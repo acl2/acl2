@@ -404,6 +404,7 @@
     in-region48p-cancel-2-1
     in-region48p-cancel-1+-2
     in-region48p-cancel-2-1+
+    in-region48p-cancel-2+-1
     in-region48p-cancel-1-3
     in-region48p-cancel-3-1
     in-region48p-cancel-2-2
@@ -422,6 +423,7 @@
     disjoint-regions48p-cancel-1+-2
     disjoint-regions48p-cancel-2-1+
     disjoint-regions48p-cancel-2-2
+    disjoint-regions48p-cancel-2+-2
     disjoint-regions48p-of-bvplus-of-constant-and-constant
     subregion48p-cancel-1-1
     subregion48p-cancel-1+-1
@@ -459,6 +461,8 @@
   '(read-of-write-when-disjoint-regions48p-gen
     read-of-write-when-disjoint-regions48p-gen-alt
     read-of-write-when-disjoint-regions48p ; for different regions with the same base address?
+    read-of-write-of-write-irrel-inner-bv ; can clarify failures
+    read-of-write-of-write-of-write-same-middle-bv ; can clarify failures
     in-region48p-of-+-arg1
     in-region48p-of-+-arg3
     in-region48p-of-logext-arg1
@@ -489,6 +493,7 @@
   '(read-1-of-write-1-diff
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
+    read-of-write-within
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
@@ -950,11 +955,14 @@
     x86isa::prefixes->adr$inline
     x86isa::prefixes->nxt$inline
     ;; x86isa::prefixes->rep$inline-constant-opener ; for floating point?
-
-    x86isa::!prefixes->nxt$inline ; why are these needed?
-    x86isa::!prefixes->num$inline
-    x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->num$inline ; why are these needed?
     x86isa::!prefixes->lck$inline
+    x86isa::!prefixes->rep$inline
+    x86isa::!prefixes->seg$inline
+    x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->adr$inline
+    x86isa::!prefixes->nxt$inline
+
     ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
@@ -1320,6 +1328,12 @@
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
     acl2::bvsx-of-logext
     acl2::logext-of-+-of-logext-arg2
+
+    acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
+
+    ;; needed to shorten arrays by making the indices obviously smaller bvs:
+    acl2::bvchop-tighten-when-not-bvlt-of-constant
+    acl2::bvchop-tighten-when-bvlt-of-constant
     ))
 
 ;; ;not used?
@@ -1553,20 +1567,23 @@
     in-region48p-constant-opener
     disjoint-regions48p-constant-opener))
 
+;; too: update this list
 (defund get-prefixes-openers ()
   (declare (xargs :guard t))
-  '(x86isa::get-prefixes-base-1
+  '(;; x86isa::get-prefixes-base-1; error case
     ;; x86isa::get-prefixes-base-2 ; error case
     ;; x86isa::get-prefixes-base-3 ; error case
     x86isa::get-prefixes-base-4
     ;; x86isa::get-prefixes-base-5 ; error case
-    x86isa::get-prefixes-base-6
+    ;; x86isa::get-prefixes-base-6 ; error case
     ;; x86isa::get-prefixes-base-7 ; error case
     ;; x86isa::get-prefixes-base-8 ; error case
+    ;; x86isa::get-prefixes-base-9 ; error case
     x86isa::get-prefixes-unroll-1
     x86isa::get-prefixes-unroll-2
     x86isa::get-prefixes-unroll-3
     x86isa::get-prefixes-unroll-4
+    x86isa::get-prefixes-unroll-5
     ;; x86isa::get-prefixes-opener-lemma-no-prefix-byte
     ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple
     ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple
@@ -1631,10 +1648,13 @@
     segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
+;; todo: more?
 (defund get-prefixes-rules64 ()
   (declare (xargs :guard t))
   '(mv-nth-0-of-get-prefixes-of-set-rip
     mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rbx
+    mv-nth-0-of-get-prefixes-of-set-rcx
     mv-nth-0-of-get-prefixes-of-set-rdx
     mv-nth-0-of-get-prefixes-of-set-rsi
     mv-nth-0-of-get-prefixes-of-set-rdi
@@ -1642,6 +1662,8 @@
     mv-nth-0-of-get-prefixes-of-set-rbp
     mv-nth-1-of-get-prefixes-of-set-rip
     mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rbx
+    mv-nth-1-of-get-prefixes-of-set-rcx
     mv-nth-1-of-get-prefixes-of-set-rdx
     mv-nth-1-of-get-prefixes-of-set-rsi
     mv-nth-1-of-get-prefixes-of-set-rdi
@@ -2013,8 +2035,10 @@
     in-region64p-cancel-1+-1+
     in-region64p-cancel-1-2
     in-region64p-cancel-2-1
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1+-2
     in-region64p-cancel-2-1+
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1-3
     in-region64p-cancel-3-1
     in-region64p-cancel-2-2
@@ -2232,7 +2256,7 @@
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
+            ;acl2::acl2-numberp-of-+
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
@@ -2255,6 +2279,8 @@
             acl2::open-ash-positive-constants
             acl2::logext-of-bvchop-same
             acl2::logext-identity
+            acl2::logext-of-+-of-logext-arg1
+            acl2::logext-of-+-of-logext-arg2
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
@@ -2497,6 +2523,10 @@
             x86isa::!ms$a
 
             acl2::bv-array-read-shorten-axe
+            ;; these can discard bytes from large executable segments:
+            acl2::bv-array-read-shorten-when-bvlt
+            acl2::bv-array-read-shorten-when-not-bvlt
+
             acl2::integerp-of-if-strong
 
             x86isa::feature-flags-constant-opener  ; move
@@ -2675,7 +2705,7 @@
      acl2::get-elf-section-address
      acl2::get-elf-section-bytes
      acl2::get-elf-code
-     acl2::get-elf-code-address
+     acl2::get-elf-text-section-address ; todo: use segments!
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
@@ -5646,7 +5676,6 @@
             ;;stuff related to flags changes:
 
             ;acl2::logand-of-1-becomes-getbit-arg2 ;move
-            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
@@ -5791,42 +5820,59 @@
             add-af-spec16-becomes-bvlt
             add-af-spec32-becomes-bvlt
             add-af-spec64-becomes-bvlt
+            adc-af-spec8-becomes-bvlt
+            adc-af-spec16-becomes-bvlt
+            adc-af-spec32-becomes-bvlt
+            adc-af-spec64-becomes-bvlt
             sub-af-spec8-becomes-bvlt
             sub-af-spec16-becomes-bvlt
             sub-af-spec32-becomes-bvlt
             sub-af-spec64-becomes-bvlt
-            cf-spec64-becomes-getbit ;cf-spec64$inline ; todo: more!
+            sbb-af-spec8-becomes-bvlt
+            sbb-af-spec16-becomes-bvlt
+            sbb-af-spec32-becomes-bvlt
+            sbb-af-spec64-becomes-bvlt
+            cf-spec8-becomes-getbit  ; cf-spec8$inline
+            cf-spec16-becomes-getbit ; cf-spec16$inline
+            cf-spec32-becomes-getbit ; cf-spec32$inline
+            cf-spec64-becomes-getbit ; cf-spec64$inline
+            pf-spec8$inline ; these expose logcount, which logcount-opener-8 then opens
+            pf-spec16$inline
+            pf-spec32$inline
+            pf-spec64$inline
+            logcount-opener-8 ; improve?
             sf-spec8-becomes-getbit
             sf-spec16-becomes-getbit
             sf-spec32-becomes-getbit
             sf-spec64-becomes-getbit
             zf-spec$inline
             ;;sub-af-spec8$inline
-            sub-cf-spec8
+            x86isa::sub-cf-spec8-opener
             sub-of-spec8
             sub-pf-spec8
             sub-sf-spec8
             sub-zf-spec8
             ;;sub-af-spec16$inline
-            sub-cf-spec16
+            x86isa::sub-cf-spec16-opener
             sub-of-spec16
             sub-pf-spec16
             sub-sf-spec16
             sub-zf-spec16
             ;;sub-af-spec32$inline
-            sub-cf-spec32
+            x86isa::sub-cf-spec32-opener
             sub-of-spec32
             sub-pf-spec32
             sub-sf-spec32
             sub-zf-spec32
             ;;sub-af-spec64$inline
-            sub-cf-spec64
+            x86isa::sub-cf-spec64-opener
             sub-of-spec64
             sub-pf-spec64
             sub-sf-spec64
             sub-zf-spec64
             ;; todo: how to open the other flags, like pf, to bv notions?
             acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            acl2::signed-byte-p-of-+-of---becomes-bv-claim
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
             acl2::bvplus-convert-arg3-to-bv-axe
             acl2::slice-convert-arg3-to-bv-axe
@@ -6097,7 +6143,7 @@
 (set-axe-rule-priority read-of-set-rsi -2)
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
-(set-axe-rule-priority read-of-write-same -1)
+(set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
 (set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
 

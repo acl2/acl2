@@ -569,3 +569,34 @@
   :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
                                   (x (bvplus 64 offset ad)))
            :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
+
+;; can help clarify failures
+(defthm read-of-write-of-write-irrel-inner-bv
+  (implies (and (disjoint-regions48p n1 addr1 n2 addr2)
+                (integerp addr1)
+                (integerp addr2)
+                (integerp outer-n)
+                (integerp outer-addr)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 addr1 (write outer-n outer-addr outer-val (write n2 addr2 val x86)))
+                  (read n1 addr1 (write outer-n outer-addr outer-val x86))))
+  :hints (("Goal" :use (:instance read-of-write-of-write-irrel-inner)
+           :in-theory (e/d (disjoint-regions48p bvlt)
+                           (read-of-write-of-write-irrel-inner)))))
+
+;; can help clarify failures
+(defthm read-of-write-of-write-of-write-same-middle-bv
+  (implies (and ;(disjoint-regions48p n1 addr1 n2 addr2)
+                (integerp ad1)
+                (integerp ad2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2)
+                (integerp n4))
+           (equal (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner (write n4 ad4 val4 x86))))
+                  (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner x86)))
+                  ))
+  :hints (("Goal" :in-theory (enable read write acl2::bvminus-of-+-arg2
+                                     in-region48p ; why?
+                                     bvlt
+                                     ))))

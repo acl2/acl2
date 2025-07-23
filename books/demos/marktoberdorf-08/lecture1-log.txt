@@ -57,10 +57,11 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APP A B).
+We will induct according to a scheme suggested by (APP A B), while
+accommodating (APP A (APP B C)).
 
-This suggestion was produced using the :induction rule APP.  If we
-let (:P A B C) denote *1 above then the induction scheme we'll use
+These suggestions were produced using the :induction rule APP.  If
+we let (:P A B C) denote *1 above then the induction scheme we'll use
 is
 (AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B C))
               (:P A B C))
@@ -259,9 +260,10 @@ Perhaps we can prove *1.1 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (INSERT X1 IT).
+We will induct according to a scheme suggested by (INSERT X1 IT), while
+accommodating (ORDEREDP IT).
 
-This suggestion was produced using the :induction rules INSERT and
+These suggestions were produced using the :induction rules INSERT and
 ORDEREDP.  If we let (:P IT X1) denote *1.1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP IT))
@@ -465,10 +467,11 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (ISORT X).
+We will induct according to a scheme suggested by (ISORT X), while
+accommodating (ISORT X).
 
-This suggestion was produced using the :induction rule ISORT.  If we
-let (:P X) denote *1 above then the induction scheme we'll use is
+These suggestions were produced using the :induction rule ISORT.  If
+we let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
               (:P X))
      (IMPLIES (ENDP X) (:P X))).
@@ -552,9 +555,10 @@ So we now return to *1.1, which is
 Perhaps we can prove *1.1 by induction.  Two induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (INSERT X1 IT).
+We will induct according to a scheme suggested by (INSERT X1 IT), while
+accommodating (ISORT IT).
 
-This suggestion was produced using the :induction rules INSERT and
+These suggestions were produced using the :induction rules INSERT and
 ISORT.  If we let (:P IT X1) denote *1.1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (AND (NOT (ENDP IT))
@@ -683,9 +687,10 @@ So we now return to *1.1.1, which is
 Perhaps we can prove *1.1.1 by induction.  Two induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (INSERT X1 IT2).
+We will induct according to a scheme suggested by (INSERT X1 IT2),
+while accommodating (ISORT IT2).
 
-This suggestion was produced using the :induction rules INSERT and
+These suggestions were produced using the :induction rules INSERT and
 ISORT.  If we let (:P IT1 IT2 X1) denote *1.1.1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP IT2))
@@ -921,8 +926,8 @@ Perhaps we can prove *1.1.1.2 by induction.  Two induction schemes
 are suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (INSERT IT1 L), but
-modified to accommodate (INSERT X1 L).
+We will induct according to a scheme suggested by (INSERT IT1 L), while
+accommodating (INSERT X1 L).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT1 IT3 L X1) denote *1.1.1.2 above then the induction
@@ -1130,7 +1135,7 @@ are suggested by this conjecture.  These merge into two derived induction
 schemes.  We will choose arbitrarily among these.  
 
 We will induct according to a scheme suggested by (INSERT IT3 IT0),
-but modified to accommodate (INSERT IT1 IT0).
+while accommodating (INSERT IT1 IT0).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT IT0 IT1 IT3 X1) denote *1.1.1.1 above then the induction
@@ -1699,7 +1704,7 @@ are suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT IT3 IT),
-but modified to accommodate (INSERT IT1 IT).
+while accommodating (INSERT IT1 IT).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT IT0 IT1 IT3 X1) denote *1.1.1.1.9 above then the induction
@@ -1970,7 +1975,7 @@ are suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT IT3 IT),
-but modified to accommodate (INSERT IT1 IT).
+while accommodating (INSERT IT1 IT).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT IT0 IT1 IT3 X1) denote *1.1.1.1.8 above then the induction
@@ -2300,7 +2305,7 @@ are suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT IT3 IT),
-but modified to accommodate (INSERT IT1 IT).
+while accommodating (INSERT IT1 IT).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT IT1 IT2 IT3 X1) denote *1.1.1.1.7 above then the induction
@@ -2589,7 +2594,7 @@ are suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT IT3 IT5),
-but modified to accommodate (INSERT IT1 IT5).
+while accommodating (INSERT IT1 IT5).
 
 These suggestions were produced using the :induction rule INSERT. 
 If we let (:P IT1 IT2 IT3 IT4 IT5 X1) denote *1.1.1.1.7.1 above then
@@ -3040,11 +3045,12 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (ORDEREDP A).
+We will induct according to a scheme suggested by (ORDEREDP A), while
+accommodating (ISORT A).
 
-This suggestion was produced using the :induction rules ISORT and ORDEREDP.
-If we let (:P A) denote *1 above then the induction scheme we'll use
-is
+These suggestions were produced using the :induction rules ISORT and
+ORDEREDP.  If we let (:P A) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ENDP A))
                    (NOT (ENDP (CDR A)))
                    (NOT (LEXORDER (CAR A) (CADR A))))
@@ -3308,8 +3314,8 @@ Perhaps we can prove *1.1 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (INSERT X1 IT), but
-modified to accommodate (PERM IT X2).
+We will induct according to a scheme suggested by (INSERT X1 IT), while
+accommodating (PERM IT X2).
 
 These suggestions were produced using the :induction rules INSERT and
 PERM.  If we let (:P IT X1 X2) denote *1.1 above then the induction
@@ -3554,11 +3560,12 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (RM* X1 X2).
+We will induct according to a scheme suggested by (RM* X1 X2), while
+accommodating (LEN X2).
 
-This suggestion was produced using the :induction rules LEN and RM*.
-If we let (:P X1 X2) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules LEN and
+RM*.  If we let (:P X1 X2) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP X2)) (:P X1 X2))
      (IMPLIES (AND (CONSP X2)
                    (NOT (EQUAL X1 (CAR X2)))
@@ -4823,9 +4830,10 @@ are suggested by this conjecture.  Subsumption reduces that number
 to two.  By considering those suggested by the largest number of non-
 primitive recursive functions, we narrow the field to one.  
 
-We will induct according to a scheme suggested by (TWINS R*).
+We will induct according to a scheme suggested by (TWINS R*), while
+accommodating (TRUE-LISTP R*).
 
-This suggestion was produced using the :induction rules TRUE-LISTP
+These suggestions were produced using the :induction rules TRUE-LISTP
 and TWINS.  If we let (:P E R* X1) denote *1.12.1.1 above then the
 induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP R*)) (:P E R* X1))
@@ -5520,9 +5528,10 @@ to four.  These merge into three derived induction schemes.  Two of
 these are tied for the highest score.  We will choose arbitrarily among
 these.  
 
-We will induct according to a scheme suggested by (MEMBER-EQUAL R*1 TS).
+We will induct according to a scheme suggested by (MEMBER-EQUAL R*1 TS),
+while accommodating (TRUE-LISTP TS).
 
-This suggestion was produced using the :induction rules MEMBER-EQUAL
+These suggestions were produced using the :induction rules MEMBER-EQUAL
 and TRUE-LISTP.  If we let (:P L1 L2 R*1 R*2 TS X1) denote *1.12.1.1.7
 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP TS))
@@ -5682,11 +5691,12 @@ Perhaps we can prove *1.12.1.1.7.1 by induction.  Three induction schemes
 are suggested by this conjecture.  Subsumption reduces that number
 to two.  One of these has a score higher than the other.  
 
-We will induct according to a scheme suggested by (HOW-MANY R*1 R*2).
+We will induct according to a scheme suggested by (HOW-MANY R*1 R*2),
+while accommodating (TRUE-LISTP R*2).
 
-This suggestion was produced using the :induction rules HOW-MANY and
-TRUE-LISTP.  If we let (:P L1 L2 R*1 R*2 X1) denote *1.12.1.1.7.1 above
-then the induction scheme we'll use is
+These suggestions were produced using the :induction rules HOW-MANY
+and TRUE-LISTP.  If we let (:P L1 L2 R*1 R*2 X1) denote *1.12.1.1.7.1
+above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP R*2))
               (:P L1 L2 R*1 R*2 X1))
      (IMPLIES (AND (CONSP R*2)
@@ -5834,10 +5844,11 @@ Perhaps we can prove *1.12.1.1.7.1.1 by induction.  Three induction
 schemes are suggested by this conjecture.  Subsumption reduces that
 number to two.  One of these has a score higher than the other.  
 
-We will induct according to a scheme suggested by (HOW-MANY R*3 R*4).
+We will induct according to a scheme suggested by (HOW-MANY R*3 R*4),
+while accommodating (TRUE-LISTP R*4).
 
-This suggestion was produced using the :induction rules HOW-MANY and
-TRUE-LISTP.  If we let (:P L1 L2 R*3 R*4 X1) denote *1.12.1.1.7.1.1
+These suggestions were produced using the :induction rules HOW-MANY
+and TRUE-LISTP.  If we let (:P L1 L2 R*3 R*4 X1) denote *1.12.1.1.7.1.1
 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP R*4))
               (:P L1 L2 R*3 R*4 X1))
@@ -6181,10 +6192,11 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (HOW-MANY E X).
+We will induct according to a scheme suggested by (HOW-MANY E X), while
+accommodating (MEMBER-EQUAL E X).
 
-This suggestion was produced using the :induction rules HOW-MANY and
-MEMBER-EQUAL.  If we let (:P E X) denote *1 above then the induction
+These suggestions were produced using the :induction rules HOW-MANY
+and MEMBER-EQUAL.  If we let (:P E X) denote *1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P E X))
      (IMPLIES (AND (CONSP X)
@@ -7197,7 +7209,7 @@ These merge into three derived induction schemes.  However, two of
 these are flawed and so we are left with one viable candidate.  
 
 We will induct according to a scheme suggested by (HOW-MANY E X2),
-but modified to accommodate (HOW-MANY X1 X2).
+while accommodating (HOW-MANY X1 X2) and (MEMBER-EQUAL X1 X2).
 
 These suggestions were produced using the :induction rules HOW-MANY
 and MEMBER-EQUAL.  If we let (:P E R* X1 X2) denote *1.11 above then
@@ -7576,7 +7588,7 @@ These merge into three derived induction schemes.  However, two of
 these are flawed and so we are left with one viable candidate.  
 
 We will induct according to a scheme suggested by (HOW-MANY X1 X4),
-but modified to accommodate (MEMBER-EQUAL X1 X4) and (HOW-MANY X3 X4).
+while accommodating (MEMBER-EQUAL X1 X4) and (HOW-MANY X3 X4).
 
 These suggestions were produced using the :induction rules HOW-MANY
 and MEMBER-EQUAL.  If we let (:P R* X1 X3 X4) denote *1.11.4 above
@@ -7952,7 +7964,7 @@ to four.  These merge into three derived induction schemes.  However,
 two of these are flawed and so we are left with one viable candidate.
 
 We will induct according to a scheme suggested by (HOW-MANY X3 X6),
-but modified to accommodate (HOW-MANY X5 X6).
+while accommodating (HOW-MANY X5 X6).
 
 These suggestions were produced using the :induction rule HOW-MANY.
 If we let (:P R* X3 X5 X6) denote *1.11.4.2 above then the induction
@@ -8214,9 +8226,10 @@ are suggested by this conjecture.  Subsumption reduces that number
 to two.  By considering those suggested by the largest number of non-
 primitive recursive functions, we narrow the field to one.  
 
-We will induct according to a scheme suggested by (TWINS R*).
+We will induct according to a scheme suggested by (TWINS R*), while
+accommodating (TRUE-LISTP R*).
 
-This suggestion was produced using the :induction rules TRUE-LISTP
+These suggestions were produced using the :induction rules TRUE-LISTP
 and TWINS.  If we let (:P R* X5 X7) denote *1.11.4.2.1.1 above then
 the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP R*)) (:P R* X5 X7))
@@ -8873,9 +8886,10 @@ Perhaps we can prove *1.11.4.2.1.1.6 by induction.  Three induction
 schemes are suggested by this conjecture.  Subsumption reduces that
 number to two.  These merge into one derived induction scheme.  
 
-We will induct according to a scheme suggested by (RM* R*1 R*2).
+We will induct according to a scheme suggested by (RM* R*1 R*2), while
+accommodating (MEMBER-EQUAL R*1 R*2) and (TRUE-LISTP R*2).
 
-This suggestion was produced using the :induction rules MEMBER-EQUAL,
+These suggestions were produced using the :induction rules MEMBER-EQUAL,
 RM* and TRUE-LISTP.  If we let (:P R*1 R*2 X5) denote *1.11.4.2.1.1.6
 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP R*2))
@@ -9045,8 +9059,8 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (HOW-MANY E X), but
-modified to accommodate (RM* D X).
+We will induct according to a scheme suggested by (HOW-MANY E X), while
+accommodating (RM* D X).
 
 These suggestions were produced using the :induction rules HOW-MANY
 and RM*.  If we let (:P D E X) denote *1 above then the induction scheme
@@ -9871,9 +9885,10 @@ Perhaps we can prove *1.3 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (MEMBER-EQUAL X1 X2).
+We will induct according to a scheme suggested by (MEMBER-EQUAL X1 X2),
+while accommodating (RM* X1 X2).
 
-This suggestion was produced using the :induction rules MEMBER-EQUAL
+These suggestions were produced using the :induction rules MEMBER-EQUAL
 and RM*.  If we let (:P X1 X2) denote *1.3 above then the induction
 scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X2))
@@ -10196,10 +10211,11 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to two.
 These merge into one derived induction scheme.  
 
-We will induct according to a scheme suggested by (MEMBER-EQUAL E X).
+We will induct according to a scheme suggested by (MEMBER-EQUAL E X),
+while accommodating (HOW-MANY E X).
 
-This suggestion was produced using the :induction rules HOW-MANY and
-MEMBER-EQUAL.  If we let (:P E X) denote *1 above then the induction
+These suggestions were produced using the :induction rules HOW-MANY
+and MEMBER-EQUAL.  If we let (:P E X) denote *1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X))
                    (NOT (EQUAL E (CAR X)))

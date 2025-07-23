@@ -26,9 +26,8 @@
 #                    ;   goes to file make.log (customizable with
 #                    ;   ACL2_MAKE_LOG), including output from both large and
 #                    ;   TAGS-acl2-doc.
-#   make large       ; Build ${PREFIXsaved_acl2} from scratch.  Most output
-#                    ;   goes to file make.log (customizable with
-#                    ;   ACL2_MAKE_LOG).
+#   make large       ; Build saved_acl2 from scratch.  Most output goes to file
+#                    ;   make.log (customizable with ACL2_MAKE_LOG).
 #   make TAGS-acl2-doc ; Build tags-table for books (used by acl2-doc browser)
 #   make clean       ; Remove all generated files in top-level directory and doc/
 #   make clean-all   ; Same as above
@@ -39,7 +38,7 @@
 #                    ; executable is up-to-date with respect to the
 #                    ; ACL2 sources, then do nothing.  See warning
 #                    ; next to `update' target, below.
-#   make LISP=cl PREFIX=allegro-
+#   make LISP=sbcl PREFIX=sbcl- ; Build sbcl-saved_acl2 on host Lisp sbcl
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make regression
@@ -75,8 +74,7 @@
 #   make full-meter init  ; Completely recompile with meters, init and save.
 #   make init      ; Just build full-size ${PREFIXsaved_acl2}.
 #   make check-sum ; Call only after ACL2 is completely compiled.
-#   make full LISP=lucid PREFIX=lucid-  ; makes acl2 in Lucid
-#   make full LISP=cl PREFIX=allegro- ; makes acl2 in allegro
+#   make full LISP=sbcl PREFIX=sbcl-  ; makes acl2 in sbcl
 #   make full LISP=lispworks PREFIX=lispworks- ; makes acl2 in lispworks
 #   make copy-distribution DIR=/stage/ftp/pub/moore/acl2/v2-9/acl2-sources
 #                  ; copies all of acl2 plus books, doc, etc., to the named
@@ -115,7 +113,16 @@ export CERT_PL_NO_COLOR ?= t
 # Always make it possible to gather timing statistics after a regression.
 export TIME_CERT = yes
 
+# Here we set LISP to ccl by default, where that value can be
+# overriden on the command line with "make LISP=<other_lisp>.  It may
+# seem to be more natural to use ?= instead of = for this default
+# assignment.  But then the default would be overridden when LISP has
+# a value as an environment variable, and the user might not even be
+# aware of that value.  (Perhaps a better name would be ACL2_LISP so
+# that the variable is less likely to be set in the environment by
+# some other application.)
 LISP = ccl
+
 DIR = /tmp
 
 # The following is intended to provide the current working directory
@@ -124,14 +131,6 @@ ifneq (,$(findstring CYGWIN, $(shell uname)))
 ACL2_WD := $(shell cygpath -m `pwd`)
 else
 ACL2_WD := $(shell pwd)
-endif
-
-# The build of saved_acl2 may succeed even if the directory name has
-# spaces, but book certification will almost surely fail, so we
-# disallow such a build.  Comment out the three lines below if you
-# want to take your chances nonetheless!
-ifneq (,$(word 2, $(ACL2_WD)))
-$(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
 endif
 
 # The variable ACL2_REAL should be defined for the non-standard
@@ -168,6 +167,26 @@ PREFIXsaved_acl2 := ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 := ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
 ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
+
+# The build of saved_acl2 may succeed even if the directory name
+# includes spaces; we have seen this success using each supported Lisp
+# except GCL (Version 2.7.1).  However, book certification with the
+# build system for books, such as with "make" or with
+# books/build/cert.pl, will fail (at least, as of this writing in July
+# 2025); so we disallow such a build by default.  The message below
+# provides a workaround for building saved_acl2 but not for the issue
+# with the build system for books.
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
+ifneq (,$(word 2, $(ACL2_WD)))
+$(info - Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
+$(info -   To avoid this error, try setting variable ACL2_ALLOW_SPACES_IN_DIRECTORIES)
+$(info -   to a non-empty value, e.g., (make ACL2_ALLOW_SPACES_IN_DIRECTORIES=t).)
+$(info -   But although that may allow you to build $(PREFIXsaved_acl2), there may be)
+$(info -   errors when attempting to certify books; so use this workaround at)
+$(info -   your own risk.)
+$(error Illegal ACL2 build directory (see message above): $(ACL2_WD)/)
+endif
+endif
 
 # One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
 # to provide a safety or :stack-access setting.  We recommend
@@ -745,10 +764,12 @@ else
 	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
 	@echo " done."
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
 	@echo "Updating books/build/."
 	@if [ -d books/build ] ; then \
 	$(MAKE) --no-print-directory update_books_build_info ;\
 	fi
+endif
 endif
 
 # The following target should be used with care, since it fails to

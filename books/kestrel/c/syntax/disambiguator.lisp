@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,6 +13,7 @@
 
 (include-book "unambiguity")
 
+(include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
@@ -1112,7 +1114,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-expr ((expr exprp) (table dimb-tablep))
-    :returns (mv erp (new-expr exprp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-expr exprp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an expression."
     :long
@@ -1172,14 +1174,14 @@
        :ident
        (b* ((kind (dimb-lookup-ident expr.ident table))
             ((unless kind)
-             (reterr (msg "The identifier ~x0 is used as an expression ~
-                           but is not in scope."
-                          (ident->unwrap expr.ident)))))
+             (retmsg$ "The identifier ~x0 is used as an expression ~
+                       but is not in scope."
+                      (ident->unwrap expr.ident))))
          (dimb-kind-case
           kind
-          :typedef (reterr (msg "The identifier ~x0 denotes a typedef ~
-                                 but it is used as an expression."
-                                (ident->unwrap expr.ident)))
+          :typedef (retmsg$ "The identifier ~x0 denotes a typedef ~
+                             but it is used as an expression."
+                            (ident->unwrap expr.ident))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
           :enumconst (retok (expr-const (const-enum expr.ident))
@@ -1386,7 +1388,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-expr-list ((exprs expr-listp) (table dimb-tablep))
-    :returns (mv erp (new-exprs expr-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-exprs expr-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of expressions."
     (b* (((reterr) nil (irr-dimb-table))
@@ -1399,7 +1403,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-expr-option ((expr? expr-optionp) (table dimb-tablep))
-    :returns (mv erp (new-expr? expr-optionp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-expr? expr-optionp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional expression."
     (b* (((reterr) nil (irr-dimb-table)))
@@ -1412,7 +1418,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-const-expr ((cexpr const-exprp) (table dimb-tablep))
-    :returns (mv erp (new-cexpr const-exprp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-cexpr const-exprp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a constant expression."
     (b* (((reterr) (irr-const-expr) (irr-dimb-table))
@@ -1424,7 +1432,9 @@
 
   (define dimb-const-expr-option ((cexpr? const-expr-optionp)
                                   (table dimb-tablep))
-    :returns (mv erp (new-cexpr? const-expr-optionp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-cexpr? const-expr-optionp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional constant expression."
     (b* (((reterr) nil (irr-dimb-table)))
@@ -1437,7 +1447,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-genassoc ((assoc genassocp) (table dimb-tablep))
-    :returns (mv erp (new-assoc genassocp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-assoc genassocp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a generic association."
     (b* (((reterr) (irr-genassoc) (irr-dimb-table)))
@@ -1455,7 +1467,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-genassoc-list ((assocs genassoc-listp) (table dimb-tablep))
-    :returns (mv erp (new-assocs genassoc-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-assocs genassoc-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of generic associations."
     (b* (((reterr) nil (irr-dimb-table))
@@ -1468,7 +1482,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-member-designor ((memdes member-designorp) (table dimb-tablep))
-    :returns (mv erp (new-memdes member-designorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-memdes member-designorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a member designator."
     (b* (((reterr) (irr-member-designor) (irr-dimb-table)))
@@ -1492,7 +1508,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-type-spec ((tyspec type-specp) (table dimb-tablep))
-    :returns (mv erp (new-tyspec type-specp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-tyspec type-specp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a type specifier."
     :long
@@ -1551,24 +1569,21 @@
                (retok (type-spec-enum new-enumspec) table))
        :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
                      ((unless kind)
-                      (reterr
-                       (msg "The identifier ~x0 is used as a type specifier ~
-                             but it is not in scope."
-                            (ident->unwrap tyspec.name)))))
+                      (retmsg$ "The identifier ~x0 is used as a type specifier ~
+                                but it is not in scope."
+                               (ident->unwrap tyspec.name))))
                   (dimb-kind-case
                    kind
                    :typedef (retok (type-spec-typedef tyspec.name)
                                    (dimb-table-fix table))
-                   :objfun (reterr
-                            (msg "The identifier ~x0 denotes ~
-                                  an object or function ~
-                                  but it is used as a typedef name."
-                                 (ident->unwrap tyspec.name)))
-                   :enumconst (reterr
-                               (msg "The identifier ~x0 denotes ~
-                                     an enumeration constant ~
+                   :objfun (retmsg$ "The identifier ~x0 denotes ~
+                                     an object or function ~
                                      but it is used as a typedef name."
-                                    (ident->unwrap tyspec.name)))))
+                                    (ident->unwrap tyspec.name))
+                   :enumconst (retmsg$ "The identifier ~x0 denotes ~
+                                        an enumeration constant ~
+                                        but it is used as a typedef name."
+                                       (ident->unwrap tyspec.name))))
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
        :float32x (retok (type-spec-float32x) (dimb-table-fix table))
@@ -1607,7 +1622,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-spec/qual ((specqual spec/qual-p) (table dimb-tablep))
-    :returns (mv erp (new-specqual spec/qual-p) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-specqual spec/qual-p)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a specifier or qualifier."
     :long
@@ -1635,7 +1652,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-spec/qual-list ((specquals spec/qual-listp) (table dimb-tablep))
-    :returns (mv erp (new-specquals spec/qual-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-specquals spec/qual-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of specifiers and qualifiers."
     :long
@@ -1653,7 +1672,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-align-spec ((alignspec align-specp) (table dimb-tablep))
-    :returns (mv erp (new-alignspec align-specp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-alignspec align-specp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an alignment specifier."
     :long
@@ -1688,7 +1709,7 @@
   (define dimb-decl-spec ((declspec decl-specp)
                           (kind dimb-kindp)
                           (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-declspec decl-specp)
                  (new-kind dimb-kindp)
                  (new-table dimb-tablep))
@@ -1753,7 +1774,7 @@
   (define dimb-decl-spec-list ((declspecs decl-spec-listp)
                                (kind dimb-kindp)
                                (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-declspecs decl-spec-listp)
                  (new-kind dimb-kindp)
                  (new-table dimb-tablep))
@@ -1778,7 +1799,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-initer ((initer initerp) (table dimb-tablep))
-    :returns (mv erp (new-initer initerp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-initer initerp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer."
     (b* (((reterr) (irr-initer) (irr-dimb-table)))
@@ -1796,7 +1817,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-initer-option ((initer? initer-optionp) (table dimb-tablep))
-    :returns (mv erp (new-initer? initer-optionp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-initer? initer-optionp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional initializer."
     (b* (((reterr) nil (irr-dimb-table)))
@@ -1809,7 +1832,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-desiniter ((desiniter desiniterp) (table dimb-tablep))
-    :returns (mv erp (new-desiniter desiniterp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-desiniter desiniterp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer with optional designations."
     (b* (((reterr) (irr-desiniter) (irr-dimb-table))
@@ -1824,7 +1849,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-desiniter-list ((desiniters desiniter-listp) (table dimb-tablep))
-    :returns (mv erp (new-desiniters desiniter-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-desiniters desiniter-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of initializers with optional designations."
     (b* (((reterr) nil (irr-dimb-table))
@@ -1838,7 +1865,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-designor ((design designorp) (table dimb-tablep))
-    :returns (mv erp (new-design designorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-design designorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a designator."
     (b* (((reterr) (irr-designor) (irr-dimb-table)))
@@ -1852,7 +1881,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-designor-list ((designs designor-listp) (table dimb-tablep))
-    :returns (mv erp (new-designs designor-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-designs designor-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of designators."
     (b* (((reterr) nil (irr-dimb-table))
@@ -1864,8 +1895,14 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declor ((declor declorp) (fundefp booleanp) (table dimb-tablep))
-    :returns (mv erp (new-declor declorp) (ident identp) (table dimb-tablep))
+  (define dimb-declor ((declor declorp)
+                       (fundef-params-p booleanp)
+                       (table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-declor declorp)
+                 (new-fundef-params-p booleanp)
+                 (ident identp)
+                 (table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declarator."
     :long
@@ -1884,26 +1921,35 @@
        which also gives us the identifier,
        and then we re-add the pointer part.")
      (xdoc::p
-      "The @('fundefp') flag passed to this function
-       says whether we are disambiguating
-       the declarator of a function definition or not.
-       It is used to determine whether,
-       when disambiguating the parameters of a function declarator,
-       the new scope pushed for the function prototype
-       should be popped at the end of the function declarator or not.
-       If the declarator is not part of a function definition,
-       then that scope must be popped;
-       but if instead the declarator is part of a function definition,
-       that scope is the block scope of the definition,
-       and must not be popped.
-       Here by `part of a function definition' of course we mean
-       the one that introduces the name of the function being defined."))
-    (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
+      "The @('fundef-params-p') flag is @('t')
+       when this function is called
+       to disambiguate the declarator of a function definition,
+       and only when the parameters of the function
+       have not been disambiguated yet.
+       Its new value @('new-fundef-params-p'), returned as result,
+       stays @('t') if the parameters of the function
+       have still not been disambiguated yet,
+       because they are not found in this declarator;
+       otherwise, its new value is @('nil').
+       If the input @('fundef-params-p') is @('nil'),
+       then @('new-fundef-params-p') is @('nil') as well.
+       The exact handling of this flag,
+       and the exact treatment of the parameters of function declarations,
+       are explained in @(tsee dimb-dirdeclor).")
+     (xdoc::p
+      "We also pass the @('fundef-params-p') flag to @(tsee dimb-dirdeclor),
+       and relay the @('new-fundef-params-p') output.
+       The reason is that, after peeling off the pointers,
+       which refine the return result of the function,
+       the direct declarator is still expected to be for a function,
+       and we have not disambiguated the parameters yet."))
+    (b* (((reterr) (irr-declor) nil (irr-ident) (irr-dimb-table))
          ((declor declor) declor)
-         ((erp new-dirdeclor ident table)
-          (dimb-dirdeclor declor.direct fundefp table)))
+         ((erp new-dirdeclor fundef-params-p ident table)
+          (dimb-dirdeclor declor.direct fundef-params-p table)))
       (retok (make-declor :pointers declor.pointers
                           :direct new-dirdeclor)
+             fundef-params-p
              ident
              table))
     :measure (declor-count declor))
@@ -1911,7 +1957,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-declor-option ((declor? declor-optionp) (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-declor? declor-optionp)
                  (ident? ident-optionp)
                  (new-table dimb-tablep))
@@ -1925,24 +1971,25 @@
        Since the declarator may be absent,
        we also generalize the returned identifier to be an optional one.")
      (xdoc::p
-      "Note that we call @(tsee dimb-declor) with
-       @('nil') as the @('fundefp') flag,
-       because if we are disambiguating an optional declarator
-       we are not disambiguating the declarator of a defined function."))
+      "This function does not take or return a @('fundef-params-p') flag
+       because optional declarators are not used in function parameters."))
     (b* (((reterr) nil nil (irr-dimb-table)))
       (declor-option-case
        declor?
-       :some (dimb-declor declor?.val nil table)
+       :some (b* (((erp new-declor? & ident table)
+                   (dimb-declor declor?.val nil table)))
+               (retok new-declor? ident table))
        :none (retok nil nil (dimb-table-fix table))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
-                          (fundefp booleanp)
+                          (fundef-params-p booleanp)
                           (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-dirdeclor dirdeclorp)
+                 (new-fundef-params-p booleanp)
                  (ident identp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -1957,10 +2004,8 @@
        The actual addition to the disambiguation table
        is performed outside this function.")
      (xdoc::p
-      "The purpose of the @('fundefp') flag is
-       the same as in @(tsee dimb-declor),
-       which in fact passes it to this function.
-       Here we make use of it, as explained below.")
+      "The meaning of the @('fundef-params-p') flag passed as input is
+       the same as in @(tsee dimb-declor): see that function's documentation.")
      (xdoc::p
       "We recursively disambiguate the inner declarator and direct declarator,
        from which we obtain the identifier.
@@ -1976,98 +2021,133 @@
      (xdoc::p
       "For a @(':function-params'),
        first we attempt to turn it into a @(':function-names'), if applicable.
-       we also push a new scope if @('fundefp') is @('t'),
-       for the reason explained below.
-       If we cannot turn the @(':function-params') into @(':function-names'),
-       we disambiguate it (into another @(':function-params')) as follows.
-       We push a new scope for the function prototype [C17:6.2.1/2] [C17:6.2.1/4].
-       We call a separate function to disambiguate each parameter declaration.
-       Then, based on the @('fundefp') flag,
-       we pop the scope (if the flag is @('nil')),
-       or we leave the scope there (if the flag is @('t')):
-       in the latter case, this will be the scope of the function definition.
-       So that is the reason why we push a scope
-       also in the case, described above,
-       that we turn @(':function-params') into @(':function-names'):
-       either way, we are pushing a scope for the function definition.
-       If the code is valid, the function definition
-       will indeed have parameter declarations,
-       and so the disambiguator will do the right thing;
-       if the code is invalid,
-       it does not actually matter what the disambiguator does."))
-    (b* (((reterr) (irr-dirdeclor) (irr-ident) (irr-dimb-table)))
+       We pass @('fundef-params-p') as the @('fundefp') flag
+       to @(tsee dimb-params-to-names),
+       which indicates whether the parameters in question
+       are for a function definition or not.
+       If this flag is @('t'),
+       we push a new scope for the function parameters and body,
+       but it will be the declarations between the parameter names and the body
+       that will populate the newly pushed scope.
+       If this flag is @('nil'),
+       we do not push a new scope,
+       because it just means that the list of parameters is empty,
+       but they are not the parameters of a function definition;
+       it is just a function prototype with no parameters.")
+     (xdoc::p
+      "If we cannot turn the @(':function-params') into a @(':function-names'),
+       we push a new scope for the parameters,
+       and we disambiguate the parameters (which adds them to the new scope),
+       passing the @('fundef-params-p') resulting from
+       the recursive validation of the enclosed direct declarator.
+       This resulting flag is @('t') if
+       the parameters of the function being defined
+       have not been disambiguated yet,
+       which means that the parameters of the current direct declarator
+       are in fact the ones of the function.
+       So we return @('nil') as the @('new-fundef-params-p') result,
+       so that any outer function declarator
+       is not treated as the one
+       whose parameters are for the function definition,
+       if we are validating one.
+       See the example in @(tsee valid-dirdeclor) for clarification;
+       validation and disambiguation follow the same pattern.
+       In any case, when the current function declarator
+       is the one whose parameters are for the function definition,
+       i.e. when @('fundef-params-p') is @('t'),
+       after disambiguating the parameters, which pushes a new scope with them,
+       we return the validation table as such,
+       so that when we later disambiguate the function body,
+       we already have the top-level scope for the body.
+       If instead @('fundef-params-p') is @('nil'),
+       the parameters form a function prototype scope [C17:6.2.1/4],
+       which is therefore popped."))
+    (b* (((reterr) (irr-dirdeclor) nil (irr-ident) (irr-dimb-table)))
       (dirdeclor-case
        dirdeclor
        :ident
-       (retok (dirdeclor-fix dirdeclor) dirdeclor.ident (dimb-table-fix table))
+       (retok (dirdeclor-fix dirdeclor)
+              (bool-fix fundef-params-p)
+              dirdeclor.ident
+              (dimb-table-fix table))
        :paren
-       (b* (((erp new-declor ident table)
-             (dimb-declor dirdeclor.inner fundefp table)))
-         (retok (dirdeclor-paren new-declor) ident table))
+       (b* (((erp new-declor fundef-params-p ident table)
+             (dimb-declor dirdeclor.inner fundef-params-p table)))
+         (retok (dirdeclor-paren new-declor)
+                fundef-params-p
+                ident
+                table))
        :array
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
             ((erp new-expr? table) (dimb-expr-option dirdeclor.size? table)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
                                       :size? new-expr?)
+                fundef-params-p
                 ident
                 table))
        :array-static1
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
             ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
+                fundef-params-p
                 ident
                 table))
        :array-static2
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
             ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
+                fundef-params-p
                 ident
                 table))
        :array-star
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
+                fundef-params-p
                 ident
                 table))
        :function-params
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
             ((mv yes/no names)
-             (dimb-params-to-names dirdeclor.params fundefp table))
+             (dimb-params-to-names dirdeclor.params fundef-params-p table))
             ((when yes/no)
              (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names names)
+                    fundef-params-p
                     ident
-                    (if fundefp
+                    (if fundef-params-p
                         (dimb-push-scope table)
                       table)))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-param-declon-list dirdeclor.params table))
-            (table (if fundefp
+            (table (if fundef-params-p
                        table
                      (dimb-pop-scope table))))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
+                fundef-params-p
                 ident
                 table))
        :function-names
-       (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+       (b* (((erp new-dirdeclor fundef-params-p ident table)
+             (dimb-dirdeclor dirdeclor.declor fundef-params-p table)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
+                fundef-params-p
                 ident
-                (if fundefp
+                (if fundef-params-p
                     (dimb-push-scope table)
                   table)))))
     :measure (dirdeclor-count dirdeclor))
@@ -2075,7 +2155,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-absdeclor ((absdeclor absdeclorp) (table dimb-tablep))
-    :returns (mv erp (new-absdeclor absdeclorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-absdeclor absdeclorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an abstract declarator."
     :long
@@ -2098,7 +2180,9 @@
 
   (define dimb-absdeclor-option ((absdeclor? absdeclor-optionp)
                                  (table dimb-tablep))
-    :returns (mv erp (new-absdeclor? absdeclor-optionp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-absdeclor? absdeclor-optionp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an optional abstract declarator."
     (b* (((reterr) nil nil (irr-dimb-table)))
@@ -2111,7 +2195,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (table dimb-tablep))
-    :returns (mv erp (new-dirabsdeclor dirabsdeclorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-dirabsdeclor dirabsdeclorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a direct abstract declarator."
     :long
@@ -2126,7 +2212,7 @@
        :dummy-base
        (prog2$
         (raise "Internal error: dummy base case of direct abstract declarator.")
-        (reterr t))
+        (retmsg$ ""))
        :paren
        (b* (((erp new-absdeclor table)
              (dimb-absdeclor dirabsdeclor.inner table)))
@@ -2182,7 +2268,7 @@
 
   (define dimb-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
                                     (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-dirabsdeclor? dirabsdeclor-optionp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2197,11 +2283,16 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-param-declon ((param param-declonp) (table dimb-tablep))
-    :returns (mv erp (new-param param-declonp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-param param-declonp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declaration."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "The @('fundef-params-p') input is @('t') iff
+       we are disambiguating the parameter of a function definition.")
      (xdoc::p
       "We start by disambiguating the declaration specifiers,
        which may result in extending the disambiguation table.
@@ -2226,7 +2317,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-param-declon-list ((params param-declon-listp) (table dimb-tablep))
-    :returns (mv erp (new-params param-declon-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-params param-declon-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of parameter declarations."
     :long
@@ -2245,7 +2338,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-param-declor ((paramdeclor param-declorp) (table dimb-tablep))
-    :returns (mv erp (new-paramdeclor param-declorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-paramdeclor param-declorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declarator."
     :long
@@ -2269,14 +2364,14 @@
        the identifier is also added to the disambiguation table.")
      (xdoc::p
       "Note that we call @(tsee dimb-declor)
-       with @('nil') as the @('fundefp') flag,
+       with @('nil') as the @('fundef-params-p') flag,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
     (b* (((reterr) (irr-param-declor) (irr-dimb-table)))
       (param-declor-case
        paramdeclor
        :nonabstract
-       (b* (((erp new-declor ident table)
+       (b* (((erp new-declor & ident table)
              (dimb-declor paramdeclor.declor nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
          (retok (param-declor-nonabstract new-declor) table))
@@ -2294,7 +2389,7 @@
           :declor
           (b* (((unless ident?)
                 (raise "Internal error: declarator without identifier.")
-                (reterr t))
+                (retmsg$ ""))
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
             (retok (param-declor-nonabstract declor/absdeclor.unwrap) table))
           :absdeclor
@@ -2305,7 +2400,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-tyname ((tyname tynamep) (table dimb-tablep))
-    :returns (mv erp (new-tyname tynamep) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-tyname tynamep) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a type name."
     (b* (((reterr) (irr-tyname) (irr-dimb-table))
@@ -2323,7 +2418,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-struni-spec ((struni-spec struni-specp) (table dimb-tablep))
-    :returns (mv erp (new-struni-spec struni-specp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-struni-spec struni-specp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure or union specifier."
     :long
@@ -2342,7 +2439,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-structdecl ((structdecl structdeclp) (table dimb-tablep))
-    :returns (mv erp (new-structdecl structdeclp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-structdecl structdeclp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declaration."
     (b* (((reterr) (irr-structdecl) (irr-dimb-table)))
@@ -2370,7 +2469,9 @@
 
   (define dimb-structdecl-list ((structdecls structdecl-listp)
                                 (table dimb-tablep))
-    :returns (mv erp (new-structdecls structdecl-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-structdecls structdecl-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of structure declarations."
     (b* (((reterr) nil (irr-dimb-table))
@@ -2384,7 +2485,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-structdeclor ((structdeclor structdeclorp) (table dimb-tablep))
-    :returns (mv erp (new-structdeclor structdeclorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-structdeclor structdeclorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declarator."
     :long
@@ -2408,7 +2511,7 @@
 
   (define dimb-structdeclor-list ((structdeclors structdeclor-listp)
                                   (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (new-structdeclors structdeclor-listp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2425,7 +2528,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-enumspec ((enumspec enumspecp) (table dimb-tablep))
-    :returns (mv erp (new-enumspec enumspecp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-enumspec enumspecp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an enumeration specifier."
     :long
@@ -2449,7 +2554,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-enumer ((enumer enumerp) (table dimb-tablep))
-    :returns (mv erp (new-enumer enumerp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-enumer enumerp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an enumerator."
     :long
@@ -2467,7 +2574,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-enumer-list ((enumers enumer-listp) (table dimb-tablep))
-    :returns (mv erp (new-enumers enumer-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-enumers enumer-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of enumerators."
     :long
@@ -2485,7 +2594,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-statassert ((statassert statassertp) (table dimb-tablep))
-    :returns (mv erp (new-statassert statassertp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-statassert statassertp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a static assertion declaration."
     (b* (((reterr) (irr-statassert) (irr-dimb-table))
@@ -2500,7 +2611,9 @@
   (define dimb-initdeclor ((ideclor initdeclorp)
                            (kind dimb-kindp)
                            (table dimb-tablep))
-    :returns (mv erp (new-ideclor initdeclorp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-ideclor initdeclorp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer declarator."
     :long
@@ -2513,12 +2626,13 @@
        which comes from the preceding declaration specifiers,
        and is passed to this function.")
      (xdoc::p
-      "We pass @('nil') as the @('fundefp') flag to @(tsee dimb-declor),
+      "We pass @('nil') as the @('fundef-params-p') flag
+       to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
     (b* (((reterr) (irr-initdeclor) (irr-dimb-table))
          ((initdeclor ideclor) ideclor)
-         ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
+         ((erp new-declor & ident table) (dimb-declor ideclor.declor nil table))
          ((erp new-init? table) (dimb-initer-option ideclor.init? table))
          (table (dimb-add-ident ident kind table)))
       (retok (make-initdeclor :declor new-declor
@@ -2533,7 +2647,9 @@
   (define dimb-initdeclor-list ((ideclors initdeclor-listp)
                                 (kind dimb-kindp)
                                 (table dimb-tablep))
-    :returns (mv erp (new-ideclors initdeclor-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-ideclors initdeclor-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of initializer declarators."
     :long
@@ -2554,7 +2670,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-decl ((decl declp) (table dimb-tablep))
-    :returns (mv erp (new-decl declp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-decl declp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declaration."
     :long
@@ -2587,7 +2703,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-decl-list ((decls decl-listp) (table dimb-tablep))
-    :returns (mv erp (new-decls decl-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-decls decl-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of declarations."
     :long
@@ -2604,7 +2722,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-label ((label labelp) (table dimb-tablep))
-    :returns (mv erp (new-label labelp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-label labelp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a label."
     :long
@@ -2629,7 +2747,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-stmt ((stmt stmtp) (table dimb-tablep))
-    :returns (mv erp (new-stmt stmtp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-stmt stmtp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a statement."
     :long
@@ -2766,7 +2884,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-block-item ((item block-itemp) (table dimb-tablep))
-    :returns (mv erp (new-item block-itemp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-item block-itemp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a block item."
     :long
@@ -2794,7 +2914,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-block-item-list ((items block-item-listp) (table dimb-tablep))
-    :returns (mv erp (new-items block-item-listp) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-items block-item-listp)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of block items."
     (b* (((reterr) nil (irr-dimb-table))
@@ -2809,7 +2931,9 @@
   (define dimb-amb-expr/tyname ((expr/tyname amb-expr/tyname-p)
                                 (add-parens-p booleanp)
                                 (table dimb-tablep))
-    :returns (mv erp (expr-or-tyname expr/tyname-p) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (expr-or-tyname expr/tyname-p)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous expression or type name."
     :long
@@ -2855,16 +2979,15 @@
           ;; expr fails:
           (if erp-tyname
               ;; tyname fails:
-              (reterr (msg "In the ambiguous expression or type name ~x0, ~
-                            neither the expression nor the type name ~
-                            can be successfully disambiguated. ~
-                            The code must be invalid, ~
-                            because at least one must succeed.~%~%~
-                            These are the failures for each:~%~%~
-                            ~@1~%~%~@2"
-                           (amb-expr/tyname-fix expr/tyname)
-                           erp-expr
-                           erp-tyname))
+              (retmsg$ "In the ambiguous expression or type name ~x0, ~
+                        neither the expression nor the type name can be ~
+                        successfully disambiguated. The code must be invalid, ~
+                        because at least one must succeed.~%~%~
+                        These are the failures for each:~%~%~
+                        ~@1~%~%~@2"
+                       (amb-expr/tyname-fix expr/tyname)
+                       erp-expr
+                       erp-tyname)
             ;; tyname succeeds:
             (retok (expr/tyname-tyname new-tyname) table-tyname))
         ;; expr succeeds:
@@ -2875,19 +2998,19 @@
                              new-expr)))
               (retok (expr/tyname-expr new-expr) table-expr))
           ;; tyname succeeds:
-          (reterr (msg "In the ambiguous expression or type name ~x0, ~
-                        both the expression and the type name ~
-                        are successfully disambiguated. ~
-                        The code must be invalid, ~
-                        because at most one must succeed."
-                       (amb-expr/tyname-fix expr/tyname))))))
+          (retmsg$ "In the ambiguous expression or type name ~x0, ~
+                    both the expression and the type name
+                    are successfully disambiguated. ~
+                    The code must be invalid, ~
+                    because at most one must succeed."
+                   (amb-expr/tyname-fix expr/tyname)))))
     :measure (amb-expr/tyname-count expr/tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-declor/absdeclor ((declor/absdeclor amb-declor/absdeclor-p)
                                      (table dimb-tablep))
-    :returns (mv erp
+    :returns (mv (erp maybe-msgp)
                  (declor-or-absdeclor declor/absdeclor-p)
                  (ident? ident-optionp)
                  (new-table dimb-tablep))
@@ -2935,13 +3058,13 @@
        besides the disambiguated declarator or abstract declarator.")
      (xdoc::p
       "In the call of @(tsee dimb-declor)
-       we pass @('nil') as the @('fundefp') flag,
+       we pass @('nil') as the @('fundef-params-p') flag,
        because if we are disambiguating a declarator or abstract declarator,
        it means that we are disambiguating a parameter declarator,
        and not the declarator of a defined function."))
     (b* (((reterr) (irr-declor/absdeclor) nil (irr-dimb-table))
          ((amb-declor/absdeclor declor/absdeclor) declor/absdeclor)
-         ((mv erp-declor new-declor ident table-declor)
+         ((mv erp-declor new-declor & ident table-declor)
           (dimb-declor declor/absdeclor.declor nil table))
          ((mv erp-absdeclor new-absdeclor table-absdeclor)
           (dimb-absdeclor declor/absdeclor.absdeclor table)))
@@ -2949,17 +3072,17 @@
           ;; declor fails:
           (if erp-absdeclor
               ;; absdeclor fails:
-              (reterr (msg "In the ambiguous ~
-                            declarator or abstract declarator ~x0, ~
-                            neither the declarator nor the abstract declarator ~
-                            can be successfully disambiguated. ~
-                            The code must be invalid, ~
-                            because at least one must succeed.~%~%~
-                            These are the failures for each:~%~%~
-                            ~@1~%~%~@2"
-                           (amb-declor/absdeclor-fix declor/absdeclor)
-                           erp-declor
-                           erp-absdeclor))
+              (retmsg$ "In the ambiguous ~
+                        declarator or abstract declarator ~x0, ~
+                        neither the declarator nor the abstract declarator ~
+                        can be successfully disambiguated. ~
+                        The code must be invalid, ~
+                        because at least one must succeed.~%~%~
+                        These are the failures for each:~%~%~
+                        ~@1~%~%~@2"
+                       (amb-declor/absdeclor-fix declor/absdeclor)
+                       erp-declor
+                       erp-absdeclor)
             ;; absdeclor succeeds:
             (retok (declor/absdeclor-absdeclor new-absdeclor)
                    nil
@@ -2976,22 +3099,24 @@
                 (retok (declor/absdeclor-absdeclor new-absdeclor)
                        nil
                        table-absdeclor)
-              (reterr (msg "In the ambiguous ~
-                            declarator or abstract declarator ~x0, ~
-                            both the declarator and the abstract declarator ~
-                            are successfully disambiguated, ~
-                            and the identifier ~x1 in the declarator ~
-                            is not a typedef name. ~
-                            The code must be invalid, ~
-                            because at most one must succeed."
-                           (amb-declor/absdeclor-fix declor/absdeclor)
-                           ident)))))))
+              (retmsg$ "In the ambiguous ~
+                        declarator or abstract declarator ~x0, ~
+                        both the declarator and the abstract declarator ~
+                        are successfully disambiguated, ~
+                        and the identifier ~x1 in the declarator ~
+                        is not a typedef name. ~
+                        The code must be invalid, ~
+                        because at most one must succeed."
+                       (amb-declor/absdeclor-fix declor/absdeclor)
+                       ident))))))
     :measure (amb-declor/absdeclor-count declor/absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-decl/stmt ((decl/stmt amb-decl/stmt-p) (table dimb-tablep))
-    :returns (mv erp (decl-or-stmt decl/stmt-p) (new-table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (decl-or-stmt decl/stmt-p)
+                 (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous declaration or statement."
     :long
@@ -3016,16 +3141,16 @@
           ;; decl fails:
           (if erp-expr
               ;; stmt fails:
-              (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                            neither the declaration nor the expression ~
-                            can be successfully disambiguated. ~
-                            The code must be invalid, ~
-                            because at least one must succeed.~%~%~
-                            These are the failures for each:~%~%~
-                            ~@1~%~%~@2"
-                           (amb-decl/stmt-fix decl/stmt)
-                           erp-decl
-                           erp-expr))
+              (retmsg$ "In the ambiguous declaration or statement ~x0, ~
+                        neither the declaration nor the expression ~
+                        can be successfully disambiguated. ~
+                        The code must be invalid, ~
+                        because at least one must succeed.~%~%~
+                        These are the failures for each:~%~%~
+                        ~@1~%~%~@2"
+                       (amb-decl/stmt-fix decl/stmt)
+                       erp-decl
+                       erp-expr)
             ;; stmt succeeds:
             (retok (decl/stmt-stmt new-expr) table-expr))
         ;; decl succeeds:
@@ -3033,12 +3158,12 @@
             ;; stmt fails:
             (retok (decl/stmt-decl new-decl) table-decl)
           ;; stmt succeeds:
-          (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                        both the declaration and the statement ~
-                        are successfully disambiguated. ~
-                        The code must be invalid, ~
-                        because at most one must succeed."
-                       (amb-decl/stmt-fix decl/stmt))))))
+          (retmsg$ "In the ambiguous declaration or statement ~x0, ~
+                    both the declaration and the statement ~
+                    are successfully disambiguated. ~
+                    The code must be invalid, ~
+                    because at most one must succeed."
+                   (amb-decl/stmt-fix decl/stmt)))))
     :measure (amb-decl/stmt-count decl/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3266,7 +3391,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-fundef ((fundef fundefp) (table dimb-tablep))
-  :returns (mv erp (new-fundef fundefp) (new-table dimb-tablep))
+  :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-table dimb-tablep))
   :short "Disambiguate a function definition."
   :long
   (xdoc::topstring
@@ -3276,12 +3401,13 @@
      which in valid code must be @(':objfun'),
      but we do not check this explicitly.")
    (xdoc::p
-    "Then we process the declarator, passing @('t') as the @('fundefp') flag,
+    "Then we process the declarator,
+     passing @('t') as the @('fundef-params-p') flag,
      because we are processing the declarator of a defined function.
      In valid code, this declarator will include a function declarator
      with either parameter declarations or identifiers,
      after it has been processed.
-     Because of the @('fundefp') flag set to @('t'),
+     Because of the @('fundef-params-p') flag set to @('t'),
      the disambiguation table returned from @(tsee dimb-declor)
      will contain a newly pushed scope for the function definition.
      If the (disambiguated) declarator has parameter declarations,
@@ -3313,15 +3439,14 @@
        ((fundef fundef) fundef)
        ((erp new-spec & table)
         (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
-       ((erp new-declor ident table) (dimb-declor fundef.declor t table))
+       ((erp new-declor & ident table) (dimb-declor fundef.declor t table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
        (table (dimb-add-ident-objfun ident table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
        ((unless (stmt-case fundef.body :compound))
-        (reterr (msg "The body of the function definition ~x0 ~
-                      is not a compound statement; ~
-                      the code is invalid."
-                     (fundef-fix fundef))))
+        (retmsg$ "The body of the function definition ~x0 ~
+                  is not a compound statement; the code is invalid."
+                 (fundef-fix fundef)))
        ((erp new-items table)
         (dimb-block-item-list (stmt-compound->items fundef.body) table))
        (table (dimb-pop-scope table))
@@ -3343,7 +3468,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-extdecl ((extdecl extdeclp) (table dimb-tablep))
-  :returns (mv erp (new-extdecl extdeclp) (new-table dimb-tablep))
+  :returns (mv (erp maybe-msgp) (new-extdecl extdeclp) (new-table dimb-tablep))
   :short "Disambiguate an external declaration."
   (b* (((reterr) (irr-extdecl) (irr-dimb-table)))
     (extdecl-case
@@ -3369,7 +3494,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-extdecl-list ((edecls extdecl-listp) (table dimb-tablep))
-  :returns (mv erp (new-edecls extdecl-listp) (new-table dimb-tablep))
+  :returns (mv (erp maybe-msgp)
+               (new-edecls extdecl-listp)
+               (new-table dimb-tablep))
   :short "Disambiguate a list of external declarations."
   (b* (((reterr) nil (irr-dimb-table))
        ((when (endp edecls)) (retok nil (dimb-table-fix table)))
@@ -3388,7 +3515,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-transunit ((tunit transunitp) (gcc booleanp))
-  :returns (mv erp (new-tunit transunitp))
+  :returns (mv (erp maybe-msgp) (new-tunit transunitp))
   :short "Disambiguate a translation unit."
   :long
   (xdoc::topstring
@@ -3517,7 +3644,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-transunit-ensemble ((tuens transunit-ensemblep) (gcc booleanp))
-  :returns (mv erp (new-tuens transunit-ensemblep))
+  :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
   (xdoc::topstring
@@ -3536,8 +3663,9 @@
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
                                          (gcc booleanp))
-     :returns (mv erp (new-tumap filepath-transunit-mapp
-                                 :hyp (filepath-transunit-mapp tumap)))
+     :returns (mv (erp maybe-msgp)
+                  (new-tumap filepath-transunit-mapp
+                             :hyp (filepath-transunit-mapp tumap)))
      :parents nil
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))

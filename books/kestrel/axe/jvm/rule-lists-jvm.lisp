@@ -1458,7 +1458,7 @@
             equal-cons-cases2 ;drop?  was for locals?
             equal-of-cons-alt
             len-equal-impossible
-            integerp-implies-acl2-numberp
+            acl2-numberp-when-integerp
             )))
 
 ;; todo: get rid of this? used in lifter.

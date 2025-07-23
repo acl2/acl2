@@ -215,6 +215,7 @@
 
 ;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
 ;; text section)?  Transition to just generating a list of terms?
+;; should be used in loop-lifter?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf
                                     stack-slots-needed
@@ -228,10 +229,10 @@
                               (booleanp bvp)
                               )
                   :stobjs x86
-                  :verify-guards nil ;todo, first do acl2::get-elf-code-address and acl2::subroutine-address-elf
+                  :verify-guards nil ;todo, first do acl2::get-elf-text-section-address and acl2::subroutine-address-elf
                   ))
   (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
-        (text-section-address (acl2::get-elf-code-address parsed-elf))
+        (text-section-address (acl2::get-elf-text-section-address parsed-elf))
         (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
     (standard-assumptions-core-64 text-section-bytes
                                   text-offset

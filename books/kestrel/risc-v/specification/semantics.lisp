@@ -2177,10 +2177,15 @@
      We write the address of the instruction just after this to @('rd');
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc').
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((offset
         (loghead (feat->xlen feat) (logext 21 (ash (ubyte20-fix imm) 1))))
        (target-pc (+ pc offset))
+       ((unless (= (mod target-pc 4) 0)) (error stat feat))
        (next-pc (+ pc 4))
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
@@ -2229,6 +2234,7 @@
                    ((feat-64p feat) #xfffffffffffffffe)
                    (t (impossible))))
        (target-pc (logand mask (+ base offset)))
+       ((unless (= (mod target-pc 4) 0)) (error stat feat))
        (next-pc (+ pc 4))
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
@@ -2272,14 +2278,20 @@
      We compare the two integers from the registers:
      if they are equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2319,14 +2331,20 @@
      We compare the two integers from the registers:
      if they are not equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (/= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2366,14 +2384,20 @@
      We compare the two signed integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2413,14 +2437,20 @@
      We compare the two unsigned integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2460,14 +2490,20 @@
      We compare the two signed integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2507,14 +2543,20 @@
      We compare the two unsigned integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))

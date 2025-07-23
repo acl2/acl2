@@ -46,7 +46,7 @@
                s))
 
 (defxdoc publications
-  :parents (documentation)
+  :parents (documentation about-acl2)
   :short "ACL2 Annotated Bibliography"
   :long "<p>This is the top-level topic for an annotated bibliography
   containing books and Papers about <a
@@ -1389,8 +1389,9 @@
  International Workshop on the ACL2 Theorem Prover and Its Applications (ACL2
  2003)</a>, Boulder, CO, July 2003.</li>
 
- <li>Mu-Calculus Model-Checking, Panagiotis Manolios, Chapter 7 of <a
- href='acl2-books/acs/index.html'>Computer-Aided Reasoning: ACL2 Case
+ <li>Mu-Calculus Model-Checking, Panagiotis Manolios, Chapter 7 of
+ <a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>
+ Computer-Aided Reasoning: ACL2 Case
  Studies</a> (Kaufmann, Manolios, Moore, eds.)  Kluwer, 2000.
  (ACL2 scripts are available from
    directory <tt>1999/mu-calculus/</tt> in the @(see community-books).)

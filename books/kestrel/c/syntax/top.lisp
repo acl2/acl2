@@ -18,6 +18,7 @@
 (include-book "validation-information")
 (include-book "ascii-identifiers")
 (include-book "standard")
+(include-book "purity")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -158,6 +159,10 @@
                     "abstract syntax for standard C")
     ", i.e. that does not use any GCC extensions.")
    (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "purity" "pure abstract syntax")
+    ", i.e. without side effects.")
+   (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
                     "other operations on the abstract syntax")
@@ -201,6 +206,7 @@
                     validation-information
                     ascii-identifiers
                     standard
+                    purity
                     preprocessing
                     parser
                     disambiguator

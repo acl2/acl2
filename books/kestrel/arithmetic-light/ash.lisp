@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -176,3 +176,32 @@
            (equal (ash 1 c)
                   (expt 2 c)))
   :hints (("Goal" :in-theory (enable ash))))
+
+;move
+(local
+  (defthm <=-of-*-of-expt-2-when-negative-linear
+    (implies (and (< c 0)
+                  (<= 0 i)
+                  (integerp c)
+                  (rationalp i))
+             (<= (* i (expt 2 c)) i))
+    :rule-classes :linear))
+
+(defthm <=-of-ash-when-left-shift-linear
+  (implies (and (<= c 0) ; left shift (or no shift)
+                ;; (integerp c)
+                (<= 0 i))
+           (<= (ash i c) i))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((equal c 0)
+                          (and (integerp c) (not (equal c 0))))
+           :in-theory (enable ash <-of-floor-arg2-gen))))
+
+(defthm <-of-ash-when-left-shift-linear
+  (implies (and (< c 0) ; left shift
+                ;; (integerp i)
+                (< 0 i) ; positive i means the shifted value is strictly less
+                (integerp c))
+           (< (ash i c) i))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable ash <-of-floor-arg1-gen))))

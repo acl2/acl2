@@ -49,6 +49,7 @@
 (include-book "assumptions")
 (include-book "assumptions32")
 (include-book "assumptions64")
+(include-book "assumptions-new")
 
 (include-book "run-until-return")
 (include-book "run-until-return2")

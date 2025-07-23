@@ -935,12 +935,12 @@
                   ;; todo: consider what should happen here if ADDR is not a constant:
                   ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
                   (bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
-  :hints (("Goal" :in-theory (enable read
-                                     read-byte-when-program-at-gen
-                                     acl2::bv-array-read-chunk-little
-                                     ;acl2::packbv-little ; todo
-                                     bv-array-read
-                                     ))))
+  :hints (("Goal" :in-theory (e/d (read
+                                   read-byte-when-program-at-gen
+                                   acl2::bv-array-read-chunk-little
+                                   ;;acl2::packbv-little ; todo
+                                   bv-array-read)
+                                  (true-listp)))))
 
 ;(def-constant-opener acl2::packbv-little) ; move?
 
@@ -2094,7 +2094,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; same n and same address
 (local
   (defthm read-of-write-same-helper
     (implies (and (<= n 281474976710656) ; 2^48
@@ -2108,6 +2107,7 @@
                               (:e expt) ; memory exhaustion
                               ))))))
 
+; same n and same address
 (defthm read-of-write-same
   (implies (and (<= n 281474976710656) ; 2^48
                 ;; (integerp addr)
@@ -3378,10 +3378,11 @@
                              (m2 n1)
                              (val val))))))
 
+;; or we could use subregion48p for the hyp...
 (defthm read-of-write-within
   (implies (and (<= n1 n2) ; quick, necessary check.  also ensures the difference is not negative. ; todo: require strictly greater, for speed?
                 (bvlt 48 (bvminus 48 ad1 ad2) n2) ; the start of the read is within the write
-                (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)) ; the end of the read is within the write (see subregionp)
+                (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)) ; the end of the read is within the write (see subregion48p)
                 (unsigned-byte-p 48 n2) ; allow 2^48?
                 (integerp n1)
                 (integerp ad1)

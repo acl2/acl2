@@ -174,13 +174,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::defomap call-graph
-    :key-type qualified-ident
-    :val-type qualified-ident-option-set
-    :pred call-graphp))
+(fty::defomap call-graph
+  :key-type qualified-ident
+  :val-type qualified-ident-option-set
+  :pred call-graphp)
 
 (defrulel qualified-ident-option-setp-of-cdr-assoc-when-call-graphp
   (implies (call-graphp graph)

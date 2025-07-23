@@ -1,10 +1,10 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,7 +14,7 @@
 
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "std/system/irecursivep" :dir :system)
-(include-book "std/system/well-founded-relation-plus" :dir :system)
+(include-book "std/system/get-well-founded-relation-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,7 +39,7 @@
   (b* ((wrld (w state))
        ((unless (logicp fn wrld)) (value nil))
        ((unless (irecursivep fn wrld)) (value nil))
-       (wfrel (well-founded-relation+ fn wrld))
+       (wfrel (get-well-founded-relation+ fn wrld))
        ((when (eq wfrel 'o<)) (value nil)))
     (er-soft+ ctx t nil
               "The well-founded relation of the recursive function ~x0 ~

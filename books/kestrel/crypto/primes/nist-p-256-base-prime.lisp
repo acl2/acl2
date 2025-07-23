@@ -71,7 +71,7 @@
                   (1 1 1 1 1)
                   (() () () () ()))))))))
 
-  :parents (crypto)
+  :parents (crypto::crypto)
 
   :short "The NIST P-256 base field prime."
 
@@ -118,4 +118,4 @@
         (+ (- (expt 2 256) (expt 2 224))
            (expt 2 192)
            (expt 2 96)
-           -1))) 
+           -1)))
