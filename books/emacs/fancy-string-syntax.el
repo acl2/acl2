@@ -114,7 +114,7 @@
       (fancystring-debug "Found close fancyquote at %d" after-close-brace quotestart)
       (set-generic-string-delimiter (- after-close-brace 1))
       (when (< (point) end)
-	(fancystring-syntax-propertize-when-not-inside-generic-string end)))))
+        (fancystring-syntax-propertize-when-not-inside-generic-string end)))))
 
 (defun fancystring-syntax-propertize-when-not-inside-generic-string (end)
 ; Call this function when we're not already inside a generic string.  Search
@@ -123,27 +123,27 @@
 ; find the next one.
   (when (search-forward "#{\"\"\"" end t)
     (let* ((after-open-quote (point))
-	   (sharpsign (- after-open-quote 5))
-	   (openbrace (+ sharpsign 1))
+           (sharpsign (- after-open-quote 5))
+           (openbrace (+ sharpsign 1))
 ; check syntax on the # character
-	   (syntax (syntax-ppss sharpsign)))
+           (syntax (syntax-ppss sharpsign)))
       (cond ((or (nth 3 syntax)  ; indicates in a string
-		 (nth 4 syntax)) ; indicates in a comment
-	     (when (eq (nth 3 syntax) t)
+                 (nth 4 syntax)) ; indicates in a comment
+             (when (eq (nth 3 syntax) t)
 ; Somehow we went from not being in a generic string to being in a generic
 ; string without passing a fancystring open delimiter.  Unexpected.
-	       (error "Assertion failed in ~
+               (error "Assertion failed in ~
                        fancystring-syntax-propertize-when-not-inside-generic-string"))
-	     (fancystring-debug "Skipping open fancyquote at %d because it is in a %s"
+             (fancystring-debug "Skipping open fancyquote at %d because it is in a %s"
                                 sharpsign (if (nth 3 syntax) "string" "comment"))
-	     (goto-char (+ after-open-quote 1))
-	     (fancystring-syntax-propertize-when-not-inside-generic-string end))
-	    (t
+             (goto-char (+ after-open-quote 1))
+             (fancystring-syntax-propertize-when-not-inside-generic-string end))
+            (t
 ; Not in a string or comment. Set this up as an open delimiter.
-	     (fancystring-debug "Found open fancyquote at %d" after-open-quote)
-	     (set-generic-string-delimiter openbrace)
+             (fancystring-debug "Found open fancyquote at %d" after-open-quote)
+             (set-generic-string-delimiter openbrace)
 ; Now we should be inside a generic string, so recur by calling that function.
-	     (fancystring-syntax-propertize-when-inside-generic-string end openbrace))))))
+             (fancystring-syntax-propertize-when-inside-generic-string end openbrace))))))
 
 
 (defun fancystring-syntax-propertize-function (start end)
@@ -153,10 +153,10 @@
     (let* ((syntax (syntax-ppss)))
       (if (eq (nth 3 syntax) t)
 ; We're already inside a generic string -- look for the end of a fancystring
-	  (fancystring-syntax-propertize-when-inside-generic-string end (nth 8 syntax))
+          (fancystring-syntax-propertize-when-inside-generic-string end (nth 8 syntax))
 ; Not inside a generic string -- look for the beginning of a fancystring
-	(fancystring-syntax-propertize-when-not-inside-generic-string end)))))
-	    
+        (fancystring-syntax-propertize-when-not-inside-generic-string end)))))
+            
       
       
 (add-hook 'lisp-mode-hook
