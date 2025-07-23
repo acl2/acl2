@@ -74,7 +74,7 @@
        (xdoc::box
          (xdoc::b "Note")
          ": This identifier should be free to avoid name conflict, but this
-          condition is not current checked."))
+          condition is not currently checked."))
      (xdoc::desc
        "@(':split-point')"
        (xdoc::p
