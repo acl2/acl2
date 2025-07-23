@@ -1,0 +1,7 @@
+{"command": "splitgso",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "splitgso.output",
+  "files": ["file1.c", "file2.c"],
+  "object-name": "foo_data",
+  "split-members": ["a2", "a2_size"]}}
