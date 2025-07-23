@@ -411,27 +411,36 @@
     (stmt-case
       fundef.body
       :compound
-      (dirdeclor-case
-        fundef.declor.direct
-        :function-params
-        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.declor)))
-              (retok (fundef-fix fundef) nil))
-             ((erp new-fn truncated-items)
+      (b* (((mv well-formedp fundef-name params)
+             (dirdeclor-case
+               fundef.declor.direct
+               :function-params
+               (mv t
+                   (c$::dirdeclor->ident fundef.declor.direct.declor)
+                   fundef.declor.direct.params)
+               :function-names
+               (mv t
+                   (c$::dirdeclor->ident fundef.declor.direct.declor)
+                   nil)
+               :otherwise (mv nil nil nil)))
+           ((unless (and well-formedp
+                         (equal target-fn fundef-name)))
+            (retok (fundef-fix fundef) nil))
+           ((erp new-fn truncated-items)
               (split-fn-block-item-list
                 new-fn-name
                 fundef.body.items
                 fundef.spec
                 fundef.declor.pointers
-                (param-declon-list-to-ident-param-declon-map fundef.declor.direct.params)
+                (param-declon-list-to-ident-param-declon-map params)
                 split-point)))
-          (retok new-fn
+        (retok new-fn
                  (make-fundef
                    :extension fundef.extension
                    :spec fundef.spec
                    :declor fundef.declor
                    :decls fundef.decls
                    :body (stmt-compound truncated-items))))
-        :otherwise (retok (fundef-fix fundef) nil))
       :otherwise (retok (fundef-fix fundef) nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
