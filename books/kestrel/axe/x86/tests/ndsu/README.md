@@ -57,3 +57,13 @@ gcc add-r32-m32.c -o add-r32-m32.elf64
 
 gcc -o add-imm.macho64 add-imm.c
 gcc -o sub-imm.macho64 sub-imm.c
+
+gcc -o add-all-configurations.macho64 add-all-configurations.c
+gcc -o and.macho64 and.c
+gcc -o or.macho64 or.c
+
+;; Done on Dell Latitude 5480, Intel Core i5 64-bit Windows
+
+gcc -o add-all-configurations.pe64 add-all-configurations.c
+gcc -o and.pe64 and.c
+gcc -o or.pe64 or.c
