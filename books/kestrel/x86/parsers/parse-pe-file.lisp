@@ -872,19 +872,11 @@
               (mv erp nil)
             (mv nil (cons entry rest-result))))))))
 
-;move
-(local
-  (defthmd <-of-256-when-bytep
-    (implies (bytep x)
-             (< x 256))
-    :hints (("Goal" :in-theory (enable bytep unsigned-byte-p)))))
-
-
-
 ;; Returns (mv erp string-table) where STRING-TABLE is a list of bytes.
-(defund parse-string-table (bytes)
+(defun parse-string-table (bytes)
   (declare (xargs :guard (byte-listp bytes)))
-  (b* (((when (not (len-at-least 4 bytes)))
+  (b* ((all-bytes bytes)
+       ((when (not (len-at-least 4 bytes)))
         (er hard? 'parse-string-table "Can't read string table size.")
         (mv :cant-read-string-table-size nil))
        ((mv erp size bytes) (parse-u32 bytes)) ;the size includes these 4 bytes
@@ -896,9 +888,12 @@
        ((when (not (len-at-least size-of-string-part bytes)))
         (er hard? 'parse-string-table "Can't read string table (not enough data).")
         (mv :not-enough-data-for-string-table nil))
-       (bytes (take size-of-string-part bytes)) ;; these bytes include a bunch of null-terminated strings
+       ;; (bytes (take size-of-string-part bytes)) ;; these bytes include a bunch of null-terminated strings
        )
-    (mv nil bytes)))
+    ;; We return all-bytes, because offsets from elsewhere into the
+    ;; string-table are for the whole thing, not just the "string part" (the
+    ;; part after the 4 size bytes):
+    (mv nil all-bytes)))
 
 (local
   (defthm byte-listp-of-mv-nth-1-of-parse-string-table
@@ -907,6 +902,15 @@
     :hints (("Goal" :in-theory (enable parse-string-table len-at-least-correct
                                        natp-of-mv-nth-1-of-parse-u32
                                        byte-listp-of-mv-nth-2-of-parse-u32)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move
+(local
+  (defthmd <-of-256-when-bytep
+    (implies (bytep x)
+             (< x 256))
+    :hints (("Goal" :in-theory (enable bytep unsigned-byte-p)))))
 
 ;move?
 (defund map-code-char-tail (bytes acc)
@@ -918,6 +922,7 @@
     (map-code-char-tail (rest bytes)
                         (cons (code-char (first bytes))
                               acc))))
+
 
 ;move?
 (local
@@ -983,7 +988,7 @@
                          (bytes-to-string string-table-bytes)
                        :none))
        (pe (acons :string-table string-table pe))
-       (symbol-table-bytes (take symbol-table-size (nthcdr pointer-to-symbol-table all-bytes)))
+       (symbol-table-bytes (take symbol-table-size (nthcdr pointer-to-symbol-table all-bytes))) ; todo: avoid the take?
        ((mv erp symbol-table) (if symbol-table-existsp (parse-pe-symbol-table symbol-table-bytes string-table-bytes) (mv nil :none)))
        ((when erp) (mv erp nil))
        (pe (acons :symbol-table symbol-table pe))

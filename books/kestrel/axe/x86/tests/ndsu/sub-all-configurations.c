@@ -27,7 +27,7 @@ unsigned char sub_AL_i8_return_CF(uint8_t x) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x)                 // inputs
-        : "%al", "%ah"         // clobbered registers
+        : "al", "ah"         // clobbered registers
     );
 
     return ah;
@@ -61,7 +61,7 @@ unsigned char sub_AL_i8_return_flags(int8_t x) {
         "movb %%ah, %0;"      // store AH in output variable
         : "=r" (ah)           // output
         : "r" (x)            // inputs
-        : "%al", "%ah"        // clobbered registers
+        : "al", "ah"        // clobbered registers
     );
 
     return ah;
@@ -124,9 +124,9 @@ bool test_sub_AL_i8_PF (int8_t x) {
     unsigned char flags = sub_AL_i8_return_flags(x);
 
     int8_t result = x - 0x02;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF);  
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
@@ -140,7 +140,7 @@ unsigned char sub_AL_i8_return_OF(int8_t x) {
         "seto %0;"            // Set OF flag into 'of'
         : "=r"(of)            // Output operand
         : "r"(x)               // input
-        : "%al"               // Clobbered register
+        : "al"               // Clobbered register
     );
 
     return of;
@@ -173,7 +173,7 @@ unsigned char sub_AX_i16_return_CF(uint16_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output: store AH flags in 'ah'
         : "r" (x)              // inputs: x = register, imm = immediate
-        : "%ax", "%ah"         // clobbered registers
+        : "ax", "ah"         // clobbered registers
     );
 
     return ah;
@@ -206,7 +206,7 @@ unsigned char sub_AX_i16_return_flags(int16_t x) {
         "movb %%ah, %0;"      // Move AH to output variable
         : "=r" (ah)           // output
         : "r" (x)             // inputs
-        : "%ax", "%ah"        // clobbered registers
+        : "ax", "ah"        // clobbered registers
     );
 
     return ah;
@@ -278,10 +278,9 @@ bool test_sub_AX_i16_PF (int16_t x) {
     unsigned char flags = sub_AX_i16_return_flags(x);
 
     int16_t result = x - 0x0002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF);  
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
@@ -296,7 +295,7 @@ unsigned char sub_AX_i16_return_OF(int16_t x) {
         "seto %0;"           // Set OF flag into 'of'
         : "=r"(of)           // Output operand
         : "r"(x)              // Inputs: x in register, imm as immediate
-        : "%ax"              // Clobbered register
+        : "ax"              // Clobbered register
     );
 
     return of;
@@ -329,7 +328,7 @@ unsigned char sub_EAX_i32_return_CF(uint32_t x) {
         "movb %%ah, %0;"       // move AH to output
         : "=r" (ah)            // output
         : "r" (x)       // inputs: register and immediate
-        : "%eax", "%ah"        // clobbered registers
+        : "eax", "ah"        // clobbered registers
     );
 
     return ah;
@@ -363,7 +362,7 @@ unsigned char sub_EAX_i32_return_flags(int32_t x) {
         "movb %%ah, %0;"        // move AH to output
         : "=r" (ah)
         : "r" (x)
-        : "%eax", "%ah"
+        : "eax", "ah"
     );
 
     return ah;
@@ -427,10 +426,9 @@ bool test_sub_EAX_i32_PF (int32_t x) {
     unsigned char flags = sub_EAX_i32_return_flags(x);
 
     int32_t result = x - 0x00000002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
@@ -443,7 +441,7 @@ unsigned char sub_EAX_i32_return_OF(int32_t x) {
         "seto %0;"            // Set OF flag into 'of'
         : "=r"(of)            // Output
         : "r"(x)                   // Inputs: register and immediate
-        : "%eax"              // Clobbered register
+        : "eax"              // Clobbered register
     );
 
     return of;
@@ -468,7 +466,7 @@ bool test_sub_EAX_i32_OF (int32_t x) {
 // SUB RAX, i32
 
 
-unsigned char sub_RAX_i32_return_CF(unsigned long x) {
+unsigned char sub_RAX_i32_return_CF(unsigned long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -478,7 +476,7 @@ unsigned char sub_RAX_i32_return_CF(unsigned long x) {
         "movb %%ah, %0;"            // Move AH to output variable
         : "=r" (ah)                 // output: store AH flags in 'ah'
         : "r" (x)                   // inputs: x = register
-        : "%rax", "%ah"             // clobbered registers
+        : "rax", "ah"             // clobbered registers
     );
 
     return ah;
@@ -487,7 +485,7 @@ unsigned char sub_RAX_i32_return_CF(unsigned long x) {
 //check property for CF
 //CF is bit 0 in ah
 
-bool test_sub_RAX_i32_CF (uint32_t  x) {
+bool test_sub_RAX_i32_CF (unsigned long long  x) {
      
     unsigned char flags = sub_RAX_i32_return_CF(x);
 
@@ -500,7 +498,7 @@ bool test_sub_RAX_i32_CF (uint32_t  x) {
     }
        
 }
-unsigned char sub_RAX_i32_return_flags(long x) {
+unsigned char sub_RAX_i32_return_flags(long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -510,7 +508,7 @@ unsigned char sub_RAX_i32_return_flags(long x) {
         "movb %%ah, %0;"            // Move AH to output variable
         : "=r" (ah)                 // output
         : "r" (x)                   // inputs
-        : "%rax", "%ah"             // clobbered registers
+        : "rax", "ah"             // clobbered registers
     );
 
     return ah;
@@ -519,8 +517,8 @@ unsigned char sub_RAX_i32_return_flags(long x) {
 //check property for SF
 //SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_RAX_i32_SF (long x) {
-    long diff = x - 0x00000002;  
+bool test_sub_RAX_i32_SF (long long x) {
+    long long diff = x - 0x00000002;  
     unsigned char flags = sub_RAX_i32_return_flags(x);
 
     if (diff < 0) {
@@ -533,8 +531,8 @@ bool test_sub_RAX_i32_SF (long x) {
 //check property for ZF
 //ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_RAX_i32_ZF (long x) {
-    long diff = x - 0x00000002;
+bool test_sub_RAX_i32_ZF (long long x) {
+    long long diff = x - 0x00000002;
     unsigned char flags = sub_RAX_i32_return_flags(x);
 
     if (diff == 0) {
@@ -547,8 +545,8 @@ bool test_sub_RAX_i32_ZF (long x) {
 //check property for AF
 //AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_RAX_i32_AF (long x) {
-    long x_lsb = x & 0x0000000F;               // Get lower 4 bits of x
+bool test_sub_RAX_i32_AF (long long x) {
+    long long x_lsb = x & 0x0000000F;               // Get lower 4 bits of x
     long imm_lsb = 0x00000002 & 0x0000000F;    
     
     bool expected_af = (x_lsb < imm_lsb);
@@ -559,20 +557,17 @@ bool test_sub_RAX_i32_AF (long x) {
     return expected_af == actual_af;
 }
 
-
- bool test_sub_RAX_i32_PF (long x) {
-   
+bool test_sub_RAX_i32_PF(long long x) {
     unsigned char flags = sub_RAX_i32_return_flags(x);
 
-    long result = x - 0x00000002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    long long result = x - 0x00000002;
+    uint8_t expected_parity = calculate_parity(result & 0xFF);  
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
-unsigned char sub_RAX_i32_return_OF(long x) {
+unsigned char sub_RAX_i32_return_OF(long long x) {
     unsigned char of;
 
     __asm__ volatile (
@@ -581,15 +576,15 @@ unsigned char sub_RAX_i32_return_OF(long x) {
         "seto %0;"                  // Set OF flag into 'of'
         : "=r"(of)                  // Output operand
         : "r"(x)                    // Inputs: x in register
-        : "%rax"                    // Clobbered register
+        : "rax"                    // Clobbered register
     );
 
     return of;
 }
 
 //check property for OF
-bool test_sub_RAX_i32_OF (long x) {
-    long diff = x - 0x00000002;
+bool test_sub_RAX_i32_OF (long long x) {
+    long  long diff = x - 0x00000002;
     unsigned char of = sub_RAX_i32_return_OF(x);
 
     if ((x < 0) && (diff >= 0)) {
@@ -611,7 +606,7 @@ unsigned char sub_r8_i8_return_CF(uint8_t x) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x)                 // inputs
-        : "%cl", "%ah"         // clobbered registers
+        : "cl", "ah"         // clobbered registers
     );
 
     return ah;
@@ -644,7 +639,7 @@ unsigned char sub_r8_i8_return_flags(int8_t x) {
         "movb %%ah, %0;"      // store AH in output variable
         : "=r" (ah)           // output
         : "r" (x)            // inputs
-        : "%cl", "%ah"        // clobbered registers
+        : "cl", "ah"        // clobbered registers
     );
 
     return ah;
@@ -709,11 +704,10 @@ bool test_sub_r8_i8_AF (int8_t x) {
 bool test_sub_r8_i8_PF (int8_t x) {
    
     unsigned char flags = sub_r8_i8_return_flags(x);
-
     int8_t result = x - 0x02;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity((uint8_t)result); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity;
 }
 
 
@@ -727,7 +721,7 @@ unsigned char sub_r8_i8_return_OF(int8_t x) {
         "seto %0;"            // Set OF flag into 'of'
         : "=r"(of)            // Output operand
         : "r"(x)               // input
-        : "%cl"               // Clobbered register
+        : "cl"               // Clobbered register
     );
 
     return of;
@@ -761,7 +755,7 @@ unsigned char sub_M8_i8_return_CF(uint8_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"         // clobbered registers
+        : "ah"         // clobbered registers
     );
 
     return ah;
@@ -792,7 +786,7 @@ unsigned char sub_M8_i8_return_flags(int8_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"         // clobbered registers
+        : "ah"         // clobbered registers
     );
 
     return ah;
@@ -850,11 +844,10 @@ bool test_sub_M8_i8_PF(int8_t x) {
     unsigned char flags = sub_M8_i8_return_flags(x);
     
     int8_t result = x - 0x02;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity((uint8_t)result);  
     
     return (flags & 0x04) == expected_parity;
 }
-
 // overflow flag version
 unsigned char sub_M8_i8_return_OF(int8_t x) {
     unsigned char of;
@@ -895,7 +888,7 @@ unsigned char sub_REX1_r8_i8_return_CF(uint8_t x) {
         "movb %%ah, %0;"        // Store AH in output
         : "=r"(ah)              // output
         : "r"(x)                // inputs: x
-        : "%r8", "%ah"   // clobbered registers
+        : "r8", "ah"   // clobbered registers
     );
 
     return ah;
@@ -924,7 +917,7 @@ unsigned char sub_REX1_r8_i8_return_flags(int8_t x) {
         "movb %%ah, %0;"        // Store AH in output
         : "=r"(ah)              // output
         : "r"(x)                // inputs: x
-        : "%r9", "%ah"   // clobbered registers
+        : "r9", "ah"   // clobbered registers
     );
 
     return ah;
@@ -1030,7 +1023,7 @@ unsigned char sub_REX1_m8_i8_return_CF(uint8_t x) {
         "movb %%ah, %0;"        // Store AH in output
         : "=r"(ah)              // output
         : "r"(x), "r"(&val)     // inputs: x, memory address
-        : "%r9", "%ah"  // clobbered registers
+        : "r9", "ah"  // clobbered registers
     );
 
     return ah;
@@ -1064,7 +1057,7 @@ unsigned char sub_REX1_m8_i8_return_flags(int8_t x) {
         "movb %%ah, %0;"        // Store AH in output
         : "=r"(ah)              // output
         : "r"(x), "r"(&val)     // inputs: x, memory address
-        : "%r9", "%ah"  // clobbered registers
+        : "r9", "ah"  // clobbered registers
     );
 
     return ah;
@@ -1120,6 +1113,8 @@ bool test_sub_REX1_m8_i8_PF(int8_t x) {
     return (flags & 0x04) == expected_parity;
 }
 
+ 
+
 // Overflow flag version (REX memory immediate form)
 unsigned char sub_REX1_m8_i8_return_OF(int8_t x) {
     unsigned char of;
@@ -1170,7 +1165,7 @@ unsigned char sub_r16_i16_return_CF(uint16_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output: store AH flags in 'ah'
         : "r" (x)              // inputs: x = register, imm = immediate
-        : "%cx", "%ah"         // clobbered registers
+        : "cx", "ah"         // clobbered registers
     );
 
     return ah;
@@ -1201,7 +1196,7 @@ unsigned char sub_r16_i16_return_flags(int16_t x) {
         "movb %%ah, %0;"      // Move AH to output variable
         : "=r" (ah)           // output
         : "r" (x)             // inputs
-        : "%cx", "%ah"        // clobbered registers
+        : "cx", "ah"        // clobbered registers
     );
 
     return ah;
@@ -1270,12 +1265,12 @@ bool test_sub_r16_i16_PF (int16_t x) {
    
     unsigned char flags = sub_r16_i16_return_flags(x);
 
-    int16_t result = x - 0x0002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+        int32_t result = x - 0x00000002;
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity;  
 }
+
 
 
 unsigned char sub_r16_i16_return_OF(int16_t x) {
@@ -1287,7 +1282,7 @@ unsigned char sub_r16_i16_return_OF(int16_t x) {
         "seto %0;"           // Set OF flag into 'of'
         : "=r"(of)           // Output operand
         : "r"(x)              // Inputs: x in register, imm as immediate
-        : "%cx"              // Clobbered register
+        : "cx"              // Clobbered register
     );
 
     return of;
@@ -1319,7 +1314,7 @@ unsigned char sub_M16_i16_return_CF(uint16_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"        // clobbered registers
+        : "ah"        // clobbered registers
     );
 
     return ah;
@@ -1349,7 +1344,7 @@ unsigned char sub_M16_i16_return_flags(int16_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"         // clobbered registers
+        : "ah"         // clobbered registers
     );
 
     return ah;
@@ -1407,10 +1402,13 @@ bool test_sub_M16_i16_PF(int16_t x) {
     unsigned char flags = sub_M16_i16_return_flags(x);
     
     int16_t result = x - 0x0002;
-    uint8_t expected_parity = calculate_parity(result);
     
+  uint8_t expected_parity = calculate_parity(result & 0xFF);   
     return (flags & 0x04) == expected_parity;
 }
+
+
+
 
 // overflow flag version
 unsigned char sub_M16_i16_return_OF(int16_t x) {
@@ -1455,7 +1453,7 @@ unsigned char sub_r32_i32_return_CF(uint32_t x) {
         "movb %%ah, %0;"       // move AH to output
         : "=r" (ah)            // output
         : "r" (x)       // inputs: register and immediate
-        : "%ecx", "%ah"        // clobbered registers
+        : "ecx", "ah"        // clobbered registers
     );
 
     return ah;
@@ -1488,7 +1486,7 @@ unsigned char sub_r32_i32_return_flags(int32_t x) {
         "movb %%ah, %0;"        // move AH to output
         : "=r" (ah)
         : "r" (x)
-        : "%ecx", "%ah"
+        : "ecx", "ah"
     );
 
     return ah;
@@ -1552,10 +1550,9 @@ bool test_sub_r32_i32_PF (int32_t x) {
     unsigned char flags = sub_r32_i32_return_flags(x);
 
     int32_t result = x - 0x00000002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
@@ -1569,7 +1566,7 @@ unsigned char sub_r32_i32_return_OF(int32_t x) {
         "seto %0;"            // Set OF flag into 'of'
         : "=r"(of)            // Output
         : "r"(x)                   // Inputs: register and immediate
-        : "%ecx"              // Clobbered register
+        : "ecx"              // Clobbered register
     );
 
     return of;
@@ -1603,7 +1600,7 @@ unsigned char sub_M32_i32_return_CF(uint32_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"        // clobbered registers
+        : "ah"        // clobbered registers
     );
 
     return ah;
@@ -1632,7 +1629,7 @@ unsigned char sub_M32_i32_return_flags(int32_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"       // clobbered registers
+        : "ah"       // clobbered registers
     );
 
     return ah;
@@ -1689,7 +1686,7 @@ bool test_sub_M32_i32_PF(int32_t x) {
     unsigned char flags = sub_M32_i32_return_flags(x);
     
     int32_t result = x - 0x00000002;
-    uint8_t expected_parity = calculate_parity(result);
+   uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -1727,7 +1724,7 @@ bool test_sub_M32_i32_OF(int32_t x) {
 //*******************************************************
 // SUB r64, i32
 
-unsigned char sub_r64_i32_return_CF(unsigned long x) {
+unsigned char sub_r64_i32_return_CF(unsigned long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -1737,7 +1734,7 @@ unsigned char sub_r64_i32_return_CF(unsigned long x) {
         "movb %%ah, %0;"            // Move AH to output variable
         : "=r" (ah)                 // output: store AH flags in 'ah'
         : "r" (x)                   // inputs: x = register
-        : "%rcx", "%ah"             // clobbered registers
+        : "rcx", "ah"             // clobbered registers
     );
 
     return ah;
@@ -1746,7 +1743,7 @@ unsigned char sub_r64_i32_return_CF(unsigned long x) {
 //check property for CF
 //CF is bit 0 in ah
 
-   bool test_sub_r64_i32_CF (uint32_t x) {
+   bool test_sub_r64_i32_CF (unsigned long long x) {
     unsigned char flags = sub_r64_i32_return_CF(x);
 
     if (0x02 > x) {
@@ -1760,7 +1757,7 @@ unsigned char sub_r64_i32_return_CF(unsigned long x) {
 }
 
 
-unsigned char sub_r64_i32_return_flags(long x) {
+unsigned char sub_r64_i32_return_flags(long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -1770,7 +1767,7 @@ unsigned char sub_r64_i32_return_flags(long x) {
         "movb %%ah, %0;"            // Move AH to output variable
         : "=r" (ah)                 // output
         : "r" (x)                   // inputs
-        : "%rcx", "%ah"             // clobbered registers
+        : "rcx", "ah"             // clobbered registers
     );
 
     return ah;
@@ -1779,8 +1776,8 @@ unsigned char sub_r64_i32_return_flags(long x) {
 //check property for SF
 //SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_r64_i32_SF (long x) {
-    long diff = x - 0x00000002;  
+bool test_sub_r64_i32_SF (long long x) {
+    long long diff = x - 0x00000002;  
     unsigned char flags = sub_r64_i32_return_flags(x);
 
     if (diff < 0) {
@@ -1793,8 +1790,8 @@ bool test_sub_r64_i32_SF (long x) {
 //check property for ZF
 //ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_r64_i32_ZF (long x) {
-    long diff = x - 0x00000002;
+bool test_sub_r64_i32_ZF (long long x) {
+    long long diff = x - 0x00000002;
     unsigned char flags = sub_r64_i32_return_flags(x);
 
     if (diff == 0) {
@@ -1807,9 +1804,9 @@ bool test_sub_r64_i32_ZF (long x) {
 //check property for AF
 //AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_r64_i32_AF (long x) {
-    long x_lsb = x & 0x0000000F;               // Get lower 4 bits of x
-    long imm_lsb = 0x00000002 & 0x0000000F;    
+bool test_sub_r64_i32_AF (long long x) {
+    long long x_lsb = x & 0x0000000F;               // Get lower 4 bits of x
+    long long imm_lsb = 0x00000002 & 0x0000000F;    
     
     bool expected_af = (x_lsb < imm_lsb);
     
@@ -1820,19 +1817,19 @@ bool test_sub_r64_i32_AF (long x) {
 }
 
 
- bool test_sub_r64_i32_PF (long x) {
+ bool test_sub_r64_i32_PF (long long x) {
    
     unsigned char flags = sub_r64_i32_return_flags(x);
 
-    long result = x - 0x00000002;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    long long result = x - 0x00000002;
     
-    return (flags & 0x04) == result_parity; 
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
+    
+    return (flags & 0x04) == expected_parity; 
 }
 
 
-unsigned char sub_r64_i32_return_OF(long x) {
+unsigned char sub_r64_i32_return_OF(long long x) {
     unsigned char of;
 
     __asm__ volatile (
@@ -1841,15 +1838,15 @@ unsigned char sub_r64_i32_return_OF(long x) {
         "seto %0;"                  // Set OF flag into 'of'
         : "=r"(of)                  // Output operand
         : "r"(x)                    // Inputs: x in register
-        : "%rcx"                    // Clobbered register
+        : "rcx"                    // Clobbered register
     );
 
     return of;
 }
 
 //check property for OF
-bool test_sub_r64_i32_OF (long x) {
-    long diff = x - 0x00000002;
+bool test_sub_r64_i32_OF (long long x) {
+    long long diff = x - 0x00000002;
     unsigned char of = sub_r64_i32_return_OF(x);
  if ((x < 0) && (diff >= 0)) {
         return of == 1;
@@ -1861,9 +1858,9 @@ bool test_sub_r64_i32_OF (long x) {
 //*******************************************************
 // SUB m64, i32
 
-unsigned char sub_M64_i32_return_CF(uint64_t x) {
+unsigned char sub_M64_i32_return_CF(unsigned long long x) {
     unsigned char ah;
-    uint64_t val;
+    unsigned long long val;
 
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -1872,7 +1869,7 @@ unsigned char sub_M64_i32_return_CF(uint64_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"        // clobbered registers
+        : "ah"        // clobbered registers
     );
 
     return ah;
@@ -1880,7 +1877,7 @@ unsigned char sub_M64_i32_return_CF(uint64_t x) {
 
 // Check property for CF
 // CF is bit 0 in ah
-bool test_sub_M64_i32_CF(uint64_t x) {
+bool test_sub_M64_i32_CF(unsigned long long x) {
     unsigned char flags = sub_M64_i32_return_CF(x);
 
     if (x < 2) {  // Underflow occurred (borrowing needed)
@@ -1891,9 +1888,9 @@ bool test_sub_M64_i32_CF(uint64_t x) {
 }
 
 // REX.W + 81/5 id: SUB r/m64, imm32 (memory form) - signed version
-unsigned char sub_M64_i32_return_flags(int64_t x) {
+unsigned char sub_M64_i32_return_flags(long long x) {
     unsigned char ah;
-    int64_t val;
+    long long val;
 
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -1902,7 +1899,7 @@ unsigned char sub_M64_i32_return_flags(int64_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"       // clobbered registers
+        : "ah"       // clobbered registers
     );
 
     return ah;
@@ -1911,8 +1908,8 @@ unsigned char sub_M64_i32_return_flags(int64_t x) {
 // Check property for SF
 // SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_M64_i32_SF(int64_t x) {
-    int64_t result = x - 2;  
+bool test_sub_M64_i32_SF(long long x) {
+    long long result = x - 2;  
     unsigned char flags = sub_M64_i32_return_flags(x);
 
     if (result < 0) {
@@ -1925,8 +1922,8 @@ bool test_sub_M64_i32_SF(int64_t x) {
 // Check property for ZF
 // ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_M64_i32_ZF(int64_t x) {
-    int64_t result = x - 2;  
+bool test_sub_M64_i32_ZF(long long x) {
+    long long result = x - 2;  
     unsigned char flags = sub_M64_i32_return_flags(x);
 
     if (result == 0) {
@@ -1939,9 +1936,9 @@ bool test_sub_M64_i32_ZF(int64_t x) {
 // Check property for AF
 // AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_M64_i32_AF(int64_t x) {
-    int64_t x_lsb = x & 0x000000000000000FLL;  // Get lower 4 bits of x
-    int64_t imm_lsb = 0x00000002 & 0x000000000000000FLL;  // Get lower 4 bits of immediate
+bool test_sub_M64_i32_AF(long long x) {
+    long long x_lsb = x & 0x000000000000000FLL;  // Get lower 4 bits of x
+    long long imm_lsb = 0x00000002 & 0x000000000000000FLL;  // Get lower 4 bits of immediate
     
     // For subtraction, AF is set when there's a borrow from bit 4 to bit 3
     bool expected_af = (x_lsb < imm_lsb);
@@ -1955,19 +1952,19 @@ bool test_sub_M64_i32_AF(int64_t x) {
 // Check property for PF
 // PF is bit 2 in ah
 // Filter to extract PF is: 0000 0100=0x04
-bool test_sub_M64_i32_PF(int64_t x) {
+bool test_sub_M64_i32_PF(long long x) {
     unsigned char flags = sub_M64_i32_return_flags(x);
     
-    int64_t result = x - 0x00000002;
-    uint8_t expected_parity = calculate_parity(result);
+    long long result = x - 0x00000002;
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
 
 // overflow flag version
-unsigned char sub_M64_i32_return_OF(int64_t x) {
+unsigned char sub_M64_i32_return_OF(long long x) {
     unsigned char of;
-    int64_t val;
+    long long val;
     
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -1983,8 +1980,8 @@ unsigned char sub_M64_i32_return_OF(int64_t x) {
 }
 
 // Check property for OF
-bool test_sub_M64_i32_OF(int64_t x) {
-    int64_t result = x - 2;
+bool test_sub_M64_i32_OF(long long x) {
+    long long result = x - 2;
     unsigned char of = sub_M64_i32_return_OF(x);
 
   if ((x < 0) && (2 >= 0) && (result >= 0)) {
@@ -2009,7 +2006,7 @@ unsigned char sub_R16_i8_return_CF(uint16_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output: store AH flags in 'ah'
         : "r" (x)              // inputs: x = register
-        : "%ax", "%ah"         // clobbered registers
+        : "ax", "ah"         // clobbered registers
     );
 
     return ah;
@@ -2040,7 +2037,7 @@ unsigned char sub_R16_i8_return_flags(int16_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output
         : "r" (x)              // inputs
-        : "%ax", "%ah"         // clobbered registers
+        : "ax", "ah"         // clobbered registers
     );
 
     return ah;
@@ -2100,10 +2097,9 @@ bool test_sub_R16_i8_AF (int16_t x) {
     unsigned char flags = sub_R16_i8_return_flags(x);
 
     int16_t result = x - 0x02;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 unsigned char sub_R16_i8_return_OF(int16_t x) {
@@ -2115,7 +2111,7 @@ unsigned char sub_R16_i8_return_OF(int16_t x) {
         "seto %0;"             // Set OF flag into 'of'
         : "=r"(of)             // Output operand
         : "r"(x)               // Inputs: x in register
-        : "%ax"                // Clobbered register
+        : "ax"                // Clobbered register
     );
 
     return of;
@@ -2146,7 +2142,7 @@ unsigned char sub_M16_i8_return_CF(uint16_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        :  "%ah"         // clobbered registers
+        :  "ah"         // clobbered registers
     );
 
     return ah;
@@ -2175,7 +2171,7 @@ unsigned char sub_M16_i8_return_flags(int16_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        :  "%ah"         // clobbered registers
+        :  "ah"         // clobbered registers
     );
 
     return ah;
@@ -2231,7 +2227,7 @@ bool test_sub_M16_i8_PF(int16_t x) {
     unsigned char flags = sub_M16_i8_return_flags(x);
     
     int16_t result = x - 0x02;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -2277,7 +2273,7 @@ unsigned char sub_R32_i8_return_CF(uint32_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output: store AH flags in 'ah'
         : "r" (x)              // inputs: x = register
-        : "%eax", "%ah"        // clobbered registers
+        : "eax", "ah"        // clobbered registers
     );
 
     return ah;
@@ -2307,7 +2303,7 @@ unsigned char sub_R32_i8_return_flags(int32_t x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output
         : "r" (x)              // inputs
-        : "%eax", "%ah"        // clobbered registers
+        : "eax", "%ah"        // clobbered registers
     );
 
     return ah;
@@ -2365,10 +2361,9 @@ bool test_sub_R32_i8_PF (int32_t x) {
     unsigned char flags = sub_R32_i8_return_flags(x);
 
     int32_t result = x - 0x02;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
@@ -2381,7 +2376,7 @@ unsigned char sub_R32_i8_return_OF(int32_t x) {
         "seto %0;"             // Set OF flag into 'of'
         : "=r"(of)             // Output operand
         : "r"(x)               // Inputs: x in register
-        : "%eax"               // Clobbered register
+        : "eax"               // Clobbered register
     );
 
     return of;
@@ -2412,7 +2407,7 @@ unsigned char sub_M32_i8_return_CF(uint32_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        :  "%ah"        // clobbered registers
+        :  "ah"        // clobbered registers
     );
 
     return ah;
@@ -2441,7 +2436,7 @@ unsigned char sub_M32_i8_return_flags(int32_t x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        :  "%ah"        // clobbered registers
+        :  "ah"        // clobbered registers
     );
 
     return ah;
@@ -2500,7 +2495,7 @@ bool test_sub_M32_i8_PF(int32_t x) {
     unsigned char flags = sub_M32_i8_return_flags(x);
     
     int32_t result = x - 0x02;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -2540,7 +2535,7 @@ bool test_sub_M32_i8_OF(int32_t x) {
 // SUB r64, i8
 
 
-unsigned char sub_R64_i8_return_CF(unsigned long x) {
+unsigned char sub_R64_i8_return_CF(unsigned long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -2550,7 +2545,7 @@ unsigned char sub_R64_i8_return_CF(unsigned long x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output: store AH flags in 'ah'
         : "r" (x)              // inputs: x = register
-        : "%rax", "%ah"        // clobbered registers
+        : "rax", "ah"        // clobbered registers
     );
 
     return ah;
@@ -2558,7 +2553,7 @@ unsigned char sub_R64_i8_return_CF(unsigned long x) {
 
 //check property for CF
 //CF is bit 0 in ah
-bool test_sub_R64_i8_CF (unsigned long x) {
+bool test_sub_R64_i8_CF (unsigned long long x) {
     unsigned char flags = sub_R64_i8_return_CF(x);
 
     if (0x02 > x) {
@@ -2570,7 +2565,7 @@ bool test_sub_R64_i8_CF (unsigned long x) {
     }
 }
 
-unsigned char sub_R64_i8_return_flags(long x) {
+unsigned char sub_R64_i8_return_flags(long long x) {
     unsigned char ah;
 
     __asm__ volatile (
@@ -2580,7 +2575,7 @@ unsigned char sub_R64_i8_return_flags(long x) {
         "movb %%ah, %0;"       // Move AH to output variable
         : "=r" (ah)            // output
         : "r" (x)              // inputs
-        : "%rax", "%ah"        // clobbered registers
+        : "rax", "ah"        // clobbered registers
     );
 
     return ah;
@@ -2589,8 +2584,8 @@ unsigned char sub_R64_i8_return_flags(long x) {
 //check property for SF
 //SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_R64_i8_SF (long x) {
-    long diff = x - 0x02;  
+bool test_sub_R64_i8_SF (long long x) {
+    long  long diff = x - 0x02;  
     unsigned char flags = sub_R64_i8_return_flags(x);
 
     if (diff < 0) {
@@ -2603,8 +2598,8 @@ bool test_sub_R64_i8_SF (long x) {
 //check property for ZF
 //ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_R64_i8_ZF (long x) {
-    long diff = x - 0x02;
+bool test_sub_R64_i8_ZF (long long x) {
+    long long diff = x - 0x02;
     unsigned char flags = sub_R64_i8_return_flags(x);
 
     if (diff == 0) {
@@ -2617,9 +2612,9 @@ bool test_sub_R64_i8_ZF (long x) {
 //check property for AF
 //AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_R64_i8_AF (long x) {
-    long x_lsb = x & 0x0F;               // Get lower 4 bits of x
-    long imm_lsb = 0x02 & 0x0F;          // Get lower 4 bits of immediate (=2)
+bool test_sub_R64_i8_AF (long long x) {
+    long long x_lsb = x & 0x0F;               // Get lower 4 bits of x
+    long long imm_lsb = 0x02 & 0x0F;          // Get lower 4 bits of immediate (=2)
     
    
     bool expected_af = (x_lsb < imm_lsb);
@@ -2634,20 +2629,19 @@ bool test_sub_R64_i8_AF (long x) {
 //PF is bit 2 in ah
 // Filter to extract PF is: 0000 0100=0x04
 
-bool test_sub_R64_i8_PF (long x) {
+bool test_sub_R64_i8_PF (long long x) {
    
     unsigned char flags = sub_R64_i8_return_flags(x);
 
-    long result = x - 0x02;
-    uint8_t result_lsb = result & 0xFF;
-    uint8_t result_parity = calculate_parity(result); 
+    long long result = x - 0x02;
+    uint8_t expected_parity = calculate_parity(result & 0xFF); 
     
-    return (flags & 0x04) == result_parity; 
+    return (flags & 0x04) == expected_parity; 
 }
 
 
 
-unsigned char sub_R64_i8_return_OF(long x) {
+unsigned char sub_R64_i8_return_OF(long long x) {
     unsigned char of;
 
     __asm__ volatile (
@@ -2656,15 +2650,15 @@ unsigned char sub_R64_i8_return_OF(long x) {
         "seto %0;"             // Set OF flag into 'of'
         : "=r"(of)             // Output operand
         : "r"(x)               // Inputs: x in register
-        : "%rax"               // Clobbered register
+        : "rax"               // Clobbered register
     );
 
     return of;
 }
 
 //check property for OF
-bool test_sub_R64_i8_OF (long x) {
-    long diff = x - 0x02;
+bool test_sub_R64_i8_OF (long long x) {
+    long long diff = x - 0x02;
     unsigned char of = sub_R64_i8_return_OF(x);
    if ((x < 0) && (diff >= 0)) {
         return of == 1;
@@ -2677,9 +2671,9 @@ bool test_sub_R64_i8_OF (long x) {
 //*************************************************************
 // SUB m64, i8
 
-unsigned char sub_M64_i8_return_CF(unsigned long x) {
+unsigned char sub_M64_i8_return_CF(unsigned long long x) {
     unsigned char ah;
-    unsigned long val;  
+    unsigned long long val;  
 
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -2688,7 +2682,7 @@ unsigned char sub_M64_i8_return_CF(unsigned long x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        : "%ah"        // clobbered registers
+        : "ah"        // clobbered registers
     );
 
     return ah;
@@ -2697,7 +2691,7 @@ unsigned char sub_M64_i8_return_CF(unsigned long x) {
 // Check property for CF
 // CF is bit 0 in ah
 // Filter to extract CF is: 0000 0001=0x01
-bool test_sub_M64_i8_CF(unsigned long x) {  
+bool test_sub_M64_i8_CF(unsigned long long x) {  
     unsigned char flags = sub_M64_i8_return_CF(x);
     
 
@@ -2708,9 +2702,9 @@ bool test_sub_M64_i8_CF(unsigned long x) {
     }
 }
 
-unsigned char sub_M64_i8_return_flags(long x) {
+unsigned char sub_M64_i8_return_flags(long long x) {
     unsigned char ah;
-    long val;
+    long long val;
 
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -2719,7 +2713,7 @@ unsigned char sub_M64_i8_return_flags(long x) {
         "movb %%ah, %0;"       // move AH to output variable
         : "=r" (ah)            // output
         : "r" (x), "r" (&val)  // inputs: x, memory address
-        :  "%ah"        // clobbered registers
+        :  "ah"        // clobbered registers
     );
 
     return ah;
@@ -2728,8 +2722,8 @@ unsigned char sub_M64_i8_return_flags(long x) {
 // Check property for SF
 // SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_M64_i8_SF(long x) {
-    long result = x - 2;  
+bool test_sub_M64_i8_SF(long long x) {
+    long long result = x - 2;  
     unsigned char flags = sub_M64_i8_return_flags(x);
 
     if (result < 0) {
@@ -2742,8 +2736,8 @@ bool test_sub_M64_i8_SF(long x) {
 // Check property for ZF
 // ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_M64_i8_ZF(long x) {
-    long result = x - 2;  
+bool test_sub_M64_i8_ZF(long long x) {
+    long long result = x - 2;  
     unsigned char flags = sub_M64_i8_return_flags(x);
 
     if (result == 0) {
@@ -2756,10 +2750,10 @@ bool test_sub_M64_i8_ZF(long x) {
 // Check property for AF
 // AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_M64_i8_AF(long x) {
+bool test_sub_M64_i8_AF(long long x) {
     // For SUB: AF=1 when there's a borrow from bit 4 (low nibble underflow)
-    unsigned long x_lsb = x & 0x0F;
-    unsigned long imm_lsb = 0x02 & 0x0F;  // 8-bit immediate, only low nibble matters
+    unsigned long long x_lsb = x & 0x0F;
+    unsigned long long imm_lsb = 0x02 & 0x0F;  // 8-bit immediate, only low nibble matters
     bool borrow_needed = (x_lsb < imm_lsb);
     
     unsigned char flags = sub_M64_i8_return_flags(x);
@@ -2774,19 +2768,19 @@ bool test_sub_M64_i8_AF(long x) {
 // Check property for PF
 // PF is bit 2 in ah
 // Filter to extract PF is: 0000 0100=0x04
-bool test_sub_M64_i8_PF(long x) {
+bool test_sub_M64_i8_PF(long long x) {
     unsigned char flags = sub_M64_i8_return_flags(x);
     
-    long result = x - 0x02;
-    uint8_t expected_parity = calculate_parity(result);
+    long long result = x - 0x02;
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
 
 // overflow flag version
-unsigned char sub_M64_i8_return_OF(long x) {
+unsigned char sub_M64_i8_return_OF(long long x) {
     unsigned char of;
-    long val;
+    long long val;
     
     __asm__ volatile (
         "movq %1, (%2);"       // store x in memory location
@@ -2801,8 +2795,8 @@ unsigned char sub_M64_i8_return_OF(long x) {
 }
 
 // Check property for OF
-bool test_sub_M64_i8_OF(long x) {
-    long result = x - 2;
+bool test_sub_M64_i8_OF(long long  x) {
+    long long result = x - 2;
     unsigned char of = sub_M64_i8_return_OF(x);
     
     if ((x < 0) && (2 >= 0) && (result >= 0)) {
@@ -2825,7 +2819,7 @@ unsigned char sub_R8_r8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%al", "%bl", "%ah"  // clobbered registers
+        : "al", "bl", "ah"  // clobbered registers
     );
 
     return ah;
@@ -2855,7 +2849,7 @@ unsigned char sub_R8_r8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%al", "%bl", "%ah"  // clobbered registers
+        : "al", "bl", "ah"  // clobbered registers
     );
 
     return ah;
@@ -2926,7 +2920,7 @@ unsigned char sub_R8_r8_return_OF(int8_t x, int8_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y)       // Input operands: x, y
-        : "%al", "%bl"         // clobbered registers
+        : "al", "bl"         // clobbered registers
     );
 
     return of;
@@ -2960,7 +2954,7 @@ unsigned char sub_M8_r8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%bl", "%ah"  // clobbered registers
+        : "bl", "ah"  // clobbered registers
     );
 
     return ah;
@@ -2989,7 +2983,7 @@ unsigned char sub_M8_r8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%bl", "%ah"  // clobbered registers
+        :  "bl", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3036,7 +3030,7 @@ bool test_sub_M8_r8_PF(int8_t x, int8_t y) {
     unsigned char flags = sub_M8_r8_return_flags(x, y);
     
     int8_t result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+     uint8_t expected_parity = calculate_parity((uint8_t)result);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -3053,7 +3047,7 @@ unsigned char sub_M8_r8_return_OF(int8_t x, int8_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%bl"                // clobbered registers
+        : "bl"                // clobbered registers
     );
 
     return of;
@@ -3089,7 +3083,7 @@ unsigned char sub_REX_r8_r8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%r10", "%r11", "%ah" // clobbered registers (REX required)
+        : "r10", "r11", "ah" // clobbered registers (REX required)
     );
 
     return ah;
@@ -3118,7 +3112,7 @@ unsigned char sub_REX_r8_r8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"         // Store AH into output
         : "=r"(ah)
         : "r"(x), "r"(y)
-        : "%r10", "%r11", "%ah"
+        : "r10", "r11", "ah"
     );
 
     return ah;
@@ -3186,7 +3180,7 @@ unsigned char sub_REX_r8_r8_return_OF(int8_t x, int8_t y) {
         "seto %0;"               // Set OF = 1 if overflow
         : "=r"(of)               // Output
         : "r"(x), "r"(y)         // Inputs
-        : "%r10", "%r11"         // Clobbered extended registers
+        : "r10", "r11"         // Clobbered extended registers
     );
 
     return of;
@@ -3223,7 +3217,7 @@ unsigned char sub_REX_M8_r8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%r8","%ah"  // clobbered registers (CORRECTED)
+        : "r8","%ah"  // clobbered registers (CORRECTED)
     );
 
     return ah;
@@ -3252,7 +3246,7 @@ unsigned char sub_REX_M8_r8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%r9", "%ah" // clobbered registers (REX required)
+        : "r9", "%ah" // clobbered registers (REX required)
     );
 
     return ah;
@@ -3320,7 +3314,7 @@ unsigned char sub_REX_M8_r8_return_OF(int8_t x, int8_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%r10"              // clobbered registers (REX required)
+        : "r10"              // clobbered registers (REX required)
     );
 
     return of;
@@ -3357,7 +3351,7 @@ unsigned char sub_R16_r16_return_CF(uint16_t x, uint16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%ax", "%bx", "%ah"  // clobbered registers
+        : "ax", "bx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3387,7 +3381,7 @@ unsigned char sub_R16_r16_return_flags(int16_t x, int16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%ax", "%bx", "%ah"  // clobbered registers
+        : "ax", "bx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3442,7 +3436,7 @@ bool test_sub_R16_r16_PF(int16_t x, int16_t y) {
     unsigned char flags = sub_R16_r16_return_flags(x, y);
     
     int16_t result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+   uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -3458,7 +3452,7 @@ unsigned char sub_R16_r16_return_OF(int16_t x, int16_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y)       // Input operands: x, y
-        : "%ax", "%bx"         // clobbered registers
+        : "ax", "bx"         // clobbered registers
     );
 
     return of;
@@ -3492,7 +3486,7 @@ unsigned char sub_M16_r16_return_CF(uint16_t x, uint16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%bx", "%ah"  // clobbered registers
+        : "bx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3522,7 +3516,7 @@ unsigned char sub_M16_r16_return_flags(int16_t x, int16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%bx", "%ah"  // clobbered registers
+        :  "bx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3569,7 +3563,7 @@ bool test_sub_M16_r16_PF(int16_t x, int16_t y) {
     unsigned char flags = sub_M16_r16_return_flags(x, y);
     
     int16_t result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -3586,7 +3580,7 @@ unsigned char sub_M16_r16_return_OF(int16_t x, int16_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%bx"                // clobbered registers
+        : "bx"                // clobbered registers
     );
 
     return of;
@@ -3621,7 +3615,7 @@ unsigned char sub_R32_r32_return_CF(uint32_t x, uint32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%eax", "%ebx", "%ah"  // clobbered registers
+        : "eax", "ebx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3651,7 +3645,7 @@ unsigned char sub_R32_r32_return_flags(int32_t x, int32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%eax", "%ebx", "%ah"  // clobbered registers
+        : "eax", "ebx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3706,7 +3700,7 @@ bool test_sub_R32_r32_PF(int32_t x, int32_t y) {
     unsigned char flags = sub_R32_r32_return_flags(x, y);
     
     int32_t result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -3722,7 +3716,7 @@ unsigned char sub_R32_r32_return_OF(int32_t x, int32_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y)       // Input operands: x, y
-        : "%eax", "%ebx"       // clobbered registers
+        : "eax", "ebx"       // clobbered registers
     );
 
     return of;
@@ -3756,7 +3750,7 @@ unsigned char sub_M32_r32_return_CF(uint32_t x, uint32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%ebx", "%ah"  // clobbered registers
+        :  "ebx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3786,7 +3780,7 @@ unsigned char sub_M32_r32_return_flags(int32_t x, int32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%ebx", "%ah"  // clobbered registers
+        :  "ebx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3833,7 +3827,7 @@ bool test_sub_M32_r32_PF(int32_t x, int32_t y) {
     unsigned char flags = sub_M32_r32_return_flags(x, y);
     
     int32_t result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -3850,7 +3844,7 @@ unsigned char sub_M32_r32_return_OF(int32_t x, int32_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%ebx"               // clobbered registers
+        : "ebx"               // clobbered registers
     );
 
     return of;
@@ -3874,7 +3868,7 @@ bool test_sub_M32_r32_OF(int32_t x, int32_t y) {
 //********************************************************
 // SUB r64, r64 
 
-unsigned char sub_R64_r64_return_CF(unsigned long x, unsigned long y) {
+unsigned char sub_R64_r64_return_CF(unsigned long long x, unsigned long long y) {
     unsigned char ah;
     
     __asm__ volatile (
@@ -3885,7 +3879,7 @@ unsigned char sub_R64_r64_return_CF(unsigned long x, unsigned long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%rax", "%rbx", "%ah"  // clobbered registers
+        : "rax", "rbx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3893,7 +3887,7 @@ unsigned char sub_R64_r64_return_CF(unsigned long x, unsigned long y) {
 
 // Check property for CF
 // CF is bit 0 in ah
-bool test_sub_R64_r64_CF(unsigned long x, unsigned long y) {
+bool test_sub_R64_r64_CF(unsigned long long x, unsigned long long y) {
     unsigned char flags = sub_R64_r64_return_CF(x, y);
 
     if (y > x) {  // Underflow occurred (borrowing needed)
@@ -3904,7 +3898,7 @@ bool test_sub_R64_r64_CF(unsigned long x, unsigned long y) {
 }
 
 // REX.W + 2B /r: SUB r/m64, r64 (register form) - signed version
-unsigned char sub_R64_r64_return_flags(long x, long y) {
+unsigned char sub_R64_r64_return_flags(long long x, long long y) {
     unsigned char ah;
     
     __asm__ volatile (
@@ -3915,7 +3909,7 @@ unsigned char sub_R64_r64_return_flags(long x, long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y)     // inputs: x, y
-        : "%rax", "%rbx", "%ah"  // clobbered registers
+        : "rax", "rbx", "ah"  // clobbered registers
     );
 
     return ah;
@@ -3924,8 +3918,8 @@ unsigned char sub_R64_r64_return_flags(long x, long y) {
 // Check property for SF
 // SF is bit 7 in ah
 // Filter to extract SF is: 1000 0000=0x80
-bool test_sub_R64_r64_SF(long x, long y) {
-    long result = x - y;
+bool test_sub_R64_r64_SF(long long x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_R64_r64_return_flags(x, y);
 
     if (result < 0) {
@@ -3938,8 +3932,8 @@ bool test_sub_R64_r64_SF(long x, long y) {
 // Check property for ZF
 // ZF is bit 6 in ah
 // Filter to extract ZF is: 0100 0000=0x40
-bool test_sub_R64_r64_ZF(long x, long y) {
-    long result = x - y;
+bool test_sub_R64_r64_ZF(long long x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_R64_r64_return_flags(x, y);
 
     if (result == 0) {
@@ -3952,9 +3946,9 @@ bool test_sub_R64_r64_ZF(long x, long y) {
 // Check property for AF
 // AF is bit 4 in ah
 // Filter to extract AF is: 0001 0000=0x10
-bool test_sub_R64_r64_AF(long x, long y) {
-    unsigned long x_lsb = x & 0x0F;
-    unsigned long y_lsb = y & 0x0F;
+bool test_sub_R64_r64_AF(long long x, long long y) {
+    unsigned long long x_lsb = x & 0x0F;
+    unsigned long long y_lsb = y & 0x0F;
     bool expected_af = (x_lsb < y_lsb);
     
     unsigned char flags = sub_R64_r64_return_flags(x, y);
@@ -3966,17 +3960,17 @@ bool test_sub_R64_r64_AF(long x, long y) {
 // Check property for PF
 // PF is bit 2 in ah
 // Filter to extract PF is: 0000 0100=0x04
-bool test_sub_R64_r64_PF(long x, long y) {
+bool test_sub_R64_r64_PF(long long x, long long y) {
     unsigned char flags = sub_R64_r64_return_flags(x, y);
     
-    long result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+    long long result = x - y;
+     uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
 
 // Overflow flag version
-unsigned char sub_R64_r64_return_OF(long x, long y) {
+unsigned char sub_R64_r64_return_OF(long long x, long long y) {
     unsigned char of;
     
     __asm__ volatile (
@@ -3986,15 +3980,15 @@ unsigned char sub_R64_r64_return_OF(long x, long y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y)       // Input operands: x, y
-        : "%rax", "%rbx"       // clobbered registers
+        : "rax", "rbx"       // clobbered registers
     );
 
     return of;
 }
 
 // Check property for OF
-bool test_sub_R64_r64_OF(long x, long y) {
-    long result = x - y;
+bool test_sub_R64_r64_OF(long long x, long long y) {
+    long long result = x - y;
     unsigned char of = sub_R64_r64_return_OF(x, y);
     
     if (((x >= 0) && (y < 0) && (result < 0)) ||
@@ -4009,9 +4003,9 @@ bool test_sub_R64_r64_OF(long x, long y) {
 //************************************************************* */
 // SUB m64, r64
 
-unsigned char sub_M64_r64_return_CF(unsigned long x, unsigned long y) {
+unsigned char sub_M64_r64_return_CF(unsigned long long x, unsigned long long y) {
     unsigned char ah;
-    unsigned long val;
+    unsigned long long val;
     
     __asm__ volatile (
         "movq %1, (%3);"       // store x in memory location
@@ -4021,14 +4015,14 @@ unsigned char sub_M64_r64_return_CF(unsigned long x, unsigned long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%rbx", "%ah"  // clobbered registers
+        :  "rbx", "%ah"  // clobbered registers
     );
 
     return ah;
 }
 
 // Check property for CF (memory form)
-bool test_sub_M64_r64_CF(unsigned long x, unsigned long y) {
+bool test_sub_M64_r64_CF(unsigned long long x, unsigned long long y) {
     unsigned char flags = sub_M64_r64_return_CF(x, y);
 
     if (y > x) {  // Underflow occurred (borrowing needed)
@@ -4039,9 +4033,9 @@ bool test_sub_M64_r64_CF(unsigned long x, unsigned long y) {
 }
 
 // REX.W + 2B /r: SUB r/m64, r64 (memory form) - signed version
-unsigned char sub_M64_r64_return_flags(long x, long y) {
+unsigned char sub_M64_r64_return_flags(long long x, long long y) {
     unsigned char ah;
-    long val;
+    long long val;
     
     __asm__ volatile (
         "movq %1, (%3);"       // store x in memory location
@@ -4051,15 +4045,15 @@ unsigned char sub_M64_r64_return_flags(long x, long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        :  "%rbx", "%ah"  // clobbered registers
+        :  "rbx", "%ah"  // clobbered registers
     );
 
     return ah;
 }
 
 // Check property for SF (memory form)
-bool test_sub_M64_r64_SF(long x, long y) {
-    long result = x - y;
+bool test_sub_M64_r64_SF(long long x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_M64_r64_return_flags(x, y);
 
     if (result < 0) {
@@ -4070,8 +4064,8 @@ bool test_sub_M64_r64_SF(long x, long y) {
 }
 
 // Check property for ZF (memory form)
-bool test_sub_M64_r64_ZF(long x, long y) {
-    long result = x - y;
+bool test_sub_M64_r64_ZF(long long  x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_M64_r64_return_flags(x, y);
 
     if (result == 0) {
@@ -4082,9 +4076,9 @@ bool test_sub_M64_r64_ZF(long x, long y) {
 }
 
 // Check property for AF (memory form)
-bool test_sub_M64_r64_AF(long x, long y) {
-    unsigned long x_lsb = x & 0x0F;
-    unsigned long y_lsb = y & 0x0F;
+bool test_sub_M64_r64_AF(long long x, long long y) {
+    unsigned long long x_lsb = x & 0x0F;
+    unsigned long long y_lsb = y & 0x0F;
     bool expected_af = (x_lsb < y_lsb);
     
     unsigned char flags = sub_M64_r64_return_flags(x, y);
@@ -4094,19 +4088,19 @@ bool test_sub_M64_r64_AF(long x, long y) {
 }
 
 // Check property for PF (memory form)
-bool test_sub_M64_r64_PF(long x, long y) {
+bool test_sub_M64_r64_PF(long long x, long long y) {
     unsigned char flags = sub_M64_r64_return_flags(x, y);
     
-    long result = x - y;
-    uint8_t expected_parity = calculate_parity(result);
+    long long result = x - y;
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
 
 // Overflow flag version (memory form)
-unsigned char sub_M64_r64_return_OF(long x, long y) {
+unsigned char sub_M64_r64_return_OF(long long  x, long long y) {
     unsigned char of;
-    long val;
+    long long val;
     
     __asm__ volatile (
         "movq %1, (%3);"       // store x in memory location
@@ -4115,15 +4109,15 @@ unsigned char sub_M64_r64_return_OF(long x, long y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%rbx"               // clobbered registers
+        : "rbx"               // clobbered registers
     );
 
     return of;
 }
 
 // Check property for OF (memory form)
-bool test_sub_M64_r64_OF(long x, long y) {
-    long result = x - y;
+bool test_sub_M64_r64_OF(long long x, long long y) {
+    long long result = x - y;
     unsigned char of = sub_M64_r64_return_OF(x, y);
     
     // For x - y, overflow occurs when:
@@ -4150,7 +4144,7 @@ unsigned char sub_r8_m8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%al", "%ah"         // clobbered registers
+        : "al", "%ah"         // clobbered registers
     );
 
     return ah;
@@ -4180,7 +4174,7 @@ unsigned char sub_r8_m8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%al", "%ah"         // clobbered registers
+        : "al", "%ah"         // clobbered registers
     );
 
     return ah;
@@ -4244,7 +4238,7 @@ unsigned char sub_r8_m8_return_OF(int8_t x, int8_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%al"                // clobbered registers
+        : "al"                // clobbered registers
     );
 
     return of;
@@ -4283,7 +4277,7 @@ unsigned char sub_REX_r8_m8_return_CF(uint8_t x, uint8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%r8", "%ah" // clobbered registers
+        : "r8", "ah" // clobbered registers
     );
 
     return ah;
@@ -4312,7 +4306,7 @@ unsigned char sub_REX_r8_m8_return_flags(int8_t x, int8_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%r9", "%ah" // clobbered registers
+        : "r9", "%ah" // clobbered registers
     );
 
     return ah;
@@ -4359,7 +4353,7 @@ bool test_sub_REX_r8_m8_PF(int8_t x, int8_t y) {
     unsigned char flags = sub_REX_r8_m8_return_flags(x, y);
     
     int8_t result = x - y;
-    uint8_t expected_parity = calculate_parity((uint8_t)result);
+   uint8_t expected_parity = calculate_parity((uint8_t)result);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -4376,7 +4370,7 @@ unsigned char sub_REX_r8_m8_return_OF(int8_t x, int8_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%r10"              // clobbered registers
+        : "r10"              // clobbered registers
     );
 
     return of;
@@ -4412,7 +4406,7 @@ unsigned char sub_r16_m16_return_CF(uint16_t x, uint16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%ax", "%ah"         // clobbered registers
+        : "ax", "%ah"         // clobbered registers
     );
 
     return ah;
@@ -4442,7 +4436,7 @@ unsigned char sub_r16_m16_return_flags(int16_t x, int16_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%ax", "%ah"         // clobbered registers
+        : "ax", "%ah"         // clobbered registers
     );
 
     return ah;
@@ -4489,7 +4483,7 @@ bool test_sub_r16_m16_PF(int16_t x, int16_t y) {
     unsigned char flags = sub_r16_m16_return_flags(x, y);
     
     int16_t result = x - y;
-    uint8_t expected_parity = calculate_parity((uint16_t)result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -4542,7 +4536,7 @@ unsigned char sub_r32_m32_return_CF(uint32_t x, uint32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%eax", "%ah"        // clobbered registers
+        : "eax", "%ah"        // clobbered registers
     );
 
     return ah;
@@ -4572,7 +4566,7 @@ unsigned char sub_r32_m32_return_flags(int32_t x, int32_t y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%eax", "%ah"        // clobbered registers
+        : "eax", "%ah"        // clobbered registers
     );
 
     return ah;
@@ -4619,7 +4613,7 @@ bool test_sub_r32_m32_PF(int32_t x, int32_t y) {
     unsigned char flags = sub_r32_m32_return_flags(x, y);
     
     int32_t result = x - y;
-    uint8_t expected_parity = calculate_parity((uint32_t)result);
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     
     return (flags & 0x04) == expected_parity;
 }
@@ -4636,7 +4630,7 @@ unsigned char sub_r32_m32_return_OF(int32_t x, int32_t y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%eax"               // clobbered registers
+        : "eax"               // clobbered registers
     );
 
     return of;
@@ -4660,9 +4654,9 @@ bool test_sub_r32_m32_OF(int32_t x, int32_t y) {
 
 //***************************************8
 // SUB r64, m64 
-unsigned char sub_r64_m64_return_CF(unsigned long x, unsigned long y) {
+unsigned char sub_r64_m64_return_CF(unsigned long long x, unsigned long long y) {
     unsigned char ah;
-    unsigned long val;
+    unsigned long long val;
     
     __asm__ volatile (
         "movq %2, (%3);"       // store y in memory location
@@ -4672,14 +4666,14 @@ unsigned char sub_r64_m64_return_CF(unsigned long x, unsigned long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%rax", "%ah"        // clobbered registers
+        : "rax", "%ah"        // clobbered registers
     );
 
     return ah;
 }
 
 // Check property for CF (register form)
-bool test_sub_r64_m64_CF(unsigned long x, unsigned long y) {
+bool test_sub_r64_m64_CF(unsigned long long x, unsigned long long y) {
     unsigned char flags = sub_r64_m64_return_CF(x, y);
 
     if (y > x) {  // Underflow occurred (borrowing needed)
@@ -4690,9 +4684,9 @@ bool test_sub_r64_m64_CF(unsigned long x, unsigned long y) {
 }
 
 // REX.W + 2B /r: SUB r64, r/m64 (register form) - signed version
-unsigned char sub_r64_m64_return_flags(long x, long y) {
+unsigned char sub_r64_m64_return_flags(long long x, long long y) {
     unsigned char ah;
-    long val;
+    long long val;
     
     __asm__ volatile (
         "movq %2, (%3);"       // store y in memory location
@@ -4702,15 +4696,15 @@ unsigned char sub_r64_m64_return_flags(long x, long y) {
         "movb %%ah, %0;"       // store AH in output
         : "=r" (ah)            // output
         : "r" (x), "r" (y), "r" (&val)  // inputs: x, y, memory address
-        : "%rax", "%ah"        // clobbered registers
+        : "rax", "%ah"        // clobbered registers
     );
 
     return ah;
 }
 
 // Check property for SF (register form)
-bool test_sub_r64_m64_SF(long x, long y) {
-    long result = x - y;
+bool test_sub_r64_m64_SF(long long x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_r64_m64_return_flags(x, y);
 
     if (result < 0) {
@@ -4721,8 +4715,8 @@ bool test_sub_r64_m64_SF(long x, long y) {
 }
 
 // Check property for ZF (register form)
-bool test_sub_r64_m64_ZF(long x, long y) {
-    long result = x - y;
+bool test_sub_r64_m64_ZF(long long x, long long y) {
+    long long result = x - y;
     unsigned char flags = sub_r64_m64_return_flags(x, y);
 
     if (result == 0) {
@@ -4733,9 +4727,9 @@ bool test_sub_r64_m64_ZF(long x, long y) {
 }
 
 // Check property for AF (register form)
-bool test_sub_r64_m64_AF(long x, long y) {
-    unsigned long x_lsb = x & 0x0F;
-    unsigned long y_lsb = y & 0x0F;
+bool test_sub_r64_m64_AF(long long x, long long y) {
+    unsigned long long x_lsb = x & 0x0F;
+    unsigned long long y_lsb = y & 0x0F;
     bool expected_af = (x_lsb < y_lsb);
     
     unsigned char flags = sub_r64_m64_return_flags(x, y);
@@ -4745,19 +4739,21 @@ bool test_sub_r64_m64_AF(long x, long y) {
 }
 
 // Check property for PF (register form)
-bool test_sub_r64_m64_PF(long x, long y) {
+bool test_sub_r64_m64_PF(long long  x, long long y) {
     unsigned char flags = sub_r64_m64_return_flags(x, y);
     
-    long result = x - y;
-    uint8_t expected_parity = calculate_parity((unsigned long)result);
-    
+    long long result = x - y;
+  
+    uint8_t expected_parity = calculate_parity(result & 0xFF);
     return (flags & 0x04) == expected_parity;
 }
 
+
+
 // Overflow flag version (register form)
-unsigned char sub_r64_m64_return_OF(long x, long y) {
+unsigned char sub_r64_m64_return_OF(long long x, long long y) {
     unsigned char of;
-    long val;
+    long long val;
     
     __asm__ volatile (
         "movq %2, (%3);"       // store y in memory location
@@ -4766,15 +4762,15 @@ unsigned char sub_r64_m64_return_OF(long x, long y) {
         "seto %0;"             // Set 'of' to 1 if overflow occurred
         : "=r"(of)             // Output operand (OF flag)
         : "r"(x), "r"(y), "r" (&val)  // Input operands: x, y, memory address
-        : "%rax"               // clobbered registers
+        : "rax"               // clobbered registers
     );
 
     return of;
 }
 
 // Check property for OF (register form)
-bool test_sub_r64_m64_OF(long x, long y) {
-    long result = x - y;
+bool test_sub_r64_m64_OF(long long x, long long y) {
+    long long result = x - y;
     unsigned char of = sub_r64_m64_return_OF(x, y);
     
     // For x - y, overflow occurs when:

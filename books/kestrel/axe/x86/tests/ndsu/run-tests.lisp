@@ -144,3 +144,38 @@
 
 ;; (depends-on "sub-imm.macho64")
 (test-file "sub-imm.macho64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "add-all-configurations.macho64")
+(test-file "add-all-configurations.macho64")
+
+;; (depends-on "add-all-configurations.pe64")
+;;(test-file "add-all-configurations.pe64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "sub-all-configurations.macho64")
+(test-file "sub-all-configurations.macho64")
+
+;; (depends-on "sub-all-configurations.pe64")
+;;(test-file "sub-all-configurations.pe64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "and.macho64")
+(test-file "and.macho64")
+
+;; (depends-on "and.pe64")
+;;(test-file "and.pe64")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "or.macho64")
+(test-file "or.macho64")
+
+;; (depends-on "or.pe64")
+;;(test-file "or.pe64")

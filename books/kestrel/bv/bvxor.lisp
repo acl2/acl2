@@ -482,18 +482,16 @@
                                unsigned-byte-p-of-bvxor-gen))))
 
 (defthm slice-of-bvxor
-  (implies (and (< highbit size)
-;                (<= lowbit highbit)
-                (natp size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvxor size x y))
-                  (bvxor (+ 1 highbit (- lowbit))
-                         (slice highbit lowbit x)
-                         (slice highbit lowbit y))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  ()))))
+  (implies (and (< high size)
+                ;; (<= low high)
+                (integerp size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvxor size x y))
+                  (bvxor (+ 1 high (- low))
+                         (slice high low x)
+                         (slice high low y))))
+  :hints (("Goal" :in-theory (enable slice bvxor natp bvchop-of-logtail))))
 
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
 ;or just pass slice through?
@@ -519,8 +517,36 @@
                       (bvxor (+ size (- low))
                              (slice (+ -1 size) low x)
                              (slice (+ -1 size) low y))))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable slice bvxor natp bvchop-of-logtail))))
+
+;here we tighten the slice
+(defthm slice-of-bvxor-tighten2
+  (implies (and (<= size high)
+                (<= low size)
+                (natp high)
+                (natp low)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  (slice (+ -1 size) low (bvxor size x y))))
+  :hints (("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop
+                                           logtail-of-bvchop-becomes-slice)))))
+
+;drop in favor of trim rules?
+(defthm slice-of-bvxor-tighten
+  (implies (and (< (+ 1 highbit) size)
+;                (<= lowbit highbit)
+                (integerp size)
+                (< 0 size)
+                (natp lowbit)
+                (natp highbit)
+                (integerp x)
+                (integerp y))
+           (equal (slice highbit lowbit (bvxor size x y))
+                  (slice highbit lowbit (bvxor (+ 1 highbit) x y))))
+  :hints (("Goal" :cases ((<= lowbit highbit))
+          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (slice-becomes-bvchop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvxor-cancel-2-of-more-and-1-of-more
   (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
