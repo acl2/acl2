@@ -805,6 +805,20 @@
                                     ;; todo: why do we have to add the underscore?
                                     (acl2::add-prefix-to-strings "_" include-fns)
                                   include-fns)))
+       ;; Handle any excludes:
+       (exclude-fns (if (eq executable-type :mach-o-64)
+                        (acl2::add-prefix-to-strings "_" exclude-fns)
+                      exclude-fns))
+       (function-name-strings (set-difference-equal function-name-strings exclude-fns))
+       ;; Determine which test functions are expected to fail:
+       (expected-failures (if (eq expected-failures :auto)
+                              (append (acl2::strings-starting-with "fail_test_" function-name-strings)
+                                      (acl2::strings-starting-with "_fail_test_" function-name-strings))
+                            ;; The expected failures were given explicitly:
+                            expected-failures))
+       ;; Sort the functions (TODO: What determines the order in the executable? Would that be better to use?  Would like to match the source code, if available)
+       (function-name-strings (acl2::merge-sort-string< function-name-strings))
+       ;; Associate functions with their assumptions:
        (assumption-alist (if (null assumptions)
                              nil
                            (let ((first-assumption-item (first assumptions)))
@@ -818,22 +832,6 @@
                                    (er hard? 'test-functions-fn "Ill-formed assumptions: ~X01." assumptions nil))
                                ;; it's a list of (untranslated) terms to be used as assumptions for every function:
                                (pairlis$ function-name-strings (acl2::repeat (len function-name-strings) assumptions))))))
-       (expected-failures (if (eq expected-failures :auto)
-                              (if (eq :elf-64 executable-type)
-                                  (acl2::strings-starting-with "fail_test_" function-name-strings)
-                                (if (eq :mach-o-64 executable-type)
-                                    (acl2::strings-starting-with "_fail_test_" function-name-strings)
-                                  (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type)))
-                            ;; The expected failures were given explicitly:
-                            expected-failures))
-       ;; Handle any excludes:
-       (exclude-fns (if (eq executable-type :mach-o-64)
-                        (acl2::add-prefix-to-strings "_" exclude-fns)
-                      exclude-fns))
-       (function-name-strings (set-difference-equal function-name-strings exclude-fns))
-       (expected-failures (set-difference-equal expected-failures exclude-fns))
-       ;; Sort the functions (TODO: What determines the order in the executable?)
-       (function-name-strings (acl2::merge-sort-string< function-name-strings))
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-functions-fn-aux function-name-strings parsed-executable
