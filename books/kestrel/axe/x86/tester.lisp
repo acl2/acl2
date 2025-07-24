@@ -337,7 +337,7 @@
                             ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
                             ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
                             ;; todo: build this stuff into def-unrolled:
-                            ,@register-replacement-assumptions
+                            ,@register-replacement-assumptions ; todo: build these in to the unroller?
                             ,@register-type-assumptions
                             ;; todo: build this into def-unrolled:
                             ;; ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
