@@ -600,7 +600,7 @@
                               (booleanp bvp)
                               (acl2::ilks-plist-worldp (w state)))
                   :stobjs state))
-  (b* ((- (cw "(Simplifying assumptions...~%"))
+  (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
        (assumption-rules (set-difference-equal
@@ -1152,7 +1152,7 @@
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil nil nil state))
-       (- (and print (progn$ (cw "(Assumptions for lifting:~%") ; should we untranslate these?
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
                                (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
