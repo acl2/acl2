@@ -2058,6 +2058,7 @@
     ;;write-of-logext-arg2
     ;;set-rip-of-+-of-logext
     set-rip-of-+-of-bvplus
+    set-rip-of-+-of-logext
     ;;x86isa::logext-48-does-nothing-when-canonical-address-p
     acl2::bvplus-of-logext-arg3-convert-to-bv ; crucial
     acl2::bvsx-convert-arg3-to-bv-axe ; crucial
