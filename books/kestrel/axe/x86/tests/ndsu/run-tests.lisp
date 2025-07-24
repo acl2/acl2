@@ -167,7 +167,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (depends-on "and.macho64")
-;;(test-file "and.macho64")
+   (test-file "and.macho64")
 
 ;; (depends-on "and.pe64")
 (test-file "and.pe64")
