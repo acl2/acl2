@@ -665,6 +665,7 @@
                              suppress-assumptions
                              inputs-disjoint-from
                              stack-slots
+                             existing-stack-slots
                              position-independent
                              inputs
                              type-assumptions-for-array-varsp
@@ -694,6 +695,8 @@
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
@@ -767,6 +770,12 @@
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+       (existing-stack-slots (if (eq :auto existing-stack-slots)
+                                 (if (eq :pe-64 executable-type)
+                                     5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)
+                                   1 ; todo: think about the 32-bit cases
+                                   )
+                               existing-stack-slots))
        ;; Generate assumptions:
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
@@ -781,6 +790,7 @@
                     (assumptions-elf64-new target
                                            position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                            stack-slots
+                                           existing-stack-slots
                                            'x86
                                            inputs
                                            type-assumptions-for-array-varsp
@@ -811,6 +821,7 @@
                       (assumptions-macho64-new target
                                                position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                                stack-slots
+                                               existing-stack-slots
                                                'x86
                                                inputs
                                                type-assumptions-for-array-varsp
@@ -841,6 +852,7 @@
                         (assumptions-pe64-new target
                                               position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                               stack-slots
+                                              existing-stack-slots
                                               'x86
                                               inputs
                                               type-assumptions-for-array-varsp
@@ -1068,10 +1080,11 @@
                      (if suppress-assumptions
                          ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                          nil
-                       (if (eq :pe-64 executable-type)
+                       (if (eq :pe-64 executable-type) ; todo: impossible?
                            `((standard-assumptions-pe-64 ',target
                                                          ',parsed-executable
                                                          ',stack-slots
+                                                         ',existing-stack-slots
                                                          text-offset
                                                          ',bvp
                                                          x86))
@@ -1108,6 +1121,7 @@
                                                          ;; See the System V AMD64 ABI
                                                          '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                          stack-slots
+                                                         existing-stack-slots
                                                          (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
                                                          type-assumptions-for-array-varsp
                                                          nil nil
@@ -1227,6 +1241,7 @@
                         suppress-assumptions
                         inputs-disjoint-from
                         stack-slots
+                        existing-stack-slots
                         position-independent
                         type-assumptions-for-array-varsp
                         use-internal-contextsp
@@ -1261,6 +1276,8 @@
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
@@ -1315,7 +1332,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
+          extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
           inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
        ((when erp) (mv erp nil state))
@@ -1466,6 +1483,7 @@
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
                                   (stack-slots '100)
+                                  (existing-stack-slots ':auto)
                                   (position-independent ':auto)
                                   (type-assumptions-for-array-vars 't)
                                   (use-internal-contextsp 't)
@@ -1503,6 +1521,7 @@
       ',suppress-assumptions
       ',inputs-disjoint-from
       ',stack-slots
+      ',existing-stack-slots
       ',position-independent
       ',type-assumptions-for-array-vars
       ',use-internal-contextsp
@@ -1539,6 +1558,7 @@
          (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
          (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
+         (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
          (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")

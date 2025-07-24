@@ -266,6 +266,7 @@
                            max-conflicts  ;a number of conflicts, or nil for no max
                            inputs-disjoint-from
                            stack-slots
+                           existing-stack-slots
                            position-independentp
                            bvp
                            state)
@@ -296,6 +297,8 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
                               (booleanp position-independentp)
                               (booleanp bvp))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
@@ -304,7 +307,7 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
 
-       (stack-slots (if (eq :auto stack-slots) 100 stack-slots))
+       (stack-slots (if (eq :auto stack-slots) 100 stack-slots)) ; existing-stack-slots is dealt with in unroll-x86-code-core
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
 
@@ -353,6 +356,7 @@
           nil ;suppress-assumptions
           inputs-disjoint-from
           stack-slots
+          existing-stack-slots
           position-independentp
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
@@ -500,7 +504,7 @@
                          normalize-xors count-hits print monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
-                         max-conflicts inputs-disjoint-from stack-slots
+                         max-conflicts inputs-disjoint-from stack-slots existing-stack-slots
                          position-independent
                          expected-result
                          bvp
@@ -533,6 +537,8 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
                               (member-eq expected-result '(:pass :fail :any))
                               (booleanp bvp))
@@ -565,7 +571,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
+                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -616,6 +622,7 @@
                          (expected-result ':pass)
                          (inputs-disjoint-from ':code)
                          (stack-slots ':auto)
+                         (existing-stack-slots ':auto)
                          (position-independent ':auto)
                          (max-conflicts '1000000)
                          (bvp 't))
@@ -635,7 +642,7 @@
                                              ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result ',bvp ',whole-form state)))
+                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',bvp ',whole-form state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -650,6 +657,7 @@
                               tactics max-conflicts
                               inputs-disjoint-from
                               stack-slots
+                              existing-stack-slots
                               position-independentp
                               expected-failures
                               result-alist
@@ -685,6 +693,8 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
                               (alistp result-alist)
@@ -700,7 +710,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
+                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -712,7 +722,7 @@
                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                             tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
+                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist) bvp
                              state))))
@@ -726,7 +736,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots position-independent
+                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
                           bvp
                           state)
@@ -761,6 +771,8 @@
                           (member-eq inputs-disjoint-from '(nil :code :all))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
+                          (or (natp existing-stack-slots)
+                              (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
                               (string-listp expected-failures))
@@ -839,7 +851,7 @@
                                extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                                normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                               tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
+                               tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
                                bvp
@@ -860,7 +872,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots position-independent
+                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
                           bvp
                           whole-form
@@ -896,6 +908,8 @@
                           (member-eq inputs-disjoint-from '(nil :code :all))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
+                          (or (natp existing-stack-slots)
+                              (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
                               (string-listp expected-failures))
@@ -914,7 +928,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots position-independent
+                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
                             bvp
                             state))
@@ -956,6 +970,7 @@
                           (max-conflicts '1000000)
                           (inputs-disjoint-from ':code)
                           (stack-slots ':auto)
+                          (existing-stack-slots ':auto)
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
@@ -977,7 +992,7 @@
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
                                               ',expected-failures
                                               ',bvp
                                               ',whole-form
@@ -993,7 +1008,7 @@
                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                      normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                     tactics max-conflicts inputs-disjoint-from stack-slots position-independent
+                     tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                      expected-failures
                      bvp
                      whole-form
@@ -1029,6 +1044,8 @@
                           (member-eq inputs-disjoint-from '(nil :code :all))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
+                          (or (natp existing-stack-slots)
+                              (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
                               (string-listp expected-failures))
@@ -1047,7 +1064,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots position-independent
+                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
                             bvp
                             state))
@@ -1091,6 +1108,7 @@
                      (max-conflicts '1000000)
                      (inputs-disjoint-from ':code)
                      (stack-slots ':auto)
+                     (existing-stack-slots ':auto)
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
@@ -1111,7 +1129,7 @@
                                          ',count-hits ',print
                                          ,monitor ; gets evaluated
                                          ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
+                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
                                          ',expected-failures
                                          ',bvp
                                          ',whole-form
