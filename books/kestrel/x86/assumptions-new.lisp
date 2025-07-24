@@ -25,6 +25,7 @@
 ;(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 ;(include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system) ; todo: reduce
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;; (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -49,14 +50,6 @@
     (implies (acl2::byte-listp x)
              (acl2::all-unsigned-byte-p 8 x))
     :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::all-unsigned-byte-p)))))
-
-(local
-  (defthm byte-listp-of-repeat ;move
-    (equal (acl2::byte-listp (acl2::repeat n x))
-           (if (posp n)
-               (acl2::bytep x)
-             t))
-    :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::repeat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
