@@ -1354,22 +1354,6 @@
 ;;         (bvchop HIGHSIZE HIGHVAL))
 ;;  :hints (("Goal" :in-theory (enable bvnot))))
 
-
-;drop in favor of trim rules?
-(defthm slice-of-bvxor-tighten
-  (implies (and (< (+ 1 highbit) size)
-;                (<= lowbit highbit)
-                (integerp size)
-                (< 0 size)
-                (natp lowbit)
-                (natp highbit)
-                (integerp x)
-                (integerp y))
-           (equal (slice highbit lowbit (bvxor size x y))
-                  (slice highbit lowbit (bvxor (+ 1 highbit) x y))))
-  :hints (("Goal" :cases ((<= lowbit highbit))
-          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (slice-becomes-bvchop)))))
-
 ;drop in favor of trim rules?
 (defthm slice-of-bvand-tighten
   (implies (and (< (+ 1 highbit) size)

@@ -677,20 +677,6 @@
                   (bvxor size z (bvor size x y))))
  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
 
-;here we tighten the call to size...
-(defthm slice-of-bvxor-tighten2
-  (implies (and (<= n high)
-                (<= low n)
-                (natp high)
-                (natp low)
-                (natp n))
-           (equal (slice high low (bvxor n x y))
-                  (slice (+ -1 n) low (bvxor n x y))))
-  :hints (("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop
-
-                                           logtail-of-bvchop-becomes-slice
-                                           )))))
-
 ;gen the bvand to any op?
 (defthm slice-of-bvand-tighten-high-index
   (implies (and (<= size high)
