@@ -12,9 +12,9 @@ fi
 # The following does a "git fetch --all", as necessary in order to
 # prepare for the "git merge" below.
 echo "-----"
-echo "Executing `dirname $0`/purity.sh"
+echo "Executing `dirname $0`/purity-acl2.sh"
 echo "-----"
-`dirname $0`/purity.sh
+`dirname $0`/purity-acl2.sh
 
 if [ $? -ne 0 ] ; then \
     echo 'ERROR: Not executing git merge command.' ; \

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Consider also taking a look at :DOC xdoc::deploying-manuals.
+
 # This program installs a web-based acl2+books combined manual as well
 # as a corresponding text-based copy of that manual, suitable for the
 # ACL2-Doc Emacs browser.
