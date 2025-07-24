@@ -259,7 +259,7 @@
                                   (+ ,(- stack-byte-count) (rsp x86)))
                         (disjoint-regions48p ,numbytes ,pointer-name
                                              ,stack-byte-count
-                                             (bvplus 48 ,(- stack-byte-count) (rsp x86)))
+                                             (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                         ;; The input is disjoint from the saved return address:
@@ -299,7 +299,7 @@
                                         (+ ,(- stack-byte-count) (rsp x86)))
                               (disjoint-regions48p ,numbytes ,pointer-name
                                                    ,stack-byte-count
-                                                   (bvplus 48 ,(- stack-byte-count) (rsp x86)))
+                                                   (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
                               ;; The input is disjoint from the code:
                               ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                               ;; The input is disjoint from the saved return address:

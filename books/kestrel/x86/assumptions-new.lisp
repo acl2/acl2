@@ -175,7 +175,7 @@
               (append
                 ;; Assert that the addresses are canonical:
                 (if new-canonicalp
-                    `((integerp ,base-var) ; needed for things like turning + into bvplus
+                    `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
                       (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
                                          ,(if (= offset 0) base-var `(bvplus 64 ,offset ,base-var))))
                   `((canonical-address-p ,first-addr-term)
@@ -197,15 +197,14 @@
                       `((separate ':r ',(len bytes) ,first-addr-term
                                   ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
                   nil)
-                ;; todo: chop the calculated numbers here:
                 ;; Assert that the chunk is disjoint from the new part of the stack that may be written to:
                 ;; ;; TODO: Do this only for writable chunks?
                 (if (posp stack-slots-needed)
                     (if bvp
                         `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                       `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                  ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
                   nil))))
       ;; Absolute addresses are just numbers:
       (let* ((first-addr offset)
@@ -235,14 +234,13 @@
                      nil)
                  ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                  ;; TODO: Do this only for writable chunks?
-                 ;; todo: chop the numbers here:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       (if bvp
                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                         `((separate ':r ',(len bytes) ,first-addr-term
-                                    ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                    ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))
 
@@ -406,7 +404,8 @@
             ;; Assumptions about the BASE-VAR:
             (if position-independentp
                 (if new-canonicalp
-                    `((unsigned-canonical-address-p ,base-var)) ; do we need this?
+                    `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-canonical-address-p
+                      (unsigned-canonical-address-p ,base-var)) ; do we need this?
                   `(;(integerp ,base-var)
                     (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
                     ))
@@ -434,7 +433,7 @@
                                          (* 8 stack-slots-needed))
                                      ,(if (= 0 stack-slots-needed)
                                           `(rsp ,state-var)
-                                        `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
+                                        `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
               ;; old-style:
               (append `(;; The stack slot contaning the return address must be canonical
                         ;; because the stack pointer returns here when we pop the saved
@@ -561,7 +560,7 @@
                     (append
                       ;; Assert that the addresses are canonical:
                       (if new-canonicalp
-                          `((integerp ,base-var) ; needed for things like turning + into bvplus
+                          `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
                             (canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above)
                                                ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
                         `((canonical-address-p ,first-addr-term)
@@ -586,14 +585,13 @@
                         nil)
                       ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
-                      ;; todo: chop the numbers here:
                       (if (posp stack-slots-needed)
                           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                           (if bvp
                               `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                     ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                                     ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                             `((separate ':r ',(len bytes) ,first-addr-term
-                                        ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                        ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
                         nil))))
             ;; Absolute addresses are just numbers:
             (let* ((first-addr addr)
@@ -625,9 +623,9 @@
                        ,@(if (posp stack-slots-needed)
                              (if bvp
                                  `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                        ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                                        ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                                `((separate ':r ',(len bytes) ,first-addr-term
-                                           ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                           ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
                            ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                            nil)))))))
          ((when erp)
