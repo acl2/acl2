@@ -821,7 +821,6 @@
 ;;   (declare (xargs :guard (stringp filename)
 ;;                   :stobjs state
 ;; ;                  :mode :program
-;;                   :verify-guards nil ; todo
 ;;                   ))
 ;;   (b* (((mv existsp state) (file-existsp filename state))
 ;;        ((when (not existsp))
