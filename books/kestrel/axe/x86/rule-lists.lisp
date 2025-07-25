@@ -480,8 +480,8 @@
     read-when-equal-of-read-and-subregion48p
     read-when-equal-of-read-and-subregion48p-alt
     acl2::bvchop-of-+-becomes-bvplus
-    acl2::bvplus-of-*-arg1
-    acl2::bvplus-of-*-arg2
+    ;;acl2::bvplus-of-*-arg1
+    ;;acl2::bvplus-of-*-arg2
     acl2::bvminus-of-bvplus-tighten-arg2
     acl2::bvminus-of-bvplus-tighten-arg3
     ))
