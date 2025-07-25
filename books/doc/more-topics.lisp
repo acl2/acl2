@@ -369,7 +369,8 @@ href='http://www.cs.utexas.edu/users/hunt/FMCAD/FMCAD15/index.shtml'>FMCAD
  <p>Jared Davis, Keshav Kini, and Andrew Walter have graciously supplied <a
  href='https://github.com/acl2/acl2/tree/master/books/workshops/references'>a
  listing of bibtex entries for the ACL2 workshops</a> through 2023 (would be
- nice if extended past 2023; any volunteers?).</p>
+ nice if extended past 2023; any volunteers?).  The @(see pubs::pubs-workshops)
+ page lists all of these Workshop publications.</p>
 
  <p>ACL2 input files (@(see certifiable) @(see books)) from the preceding
  workshops are available in the <a
