@@ -1088,10 +1088,11 @@ sites, then you may wish to read on.</p>
 <h3>Server-Supported Manuals</h3>
 
 <p>The basic reason that the default manuals are slow is that they work by
-simply loading the data for <b>every</b> topic, at startup.  As of October
-2013, this comes to around 25 MB of data for the basic @('doc/top.lisp')
-manual.  It's no big deal to load 25 MB from a local hard drive or a fast
-intranet connection, but it can be quite slow over the internet.</p>
+simply loading the data for <b>every</b> topic, at startup.  As of the time of
+writing (July 2025), this comes to around 310 MB of data for the basic
+@('doc/top.lisp') manual.  It's no big deal to load 310 MB from a local hard
+drive or a fast intranet connection, but it can be quite slow over the
+internet.</p>
 
 <p>The XDOC manuals created by @('save') can be reconfigured to just load the
 @(':long') sections as they are accessed.  This results in a much
@@ -1171,7 +1172,8 @@ missing modules.</p>
 
 <p>Once you have created the @('xdata.db') file, you will need to copy both it
 and a different script, @('xdataget.pl'), to some directory in your web
-server.</p>
+server.  If @('xdata.db') is not placed in the same directory as
+@('xdataget.pl'), @('xdataget.pl') will not be able to find it.</p>
 
 <p>Typically, for @('xdataget.pl') to work at all, it will need to have its
 executable bit set, and it may need to be in a special directory within your
@@ -1218,7 +1220,20 @@ just need to change:</p>
 })
 
 <p>At this point, your manual should load topic data dynamically as needed.
-The result should be much faster for users on slow connections.</p>")
+The result should be much faster for users on slow connections.</p>
+
+<h4>Deploying the SEO Manual</h4>
+
+<p>There is also an SEO variant of the server-supported manual which is more
+accessible to web crawlers (but less accessible to humans).  To deploy this
+manual, repeat the steps above but with the @('xdata2sql4seo.pl') script, which
+will produce @('xdata-seo.db').  You will also need to deploy to a server which
+supports PHP.</p>
+
+<p>The SEO variant of the manual is intended to be deployed in addition to the
+regular server-supported manual, not to replace it.  The SEO variant is not
+intended for typical use and is only provided to allow search engines to index
+the site.</p>")
 
 (defxdoc emacs-links
   :short "Instructions for integrating XDOC web pages with <a
