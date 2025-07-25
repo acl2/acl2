@@ -1,6 +1,6 @@
 ; ACL2 versions of (some of) the Top 100 Theorems List
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 
 ;; Include here any books that contain theorems cited below:
 (include-book "arithmetic/binomial" :dir :system)

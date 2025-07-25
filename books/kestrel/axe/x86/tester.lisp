@@ -432,7 +432,7 @@
        (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
                (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
-       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
+       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (acl2::real-time-since start-real-time state)
