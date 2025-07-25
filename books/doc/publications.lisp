@@ -1774,7 +1774,7 @@
                            "</ul>"))))
 
 ; generate XDOC documentation from BibTeX file along with the state
-(defun generate-workshop-documentation (bibtex-filename state)
+(defun generate-workshop-documentation-fn (bibtex-filename state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
   (mv-let (entries state)
@@ -1784,9 +1784,9 @@
           (mv nil xdoc-form state))
       (mv "no-entries-found" nil state))))
 
-(defmacro parsed-bibtex-to-defxdoc (bibtex-filename)
+(defmacro generate-workshop-documentation (bibtex-filename)
   `(make-event
-    (generate-workshop-documentation ,bibtex-filename state)))
+    (generate-workshop-documentation-fn ,bibtex-filename state)))
 
 ;Submit documentation for ACL2 workshops file
-(parsed-bibtex-to-defxdoc "../workshops/references/workshops.bib")
+(generate-workshop-documentation "../workshops/references/workshops.bib")
