@@ -17,6 +17,7 @@
 
 (include-book "byte-listp-def")
 (include-book "byte-listp")
+(include-book "byte-listp2")
 
 (include-book "bit-listp")
 (include-book "bit-listp-rules")
