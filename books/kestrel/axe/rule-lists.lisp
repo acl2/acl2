@@ -767,6 +767,7 @@
      bvminus-of-constant-and-bvplus-of-constant
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
+     bvminus-of-bvplus-and-bvplus-same-2-2
 
      bvplus-of-0-arg2
      bvplus-of-ifix-arg2
