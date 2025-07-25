@@ -26,6 +26,7 @@
 
 (in-package "PUBS")
 (include-book "xdoc/top" :dir :system)
+(include-book "kestrel/bibtex/xdoc-generation" :dir :system)
 
 (defun docpath (s)
 
@@ -1752,3 +1753,40 @@
  </ul>
 
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun generate-workshop-documentation-xdoc (entries)
+  "Generate single XDOC documentation for all workshop entries"
+  (let ((entry-count (len entries))
+        (entries (acl2::generate-bibtex-entries-XDOC entries)))
+    `(defxdoc pubs-workshops
+       :parents (pubs-papers)
+       :short "ACL2 Workshop Papers and Publications"
+       :long ,(concatenate 'string
+                           "<p>This section contains documentation for papers and publications related to ACL2 workshops and conferences.</p>"
+                           "<p><b>Total number of entries:</b> "(if (natp entry-count)
+                                                                    (coerce (explode-atom entry-count 10) 'string)
+                                                                  "unknown")
+                           "</p>"
+                           "<ul>"
+                           entries
+                           "</ul>"))))
+
+; generate XDOC documentation from BibTeX file along with the state
+(defun generate-workshop-documentation (bibtex-filename state)
+  (declare (xargs :stobjs state
+                  :verify-guards nil))
+  (mv-let (entries state)
+    (acl2::parse-bibtex-file bibtex-filename state)
+    (if entries
+        (let ((xdoc-form (generate-workshop-documentation-xdoc entries)))
+          (mv nil xdoc-form state))
+      (mv "no-entries-found" nil state))))
+
+(defmacro parsed-bibtex-to-defxdoc (bibtex-filename)
+  `(make-event
+    (generate-workshop-documentation ,bibtex-filename state)))
+
+;Submit documentation for ACL2 workshops file
+(parsed-bibtex-to-defxdoc "../workshops/references/workshops.bib")
