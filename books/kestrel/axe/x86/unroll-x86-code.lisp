@@ -1201,6 +1201,7 @@
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
+       ;; Make the rule-alist:
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil nil nil state))
@@ -1343,12 +1344,14 @@
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
        (result-dag-vars (acl2::dag-vars result-dag))
-       ;; Build the defconst:
+       ;; Build the defconst that will contain the result DAG:
        (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       ;; Now sort the formals:
+       ;; Build the defun that will contain the result of lifting:
+       ;; Create the list of formals for the function:
+       ;; todo: move some of this to after we check produce-function below
        (param-names (if (and 64-bitp
                              (not (equal :skip inputs)))
                         ;; The user gave names to the params (and/or their components, etc), and those vars will be put in:

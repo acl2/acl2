@@ -337,7 +337,7 @@
                             ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
                             ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
                             ;; todo: build this stuff into def-unrolled:
-                            ,@register-replacement-assumptions
+                            ,@register-replacement-assumptions ; todo: build these in to the unroller?
                             ,@register-type-assumptions
                             ;; todo: build this into def-unrolled:
                             ;; ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
@@ -432,7 +432,7 @@
        (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
                (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
-       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
+       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (acl2::real-time-since start-real-time state)
