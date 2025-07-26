@@ -28,6 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Updated 7/2022 for more entities: Matt Kaufmann <matthew.j.kaufmann@gmail.com>
+; Updated 7/2025 to simplify entity handling: Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "XDOC")
 (include-book "autolink")

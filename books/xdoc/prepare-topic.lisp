@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Updated 7/2025 to simplify entity handling: Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "XDOC")
 (include-book "base")
