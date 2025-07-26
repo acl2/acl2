@@ -287,6 +287,7 @@
                 (acl2::string-upcase s))))
     (intern name "KEYWORD")))
 
+;; Example alist entry: ("Omega" :ENTITY :|Omega|)
 (defun entity-strings-to-keywords-fal (strings fal)
   (cond ((endp strings) fal)
         (t (entity-strings-to-keywords-fal
@@ -296,6 +297,7 @@
                               (keyword-from-entity-string (car strings)))
                         fal)))))
 
+;; Example alist entry: (:|Omega| . "&Omega;")
 (defun entity-keywords-to-strings-fal (strings fal)
   (cond ((endp strings) fal)
         (t (entity-keywords-to-strings-fal
@@ -406,9 +408,11 @@
     "sum"
     ))
 
+;; Example alist entry: ("Omega" :ENTITY :|Omega|)
 (defconst *entity-strings-to-keywords-fal*
   (entity-strings-to-keywords-fal *entity-strings* nil))
 
+;; Example alist entry: (:|Omega| . "&Omega;")
 (defconst *entity-keywords-to-strings-fal*
   (let* ((fal (entity-keywords-to-strings-fal *entity-strings* nil))
          (dup (acl2::duplicate-keysp-eq fal)))
