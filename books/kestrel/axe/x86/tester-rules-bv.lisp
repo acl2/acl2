@@ -343,18 +343,6 @@
                   (bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-(defthm bvchop-subst-constant-alt
-  (implies (and (syntaxp (not (quotep x)))
-                (equal (bvchop free x) k) ; this rule
-                (syntaxp (quotep k))
-                (<= size free)
-                ;(natp size)
-                (integerp free))
-           (equal (bvchop size x)
-                  (bvchop size k)))
-  :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
-           :in-theory (disable bvchop-subst-constant))))
-
 ;gen
 (defthm bvcat-of-repeatbit-of-getbit-of-bvsx-same
   (implies (and (equal oldsize-1 (+ oldsize -1))
