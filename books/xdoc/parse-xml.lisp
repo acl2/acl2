@@ -288,9 +288,9 @@
     (intern name "KEYWORD")))
 
 ;; Example alist entry: ("Omega" :ENTITY :|Omega|)
-(defun entity-strings-to-keywords-fal (strings fal)
+(defun entity-strings-to-tokens-fal (strings fal)
   (cond ((endp strings) fal)
-        (t (entity-strings-to-keywords-fal
+        (t (entity-strings-to-tokens-fal
             (cdr strings)
             (hons-acons (car strings)
                         (list :ENTITY
@@ -409,8 +409,8 @@
     ))
 
 ;; Example alist entry: ("Omega" :ENTITY :|Omega|)
-(defconst *entity-strings-to-keywords-fal*
-  (entity-strings-to-keywords-fal *entity-strings* nil))
+(defconst *entity-strings-to-tokens-fal*
+  (entity-strings-to-tokens-fal *entity-strings* nil))
 
 ;; Example alist entry: (:|Omega| . "&Omega;")
 (defconst *entity-keywords-to-strings-fal*
@@ -436,7 +436,7 @@
             n nil))
        (n (+ 1 n)) ;; eat the ;
        (str (str::rchars-to-string rchars))
-       (doublet (cdr (hons-get str *entity-strings-to-keywords-fal*)))
+       (doublet (cdr (hons-get str *entity-strings-to-tokens-fal*)))
        ((when doublet) (mv nil n doublet)))
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
                   "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
