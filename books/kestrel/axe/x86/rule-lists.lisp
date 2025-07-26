@@ -2357,7 +2357,6 @@
 
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
-            acl2::bvplus-of-unary-minus
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
@@ -5608,8 +5607,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::bvplus-of-unary-minus
-    acl2::bvplus-of-unary-minus-arg2
     acl2::if-becomes-bvif-1-axe
     ;; acl2::boolif-of-t-and-nil-when-booleanp
     acl2::slice-of-bvand-of-constant
