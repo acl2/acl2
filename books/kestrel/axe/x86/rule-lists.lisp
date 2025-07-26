@@ -5641,7 +5641,6 @@
     acl2::<-of-if-arg1-safe
     ;; acl2::<-of-if-arg2-safe
     acl2::equal-of-bvif-safe2
-    acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
     ))
 
 ;; beyond what def-unrolled uses
@@ -5792,6 +5791,7 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
