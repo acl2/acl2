@@ -2492,6 +2492,7 @@
             ;acl2::bvplus-trim-leading-constant
             ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
+            acl2::bvchop-subst-constant-alt
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
             gl::gl-mbe-fn ;used by bitops.  yuck.
@@ -5751,8 +5752,6 @@
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant ; move
-            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
