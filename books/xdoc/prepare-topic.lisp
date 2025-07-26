@@ -90,6 +90,8 @@
 ; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
 ; fancy/xslt.js, (defxdoc entities ...) in topics.lisp, and
 ; wrap_xdoc_fragment in fancy/xdata2html.pl
+; but note that 5 entities (amp, lt, gt, apos, quot) need not be
+; declared here (see https://www.w3.org/TR/xml/).
 
 ; The decimal values below for Greek letters were obtained from
 ; https://www.htmlhelp.com/reference/html40/entities/symbols.html.
