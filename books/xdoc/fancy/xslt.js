@@ -35,9 +35,8 @@
 // Compatibility wrapper for lack of XSLT standards in browsers.
 //
 
-// Warning: Keep this in sync with *entity-strings* and
-// *entitytok-as-plaintext-fal* in ../parse-xml.lisp,
-// *xml-entity-stuff* in ../prepare-topic.lisp, and
+// Warning: Keep this in sync with *entity-info*
+// in ../parse-xml.lisp, and
 // (defxdoc entities ...) in topics.lisp, and
 // wrap_xdoc_fragment in xdata2html.pl
 /**
