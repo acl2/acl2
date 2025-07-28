@@ -34,6 +34,8 @@
 
 ;; note that, for unsigned, the canonical region is not contiguous
 ;; Note that this is amenable to BV-based SMT solving
+;; todo: make a variant that also asserts (unsigned-byte-p 64 ad)
+;; This chops its argument down to 64-bits
 (defund unsigned-canonical-address-p (ad)
   (declare (xargs :guard (unsigned-byte-p 64 ad)))
   (acl2::bvlt 64 (acl2::bvminus 64 ad *base-of-canonical*) *len-of-canonical*))
@@ -49,6 +51,15 @@
          (if test
              (unsigned-canonical-address-p x)
            (unsigned-canonical-address-p y))))
+
+;; unintuitive, but note that unsigned-canonical-address-p chops down to 64 bits
+(defthm unsigned-canonical-address-p-when-signed-byte-p-48
+  (implies (signed-byte-p 48 x)
+           (unsigned-canonical-address-p x))
+  :hints (("Goal" :cases ((<= 0 x))
+           :in-theory (enable unsigned-canonical-address-p bvlt
+                              acl2::bvchop-when-negative-lemma))))
+
 
 (defthm unsigned-canonical-address-p-of-bvsx-64-48
   (unsigned-canonical-address-p (bvsx 64 48 x))

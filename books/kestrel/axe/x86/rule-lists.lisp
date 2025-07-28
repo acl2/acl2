@@ -2633,6 +2633,8 @@
 
             ;; maybe eventually remove, but needed for the loop lifter (at least remove other mentions)
             x86isa::integerp-when-canonical-address-p-cheap
+
+            x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4135,7 +4137,11 @@
             x86isa::write-*sp-when-64-bit-modep ; puts in !rgfi -- todo: go to set-rsp
             ;; todo: combine these:
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep)))
+            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
+            ;; todo: more like these?:
+            set-rip-of-bvchop
+            set-rip-of-logext
+            )))
 
 (defund new-normal-form-rules64 ()
   (declare (xargs :guard t))
@@ -4212,6 +4218,7 @@
     xr-becomes-rip ; introduces rip
     !rip-becomes-set-rip
     xw-becomes-set-rip
+    x86isarip-becomes-rip
 
     xw-of-set-rip-irrel
     xr-of-set-rip-irrel
@@ -5981,6 +5988,9 @@
      xw-of-xr-same-gen
 
      set-undef ; can be introduced by write-user-rflags-rewrite-better
+
+     x86isa::canonical-address-p-of-xr-of-rip
+     x86isa::rip ; at least for now
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)

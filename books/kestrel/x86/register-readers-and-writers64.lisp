@@ -1066,13 +1066,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd !rip-becomes-set-rip
-  (equal (!rip v x86)
-         (set-rip v x86))
-  :hints (("Goal" :in-theory (enable set-rip))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
 
 ;; todo: could enable all these but then we should enable the other rules that introduce the normal form

@@ -30,7 +30,7 @@
     (declare (xargs :stobjs x86 :verify-guards nil))
     (prog2$ (acl2::throw-nonexec-error 'add
                                        (list x86))
-            (set-rip (logext 64 (read 8 (rsp x86) x86))
+            (set-rip (read 8 (rsp x86) x86)
                      (set-rax (bvplus 32 (rsi x86) (rdi x86))
                               (set-rdx (bvchop 32 (rdi x86))
                                        (set-rsp (bvplus 64 8 (rsp x86))

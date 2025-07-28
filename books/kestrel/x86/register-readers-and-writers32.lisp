@@ -96,15 +96,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Gets the 32-bit instruction pointer:
-(defun eip (x86) (declare (xargs :stobjs x86)) (bvchop 32 (rip x86)))
+(defun eip (x86) (declare (xargs :stobjs x86)) (bvchop 32 (x86isa::rip x86)))
 
 ;; Accessing the high 16 bits of the 48-bit RIP (undefined in 32-bit mode).
-(defund rip-high (x86) (declare (xargs :stobjs x86)) (slice 47 32 (rip x86)))
+(defund rip-high (x86) (declare (xargs :stobjs x86)) (slice 47 32 (x86isa::rip x86)))
 ;; do we need a set-rip-high?
 
 ;; Introduce EIP. These rules are disabled since they are not appropriate for 64-bit reasoning:
 ;; To be unconditional, these rules have to mention rip-high, those we usually don't care about those high bits in 32-bit mode.
-(defthmd rip-becomes-eip (equal (rip x86) (logext 48 (bvcat 16 (rip-high x86) 32 (eip x86)))) :hints (("Goal" :in-theory (enable eip rip-high))))
+(defthmd rip-becomes-eip (equal (x86isa::rip x86) (logext 48 (bvcat 16 (rip-high x86) 32 (eip x86)))) :hints (("Goal" :in-theory (enable eip rip-high))))
 (defthmd xr-becomes-eip (equal (xr :rip nil x86) (logext 48 (bvcat 16 (rip-high x86) 32 (eip x86)))) :hints (("Goal" :in-theory (enable eip rip-high))))
 
 (theory-invariant (incompatible (:rewrite rip-becomes-eip) (:definition eip)))
