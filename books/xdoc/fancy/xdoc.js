@@ -1096,7 +1096,9 @@ function jumpInit() {
             uid: xindexObj.topicUid(key)
         });
     }
-
+ta_data.sort(function(a, b) {
+    return a.nicename.localeCompare(b.nicename);
+});
     // Custom substring matcher for infix matching
     // Ranking system:
     // - Rank 0: Exact matches (topic name matches query)
@@ -1107,21 +1109,27 @@ function jumpInit() {
     // 2. Alphabetical order by topic name
     function substringMatcher(data) {
         return function findMatches(q, cb) {
-            var matches = [];
+            var rank0and1 = [];
+            var rank2 = [];
             var qlc = q.toLowerCase();
             for (var i = 0; i < data.length; i++) {
                 var name = data[i].nicename.toLowerCase();
-                var rank = null;
-                if (name === qlc) {
-                    rank = 0; // exact match
-                } else if (name.startsWith(qlc)) {
-                    rank = 1; // prefix match
-                } else if (name.indexOf(qlc) !== -1) {
-                    rank = 2; // substring match
+                // var rank = null;
+                var index = name.indexOf(qlc);
+                if (index === 0) { // prefix match
+                    if (name === qlc) { // exact match
+                        rank0and1.push({ ...data[i], _rank: 0 });
+                    }
+                    else { // proper prefix match
+                        rank0and1.push({ ...data[i], _rank: 1 });
+                    }
+                } else if (index !== -1) { // substring match
+                    rank2.push({ ...data[i], _rank: 2 });
                 }
-                if (rank !== null) {
-                    matches.push({ ...data[i], _rank: rank });
-                }
+            }
+            var matches = rank0and1;
+            if (matches.length < 20) {
+                matches.push(...rank2);
             }
             // Sort by rank, then ACL2 Sources, then nicename
             matches.sort(function(a, b) {
@@ -1132,7 +1140,7 @@ function jumpInit() {
                 var sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
                 if (sysA && !sysB) return -1;
                 if (!sysA && sysB) return 1;
-                return a.nicename.localeCompare(b.nicename);
+                return 0;
             });
             cb(matches.slice(0, 20)); // Limit to 20 suggestions
         };
