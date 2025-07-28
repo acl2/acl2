@@ -45,15 +45,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::defomap env-block
-    :parents (env)
-    :short "A scope block within an environment."
-    :key-type ident
-    :val-type c::value-option
-    :pred env-blockp))
+(fty::defomap env-block
+  :parents (env)
+  :short "A scope block within an environment."
+  :key-type ident
+  :val-type c::value-option
+  :pred env-blockp)
 
 (defrule value-optionp-of-cdr-assoc-when-env-blockp
   (implies (env-blockp block)

@@ -1,7 +1,7 @@
 ; Parsing an x86 executable
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,9 +25,7 @@
                                filename ; only used in error messages
                                )
   (declare (xargs :guard (and (byte-listp bytes)
-                              (stringp filename))
-                  :verify-guards nil ; todo
-                  ))
+                              (stringp filename))))
   (b* (((mv erp magic-number)
         (parse-executable-magic-number bytes filename))
        ((when erp) (mv erp nil)))
@@ -50,8 +48,7 @@
 ;; the executable).
 (defun parse-executable (filename state)
   (declare (xargs :guard (stringp filename)
-                  :stobjs state
-                  :verify-guards nil))
+                  :stobjs state))
   (b* (((mv existsp state) (file-existsp filename state))
        ((when (not existsp))
         (progn$ (er hard? 'parse-executable "File does not exist: ~x0." filename)

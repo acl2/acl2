@@ -245,7 +245,12 @@
      We will extend this fixtype to contain additional information,
      particularly about tag of structure, union, and enumeration types."))
   ((ord valid-ord-scope))
-  :pred valid-scopep)
+  :pred valid-scopep
+  ///
+
+  (defrule alistp-of-valid-scope->ord
+    (alistp (valid-scope->ord x))
+    :enable alistp-when-valid-ord-scopep-rewrite))
 
 ;;;;;;;;;;;;;;;;;;;;
 

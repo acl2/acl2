@@ -767,6 +767,7 @@
      bvminus-of-constant-and-bvplus-of-constant
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
+     bvminus-of-bvplus-and-bvplus-same-2-2
 
      bvplus-of-0-arg2
      bvplus-of-ifix-arg2
@@ -1246,7 +1247,11 @@
      getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
 
      unsigned-byte-p-of-+-with-carry
-     slice-of-bvmult-of-expt-gen-constant-version)))
+     slice-of-bvmult-of-expt-gen-constant-version
+
+     bvcat-equal-rewrite-constant ; previously caused problems for aes?
+     bvcat-equal-rewrite-constant-alt
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
