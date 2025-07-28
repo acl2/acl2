@@ -1086,7 +1086,7 @@ function jumpRender(datum) {
 
 function jumpInit() {
     var ta_data = [];
-    var keys = Array.from(xindexObj.allKeys());
+    var keys = xindexObj.allKeys();
     for(const key of keys) {
         ta_data.push({
             value: key,
@@ -1097,20 +1097,26 @@ function jumpInit() {
         });
     }
 
-    // Custom substring matcher for infix matching with ranking and ACL2 Sources priority
+    // Custom substring matcher for infix matching
+    // Ranking system:
+    // - Rank 0: Exact matches (topic name matches query)
+    // - Rank 1: Prefix matches (topic name starts with query)
+    // - Rank 2: Substring matches (topic name contains query)
+    // Within each rank, topics are sorted by:
+    // 1. ACL2 system documentation topics first
+    // 2. Alphabetical order by topic name
     function substringMatcher(data) {
         return function findMatches(q, cb) {
             var matches = [];
             var qlc = q.toLowerCase();
             for (var i = 0; i < data.length; i++) {
                 var name = data[i].nicename.toLowerCase();
-                var value = data[i].value.toLowerCase();
                 var rank = null;
-                if (name === qlc || value === qlc) {
+                if (name === qlc) {
                     rank = 0; // exact match
-                } else if (name.startsWith(qlc) || value.startsWith(qlc)) {
+                } else if (name.startsWith(qlc)) {
                     rank = 1; // prefix match
-                } else if (name.indexOf(qlc) !== -1 || value.indexOf(qlc) !== -1) {
+                } else if (name.indexOf(qlc) !== -1) {
                     rank = 2; // substring match
                 }
                 if (rank !== null) {
@@ -1120,12 +1126,6 @@ function jumpInit() {
             // Sort by rank, then ACL2 Sources, then nicename
             matches.sort(function(a, b) {
                 if (a._rank !== b._rank) return a._rank - b._rank;
-
-                // ACL 2 Package Priority
-                //var pkgA = xdataObj.topicBasepkg(a.value);
-                //var pkgB = xdataObj.topicBasepkg(b.value);
-                //if (pkgA === 'ACL2' && pkgB !== 'ACL2') return -1;
-                //if (pkgA !== 'ACL2' && pkgB === 'ACL2') return 1;
 
                 //system directory priority
                 var sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
@@ -1160,12 +1160,31 @@ function jumpInit() {
     $("#jump").attr("placeholder", "append");
     $("#jump").removeAttr("disabled");
 
-    $("#jumpform").submit(function(event) {
+
+    $("#jumpform").submit(function(event)
+    {
+	// Magic code that took me way too much hacking to get working.
+	//console.log("In form submitter.");
+
+	// Don't actually try to "submit" the form.
         event.preventDefault();
+
+	// Act like the tab key was pressed, to trigger autocomplete.
+	// In the case where the user hasn't entered the entire input,
+	// this will trigger the jumpGo call all by itself.
+
         var e = jQuery.Event("keydown");
         e.keyCode = e.which = 9; // 9 == tab
         $("#jump").trigger(e);
+
+	// We seem to never get here EXCEPT in the case where the user
+	// has typed in the entire text for one of the entries.  In
+	// that case, for whatever reason, the autocomplete feature
+	// doesn't actually trigger the submit.  So, if we get here,
+	// figure out what we're looking at and submit it manually.
+
         var value = $("#jump").typeahead('val');
+	// console.log("After tab, value is " + value);
         jumpGo(null, {value:value});
     });
 }
