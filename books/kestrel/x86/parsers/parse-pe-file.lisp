@@ -729,10 +729,11 @@
     :hints (("Goal" :in-theory (enable parse-pe-section-headers)))))
 
 ;; Returns (mv erp new-acc).
-(defund parse-section (section-header all-bytes len-all-bytes acc)
+(defund parse-section (section-header all-bytes len-all-bytes suppress-errorsp acc)
   (declare (xargs :guard (and (alistp section-header)
                               (byte-listp all-bytes)
                               (equal len-all-bytes (len all-bytes))
+                              (booleanp suppress-errorsp)
                               (alistp acc))))
   (b* ((name (lookup-eq-safe :name section-header))
        (size-of-raw-data (lookup-eq-safe :size-of-raw-data section-header))
@@ -745,8 +746,10 @@
        ((when (not (natp virtual-size))) ; strengthen guard and drop?
         (mv :bad-virtual-size nil))
        ((when (> (+ size-of-raw-data pointer-to-raw-data) len-all-bytes))
-        (er hard? 'parse-section "Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%"
-            name pointer-to-raw-data size-of-raw-data len-all-bytes)
+        (if suppress-errorsp
+            (cw "ERROR (suppressed)")
+          (cw "ERROR"))
+        (cw " in parse-section: Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%" name pointer-to-raw-data size-of-raw-data len-all-bytes)
         (mv :not-enough-bytes nil))
        (raw-data (if (<= virtual-size size-of-raw-data) ; size-of-raw-data may be greater since it is rounded up
                      (take virtual-size (nthcdr pointer-to-raw-data all-bytes))
@@ -762,22 +765,23 @@
 (local
   (defthm alist-of-mv-nth-1-of-parse-section
       (implies (alistp acc)
-               (alistp (mv-nth 1 (parse-section section-header all-bytes len-all-bytes acc))))
+               (alistp (mv-nth 1 (parse-section section-header all-bytes len-all-bytes suppress-errorsp acc))))
     :hints (("Goal" :in-theory (enable parse-section)))))
 
 ;; Returns (mv erp sections).
-(defun parse-sections (section-headers acc all-bytes len-all-bytes)
+(defun parse-sections (section-headers acc all-bytes len-all-bytes suppress-errorsp)
   (declare (xargs :guard (and (alist-listp section-headers)
                               (byte-listp all-bytes)
                               (equal len-all-bytes (len all-bytes))
+                              (booleanp suppress-errorsp)
                               (alistp acc))))
   (if (endp section-headers)
       (mv nil (reverse acc))
     (mv-let (erp acc)
-      (parse-section (first section-headers) all-bytes len-all-bytes acc)
+      (parse-section (first section-headers) all-bytes len-all-bytes suppress-errorsp acc)
       (if erp
           (mv erp nil)
-        (parse-sections (rest section-headers) acc all-bytes len-all-bytes)))))
+        (parse-sections (rest section-headers) acc all-bytes len-all-bytes suppress-errorsp)))))
 
 ;; Returns (mv erp string)
 ;bytes has length 8
@@ -939,8 +943,9 @@
     string))
 
 ;; Returns (mv erp parsed-pe) where PARSED-PE is an alist representing the contents of the PE file.
-(defun parse-pe-file-bytes (bytes)
-  (declare (xargs :guard (byte-listp bytes)
+(defun parse-pe-file-bytes (bytes suppress-errorsp)
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (booleanp suppress-errorsp))
                   :guard-hints (("Goal" :in-theory (disable natp)))))
   (b* ((all-bytes bytes)
        (pe nil) ;initially empty alist to accumulate results
@@ -1018,7 +1023,7 @@
        (- (cw "~x0 bytes after section headers.~%" (len bytes)))
        ;; (pe (acons :section-headers section-headers pe)) ;; the header is now included in the parsed data for its section
        ;; Here we stop processing the bytes in order, instead looking up each section's start in all-bytes:
-       ((mv erp sections) (parse-sections section-headers nil all-bytes (len all-bytes)))
+       ((mv erp sections) (parse-sections section-headers nil all-bytes (len all-bytes) suppress-errorsp))
        ((when erp) (mv erp nil))
        (pe (acons :sections sections pe))
        ;;TODO: What other data do we need to parse?

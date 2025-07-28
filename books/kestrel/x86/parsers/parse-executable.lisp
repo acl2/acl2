@@ -38,7 +38,9 @@
         (let ((sig (pe-file-signature bytes)))
           (if (eql sig *pe-signature*)
               (prog2$ (cw "PE file detected.~%")
-                      (parse-pe-file-bytes bytes))
+                      (parse-pe-file-bytes bytes
+                                           nil ; suppress-errorsp ; todo: pass in
+                                           ))
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
