@@ -499,7 +499,7 @@
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than
+         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than ; todo: compare to other list below
                                                  run-until-stack-shorter-than-or-reach-pc
                                                  ;; new scheme:
                                                  run-until-rsp-is
