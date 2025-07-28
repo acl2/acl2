@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Updated 7/2025 to simplify entity handling: Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "XDOC")
 (include-book "base")
@@ -84,100 +85,36 @@
            (remove-duplicates-eq children-names))
           (t (mergesort children-names)))))
 
-(defconst *xml-entity-stuff*
-
-; Warning: Keep this in sync with *entity-strings* and
-; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
-; fancy/xslt.js, (defxdoc entities ...) in topics.lisp, and
-; wrap_xdoc_fragment in fancy/xdata2html.pl
-
-; The decimal values below for Greek letters were obtained from
-; https://www.htmlhelp.com/reference/html40/entities/symbols.html.
-
-; The additional symbols below are from
-; https://www.w3schools.com/html/html_symbols.asp.
-
-  "<!DOCTYPE xdoc [
-  <!ENTITY nbsp \"&#160;\">
-  <!ENTITY ndash \"&#8211;\">
-  <!ENTITY mdash \"&#8212;\">
-  <!ENTITY larr \"&#8592;\">
-  <!ENTITY rarr \"&#8594;\">
-  <!ENTITY harr \"&#8596;\">
-  <!ENTITY lang \"&#9001;\">
-  <!ENTITY rang \"&#9002;\">
-  <!ENTITY hellip \"&#8230;\">
-  <!ENTITY lsquo \"&#8216;\">
-  <!ENTITY rsquo \"&#8217;\">
-  <!ENTITY ldquo \"&#8220;\">
-  <!ENTITY rdquo \"&#8221;\">
-  <!ENTITY and   \"&#8743;\">
-  <!ENTITY or    \"&#8744;\">
-  <!ENTITY not   \"&#172;\">
-  <!ENTITY ne    \"&#8800;\">
-  <!ENTITY le    \"&#8804;\">
-  <!ENTITY ge    \"&#8805;\">
-  <!ENTITY mid   \"&#8739;\">
-  <!ENTITY times \"&#215;\">
-
-  <!ENTITY Alpha   \"&#913;\">
-  <!ENTITY Beta    \"&#914;\">
-  <!ENTITY Gamma   \"&#915;\">
-  <!ENTITY Delta   \"&#916;\">
-  <!ENTITY Epsilon \"&#917;\">
-  <!ENTITY Zeta    \"&#918;\">
-  <!ENTITY Eta     \"&#919;\">
-  <!ENTITY Theta   \"&#920;\">
-  <!ENTITY Iota    \"&#921;\">
-  <!ENTITY Kappa   \"&#922;\">
-  <!ENTITY Lambda  \"&#923;\">
-  <!ENTITY Mu      \"&#924;\">
-  <!ENTITY Nu      \"&#925;\">
-  <!ENTITY Xi      \"&#926;\">
-  <!ENTITY Omicron \"&#927;\">
-  <!ENTITY Pi      \"&#928;\">
-  <!ENTITY Rho     \"&#929;\">
-  <!ENTITY Sigma   \"&#931;\">
-  <!ENTITY Tau     \"&#932;\">
-  <!ENTITY Upsilon \"&#933;\">
-  <!ENTITY Phi     \"&#934;\">
-  <!ENTITY Chi     \"&#935;\">
-  <!ENTITY Psi     \"&#936;\">
-  <!ENTITY Omega   \"&#937;\">
-  <!ENTITY alpha   \"&#945;\">
-  <!ENTITY beta    \"&#946;\">
-  <!ENTITY gamma   \"&#947;\">
-  <!ENTITY delta   \"&#948;\">
-  <!ENTITY epsilon \"&#949;\">
-  <!ENTITY zeta    \"&#950;\">
-  <!ENTITY eta     \"&#951;\">
-  <!ENTITY theta   \"&#952;\">
-  <!ENTITY iota    \"&#953;\">
-  <!ENTITY kappa   \"&#954;\">
-  <!ENTITY lambda  \"&#955;\">
-  <!ENTITY mu      \"&#956;\">
-  <!ENTITY nu      \"&#957;\">
-  <!ENTITY xi      \"&#958;\">
-  <!ENTITY omicron \"&#959;\">
-  <!ENTITY pi      \"&#960;\">
-  <!ENTITY rho     \"&#961;\">
-  <!ENTITY sigma   \"&#963;\">
-  <!ENTITY tau     \"&#964;\">
-  <!ENTITY upsilon \"&#965;\">
-  <!ENTITY phi     \"&#966;\">
-  <!ENTITY chi     \"&#967;\">
-  <!ENTITY psi     \"&#968;\">
-  <!ENTITY omega   \"&#969;\">
-  <!ENTITY forall  \"&#8704;\">
-  <!ENTITY exist   \"&#8707;\">
-  <!ENTITY empty   \"&#8709;\">
-  <!ENTITY isin    \"&#8712;\">
-  <!ENTITY notin   \"&#8713;\">
-  <!ENTITY prod    \"&#8719;\">
-  <!ENTITY sum     \"&#8721;\">
-]>
+(defconst *newline* "
 ")
 
+(defun make-xml-entity-stuff-items-aux (entity-info acc)
+  (if (endp entity-info)
+      (reverse acc)
+    (let* ((entry (car entity-info))
+           (string (car entry))
+           (decimal-code (caddr entry)))
+      (make-xml-entity-stuff-items-aux
+       (rest entity-info)
+       (if (eq decimal-code :built-in)
+           acc
+         (cons (str::cat "  <!ENTITY "
+                         string
+                         (implode (acl2::repeat (max 1 (- 8 (length string)))
+                                                #\Space)) ; must have at least 1 space
+                         "\"&#"
+                         (str::nat-to-dec-string decimal-code)
+                         ";\">"
+                         *newline*)
+               acc))))))
+
+(defun make-xml-entity-stuff-items (entity-info)
+  (string-append-lst (list "<!DOCTYPE xdoc [" *newline*
+                           (string-append-lst (make-xml-entity-stuff-items-aux entity-info nil))
+                           "]>" *newline*)))
+
+(defconst *xml-entity-stuff*
+  (make-xml-entity-stuff-items *entity-info*))
 
 ; ------------------ Making Flat Indexes ------------------------
 
