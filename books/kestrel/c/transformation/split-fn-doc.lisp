@@ -74,13 +74,13 @@
        (xdoc::box
          (xdoc::b "Note")
          ": This identifier should be free to avoid name conflict, but this
-          condition is not current checked."))
+          condition is not currently checked."))
      (xdoc::desc
        "@(':split-point')"
        (xdoc::p
          "A natural number indicating the position in the function body at
-          which to split. This is the number of top-level"
+          which to split. This is the number of top-level "
           (xdoc::seetopic "c$::block-item" "block items")
-         "in the function body before the split point. Splits within nested
+         " in the function body before the split point. Splits within nested
           statement blocks are not yet supported."))))
   :order-subtopics t)

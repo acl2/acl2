@@ -439,7 +439,6 @@
     ;; subregion48p-same-ads-same-lens ; consider this
     subregion48p-when-non-negative-and-negative-range
     subregion48p-of-1-arg1 ; introduces in-region48p
-    acl2::bvminus-of-bvplus-and-bvplus-same-2-2 ; move?  open bvminus?
     acl2::bvminus-of-bvplus-same
     subregion48p-of-bvchop-arg2
     subregion48p-of-bvchop-arg4
@@ -480,8 +479,8 @@
     read-when-equal-of-read-and-subregion48p
     read-when-equal-of-read-and-subregion48p-alt
     acl2::bvchop-of-+-becomes-bvplus
-    acl2::bvplus-of-*-arg1
-    acl2::bvplus-of-*-arg2
+    ;;acl2::bvplus-of-*-arg1
+    ;;acl2::bvplus-of-*-arg2
     acl2::bvminus-of-bvplus-tighten-arg2
     acl2::bvminus-of-bvplus-tighten-arg3
     ))
@@ -2058,6 +2057,7 @@
     ;;write-of-logext-arg2
     ;;set-rip-of-+-of-logext
     set-rip-of-+-of-bvplus
+    set-rip-of-+-of-logext
     ;;x86isa::logext-48-does-nothing-when-canonical-address-p
     acl2::bvplus-of-logext-arg3-convert-to-bv ; crucial
     acl2::bvsx-convert-arg3-to-bv-axe ; crucial
@@ -5614,7 +5614,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::bvminus-of-bvplus-and-bvplus-same-2-2
     acl2::bvplus-of-unary-minus
     acl2::bvplus-of-unary-minus-arg2
     acl2::if-becomes-bvif-1-axe

@@ -89,13 +89,21 @@
                                        nil ; fns-to-elide
                                        ))
          ((when erp) (mv erp nil nil))
+          ;; (- (and (not (equal result-term term))
+          ;;         (cw "(Term ~x0 rewrote to ~x1.)~%" term result-term)))
          )
       (if (equal result-term term) ;; no change: ; todo: flatten, as we do below?
           (simplify-conjuncts-basic (rest conjuncts) (cons term done-conjuncts) rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp againp)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-conjuncts-basic (rest conjuncts) done-conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp againp) ; we don't set againp here since the term got dropped and won't support further simplifications
-          (let ((new-conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+            (progn$ ;; (cw "Dropping term ~x0 because it rewrote to T.~%" term)
+                    (simplify-conjuncts-basic (rest conjuncts) done-conjuncts rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp againp) ; we don't set againp here since the term got dropped and won't support further simplifications
+                    )
+          ;; The term rewrote to something other than itself or T, so we set AGAINP so the new information will be used on a subsequent round:
+          (b* ((new-conjuncts (get-conjuncts-of-term2 result-term)) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+               ;; (- (and (< 1 (len new-conjuncts))
+               ;;         (cw "(Split ~x0 into conjuncts.)~%" result-term)))
+               )
             (simplify-conjuncts-basic (rest conjuncts) (append new-conjuncts done-conjuncts) rule-alist known-booleans monitored-symbols no-warn-ground-functions memoizep count-hits warn-missingp t)))))))
 
 (local
