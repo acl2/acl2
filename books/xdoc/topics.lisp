@@ -1834,9 +1834,9 @@ manual.</p>")
 
 (defxdoc entities
 
-; Warning: Keep this in sync with *entity-strings* and
-; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
-; fancy/xslt.js, *xml-entity-stuff*in prepare-topic.lisp, and
+; Warning: Keep this in sync with *entity-info*
+; in parse-xml.lisp, wrapXdocFragment in
+; fancy/xslt.js, and
 ; wrap_xdoc_fragment in fancy/xdata2html.pl
 
   :parents (xdoc xdoc-tests)
