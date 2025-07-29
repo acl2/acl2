@@ -47,7 +47,6 @@
 (include-book "../merge-term-into-dag-array-simple")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
-;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
 (include-book "rewriter-x86")
