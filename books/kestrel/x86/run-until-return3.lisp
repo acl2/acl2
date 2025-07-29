@@ -14,6 +14,7 @@
 ;; New, experimental scheme, aiming to use unsigned vals and be BV compatible.
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
+(include-book "register-readers-and-writers64") ; for RSP
 (include-book "misc/defpun" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 
@@ -24,7 +25,7 @@
   (declare (xargs :guard (signed-byte-p 64 old-rsp) ; todo: update to unsigned soon
                   :stobjs x86))
   (bvlt 64 2147483648 ; 2^31 ; todo: consider 32-bit and 64-bit
-        (bvminus 64 old-rsp (rgfi *rsp* x86))))
+        (bvminus 64 old-rsp (rsp x86))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,7 +60,7 @@
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above)
 (defund-nx run-until-return3 (x86)
   (declare (xargs :stobjs x86))
-  (run-until-rsp-is-above (xr :rgf *rsp* x86) x86))
+  (run-until-rsp-is-above (rsp x86) x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +98,7 @@
 (defund-nx run-until-return-or-reach-pc3 (stop-pcs x86)
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above-or-reach-pc)
   (declare (xargs :stobjs x86))
-  (run-until-rsp-is-above-or-reach-pc (xr :rgf *rsp* x86) stop-pcs x86))
+  (run-until-rsp-is-above-or-reach-pc (rsp x86) stop-pcs x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

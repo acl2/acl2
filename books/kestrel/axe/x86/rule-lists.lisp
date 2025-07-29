@@ -412,6 +412,8 @@
     in-region48p-of-0-arg3 ; introduces bvlt
     in-region48p-of-bvchop-arg1
     in-region48p-of-bvchop-arg3
+    in-region48p-of-bvsx-arg1
+    in-region48p-of-bvsx-arg3
     in-region48p-same
 
     ;; Seems ok to always have these on: ; todo: add more
@@ -2016,7 +2018,7 @@
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
-    ))
+    bvsx-when-unsigned-canonical-address-p))
 
 (defund canonical-rules-bv ()
   (declare (xargs :guard t))
@@ -2025,6 +2027,8 @@
     ;; WARNING: Keep in sync with the list for 48 bits above
     in-region64p-of-bvchop-arg1
     in-region64p-of-bvchop-arg3
+    in-region64p-of-bvsx-arg1
+    in-region64p-of-bvsx-arg3
     in-region64p-same
     in-region64p-cancel-constants-1-1+
     in-region64p-cancel-constants-1+-1
@@ -2357,7 +2361,6 @@
 
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
-            acl2::bvplus-of-unary-minus
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
@@ -2492,6 +2495,7 @@
             ;acl2::bvplus-trim-leading-constant
             ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
+            acl2::bvchop-subst-constant-alt
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
             gl::gl-mbe-fn ;used by bitops.  yuck.
@@ -2633,6 +2637,8 @@
 
             ;; maybe eventually remove, but needed for the loop lifter (at least remove other mentions)
             x86isa::integerp-when-canonical-address-p-cheap
+
+            x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4135,7 +4141,11 @@
             x86isa::write-*sp-when-64-bit-modep ; puts in !rgfi -- todo: go to set-rsp
             ;; todo: combine these:
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep)))
+            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
+            ;; todo: more like these?:
+            set-rip-of-bvchop
+            set-rip-of-logext
+            )))
 
 (defund new-normal-form-rules64 ()
   (declare (xargs :guard t))
@@ -4157,22 +4167,22 @@
     xr-becomes-rsp
     xr-becomes-rbp
 
-    signed-byte-p-64-of-rax
-    signed-byte-p-64-of-rbx
-    signed-byte-p-64-of-rcx
-    signed-byte-p-64-of-rdx
-    signed-byte-p-64-of-rsi
-    signed-byte-p-64-of-rdi
-    signed-byte-p-64-of-r8
-    signed-byte-p-64-of-r9
-    signed-byte-p-64-of-r10
-    signed-byte-p-64-of-r11
-    signed-byte-p-64-of-r12
-    signed-byte-p-64-of-r13
-    signed-byte-p-64-of-r14
-    signed-byte-p-64-of-r15
-    signed-byte-p-64-of-rsp
-    signed-byte-p-64-of-rbp
+    unsigned-byte-p-64-of-rax
+    unsigned-byte-p-64-of-rbx
+    unsigned-byte-p-64-of-rcx
+    unsigned-byte-p-64-of-rdx
+    unsigned-byte-p-64-of-rsi
+    unsigned-byte-p-64-of-rdi
+    unsigned-byte-p-64-of-r8
+    unsigned-byte-p-64-of-r9
+    unsigned-byte-p-64-of-r10
+    unsigned-byte-p-64-of-r11
+    unsigned-byte-p-64-of-r12
+    unsigned-byte-p-64-of-r13
+    unsigned-byte-p-64-of-r14
+    unsigned-byte-p-64-of-r15
+    unsigned-byte-p-64-of-rsp
+    unsigned-byte-p-64-of-rbp
 
     integerp-of-rax
     integerp-of-rbx
@@ -4212,6 +4222,7 @@
     xr-becomes-rip ; introduces rip
     !rip-becomes-set-rip
     xw-becomes-set-rip
+    x86isarip-becomes-rip
 
     xw-of-set-rip-irrel
     xr-of-set-rip-irrel
@@ -5607,8 +5618,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::bvplus-of-unary-minus
-    acl2::bvplus-of-unary-minus-arg2
     acl2::if-becomes-bvif-1-axe
     ;; acl2::boolif-of-t-and-nil-when-booleanp
     acl2::slice-of-bvand-of-constant
@@ -5643,7 +5652,6 @@
     acl2::<-of-if-arg1-safe
     ;; acl2::<-of-if-arg2-safe
     acl2::equal-of-bvif-safe2
-    acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
     ))
 
 ;; beyond what def-unrolled uses
@@ -5751,8 +5759,6 @@
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant ; move
-            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
@@ -5796,6 +5802,7 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
@@ -5980,6 +5987,9 @@
      xw-of-xr-same-gen
 
      set-undef ; can be introduced by write-user-rflags-rewrite-better
+
+     x86isa::canonical-address-p-of-xr-of-rip
+     x86isa::rip ; at least for now
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)

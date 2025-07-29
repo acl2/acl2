@@ -280,6 +280,8 @@
 
 ;; This section contains rules for various readers applied to the 17 register writers (including SET-RIP)
 
+(local (in-theory (disable xw-becomes-set-rip)))
+
 (defthm read-of-set-rip (equal (read n addr (set-rip rip x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm read-of-set-rax (equal (read n addr (set-rax val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rax))))
 (defthm read-of-set-rbx (equal (read n addr (set-rbx val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rbx))))

@@ -230,7 +230,7 @@
 ;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
 (defun get-pc (x86)
   (declare (xargs :stobjs x86))
-  (rip x86))
+  (x86isa::rip x86))
 
 ;;TODO: How can we determine whether we are in a subroutine call (can't just
 ;;look at RSP)?  I guess we could include subroutine PCs as part of the code
@@ -2130,6 +2130,7 @@
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
          (make-rule-alist (append (old-normal-form-rules) ; don't use the new normal forms
+                                  '(x86isa::rip) ; open this (at least for now), to expose xr
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))

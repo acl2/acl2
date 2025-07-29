@@ -15,6 +15,7 @@
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
+(include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
 
 ;; Tests whether the stack is shorter than it was when the RSP was OLD-RSP.  Recall
 ;; that the stack grows downward, so a larger RSP means a shorter stack.

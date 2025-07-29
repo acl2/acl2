@@ -729,11 +729,11 @@
     :hints (("Goal" :in-theory (enable parse-pe-section-headers)))))
 
 ;; Returns (mv erp new-acc).
-;; todo: continue adding and verifying guards from this point
-(defund parse-section (section-header all-bytes len-all-bytes acc)
+(defund parse-section (section-header all-bytes len-all-bytes suppress-errorsp acc)
   (declare (xargs :guard (and (alistp section-header)
                               (byte-listp all-bytes)
                               (equal len-all-bytes (len all-bytes))
+                              (booleanp suppress-errorsp)
                               (alistp acc))))
   (b* ((name (lookup-eq-safe :name section-header))
        (size-of-raw-data (lookup-eq-safe :size-of-raw-data section-header))
@@ -746,8 +746,10 @@
        ((when (not (natp virtual-size))) ; strengthen guard and drop?
         (mv :bad-virtual-size nil))
        ((when (> (+ size-of-raw-data pointer-to-raw-data) len-all-bytes))
-        (er hard? 'parse-section "Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%"
-            name pointer-to-raw-data size-of-raw-data len-all-bytes)
+        (if suppress-errorsp
+            (cw "ERROR (suppressed)")
+          (cw "ERROR"))
+        (cw " in parse-section: Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%" name pointer-to-raw-data size-of-raw-data len-all-bytes)
         (mv :not-enough-bytes nil))
        (raw-data (if (<= virtual-size size-of-raw-data) ; size-of-raw-data may be greater since it is rounded up
                      (take virtual-size (nthcdr pointer-to-raw-data all-bytes))
@@ -763,22 +765,23 @@
 (local
   (defthm alist-of-mv-nth-1-of-parse-section
       (implies (alistp acc)
-               (alistp (mv-nth 1 (parse-section section-header all-bytes len-all-bytes acc))))
+               (alistp (mv-nth 1 (parse-section section-header all-bytes len-all-bytes suppress-errorsp acc))))
     :hints (("Goal" :in-theory (enable parse-section)))))
 
 ;; Returns (mv erp sections).
-(defun parse-sections (section-headers acc all-bytes len-all-bytes)
+(defun parse-sections (section-headers acc all-bytes len-all-bytes suppress-errorsp)
   (declare (xargs :guard (and (alist-listp section-headers)
                               (byte-listp all-bytes)
                               (equal len-all-bytes (len all-bytes))
+                              (booleanp suppress-errorsp)
                               (alistp acc))))
   (if (endp section-headers)
       (mv nil (reverse acc))
     (mv-let (erp acc)
-      (parse-section (first section-headers) all-bytes len-all-bytes acc)
+      (parse-section (first section-headers) all-bytes len-all-bytes suppress-errorsp acc)
       (if erp
           (mv erp nil)
-        (parse-sections (rest section-headers) acc all-bytes len-all-bytes)))))
+        (parse-sections (rest section-headers) acc all-bytes len-all-bytes suppress-errorsp)))))
 
 ;; Returns (mv erp string)
 ;bytes has length 8
@@ -940,8 +943,9 @@
     string))
 
 ;; Returns (mv erp parsed-pe) where PARSED-PE is an alist representing the contents of the PE file.
-(defun parse-pe-file-bytes (bytes)
-  (declare (xargs :guard (byte-listp bytes)
+(defun parse-pe-file-bytes (bytes suppress-errorsp)
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (booleanp suppress-errorsp))
                   :guard-hints (("Goal" :in-theory (disable natp)))))
   (b* ((all-bytes bytes)
        (pe nil) ;initially empty alist to accumulate results
@@ -1019,7 +1023,7 @@
        (- (cw "~x0 bytes after section headers.~%" (len bytes)))
        ;; (pe (acons :section-headers section-headers pe)) ;; the header is now included in the parsed data for its section
        ;; Here we stop processing the bytes in order, instead looking up each section's start in all-bytes:
-       ((mv erp sections) (parse-sections section-headers nil all-bytes (len all-bytes)))
+       ((mv erp sections) (parse-sections section-headers nil all-bytes (len all-bytes) suppress-errorsp))
        ((when erp) (mv erp nil))
        (pe (acons :sections sections pe))
        ;;TODO: What other data do we need to parse?
@@ -1055,10 +1059,8 @@
 ;move?
 ;; Returns (mv erp entries).
 (defun parse-import-directory-table (bytes)
-  (declare (xargs ;; :guard (and (acl2::all-unsigned-byte-p 8 bytes)
-             ;;              (true-listp bytes))
-             :measure (len bytes)
-             ))
+  (declare (xargs :guard (byte-listp bytes)
+                  :measure (len bytes)))
   (if (< (len bytes) 20)
       (mv :not-enough-bytes
           (er hard? 'parse-import-directory-table "Not enough bytes."))
@@ -1087,6 +1089,7 @@
 
 ;; Get data at the given RVA from the sections, chopping it down to size bytes
 ;; (and checking that there are that many) if size is not :unknown.
+;; todo: continue adding and verifying guards from this point
 (defun get-data-from-sections (sections rva size)
   ;; (declare (xargs :guard (or (posp size)
   ;;                            (eq :unknown size))))
@@ -1120,12 +1123,19 @@
 
 ;; Returns a byte list
 (defun read-bytes-of-null-terminated-string (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (if (endp bytes)
       (er hard? 'read-bytes-of-null-terminated-string "No null-terminator found for string.")
     (let ((byte (first bytes)))
       (if (= 0 byte) ;found the null
           nil
         (cons byte (read-bytes-of-null-terminated-string (rest bytes)))))))
+
+(local
+ (defthm byte-listp-of-read-bytes-of-null-terminated-string
+     (implies (byte-listp bytes)
+              (byte-listp (read-bytes-of-null-terminated-string bytes)))
+   :hints (("Goal" :in-theory (enable read-bytes-of-null-terminated-string)))))
 
 (defun get-string-from-sections (sections rva)
   (if (endp sections)
@@ -1149,6 +1159,7 @@
 
 ;; Returns (mv erp result).
 (defun parse-hint/name-table-entry-bytes (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* (((mv erp hint bytes) (parse-u16 bytes))
        ((when erp) (mv erp nil))
        (string-bytes (read-bytes-of-null-terminated-string bytes))
@@ -1160,8 +1171,9 @@
 
 ;; Returns (mv erp result).
 (defun parse-import-lookup-table-bytes (bytes magic sections)
-;  (declare (xargs :guard (member-eq magic '(strip-cdrs *magic-numbers*))))
-  (declare (xargs :measure (len bytes)))
+  (declare (xargs ;; :guard (and (byte-listp bytes)
+                  ;;             (member-eq magic '(strip-cdrs *magic-numbers*)))
+                  :measure (len bytes)))
   (if (< (len bytes) (if (eq magic :pe32) 4 8))
       (mv :not-enough-bytes
           (er hard? 'parse-import-lookup-table-bytes "Not enough bytes"))

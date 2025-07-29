@@ -454,7 +454,7 @@
     x86isa::!rgfi-size
     x86isa::!rgfi-size$inline
 
-    x86isa::rip
+    ;; x86isa::rip ; we define our own RIP function that returns an unsigned value
     x86isa::rip$a
     x86isa::!rip
     x86isa::!rip$a

@@ -24,6 +24,16 @@
 ;; The spec for TEA encryption, and some rules about it:
 (include-book "kestrel/crypto/tea/tea-rules" :dir :system)
 
+;; (defthm logext-of-+-of-small-constant-when-canonical-address-p
+;;   (implies (and (syntaxp (quotep k))
+;;                 (<= -1000000 k) ; gen
+;;                 (<= k 1000000) ; gen
+;;                 (integerp k)
+;;                 (canonical-address-p ad))
+;;            (equal (logext 64 (+ k ad))
+;;                   (+ k (logext 64 ad))))
+;;   :hints (("Goal" :in-theory (enable signed-byte-p))))
+
 ;; Unroll the spec:
 (unroll-spec-basic *tea-encrypt-spec*
                    ;; The expression to unroll (use TEA to encrypt IN using KEY),
@@ -54,6 +64,10 @@
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
   ;; TODO: How much of this can we automate?
   ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
+  :extra-rules '(x86isa::canonical-address-p-between
+                 ;logext-of-+-of-small-constant-when-canonical-address-p
+                 )
+;  :monitor '(x86isa::canonical-address-p-between)
   :extra-assumptions '(;; Introduce byte vars for v:
                  ;; Each of v0, etc is a u32, so we split it into 8 bytes:
                  (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
