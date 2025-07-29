@@ -94,7 +94,7 @@ function wrapXdocFragment(str) {
         <!ENTITY Phi "&#934;">
         <!ENTITY Chi "&#935;">
         <!ENTITY Psi "&#936;">
-        <!ENTITY Omega "&#9837;">
+        <!ENTITY Omega "&#937;">
         <!ENTITY alpha "&#945;">
         <!ENTITY beta "&#946;">
         <!ENTITY gamma "&#947;">
