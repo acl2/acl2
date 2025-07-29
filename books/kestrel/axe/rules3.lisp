@@ -1886,7 +1886,7 @@
                     (bitnot (bitxor (getbit size x) (getbit size y))))))
   :hints (("Goal"
            :use (:instance getbit-of-+ (x (ifix x)) (y (ifix y)))
-           :in-theory (e/d (bvplus GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+           :in-theory (e/d (bvplus
                                    slice-of-bvplus-cases-helper)
                            (getbit-of-+)))))
 
@@ -4374,7 +4374,7 @@
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (;bvlt
                                    bvplus getbit-of-+
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvchop-of-sum-cases sbvlt
                                    bvchop-when-i-is-not-an-integer
                                    bvchop-when-top-bit-1)
@@ -4454,7 +4454,7 @@
            (not (SBVLT 32 (BVPLUS 32 '1 x) '0)))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -4472,7 +4472,7 @@
 ;;                   ))
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
 ;;                                         GETBIT-TOO-HIGH
-;;                                         GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+;;
 ;;                                         UNSIGNED-BYTE-P
 ;;                                         bvchop-of-sum-cases sbvlt
 ;;                                         bvchop-when-i-is-not-an-integer
@@ -4490,7 +4490,7 @@
                   (not (equal x 255))))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -4511,7 +4511,7 @@
            (BVLT size x k))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -5357,7 +5357,7 @@
            (bvlt size x k))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -6214,7 +6214,7 @@
                                           bvchop-of-minus
                                           bvminus
                                           bvlt
-                                          getbit-when-val-is-not-an-integer
+
                                           slice-becomes-getbit)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
@@ -6568,7 +6568,7 @@
            (getbit 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
                                    bvminus-becomes-bvplus-of-bvuminus)))))
@@ -7129,7 +7129,7 @@
            :expand (bvlt 31 x y)
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7161,7 +7161,7 @@
                     )
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7192,7 +7192,7 @@
            :expand ((:with unsigned-byte-p (UNSIGNED-BYTE-P SIZE Y)))
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7223,7 +7223,7 @@
                                    bvchop-of-minus
                                    bvminus
                                    bvlt
-                                   getbit-when-val-is-not-an-integer)
+                                   )
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
@@ -7334,7 +7334,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7385,7 +7385,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7413,7 +7413,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7440,7 +7440,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7471,7 +7471,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7503,7 +7503,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7535,7 +7535,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7567,7 +7567,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7602,7 +7602,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7634,7 +7634,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7662,7 +7662,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7696,7 +7696,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7729,7 +7729,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7765,7 +7765,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7793,7 +7793,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7820,7 +7820,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -9868,7 +9868,7 @@
          (equal 0 (getbit 25 x)))
   :hints (("Goal"
            :use (:instance split-bv (x (bvchop 26 x)) (n 26) (m 25))
-           :in-theory (e/d (getbit-when-val-is-not-an-integer
+           :in-theory (e/d (
                             bvmult)
                            (bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
@@ -10527,7 +10527,7 @@
                       (bitxor (bv-array-read 1 (len data) n data) y)
                     (getbit 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -10539,7 +10539,7 @@
                       (bitxor y (bv-array-read 1 (len data) n data))
                     (getbit 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -10586,7 +10586,7 @@
                       (getbit m (bv-array-read (+ 1 m) (len data) n data))
                     0)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -12764,7 +12764,7 @@
                        (unsigned-byte-p 7 y))))
   :hints (("Goal"
            :use (:instance bvlt-of-one-more-when-not-bvlt-helper (z (bvchop 7 y)))
-           :in-theory (enable bvlt bvplus GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER bvchop-of-sum-cases))))
+           :in-theory (enable bvlt bvplus  bvchop-of-sum-cases))))
 
 (defthm cdr-of-bv-array-write-of-cons
   (implies (and (integerp len)

@@ -50,7 +50,7 @@
            :use ((:instance bvplus-of-bvchop-arg2 (size 1))
                  (:instance bvplus-of-bvchop-arg2 (size 1) (x y) (y 1))
                  (:instance bvplus-of-bvchop-arg2 (size 1) (x y) (y 0)))
-           :in-theory (e/d (bitand  getbit-when-val-is-not-an-integer)
+           :in-theory (e/d (bitand)
                            (bvplus-of-bvchop-arg2)))))
 
 ;move
