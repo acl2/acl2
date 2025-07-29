@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "assumptions")
+(include-book "readers-and-writers64")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
 (include-book "kestrel/memory/memory48" :dir :system)
@@ -154,7 +155,8 @@
   (and (standard-state-assumption-64 x86)
        (bytes-loaded-at-address-64 text-section-bytes text-offset bvp x86)
        ;; The program counter is at the start of the routine to lift:
-       (equal (rip x86) (+ text-offset offset-to-subroutine))
+       (equal (x86isa::rip x86) ; note that this is not x::rip!
+              (+ text-offset offset-to-subroutine))
 
        ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
        (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots stack-slots-needed (rgfi *rsp* x86)))
