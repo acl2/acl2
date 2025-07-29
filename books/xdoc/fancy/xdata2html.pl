@@ -134,6 +134,32 @@ sub wrap_xdoc_fragment {
 	$wrap .= "<!ENTITY notin \"&#8713;\">";
 	$wrap .= "<!ENTITY prod \"&#8719;\">";
 	$wrap .= "<!ENTITY sum \"&#8721;\">";
+	$wrap .= "<!ENTITY ccedil \"&#231;\">";
+	$wrap .= "<!ENTITY aacute \"&#225;\">";
+	$wrap .= "<!ENTITY agrave \"&#224;\">";
+	$wrap .= "<!ENTITY acirc \"&#226;\">";
+	$wrap .= "<!ENTITY atilde \"&#227;\">";
+	$wrap .= "<!ENTITY auml \"&#228;\">";
+	$wrap .= "<!ENTITY aring \"&#229;\">";
+	$wrap .= "<!ENTITY egrave \"&#232;\">";
+	$wrap .= "<!ENTITY eacute \"&#233;\">";
+	$wrap .= "<!ENTITY ecirc \"&#234;\">";
+	$wrap .= "<!ENTITY euml \"&#235;\">";
+	$wrap .= "<!ENTITY igrave \"&#236;\">";
+	$wrap .= "<!ENTITY iacute \"&#237;\">";
+	$wrap .= "<!ENTITY icirc \"&#238;\">";
+	$wrap .= "<!ENTITY iuml \"&#239;\">";
+	$wrap .= "<!ENTITY ntilde \"&#241;\">";
+	$wrap .= "<!ENTITY ograve \"&#242;\">";
+	$wrap .= "<!ENTITY oacute \"&#243;\">";
+	$wrap .= "<!ENTITY ocirc \"&#244;\">";
+	$wrap .= "<!ENTITY otilde \"&#245;\">";
+	$wrap .= "<!ENTITY ouml \"&#246;\">";
+	$wrap .= "<!ENTITY ugrave \"&#249;\">";
+	$wrap .= "<!ENTITY uacute \"&#250;\">";
+	$wrap .= "<!ENTITY ucirc \"&#251;\">";
+
+
     $wrap .= "]>";
     $wrap .= "<root>$str</root>";
     return $wrap;

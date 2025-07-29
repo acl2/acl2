@@ -94,7 +94,7 @@ function wrapXdocFragment(str) {
         <!ENTITY Phi "&#934;">
         <!ENTITY Chi "&#935;">
         <!ENTITY Psi "&#936;">
-        <!ENTITY Omega "&#937;">
+        <!ENTITY Omega "&#9837;">
         <!ENTITY alpha "&#945;">
         <!ENTITY beta "&#946;">
         <!ENTITY gamma "&#947;">
@@ -126,6 +126,57 @@ function wrapXdocFragment(str) {
         <!ENTITY notin "&#8713;">
         <!ENTITY prod "&#8719;">
         <!ENTITY sum "&#8721;">
+        <!ENTITY ccedil "&#231;">
+        <!ENTITY aacute "&#225;">
+        <!ENTITY agrave "&#224;">
+        <!ENTITY acirc "&#226;">
+        <!ENTITY atilde "&#227;">
+        <!ENTITY auml "&#228;">
+        <!ENTITY aring "&#229;">
+        <!ENTITY egrave "&#232;">
+        <!ENTITY eacute "&#233;">
+        <!ENTITY ecirc "&#234;">
+        <!ENTITY euml "&#235;">
+        <!ENTITY igrave "&#236;">
+        <!ENTITY iacute "&#237;">
+        <!ENTITY icirc "&#238;">
+        <!ENTITY iuml "&#239;">
+        <!ENTITY ntilde "&#241;">
+        <!ENTITY ograve "&#242;">
+        <!ENTITY oacute "&#243;">
+        <!ENTITY ocirc "&#244;">
+        <!ENTITY otilde "&#245;">
+        <!ENTITY ouml "&#246;">
+        <!ENTITY ugrave "&#249;">
+        <!ENTITY uacute "&#250;">
+        <!ENTITY ucirc "&#251;">
+        <!ENTITY uuml "&#252;">
+        <!ENTITY Ccedil "&#199;">
+        <!ENTITY Aacute "&#193;">
+        <!ENTITY Agrave "&#192;">
+        <!ENTITY Acirc "&#194;">
+        <!ENTITY Atilde "&#195;">
+        <!ENTITY Auml "&#196;">
+        <!ENTITY Aring "&#197;">
+        <!ENTITY Egrave "&#200;">
+        <!ENTITY Eacute "&#201;">
+        <!ENTITY Ecirc "&#202;">
+        <!ENTITY Euml "&#203;">
+        <!ENTITY Igrave "&#204;">
+        <!ENTITY Iacute "&#205;">
+        <!ENTITY Icirc "&#206;">
+        <!ENTITY Iuml "&#207;">
+        <!ENTITY Ntilde "&#209;">
+        <!ENTITY Ograve "&#210;">
+        <!ENTITY Oacute "&#211;">
+        <!ENTITY Ocirc "&#212;">
+        <!ENTITY Otilde "&#213;">
+        <!ENTITY Ouml "&#214;">
+        <!ENTITY Ugrave "&#217;">
+        <!ENTITY Uacute "&#218;">
+        <!ENTITY Ucirc "&#219;">
+        <!ENTITY Uuml "&#220;">
+
     ]>
     <root>${str}</root>`;
 }
