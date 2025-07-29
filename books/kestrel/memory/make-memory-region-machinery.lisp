@@ -44,6 +44,7 @@
     `(progn
        (include-book "kestrel/bv/bvlt-def" :dir :system)
        (include-book "kestrel/bv/logext-def" :dir :system)
+       (include-book "kestrel/bv/bvsx-def" :dir :system)
        (include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
 
        (encapsulate ()
@@ -145,6 +146,15 @@
                            (,in-regionp-name ad len start-ad)))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvsx-arg1)
+           (implies (and (<= ,num-address-bits n)
+                         (<= n high)
+                         (integerp n)
+                         (integerp high))
+                    (equal (,in-regionp-name (bvsx high n ad) len start-ad)
+                           (,in-regionp-name ad len start-ad)))
+           :hints (("Goal" :in-theory (enable acl2::bvsx-rewrite))))
+
          (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvchop-arg3)
            (implies (and (<= ,num-address-bits n)
                          (integerp n))
@@ -165,6 +175,15 @@
                     (equal (,in-regionp-name ad len (logext n start-ad))
                            (,in-regionp-name ad len start-ad)))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvsx-arg3)
+           (implies (and (<= ,num-address-bits n)
+                         (<= n high)
+                         (integerp n)
+                         (integerp high))
+                    (equal (,in-regionp-name ad len (bvsx high n start-ad))
+                           (,in-regionp-name ad len start-ad)))
+           :hints (("Goal" :in-theory (enable acl2::bvsx-rewrite))))
 
          (defthmd ,(acl2::pack-in-package "X" in-regionp-name '-of-+-arg1)
            (implies (and (integerp x)

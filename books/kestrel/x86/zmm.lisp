@@ -170,7 +170,7 @@
 (defthm set-zmm-of-set-rip
   (equal (set-zmm reg val (set-rip rip x86))
          (set-rip rip (set-zmm reg val x86)))
-  :hints (("Goal" :in-theory (enable set-rip set-zmm))))
+  :hints (("Goal" :in-theory (enable set-zmm))))
 
 (defthm set-flag-of-set-zmm
   (equal (set-flag flag fval (set-zmm reg val x86))
