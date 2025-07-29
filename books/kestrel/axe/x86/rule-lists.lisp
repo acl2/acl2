@@ -2658,11 +2658,11 @@
   (append
    '(standard-state-assumption
      standard-state-assumption-32
-     standard-assumptions-core-64
+     standard-assumptions-core-64 ; only needed by loop lifter?
      standard-state-assumption-64
-     standard-assumptions-mach-o-64
-     standard-assumptions-elf-64
-     standard-assumptions-pe-64
+     standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     standard-assumptions-elf-64 ; only needed by loop lifter?
+     standard-assumptions-pe-64 ; only needed by loop lifter?
      bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
