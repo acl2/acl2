@@ -412,6 +412,8 @@
     in-region48p-of-0-arg3 ; introduces bvlt
     in-region48p-of-bvchop-arg1
     in-region48p-of-bvchop-arg3
+    in-region48p-of-bvsx-arg1
+    in-region48p-of-bvsx-arg3
     in-region48p-same
 
     ;; Seems ok to always have these on: ; todo: add more
@@ -2016,7 +2018,7 @@
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
-    ))
+    bvsx-when-unsigned-canonical-address-p))
 
 (defund canonical-rules-bv ()
   (declare (xargs :guard t))
@@ -2025,6 +2027,8 @@
     ;; WARNING: Keep in sync with the list for 48 bits above
     in-region64p-of-bvchop-arg1
     in-region64p-of-bvchop-arg3
+    in-region64p-of-bvsx-arg1
+    in-region64p-of-bvsx-arg3
     in-region64p-same
     in-region64p-cancel-constants-1-1+
     in-region64p-cancel-constants-1+-1
