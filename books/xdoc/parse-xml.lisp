@@ -418,7 +418,7 @@
     ("psi"     "\\psi" 968)
     ("omega"   "\\omega" 969)
 
-; capitalized accented letters
+; capitalized letters with diacritics
 
     ("Ccedil" "\\Ccedil" 199)
     ("Aacute" "\\Aacute" 193)
@@ -446,7 +446,7 @@
     ("Ucirc" "\\Ucirc" 219)
     ("Uuml" "\\Uuml" 220)
 
-; lower case accented letters
+; lower case letters with diacritics
 
     ("ccedil" "\\ccedil" 231)
     ("aacute" "\\aacute" 225)
