@@ -95,6 +95,7 @@
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable intersection-equal)))
 
@@ -109,6 +110,28 @@
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
+
+(local (defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv))))
+(local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
+
+(local (in-theory (disable ;; new-normal-form-rules-common
+                           ;; (:e new-normal-form-rules-common)
+                           ;; assumption-simplification-rules
+                           ;; (:e assumption-simplification-rules)
+                           ;; new-normal-form-rules64
+                    ;; (:e new-normal-form-rules64)
+                    (:e read-and-write-rules-bv)
+                    (:e read-and-write-rules-non-bv)
+                    )))
+
+;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
+;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
+
+;(local (in-theory (disable (:e read-and-write-rules-bv) read-and-write-rules-bv)))
+;(local (in-theory (disable (:e new-normal-form-rules64) new-normal-form-rules64)))
+;(local (in-theory (disable (:e constant-opener-rules) constant-opener-rules)))
+
+
 
 ;; ;move
 ;; ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -318,7 +341,8 @@
 (defun repeatedly-run (steps-done step-limit step-increment
                                   dag
                                   rule-alist pruning-rule-alist
-                                  assumptions 64-bitp rules-to-monitor use-internal-contextsp
+                                  assumptions 64-bitp rules-to-monitor
+                                  use-internal-contextsp ; todo: not used?
                                   prune-precise prune-approx
                                   normalize-xors count-hits print print-base untranslatep memoizep state)
   (declare (xargs :guard (and (natp steps-done)
@@ -346,7 +370,9 @@
                               (acl2::ilks-plist-worldp (w state)) ; why?
                               )
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
-                  :stobjs state))
+                  :stobjs state
+                  :hints (("Goal" :in-theory (disable min)))
+                  :guard-hints (("Goal" :in-theory (disable min)))))
   (if (or (not (mbt (and (natp steps-done)
                          (natp step-limit))))
           (<= step-limit steps-done))
@@ -396,7 +422,7 @@
                                   print
                                   rules-to-monitor
                                   *no-warn-ground-functions*
-                                  '(program-at) ; fns-to-elide
+                                  '(program-at) ; fns-to-elide ; todo: this is old
                                   state)
             ;)
           )
@@ -473,7 +499,7 @@
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than
+         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than ; todo: compare to other list below
                                                  run-until-stack-shorter-than-or-reach-pc
                                                  ;; new scheme:
                                                  run-until-rsp-is
@@ -572,23 +598,6 @@
                           step-increment
                           dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
                           state))))))
-
-(local (in-theory (disable ;; new-normal-form-rules-common
-                           ;; (:e new-normal-form-rules-common)
-                           ;; assumption-simplification-rules
-                           ;; (:e assumption-simplification-rules)
-                           ;; new-normal-form-rules64
-                           ;; (:e new-normal-form-rules64)
-                    )))
-
-;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
-;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
-
-;(local (in-theory (disable (:e read-and-write-rules-bv) read-and-write-rules-bv)))
-;(local (in-theory (disable (:e new-normal-form-rules64) new-normal-form-rules64)))
-;(local (in-theory (disable (:e constant-opener-rules) constant-opener-rules)))
-
-;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp assumptions assumption-rules state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
