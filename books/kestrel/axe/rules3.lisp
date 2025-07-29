@@ -11003,7 +11003,7 @@
                             bvplus bvlt bvchop-of-sum-cases lowbits-not-0-helper getbit-of-+
                                    bvcat
                             logapp sbvlt-rewrite)
-                           (GETBIT-WHEN-BOUND
+                           (GETBIT-WHEN-<-of-constant
                             GETBIT-WHEN-BOUND4
                             BVCAT-OF-+-LOW
                             BVCAT-EQUAL-REWRITE-ALT

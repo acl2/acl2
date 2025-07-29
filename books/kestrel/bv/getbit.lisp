@@ -568,6 +568,14 @@
            (equal (getbit n (if test x1 x2))
                   (if test (getbit n x1)
                     (getbit n x2)))))
+(defthm getbit-of-ash
+  (implies (and (natp c) ; left shift
+                (natp n))
+           (equal (getbit n (ash i c))
+                  (if (<= c n)
+                      (getbit (- n c) i)
+                    0)))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 ;enable?
 (defthmd getbit-when-negative-and-small
@@ -579,14 +587,58 @@
                   1))
   :hints (("Goal" :in-theory (enable getbit slice logtail))))
 
-(defthm getbit-of-ash
-  (implies (and (natp c) ; left shift
-                (natp n))
-           (equal (getbit n (ash i c))
-                  (if (<= c n)
-                      (getbit (- n c) i)
-                    0)))
-  :hints (("Goal" :in-theory (enable getbit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd getbit-when-<
+  (implies (and (< x free)
+                (<= free (expt 2 n))
+                ;; (natp n)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use (:instance slice-too-high-is-0 (high n) (low n))
+                  :in-theory (enable getbit))))
+
+;; restricts to constants for speed
+(defthm getbit-when-<-of-constant
+  (implies (and (syntaxp (quotep n))
+                (< x free)
+                (syntaxp (quotep free))
+                (<= free (expt 2 n))
+                ;; (natp n)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use getbit-when-<
+                  :in-theory (disable getbit-when-<))))
+
+(defthmd getbit-when-<=
+  (implies (and (<= x free)
+                (< free (expt 2 n))
+                ;; (natp n)
+                (natp free)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use (:instance getbit-when-<-of-constant (free (+ 1 free)))
+                  :in-theory (disable getbit-when-<-of-constant))))
+
+(defthm getbit-when-<=-of-constant
+  (implies (and (<= x free)
+                (syntaxp (quotep free))
+                (< free (expt 2 n))
+                ;; (natp n)
+                (natp free)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0))
+  :hints (("Goal" :use getbit-when-<=
+                  :in-theory (disable getbit-when-<=))))
 
 ;gen!
 (defthmd getbit-when-<=-of-high-helper
@@ -606,9 +658,9 @@
                                                        size))))
                                    (high (+ -1 size))
                                    (low n)))
-           :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
-                               ;exponents-add
-                               ))))
+                  :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
+;exponents-add
+                                      ))))
 
 (defthm getbit-when-<=-of-bvchop-and-constant-high
   (implies (and (<= k (bvchop size x)) ; k is a free var
@@ -632,31 +684,6 @@
   :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
                                   (x (bvchop size x))))))
 
-(defthm getbit-when-bound
-  (implies (and (< x free)
-                (syntaxp (quotep free))
-                (<= free (expt 2 n))
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  0))
-  :hints (("Goal"
-           :use (:instance slice-too-high-is-0 (high n) (low n))
-           :in-theory (e/d (getbit) ( )))))
-
-(defthm getbit-when-bound2
-  (implies (and (not (< free x))
-                (syntaxp (quotep free))
-                (< free (expt 2 n))
-                (natp n)
-                (natp free)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  0))
-  :hints (("Goal" :use (:instance getbit-when-bound (free (+ 1 free)))
-           :in-theory (disable getbit-when-bound))))
 
 (defthmd getbit-when-bound3-helper
   (implies (and (<= (expt 2 n) x)
