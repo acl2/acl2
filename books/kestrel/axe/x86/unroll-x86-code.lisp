@@ -48,7 +48,6 @@
 (include-book "kestrel/x86/run-until-return4" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
-;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../equivalent-dags")
 (include-book "../make-term-into-dag-basic")
