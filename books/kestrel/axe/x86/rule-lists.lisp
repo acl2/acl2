@@ -69,10 +69,10 @@
             x86isa::gpr-adc-spec-4-alt-def
             x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
             x86isa::open-carry-of-rflagsbits->cf
-            ;; open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
-            ;; open-carry-of-cf-spec16
-            ;; open-carry-of-cf-spec32
-            ;; open-carry-of-cf-spec64
+            open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
+            open-carry-of-cf-spec16
+            open-carry-of-cf-spec32
+            open-carry-of-cf-spec64
             open-carry-constant-opener ; also open when applied to a constant (or refrain from even this?)
             integerp-of-open-carry
 
