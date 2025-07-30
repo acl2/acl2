@@ -606,7 +606,7 @@
   (implies (and (syntaxp (quotep n))
                 (< x free)
                 (syntaxp (quotep free))
-                (<= free (expt 2 n))
+                (<= free (expt 2 n)) ; gets computed
                 ;; (natp n)
                 (natp x) ;could allow some negatives?
                 )
@@ -628,9 +628,10 @@
                   :in-theory (disable getbit-when-<-of-constant))))
 
 (defthm getbit-when-<=-of-constant
-  (implies (and (<= x free)
+  (implies (and (syntaxp (quotep n))
+                (<= x free)
                 (syntaxp (quotep free))
-                (< free (expt 2 n))
+                (< free (expt 2 n)) ; gets computed
                 ;; (natp n)
                 (natp free)
                 (natp x) ;could allow some negatives?
@@ -639,6 +640,47 @@
                   0))
   :hints (("Goal" :use getbit-when-<=
                   :in-theory (disable getbit-when-<=))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; x is in the upper half of the range
+(defthmd getbit-when->-of-constant-helper
+  (implies (and (<= (expt 2 n) x)
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :in-theory (enable getbit slice logtail floor-must-be-1 unsigned-byte-p expt-of-+))))
+
+(defthm getbit-when->-of-constant
+  (implies (and (syntaxp (quotep n))
+                (< free x)
+                (syntaxp (quotep free))
+                (<= (+ -1 (expt 2 n)) free) ; gets computed
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n)
+                ;; (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when->-of-constant-helper)
+           :in-theory (disable getbit-when->-of-constant-helper))))
+
+(defthm getbit-when->=-of-constant
+  (implies (and (syntaxp (quotep n))
+                (<= free x)
+                (syntaxp (quotep free))
+                (<= (expt 2 n) free) ; gets computed
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n)
+                ;; (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use (:instance getbit-when->-of-constant-helper)
+                  :in-theory (disable getbit-when->-of-constant-helper))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;gen!
 (defthmd getbit-when-<=-of-high-helper
@@ -684,43 +726,6 @@
   :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
                                   (x (bvchop size x))))))
 
-
-(defthmd getbit-when-bound3-helper
-  (implies (and (<= (expt 2 n) x)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal"
-;           :use (:instance slice-too-high-is-0 (high n) (low n))
-           :in-theory (e/d (getbit slice logtail floor-must-be-1 unsigned-byte-p expt-of-+)
-                           ()))))
-
-(defthm getbit-when-bound3
-  (implies (and (< free x)
-                (syntaxp (quotep free))
-                (<= (+ -1 (expt 2 n)) free)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-bound3-helper)
-           :in-theory (disable getbit-when-bound3-helper))))
-
-(defthm getbit-when-bound4
-  (implies (and (not (< x free))
-                (syntaxp (quotep free))
-                (<= (expt 2 n) free)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-bound3-helper)
-           :in-theory (disable getbit-when-bound3-helper))))
 
 ;; x is non-zero when any of its bits is non-zero
 (defthm not-0-when-bit-not-0

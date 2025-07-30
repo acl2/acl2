@@ -11004,7 +11004,7 @@
                                    bvcat
                             logapp sbvlt-rewrite)
                            (GETBIT-WHEN-<-of-constant
-                            GETBIT-WHEN-BOUND4
+                            GETBIT-WHEN->=-OF-CONSTANT
                             BVCAT-OF-+-LOW
                             BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE)))))
