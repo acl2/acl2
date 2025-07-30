@@ -2561,3 +2561,17 @@
                        (equal (slice (+ -1 lowsize highsize)
                                      lowsize x)
                               (bvchop highsize highval))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this "alt" version is only needed by Axe
+(defthm bvchop-subst-constant-alt
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k) ; this rule
+                (syntaxp (quotep k))
+                (<= size free)
+                (integerp free))
+           (equal (bvchop size x)
+                  (bvchop size k)))
+  :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
+           :in-theory (disable bvchop-subst-constant))))

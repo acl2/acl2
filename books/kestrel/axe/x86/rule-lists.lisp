@@ -2361,7 +2361,6 @@
 
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
-            acl2::bvplus-of-unary-minus
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
@@ -2496,6 +2495,7 @@
             ;acl2::bvplus-trim-leading-constant
             ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
+            acl2::bvchop-subst-constant-alt
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
             gl::gl-mbe-fn ;used by bitops.  yuck.
@@ -5618,8 +5618,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::bvplus-of-unary-minus
-    acl2::bvplus-of-unary-minus-arg2
     acl2::if-becomes-bvif-1-axe
     ;; acl2::boolif-of-t-and-nil-when-booleanp
     acl2::slice-of-bvand-of-constant
@@ -5654,7 +5652,6 @@
     acl2::<-of-if-arg1-safe
     ;; acl2::<-of-if-arg2-safe
     acl2::equal-of-bvif-safe2
-    acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
     ))
 
 ;; beyond what def-unrolled uses
@@ -5762,8 +5759,6 @@
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant ; move
-            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
@@ -5807,6 +5802,7 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
