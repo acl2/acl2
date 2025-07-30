@@ -13,3 +13,7 @@
  (include-book "nist-p-256-group-prime")
  (include-book "secp256k1-field-prime")
  (include-book "secp256k1-group-prime"))
+
+(defxdoc primes
+  :short "Primes used in cryptography."
+  :parents (crypto::cryptography))
