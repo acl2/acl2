@@ -158,6 +158,7 @@ sub wrap_xdoc_fragment {
 	$wrap .= "<!ENTITY ugrave \"&#249;\">";
 	$wrap .= "<!ENTITY uacute \"&#250;\">";
 	$wrap .= "<!ENTITY ucirc \"&#251;\">";
+	$wrap .= "<!ENTITY uuml \"&#252;\">";
 	$wrap .= "<!ENTITY Ccedil \"&#199;\">";
 	$wrap .= "<!ENTITY Aacute \"&#193;\">";
 	$wrap .= "<!ENTITY Agrave \"&#192;\">";
