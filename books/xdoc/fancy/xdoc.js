@@ -1096,9 +1096,46 @@ function jumpInit() {
             uid: xindexObj.topicUid(key)
         });
     }
-ta_data.sort(function(a, b) {
-    return a.nicename.localeCompare(b.nicename);
-});
+    // Defer this sorting until after the page load.
+    setTimeout(() =>
+        // Sort topics. Topics from the ACL2 sources come first. After
+        // that, alphabetize (by topic name, then by value).
+        ta_data.sort(function(a, b) {
+            // Prioritize ACL2 sources
+            const sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
+            const sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
+            if (sysA && !sysB) {
+                return -1;
+            }
+            if (!sysA && sysB) {
+                return 1;
+            }
+            const compareNice = a.nicename.localeCompare(b.nicename);
+            if (compareNice !== 0) {
+                return compareNice;
+            }
+            return a.value.localeCompare(b.value);
+        }), 0);
+
+    // Take the first "count" number of elements from the "flattened"
+    // (concatenated) arrays (but don't actually concatenate them all,
+    // since they may be much larger than the count).
+    function takeFlatten(count, arrays) {
+        const result = [];
+        let taken = 0;
+
+        for (const array of arrays) {
+            for (const item of array) {
+                if (count <= taken) break;
+                result.push(item);
+                taken++;
+            }
+            if (count <= taken) break;
+        }
+
+        return result;
+    }
+
     // Custom substring matcher for infix matching
     // Ranking system:
     // - Rank 0: Exact matches (topic name matches query)
@@ -1106,43 +1143,27 @@ ta_data.sort(function(a, b) {
     // - Rank 2: Substring matches (topic name contains query)
     // Within each rank, topics are sorted by:
     // 1. ACL2 system documentation topics first
-    // 2. Alphabetical order by topic name
+    // 2. Alphabetical order (by topic name then by value)
     function substringMatcher(data) {
         return function findMatches(q, cb) {
-            var rank0and1 = [];
-            var rank2 = [];
-            var qlc = q.toLowerCase();
+            var ranks = [[], [], []];
+            const qlc = q.toLowerCase();
             for (var i = 0; i < data.length; i++) {
-                var name = data[i].nicename.toLowerCase();
-                // var rank = null;
-                var index = name.indexOf(qlc);
+                const name = data[i].nicename.toLowerCase();
+                const index = name.indexOf(qlc);
                 if (index === 0) { // prefix match
                     if (name === qlc) { // exact match
-                        rank0and1.push({ ...data[i], _rank: 0 });
+                        ranks[0].push(data[i]);
                     }
                     else { // proper prefix match
-                        rank0and1.push({ ...data[i], _rank: 1 });
+                        ranks[1].push(data[i]);
                     }
                 } else if (index !== -1) { // substring match
-                    rank2.push({ ...data[i], _rank: 2 });
+                    ranks[2].push(data[i]);
                 }
             }
-            var matches = rank0and1;
-            if (matches.length < 20) {
-                matches.push(...rank2);
-            }
-            // Sort by rank, then ACL2 Sources, then nicename
-            matches.sort(function(a, b) {
-                if (a._rank !== b._rank) return a._rank - b._rank;
-
-                //system directory priority
-                var sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
-                var sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
-                if (sysA && !sysB) return -1;
-                if (!sysA && sysB) return 1;
-                return 0;
-            });
-            cb(matches.slice(0, 20)); // Limit to 20 suggestions
+            // Limit to 20 suggestions
+            cb(takeFlatten(20, ranks));
         };
     }
 
