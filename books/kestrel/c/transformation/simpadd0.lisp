@@ -68,11 +68,10 @@
    The recursive functions recursively transform the sub-constructs,
    and then call the separate non-recursive functions
    with the results from transforming the sub-constructs.
-   An example is @(tsee simpadd0-expr-paren),
+   A simple example is @(tsee simpadd0-expr-paren),
    which is called by @(tsee simpadd0-expr):
    the caller recursively transforms the inner expression,
-   and passes to the callee
-   the possibly transformed expression,
+   and passes the possibly transformed expression to the callee,
    along with some of the @(tsee simpadd0-gout) components
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
@@ -149,7 +148,7 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension.
-     Additionally, the transformation take the ACL2 state as input,
+     Additionally, the transformation functions take the ACL2 state as input,
      but this is not part of this structure for obvious reasons."))
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
@@ -192,7 +191,8 @@
            "Variables in scope, with their types.")
    (diffp bool
           "Flag saying whether the C construct was transformed
-           into something different by the transformation function."))
+           into something syntactically different
+           by the transformation function."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -282,7 +282,7 @@
    (xdoc::p
     "Note that the calls of @(tsee ldm-expr) in the theorem
      are known to succeed (i.e. not return any error),
-     given that @(tsee expr-pure-formalp) holds.")
+     given that @(tsee expr-pure-formalp) is checked to hold.")
    (xdoc::p
     "This function also takes as input a map from identifiers to types,
      which are the variables in scope with their types.
@@ -366,6 +366,7 @@
    (xdoc::p
     "This only applies to simple assignments
      whose left side is a variable expression @('var')
+     (which is not changed by the transformation)
      and whose old and new right sides are pure expressions.
      The caller of this function checks that that is the case;
      here we double-check these conditions,
@@ -470,7 +471,8 @@
      if the type is @('void'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new statements are not equal, the theorem also says that
+     If old and new statements are not syntactically equal,
+     the theorem also says that
      their execution returns equal values (or both @('nil'))
      and equal computation states,
      and that the execution of the new statement does not yield an error."))
@@ -563,7 +565,8 @@
      if the type is @('void'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new block items are not equal, the theorem also says that
+     If old and new block items are not syntactically equal,
+     the theorem also says that
      their execution returns equal values (or both @('nil'))
      and equal computation states,
      and that the execution of the new block item does not yield an error."))
@@ -770,7 +773,7 @@
      "A list @('args') of symbols used as ACL2 variables
       that denote the C values passed as arguments to the function.")
     (xdoc::li
-     "A term @('parargs') that is a nest of @(tsee omap::update)
+     "A term @('parargs') that is a nest of @(tsee omap::update) calls
       that denotes the initial scope of the function.
       Each @(tsee omap::update) call adds
       the name of the parameter as key
@@ -791,8 +794,7 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type)
-        (simpadd0-tyspecseq-to-type param.tyspec))
+       ((mv okp type) (simpadd0-tyspecseq-to-type param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
