@@ -64,7 +64,6 @@
 (include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-;(include-book "rules2") ;drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
