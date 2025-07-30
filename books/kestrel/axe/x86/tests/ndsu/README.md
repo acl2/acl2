@@ -78,3 +78,10 @@ gcc -o cmp.pe64 cmp.c
 ;; Done on Linux 12th Gen Intel Core i9
 
 gcc padd.c -o padd.elf64
+gcc -o add-all-configurations.c add-all-configurations.elf64
+gcc -o sub-all-configurations.c sub-all-configurations.elf64
+gcc -o and.c and.elf64
+gcc -o or.c or.elf64
+gcc -o xor.c xor.elf64
+gcc -o cmp.c cmp.elf64
+
