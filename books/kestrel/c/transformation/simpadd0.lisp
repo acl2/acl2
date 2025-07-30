@@ -245,7 +245,6 @@
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
-                    (c::valuep val)
                     (equal (c::type-of-value val) ',ctype))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
@@ -1106,7 +1105,8 @@
        ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
         (ldm-type info.type))
        (hints `(("Goal"
-                 :in-theory '((:e expr-ident)
+                 :in-theory '(c::valuep-of-read-object-of-objdesign-of-var
+                              (:e expr-ident)
                               (:e expr-pure-formalp)
                               (:e ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
