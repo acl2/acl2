@@ -1023,7 +1023,7 @@
 ;;                 )
 ;;            (<= (+ z (* (expt 2 n) x))
 ;;                (* (expt 2 n) y)))
-;;   :hints (("Goal" :in-theory (disable  ineq-hack *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
+;;   :hints (("Goal" :in-theory (disable *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
 ;;            :use (:instance multiply-both-sides-hack (y y) (x x) (z (expt 2 n))))))
 
 ;; (defthm plus-of-times-expt-bound2
@@ -2946,8 +2946,6 @@
                 (natp n)
                 (integerp free))
            (not (unsigned-byte-p n x))))
-
-;(include-book "rules2") ;drop but need ineq-hack below ;; old?: (but that breaks SBVDIV-OF-SUBTRACT-4-BY-MINUS-4 below)? need BVCHOP-OF-SBP-EQUAL-CONSTANT
 
 ;; (defthm unsigned-byte-p-of-*-of-expt-and-/-of-expt
 ;;   (implies (and (= (+ 1 (- high low)) size) ; gen
@@ -6537,7 +6535,6 @@
                             +-OF-MINUS-1-AND-BV2
                             ;; for speed:
                             *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE
-                            ;INEQ-HACK
                             BOUND-WHEN-USB)))))
 
 ;gen!
