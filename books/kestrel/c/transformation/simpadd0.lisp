@@ -2919,6 +2919,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-block-item-list-cons ((item block-itemp)
+                                       (item-new block-itemp)
+                                       (item-events pseudo-event-form-listp)
+                                       (item-thm-name symbolp)
+                                       (item-vartys ident-type-mapp)
+                                       (item-diffp booleanp)
+                                       (items block-item-listp)
+                                       (items-new block-item-listp)
+                                       (items-events pseudo-event-form-listp)
+                                       (items-thm-name symbolp)
+                                       (items-vartys ident-type-mapp)
+                                       (items-diffp booleanp)
+                                       (gin simpadd0-ginp))
+  :guard (and (block-item-unambp item)
+              (block-item-unambp item-new)
+              (block-item-list-unambp items)
+              (block-item-list-unambp items-new))
+  :returns (mv (item+items block-item-listp) (gout simpadd0-goutp))
+  :short "Transform a non-empty list of block items."
+  (declare (ignore item item-thm-name items items-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (item+items-new (cons (block-item-fix item-new)
+                             (block-item-list-fix items-new)))
+       (item-vartys (ident-type-map-fix item-vartys))
+       (items-vartys (ident-type-map-fix items-vartys))
+       ((unless (omap::compatiblep item-vartys items-vartys))
+        (raise "Internal error: ~
+                incompatible variable-type maps ~x0 and ~x1."
+               item-vartys items-vartys)
+        (mv nil (irr-simpadd0-gout)))
+       (vartys (omap::update* item-vartys items-vartys))
+       (diffp (or item-diffp items-diffp))
+       (gout-no-thm
+        (make-simpadd0-gout :events (append item-events items-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :vartys vartys
+                            :diffp diffp)))
+    (mv item+items-new gout-no-thm))
+  :hooks (:fix)
+
+  ///
+
+  (defret block-item-list-unambp-of-simpadd0-block-item-list-cons
+    (block-item-list-unambp item+items)
+    :hyp (and (block-item-unambp item-new)
+              (block-item-list-unambp items-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-block-item-list-one ((item block-itemp)
                                       (item-new block-itemp)
                                       (item-events pseudo-event-form-listp)
@@ -5408,15 +5459,21 @@
                                         gout-item.diffp
                                         gin))
          ((mv new-items (simpadd0-gout gout-items))
-          (simpadd0-block-item-list (cdr items) gin state)))
-      (mv (cons new-item new-items)
-          (make-simpadd0-gout
-           :events (append gout-item.events gout-items.events)
-           :thm-name nil
-           :thm-index gout-items.thm-index
-           :names-to-avoid gout-items.names-to-avoid
-           :vartys (omap::update* gout-item.vartys gout-items.vartys)
-           :diffp (or gout-item.diffp gout-items.diffp))))
+          (simpadd0-block-item-list (cdr items) gin state))
+         (gin (simpadd0-gin-update gin gout-items)))
+      (simpadd0-block-item-list-cons (car items)
+                                     new-item
+                                     gout-item.events
+                                     gout-item.thm-name
+                                     gout-item.vartys
+                                     gout-item.diffp
+                                     (cdr items)
+                                     new-items
+                                     gout-items.events
+                                     gout-items.thm-name
+                                     gout-items.vartys
+                                     gout-items.diffp
+                                     gin))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
