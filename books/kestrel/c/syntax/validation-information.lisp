@@ -749,14 +749,19 @@
 
 (define block-item-type ((item block-itemp))
   :guard (block-item-unambp item)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a block item, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is currently very limited,
      but adequate to our current purposes.
-     We only need to handle block item that are statements for now."))
+     We only need to handle block item that are statements for now.")
+   (xdoc::p
+    "We relax the return theorem of this function to an optional type,
+     as a step towards generalizing this function,
+     as well as @(tsee stmt-type),
+     to actually return optional types."))
   (block-item-case
    item
    :decl (type-unknown)
@@ -770,13 +775,6 @@
   :guard (block-item-list-unambp items)
   :returns (type? type-optionp)
   :short "Type of a list of block items, from the validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We relax the return theorem of this function to an optional type,
-     as a step towards generalizing this function,
-     as well as @(tsee block-item-type) and @(tsee stmt-type),
-     to actually return optional types."))
   (cond ((endp items) (type-void))
         ((endp (cdr items)) (block-item-type (car items)))
         (t (type-unknown)))

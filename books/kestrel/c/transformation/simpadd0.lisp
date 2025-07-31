@@ -561,7 +561,7 @@
      the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
      are syntactically equal or not;
-     if the type is @('void'),
+     if the type is @('void') or @('nil'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
      If old and new block items are not syntactically equal,
@@ -578,15 +578,16 @@
        ((unless (or equalp (block-item-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-type old))
+       (type? (block-item-type old))
        ((unless (or equalp
                     (equal (block-item-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new block item ~x1 differs from ~
                 the type ~x2 of the old block item ~x3."
-               (block-item-type new) new type old)
+               (block-item-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -2909,7 +2910,8 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       (type (block-item-type item))
+       (type? (block-item-type item))
+       (type (or type? (type-void)))
        ((unless item-thm-name)
         (mv items-new
             (make-simpadd0-gout :events item-events
