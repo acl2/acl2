@@ -63,151 +63,15 @@
                           (loghead n x))))
      :enable loghead)
 
-   (defruled loghead-plus-2-differs-from-plus-1
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 2 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs-from-plus-1
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs-from-plus-2
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-5
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 5 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-5
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 5 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-6
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 6 x)))))
+   (defruled loghead-plus-c-differs-from-plus-d
+     (implies (and (integerp x)
+                   (posp c)
+                   (posp d)
+                   (< c (expt 2 (nfix n)))
+                   (< d (expt 2 (nfix n)))
+                   (not (equal c d)))
+              (not (equal (loghead n (+ c x))
+                          (loghead n (+ d x)))))
      :enable loghead)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -929,9 +793,7 @@
                 write-memory-unsigned32
                 loghead-upper-bound
                 loghead-plus-c-differs
-                loghead-plus-2-differs-from-plus-1
-                loghead-plus-3-differs-from-plus-1
-                loghead-plus-3-differs-from-plus-2
+                loghead-plus-c-differs-from-plus-d
                 ubyte8p-of-logtail-24-of-ubyte32
                 max))))
 
@@ -1012,27 +874,7 @@
              write-memory-unsigned64
              loghead-upper-bound
              loghead-plus-c-differs
-             loghead-plus-2-differs-from-plus-1
-             loghead-plus-3-differs-from-plus-1
-             loghead-plus-3-differs-from-plus-2
-             loghead-plus-4-differs-from-plus-1
-             loghead-plus-4-differs-from-plus-2
-             loghead-plus-4-differs-from-plus-3
-             loghead-plus-5-differs-from-plus-1
-             loghead-plus-5-differs-from-plus-2
-             loghead-plus-5-differs-from-plus-3
-             loghead-plus-5-differs-from-plus-4
-             loghead-plus-6-differs-from-plus-1
-             loghead-plus-6-differs-from-plus-2
-             loghead-plus-6-differs-from-plus-3
-             loghead-plus-6-differs-from-plus-4
-             loghead-plus-6-differs-from-plus-5
-             loghead-plus-7-differs-from-plus-1
-             loghead-plus-7-differs-from-plus-2
-             loghead-plus-7-differs-from-plus-3
-             loghead-plus-7-differs-from-plus-4
-             loghead-plus-7-differs-from-plus-5
-             loghead-plus-7-differs-from-plus-6
+             loghead-plus-c-differs-from-plus-d
              ubyte8p-of-logtail-56-of-ubyte64
              max)
     :cases ((feat-32p feat)))
