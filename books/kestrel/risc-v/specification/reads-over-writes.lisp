@@ -703,8 +703,7 @@
                 max))))
 
   (defruled read-memory-unsigned8-of-write-memory-unsigned32
-    (implies (and (stat-validp stat feat)
-                  (integerp addr2))
+    (implies (stat-validp stat feat)
              (equal (read-memory-unsigned8 addr1
                                            (write-memory-unsigned32
                                             addr2 val stat feat)
