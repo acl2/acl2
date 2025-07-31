@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "../library-extensions/theorems")
+(include-book "../library-extensions/logops-theorems")
 
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)

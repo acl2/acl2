@@ -23,7 +23,7 @@
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
