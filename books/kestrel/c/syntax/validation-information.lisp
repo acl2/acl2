@@ -777,7 +777,18 @@
   :guard (block-item-list-unambp items)
   :returns (type? type-optionp)
   :short "Type of a list of block items, from the validation information."
-  (cond ((endp items) (type-void))
-        ((endp (cdr items)) (block-item-type (car items)))
-        (t (type-unknown)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An empty list returns nothing, so its type is @('nil').
+     For a non-empty list, we look at the types of
+     the first block items and the rest of the block items.
+     If the former is @('nil'), we return the latter.
+     If the former is not @('nil'), we return it."))
+  (b* (((when (endp items)) nil)
+       (item-type? (block-item-type (car items)))
+       (items-type? (block-item-list-type (cdr items))))
+    (if item-type?
+        item-type?
+      items-type?))
   :hooks (:fix))
