@@ -774,9 +774,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is currently very limited,
-     but adequate to our current purposes.
-     We only need to handle singleton lists of block items."))
-  (cond ((endp items) (type-unknown))
+     but adequate to our current purposes."))
+  (cond ((endp items) (type-void))
         ((endp (cdr items)) (block-item-type (car items)))
         (t (type-unknown)))
   :hooks (:fix))
