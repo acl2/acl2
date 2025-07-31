@@ -10,8 +10,11 @@
 
 (in-package "C$")
 
-(include-book "concrete-syntax")
+(include-book "files")
+(include-book "grammar-characters")
 (include-book "unambiguity")
+
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))

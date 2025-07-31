@@ -42,8 +42,11 @@
           ((fh test) else)
           (t (mk-g-ite (mk-g-boolean bdd) then else))))
   ///
-  (def-hyp-congruence mk-g-bdd-ite)
+  ;; (def-hyp-congruence mk-g-bdd-ite)
 
+  (defcong bfr-hyp-equiv equal (mk-g-bdd-ite bdd then else hyp) 4
+    :hints(("Goal" :in-theory (enable true-under-hyp false-under-hyp))))
+  
   (defthm mk-g-bdd-ite-correct
     (implies (double-rewrite (bfr-hyp-eval hyp (car env)))
              (equal (generic-geval (mk-g-bdd-ite bdd then else hyp) env)
@@ -77,7 +80,7 @@
   (define gtests (x hyp)
     :returns (mv nonnilp unknownp unknown-obj same-hyp)
     :verify-guards nil
-    (let* ((hyp (lbfr-hyp-fix hyp)))
+    (let* ((hyp (hyp-norm hyp)))
       (if (atom x)
           (mv (hf (if x t nil))
               (hf nil) nil hyp)
@@ -132,7 +135,7 @@
                                        (bfr-ite cc u1 u0)))))))
              (if (eq unknown nil)
                  (mv known-ans unknown nil hyp)
-               (b* ( ;; When do we have u0 and when do we have u1?
+               (b* (;; When do we have u0 and when do we have u1?
                     (unknown-cond
                      (mk-g-bdd-ite uc oc (mk-g-boolean cc) hyp))
 
@@ -301,7 +304,7 @@
                               (:t mk-g-bdd-ite)
                               (:t mk-g-boolean)
                               (:t bfr-hyp-fix)
-                              bfr-hyp-fix-when-hyp$ap
+                              ;; bfr-hyp-fix-when-hyp$ap
                               (:t bfr-hyp-eval)
                               set::sets-are-true-lists
                               )))

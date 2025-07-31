@@ -79,6 +79,14 @@ int cast_long_to_int(long x) {
   return (int) x;
 }
 
+int logand(short x, long y) {
+  return x && y;
+}
+
+int logor(short x, long y) {
+  return x || y;
+}
+
 void return_void() {
   return;
 }
