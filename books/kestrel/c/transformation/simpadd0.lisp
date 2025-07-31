@@ -658,7 +658,8 @@
      if the type is @('void'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new block item lists are not equal, the theorem also says that
+     If old and new block item lists are not syntactically equal,
+     the theorem also says that
      their execution returns equal values and equal computation states,
      and that the execution of the new block item list
      does not yield an error."))
