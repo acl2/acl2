@@ -12,9 +12,13 @@
 
 (include-book "core")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "centaur/fty/fixequiv" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+(local (include-book "std/lists/list-fix" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffixtype map :pred omap::mapp :fix omap::mfix :equiv map-equiv :define t)
 
 (defsection emptyp-fix
   :extension emptyp
