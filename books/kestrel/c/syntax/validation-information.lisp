@@ -759,12 +759,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited,
-     but adequate to our current purposes.
-     We only need to handle block item that are statements for now."))
+    "We return an optional type:
+     @('nil') means that the block item's execution falls through,
+     while the @('void') type means that
+     the block item terminates execution
+     with a @('return') without expression."))
   (block-item-case
    item
-   :decl (type-unknown)
+   :decl nil
    :stmt (stmt-type item.unwrap)
    :ambig (prog2$ (impossible) (type-unknown)))
   :hooks (:fix))
