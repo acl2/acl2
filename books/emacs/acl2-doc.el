@@ -123,7 +123,7 @@
          "books/system/doc/rendered-doc-combined.lsp")
  'TOP
  "ACL2+Books Manual"
- "https://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz"
+ "https://acl2.org/doc/rendered-doc-combined.lsp.gz"
  (concat *acl2-sources-dir* "TAGS-acl2-doc")
  (concat *acl2-sources-dir* "TAGS"))
 
