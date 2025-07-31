@@ -697,7 +697,7 @@
 
 (define stmt-type ((stmt stmtp))
   :guard (stmt-unambp stmt)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a statement, from the validation information."
   :long
   (xdoc::topstring
@@ -719,7 +719,11 @@
      but it will need to be suitably extended.
      In particular, a statement may have multiple types,
      in the sense of returning values of possibly different types;
-     cf. @(tsee valid-stmt)."))
+     cf. @(tsee valid-stmt).")
+   (xdoc::p
+    "We relax the return theorem of this function to an optional type,
+     as a step towards generalizing this function
+     to actually return optional types."))
   (stmt-case
    stmt
    :labeled (stmt-type stmt.stmt)
@@ -756,12 +760,7 @@
    (xdoc::p
     "This is currently very limited,
      but adequate to our current purposes.
-     We only need to handle block item that are statements for now.")
-   (xdoc::p
-    "We relax the return theorem of this function to an optional type,
-     as a step towards generalizing this function,
-     as well as @(tsee stmt-type),
-     to actually return optional types."))
+     We only need to handle block item that are statements for now."))
   (block-item-case
    item
    :decl (type-unknown)

@@ -484,15 +484,16 @@
        ((unless (or equalp (stmt-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (stmt-type old))
+       (type? (stmt-type old))
        ((unless (or equalp
                     (equal (stmt-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new statement ~x1 differs from ~
                 the type ~x2 of the old statement ~x3."
-               (stmt-type new) new type old)
+               (stmt-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -2762,7 +2763,8 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys stmt-vartys
                                 :diffp stmt-diffp)))
-       (type (stmt-type stmt))
+       (type? (stmt-type stmt))
+       (type (or type? (type-void)))
        (hints (if (type-case type :void)
                   `(("Goal"
                      :in-theory '((:e ldm-block-item)
