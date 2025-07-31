@@ -1,3 +1,13 @@
+; A library about various primes
+;
+; Copyright (C) 2020-2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "PRIMES")
 
 (include-book "baby-jubjub-subgroup-prime")
@@ -13,3 +23,7 @@
  (include-book "nist-p-256-group-prime")
  (include-book "secp256k1-field-prime")
  (include-book "secp256k1-group-prime"))
+
+(defxdoc primes
+  :short "Primes used in cryptography."
+  :parents (crypto::cryptography))
