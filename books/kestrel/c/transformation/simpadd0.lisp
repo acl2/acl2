@@ -2887,6 +2887,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-block-item-list-empty ((gin simpadd0-ginp))
+  :returns (gout simpadd0-goutp)
+  :short "Transform an empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is introduced mainly for uniformity.
+     It actually takes and returns no block item list,
+     because there is only one empty block item list.
+     We just generate a dummy theorem for uniformity
+     and to facilitate compositional proof generation."))
+  (b* (((simpadd0-gin gin) gin)
+       (items nil)
+       (hints '(("Goal" :in-theory '((:e ldm-block-item-list)))))
+       (vartys nil)
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-block-item-list-thm items
+                                          items
+                                          vartys
+                                          gin.const-new
+                                          gin.thm-index
+                                          hints)))
+    (make-simpadd0-gout :events (list thm-event)
+                        :thm-name thm-name
+                        :thm-index thm-index
+                        :names-to-avoid (cons thm-name gin.names-to-avoid)
+                        :vartys vartys
+                        :diffp nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-block-item-list-one ((item block-itemp)
                                       (item-new block-itemp)
                                       (item-events pseudo-event-form-listp)
@@ -5363,13 +5395,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil
-              (make-simpadd0-gout
-               :events nil
-               :thm-name nil
-               :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+              (simpadd0-block-item-list-empty gin)))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin state))
          (gin (simpadd0-gin-update gin gout-item))
