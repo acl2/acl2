@@ -27,6 +27,7 @@
 (local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/system/pseudo-event-formp" :dir :system))
+(local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
@@ -93,7 +94,18 @@
   "@('targets') is a list (in no particular order)
    of all the type names for which fold functions are generated."
 
-  "@('target') is an element of @('targets') explained above."))
+  "@('target') is an element of @('targets') explained above."
+
+  "Although in some cases the accompanying theorems could be generated
+   as part of the @(tsee define) or @(tsee defines) after the @('///'),
+   we have found cases in which the fixing theorems are needed
+   to prove some of the accompanying theorems.
+   If a generated function is not mutually recursive
+   we could use an explicit @(tsee deffixequiv) instead of @(':hooks (:fix)');
+   but for a mutually recursive function we need to generate the theorem
+   after all the functions in the clique and the @(tsee deffixequiv-mutual).
+   Some of the functions that implement @(tsee deffold-reduce) return
+   separate events for functions and theorems."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,9 +641,11 @@
                                     (extra-args true-listp)
                                     (result symbolp)
                                     (default t)
+                                    (combine symbolp)
                                     (fty-table alistp))
   :guard (eq (flexsum->typemacro sum) 'defoption)
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the fold function for an option type."
   :long
   (xdoc::topstring
@@ -646,7 +660,7 @@
   (b* ((type (flexsum->name sum))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexsum->count sum))
        (recog (flexsum->pred sum))
@@ -659,14 +673,28 @@
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type)
                                                    ,@extra-args-names)
-                          :none ,default)))
-    `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,result)
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+                          :none ,default))
+       (fn-event
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
+           :returns (result ,result)
+           :parents (,(deffoldred-gen-topic-name suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:verify-guards :after-returns))
+           ,@(and (not mutrecp) '(:hooks (:fix)))))
+       (type-suffix-when-base-type-suffix
+        (acl2::packn-pos (list type-suffix '-when- base-type-suffix) suffix))
+       (thm-events
+        (and (eq combine 'and)
+             (eq default t)
+             `((defruled ,type-suffix-when-base-type-suffix
+                 (implies (,base-type-suffix ,type ,@extra-args-names)
+                          (,type-suffix ,type ,@extra-args-names))
+                 :expand (,type-suffix ,type ,@extra-args-names)
+                 :enable ,accessor)
+               (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                               '(,type-suffix-when-base-type-suffix))))))
+    (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -680,7 +708,8 @@
                                              (combine symbolp)
                                              (overrides alistp)
                                              (fty-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the fold function for a product, sum, or option type."
   :long
   (xdoc::topstring
@@ -690,19 +719,21 @@
   (b* ((typemacro (flexsum->typemacro sum)))
     (cond
      ((eq typemacro 'defprod)
-      (deffoldred-gen-prod-fold
-        sum mutrecp suffix
-        targets extra-args result default combine overrides fty-table))
+      (mv (deffoldred-gen-prod-fold
+            sum mutrecp suffix
+            targets extra-args result default combine overrides fty-table)
+          nil))
      ((eq typemacro 'deftagsum)
-      (deffoldred-gen-sum-fold
-        sum mutrecp suffix
-        targets extra-args result default combine overrides fty-table))
+      (mv (deffoldred-gen-sum-fold
+            sum mutrecp suffix
+            targets extra-args result default combine overrides fty-table)
+          nil))
      ((eq typemacro 'defoption)
       (deffoldred-gen-option-fold
-        sum mutrecp suffix extra-args result default fty-table))
+        sum mutrecp suffix extra-args result default combine fty-table))
      (t (prog2$
          (raise "Internal error: unsupported sum type ~x0." sum)
-         '(_))))))
+         (mv '(_) nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -714,7 +745,8 @@
                                   (default t)
                                   (combine symbolp)
                                   (fty-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the fold function for a list type,
           with accompanying theorems."
   :long
@@ -727,20 +759,20 @@
   (b* ((type (flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexlist->count list))
        (recog (flexlist->pred list))
        (elt-recog (flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
-        '(_))
+        (mv '(_) nil))
        (elt-info (flextype-with-recognizer elt-recog fty-table))
        (elt-type (flextype->name elt-info))
        (recp (flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
-        '(_))
+        (mv '(_) nil))
        (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
        (extra-args-names (deffoldred-extra-args-to-names extra-args))
        (body
@@ -748,6 +780,14 @@
                 ,default)
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
+       (fn-event
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
+           :returns (result ,result)
+           :parents (,(deffoldred-gen-topic-name suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:verify-guards :after-returns))
+           ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-atom
         (acl2::packn-pos (list type-suffix '-when-atom) suffix))
        (type-suffix-of-cons
@@ -756,26 +796,17 @@
         `((defruled ,type-suffix-when-atom
             (implies (atom ,type)
                      (equal (,type-suffix ,type ,@extra-args-names)
-                            ,default)))
+                            ,default))
+            :enable ,type-suffix)
           (defruled ,type-suffix-of-cons
             (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
                    (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
                              (,type-suffix ,type ,@extra-args-names)))
-            :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))))
-       (ruleset-event
-        `(add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                         '(,type-suffix-when-atom
-                           ,type-suffix-of-cons))))
-    `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,result)
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix)))
-       ///
-       ,@thm-events
-       ,ruleset-event)))
+            :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))
+          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                          '(,type-suffix-when-atom
+                            ,type-suffix-of-cons)))))
+    (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,7 +818,8 @@
                                   (default t)
                                   (combine symbolp)
                                   (fty-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate a fold function for an omap type,
           with accompanying theorems."
   :long
@@ -800,7 +832,7 @@
   (b* ((type (flexomap->name omap))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexomap->count omap))
        (recog (flexomap->pred omap))
@@ -808,7 +840,7 @@
        (val-recog (flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
-        '(_))
+        (mv '(_) nil))
        (val-info (flextype-with-recognizer val-recog fty-table))
        (val-type (flextype->name val-info))
        (val-type-suffix (deffoldred-gen-fold-name val-type suffix))
@@ -820,26 +852,25 @@
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
                                           ,@extra-args-names)))))
+       (fn-event
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
+           :returns (result ,result)
+           :parents (,(deffoldred-gen-topic-name suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:verify-guards :after-returns))
+           ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-emptyp
         (acl2::packn-pos (list type-suffix '-when-emptyp) suffix))
        (thm-events
         `((defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
                      (equal (,type-suffix ,type ,@extra-args-names)
-                            ,default)))))
-       (ruleset-event
-        `(add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                         '(,type-suffix-when-emptyp))))
-    `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       :returns (result ,result)
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix)))
-       ///
-       ,@thm-events
-       ,ruleset-event)))
+                            ,default))
+            :enable ,type-suffix)
+          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                          '(,type-suffix-when-emptyp)))))
+    (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -853,7 +884,8 @@
                                   (combine symbolp)
                                   (overrides alistp)
                                   (fty-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate a fold function for a type, with accompanying theorems."
   (cond ((flexsum-p flex)
          (deffoldred-gen-prod/sum/option-fold
@@ -866,7 +898,7 @@
          (deffoldred-gen-omap-fold flex mutrecp suffix
            extra-args result default combine fty-table))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
-                   '(_)))))
+                   (mv '(_) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -880,19 +912,21 @@
                                     (combine symbolp)
                                     (overrides alistp)
                                     (fty-table alistp))
-  :returns (events acl2::pseudo-event-form-listp)
+  :returns (mv (fn-events acl2::pseudo-event-form-listp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate fold functions for a list of types,
           with accompanying theorems."
-  (b* (((when (endp flexs)) nil)
-       (event
+  (b* (((when (endp flexs)) (mv nil nil))
+       ((mv fn-event thm-events)
         (deffoldred-gen-type-fold
           (car flexs) mutrecp suffix
           targets extra-args result default combine overrides fty-table))
-       (more-events
+       ((mv more-fn-events more-thm-events)
         (deffoldred-gen-types-folds
           (cdr flexs) mutrecp suffix
           targets extra-args result default combine overrides fty-table)))
-    (cons event more-events)))
+    (mv (cons fn-event more-fn-events)
+        (append thm-events more-thm-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -905,12 +939,15 @@
                                           (combine symbolp)
                                           (overrides alistp)
                                           (fty-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (events acl2::pseudo-event-form-listp)
   :short "Generate a fold function,
           or a clique of mutually recursive fold functions,
           for a clique of types."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The function or clique of functions may be followed by theorems.
+     This is why this function returns a list of events.")
    (xdoc::p
     "If the clique is empty, it is an internal error.
      If the clique is a singleton, we generate a single function,
@@ -933,34 +970,34 @@
      Note that this form is automatically local to the @(tsee defines)."))
   (b* ((members (flextypes->types clique))
        ((unless (true-listp members))
-        (raise "Internal error: malformed members of type clique ~x0." clique)
-        '(_))
+        (raise "Internal error: malformed members of type clique ~x0." clique))
        ((when (endp members))
-        (raise "Internal error: empty type clique ~x0." clique)
-        '(_))
+        (raise "Internal error: empty type clique ~x0." clique))
        ((when (endp (cdr members)))
-        (deffoldred-gen-type-fold
-          (car members) nil suffix
-          targets extra-args result default combine overrides fty-table))
+        (b* (((mv fn-event thm-events)
+              (deffoldred-gen-type-fold
+                (car members) nil suffix
+                targets extra-args result default combine overrides fty-table)))
+          (cons fn-event thm-events)))
        (clique-name (flextypes->name clique))
        ((unless (symbolp clique-name))
-        (raise "Internal error: malformed clique name ~x0." clique-name)
-        '(_))
+        (raise "Internal error: malformed clique name ~x0." clique-name))
        (clique-name-suffix (deffoldred-gen-fold-name clique-name suffix))
-       (events
+       ((mv fn-events thm-events)
         (deffoldred-gen-types-folds
           members t suffix
           targets extra-args result default combine overrides fty-table)))
-    `(defines ,clique-name-suffix
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,@events
-       :hints (("Goal" :in-theory (enable o< o-finp)))
-       :verify-guards :after-returns
-       :flag-local nil
-       :prepwork ((set-bogus-mutual-recursion-ok t))
-       ///
-       (deffixequiv-mutual ,clique-name-suffix
-         :hints (("Goal" :in-theory (disable (tau-system))))))))
+    `((defines ,clique-name-suffix
+        :parents (,(deffoldred-gen-topic-name suffix))
+        ,@fn-events
+        :hints (("Goal" :in-theory (enable o< o-finp)))
+        :verify-guards :after-returns
+        :flag-local nil
+        :prepwork ((set-bogus-mutual-recursion-ok t))
+        ///
+        (deffixequiv-mutual ,clique-name-suffix
+          :hints (("Goal" :in-theory (disable (tau-system))))))
+      ,@thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -983,15 +1020,15 @@
         (raise "Internal error: no type clique with name ~x0." clique-name))
        ((unless (flextypes-p clique))
         (raise "Internal error: malformed type clique ~x0." clique))
-       (event (deffoldred-gen-clique-fold/folds
-                clique suffix
-                targets extra-args result default combine
-                overrides fty-table))
-       (events (deffoldred-gen-cliques-folds
-                 (cdr clique-names) suffix
+       (events (deffoldred-gen-clique-fold/folds
+                 clique suffix
                  targets extra-args result default combine
-                 overrides fty-table)))
-    (cons event events)))
+                 overrides fty-table))
+       (more-events (deffoldred-gen-cliques-folds
+                      (cdr clique-names) suffix
+                      targets extra-args result default combine
+                      overrides fty-table)))
+    (append events more-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
