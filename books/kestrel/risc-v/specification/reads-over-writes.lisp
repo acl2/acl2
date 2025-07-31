@@ -55,52 +55,11 @@
               ubyte8p
               logtail))
 
-   (defruled loghead-plus-1-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (1+ x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-2-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 2 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
+   (defruled loghead-plus-c-differs
+     (implies (and (integerp x)
+                   (posp c)
+                   (< c (expt 2 (nfix n))))
+              (not (equal (loghead n (+ c x))
                           (loghead n x))))
      :enable loghead)
 
@@ -870,11 +829,12 @@
                                      (part-select (ubyte16-fix val)
                                                   :low 0 :high 7))))
                              (t (read-memory-unsigned8 addr1 stat feat)))))
+       :cases ((feat-32p feat))
        :enable (read-memory-unsigned8
                 write-memory-unsigned8
                 write-memory-unsigned16
                 loghead-upper-bound
-                loghead-plus-1-differs
+                loghead-plus-c-differs
                 ubyte8p-of-logtail-8-of-ubyte16
                 max))))
 
@@ -963,13 +923,12 @@
                                      (part-select (ubyte32-fix val)
                                                   :low 0 :high 7))))
                              (t (read-memory-unsigned8 addr1 stat feat)))))
+       :cases ((feat-32p feat))
        :enable (read-memory-unsigned8
                 write-memory-unsigned8
                 write-memory-unsigned32
                 loghead-upper-bound
-                loghead-plus-1-differs
-                loghead-plus-2-differs
-                loghead-plus-3-differs
+                loghead-plus-c-differs
                 loghead-plus-2-differs-from-plus-1
                 loghead-plus-3-differs-from-plus-1
                 loghead-plus-3-differs-from-plus-2
@@ -1052,13 +1011,7 @@
              write-memory-unsigned8
              write-memory-unsigned64
              loghead-upper-bound
-             loghead-plus-1-differs
-             loghead-plus-2-differs
-             loghead-plus-3-differs
-             loghead-plus-4-differs
-             loghead-plus-5-differs
-             loghead-plus-6-differs
-             loghead-plus-7-differs
+             loghead-plus-c-differs
              loghead-plus-2-differs-from-plus-1
              loghead-plus-3-differs-from-plus-1
              loghead-plus-3-differs-from-plus-2
