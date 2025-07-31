@@ -2246,6 +2246,24 @@
     (>= size 16)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-short-wfp
+                                           ienv->char-size
+                                           ienv->short-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('short') objects."
+  (/ (ienv->short-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->int-bit-size ((ienv ienvp))
@@ -2266,6 +2284,24 @@
   (defret ienv->int-bit-size-lower-bound
     (>= size 16)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-int-wfp
+                                           ienv->char-size
+                                           ienv->int-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('int') objects."
+  (/ (ienv->int-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2288,6 +2324,24 @@
     (>= size 32)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-long-wfp
+                                           ienv->char-size
+                                           ienv->long-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long') objects."
+  (/ (ienv->long-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->llong-bit-size ((ienv ienvp))
@@ -2308,6 +2362,24 @@
   (defret ienv->llong-bit-size-lower-bound
     (>= size 64)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-llong-wfp
+                                           ienv->char-size
+                                           ienv->llong-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long long') objects."
+  (/ (ienv->llong-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

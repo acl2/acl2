@@ -68,11 +68,10 @@
    The recursive functions recursively transform the sub-constructs,
    and then call the separate non-recursive functions
    with the results from transforming the sub-constructs.
-   An example is @(tsee simpadd0-expr-paren),
+   A simple example is @(tsee simpadd0-expr-paren),
    which is called by @(tsee simpadd0-expr):
    the caller recursively transforms the inner expression,
-   and passes to the callee
-   the possibly transformed expression,
+   and passes the possibly transformed expression to the callee,
    along with some of the @(tsee simpadd0-gout) components
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
@@ -149,7 +148,7 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension.
-     Additionally, the transformation take the ACL2 state as input,
+     Additionally, the transformation functions take the ACL2 state as input,
      but this is not part of this structure for obvious reasons."))
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
@@ -192,7 +191,8 @@
            "Variables in scope, with their types.")
    (diffp bool
           "Flag saying whether the C construct was transformed
-           into something different by the transformation function."))
+           into something syntactically different
+           by the transformation function."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -245,7 +245,6 @@
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
-                    (c::valuep val)
                     (equal (c::type-of-value val) ',ctype))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
@@ -282,7 +281,7 @@
    (xdoc::p
     "Note that the calls of @(tsee ldm-expr) in the theorem
      are known to succeed (i.e. not return any error),
-     given that @(tsee expr-pure-formalp) holds.")
+     given that @(tsee expr-pure-formalp) is checked to hold.")
    (xdoc::p
     "This function also takes as input a map from identifiers to types,
      which are the variables in scope with their types.
@@ -366,6 +365,7 @@
    (xdoc::p
     "This only applies to simple assignments
      whose left side is a variable expression @('var')
+     (which is not changed by the transformation)
      and whose old and new right sides are pure expressions.
      The caller of this function checks that that is the case;
      here we double-check these conditions,
@@ -470,7 +470,8 @@
      if the type is @('void'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new statements are not equal, the theorem also says that
+     If old and new statements are not syntactically equal,
+     the theorem also says that
      their execution returns equal values (or both @('nil'))
      and equal computation states,
      and that the execution of the new statement does not yield an error."))
@@ -563,7 +564,8 @@
      if the type is @('void'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new block items are not equal, the theorem also says that
+     If old and new block items are not syntactically equal,
+     the theorem also says that
      their execution returns equal values (or both @('nil'))
      and equal computation states,
      and that the execution of the new block item does not yield an error."))
@@ -770,7 +772,7 @@
      "A list @('args') of symbols used as ACL2 variables
       that denote the C values passed as arguments to the function.")
     (xdoc::li
-     "A term @('parargs') that is a nest of @(tsee omap::update)
+     "A term @('parargs') that is a nest of @(tsee omap::update) calls
       that denotes the initial scope of the function.
       Each @(tsee omap::update) call adds
       the name of the parameter as key
@@ -791,8 +793,7 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type)
-        (simpadd0-tyspecseq-to-type param.tyspec))
+       ((mv okp type) (simpadd0-tyspecseq-to-type param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
@@ -1104,7 +1105,8 @@
        ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
         (ldm-type info.type))
        (hints `(("Goal"
-                 :in-theory '((:e expr-ident)
+                 :in-theory '(c::valuep-of-read-object-of-objdesign-of-var
+                              (:e expr-ident)
                               (:e expr-pure-formalp)
                               (:e ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
@@ -1641,8 +1643,7 @@
    (xdoc::p
     "We generate a theorem only if
      theorems were generated for both argument expressions.
-     We generate a theorem for pure strict operators.
-     We plan to add theorem generation for pure strict operators too.
+     We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
      and whose right side is a pure expression of the same integer type."))
@@ -1733,7 +1734,72 @@
                                 :vartys vartys
                                 :diffp diffp))))
      ((member-eq (binop-kind op) '(:logand :logor))
-      (mv expr-new gout-no-thm))
+      (b* ((hints
+            `(("Goal"
+               :in-theory '((:e ldm-expr)
+                            (:e ldm-ident)
+                            (:e ident)
+                            (:e c::expr-binary)
+                            (:e c::binop-logand)
+                            (:e c::binop-logor)
+                            (:e c::type-sint)
+                            (:e c::type-nonchar-integerp))
+               :use
+               (,arg1-thm-name
+                ,arg2-thm-name
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand
+                     'simpadd0-expr-binary-logand-support-lemma-first)
+                    (:logor
+                     'simpadd0-expr-binary-logor-support-lemma-first))
+                 (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                 (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                 (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                 (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand
+                     'simpadd0-expr-binary-logand-support-lemma-second)
+                    (:logor
+                     'simpadd0-expr-binary-logor-support-lemma-second))
+                 (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                 (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                 (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                 (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand
+                     'simpadd0-expr-binary-logand-support-lemma-error-first)
+                    (:logor
+                     'simpadd0-expr-binary-logor-support-lemma-error-first))
+                 (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                 (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand
+                     'simpadd0-expr-binary-logand-support-lemma-error-second)
+                    (:logor
+                     'simpadd0-expr-binary-logor-support-lemma-error-second))
+                 (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                 (arg2 (mv-nth 1 (ldm-expr ',arg2))))))))
+           ((mv thm-event thm-name thm-index)
+            (simpadd0-gen-expr-pure-thm expr
+                                        expr-new
+                                        vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events
+                                                arg2-events
+                                                (list thm-event))
+                                :thm-name thm-name
+                                :thm-index thm-index
+                                :names-to-avoid (cons thm-name
+                                                      gin.names-to-avoid)
+                                :vartys vartys
+                                :diffp diffp))))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
                          (expr-purep arg2)
@@ -1891,6 +1957,174 @@
              c::apconvert-expr-value-when-not-array
              c::add-values-of-sint-and-sint0
              c::type-of-value))
+
+  (defruled simpadd0-expr-binary-logand-support-lemma-first
+    (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
+         (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
+         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
+         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
+         (old-arg1-value (c::expr-value->value old-arg1-result))
+         (new-arg1-value (c::expr-value->value new-arg1-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type1 (c::type-of-value old-arg1-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-arg1-result))
+                    (equal old-arg1-value new-arg1-value)
+                    (c::type-nonchar-integerp type1)
+                    (not (c::test-value old-arg1-value)))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
+    :expand ((c::exec-expr-pure (c::expr-binary '(:logand) old-arg1 old-arg2)
+                                compst)
+             (c::exec-expr-pure (c::expr-binary '(:logand) new-arg1 new-arg2)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-binary-logand-support-lemma-second
+    (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
+         (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
+         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
+         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
+         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
+         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
+         (old-arg1-value (c::expr-value->value old-arg1-result))
+         (old-arg2-value (c::expr-value->value old-arg2-result))
+         (new-arg1-value (c::expr-value->value new-arg1-result))
+         (new-arg2-value (c::expr-value->value new-arg2-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type1 (c::type-of-value old-arg1-value))
+         (type2 (c::type-of-value old-arg2-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-arg1-result))
+                    (not (c::errorp new-arg2-result))
+                    (equal old-arg1-value new-arg1-value)
+                    (equal old-arg2-value new-arg2-value)
+                    (c::type-nonchar-integerp type1)
+                    (c::type-nonchar-integerp type2)
+                    (c::test-value old-arg1-value))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
+    :expand ((c::exec-expr-pure (c::expr-binary '(:logand) old-arg1 old-arg2)
+                                compst)
+             (c::exec-expr-pure (c::expr-binary '(:logand) new-arg1 new-arg2)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-binary-logand-support-lemma-error-first
+    (implies (c::errorp (c::exec-expr-pure arg1 compst))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-binary (c::binop-logand) arg1 arg2)
+                                 compst)))
+    :expand (c::exec-expr-pure (c::expr-binary '(:logand) arg1 arg2) compst))
+
+  (defruled simpadd0-expr-binary-logand-support-lemma-error-second
+    (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure arg1 compst))))
+                  (c::test-value
+                   (c::expr-value->value (c::exec-expr-pure arg1 compst)))
+                  (c::errorp (c::exec-expr-pure arg2 compst)))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-binary (c::binop-logand) arg1 arg2)
+                                 compst)))
+    :expand (c::exec-expr-pure (c::expr-binary '(:logand) arg1 arg2) compst)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-binary-logor-support-lemma-first
+    (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
+         (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
+         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
+         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
+         (old-arg1-value (c::expr-value->value old-arg1-result))
+         (new-arg1-value (c::expr-value->value new-arg1-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type1 (c::type-of-value old-arg1-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-arg1-result))
+                    (equal old-arg1-value new-arg1-value)
+                    (c::type-nonchar-integerp type1)
+                    (c::test-value old-arg1-value))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
+    :expand ((c::exec-expr-pure (c::expr-binary '(:logor) old-arg1 old-arg2)
+                                compst)
+             (c::exec-expr-pure (c::expr-binary '(:logor) new-arg1 new-arg2)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-binary-logor-support-lemma-second
+    (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
+         (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
+         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
+         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
+         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
+         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
+         (old-arg1-value (c::expr-value->value old-arg1-result))
+         (old-arg2-value (c::expr-value->value old-arg2-result))
+         (new-arg1-value (c::expr-value->value new-arg1-result))
+         (new-arg2-value (c::expr-value->value new-arg2-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type1 (c::type-of-value old-arg1-value))
+         (type2 (c::type-of-value old-arg2-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-arg1-result))
+                    (not (c::errorp new-arg2-result))
+                    (equal old-arg1-value new-arg1-value)
+                    (equal old-arg2-value new-arg2-value)
+                    (c::type-nonchar-integerp type1)
+                    (c::type-nonchar-integerp type2)
+                    (not (c::test-value old-arg1-value)))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
+    :expand ((c::exec-expr-pure (c::expr-binary '(:logor) old-arg1 old-arg2)
+                                compst)
+             (c::exec-expr-pure (c::expr-binary '(:logor) new-arg1 new-arg2)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-binary-logor-support-lemma-error-first
+    (implies (c::errorp (c::exec-expr-pure arg1 compst))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-binary (c::binop-logor) arg1 arg2)
+                                 compst)))
+    :expand (c::exec-expr-pure (c::expr-binary '(:logor) arg1 arg2) compst))
+
+  (defruled simpadd0-expr-binary-logor-support-lemma-error-second
+    (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure arg1 compst))))
+                  (not (c::test-value
+                        (c::expr-value->value (c::exec-expr-pure arg1 compst))))
+                  (c::errorp (c::exec-expr-pure arg2 compst)))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-binary (c::binop-logor) arg1 arg2)
+                                 compst)))
+    :expand (c::exec-expr-pure (c::expr-binary '(:logor) arg1 arg2) compst)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
 
   (defruled simpadd0-expr-binary-asg-support-lemma
     (b* ((old (c::expr-binary (c::binop-asg) (c::expr-ident var) old-arg))
