@@ -9,4 +9,3 @@
 
 (in-package "ACL2")
 (include-book "data-structures/portcullis" :dir :system)
-(certify-book "ihs-init" ? t)
