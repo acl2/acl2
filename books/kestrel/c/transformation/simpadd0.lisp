@@ -655,7 +655,7 @@
      the old block item list returns a value of the appropriate type,
      regardless of whether old and new block item lists
      are syntactically equal or not;
-     if the type is @('void'),
+     if the type is @('void') or @('nil'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
      If old and new block item lists are not syntactically equal,
@@ -672,15 +672,16 @@
        ((unless (or equalp (block-item-list-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-list-type old))
+       (type? (block-item-list-type old))
        ((unless (or equalp
                     (equal (block-item-list-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new block item list ~x1 differs from ~
                 the type ~x2 of the old block item list ~x3."
-               (block-item-list-type new) new type old)
+               (block-item-list-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -5711,7 +5712,8 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (type (block-item-list-type items))
+       (type? (block-item-list-type items))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)

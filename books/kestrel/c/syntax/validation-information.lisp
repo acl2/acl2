@@ -643,7 +643,7 @@
      of the kind performed by the validator
      (e.g. this function does not attempt to calculate
      the type of a binary expression based on
-     the operator and the types of the operands.
+     the operator and the types of the operands).
      If there is not enough information,
      the unknown type is returned.")
    (xdoc::p
@@ -768,13 +768,15 @@
 
 (define block-item-list-type ((items block-item-listp))
   :guard (block-item-list-unambp items)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a list of block items, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited,
-     but adequate to our current purposes."))
+    "We relax the return theorem of this function to an optional type,
+     as a step towards generalizing this function,
+     as well as @(tsee block-item-type) and @(tsee stmt-type),
+     to actually return optional types."))
   (cond ((endp items) (type-void))
         ((endp (cdr items)) (block-item-type (car items)))
         (t (type-unknown)))
