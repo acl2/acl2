@@ -113,7 +113,6 @@
       (find-next-dollar str (+ start-pos 1)))))
 
 (defun convert-math-syntax-helper (str pos acc in-math)
-  "Convert $...$ to @($...$) by processing character by character"
   (declare (xargs :measure (if (and (stringp str) (natp pos))
                                (nfix (- (length str) pos))
                              0)))
@@ -123,17 +122,14 @@
       acc
     (let ((current-char (char str pos)))
       (cond
-        ;; Found $ and we're not in math mode - start math
         ((and (equal current-char #\$) (not in-math))
          (convert-math-syntax-helper str (+ pos 1)
                                    (concatenate 'string acc "@($")
                                    t))
-        ;; Found $ and we're in math mode - end math
         ((and (equal current-char #\$) in-math)
          (convert-math-syntax-helper str (+ pos 1)
                                    (concatenate 'string acc "$)")
                                    nil))
-        ;; Regular character - just append
         (t (convert-math-syntax-helper str (+ pos 1)
                                      (concatenate 'string acc (string current-char))
                                      in-math))))))
