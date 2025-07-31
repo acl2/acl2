@@ -64,7 +64,8 @@
    (objs fgl-object-bindings-p "Selected symbolic object bindings"))
   :layout :list)
 
-(fty::deflist backtrace :elt-type backtrace-frame :true-listp t)
+(fty::deflist backtrace :elt-type backtrace-frame :true-listp t
+  :parents (backtraces))
 
 (define backtrace-speclist-find ((rune maybe-fgl-generic-rune-p)
                                  (x backtrace-speclist-p))
@@ -161,6 +162,7 @@
 
 (define interp-st-stack-backtrace-top ((specs backtrace-speclist-p) interp-st)
   :returns (frame (iff (backtrace-frame-p frame) frame))
+  :parents (backtraces)
   :short "Produce a backtrace frame for the top FGL rewriter stack frame that matches any
 of a list of rule specifications"
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -192,6 +194,7 @@ of a list of rule specifications"
 
 (define interp-st-stack-full-backtrace (interp-st)
   :returns (backtrace backtrace-p)
+  :parents (backtraces)
   :short "Produce a full backtrace for the FGL rewriter stack, containing all top-level bindings of all rules"
   (stobj-let ((stack (interp-st->stack interp-st)))
              (bt)
@@ -218,7 +221,7 @@ of a list of rule specifications"
                     (g-cons (g-map '(:g-map) x.objs) nil)))))
 
 (define backtrace-to-obj ((x backtrace-p))
-  :parents (backtrace)
+  :parents (backtraces)
   :short "Turn a FGL backtrace into a proper symbolic object"
   :returns (obj fgl-object-p)
   (if (atom x)

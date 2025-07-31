@@ -2683,8 +2683,10 @@ compute a value for @('x').</p>
              (b* (((unless (bfr-env$-p env$ (logicman->bfrstate)))
                    (mv "Bad counterexample env" nil)))
                (mv nil
-                   (bvar-db-check-ctrex-consistency
-                    (base-bvar bvar-db) bvar-db nil logicman env$ state nil)))
+                   (time$ (bvar-db-check-ctrex-consistency
+                           (base-bvar bvar-db) bvar-db nil logicman env$ state nil)
+                          :msg "; check bvar-db consistency: ~st seconds, ~sa bytes.~%"
+                          :mintime 1)))
              (b* (((when err)
                    (cw "Error checking bvar-db consistency: ~@0" err)
                    interp-st)

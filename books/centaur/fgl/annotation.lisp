@@ -146,6 +146,7 @@ find the nesting depth to use for the tracing:</p>
 
 (define interp-st-fn-annotation ((fn pseudo-fnsym-p)
                                  interp-st)
+  :parents (bind-fn-annotation annotate)
   :short "Finds the annotation, if any, of the innermost nesting of fn on the stack."
   :returns (annotation fgl-object-p)
   :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
