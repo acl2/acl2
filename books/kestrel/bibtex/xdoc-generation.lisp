@@ -11,25 +11,153 @@
 (include-book "bibtex-parser")  ; Use the parser
 (include-book "xdoc/top" :dir :system)
 
-; Helper functions for XDOC generation
+
+  (include-book "std/strings/strsubst" :dir :system)
+
+; Conversion functions for XDOC generation
 ; TODO: add guards
 
 (defun strip-brackets (str)
   "Remove curly braces from BibTeX strings"
   (if (stringp str)
-      (substitute #\  #\{ (substitute #\  #\} str))  ; replace with nothing
+      (str::strsubst "{" "" (str::strsubst "}" "" str))  ; replace with empty string
     str))
+
+(defun convert-bibtex-diacritics (str)
+  (if (not (stringp str))
+      str
+    (let* (
+           ; Acute accents (\')
+           (step1 (str::strsubst "\\'a" "&aacute;" str))
+           (step2 (str::strsubst "\\'A" "&Aacute;" step1))
+           (step3 (str::strsubst "\\'e" "&eacute;" step2))
+           (step4 (str::strsubst "\\'E" "&Eacute;" step3))
+           (step5 (str::strsubst "\\'i" "&iacute;" step4))
+           (step6 (str::strsubst "\\'I" "&Iacute;" step5))
+           (step7 (str::strsubst "\\'o" "&oacute;" step6))
+           (step8 (str::strsubst "\\'O" "&Oacute;" step7))
+           (step9 (str::strsubst "\\'u" "&uacute;" step8))
+           (step10 (str::strsubst "\\'U" "&Uacute;" step9))
+           (step10A (str::strsubst "\\'n" "&nacute;" step10))
+           (step10B (str::strsubst "\\'N" "&Nacute;" step10A))
+
+           ; Grave accents (\`)
+           (step11 (str::strsubst "\\`a" "&agrave;" step10B))
+           (step12 (str::strsubst "\\`A" "&Agrave;" step11))
+           (step13 (str::strsubst "\\`e" "&egrave;" step12))
+           (step14 (str::strsubst "\\`E" "&Egrave;" step13))
+           (step15 (str::strsubst "\\`i" "&igrave;" step14))
+           (step16 (str::strsubst "\\`I" "&Igrave;" step15))
+           (step17 (str::strsubst "\\`o" "&ograve;" step16))
+           (step18 (str::strsubst "\\`O" "&Ograve;" step17))
+           (step19 (str::strsubst "\\`u" "&ugrave;" step18))
+           (step20 (str::strsubst "\\`U" "&Ugrave;" step19))
+
+           ; Circumflex accents (\^)
+           (step21 (str::strsubst "\\^a" "&acirc;" step20))
+           (step22 (str::strsubst "\\^A" "&Acirc;" step21))
+           (step23 (str::strsubst "\\^e" "&ecirc;" step22))
+           (step24 (str::strsubst "\\^E" "&Ecirc;" step23))
+           (step25 (str::strsubst "\\^i" "&icirc;" step24))
+           (step26 (str::strsubst "\\^I" "&Icirc;" step25))
+           (step27 (str::strsubst "\\^o" "&ocirc;" step26))
+           (step28 (str::strsubst "\\^O" "&Ocirc;" step27))
+           (step29 (str::strsubst "\\^u" "&ucirc;" step28))
+           (step30 (str::strsubst "\\^U" "&Ucirc;" step29))
+
+           ; Umlaut/diaeresis (\")
+           (step31 (str::strsubst "\\\"a" "&auml;" step30))
+           (step32 (str::strsubst "\\\"A" "&Auml;" step31))
+           (step33 (str::strsubst "\\\"e" "&euml;" step32))
+           (step34 (str::strsubst "\\\"E" "&Euml;" step33))
+           (step35 (str::strsubst "\\\"i" "&iuml;" step34))
+           (step36 (str::strsubst "\\\"I" "&Iuml;" step35))
+           (step37 (str::strsubst "\\\"o" "&ouml;" step36))
+           (step38 (str::strsubst "\\\"O" "&Ouml;" step37))
+           (step39 (str::strsubst "\\\"u" "&uuml;" step38))
+           (step40 (str::strsubst "\\\"U" "&Uuml;" step39))
+
+           ; Tilde (\~)
+           (step41 (str::strsubst "\\~a" "&atilde;" step40))
+           (step42 (str::strsubst "\\~A" "&Atilde;" step41))
+           (step43 (str::strsubst "\\~n" "&ntilde;" step42))
+           (step44 (str::strsubst "\\~N" "&Ntilde;" step43))
+           (step45 (str::strsubst "\\~o" "&otilde;" step44))
+           (step46 (str::strsubst "\\~O" "&Otilde;" step45))
+
+           ; Ring above (\r)
+           (step47 (str::strsubst "\\ra" "&aring;" step46))
+           (step48 (str::strsubst "\\rA" "&Aring;" step47))
+
+           ; Cedilla (\c)
+           (step49 (str::strsubst "\\cc" "&ccedil;" step48))
+           (step50 (str::strsubst "\\cC" "&Ccedil;" step49))
+
+           ;Ogonek (\k)
+           (step51 (str::strsubst "\\ka" "&aogon;" step50))
+           (step52 (str::strsubst "\\kA" "&Aogon;" step51))
+           (step53 (str::strsubst "\\ke" "&eogon;" step52))
+           (step54 (str::strsubst "\\kE" "&Eogon;" step53))
+           (step55 (str::strsubst "\\ku" "&uogon;" step54))
+           (step56 (str::strsubst "\\kU" "&Uogon;" step55))
+           (step57 (str::strsubst "\\ki" "&iogon;" step56))
+           (step58 (str::strsubst "\\kI" "&Iogon;" step57)))
+      step58)))
+
+(defun find-next-dollar (str start-pos)
+  (declare (xargs :measure (nfix (- (length str) start-pos))))
+  (if (or (not (stringp str))
+          (not (natp start-pos))
+          (>= start-pos (length str)))
+      nil
+    (if (equal (char str start-pos) #\$)
+        start-pos
+      (find-next-dollar str (+ start-pos 1)))))
+
+(defun convert-math-syntax-helper (str pos acc in-math)
+  "Convert $...$ to @($...$) by processing character by character"
+  (declare (xargs :measure (if (and (stringp str) (natp pos))
+                               (nfix (- (length str) pos))
+                             0)))
+  (if (or (not (stringp str))
+          (not (natp pos))
+          (>= pos (length str)))
+      acc
+    (let ((current-char (char str pos)))
+      (cond
+        ;; Found $ and we're not in math mode - start math
+        ((and (equal current-char #\$) (not in-math))
+         (convert-math-syntax-helper str (+ pos 1)
+                                   (concatenate 'string acc "@($")
+                                   t))
+        ;; Found $ and we're in math mode - end math
+        ((and (equal current-char #\$) in-math)
+         (convert-math-syntax-helper str (+ pos 1)
+                                   (concatenate 'string acc "$)")
+                                   nil))
+        ;; Regular character - just append
+        (t (convert-math-syntax-helper str (+ pos 1)
+                                     (concatenate 'string acc (string current-char))
+                                     in-math))))))
+
+; Convert all occurrences of $...$ in bibtex to @($...$) for XDOC Katex"
+(defun convert-math-syntax (str)
+  (if (stringp str)
+      (convert-math-syntax-helper str 0 "" nil)
+    str))
+
+; formatting functions
 
 (defun format-author-names (author-str)
   "Format author names for display"
   (if (stringp author-str)
-      (strip-brackets author-str)
+      (convert-bibtex-diacritics (convert-math-syntax (strip-brackets author-str)))
     "Unknown Author"))
 
 (defun format-title (title-str)
-  "Format title for display, handling special characters"
+  "Format title for display"
   (if (stringp title-str)
-      (strip-brackets title-str)
+      (convert-bibtex-diacritics (convert-math-syntax (strip-brackets title-str)))
     "Untitled"))
 
 (defun get-field-value (field-name fields)

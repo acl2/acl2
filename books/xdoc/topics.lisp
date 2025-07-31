@@ -1964,6 +1964,11 @@ manual.</p>")
 <li>@('&Uacute;') becomes &Uacute;</li>
 <li>@('&Ucirc;') becomes &Ucirc;</li>
 <li>@('&Uuml;') becomes &Uuml;</li>
+<li>@('&Aogon;') becomes &Aogon;</li>
+<li>@('&Eogon;') becomes &Eogon;</li>
+<li>@('&Iogon;') becomes &Iogon;</li>
+<li>@('&Uogon;') becomes &Uogon;</li>
+<li>@('&Nacute;') becomes &Nacute;</li>
 </ul>
 
 <p>Lower case letters with diacritics:</p>
@@ -1994,6 +1999,11 @@ manual.</p>")
 <li>@('&uacute;') becomes &uacute;</li>
 <li>@('&ucirc;') becomes &ucirc;</li>
 <li>@('&uuml;') becomes &uuml;</li>
+<li>@('&aogon;') becomes &aogon;</li>
+<li>@('&eogon;') becomes &eogon;</li>
+<li>@('&iogon;') becomes &iogon;</li>
+<li>@('&uogon;') becomes &uogon;</li>
+<li>@('&nacute;') becomes &nacute;</li>
 </ul>
 
 <p>Mathematical symbols:</p>
