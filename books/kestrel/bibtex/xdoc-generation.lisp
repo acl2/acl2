@@ -10,9 +10,7 @@
 
 (include-book "bibtex-parser")  ; Use the parser
 (include-book "xdoc/top" :dir :system)
-
-
-  (include-book "std/strings/strsubst" :dir :system)
+(include-book "std/strings/strsubst" :dir :system)
 
 ; Conversion functions for XDOC generation
 ; TODO: add guards
