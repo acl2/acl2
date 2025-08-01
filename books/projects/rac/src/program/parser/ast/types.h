@@ -321,7 +321,7 @@ public:
 
   bool
   canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
-    return false;
+    return isEqual(target);
   }
 
   virtual Sexpression *cast(Expression *rval) const override;
@@ -388,7 +388,7 @@ public:
 
   bool
   canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
-    return false;
+    return isEqual(target);
   }
 
   virtual Sexpression *cast(Expression *rval) const override;
@@ -415,7 +415,7 @@ public:
   Sexpression *getEnumVal(Symbol *s) const;
 
   bool canBeImplicitlyCastTo(const Type *target) const override {
-    return isa<const PrimType *>(target);
+    return isEqual(target) || isa<const PrimType *>(target);
   }
 
   bool isEqual(const Type *) const override;
@@ -446,7 +446,7 @@ public:
 
   bool
   canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
-    return false;
+    return isEqual(target);
   }
 
 private:

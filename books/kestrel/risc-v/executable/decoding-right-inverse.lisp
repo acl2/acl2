@@ -17,7 +17,7 @@
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
