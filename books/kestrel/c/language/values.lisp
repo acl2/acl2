@@ -373,6 +373,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum init-value
+  :short "Fixtype of initializer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of values for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer value has the same structure as an initializer,
+     but expressions are replaced with (their) values.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     out model of initializer values will be extended accordingly."))
+  (:single ((get value)))
+  (:list ((get value-list)))
+  :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection bounds-of-integer-values
   :short "Linear rules about the bounds of the integer values."
 
@@ -505,24 +523,6 @@
   (defruled unsigned-byte-p-of-value-ullong->get
     (unsigned-byte-p (llong-bits) (value-ullong->get val))
     :enable (ullong-max)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum init-value
-  :short "Fixtype of initializer values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a notion of values for "
-    (xdoc::seetopic "initer" "initializers")
-    ". An initializer value has the same structure as an initializer,
-     but expressions are replaced with (their) values.")
-   (xdoc::p
-    "As our model of initializers is extended,
-     out model of initializer values will be extended accordingly."))
-  (:single ((get value)))
-  (:list ((get value-list)))
-  :pred init-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
