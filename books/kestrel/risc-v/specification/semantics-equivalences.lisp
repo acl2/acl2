@@ -117,7 +117,6 @@
                 (stat (inc4-pc stat feat)))
              stat))
     :enable (exec-addi
-             read-xreg-signed
              write-xreg
              inc4-pc
              write-pc)
