@@ -137,36 +137,28 @@
    (expansion "The @(tsee encapsulate) generated from
                the call to @(tsee defmapping)."
               pseudo-event-formp)
-   (doma "Domain @($A$), in translated form." pseudo-termfnp)
-   (domb "Domain @($B$), in translated form." pseudo-termfnp)
-   (alpha "Conversion @($\\alpha$), in translated form." pseudo-termfnp)
-   (beta "Conversion @($\\beta$), in translated form." pseudo-termfnp)
-   (alpha-image "Name of the @(':alpha-image') theorem." symbolp)
-   (beta-image "Name of the @(':beta-image') theorem." symbolp)
-   (beta-of-alpha
-    "Name of the @(':beta-of-alpha') theorem, if present (otherwise @('nil')."
-    symbolp)
-   (alpha-of-beta
-    "Name of the @(':alpha-of-beta') theorem, if present (otherwise @('nil')."
-    symbolp)
-   (alpha-injective
-    "Name of the @(':alpha-injective') theorem, if present (otherwise @('nil')."
-    symbolp)
-   (beta-injective
-    "Name of the @(':beta-injective') theorem, if present (otherwise @('nil')."
-    symbolp)
-   (doma-guard
-    "Name of the @(':doma-guard') theorem, if present (otherwise @('nil'))."
-    symbolp)
-   (domb-guard
-    "Name of the @(':domb-guard') theorem, if present (otherwise @('nil'))."
-    symbolp)
-   (alpha-guard
-    "Name of the @(':alpha-guard') theorem, if present (otherwise @('nil'))."
-    symbolp)
-   (beta-guard
-    "Name of the @(':beta-guard') theorem, if present (otherwise @('nil'))."
-    symbolp)
+   (doma pseudo-termfnp "Domain @($A$), in translated form.")
+   (domb pseudo-termfnp "Domain @($B$), in translated form.")
+   (alpha pseudo-termfnp "Conversion @($\\alpha$), in translated form.")
+   (beta pseudo-termfnp "Conversion @($\\beta$), in translated form.")
+   (alpha-image symbolp "Name of the @(':alpha-image') theorem.")
+   (beta-image symbolp "Name of the @(':beta-image') theorem.")
+   (beta-of-alpha symbolp "Name of the @(':beta-of-alpha') theorem,
+                           if present (otherwise @('nil').")
+   (alpha-of-beta symbolp "Name of the @(':alpha-of-beta') theorem,
+                           if present (otherwise @('nil').")
+   (alpha-injective symbolp "Name of the @(':alpha-injective') theorem,
+                             if present (otherwise @('nil').")
+   (beta-injective symbolp "Name of the @(':beta-injective') theorem,
+                            if present (otherwise @('nil').")
+   (doma-guard symbolp "Name of the @(':doma-guard') theorem,
+                        if present (otherwise @('nil')).")
+   (domb-guard symbolp "Name of the @(':domb-guard') theorem,
+                        if present (otherwise @('nil')).")
+   (alpha-guard symbolp "Name of the @(':alpha-guard') theorem,
+                         if present (otherwise @('nil')).")
+   (beta-guard symbolp "Name of the @(':beta-guard') theorem,
+                        if present (otherwise @('nil')).")
    (unconditional booleanp "Value of the @(':unconditional') input,
                             i.e. whether some of the theorems
                             are unconditional or not."))
