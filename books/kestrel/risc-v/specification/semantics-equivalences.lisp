@@ -124,7 +124,32 @@
                     (n (feat->xlen feat))
                     (x (logext 12 (ubyte12-fix imm)))
                     (y (read-xreg-unsigned (ubyte5-fix rs1) stat feat)))
-    :disable bitops::loghead-of-+-of-loghead-same))
+    :disable bitops::loghead-of-+-of-loghead-same)
+
+  (defruled exec-addi-alt-def-signed-unsigned
+    (equal (exec-addi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (loghead (feat->xlen feat)
+                                      (logext 12 (ubyte12-fix imm))))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addi
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc)
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (loghead (feat->xlen feat)
+                                (logext 12 (ubyte12-fix imm))))
+                    (y (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs1)
+                                                   stat
+                                                   feat))))
+    :disable (bitops::loghead-of-+-of-loghead-same
+              acl2::loghead-+-cancel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
