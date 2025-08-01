@@ -23862,22 +23862,35 @@
   (let ((old-to-new (pairlis$ (export-names old) (export-names new))))
     (fix-export-updaters1 old old-to-new)))
 
-(defun absstobj-methods-logic-and-exec (methods)
+(defun absstobj-producer-fns (st-name methods)
   (cond ((endp methods) nil)
+        ((not (member-eq st-name
+                         (access absstobj-method (car methods) :stobjs-out)))
+
+; Part 3 of the Essay on the Correctness of Abstract Stobjs explains how the
+; canonical correspondence function is defined from the creator and exports.
+; Only the exports that can actually change the stobj can contribute to that
+; function's definition.
+
+         (absstobj-producer-fns st-name (cdr methods)))
         (t (list* (access absstobj-method (car methods) :logic)
                   (access absstobj-method (car methods) :exec)
-                  (absstobj-methods-logic-and-exec (cdr methods))))))
+                  (absstobj-producer-fns st-name (cdr methods))))))
 
-(defun chk-defabsstobj-attachments-ancestors (corr-fn-exists corr-fn methods
-                                                             wrld)
+(defun chk-defabsstobj-attachments-ancestors (st-name corr-fn-exists corr-fn
+                                                      methods wrld)
+
+; Return the function symbols for which attachments must be disallowed, as per
+; the Essay on the Correctness of Abstract Stobjs (especially Part 3).
+
   (let* ((recognizer-method (car methods))
          (creator-and-export-methods (cdr methods))
          (recognizer-logic (access absstobj-method recognizer-method :logic))
          (lst (cons recognizer-logic
                     (if corr-fn-exists
                         (list corr-fn)
-                      (absstobj-methods-logic-and-exec
-                       creator-and-export-methods)))))
+                      (absstobj-producer-fns st-name
+                                             creator-and-export-methods)))))
     (canonical-ancestors-lst lst wrld)))
 
 (defun chk-defabsstobj-attachments (name anc corr-fn-exists congruent-to ctx
@@ -24176,13 +24189,15 @@
                                 (anc (and (not congruent-to) ; optimization
                                           (not two-passes) ; optimization
                                           (chk-defabsstobj-attachments-ancestors
-                                           corr-fn-exists corr-fn methods
-                                           wrld2))))
+; St-name is st-name-new since discriminator = nil.
+                                           st-name corr-fn-exists corr-fn
+                                           methods wrld2))))
                            (er-progn
                             (if two-passes ; see comment above on "two passes"
                                 (value nil)
                               (chk-defabsstobj-attachments
-                               st-name ; i.e. st-name-new (discriminator = nil)
+; St-name is st-name-new since discriminator = nil (since two-passes = nil).
+                               st-name
                                anc corr-fn-exists congruent-to ctx wrld2
                                state)) 
                             (let* ((congruent-stobj-rep
@@ -24246,7 +24261,8 @@
                                     (if two-passes ; see comment above on "two passes"
                                         wrld3
                                       (put-defabsstobj-attachments-disallowed
-                                       st-name ; i.e. st-name-new (discriminator = nil)
+; St-name is st-name-new since discriminator = nil (since two-passes = nil).
+                                       st-name
                                        anc corr-fn-exists
                                        congruent-to wrld3 wrld2)))
                                    (discriminator1
