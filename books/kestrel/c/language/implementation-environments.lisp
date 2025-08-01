@@ -2262,7 +2262,14 @@
   :short "Number of bytes of unsigned and signed @('short') objects."
   (/ (ienv->short-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->short-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2301,7 +2308,14 @@
   :short "Number of bytes of unsigned and signed @('int') objects."
   (/ (ienv->int-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->int-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2340,7 +2354,14 @@
   :short "Number of bytes of unsigned and signed @('long') objects."
   (/ (ienv->long-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->long-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2379,7 +2400,14 @@
   :short "Number of bytes of unsigned and signed @('long long') objects."
   (/ (ienv->llong-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->llong-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
