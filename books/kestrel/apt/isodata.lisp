@@ -141,8 +141,9 @@
    the alist is @('nil').
    @('res-isomaps') results from processing @('isomaps')."
 
-  "@('xform-stobjs-p') is a flag indicating whether
-   the representation of any input or output stobj is being transformed."
+  "@('conv-stobjs-p') is a flag indicating whether
+   any of the isomorphic conversions in @('isomaps')
+   have input or output stobjs."
 
   "@('appcond-thm-names') is an alist
    from the applicability condition keywords
@@ -177,44 +178,39 @@
     with @(tsee defmapping-infop),
     but it has a few extra fields and omits a few fields.
     This aggregate is only for @(tsee isodata)'s internal use.")
-  ((isoname "Name of the @(tsee defiso)." symbolp)
-   (localp "Flag saying whether the @(tsee defiso) is locally generated or not."
-           booleanp)
-   (oldp "Recognizer of the old representation." pseudo-termfnp)
-   (newp "Recognizer of the new representation." pseudo-termfnp)
-   (forth "Conversion from old to new representation." pseudo-termfnp)
-   (back "Conversion from new to old representation." pseudo-termfnp)
-   (forth-image "Name of the @(':alpha-image') theorem of the @(tsee defiso)."
-                symbolp)
-   (back-image "Name of the @(':beta-image') theorem of the @(tsee defiso)."
-               symbolp)
-   (back-of-forth "Name of the @(':beta-of-alpha') theorem
-                   of the @(tsee defiso)."
-                  symbolp)
-   (forth-of-back "Name of the @(':alpha-of-beta') theorem
-                   of the @(tsee defiso)."
-                  symbolp)
-   (forth-injective "Name of the @(':alpha-injective') theorem
-                     of the @(tsee defiso)."
-                    symbolp)
-   (back-injective "Name of the @(':beta-injective') theorem
-                    of the @(tsee defiso)."
-                   symbolp)
-   (oldp-guard "Name of the @(':doma-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (newp-guard "Name of the @(':domb-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (forth-guard "Name of the @(':alpha-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-                symbolp)
-   (back-guard "Name of the @(':beta-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (hints "Optional hints for the @(tsee defiso),
-           if locally generated (otherwise @('nil'))."
-          keyword-value-listp))
+  ((isoname symbolp "Name of the @(tsee defiso).")
+   (localp booleanp "Flag saying whether the @(tsee defiso)
+                     is locally generated or not.")
+   (oldp pseudo-termfnp "Recognizer of the old representation.")
+   (newp pseudo-termfnp "Recognizer of the new representation.")
+   (forth pseudo-termfnp "Conversion from old to new representation.")
+   (back pseudo-termfnp "Conversion from new to old representation.")
+   (forth-image symbolp "Name of the @(':alpha-image') theorem
+                         of the @(tsee defiso).")
+   (back-image symbolp "Name of the @(':beta-image') theorem
+                        of the @(tsee defiso).")
+   (back-of-forth symbolp "Name of the @(':beta-of-alpha') theorem
+                           of the @(tsee defiso).")
+   (forth-of-back symbolp "Name of the @(':alpha-of-beta') theorem
+                           of the @(tsee defiso).")
+   (forth-injective symbolp "Name of the @(':alpha-injective') theorem
+                             of the @(tsee defiso).")
+   (back-injective symbolp "Name of the @(':beta-injective') theorem
+                            of the @(tsee defiso).")
+   (oldp-guard symbolp "Name of the @(':doma-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (newp-guard symbolp "Name of the @(':domb-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (forth-guard symbolp "Name of the @(':alpha-guard') theorem
+                         of the @(tsee defiso),
+                         if present (otherwise @('nil')).")
+   (back-guard symbolp "Name of the @(':beta-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (hints keyword-value-listp "Optional hints for the @(tsee defiso),
+                               if locally generated (otherwise @('nil'))."))
   :pred isodata-isomapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
