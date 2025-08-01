@@ -239,7 +239,7 @@
                    (equal a (car x))
                    (equal b (cdr x)))))))
 
-  (acl2::defiso stat-stat1-iso
+  (acl2::defiso stat1-iso
     statp
     stat1p
     stat1-from-stat
