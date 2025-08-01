@@ -45,7 +45,7 @@
 (defsection exec-addi-alt-defs
   :short "Equivalent semantic definitions of @('ADDI')."
 
-  (defruled exec-addi-alt-def
+  (defruled exec-addi-alt-def-signed-signed
     (equal (exec-addi rd rs1 imm stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (imm-operand (logext 12 (ubyte12-fix imm)))
