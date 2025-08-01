@@ -145,7 +145,7 @@
        "@(':info'), to print,
         besides any error output and the results,
         also some additional information about
-        the internal operation of @('deftreeops')
+        the internal operation of @('deftreeops').
         (Currently there is no difference between
         the @(':info') and the @(':result') outputs,
         but we plan to add @(':info') outputs.).")
