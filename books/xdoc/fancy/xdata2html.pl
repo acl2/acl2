@@ -184,6 +184,16 @@ sub wrap_xdoc_fragment {
 	$wrap .= "<!ENTITY Uacute \"&#218;\">";
 	$wrap .= "<!ENTITY Ucirc \"&#219;\">";
 	$wrap .= "<!ENTITY Uuml \"&#220;\">";
+	$wrap .= "<!ENTITY aogon \"&#261;\">";
+	$wrap .= "<!ENTITY eogon \"&#281;\">";
+	$wrap .= "<!ENTITY iogon \"&#303;\">";
+	$wrap .= "<!ENTITY uogon \"&#371;\">";
+	$wrap .= "<!ENTITY Aogon \"&#260;\">";
+	$wrap .= "<!ENTITY Eogon \"&#280;\">";
+	$wrap .= "<!ENTITY Iogon \"&#302;\">";
+	$wrap .= "<!ENTITY Uogon \"&#370;\">";
+	$wrap .= "<!ENTITY Nacute \"&#323;\">";
+	$wrap .= "<!ENTITY nacute \"&#324;\">";
 
 
     $wrap .= "]>";

@@ -445,6 +445,11 @@
     ("Uacute" "\\Uacute" 218)
     ("Ucirc" "\\Ucirc" 219)
     ("Uuml" "\\Uuml" 220)
+    ("Aogon" "\\Aogon" 260)
+    ("Eogon" "\\Eogon" 280)
+    ("Iogon" "\\Iogon" 302)
+    ("Uogon" "\\Uogon" 370)
+    ("Nacute" "\\Nacute" 323)
 
 ; lower case letters with diacritics
 
@@ -473,6 +478,11 @@
     ("uacute" "\\uacute" 250)
     ("ucirc" "\\ucirc" 251)
     ("uuml" "\\uuml" 252)
+    ("aogon" "\\aogon" 261)
+    ("eogon" "\\eogon" 281)
+    ("iogon" "\\iogon" 303)
+    ("uogon" "\\uogon" 371)
+    ("nacute" "\\nacute" 324)
 
 ; math symbols (ok to add more)
 

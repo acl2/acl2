@@ -48,6 +48,23 @@
         start-pos
       (find-char str c (1+ start-pos)))))
 
+(defun find-unescaped-quote (str pos)
+  "Find the position of an unescaped quote character starting from pos"
+  (declare (xargs :guard (and (stringp str)
+                              (natp pos)
+                              (<= pos (length str)))
+                  :measure (nfix (- (length str) pos))))
+  (if (or (not (mbt (natp pos)))
+          (>= pos (length str)))
+      nil
+    (let ((c (char str pos)))
+      (cond ((equal c #\")
+             (if (and (> pos 0)
+                      (equal (char str (1- pos)) #\\ ))
+                 (find-unescaped-quote str (1+ pos))
+               pos))
+            (t
+              (find-unescaped-quote str (1+ pos)))))))
 
 (defun find-matching-brace-helper (str pos brace-count)
   "Helper for find-matching-brace"
@@ -69,6 +86,7 @@
                 (t
                   (find-matching-brace-helper str (1+ pos) brace-count)))))
     nil))
+
 
 (defun find-matching-brace (str start-pos)
   "Find the position of the matching closing brace"
@@ -266,6 +284,22 @@
            (< (find-char str c start-pos)
               (length str))))
 
+
+(defthm find-unescaped-quote-upper-bound
+  (implies (and (stringp str)
+                (natp pos)
+                (<= pos (length str))
+                (find-unescaped-quote str pos))
+           (and (natp (find-unescaped-quote str pos))
+                (<= (find-unescaped-quote str pos) (length str)))))
+
+(defthm find-unescaped-quote-lower-bound
+  (implies (and (stringp str)
+                (natp pos)
+                (<= pos (length str))
+                (find-unescaped-quote str pos))
+           (<= pos (find-unescaped-quote str pos))))
+
 (defun parse-field-value (str pos)
   "Parse a field value (after the = sign)"
   (declare (xargs :guard (and (stringp str)
@@ -293,7 +327,7 @@
                    (mv nil nil))))
               ((equal first-char #\")
                ;; Quoted value
-               (let ((end-pos (find-char str #\" (1+ start-pos))))
+               (let ((end-pos (find-unescaped-quote str (1+ start-pos))))
                  (if end-pos
                      (let ((value (subseq str (1+ start-pos) end-pos)))
                        (mv value (1+ end-pos)))

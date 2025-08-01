@@ -133,15 +133,19 @@ function wrapXdocFragment(str) {
         <!ENTITY atilde "&#227;">
         <!ENTITY auml "&#228;">
         <!ENTITY aring "&#229;">
+        <!ENTITY aogon "&#261;">
         <!ENTITY egrave "&#232;">
         <!ENTITY eacute "&#233;">
         <!ENTITY ecirc "&#234;">
         <!ENTITY euml "&#235;">
+        <!ENTITY eogon "&#281;">
         <!ENTITY igrave "&#236;">
         <!ENTITY iacute "&#237;">
         <!ENTITY icirc "&#238;">
         <!ENTITY iuml "&#239;">
+        <!ENTITY iogon "&#303;">
         <!ENTITY ntilde "&#241;">
+        <!ENTITY nacute "&#324;">
         <!ENTITY ograve "&#242;">
         <!ENTITY oacute "&#243;">
         <!ENTITY ocirc "&#244;">
@@ -151,6 +155,7 @@ function wrapXdocFragment(str) {
         <!ENTITY uacute "&#250;">
         <!ENTITY ucirc "&#251;">
         <!ENTITY uuml "&#252;">
+        <!ENTITY uogon "&#371;">
         <!ENTITY Ccedil "&#199;">
         <!ENTITY Aacute "&#193;">
         <!ENTITY Agrave "&#192;">
@@ -158,15 +163,19 @@ function wrapXdocFragment(str) {
         <!ENTITY Atilde "&#195;">
         <!ENTITY Auml "&#196;">
         <!ENTITY Aring "&#197;">
+        <!ENTITY Aogon "&#260;">
         <!ENTITY Egrave "&#200;">
         <!ENTITY Eacute "&#201;">
         <!ENTITY Ecirc "&#202;">
         <!ENTITY Euml "&#203;">
+        <!ENTITY Eogon "&#280;">
         <!ENTITY Igrave "&#204;">
         <!ENTITY Iacute "&#205;">
         <!ENTITY Icirc "&#206;">
         <!ENTITY Iuml "&#207;">
+        <!ENTITY Iogon "&#302;">
         <!ENTITY Ntilde "&#209;">
+        <!ENTITY Nacute "&#323;">
         <!ENTITY Ograve "&#210;">
         <!ENTITY Oacute "&#211;">
         <!ENTITY Ocirc "&#212;">
@@ -176,6 +185,7 @@ function wrapXdocFragment(str) {
         <!ENTITY Uacute "&#218;">
         <!ENTITY Ucirc "&#219;">
         <!ENTITY Uuml "&#220;">
+        <!ENTITY Uogon "&#370;">
 
     ]>
     <root>${str}</root>`;
