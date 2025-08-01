@@ -484,15 +484,16 @@
        ((unless (or equalp (stmt-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (stmt-type old))
+       (type? (stmt-type old))
        ((unless (or equalp
                     (equal (stmt-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new statement ~x1 differs from ~
                 the type ~x2 of the old statement ~x3."
-               (stmt-type new) new type old)
+               (stmt-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -561,7 +562,7 @@
      the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
      are syntactically equal or not;
-     if the type is @('void'),
+     if the type is @('void') or @('nil'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
      If old and new block items are not syntactically equal,
@@ -578,15 +579,16 @@
        ((unless (or equalp (block-item-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-type old))
+       (type? (block-item-type old))
        ((unless (or equalp
                     (equal (block-item-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new block item ~x1 differs from ~
                 the type ~x2 of the old block item ~x3."
-               (block-item-type new) new type old)
+               (block-item-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -655,10 +657,11 @@
      the old block item list returns a value of the appropriate type,
      regardless of whether old and new block item lists
      are syntactically equal or not;
-     if the type is @('void'),
+     if the type is @('void') or @('nil'),
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
-     If old and new block item lists are not equal, the theorem also says that
+     If old and new block item lists are not syntactically equal,
+     the theorem also says that
      their execution returns equal values and equal computation states,
      and that the execution of the new block item list
      does not yield an error."))
@@ -671,15 +674,16 @@
        ((unless (or equalp (block-item-list-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-list-type old))
+       (type? (block-item-list-type old))
        ((unless (or equalp
                     (equal (block-item-list-type new)
-                           type)))
+                           type?)))
         (raise "Internal error: ~
                 the type ~x0 of the new block item list ~x1 differs from ~
                 the type ~x2 of the old block item list ~x3."
-               (block-item-list-type new) new type old)
+               (block-item-list-type new) new type? old)
         (mv '(_) nil 1))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -2759,7 +2763,8 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys stmt-vartys
                                 :diffp stmt-diffp)))
-       (type (stmt-type stmt))
+       (type? (stmt-type stmt))
+       (type (or type? (type-void)))
        (hints (if (type-case type :void)
                   `(("Goal"
                      :in-theory '((:e ldm-block-item)
@@ -2882,6 +2887,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-block-item-list-empty ((gin simpadd0-ginp))
+  :returns (gout simpadd0-goutp)
+  :short "Transform an empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is introduced mainly for uniformity.
+     It actually takes and returns no block item list,
+     because there is only one empty block item list.
+     We just generate a dummy theorem for uniformity
+     and to facilitate compositional proof generation."))
+  (b* (((simpadd0-gin gin) gin)
+       (items nil)
+       (hints '(("Goal" :in-theory '((:e ldm-block-item-list)))))
+       (vartys nil)
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-block-item-list-thm items
+                                          items
+                                          vartys
+                                          gin.const-new
+                                          gin.thm-index
+                                          hints)))
+    (make-simpadd0-gout :events (list thm-event)
+                        :thm-name thm-name
+                        :thm-index thm-index
+                        :names-to-avoid (cons thm-name gin.names-to-avoid)
+                        :vartys vartys
+                        :diffp nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-block-item-list-cons ((item block-itemp)
+                                       (item-new block-itemp)
+                                       (item-events pseudo-event-form-listp)
+                                       (item-thm-name symbolp)
+                                       (item-vartys ident-type-mapp)
+                                       (item-diffp booleanp)
+                                       (items block-item-listp)
+                                       (items-new block-item-listp)
+                                       (items-events pseudo-event-form-listp)
+                                       (items-thm-name symbolp)
+                                       (items-vartys ident-type-mapp)
+                                       (items-diffp booleanp)
+                                       (gin simpadd0-ginp))
+  :guard (and (block-item-unambp item)
+              (block-item-unambp item-new)
+              (block-item-list-unambp items)
+              (block-item-list-unambp items-new))
+  :returns (mv (item+items block-item-listp) (gout simpadd0-goutp))
+  :short "Transform a non-empty list of block items."
+  (declare (ignore item item-thm-name items items-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (item+items-new (cons (block-item-fix item-new)
+                             (block-item-list-fix items-new)))
+       (item-vartys (ident-type-map-fix item-vartys))
+       (items-vartys (ident-type-map-fix items-vartys))
+       ((unless (omap::compatiblep item-vartys items-vartys))
+        (raise "Internal error: ~
+                incompatible variable-type maps ~x0 and ~x1."
+               item-vartys items-vartys)
+        (mv nil (irr-simpadd0-gout)))
+       (vartys (omap::update* item-vartys items-vartys))
+       (diffp (or item-diffp items-diffp))
+       (gout-no-thm
+        (make-simpadd0-gout :events (append item-events items-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :vartys vartys
+                            :diffp diffp)))
+    (mv item+items-new gout-no-thm))
+  :hooks (:fix)
+
+  ///
+
+  (defret block-item-list-unambp-of-simpadd0-block-item-list-cons
+    (block-item-list-unambp item+items)
+    :hyp (and (block-item-unambp item-new)
+              (block-item-list-unambp items-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-block-item-list-one ((item block-itemp)
                                       (item-new block-itemp)
                                       (item-events pseudo-event-form-listp)
@@ -2907,7 +2995,8 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       (type (block-item-type item))
+       (type? (block-item-type item))
+       (type (or type? (type-void)))
        ((unless item-thm-name)
         (mv items-new
             (make-simpadd0-gout :events item-events
@@ -5357,13 +5446,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil
-              (make-simpadd0-gout
-               :events nil
-               :thm-name nil
-               :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+              (simpadd0-block-item-list-empty gin)))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin state))
          (gin (simpadd0-gin-update gin gout-item))
@@ -5376,15 +5459,21 @@
                                         gout-item.diffp
                                         gin))
          ((mv new-items (simpadd0-gout gout-items))
-          (simpadd0-block-item-list (cdr items) gin state)))
-      (mv (cons new-item new-items)
-          (make-simpadd0-gout
-           :events (append gout-item.events gout-items.events)
-           :thm-name nil
-           :thm-index gout-items.thm-index
-           :names-to-avoid gout-items.names-to-avoid
-           :vartys (omap::update* gout-item.vartys gout-items.vartys)
-           :diffp (or gout-item.diffp gout-items.diffp))))
+          (simpadd0-block-item-list (cdr items) gin state))
+         (gin (simpadd0-gin-update gin gout-items)))
+      (simpadd0-block-item-list-cons (car items)
+                                     new-item
+                                     gout-item.events
+                                     gout-item.thm-name
+                                     gout-item.vartys
+                                     gout-item.diffp
+                                     (cdr items)
+                                     new-items
+                                     gout-items.events
+                                     gout-items.thm-name
+                                     gout-items.vartys
+                                     gout-items.diffp
+                                     gin))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5710,7 +5799,8 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (type (block-item-list-type items))
+       (type? (block-item-list-type items))
+       (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)

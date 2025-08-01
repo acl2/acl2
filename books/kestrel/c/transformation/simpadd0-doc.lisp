@@ -117,10 +117,10 @@
        function parameters,
        the unary operators that do not involve pointers
        (i.e. @('+'), @('-'), @('~'), @('!')),
-       the binary operators that are pure and strict
+       the binary operators that are pure
        (i.e. @('*'), @('/'), @('%'), @('+'), @('-'), @('<<'), @('>>'),
        @('<'), @('>'), @('<='), @('>='), @('=='), @('!='),
-       @('&'), @('^'), @('|')),
+       @('&'), @('^'), @('|'), @('&&'), @('||')),
        and the ternary conditional operator @('? :').
        Note that the transformed function definition in @('*new*')
        satisfies the same restrictions.")
