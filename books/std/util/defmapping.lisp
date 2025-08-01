@@ -95,7 +95,10 @@
    described in the documentation."
 
   "@('b1...bm') is the list of variables @('b1'), ..., @('bm')
-   described in the documentation."))
+   described in the documentation."
+
+  "@('stobjp') is a flag saying whether
+   any of the conversions has input or output stobjs."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,6 +144,8 @@
    (domb pseudo-termfnp "Domain @($B$), in translated form.")
    (alpha pseudo-termfnp "Conversion @($\\alpha$), in translated form.")
    (beta pseudo-termfnp "Conversion @($\\beta$), in translated form.")
+   (stobjp booleanp "Whether @($\\alpha$) or @($\\beta$) has
+                     any input or output stobjs.")
    (alpha-image symbolp "Name of the @(':alpha-image') theorem.")
    (beta-image symbolp "Name of the @(':beta-image') theorem.")
    (beta-of-alpha symbolp "Name of the @(':beta-of-alpha') theorem,
@@ -241,11 +246,14 @@
   :returns (mv erp
                (result "A tuple @('(function$
                                     arity
-                                    numres)')
+                                    numres
+                                    stobjp)')
                         satisfying
                         @('(typed-tuplep pseudo-termfnp
                                          natp
-                                         posp)').")
+                                         posp
+                                         booleanp
+                                         result)').")
                state)
   :mode :program
   :short "Process one of the input functions
@@ -261,9 +269,12 @@
                                        t nil))
        ((er &) (ensure-function/lambda-logic-mode$ fn/lambda description t nil))
        ((er &) (ensure-function/lambda-closed$ fn/lambda description t nil))
+       (stobjp (or (not (equal stobjs-in (repeat (len stobjs-in) nil)))
+                   (not (equal stobjs-out (repeat (len stobjs-out) nil)))))
        ((unless guard-thms$) (value (list fn/lambda
                                           (len stobjs-in)
-                                          (len stobjs-out))))
+                                          (len stobjs-out)
+                                          stobjp)))
        ((er &) (ensure-function/lambda-guard-verified-exec-fns$
                 fn/lambda
                 (msg
@@ -272,7 +283,8 @@
                 t nil)))
     (value (list fn/lambda
                  (len stobjs-in)
-                 (len stobjs-out)))))
+                 (len stobjs-out)
+                 stobjp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -284,11 +296,12 @@
                                       ctx
                                       state)
   :returns (mv erp
-               (result "A tuple @('(doma$ domb$ alpha$ beta$)')
+               (result "A tuple @('(doma$ domb$ alpha$ beta$ stobjp)')
                         satisfying @('(typed-tuplep pseudo-termfnp
                                                     pseudo-termfnp
                                                     pseudo-termfnp
                                                     pseudo-termfnp
+                                                    booleanp
                                                     result)').")
                state)
   :mode :program
@@ -297,13 +310,13 @@
   (xdoc::topstring-p
    "We call @(tsee defmapping-process-function) on each
     and then we check the constraints on the arities and numbers of results.")
-  (b* (((er (list doma$ doma-arity doma-numres))
+  (b* (((er (list doma$ doma-arity doma-numres &))
         (defmapping-process-function doma 2 guard-thms$ ctx state))
-       ((er (list domb$ domb-arity domb-numres))
+       ((er (list domb$ domb-arity domb-numres &))
         (defmapping-process-function domb 3 guard-thms$ ctx state))
-       ((er (list alpha$ alpha-arity alpha-numres))
+       ((er (list alpha$ alpha-arity alpha-numres alpha-stobjp))
         (defmapping-process-function alpha 4 guard-thms$ ctx state))
-       ((er (list beta$ beta-arity beta-numres))
+       ((er (list beta$ beta-arity beta-numres beta-stobjp))
         (defmapping-process-function beta 5 guard-thms$ ctx state))
        ((unless (= doma-numres 1))
         (er-soft+ ctx t nil
@@ -339,7 +352,7 @@
                    must equal the arity ~x1 of the domain ~x2, ~
                    but it is ~x3 instead."
                   beta doma-arity doma beta-numres)))
-    (value (list doma$ domb$ alpha$ beta$))))
+    (value (list doma$ domb$ alpha$ beta$ (or alpha-stobjp beta-stobjp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,6 +549,7 @@
                                     domb$
                                     alpha$
                                     beta$
+                                    stobjp
                                     thm-names$
                                     thm-enable$
                                     hints$)')
@@ -544,6 +558,7 @@
                                          pseudo-termfnp
                                          pseudo-termfnp
                                          pseudo-termfnp
+                                         booleanp
                                          symbol-symbol-alistp
                                          keyword-listp
                                          symbol-truelist-alistp
@@ -554,14 +569,15 @@
   (b* (((er &) (defmapping-process-name name ctx state))
        ((er &) (ensure-value-is-boolean$ guard-thms
                                          "The :GUARD-THMS input" t nil))
-       ((er (list doma$ domb$ alpha$ beta$)) (defmapping-process-functions
-                                               doma
-                                               domb
-                                               alpha
-                                               beta
-                                               guard-thms
-                                               ctx
-                                               state))
+       ((er (list doma$ domb$ alpha$ beta$ stobjp))
+        (defmapping-process-functions
+          doma
+          domb
+          alpha
+          beta
+          guard-thms
+          ctx
+          state))
        ((er &) (ensure-value-is-boolean$ beta-of-alpha-thm
                                          "The :BETA-OF-ALPHA-THM input" t nil))
        ((er &) (ensure-value-is-boolean$ alpha-of-beta-thm
@@ -596,6 +612,7 @@
                  domb$
                  alpha$
                  beta$
+                 stobjp
                  thm-names$
                  thm-enable$
                  hints$))))
@@ -1207,6 +1224,7 @@
                                   (domb$ pseudo-termfnp)
                                   (alpha$ pseudo-termfnp)
                                   (beta$ pseudo-termfnp)
+                                  (stobjp booleanp)
                                   (unconditional$ booleanp)
                                   (thm-names$ symbol-symbol-alistp)
                                   (call$ pseudo-event-formp)
@@ -1230,6 +1248,7 @@
                                    :domb domb$
                                    :alpha alpha$
                                    :beta beta$
+                                   :stobjp stobjp
                                    :alpha-image alpha-image
                                    :beta-image beta-image
                                    :beta-of-alpha beta-of-alpha
@@ -1266,6 +1285,7 @@
                                    (domb$ pseudo-termfnp)
                                    (alpha$ pseudo-termfnp)
                                    (beta$ pseudo-termfnp)
+                                   (stobjp booleanp)
                                    (beta-of-alpha-thm$ booleanp)
                                    (alpha-of-beta-thm$ booleanp)
                                    (guard-thms$ booleanp)
@@ -1373,6 +1393,7 @@
                        domb$
                        alpha$
                        beta$
+                       stobjp
                        unconditional$
                        thm-names$
                        call$
@@ -1474,6 +1495,7 @@
                   domb$
                   alpha$
                   beta$
+                  stobjp
                   thm-names$
                   thm-enable$
                   hints$))
@@ -1500,6 +1522,7 @@
       domb$
       alpha$
       beta$
+      stobjp
       beta-of-alpha-thm
       alpha-of-beta-thm
       guard-thms
