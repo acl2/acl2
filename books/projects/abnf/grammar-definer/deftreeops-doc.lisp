@@ -564,7 +564,7 @@
       See @(tsee deftreeops-table) in the implementation for details.")
 
     (xdoc::p
-     "ACL2 already provides facilities to inspect table and their entries.
+     "ACL2 already provides facilities to inspect tables and their entries.
       We provide a macro")
     (xdoc::codeblock
      "(deftreeops-show-info *grammar*)")
