@@ -27352,6 +27352,8 @@
 ; Spec for this function: Both arguments are duplicate-free symbol alists.  For
 ; every (key . val) in alist2 we a put-assoc-eq of key and val into alist1.
 
+  (declare (xargs :guard (and (symbol-alistp alist1) (symbol-alistp alist2))
+                  :measure (len alist2)))
   (cond ((endp alist2) alist1)
 
 ; The following clause is an optimization.  If alist1 and alist2 are equal and

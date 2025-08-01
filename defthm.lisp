@@ -5336,13 +5336,12 @@
 
 (defun mark-attachment-disallowed (common-anc name rule-class wrld installed-w)
 
-; Common-anc lists the common ancestors of the evaluator and meta functions of
-; the :meta and :clause-processor rules stored under name.  Rule-class is t if
-; there is more than one such rule; otherwise it is the rule's rule-class.  We
-; add (name . rule-class) to the lst of reasons that each function in
-; common-anc is not allowed to have an attachment.
-
-; See also Appendix 2 of the Essay on Correctness of Meta Reasoning.
+; Rule-class is t if there is more than one such rule; otherwise it is a rule's
+; rule-class.  We add (name . rule-class) to the lst of reasons that each
+; function in common-anc is not allowed to have an attachment.  One common
+; application is when common-anc lists the common ancestors of the evaluator
+; and meta functions of the :meta and :clause-processor rules stored under
+; name; see also Appendix 2 of the Essay on Correctness of Meta Reasoning.
 
   (cond
    ((endp common-anc) wrld)

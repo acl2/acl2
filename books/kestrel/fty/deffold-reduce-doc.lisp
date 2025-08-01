@@ -348,6 +348,21 @@
        and added to the generated ruleset described below."))
 
     (xdoc::desc
+     "Accompanying option theorems."
+     (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       for each @(tsee defoption) type specified by the @(':types') input,
+       whose base type is @('<base>'),
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-when-<base>-<suffix>')"))
+     (xdoc::p
+      "These theorems are disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
      "Accompanying omap type theorems."
      (xdoc::p
       "For each @(tsee defomap) type specified by the @(':types') input,
@@ -369,5 +384,5 @@
 
     (xdoc::p
      "The theorems that accompany the predicates
-      are generated as part of the @(tsee define) and @(tsee defines)
-      that define the predicates, after the @('///')."))))
+      are generated after the @(tsee define) and @(tsee defines)
+      that define the predicates."))))

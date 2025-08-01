@@ -646,6 +646,7 @@
                                 :scope (1- (len scopes)))))
        (objdesign-of-var-aux var frame (cdr scopes)))
      :guard-hints (("Goal" :in-theory (enable natp len)))
+
      ///
 
      (fty::deffixequiv objdesign-of-var-aux

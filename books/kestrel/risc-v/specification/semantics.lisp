@@ -14,7 +14,7 @@
 (include-book "instructions")
 (include-book "states")
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -71,9 +71,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer.
      We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))

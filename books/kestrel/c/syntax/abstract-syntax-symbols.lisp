@@ -541,6 +541,7 @@
 
     type-case
     type-kind
+    type-void
     type-sint
 
     ident-type-map

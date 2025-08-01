@@ -13,7 +13,7 @@
 
 (include-book "states32i")
 
-(include-book "../library-extensions/theorems")
+(include-book "../library-extensions/logops-theorems")
 
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
