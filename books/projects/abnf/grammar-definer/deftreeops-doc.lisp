@@ -186,7 +186,8 @@
       to the name of the constant whose value is the grammar),
       and whose only parent is the @('*grammar*') symbol.
       That is, the generated section is
-      a sub-topic of the XDOC topic for the grammar.")
+      a sub-topic of the XDOC topic for the grammar
+      (this assumes that that parent topic exists).")
 
     (xdoc::desc
      (list
