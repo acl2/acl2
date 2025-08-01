@@ -58,55 +58,11 @@
              write-xreg
              inc4-pc
              write-pc)
-    :use (:instance lemma
-                    (imm (ubyte12-fix imm))
-                    (rs1 (ubyte5-fix rs1)))
-    :prep-lemmas
-    ((defruled lemma
-       (equal (loghead (feat->xlen feat)
-                       (+ (logext 12 imm)
-                          (logext (feat->xlen feat)
-                                  (read-xreg-unsigned rs1 stat feat))))
-              (loghead (feat->xlen feat)
-                       (+ (loghead (feat->xlen feat)
-                                   (logext 12 imm))
-                          (read-xreg-unsigned rs1 stat feat))))
-       :use (lemma1 lemma2 lemma3)
-       :disable bitops::loghead-of-+-of-loghead-same
-       :cases ((feat-32p feat))
-       :prep-lemmas
-       ((defruled lemma1
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat)))))
-          :cases ((feat-32p feat)))
-        (defruled lemma2
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat))))
-          :enable (loghead-of-logext-plus-logext
-                   ifix))
-        (defruled lemma3
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat)))
-                 (loghead (feat->xlen feat)
-                          (+ (loghead (feat->xlen feat)
-                                      (logext 12 imm))
-                             (loghead (feat->xlen feat)
-                                      (read-xreg-unsigned
-                                       rs1 stat feat))))))))))
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (logext 12 (ubyte12-fix imm)))
+                    (y (read-xreg-signed (ubyte5-fix rs1) stat feat)))
+    :disable bitops::loghead-of-+-of-loghead-same)
 
   (defruled exec-addi-alt-def-unsigned-signed
     (equal (exec-addi rd rs1 imm stat feat)
