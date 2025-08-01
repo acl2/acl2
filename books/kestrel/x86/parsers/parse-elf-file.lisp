@@ -19,7 +19,6 @@
 ;; https://gabi.xinuos.com/elf/a-emachine.html
 
 (include-book "parser-utils")
-(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; reduce?
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
