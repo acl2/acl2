@@ -100,10 +100,7 @@
                     (n (feat->xlen feat))
                     (x (loghead (feat->xlen feat)
                                 (logext 12 (ubyte12-fix imm))))
-                    (y (logext (feat->xlen feat)
-                               (read-xreg-unsigned (ubyte5-fix rs1)
-                                                   stat
-                                                   feat))))
+                    (y (read-xreg-signed (ubyte5-fix rs1) stat feat)))
     :disable (bitops::loghead-of-+-of-loghead-same
               acl2::loghead-+-cancel)))
 
