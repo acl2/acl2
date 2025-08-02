@@ -740,7 +740,9 @@
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
+       ;; Make sure it's an x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
@@ -764,8 +766,6 @@
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
-
-       ;;                                  ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
        ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
        ;;                                  ))
@@ -773,11 +773,10 @@
                            (eq :mach-o-64 executable-type)
                            (eq :pe-64 executable-type) ; todo, also need to change the assumptions
                            ))
-       ;; (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
-       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
                                      5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)
@@ -1047,94 +1046,77 @@
               ;;       assumption-rules input-assumption-vars state))
 
               ;; legacy case (generate some assumptions and then simplify them):
-              ;; Covers pe-64, pe-32, elf-32, and mach-o-32.
+              ;; Covers pe-32, elf-32, and mach-o-32.
               ;; TODO: Why is assumptions-and-vars-for-inputs in this legacy case?
               (b* (;;todo: finish adding support for :entry-point!
                    ((when (and (eq :entry-point target)
                                (not (eq :pe-32 executable-type))))
-                    (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+                    (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
                     (mv :bad-entry-point nil nil nil nil state))
                    ((when (and (natp target)
                                (not (eq :pe-32 executable-type))))
-                    (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+                    (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
                     (mv :bad-entry-point nil nil nil nil state))
-                   (text-offset
-                     (and 64-bitp ; todo
-                          (if (eq :pe-64 executable-type)
-                              'text-offset ; todo: match what we do for other executable types
-                            (if (or (eq :elf-32 executable-type)
-                                    ;;(eq :elf-64 executable-type)
-                                    )
-                                (if position-independentp 'text-offset `,(acl2::get-elf-text-section-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
-                              (if (eq :mach-o-32 executable-type)
-                                  nil ; todo
-                                (if (eq :pe-32 executable-type)
-                                    nil ; todo
-                                  (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
-                   (code-length
-                     (and 64-bitp ; todo
-                          (if (eq :pe-64 executable-type)
-                              10000 ; fixme
-                            (if (or (eq :elf-32 executable-type)
-                                    ;;(eq :elf-64 executable-type)
-                                    )
-                                (len (acl2::get-elf-code parsed-executable))
-                              (if (eq :mach-o-32 executable-type)
-                                  nil ; todo
-                                (if (eq :pe-32 executable-type)
-                                    nil ; todo
-                                  (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                   ;; (text-offset
+                   ;;   (and 64-bitp ; todo
+                   ;;        (if (eq :pe-64 executable-type)
+                   ;;            'text-offset ; todo: match what we do for other executable types
+                   ;;          (if (or (eq :elf-32 executable-type)
+                   ;;                  ;;(eq :elf-64 executable-type)
+                   ;;                  )
+                   ;;              (if position-independentp 'text-offset `,(acl2::get-elf-text-section-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
+                   ;;            (if (eq :mach-o-32 executable-type)
+                   ;;                nil ; todo
+                   ;;              (if (eq :pe-32 executable-type)
+                   ;;                  nil ; todo
+                   ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                   ;; (code-length
+                   ;;   (and 64-bitp ; todo
+                   ;;        (if (eq :pe-64 executable-type)
+                   ;;            10000 ; fixme
+                   ;;          (if (or (eq :elf-32 executable-type)
+                   ;;                  ;;(eq :elf-64 executable-type)
+                   ;;                  )
+                   ;;              (len (acl2::get-elf-code parsed-executable))
+                   ;;            (if (eq :mach-o-32 executable-type)
+                   ;;                nil ; todo
+                   ;;              (if (eq :pe-32 executable-type)
+                   ;;                  nil ; todo
+                   ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))';
                    (standard-assumptions
                      (if suppress-assumptions
                          ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                          nil
-                       (if (eq :pe-64 executable-type) ; todo: impossible?
-                           `((standard-assumptions-pe-64 ',target
-                                                         ',parsed-executable
-                                                         ',stack-slots
-                                                         ',existing-stack-slots
-                                                         text-offset
-                                                         ',bvp
-                                                         x86))
-                         ;; (if (eq :elf-64 executable-type)
-                         ;;     `((standard-assumptions-elf-64 ',target
-                         ;;                                    ',parsed-executable
-                         ;;                                    ',stack-slots
-                         ;;                                    ,text-offset
-                         ;;                                    ',bvp
-                         ;;                                    x86))
-                         (if (eq :mach-o-32 executable-type)
-                             (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
-                           (if (eq :pe-32 executable-type)
-                               ;; todo: try without expanding this:
-                               (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
-                             ;;todo: add support for :elf-32
-                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))
-                     ;  )
-                         )))
+                       (if (eq :mach-o-32 executable-type)
+                           (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
+                         (if (eq :pe-32 executable-type)
+                             ;; todo: try without expanding this:
+                             (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
+                           ;;todo: add support for :elf-32
+                           (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))
                    ;; Add 32-bit-specific assumptions:
-                   (standard-assumptions (if 64-bitp
-                                             standard-assumptions
-                                           (append (register-high-bit-assumptions)
-                                                   standard-assumptions)))
+                   (standard-assumptions (append (register-high-bit-assumptions)
+                                                 standard-assumptions))
 
                    ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
                    ((mv input-assumptions input-assumption-vars)
-                    (if (and 64-bitp                                      ; todo
-                             (not (equal inputs :skip)) ; really means generate no assumptions
-                             )
-                        (assumptions-and-vars-for-inputs inputs ; these are names-and-types
-                                                         ;; todo: handle zmm regs and values passed on the stack?!:
-                                                         ;; handle structs that fit in 2 registers?
-                                                         ;; See the System V AMD64 ABI
-                                                         '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                                         stack-slots
-                                                         existing-stack-slots
-                                                         (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
-                                                         type-assumptions-for-array-varsp
-                                                         nil nil
-                                                         new-canonicalp)
-                      (mv nil nil)))
+                    ;; (if (and 64-bitp                                      ; todo
+                    ;;          (not (equal inputs :skip)) ; really means generate no assumptions
+                    ;;          )
+                    ;;     (assumptions-and-vars-for-inputs inputs ; these are names-and-types
+                    ;;                                      ;; todo: handle zmm regs and values passed on the stack?!:
+                    ;;                                      ;; handle structs that fit in 2 registers?
+                    ;;                                      ;; See the System V AMD64 ABI
+                    ;;                                      '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                    ;;                                      stack-slots
+                    ;;                                      existing-stack-slots
+                    ;;                                      (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                    ;;                                      type-assumptions-for-array-varsp
+                    ;;                                      nil nil
+                    ;;                                      new-canonicalp)
+                    (mv nil nil)
+                    ;)
+                    )
                    (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                    (assumptions (append assumptions extra-assumptions))
                    (assumptions-to-return assumptions) ; untranslated?
@@ -1143,7 +1125,7 @@
                                                                          (print-terms-elided assumptions
                                                                                              '(;; (standard-assumptions-elf-64 t nil t t t t)
                                                                                                ;; (standard-assumptions-mach-o-64 t nil t t t t)
-                                                                                               (standard-assumptions-pe-64 t nil t t t t)
+                                                                                               ;; (standard-assumptions-pe-64 t nil t t t t)
                                                                                                (equal t nil)
                                                                                                )) ; todo: more?
                                                                          (cw ")~%"))))
@@ -1154,7 +1136,9 @@
                    ;; others, because opening things like read64 involves testing
                    ;; canonical-addressp (which we know from other assumptions is true):
                    ((mv erp assumptions assumption-rules state)
-                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
+                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules
+                                          64-bitp ; todo: always nil
+                                          count-hits bvp nil state))
                    ((when erp) (mv erp nil nil nil nil state)))
                 (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
        ((when erp)
@@ -1169,7 +1153,7 @@
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (- (and stop-pcs
-               position-independentp
+               position-independentp ; todo: make this work!
                (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
        (term-to-simulate (if stop-pcs
                              (if 64-bitp
@@ -1209,11 +1193,11 @@
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
-       ;; Make the rule-alist:
+       ;; Make the rule-alist for lifting:
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil nil nil state))
-       ;; Now make a rule-alist for pruning (must exclude rules that require the x86 rewriter):
+       ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
        (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
        ((mv erp pruning-rule-alist)
         (acl2::make-rule-alist pruning-rules (w state)))
