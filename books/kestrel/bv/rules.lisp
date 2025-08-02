@@ -4345,10 +4345,17 @@
                 (natp size))
            (equal (getbit size x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (;BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
+  :hints (("Goal" :in-theory (enable bvlt))))
 
-                                   )))))
+;; todo:
+;; (defthmd getbit-when-bvlt-of-small-helper2
+;;   (implies (and (bvlt size2 x (expt 2 size))
+;;                 (< size size2)
+;;                 (natp size)
+;;                 (integerp size2))
+;;            (equal (getbit size x)
+;;                   0))
+;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm getbit-when-bvlt-of-small
   (implies (and (bvlt (+ 1 size) x free)

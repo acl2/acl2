@@ -102,7 +102,7 @@
                            <-of-constant-when-unsigned-byte-p-size-param ;fixme why?
                            )))
 
-(local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
+;(local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
 
 ;todo: move these (and disable them)?
 
@@ -9221,7 +9221,9 @@
                   (bvxor size (bvand size x y) (bvxor size (bvand size x z) (bvand size y z)))))
   :hints (("Goal"
            :do-not '(preprocess)
-           :in-theory (e/d (BVAND-1-BECOMES-BITAND BVOR-1-BECOMES-BITOR bitxor-of-bvand)
+           :in-theory (e/d (BVAND-1-BECOMES-BITAND BVOR-1-BECOMES-BITOR bitxor-of-bvand
+                                                   getbit-when-bvlt-of-small-helper
+)
                            (;GETBIT-OF-BVOR-ERIC
                             GETBIT-OF-BVand-ERIC
                             bvor-of-bvor-tighten-2 ; looped (but shouldn't have)
@@ -10225,7 +10227,8 @@
                                   logapp
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
-                            bvcat-equal-rewrite-alt)))))
+                            bvcat-equal-rewrite-alt
+                            getbit-when->-free)))))
 
 (defthm boolor-of-sbvlt-combine-gen-better-alt
   (implies (and (syntaxp (and (quotep k)
@@ -13291,7 +13294,7 @@
   (implies (and (not (sbvlt 32 x 0))
                 (sbvlt 32 x 100000)) ;gen!
            (not (sbvlt 32 (bvmult 32 '4 x) '0)))
-  :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable sbvlt-rewrite getbit-when-bvlt-of-small-helper))))
 
 ;if x<4 then 4x<16
 (defthm sbvlt-of-bvmult-4-and-16

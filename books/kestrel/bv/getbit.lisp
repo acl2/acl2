@@ -591,8 +591,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd getbit-when-<
-  (implies (and (< x free)
-                (<= free (expt 2 n))
+  (implies (and (< x (expt 2 n))
                 ;; (natp n)
                 (natp x) ;could allow some negatives?
                 )
@@ -601,7 +600,16 @@
   :hints (("Goal" :use (:instance slice-too-high-is-0 (high n) (low n))
                   :in-theory (enable getbit))))
 
-;; restricts to constants for speed
+(defthmd getbit-when-<-free
+  (implies (and (< x free)
+                (<= free (expt 2 n))
+                ;; (natp n)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0)))
+
+;; restricts to constants, for speed
 (defthm getbit-when-<-of-constant
   (implies (and (syntaxp (quotep n))
                 (< x free)
@@ -616,6 +624,15 @@
                   :in-theory (disable getbit-when-<))))
 
 (defthmd getbit-when-<=
+  (implies (and (<= x (+ -1 (expt 2 n)))
+                ;; (natp n)
+                (natp free)
+                (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  0)))
+
+(defthmd getbit-when-<=-free
   (implies (and (<= x free)
                 (< free (expt 2 n))
                 ;; (natp n)
@@ -623,10 +640,9 @@
                 (natp x) ;could allow some negatives?
                 )
            (equal (getbit n x)
-                  0))
-  :hints (("Goal" :use (:instance getbit-when-<-of-constant (free (+ 1 free)))
-                  :in-theory (disable getbit-when-<-of-constant))))
+                  0)))
 
+;; restricts to constants, for speed
 (defthm getbit-when-<=-of-constant
   (implies (and (syntaxp (quotep n))
                 (<= x free)
@@ -644,7 +660,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; x is in the upper half of the range
-(defthmd getbit-when->-of-constant-helper
+(defthmd getbit-when->=
   (implies (and (<= (expt 2 n) x)
                 (unsigned-byte-p (+ 1 n) x)
                 (natp n))
@@ -652,20 +668,16 @@
                   1))
   :hints (("Goal" :in-theory (enable getbit slice logtail floor-must-be-1 unsigned-byte-p expt-of-+))))
 
-(defthm getbit-when->-of-constant
-  (implies (and (syntaxp (quotep n))
-                (< free x)
-                (syntaxp (quotep free))
-                (<= (+ -1 (expt 2 n)) free) ; gets computed
+;; x is in the upper half of the range
+(defthmd getbit-when->=-free
+  (implies (and (<= free x)
+                (<= (expt 2 n) free)
                 (unsigned-byte-p (+ 1 n) x)
-                (natp n)
-                ;; (natp x) ;could allow some negatives?
-                )
+                (natp n))
            (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when->-of-constant-helper)
-           :in-theory (disable getbit-when->-of-constant-helper))))
+                  1)))
 
+;; restricts to constants, for speed
 (defthm getbit-when->=-of-constant
   (implies (and (syntaxp (quotep n))
                 (<= free x)
@@ -677,8 +689,41 @@
                 )
            (equal (getbit n x)
                   1))
-  :hints (("Goal" :use (:instance getbit-when->-of-constant-helper)
-                  :in-theory (disable getbit-when->-of-constant-helper))))
+  :hints (("Goal" :in-theory (enable getbit-when->=))))
+
+(defthmd getbit-when->
+  (implies (and (< (+ -1 (expt 2 n)) x)
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n)
+                ;; (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :use getbit-when->=
+                  :in-theory (disable getbit-when->=))))
+
+(defthm getbit-when->-free
+  (implies (and (< free x)
+                (<= (+ -1 (expt 2 n)) free) ; gets computed
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n)
+                ;; (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  1)))
+
+;; restricts to constants, for speed
+(defthm getbit-when->-of-constant
+  (implies (and (syntaxp (quotep n))
+                (< free x)
+                (syntaxp (quotep free))
+                (<= (+ -1 (expt 2 n)) free) ; gets computed
+                (unsigned-byte-p (+ 1 n) x)
+                (natp n)
+                ;; (natp x) ;could allow some negatives?
+                )
+           (equal (getbit n x)
+                  1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,8 +741,7 @@
                                    (low n)
                                    (free (expt 2 (+ size (- n)))))
                         (:instance equal-of-slice
-                                   (k (+ -1 (EXPT 2 (+ (- n)
-                                                       size))))
+                                   (k (+ -1 (EXPT 2 (+ (- n) size))))
                                    (high (+ -1 size))
                                    (low n)))
                   :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
