@@ -2658,11 +2658,11 @@
   (append
    '(standard-state-assumption
      standard-state-assumption-32
-     standard-assumptions-core-64
+     standard-assumptions-core-64 ; only needed by loop lifter?
      standard-state-assumption-64
-     standard-assumptions-mach-o-64
-     standard-assumptions-elf-64
-     standard-assumptions-pe-64
+     standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     standard-assumptions-elf-64 ; only needed by loop lifter?
+     standard-assumptions-pe-64 ; only needed by loop lifter?
      bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
@@ -2676,9 +2676,9 @@
      acl2::get-mach-o-segment-base-2
      acl2::get-mach-o-segment-unroll-1
      acl2::get-mach-o-segment-unroll-2
-     acl2::get-symbol-entry-mach-o-base-1
-     acl2::get-symbol-entry-mach-o-base-2
-     acl2::get-symbol-entry-mach-o-unroll
+     acl2::get-symbol-table-entry-mach-o-base-1
+     acl2::get-symbol-table-entry-mach-o-base-2
+     acl2::get-symbol-table-entry-mach-o-unroll
      acl2::get-text-section-number-mach-o
      acl2::get-all-sections-from-mach-o
      acl2::get-all-sections-from-mach-o-load-commands-base
