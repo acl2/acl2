@@ -19,7 +19,6 @@
 ;; https://gabi.xinuos.com/elf/a-emachine.html
 
 (include-book "parser-utils")
-(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; reduce?
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -396,8 +395,8 @@
                               (byte-listp bytes))
                   :measure (nfix (- count index))))
   (if (or (<= count index)
-          (not (natp index))
-          (not (natp count)))
+          (not (mbt (natp index)))
+          (not (mbt (natp count))))
       (mv nil (reverse acc))
     (mv-let (erp section-header bytes)
       (parse-elf-section-header 64-bitp bytes)
@@ -730,8 +729,8 @@
                   :measure (nfix (- num-entries index))
                   :hints (("Goal" :in-theory (enable natp)))))
   (if (or (<= num-entries index)
-          (not (natp index))
-          (not (natp num-entries)))
+          (not (mbt (natp index)))
+          (not (mbt (natp num-entries))))
       (mv nil (reverse acc))
     (mv-let (erp program-header bytes)
       (parse-elf-program-header 64-bitp bytes)
