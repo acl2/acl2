@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; Copyright (C) 2024, ForrestHunt, Inc.
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
@@ -131,6 +132,7 @@
   (search-forward "</span>")
   (let ((point3 (match-beginning 0))
         (point4 (match-end 0)))
+    (ignore point4)
     (goto-char point2)
     (cond ((search-forward "class=\"texttt\"" point3 t)) ; just continue
           ((search-forward "<span" point3 t)
@@ -156,6 +158,7 @@
   (interactive)
   (goto-char (point-min))
   (let ((saved-point (point)))
+    (ignore saved-point)
     (while (re-search-forward "</i><sub>\\(.*\\)</sub>" nil t)
 ;;;                              0        1       2     3
       (let* ((p0 (match-beginning 0))
