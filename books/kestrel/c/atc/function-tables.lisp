@@ -70,7 +70,7 @@
      when the arguments of the C functions have values
      symbolically expressed by the ACL2 function's formal parameters.
      For a recursive function,
-     the term expressed a limit that suffices to execute @(tsee exec-stmt-while)
+     the term expresses a limit that suffices to execute @(tsee exec-stmt-while)
      on the C loop generated from the ACL2 function
      when the variables read by the C loop have values
      symbolically expressed by the ACL2 function's formal parameters.

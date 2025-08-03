@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
@@ -689,6 +690,8 @@ one such error; if you suspect more errors, run it again."
 (define-key (current-global-map) "\C-\M-q" 'indent-sexp)
 
 (define-key ctl-t-keymap "\C-p" 'up-list)
+
+(require 'compare-w)
 
 ; For the following, set compare-windows-whitespace to something other than "[
 ; \t\n]+"

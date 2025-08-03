@@ -690,6 +690,8 @@ one such error; if you suspect more errors, run it again."
 
 (define-key ctl-t-keymap "\C-p" 'up-list)
 
+(require 'compare-w)
+
 ; For the following, set compare-windows-whitespace to something other than "[
 ; \t\n]+"
 ; if desired.

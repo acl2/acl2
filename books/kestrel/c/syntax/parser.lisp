@@ -9938,8 +9938,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-specifier/qualifier ((tyspec-seenp booleanp)
-                                     (parstate parstatep))
+  (define parse-specifier/qualifier ((parstate parstatep))
     :returns (mv erp
                  (specqual spec/qual-p)
                  (span spanp)
@@ -9953,7 +9952,9 @@
        @('specifier-qualifier-list') in the ABNF grammar;
        the grammar does not have a rule name for that.
        But this is like an alternation of
-       a type specifier, a type qualifier, or an alignment specifier.")
+       a type specifier, a type qualifier, or an alignment specifier;
+       if GCC extensions are enabled,
+       the alternation also includes attribute specifiers.")
      (xdoc::p
       "This function is called when we expect a specifier or qualifier,
        which is the case at the start of a specifier and qualifier list
@@ -9961,29 +9962,20 @@
        and when the caller @(tsee parse-specifier-qualifier-list)
        determines that there must be another specifier or qualifier.")
      (xdoc::p
-      "There is an overlap in the tokens that may start the three cases of
-       type specifiers, type qualifiers, and alignment specifiers:
+      "There is an overlap in the tokens that may start two cases:
        the @('_Atomic') keyword could start a type specifier,
        in which case it must be followed by a parenthesized type name,
        or it could be a type qualifier (as is).
        So we cannot simply look at the next token
        and call separate functions to parse
-       a type specifier or a type qualifier or an alignment specifier.
-       We need to read more tokens if we see @('_Atomic'),
-       but if we find a parenthesized identifier after that,
-       it could be a type name, forming an atomic type specifier,
-       but it could instead be a declarator following an atomic type qualifier
-       (if the boolean flag passed to this function is @('t')).
-       However, we can exploit the fact discussed in
-       @(tsee parse-declaration-specifiers),
-       using the flag also discussed there.
-       If the flag is @('t'), the @('_Atomic') must be a type qualifier;
-       if the flag is @('nil'),
-       and an open parenthesis follows the @('_Atomic'),
-       since no specifier or qualifier may start with an open parenthesis,
-       the @('_Atomic') must start a type specifier,
-       so we must parse a type name after the open parenthesis,
-       and finally the closing parenthesis."))
+       a type specifier or a type qualifier or an alignment specifier
+       (or an attribute specifier, if GCC extensions are enabled).
+       We need to read more tokens if we see @('_Atomic').
+       [C17:6.7.2.4/4] says that
+       an @('_Atomic') immediately followed by a left parentheses
+       is interpreted as a type specifier (not a type qualifier).
+       Thus, we read an additional token to decide whether
+       we are parsing a type specifier or a type qualifier."))
     (b* (((reterr) (irr-spec/qual) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -9995,34 +9987,22 @@
                parstate))
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
-       ;; so we examine more tokens.
+       ;; so we examine an additional token.
        ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open parenthesis,
-           ;; we check the TYSPEC-SEENP flag,
-           ;; as explained in the documentation.
+           ;; we must be parsing a type specifier.
            ((token-punctuatorp token2 "(") ; _Atomic (
-            (if tyspec-seenp
-                ;; If we have already seen a type specifier,
-                ;; this must be a type qualifier.
-                (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (spec/qual-typequal (type-qual-atomic))
-                         span
-                         parstate))
-              ;; If we have not already seen a type specifier,
-              ;; this must be a type specifier,
-              ;; because the open parenthesis cannot be
-              ;; another specifier or qualifier.
-              (b* (((erp tyname & parstate) ; _Atomic ( typename
-                    (parse-type-name parstate))
-                   ((erp last-span parstate) ; _Atomic ( typename )
-                    (read-punctuator ")" parstate)))
-                (retok (spec/qual-typespec (type-spec-atomic tyname))
-                       (span-join span last-span)
-                       parstate))))
-           ;; If token2 is not an open parenthesis,
-           ;; we must have an atomic type qualifier.
+            (b* (((erp tyname & parstate) ; _Atomic ( typename
+                  (parse-type-name parstate))
+                 ((erp last-span parstate) ; _Atomic ( typename )
+                  (read-punctuator ")" parstate)))
+              (retok (spec/qual-typespec (type-spec-atomic tyname))
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token 2 is not an open parenthesis,
+           ;; we must be parsing a type qualifier.
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
@@ -10171,7 +10151,7 @@
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp specqual first-span parstate) ; specqual
-          (parse-specifier/qualifier tyspec-seenp parstate))
+          (parse-specifier/qualifier parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
@@ -10225,8 +10205,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-declaration-specifier ((tyspec-seenp booleanp)
-                                       (parstate parstatep))
+  (define parse-declaration-specifier ((parstate parstatep))
     :returns (mv erp
                  (declspec decl-specp)
                  (span spanp)
@@ -10270,8 +10249,7 @@
        but more complex because there are more alternatives.
        The syntactic overlap between
        the @('_Atomic') type qualifier and the @('_Atomic') type specifier
-       is resolved in the same way as in @(tsee parse-specifier/qualifier),
-       which motivates the @('tyspec-seenp') flag passed to this function;
+       is resolved in the same way as in @(tsee parse-specifier/qualifier);
        see that function's documentation."))
     (b* (((reterr) (irr-decl-spec) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -10291,34 +10269,22 @@
                parstate))
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
-       ;; so we examine more tokens.
+       ;; so we examine an additional token.
        ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open parenthesis,
-           ;; we check the TYSPEC-SEENP flag,
-           ;; as explained in the documentation.
+           ;; we must be parsing a type specifier.
            ((token-punctuatorp token2 "(") ; _Atomic (
-            (if tyspec-seenp
-                ;; If we have already seen a type specifier,
-                ;; this must be a type qualifier.
-                (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (decl-spec-typequal (type-qual-atomic))
-                         span
-                         parstate))
-              ;; If we have not already seen a type specifier,
-              ;; this must be a type specifier,
-              ;; because the open parenthesis cannot be
-              ;; another declaration specifier.
-              (b* (((erp tyname & parstate) ; _Atomic ( typename
-                    (parse-type-name parstate))
-                   ((erp last-span parstate) ; _Atomic ( typename )
-                    (read-punctuator ")" parstate)))
-                (retok (decl-spec-typespec (type-spec-atomic tyname))
-                       (span-join span last-span)
-                       parstate))))
+            (b* (((erp tyname & parstate) ; _Atomic ( typename
+                  (parse-type-name parstate))
+                 ((erp last-span parstate) ; _Atomic ( typename )
+                  (read-punctuator ")" parstate)))
+              (retok (decl-spec-typespec (type-spec-atomic tyname))
+                     (span-join span last-span)
+                     parstate)))
            ;; If token2 is not an open parenthesis,
-           ;; we must have an atomic type qualifier.
+           ;; we must be parsing a type qualifier.
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
@@ -10520,7 +10486,7 @@
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declspec first-span parstate) ; declspec
-          (parse-declaration-specifier tyspec-seenp parstate))
+          (parse-declaration-specifier parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
@@ -15340,16 +15306,14 @@
        '(:expand (parse-enumerator-list parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
                         clause)
-       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
-                  (parse-specifier/qualifier nil parstate))))
+       '(:expand (parse-specifier/qualifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
        '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
                   (parse-specifier-qualifier-list nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
                         clause)
-       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
-                  (parse-declaration-specifier nil parstate))))
+       '(:expand (parse-declaration-specifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
                         clause)
        '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
@@ -16094,8 +16058,7 @@
        '(:expand (parse-enumerator-list parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
                         clause)
-       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
-                  (parse-specifier/qualifier nil parstate))))
+       '(:expand (parse-specifier/qualifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
        '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
@@ -16105,8 +16068,7 @@
        '(:expand (parse-statement parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
                         clause)
-       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
-                  (parse-declaration-specifier nil parstate))))
+       '(:expand (parse-declaration-specifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
                         clause)
        '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
