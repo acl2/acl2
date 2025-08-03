@@ -46,7 +46,7 @@
                (hour natp :rule-classes :type-prescription)
                (date posp :rule-classes :type-prescription)
                (month posp :rule-classes :type-prescription)
-               (year natp :rule-classes :type-prescription)
+               (year integerp :rule-classes :type-prescription)
                (day natp :rule-classes :type-prescription)
                daylight-p
                (zone rationalp :rule-classes :type-prescription)
@@ -65,7 +65,7 @@ function.  In the logic, this is modeled as a read from the ACL2 oracle.</p>
     represents the day of the month.</li>
   <li>@('month') &mdash; A positive natural number less than @('13').  January
     is @('1'), February is @('2'), etc.</li>
-  <li>@('year') &mdash; A natural number representing the year A.D.</li>
+  <li>@('year') &mdash; An integer number representing the year A.D.</li>
   <li>@('day') &mdash; A natural number less than @('7').  This represents the
     day of the week.  Monday is @('0'), Tuesday is @('1'), etc.</li>
   <li>@('daylight-p') &mdash; A generalized boolean indicating whether daylight
@@ -91,7 +91,7 @@ the current time.</p>"
              (integer-range-p 0 24 (third val))
              (integer-range-p 1 32 (fourth val))
              (integer-range-p 1 13 (fifth val))
-             (natp (sixth val))
+             (integerp (sixth val))
              (integer-range-p 0 7 (seventh val))
              (rationalp (ninth val))
              (<= -24 (ninth val))
@@ -293,7 +293,7 @@ the current time.</p>"
     (let ((month (nth (- month 1) '("January" "February" "March" "April" "May"
                                     "June" "July" "August" "September" "October"
                                     "November" "December")))
-          (year   (str::natstr year))
+          (year   (str::natstr (if (<= 0 year) year 0)))
           (date   (str::natstr date))
           (hour   (if (< hour 10)
                       (str::cat "0" (str::natstr hour))
