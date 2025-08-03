@@ -37,10 +37,13 @@
      (er hard? 'get-decoded-time$ "Get-decoded-time$ can only be called on a live state.")
      (mv 0 0 0 1 1 0 0 nil 0 state))
 
-   (multiple-value-bind
-    (second minute hour date month year day daylight-p zone)
-    (get-decoded-time)
-    (mv second minute hour date month year day daylight-p zone state)))
+   (handler-case
+       (multiple-value-bind
+         (second minute hour date month year day daylight-p zone)
+         (get-decoded-time)
+         (mv second minute hour date month year day daylight-p zone state))
+     (error ()
+            (mv 0 0 0 1 1 0 0 nil 0 state))))
 
 
 (defun universal-time-fn (state)

@@ -38,6 +38,7 @@
 (local (xdoc::set-default-parents oslib))
 
 ;; These return theorems are justified by the specification for
+;; - get-decode-time: https://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm#get-decoded-time
 ;; - decoded time: https://www.lispworks.com/documentation/HyperSpec/Body/25_ada.htm
 ;; - time zone: https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_t.htm#time_zone
 (define get-decoded-time$ (state)
