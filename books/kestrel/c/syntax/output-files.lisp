@@ -342,6 +342,7 @@
                                 (path stringp)
                                 (indent-size posp)
                                 (paren-nested-conds booleanp)
+                                (gcc booleanp)
                                 state)
   :guard (transunit-ensemble-unambp tunits)
   :returns (mv erp state)
@@ -350,7 +351,7 @@
        ;; Print the abstract syntax.
        (options (make-priopt :indent-size indent-size
                              :paren-nested-conds paren-nested-conds))
-       (files (print-fileset tunits options))
+       (files (print-fileset tunits options gcc))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) path state)))
@@ -392,13 +393,14 @@
              path
              indent-size
              paren-nested-conds
-             &) ; GCC flag only used in input processing
+             gcc)
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
                                 path
                                 indent-size
                                 paren-nested-conds
+                                gcc
                                 state)))
     (retok state)))
 

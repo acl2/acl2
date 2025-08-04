@@ -92,6 +92,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm x::cf-spec8-becomes-getbit
+  (implies (unsigned-byte-p 9 x)
+           (equal (cf-spec8 x)
+                  (acl2::getbit 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8))))
+
+(defthm x::cf-spec16-becomes-getbit
+  (implies (unsigned-byte-p 17 x)
+           (equal (cf-spec16 x)
+                  (acl2::getbit 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16))))
+
+(defthm x::cf-spec32-becomes-getbit
+  (implies (unsigned-byte-p 33 x)
+           (equal (cf-spec32 x)
+                  (acl2::getbit 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32))))
+
+;; todo: just put the result of this into the alt-def?
+;see cf-spec64-becomes-getbit
+(defthm x::cf-spec64-becomes-getbit
+  (implies (unsigned-byte-p 65 x) ; example; sum of two u64s
+           (equal (cf-spec64 x)
+                  (acl2::getbit 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A wrapper indicating that the CF functions should be opened when they are an
 ;; argument of this function.  We want to open the cf-spec functions when they
 ;; are used for something other than a conditional jump (see conditions.lisp).
@@ -103,31 +131,31 @@
 
 (acl2::def-constant-opener x::open-carry)
 
-;; (defthm x::open-carry-of-cf-spec8
-;;   (implies (unsigned-byte-p 9 x)
-;;            (equal (x::open-carry (cf-spec8 x))
-;;                   (acl2::getbit 8 x)))
-;;   :hints (("Goal" :in-theory (enable cf-spec8 x::open-carry))))
+(defthm x::open-carry-of-cf-spec8
+  (implies (unsigned-byte-p 9 x)
+           (equal (x::open-carry (cf-spec8 x))
+                  (acl2::getbit 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8 x::open-carry))))
 
-;; (defthm x::open-carry-of-cf-spec16
-;;   (implies (unsigned-byte-p 17 x)
-;;            (equal (x::open-carry (cf-spec16 x))
-;;                   (acl2::getbit 16 x)))
-;;   :hints (("Goal" :in-theory (enable cf-spec16 x::open-carry))))
+(defthm x::open-carry-of-cf-spec16
+  (implies (unsigned-byte-p 17 x)
+           (equal (x::open-carry (cf-spec16 x))
+                  (acl2::getbit 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16 x::open-carry))))
 
-;; (defthm x::open-carry-of-cf-spec32
-;;   (implies (unsigned-byte-p 33 x)
-;;            (equal (x::open-carry (cf-spec32 x))
-;;                   (acl2::getbit 32 x)))
-;;   :hints (("Goal" :in-theory (enable cf-spec32 x::open-carry))))
+(defthm x::open-carry-of-cf-spec32
+  (implies (unsigned-byte-p 33 x)
+           (equal (x::open-carry (cf-spec32 x))
+                  (acl2::getbit 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32 x::open-carry))))
 
-;; ;; todo: just put the result of this into the alt-def?
-;; ;see cf-spec64-becomes-getbit
-;; (defthm x::open-carry-of-cf-spec64
-;;   (implies (unsigned-byte-p 65 x)
-;;            (equal (x::open-carry (cf-spec64 x))
-;;                   (acl2::getbit 64 x)))
-;;   :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
+;; todo: just put the result of this into the alt-def?
+;see cf-spec64-becomes-getbit
+(defthm x::open-carry-of-cf-spec64
+  (implies (unsigned-byte-p 65 x) ; example; sum of two u64s
+           (equal (x::open-carry (cf-spec64 x))
+                  (acl2::getbit 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
 
 ;; Only for Axe
 (defthmd x::integerp-of-open-carry

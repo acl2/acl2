@@ -1,6 +1,6 @@
 ; Tools for processing the alists that represent parsed ELF files.
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-;(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 
 ;; todo: use the section-header-table?
 (defund elf-section-presentp (section-name parsed-elf)
