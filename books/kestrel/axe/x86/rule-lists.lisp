@@ -69,10 +69,10 @@
             x86isa::gpr-adc-spec-4-alt-def
             x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
             x86isa::open-carry-of-rflagsbits->cf
-            ;; open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
-            ;; open-carry-of-cf-spec16
-            ;; open-carry-of-cf-spec32
-            ;; open-carry-of-cf-spec64
+            open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
+            open-carry-of-cf-spec16
+            open-carry-of-cf-spec32
+            open-carry-of-cf-spec64
             open-carry-constant-opener ; also open when applied to a constant (or refrain from even this?)
             integerp-of-open-carry
 
@@ -2111,6 +2111,10 @@
           (acl2::bvif-rules)
           (bitops-rules)
           (acl2::if-becomes-bvif-rules)
+          '(acl2::if-becomes-bvif-1-axe
+            acl2::if-becomes-bvif-2-axe
+            acl2::if-becomes-bvif-3-axe
+            acl2::if-becomes-bvif-4-axe)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
           *unsigned-choppers* ;; these are just logead, aka bvchop
@@ -5618,7 +5622,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::if-becomes-bvif-1-axe
     ;; acl2::boolif-of-t-and-nil-when-booleanp
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
