@@ -138,16 +138,21 @@
      in reverse order, which makes extending the data more efficent
      (by @(tsee cons)ing).")
    (xdoc::p
-    "We also keep track of the current indentation level,
+    "We keep track of the current indentation level,
      as a natural number starting from 0 (where 0 means left margin).
      This is used to print indented code, as typical.")
    (xdoc::p
-    "We also keep track of the printing options (see @(tsee priopt)).
+    "We keep track of the printing options (see @(tsee priopt)).
      These do not change in the course of the printing,
      but they are convenient to keep in the printing state,
      to avoid passing them around as an extra parameter.
      They are set when the printing state is initially created,
      and they never change.")
+   (xdoc::p
+    "We include a boolean flag saying whether GCC extensions are enabled or not.
+     This printer state component is set at the beginning and never changes.
+     This printer state component could potentially evolve into
+     a richer set of options for different versions and dialects of C.")
    (xdoc::p
     "In the future, we may make printer states richer,
      in order to support more elaborate printing strategies,
@@ -159,23 +164,26 @@
      if efficiency is an issue."))
   ((bytes-rev byte-list)
    (indent-level nat)
-   (options priopt))
+   (options priopt)
+   (gcc bool))
   :pred pristatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-pristate ((options prioptp))
+(define init-pristate ((options prioptp) (gcc booleanp))
   :returns (pstate pristatep)
   :short "Initial printer state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass the printing options, which must be provided externally.")
+    "We pass the printing options and the GCC flag,
+     which must be provided externally.")
    (xdoc::p
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
-                 :options options)
+                 :options options
+                 :gcc gcc)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,7 +262,9 @@
                                            bytep
                                            unsigned-byte-p
                                            integer-range-p)))
+
   ///
+
   (fty::deffixequiv print-char
     :args ((pstate pristatep))))
 
@@ -272,7 +282,9 @@
   (b* (((when (endp chars)) (pristate-fix pstate))
        (pstate (print-char (car chars) pstate)))
     (print-chars (cdr chars) pstate))
+
   ///
+
   (fty::deffixequiv print-chars
     :args ((pstate pristatep))))
 
@@ -336,7 +348,9 @@
      and therefore are not ASCII.
      But we always call this printing function with ASCII strings."))
   (print-chars (acl2::string=>nats string) pstate)
+
   ///
+
   (fty::deffixequiv print-astring
     :args ((pstate pristatep))))
 
@@ -359,7 +373,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            dec-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-dec-digit-achar
     :args ((pstate pristatep))))
 
@@ -372,7 +388,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-dec-digit-achar (car achars) pstate)))
     (print-dec-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-dec-digit-achars
     :args ((pstate pristatep))))
 
@@ -395,7 +413,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            oct-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-oct-digit-achar
     :args ((pstate pristatep))))
 
@@ -408,7 +428,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-oct-digit-achar (car achars) pstate)))
     (print-oct-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-oct-digit-achars
     :args ((pstate pristatep))))
 
@@ -431,7 +453,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            hex-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-hex-digit-achar
     :args ((pstate pristatep))))
 
@@ -444,7 +468,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-hex-digit-achar (car achars) pstate)))
     (print-hex-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-hex-digit-achars
     :args ((pstate pristatep))))
 
@@ -3680,7 +3706,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp) (options prioptp))
+(define print-file ((tunit transunitp) (options prioptp) (gcc booleanp))
   :guard (transunit-unambp tunit)
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
@@ -3693,7 +3719,7 @@
      We print the translation unit,
      we extract the data bytes from the final printing state,
      and we reverse them (see @(tsee pristate))."))
-  (b* ((pstate (init-pristate options))
+  (b* ((pstate (init-pristate options gcc))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
@@ -3702,7 +3728,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
-                                      (options prioptp))
+                                      (options prioptp)
+                                      (gcc booleanp))
   :guard (filepath-transunit-map-unambp tunitmap)
   :returns (filemap filepath-filedata-mapp)
   :short "Print the files in a file set."
@@ -3719,8 +3746,10 @@
      The two maps have the same keys."))
   (b* (((when (omap::emptyp tunitmap)) nil)
        ((mv filepath tunit) (omap::head tunitmap))
-       (data (print-file tunit options))
-       (filemap (print-filepath-transunit-map (omap::tail tunitmap) options)))
+       (data (print-file tunit options gcc))
+       (filemap (print-filepath-transunit-map (omap::tail tunitmap)
+                                              options
+                                              gcc)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
 
@@ -3733,11 +3762,13 @@
     :hints (("Goal" :induct t)))
 
   (fty::deffixequiv print-filepath-transunit-map
-    :args ((options prioptp))))
+    :args ((options prioptp) (gcc booleanp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-fileset ((tunits transunit-ensemblep) (options prioptp))
+(define print-fileset ((tunits transunit-ensemblep)
+                       (options prioptp)
+                       (gcc booleanp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (fileset filesetp)
   :short "Print a file set."
@@ -3750,7 +3781,9 @@
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset
-   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits) options))
+   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
+                                 options
+                                 gcc))
   :hooks (:fix)
 
   ///
