@@ -412,7 +412,7 @@
      i.e. with a @('return') without expression.
      The distinction affects how execution proceeds
      just after the statement in question."))
-  (:none ())
+  ;; (:none ()) ; temporarily commented out to facilitate transition
   (:return ((value? value-option)))
   :pred stmt-valuep)
 
