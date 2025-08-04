@@ -727,8 +727,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;gen!
-(defthmd getbit-when-<=-of-high-helper
+;; x is sufficiently close to (but less than) a power of 2
+(defthmd getbit-when->=-of-high-helper
   (implies (and (<= (- (expt 2 size) (expt 2 n)) x) ; size is a free var
                 (unsigned-byte-p size x)
                 (< n size)
@@ -744,11 +744,11 @@
                                    (k (+ -1 (EXPT 2 (+ (- n) size))))
                                    (high (+ -1 size))
                                    (low n)))
-                  :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
-;exponents-add
-                                      ))))
+                  :in-theory (disable getbit-when-slice-is-known-to-be-all-ones))))
 
-(defthm getbit-when-<=-of-bvchop-and-constant-high
+;rename: no quotep hyp
+;todo: put >= in the name?
+(defthm getbit-when->=-of-bvchop-and-constant-high
   (implies (and (<= k (bvchop size x)) ; k is a free var
                 (<= (- (expt 2 size) (expt 2 n)) k)
                 (< n size)
@@ -756,7 +756,7 @@
                 (natp n))
            (equal (getbit n x)
                   1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+  :hints (("Goal" :use (:instance getbit-when->=-of-high-helper
                                   (x (bvchop size x))))))
 
 (defthm getbit-when-<-of-bvchop-and-constant-high
@@ -767,9 +767,8 @@
                 (natp n))
            (equal (getbit n x)
                   1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
+  :hints (("Goal" :use (:instance getbit-when->=-of-high-helper
                                   (x (bvchop size x))))))
-
 
 ;; x is non-zero when any of its bits is non-zero
 (defthm not-0-when-bit-not-0

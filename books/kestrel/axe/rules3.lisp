@@ -3572,7 +3572,7 @@
                            (getbit-when-bvlt-of-small-helper
                             equal-of-bvchop-extend
                             bvcat-of-getbit-and-x-adjacent
-                            getbit-when-<=-of-bvchop-and-constant-high)))))
+                            getbit-when->=-of-bvchop-and-constant-high)))))
 
 (defthm equal-of-0-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -13541,48 +13541,6 @@
            (equal (* (expt r i) (expt r (+ j (- i))))
                   (expt r j))))
 
-(local
- (DEFTHM GETBIT-OF-MINUS-EXPT-when->=
-  (IMPLIES (AND (>= SIZE SIZE2)
-                (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  1))))
-
-(DEFTHM GETBIT-OF-MINUS-EXPT-gen
-  (IMPLIES (AND (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  (if (>= SIZE SIZE2)
-                      1
-                    0))))
-
-(defthm getbit-when-<=-of-constant-high
-  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
-                (<= k x) ; k is a free var
-                (syntaxp (quotep k))
-                (< n (ceiling-of-lg k))
-                (<= (- (expt 2 (ceiling-of-lg k)) (expt 2 n)) k) ; k is a bit less than a power of 2
-                (unsigned-byte-p (ceiling-of-lg k) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (size (ceiling-of-lg k))))))
-
-(defthm getbit-when-<-of-constant-high
-  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
-                (< k x) ; k is a free var
-                (syntaxp (quotep k))
-                (< n (ceiling-of-lg k))
-                (<= (+ -1 (- (expt 2 (ceiling-of-lg k)) (expt 2 n))) k) ; k is a bit less than a power of 2
-                (unsigned-byte-p (ceiling-of-lg k) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (size (ceiling-of-lg k))))))
-
 ;move
 (defthm <-of-bvchop-and-bvchop-when-not-<-of-bvchop-and-bvchop-smaller-cheap
   (implies (and (not (< (bvchop n-1 x) (bvchop n-1 y))) ; n-1 is a free var but we check it below
@@ -13730,7 +13688,7 @@
 ;;                             GETBIT-OF-ONE-LESS ; looped
 ;;                             exponents-add
 ;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
-;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN->=-OF-BVCHOP-AND-CONSTANT-HIGH
 ;;                             )))))
 
 ;; ;delete the more specific version
@@ -13764,7 +13722,7 @@
 ;;                            (GETBIT-OF-ONE-LESS ; looped
 ;;                             exponents-add
 ;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
-;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN->=-OF-BVCHOP-AND-CONSTANT-HIGH
 ;;                             )))))
 
 ;; (defthm sbvlt-of-constant-and-bvsx
