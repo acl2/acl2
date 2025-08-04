@@ -1298,7 +1298,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv (stmt-value-return ,result) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1457,7 +1457,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv nil
+                             (mv (stmt-value-return nil)
                                  ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula
                                         gin.context
@@ -1706,7 +1706,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil ,new-compst)))
+                             (mv (stmt-value-return nil) ,new-compst)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -3557,7 +3557,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv nil ,gin.compst-var)))
+                             (mv (stmt-value-return nil) ,gin.compst-var)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3699,7 +3699,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv (stmt-value-return ,result) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3737,6 +3737,10 @@
                                                                gin.prec-tags)))
                                ,item-thm
                                exec-block-item-list-of-nil
+                               return-type-of-stmt-value-return
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
+                               value-option-fix-when-value-optionp
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
                                compustatep-of-update-object
@@ -3849,7 +3853,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv (stmt-value-return ,result) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3876,7 +3880,11 @@
                                mv-nth-of-cons
                                (:e zp)
                                (:e value-optionp)
+                               (:e value-option-fix)
                                not-zp-of-limit-minus-const
+                               return-type-of-stmt-value-return
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
                                (:e valuep)
                                ,items-thm
                                uchar-array-length-of-uchar-array-write
@@ -3985,17 +3993,18 @@
                                      (equal (len (cadr items)) ,m)))
                        (equal (len items) ,m)
                        (not (zp limit))
-                       (equal val?+compst1
+                       (equal sval+compst1
                               (exec-block-item-list (take ,n items)
                                                     compst
                                                     fenv
                                                     limit))
-                       (equal val? (mv-nth 0 val?+compst1))
-                       (value-optionp val?)
-                       (equal compst1 (mv-nth 1 val?+compst1)))
+                       (equal sval (mv-nth 0 sval+compst1))
+                       (stmt-valuep sval)
+                       (equal val? (stmt-value-return->value? sval))
+                       (equal compst1 (mv-nth 1 sval+compst1)))
                   (equal (exec-block-item-list items compst fenv limit)
                          (if (valuep val?)
-                             (mv val? compst1)
+                             (mv (stmt-value-return val?) compst1)
                            (exec-block-item-list (nthcdr ,n items)
                                                  compst1
                                                  fenv
@@ -4005,6 +4014,7 @@
            :in-theory '(append-of-take-and-nthcdr
                         (:e nfix)
                         value-optionp
+                        not-errorp-when-stmt-valuep
                         (:e errorp)
                         len-of-take
                         commutativity-of-+)
@@ -4033,7 +4043,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv (stmt-value-return ,result) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -4065,6 +4075,9 @@
                                (:e value-optionp)
                                ,items2-thm
                                (:e valuep)
+                               (:e value-option-fix)
+                               return-type-of-stmt-value-return
+                               stmt-value-return->value?-of-stmt-value-return
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
                                ushort-array-length-of-ushort-array-write
@@ -4235,7 +4248,8 @@
                                          ,gin.compst-var
                                          ,gin.fenv-var
                                          ,gin.limit-var)
-                              (mv ,expr.result ,expr.new-compst)))
+                              (mv (stmt-value-return ,expr.result)
+                                  ,expr.new-compst)))
        (stmt-formula1 (atc-contextualize stmt-formula1
                                          gin.context
                                          gin.fn
@@ -4439,9 +4453,10 @@
                                                ,gin.compst-var
                                                ,gin.fenv-var
                                                ,gin.limit-var)
-                         (mv ,(if (type-case then-type :void)
-                                  nil
-                                uterm)
+                         (mv (stmt-value-return
+                              ,(if (type-case then-type :void)
+                                   nil
+                                 uterm))
                              ,gin.compst-var)))
        (formula1 (atc-contextualize formula1
                                     gin.context
@@ -4650,7 +4665,8 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,then-result ,then-new-compst)))
+                                       (mv (stmt-value-return ,then-result)
+                                           ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -4664,7 +4680,8 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,else-result ,else-new-compst)))
+                                       (mv (stmt-value-return ,else-result)
+                                           ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -4708,6 +4725,7 @@
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
+                               return-type-of-stmt-value-return
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -4738,6 +4756,7 @@
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
+                               return-type-of-stmt-value-return
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -4785,7 +4804,8 @@
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,if-result ,new-compst)))
+                                     (mv (stmt-value-return ,if-result)
+                                         ,new-compst)))
        (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
                                                 gin.context
                                                 gin.fn
@@ -5303,7 +5323,7 @@
                                              ,gin.compst-var
                                              ,gin.fenv-var
                                              ,gin.limit-var)
-                                  (mv nil ,new-compst)))
+                                  (mv (stmt-value-return nil) ,new-compst)))
        (stmt-exec-formula (atc-contextualize stmt-exec-formula
                                              gin.context
                                              gin.fn

@@ -1729,30 +1729,35 @@
                                ,@measure-thms
                                ,fn-fun-env-thm))
                  :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@(alist-to-doublets instantiation))
+                                 :extra-bindings-ok
+                                 ,@(alist-to-doublets instantiation))
                  :expand (:lambdas))
                 (and stable-under-simplificationp
-                     '(:in-theory (union-theories
-                                   (theory 'atc-all-rules)
-                                   '(,fn
-                                     not-errorp-when-expr-valuep
-                                     ,@not-error-thms
-                                     ,@valuep-thms
-                                     ,@value-kind-thms
-                                     not
-                                     ,@result-thms
-                                     ,@struct-reader-return-thms
-                                     ,@struct-writer-return-thms
-                                     ,@type-of-value-thms
-                                     ,@flexiblep-thms
-                                     ,@member-read-thms
-                                     ,@member-write-thms
-                                     ,@type-prescriptions-called
-                                     ,@type-prescriptions-struct-readers
-                                     ,@extobj-recognizers
-                                     ,@correct-thms
-                                     ,@measure-thms
-                                     ,fn-fun-env-thm))))))
+                     '(:in-theory
+                       (union-theories
+                        (theory 'atc-all-rules)
+                        '(,fn
+                          not-errorp-when-expr-valuep
+                          ,@not-error-thms
+                          ,@valuep-thms
+                          ,@value-kind-thms
+                          not
+                          return-type-of-stmt-value-return
+                          stmt-value-return->value?-of-stmt-value-return
+                          value-option-fix-when-value-optionp
+                          ,@result-thms
+                          ,@struct-reader-return-thms
+                          ,@struct-writer-return-thms
+                          ,@type-of-value-thms
+                          ,@flexiblep-thms
+                          ,@member-read-thms
+                          ,@member-write-thms
+                          ,@type-prescriptions-called
+                          ,@type-prescriptions-struct-readers
+                          ,@extobj-recognizers
+                          ,@correct-thms
+                          ,@measure-thms
+                          ,fn-fun-env-thm))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -3088,6 +3093,9 @@
                                (:e fun-info->body)
                                mv-nth-of-cons
                                (:e zp)
+                               return-type-of-stmt-value-return
+                               stmt-value-return->value?-of-stmt-value-return
+                               value-option-fix-when-value-optionp
                                value-optionp-when-valuep
                                (:e value-optionp)
                                (:e type-of-value-option)
@@ -3696,10 +3704,12 @@
               (test-val (expr-value->value test-eval))
               (continuep (test-value test-val))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-              ((when (not continuep)) (mv nil (compustate-fix compst)))
-              ((mv val? compst) (exec-stmt ',loop-body compst fenv (1- limit)))
-              ((when (errorp val?)) (mv val? compst))
-              ((when (valuep val?)) (mv val? compst)))
+              ((when (not continuep))
+               (mv (stmt-value-return nil) (compustate-fix compst)))
+              ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
+              ((when (errorp sval)) (mv sval compst))
+              ((when (valuep (stmt-value-return->value? sval)))
+               (mv sval compst)))
            (,exec-stmt-while-for-fn compst (1- limit))))
        (exec-stmt-while-for-fn-hints
         '(("Goal" :in-theory '(acl2::zp-compound-recognizer
@@ -3736,8 +3746,13 @@
                                             (preprocess ,prog-const))
                                            limit))
          :rule-classes nil
-         :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
-                                       exec-stmt-while))))))
+         :hints `(("Goal"
+                   :induct (,exec-stmt-while-for-fn compst limit)
+                   :in-theory '(,exec-stmt-while-for-fn
+                                exec-stmt-while
+                                valuep-when-value-optionp
+                                value-optionp-of-stmt-value-return->value?
+                                (:e valuep)))))))
     (mv (list exec-stmt-while-for-fn-event
               exec-stmt-while-for-fn-thm-event)
         exec-stmt-while-for-fn
@@ -4178,7 +4193,7 @@
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
-                        (mv nil ,final-compst))))
+                        (mv (stmt-value-return nil) ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -4218,6 +4233,10 @@
                                ,@valuep-thms
                                ,@value-kind-thms
                                not
+                               return-type-of-stmt-value-return
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
+                               (:e c::value-option-fix)
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
@@ -4231,7 +4250,8 @@
                                ,@correct-thms
                                ,@measure-thms))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@(alist-to-doublets instantiation)))
+                                  :extra-bindings-ok
+                                  ,@(alist-to-doublets instantiation)))
                  :expand :lambdas)))
        ((mv correct-body-thm-event &)
         (evmac-generate-defthm correct-body-thm
@@ -4359,14 +4379,14 @@
                                                     prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
-                              (mv nil ,final-compst))))
+                              (mv (stmt-value-return nil) ,final-compst))))
        (concl-thm `(equal (exec-stmt-while ',loop-test
                                            ',loop-body
                                            ,compst-var
                                            ,fenv-var
                                            ,limit-var)
                           (b* ((,affect-binder (,fn ,@formals)))
-                            (mv nil ,final-compst))))
+                            (mv (stmt-value-return nil) ,final-compst))))
        (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
@@ -4508,6 +4528,10 @@
                                 ,@valuep-thms
                                 ,@value-kind-thms
                                 not
+                                stmt-value-return->value?-of-stmt-value-return
+                                (:e value-option-fix)
+                                not-errorp-when-stmt-valuep
+                                return-type-of-stmt-value-return
                                 ,exec-stmt-while-for-fn
                                 ,@struct-reader-return-thms
                                 ,@struct-writer-return-thms
