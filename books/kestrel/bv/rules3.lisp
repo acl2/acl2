@@ -249,7 +249,7 @@
                                    LOGTAIL-OF-BVCHOP
                                    slice
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                    BITXOR-SPLIT)
                            (
                             anti-slice
@@ -1174,7 +1174,6 @@
            :in-theory (e/d (bvplus ;bvchop-of-sum-cases
                                    slice-of-sum-cases
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    bitxor
                                    bvxor
                                    expt-of-+)

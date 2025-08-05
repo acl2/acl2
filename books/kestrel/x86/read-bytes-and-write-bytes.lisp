@@ -25,6 +25,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system))
 
 (local (in-theory (disable ;(:linear x86isa::n08p-xr-mem)
                     acl2::unsigned-byte-p-from-bounds

@@ -440,11 +440,13 @@
 ;(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))
 
 ;these shouldn't be needed for "user" proofs outside the BV library:
+;todo: consider dropping this.
+;where should these disables go?
 (in-theory (disable slice-too-high-is-0
                     bvcat-when-highval-is-not-an-integer
                     bvcat-when-lowval-is-not-an-integer
                     bvchop-when-i-is-not-an-integer
-                    getbit-when-val-is-not-an-integer
+                    ;;getbit-when-val-is-not-an-integer
                     slice-when-val-is-not-an-integer
                     ;;bvxor-when-x-is-not-an-integer
                     ;;bvxor-when-y-is-not-an-integer
