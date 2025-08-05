@@ -361,6 +361,27 @@
                                                           table))))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-ident-objfun-file-scope ((ident identp) (table dimb-tablep))
+  :returns (new-table dimb-tablep
+                      :hints (("Goal" :in-theory (enable acons))))
+  :short "Add an identifier to the file scope of a disambiguation table,
+          with object or function kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee dimb-add-ident-objfun), this skips any block scopes,
+     and directly updates the file scope at the bottom of the stack."))
+  (b* (((when (endp table)) (raise "Internal error: no scopes."))
+       (table (dimb-table-fix table))
+       (scope (car (last table)))
+       (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
+       (new-table (append (butlast table 1) (list new-scope))))
+    new-table)
+  :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-make/adjust-expr-cast ((type tynamep) (arg exprp))
@@ -3417,7 +3438,15 @@
      but the declarator will be followed, in the function definition,
      by declarations for the identifiers (again, assuming the code is valid).")
    (xdoc::p
-    "We process those declarations, which will add the function parameters
+    "As with declarations, the scope of the function name
+     starts just after its declarator;
+     it must be added to the file scope of the disambiguation table.
+     However, recall that the disambiguation of the declarator
+     pushes a new scope for the outermost block of the function definition.
+     Thus, instead of using @(tsee dimb-add-ident-objfun) to add the function,
+     we use @(tsee dimb-add-ident-objfun-file-scope).")
+   (xdoc::p
+    "We process any declarations, which add function parameters
      to the scope that was added when processing the declarator.")
    (xdoc::p
     "Then we add the declared function to the disambiguation table,
@@ -3440,8 +3469,8 @@
        ((erp new-spec & table)
         (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
        ((erp new-declor & ident table) (dimb-declor fundef.declor t table))
+       (table (dimb-add-ident-objfun-file-scope ident table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
-       (table (dimb-add-ident-objfun ident table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
        ((unless (stmt-case fundef.body :compound))
         (retmsg$ "The body of the function definition ~x0 ~

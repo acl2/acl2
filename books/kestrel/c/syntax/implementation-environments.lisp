@@ -32,18 +32,14 @@
     (xdoc::seetopic "c::implementation-environments"
                     "implementation environments")
     " that are part of our formalization of C.
-     We need to use that notion also for our C syntax for tools,
+     We need to use implementation environments also for our C syntax for tools,
      specifically for certain tools that operate on it.
-     Eventually, for this C syntax for tools, we should just use
-     those implementation environment that are part of our formalization of C,
-     but for this C syntax for tools we need some information
-     that is not part of those implementation environments,
-     and thus we define a temporary version of implementation environments
-     exclusively for use by the C syntax of tools.
-     When the implementation environments in the C formalization
-     are extended to contain all the information
-     needed for the C syntax for tools,
-     we will eliminate this temporary definition and use those instead."))
+     We created this notion anew here,
+     instead of using the one from the language formalization,
+     because at that time the latter lacked some information needed here.
+     Now the information has been added there,
+     so we plan soon to remove this notion here
+     and use the one from the language formalization."))
   :order-subtopics t
   :default-parent t)
 
@@ -71,7 +67,9 @@
      also on the allowed ranges and relative constraints.
      We also need a flag saying whether the plain @('char') type
      has the same range as @('signed char') or not [C17:6.2.5/15];
-     if the flag is false, it has the same range as @('unsigned char')."))
+     if the flag is false, it has the same range as @('unsigned char').")
+   (xdoc::p
+    "We also include a flag saying whether GCC extensions are enabled or not."))
   ((short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
@@ -112,7 +110,8 @@
                                  (<= 8 llong-bytes))
                             llong-bytes
                           8))
-   (plain-char-signedp bool))
+   (plain-char-signedp bool)
+   (gcc bool))
   :require (and (<= short-bytes int-bytes)
                 (<= int-bytes long-bytes)
                 (<= long-bytes llong-bytes)
@@ -131,12 +130,14 @@
    (xdoc::p
     "This has no particular significance,
      but we set all the byte sizes to their minima,
-     and the plain @('char') flag to @('nil') (i.e. unsigned)."))
+     and the plain @('char') flag to @('nil') (i.e. unsigned);
+     we also disable GCC extensions."))
   (make-ienv :short-bytes 2
              :int-bytes 4
              :long-bytes 8
              :llong-bytes 8
-             :plain-char-signedp nil))
+             :plain-char-signedp nil
+             :gcc nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
