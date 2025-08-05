@@ -1108,7 +1108,10 @@
                                                   (1- limit)))
          (compst (pop-frame compst))
          ((when (errorp sval)) (mv sval compst))
-         (val? (stmt-value-return->value? sval))
+         (val? (stmt-value-case
+                sval
+                :none nil
+                :return sval.value?))
          ((unless (equal (type-of-value-option val?)
                          (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
@@ -1232,7 +1235,9 @@
           (mv (stmt-value-return nil) (compustate-fix compst)))
          ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
          ((when (errorp sval)) (mv sval compst))
-         ((when (stmt-value-return->value? sval)) (mv sval compst)))
+         ((when (and (stmt-value-case sval :return)
+                     (stmt-value-return->value? sval)))
+          (mv sval compst)))
       (exec-stmt-while test body compst fenv (1- limit)))
     :measure (nfix limit))
 
@@ -1356,7 +1361,9 @@
           (mv (stmt-value-return nil) (compustate-fix compst)))
          ((mv sval compst) (exec-block-item (car items) compst fenv (1- limit)))
          ((when (errorp sval)) (mv sval compst))
-         ((when (stmt-value-return->value? sval)) (mv sval compst)))
+         ((when (and (stmt-value-case sval :return)
+                     (stmt-value-return->value? sval)))
+          (mv sval compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 

@@ -412,13 +412,14 @@
      i.e. with a @('return') without expression.
      The distinction affects how execution proceeds
      just after the statement in question."))
-  ;; (:none ()) ; temporarily commented out to facilitate transition
+  (:none ())
   (:return ((value? value-option)))
   :pred stmt-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult stmt-value "statement values")
+(defresult stmt-value "statement values"
+  :enable (errorp stmt-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;
 
