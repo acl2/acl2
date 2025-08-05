@@ -124,7 +124,7 @@
 
 ;; TODO: Add a tactic for the Axe prover
 ;; TODO: Add a bit-blasting tactic?
-;; TODO: Add case-splitting
+;; TODO: Add splitting based on IFs in the goal
 ;; TODO: What about increasing the timeout and trying again?
 (defun tacticp (tac)
   (declare (xargs :guard t))
@@ -862,8 +862,10 @@
                    :mode :program))
    ;; TODO: What if the DAG is a constant?
    (if (endp tactics)
-       (let ((dag (first problem)))
+       (let ((dag (first problem))
+             (assumptions (second problem)))
          (progn$ (cw "~%FAILED: No more tactics!~%~%")
+                 (cw "The assumptions are:~%~X01.~%" assumptions nil)
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)
