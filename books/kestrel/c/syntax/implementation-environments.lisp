@@ -67,7 +67,9 @@
      also on the allowed ranges and relative constraints.
      We also need a flag saying whether the plain @('char') type
      has the same range as @('signed char') or not [C17:6.2.5/15];
-     if the flag is false, it has the same range as @('unsigned char')."))
+     if the flag is false, it has the same range as @('unsigned char').")
+   (xdoc::p
+    "We also include a flag saying whether GCC extensions are enabled or not."))
   ((short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
@@ -108,7 +110,8 @@
                                  (<= 8 llong-bytes))
                             llong-bytes
                           8))
-   (plain-char-signedp bool))
+   (plain-char-signedp bool)
+   (gcc bool))
   :require (and (<= short-bytes int-bytes)
                 (<= int-bytes long-bytes)
                 (<= long-bytes llong-bytes)
@@ -127,12 +130,14 @@
    (xdoc::p
     "This has no particular significance,
      but we set all the byte sizes to their minima,
-     and the plain @('char') flag to @('nil') (i.e. unsigned)."))
+     and the plain @('char') flag to @('nil') (i.e. unsigned);
+     we also disable GCC extensions."))
   (make-ienv :short-bytes 2
              :int-bytes 4
              :long-bytes 8
              :llong-bytes 8
-             :plain-char-signedp nil))
+             :plain-char-signedp nil
+             :gcc nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
