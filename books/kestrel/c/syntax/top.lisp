@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "concrete-syntax")
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
