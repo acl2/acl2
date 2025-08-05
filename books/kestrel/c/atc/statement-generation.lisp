@@ -1244,7 +1244,7 @@
                                  (stmt-thm symbolp)
                                  (uterm? "An untranslated term.")
                                  (type typep)
-                                 (result "An untranslated term.")
+                                 (stmt-value "An untranslated term.")
                                  (new-compst "An untranslated term.")
                                  (gin stmt-ginp)
                                  state)
@@ -1265,7 +1265,7 @@
      we also generate a theorem saying that
      @(tsee exec-block-item) applied to the quoted block item
      yields an @(tsee mv) pair consisting of
-     a result term (or @('nil'))
+     a statement value term
      and a possibly updated computation state;
      these are the same as the ones for the statement theorem.")
    (xdoc::p
@@ -1298,7 +1298,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv (stmt-value-return ,result) ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1737,7 +1737,7 @@
                              stmt-thm-name
                              nil
                              (type-void)
-                             nil
+                             '(stmt-value-return nil)
                              new-compst
                              (change-stmt-gin
                               gin
@@ -4303,7 +4303,7 @@
                                  stmt-thm-name
                                  uterm
                                  expr.type
-                                 expr.result
+                                 `(stmt-value-return ,expr.result)
                                  expr.new-compst
                                  (change-stmt-gin
                                   gin
@@ -4953,7 +4953,7 @@
                                  if-stmt-thm
                                  (untranslate$ term nil state)
                                  type
-                                 if-result
+                                 `(stmt-value-return ,if-result)
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5377,7 +5377,7 @@
                                  stmt-thm-name
                                  uterm
                                  (type-void)
-                                 nil
+                                 '(stmt-value-return nil)
                                  new-compst
                                  (change-stmt-gin
                                   gin
