@@ -32,18 +32,14 @@
     (xdoc::seetopic "c::implementation-environments"
                     "implementation environments")
     " that are part of our formalization of C.
-     We need to use that notion also for our C syntax for tools,
+     We need to use implementation environments also for our C syntax for tools,
      specifically for certain tools that operate on it.
-     Eventually, for this C syntax for tools, we should just use
-     those implementation environment that are part of our formalization of C,
-     but for this C syntax for tools we need some information
-     that is not part of those implementation environments,
-     and thus we define a temporary version of implementation environments
-     exclusively for use by the C syntax of tools.
-     When the implementation environments in the C formalization
-     are extended to contain all the information
-     needed for the C syntax for tools,
-     we will eliminate this temporary definition and use those instead."))
+     We created this notion anew here,
+     instead of using the one from the language formalization,
+     because at that time the latter lacked some information needed here.
+     Now the information has been added there,
+     so we plan soon to remove this notion here
+     and use the one from the language formalization."))
   :order-subtopics t
   :default-parent t)
 
