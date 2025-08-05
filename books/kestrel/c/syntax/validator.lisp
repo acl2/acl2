@@ -5889,7 +5889,8 @@
                         its associated information is ~x1."
                        (fundef-fix fundef) info))
              ((valid-ord-info-objfun info) info)
-             ((unless (type-case info.type :function))
+             ((unless (or (type-case info.type :function)
+                          (type-case info.type :unknown)))
               (retmsg$ "The name of the function definition ~x0 ~
                         is already in the file scope, ~
                         but it has type ~x1."
