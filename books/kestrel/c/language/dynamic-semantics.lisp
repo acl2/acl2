@@ -1102,13 +1102,13 @@
          ((when (errorp scope)) (mv scope (compustate-fix compst)))
          (frame (make-frame :function fun :scopes (list scope)))
          (compst (push-frame frame compst))
-         ((mv sval? compst) (exec-block-item-list info.body
+         ((mv sval compst) (exec-block-item-list info.body
                                                   compst
                                                   fenv
                                                   (1- limit)))
          (compst (pop-frame compst))
-         ((when (errorp sval?)) (mv sval? compst))
-         (val? (stmt-value-return->value? sval?))
+         ((when (errorp sval)) (mv sval compst))
+         (val? (stmt-value-return->value? sval))
          ((unless (equal (type-of-value-option val?)
                          (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
@@ -1354,9 +1354,9 @@
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          ((when (endp items))
           (mv (stmt-value-return nil) (compustate-fix compst)))
-         ((mv sval? compst) (exec-block-item (car items) compst fenv (1- limit)))
-         ((when (errorp sval?)) (mv sval? compst))
-         ((when (stmt-value-return->value? sval?)) (mv sval? compst)))
+         ((mv sval compst) (exec-block-item (car items) compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval compst))
+         ((when (stmt-value-return->value? sval)) (mv sval compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
