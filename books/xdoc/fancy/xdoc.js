@@ -40,23 +40,22 @@ let xindex_loaded = false;
 const xindexObj = new XDocIndex();
 const xdocRenderer = new XdocRenderer();
 
-
 // --------------------------------------------------------------------------
 //
 //                         RANDOM UTILITIES
 //
 // --------------------------------------------------------------------------
 
-
 var short_plaintext_cache = {};
 function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
-        return short_plaintext_cache[key];
+	return short_plaintext_cache[key];
     }
     var ret = xdocRenderer.renderText(xindexObj.topicShort(key));
     short_plaintext_cache[key] = ret;
     return ret;
 }
+window.topicShortPlaintext = topicShortPlaintext;
 
 function htmlEncode(value){
     // copied from stackoverflow:1219860
@@ -70,24 +69,24 @@ function chunkify(t) {
     var tz = [], x = 0, y = -1, n = 0, i, j;
 
     while ((i = (j = t.charAt(x++)).charCodeAt(0))) {
-        var m = (i == 46 || (i >=48 && i <= 57));
-        if (m !== n) {
+	var m = (i == 46 || (i >=48 && i <= 57));
+	if (m !== n) {
             tz[++y] = "";
             n = m;
-        }
-        tz[y] += j;
+	}
+	tz[y] += j;
     }
     return tz;
 }
 
 function alphanumChunks(aa,bb) {
     for (var x = 0; aa[x] && bb[x]; x++) {
-        if (aa[x] !== bb[x]) {
-            var c = Number(aa[x]), d = Number(bb[x]);
-            if (c == aa[x] && d == bb[x]) {
+	if (aa[x] !== bb[x]) {
+	    var c = Number(aa[x]), d = Number(bb[x]);
+	    if (c == aa[x] && d == bb[x]) {
 		return c - d;
-            } else return (aa[x] > bb[x]) ? 1 : -1;
-        }
+	    } else return (aa[x] > bb[x]) ? 1 : -1;
+	}
     }
     return aa.length - bb.length;
 }
@@ -101,16 +100,16 @@ function alphanum(a, b) {
 var waitmsg = 0;
 function pleaseWait() {
     var msgs = ["Still loading",
-                "Gah, what's taking so long?",
-                "Man, tubes must be clogged...",
-                "The boy has no patience.",
-                "It's not ready yet!",
-                "Dude, stop clicking already!"];
+		"Gah, what's taking so long?",
+		"Man, tubes must be clogged...",
+		"The boy has no patience.",
+		"It's not ready yet!",
+		"Dude, stop clicking already!"];
     $("#still_loading").html("<p>" + msgs[waitmsg] + "</p>");
     $("#still_loading").fadeIn(100).delay(500).fadeOut(100);
     waitmsg = waitmsg + 1;
     if (waitmsg == msgs.length)
-        waitmsg = msgs.length - 1;
+	waitmsg = msgs.length - 1;
 }
 
 
@@ -128,39 +127,39 @@ function renderMathFragments ()
     // the page.
 
     if (! KATEX_LOADED) {
-        // just wait, it'll get loaded eventually
-        return;
+	// just wait, it'll get loaded eventually
+	return;
     }
 
     // console.log("Rendering math fragments.");
     $(".mathblock").each(function () {
-        var obj = $(this);
-        var formula_text = obj.text();
-        var newdiv = jQuery("<span></span>");
-        try {
-            katex.render(formula_text, newdiv.get(0));
+	var obj = $(this);
+	var formula_text = obj.text();
+	var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
             obj.html(newdiv);
-            obj.removeAttr("class");
-            obj.attr("class", "mathblockrendered");
-        }
-        catch(e) {
-            obj.html(htmlEncode("{{" + e.message + "}}"));
-        }
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathblockrendered");
+	}
+	catch(e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
     });
 
     $(".mathfrag").each(function () {
-        var obj = $(this);
-        var formula_text = obj.text();
-        var newdiv = jQuery("<span></span>");
-        try {
-            katex.render(formula_text, newdiv.get(0));
-            obj.html(newdiv);
-            obj.removeAttr("class");
-            obj.attr("class", "mathfragrendered");
-        }
-        catch (e) {
-            obj.html(htmlEncode("{{" + e.message + "}}"));
-        }
+	var obj = $(this);
+	var formula_text = obj.text();
+	var newdiv = jQuery("<span></span>");
+	try {
+	    katex.render(formula_text, newdiv.get(0));
+	    obj.html(newdiv);
+	    obj.removeAttr("class");
+	    obj.attr("class", "mathfragrendered");
+	}
+	catch (e) {
+	    obj.html(htmlEncode("{{" + e.message + "}}"));
+	}
     });
 }
 
@@ -211,31 +210,29 @@ function closeAllPowertips()
 // load xindex first, then once it's complete we load xdata.  The format of
 // both are described in xdoc_index.js.
 
-
 function keyTitle(key)
 {
     var prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
     return (xindexObj.topicExists(key))
-        ? (prefix + " &mdash; " + xindexObj.topicName(key))
-        : (prefix + " &mdash; " + key);
+	? (prefix + " &mdash; " + xindexObj.topicName(key))
+	: (prefix + " &mdash; " + key);
 }
-
 
 
 function applySuborder(subkeys, keys) {
     var ret = [];
     for(var i in subkeys) {
-        ret.push(subkeys[i]);
+	ret.push(subkeys[i]);
     }
     for(var i in keys) {
-        var k = keys[i];
-        var idx = ret.indexOf(k);
-        if (idx == -1) { // new key, add it
-            ret.push(k);
-        }
-        // else already have it.
+	var k = keys[i];
+	var idx = ret.indexOf(k);
+	if (idx == -1) { // new key, add it
+	    ret.push(k);
+	}
+	// else already have it.
     }
     return ret;
 }
@@ -245,20 +242,20 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
 
     var tmp = [];
     for(var i in children) {
-        var child_key = children[i];
-        var rawname = xindexObj.topicRawname(child_key);
-        tmp.push({key:child_key, rawname:rawname});
+	var child_key = children[i];
+	var rawname = xindexObj.topicRawname(child_key);
+	tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
     for(var i in tmp) {
-        ret.push(tmp[i].key);
+	ret.push(tmp[i].key);
     }
 
     var suborder = xindexObj.topicSuborder(key);
     if (suborder.length > 0) {
-        return applySuborder(suborder, ret);
+	return applySuborder(suborder, ret);
     }
 
     return ret;
@@ -276,49 +273,49 @@ function xdataLoadKeys(keys) {
     // Optimization, don't load keys we've already loaded
     const missing = [];
     for(const key of keys) {
-        if (!xdataObj.topicExists(key))
+	if (!xdataObj.topicExists(key))
             missing.push(key);
     }
     // If no keys are missing, we don't need to load anything!
     if (missing.length == 0) {
-        return Promise.resolve();
+	return Promise.resolve();
     }
 
     if (!XDATAGET) {
-        // We're running in local mode, so we can't load any more data from
-        // the server.  Any missing keys are errors!
-        for(const missingKey of missing)
+	// We're running in local mode, so we can't load any more data from
+	// the server.  Any missing keys are errors!
+	for(const missingKey of missing)
             xdataObj.addError(missingKey, "Error: no such topic.");
-        return Promise.resolve();
+	return Promise.resolve();
     }
 
     // Else, running on a server and missing some keys.  Try to load them.
     const url = XDATAGET + "?keys=" + missing.join(":");
 
     return fetch(url, {
-        method: 'GET',
+	method: 'GET',
     }).then(res => res.json()).then(obj => {
-        const results = "results" in obj && obj["results"];
-        if (results && results.length == missing.length) {
+	const results = "results" in obj && obj["results"];
+	if (results && results.length == missing.length) {
             // TODO: we need to assume that the order of the returned
             // data is the same as the order of the requested keys.
             for(let i = 0; i < results.length; i++) {
-                xdataObj.add(missing[i], results[i]);
+		xdataObj.add(missing[i], results[i]);
             }
-        } else {
+	} else {
             let val = "Error: malformed reply from " + url;
             if ("error" in obj)
-                val = obj["error"];
+		val = obj["error"];
             for(const missingKey of missing) {
-                xdataObj.addError(missingKey, val);
+		xdataObj.addError(missingKey, val);
             }
-        }
+	}
     }).catch(err => {
-        const val = `Error: AJAX query failed. ${err}`;
-        console.error(err);
-        for(const missingKey of missing) {
+	const val = `Error: AJAX query failed. ${err}`;
+	console.error(err);
+	for(const missingKey of missing) {
             xdataObj.addError(missingKey, val);
-        }
+	}
     });
 }
 
@@ -379,18 +376,18 @@ function navMakeNode(key) {
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
     if (xindexObj.topicChildKeys(key).length == 0) {
-        node += "<img src=\"leaf.png\"/>";
+	node += "<img src=\"leaf.png\"/>";
     }
     else {
-        node += "<a id=\"_nav_ilink" + id + "\" ";
-        node += " href=\"javascript:navExpand(" + id + ")\">";
-        node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
-        node += "</a>";
+	node += "<a id=\"_nav_ilink" + id + "\" ";
+	node += " href=\"javascript:navExpand(" + id + ")\">";
+	node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
+	node += "</a>";
     }
     node += "<a id=\"_golink" + id + "\""
-        + " href=\"index.html?topic=" + key + "\""
-        + " onclick=\"return dolink(event, '" + key + "');\""
-        + " data-powertip=\"" + tooltip + "\">";
+	+ " href=\"index.html?topic=" + key + "\""
+	+ " onclick=\"return dolink(event, '" + key + "');\""
+	+ " data-powertip=\"" + tooltip + "\">";
     node += name;
     node += "</a>";
     node += "</nobr>";
@@ -416,8 +413,8 @@ function navExpand(id) {
     var key = nav_id_table[id]["key"];
 
     if(nav_id_table[id]["ever_expanded"]) {
-        $("#_navTree" + id).show();
-        return;
+	$("#_navTree" + id).show();
+	return;
     }
 
     nav_id_table[id]["ever_expanded"] = true;
@@ -426,14 +423,14 @@ function navExpand(id) {
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
     for(var i in children) {
-        exp += navMakeNode(children[i]);
+	exp += navMakeNode(children[i]);
     }
     $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
     for(var i = start; i < nav_id_table.length; ++i) {
-        navActivateTooltip(i);
+	navActivateTooltip(i);
     }
 }
 
@@ -451,8 +448,8 @@ var navFlat_ever_shown = false;
 
 function navTree() {
     if (!xindex_loaded) {
-        pleaseWait();
-        return;
+	pleaseWait();
+	return;
     }
     if (nav_mode == "tree") { return; }
     navFlat_top = $("#left").scrollTop();
@@ -465,8 +462,8 @@ function navTree() {
 
 function navFlat() {
     if (!xindex_loaded) {
-        pleaseWait();
-        return;
+	pleaseWait();
+	return;
     }
     if (nav_mode == "flat") { return; }
     navTree_top = $("#left").scrollTop();
@@ -477,20 +474,19 @@ function navFlat() {
     nav_mode = "flat";
 
     if (navFlat_ever_shown) {
-        // Nothing to do, we've already built the flat index.
-        return;
+	// Nothing to do, we've already built the flat index.
+	return;
     }
     $("#flat").html("<p>Loading...</p>");
     navFlat_ever_shown = true;
     setTimeout(navFlatReallyInstall, 10);
 }
 
-
 function navFlatSort(array)
 {
     var len = array.length;
     if(len < 2) {
-        return array;
+	return array;
     }
     var pivot = Math.ceil(len/2);
     return navFlatMerge(navFlatSort(array.slice(0,pivot)), navFlatSort(array.slice(pivot)));
@@ -501,10 +497,10 @@ function navFlatMerge(left, right)
     var result = [];
     while((left.length > 0) && (right.length > 0))
     {
-        if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
-            result.push(left.shift());
-        else
-            result.push(right.shift());
+	if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
+	    result.push(left.shift());
+	else
+	    result.push(right.shift());
     }
 
     result = result.concat(left, right);
@@ -551,14 +547,14 @@ function navFlatReallyInstall()
 
     // Preprocessing: upcase and chunkify everything
     for(const key of keys) {
-        var rawname = xindexObj.topicRawname(key).toUpperCase();
-        myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
+	var rawname = xindexObj.topicRawname(key).toUpperCase();
+	myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
 
     // Sort using faster algorithm
     myarr = navFlatSort(myarr);
     // myarr.sort(function(a,b) {
-    // 	return alphanumChunks(a.chunks, b.chunks);
+    //  return alphanumChunks(a.chunks, b.chunks);
     // });
 
     // Previously used jQuery("<ul></ul>") and extended it with append.  That
@@ -572,26 +568,26 @@ function navFlatReallyInstall()
     // efficiency.
 
     for(var i in myarr) {
-        var key = myarr[i].key;
-        var name = xindexObj.topicName(key);
-        var rawname = myarr[i].rawname;
+	var key = myarr[i].key;
+	var name = xindexObj.topicName(key);
+	var rawname = myarr[i].rawname;
 
-        // If you want to resurrect this, also need to add the data-powertip
-        // stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
-        // + "</p>";
+	// If you want to resurrect this, also need to add the data-powertip
+	// stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
+	// + "</p>";
 
-        var code = rawname.charCodeAt(0);
-        if ((rawname.charAt(0) != current_startchar) &&
-            // Avoid headers unless it's alphabetic.  Only need to check for
-            // upper-case things since we're upcasing everything to begin with.
-            ((big_a <= code && code <= big_z)))
-        {
+	var code = rawname.charCodeAt(0);
+	if ((rawname.charAt(0) != current_startchar) &&
+	    // Avoid headers unless it's alphabetic.  Only need to check for
+	    // upper-case things since we're upcasing everything to begin with.
+	    ((big_a <= code && code <= big_z)))
+	{
             current_startchar = rawname.charAt(0);
-            dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
-                + current_startchar + "</b></li>";
-        }
+	    dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
+		+ current_startchar + "</b></li>";
+	}
 
-        dl += "<li><a class=\"flatnav\""
+	dl += "<li><a class=\"flatnav\""
             + " href=\"index.html?topic=" + key + "\""
             + " onclick=\"return dolink(event, '" + key + "');\">"
             + name
@@ -628,8 +624,6 @@ function navToggleVisible()
     closeAllPowertips();
 }
 
-
-
 // --------------------------------------------------------------------------
 //
 //                          MAIN DATA DISPLAY
@@ -651,25 +645,25 @@ function datLoadParents(key) {
     var parent_names = xdataObj.topicParentNames(key);
     var acc = "";
     if (parent_keys.length == 0) {
-        $("#parents").hide();
-        $("#parents").html("");
-        return;
+	$("#parents").hide();
+	$("#parents").html("");
+	return;
     }
     acc += "<ul>";
     for(var i in parent_keys) {
-        var pkey = parent_keys[i];
-        var pname = parent_names[i];
-        var tooltip = "Error: parent topic is missing!";
-        if (xindexObj.topicExists(key)) {
+	var pkey = parent_keys[i];
+	var pname = parent_names[i];
+	var tooltip = "Error: parent topic is missing!";
+	if (xindexObj.topicExists(key)) {
             tooltip = topicShortPlaintext(pkey);
-        }
-        acc += "<li>";
-        acc += "<a href=\"index.html?topic=" + pkey + "\""
-            + " onclick=\"return dolink(event, '" + pkey + "');\""
+	}
+	acc += "<li>";
+	acc += "<a href=\"index.html?topic=" + pkey + "\""
+	    + " onclick=\"return dolink(event, '" + pkey + "');\""
             + " data-powertip=\"<p>" + tooltip + "</p>\">";
-        acc += pname;
-        acc += "</a>";
-        acc += "</li>\n";
+	acc += pname;
+	acc += "</a>";
+	acc += "</li>\n";
     }
     acc += "</ul>";
     $("#parents").html(acc);
@@ -683,15 +677,15 @@ function datShortSubtopics(key)
 
     var dl = jQuery("<div></div>");
     for(var i in children) {
-        var child_key = children[i];
-        dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
+	var child_key = children[i];
+	dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
 		  + ">"
                   + xindexObj.topicName(child_key)
                   + "</dt>");
-        var dd = jQuery("<dd></dd>");
-        dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(child_key)));
-        dl.append(dd);
+	var dd = jQuery("<dd></dd>");
+	dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(child_key)));
+	dl.append(dd);
     }
     return dl;
 }
@@ -704,22 +698,22 @@ function datExpand(dat_id)
     $("#_dat_long" + dat_id).show();
 
     if (dat_id_table[dat_id]["ever_expanded"] == true) {
-        // Already showed it, nothing more to do
-        return;
+	// Already showed it, nothing more to do
+	return;
     }
 
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
     var children = keySortedChildren(key);
     xdataLoadKeys(children).then(() => {
-        var div = $("#_dat_long" + dat_id);
-        for(var i in children) {
+	var div = $("#_dat_long" + dat_id);
+	for(var i in children) {
             var child_key = children[i];
             div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
-                div.append("<hr></hr>");
+		div.append("<hr></hr>");
             }
-        }
+	}
     });
 
     maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
@@ -746,11 +740,11 @@ function datLongTopic(key)
 
     var curr_state = history.state;
     if (!curr_state && !warned_about_history_state) {
-        div.append(
-            "<p>Warning: your browser does not implement the history.state "
+	div.append(
+	    "<p>Warning: your browser does not implement the history.state "
 		+ "API, so your back button will lose your place.  You may wish "
 		+ "to use a browser like Firefox or Chrome, instead.</p>");
-        warned_about_history_state = true;
+	warned_about_history_state = true;
     }
 
     // Special handling for broken links.  We want to give XDOC manuals to have
@@ -760,73 +754,73 @@ function datLongTopic(key)
     // internal manuals within, say, Centaur, might want to say, "please report
     // this broken link to Jared."
     if (!xindexObj.topicExists(key)) {
-        // I think it's nice to change the title dynamically, to say what topic
-        // they tried to access, instead of just generically saying Broken-Link.
-        div.append("<h1>" + key + " Not Found</h1>");
+	// I think it's nice to change the title dynamically, to say what topic
+	// they tried to access, instead of just generically saying Broken-Link.
+	div.append("<h1>" + key + " Not Found</h1>");
 
-        if (xindexObj.topicExists(BROKEN_KEY)) {
+	if (xindexObj.topicExists(BROKEN_KEY)) {
             div.append(xdocRenderer.renderHtml(xdataObj.topicLong(BROKEN_KEY)));
-        }
+	}
 
-        return div;
+	return div;
     }
 
     var from = xdataObj.topicFrom(key);
     var fromp;
     if (from == "Unknown") {
-        fromp = "<p class='from'>Unknown Origin</p>";
+	fromp = "<p class='from'>Unknown Origin</p>";
     }
     else if (from == "ACL2 Sources") {
-        // link to main ACL2 sources dir:
-        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
+	// link to main ACL2 sources dir:
+	fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
     }
     else if (from.endsWith(":DIR :SYSTEM")) {
-        // link to the specific file on GitHub:
-        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
+	// link to the specific file on GitHub:
+	fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
             + from.slice(0,-13) // strip " :DIR :SYSTEM" from end
             + "\">" + from + "</a></p>";
     }
     else {
-        fromp = "<p class='from'>" + from + "</p>";
+	fromp = "<p class='from'>" + from + "</p>";
     }
 
     var basepkg = htmlEncode(xdataObj.topicBasepkg(key));
     var basediv = (basepkg == "ACL2")
-        ? ""
-        : "<div class='basepkg' data-powertip='"
-        + "<p>In links and code snippets here, symbols are "
-        + "shown relative to the <b>" + basepkg
-        + "</b> package.</p><p>You may need <b>" + basepkg
-        + "::</b> prefixes to call these functions, etc.</p>'>"
-        + "<b>" + basepkg + "</b><br/>Package</div>";
+	? ""
+	: "<div class='basepkg' data-powertip='"
+	+ "<p>In links and code snippets here, symbols are "
+	+ "shown relative to the <b>" + basepkg
+	+ "</b> package.</p><p>You may need <b>" + basepkg
+	+ "::</b> prefixes to call these functions, etc.</p>'>"
+	+ "<b>" + basepkg + "</b><br/>Package</div>";
 
     var shortp;
     if (key != TOP_KEY) {
-        div.append(basediv);
-        div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
-        shortp = jQuery("<p></p>");
+	div.append(basediv);
+	div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
+	shortp = jQuery("<p></p>");
     } else {
-        div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
-        shortp = jQuery("<p align='center'></p>");
+	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
+	shortp = jQuery("<p align='center'></p>");
     }
 
     shortp.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     div.append(shortp);
     div.append(xdocRenderer.renderHtml(xdataObj.topicLong(key)));
     if (xindexObj.topicChildKeys(key).length != 0) {
-        var acc = "<h3>";
-        acc += "Subtopics ";
-        acc += "<a id=\"_dat_ilink" + dat_id + "\""
+	var acc = "<h3>";
+	acc += "Subtopics ";
+	acc += "<a id=\"_dat_ilink" + dat_id + "\""
             + " href=\"javascript:datExpand(" + dat_id + ")\">";
-        acc += "<img id=\"_dat_img" + dat_id + "\""
+	acc += "<img id=\"_dat_img" + dat_id + "\""
             + " src=\"expand_subtopics.png\" align=\"top\"/>";
-        acc += "</a>";
-        acc += "</h3>";
-        var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
-        sub.append(datShortSubtopics(key));
-        div.append(acc);
-        div.append(sub);
-        div.append("<div id=\"_dat_long" + dat_id + "\" "
+	acc += "</a>";
+	acc += "</h3>";
+	var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
+	sub.append(datShortSubtopics(key));
+	div.append(acc);
+	div.append(sub);
+	div.append("<div id=\"_dat_long" + dat_id + "\" "
                    + "style=\"display:none\" class=\"dat_long\"></dl>");
     }
 
@@ -840,16 +834,44 @@ function datLoadKey(key, scroll_to)
     var keys = [key];
 
     xdataLoadKeys(keys).then(() => {
-        $("#parents").html("");
-        $("#data").html("");
-        $("#right").scrollTop(0);
-        dat_id_table = [];
-        datLoadParents(key);
-        $("#data").append(datLongTopic(key));
-        maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
-        $("title").html(keyTitle(key));
-        renderMathFragments();
-        setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
+	$("#parents").html("");
+	$("#data").html("");
+	$("#right").scrollTop(0);
+	dat_id_table = [];
+	datLoadParents(key);
+	$("#data").append(datLongTopic(key));
+	maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
+	$("title").html(keyTitle(key));
+	renderMathFragments();
+	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
+
+	// Highlight first match if lastSearchTerm is set
+	if (window.lastSearchTerm && typeof window.lastSearchTerm === 'string' && window.lastSearchTerm.length > 0) {
+            var term = window.lastSearchTerm;
+            var $data = $("#data");
+            // Find the first text node containing the term (case-insensitive)
+            var found = false;
+            $data.find('*').addBack().contents().each(function() {
+		if (found) return;
+		if (this.nodeType === 3) { // Text node
+                    var idx = this.nodeValue.toLowerCase().indexOf(term.toLowerCase());
+                    if (idx !== -1) {
+			// Split the text node and wrap the match in a span
+			var before = this.nodeValue.slice(0, idx);
+			var match = this.nodeValue.slice(idx, idx + term.length);
+			var after = this.nodeValue.slice(idx + term.length);
+			var $span = $('<span>').text(match).css({background: '#ffff66', padding: '0 2px'});
+			var frag = document.createDocumentFragment();
+			if (before) frag.appendChild(document.createTextNode(before));
+			frag.appendChild($span[0]);
+			if (after) frag.appendChild(document.createTextNode(after));
+			$(this).replaceWith(frag);
+			found = true;
+                    }
+		}
+            });
+            window.lastSearchTerm = null;
+	}
     });
 }
 
@@ -857,11 +879,6 @@ function datReallyScrollTo(top) {
     //console.log(" -- really scrolling to " + top);
     $("#right").scrollTop(top);
 }
-
-
-
-
-
 
 // --------------------------------------------------------------------------
 //
@@ -875,30 +892,37 @@ var short_tokens = {};
 function searchTokenize(plaintext) {
     var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
     if (tokens.length == 1 && tokens[0] == "") {
-        // Correct for ridiculous behavior of string.split
-        return [];
+	// Correct for ridiculous behavior of string.split
+	return [];
     }
     for(var i in tokens) {
-        var orig = tokens[i];
-        var trim = orig.replace(/^[()"'`.,;?!]*/, '')
-            .replace(/[()"'`.,;?!]*$/, '');
-        tokens[i] = trim;
+	var orig = tokens[i];
+	var trim = orig.replace(/^[()"'`.,;?!]*/, '')
+	    .replace(/[()"'`.,;?!]*$/, '');
+	tokens[i] = trim;
     }
     return tokens;
 }
 
 function makeShortTokens() {
     if (short_tokens_initialized)
-        return;
+	return;
     var keys = xindexObj.allKeys();
     for(const key of keys) {
-        var name = xindexObj.topicName(key);
-        var rawname = xindexObj.topicRawname(key);
-        var plaintext = topicShortPlaintext(key);
-        var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
-        short_tokens[key] = tokens;
+	var name = xindexObj.topicName(key);
+	var rawname = xindexObj.topicRawname(key);
+	var plaintext = topicShortPlaintext(key);
+	var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
+	short_tokens[key] = tokens;
     }
     short_tokens_initialized = true;
+}
+
+function countOccurrences(haystack, needle) {
+    if (!needle) return 0;
+    var re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    var matches = haystack.match(re);
+    return matches ? matches.length : 0;
 }
 
 function subarrayAtOffsetp (a, b, n) {
@@ -906,11 +930,11 @@ function subarrayAtOffsetp (a, b, n) {
     var al = a.length;
     var bl = b.length - n;
     if (al > bl) {
-        return false;
+	return false;
     }
     for(var i = 0; i < al; ++i) {
-        if (a[i] != b[(i+n)])
-            return false;
+	if (a[i] != b[(i+n)])
+	    return false;
     }
     return true;
 }
@@ -922,10 +946,20 @@ function subarrayp (a, b) {
     if (al > bl) return false;
     var stop = (bl-al)+1;
     for(var i = 0; i < stop; ++i) {
-        if (subarrayAtOffsetp(a,b,i))
-            return true;
+	if (subarrayAtOffsetp(a,b,i))
+	    return true;
     }
     return false;
+}
+
+// Check if all words in query appear in text (for multi-word queries)
+function allWordsMatch(text, query_words) {
+    for(var i = 0; i < query_words.length; i++) {
+	if (text.indexOf(query_words[i]) === -1) {
+            return false;
+	}
+    }
+    return true;
 }
 
 function searchSubmit() {
@@ -946,10 +980,7 @@ function searchGo(str) {
     $("#data").html("");
     $("#right").scrollTop(0);
 
-    $("#data").append("<p><b style='color: red'>Note:</b> <i>search is extremely beta.</i> "
-                      + "It doesn't even search the <tt>:long</tt> sections yet.</p>");
-
-    $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
+    $("#data").append("<p id='searching_message'>Searching...</p>");
 
     var query = searchTokenize(str);
 
@@ -958,86 +989,163 @@ function searchGo(str) {
     $("#left").removeClass("active");
     closeAllPowertips();
 
-    // Now wait a bit to allow that to render, before starting the search.
+    // Start search immediately since we only search titles and shorts
     setTimeout(searchGoMain, 10, query);
     return false;
 }
 
-function searchAddHit(matches, hits, key) {
+// Patch searchAddHit to accept an optional extra content
+function searchAddHit(matches, hits, key, extra) {
     if (key in matches) {
-        // already showed this result, don't show it again
-        return;
+	// already showed this result, don't show it again
+	return;
     }
     matches[key] = 1;
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
 		+ " onclick=\"return dolink(event, '" + key + "');\">"
 		+ xindexObj.topicName(key)
 		+ "</a>"
-		//		+ " (" + xindexObj.topicUid(key) + ")" // nice for debugging
 		+ "</dt>");
     var dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
+    if (extra) {
+	dd.append("<div style='margin-top:0.5em;color:#444;font-size:90%'>" + extra + "</div>");
+    }
     hits.append(dd);
 }
 
 function searchGoMain(query) {
     makeShortTokens();
 
+    var query_str = query.join(" ");
+    var query_str_lc = query_str.toLowerCase();
+
     $("#searching_message").hide();
     if (query.length == 0) {
-        $("#data").append("<h3>No results (empty search)</h3>");
-        return;
+	$("#data").append("<h3>No results (empty search)</h3>");
+	return;
     }
 
-    var query_str = query.join(" ");
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    // Matches will just bind keys we've already shown, so we don't repeatedly
-    // shown a topic just because it matches multiple criteria.
+    // Restore previous results collection and display
+    var max_results = 100;
     var matches = {};
+    var results = [];
+    const keys = Array.from(xindexObj.allKeys());
+    var num_hits = 0;
 
-    // Hits will collect all the results
-    var hits = jQuery("<dl></dl>");
-    const keys = xindexObj.allKeys();
-
-    // We'll start with a stupid topic name search, in case there are any very
-    // exact hits.
-    for(const key of keys) {
-        var name = xindexObj.topicRawname(key);
-        var tokens = searchTokenize(name);
-        if (subarrayp(query,tokens))
-            searchAddHit(matches, hits, key);
+    function addResult(key, rank, snippet, label) {
+	if (!(key in matches) && results.length < max_results) {
+            var rawname = xindexObj.topicRawname(key);
+            var title = xindexObj.topicName(key);
+            var short_plain = topicShortPlaintext(key);
+            var freq = countOccurrences(rawname, query_str) + countOccurrences(title, query_str) + countOccurrences(short_plain, query_str);
+            matches[key] = true;
+            results.push({key, rank, freq, snippet, label});
+	}
+	return results.length >= max_results;
     }
 
-    // Next, expand to a basic topic name substring search
+    // Search Ranking System:
+    // Rank 0: Exact matches (key, rawname, title)
+    // Rank 0.5: Prefix matches (key, rawname, title)
+    // Rank 1: Exact phrase matches in titles
+    // Rank 1.5: Individual word matches in titles (multi-word queries)
+    // Rank 2: Exact phrase matches in short descriptions
+    // Rank 2.5: Individual word matches in short descriptions (multi-word queries)
+    // Within each rank, results are sorted by ACL2 Sources priority, then frequency
+
+
+    // 0. Exact matches
     for(const key of keys) {
-        var name = xindexObj.topicRawname(key);
-        if (name.toLowerCase().indexOf(query_str) != -1)
-            searchAddHit(matches, hits, key);
+	var rawname = xindexObj.topicRawname(key);
+	var title = xindexObj.topicName(key);
+	var key_lc = key.toLowerCase();
+	var rawname_lc = rawname.toLowerCase();
+	var title_lc = title.toLowerCase();
+	if (key_lc === query_str_lc || rawname_lc === query_str_lc || title_lc === query_str_lc) {
+            if (addResult(key, 0, null, null)) break;
+	}
+    }
+    if (results.length < max_results) {
+	// 0.5. Prefix matches
+	for(const key of keys) {
+            if (key in matches) continue;
+            var rawname = xindexObj.topicRawname(key);
+            var title = xindexObj.topicName(key);
+            var key_lc = key.toLowerCase();
+            var rawname_lc = rawname.toLowerCase();
+            var title_lc = title.toLowerCase();
+            if (key_lc.startsWith(query_str_lc) || rawname_lc.startsWith(query_str_lc) || title_lc.startsWith(query_str_lc)) {
+		if (addResult(key, 0.5, null, null)) break;
+            }
+	}
+    }
+    if (results.length < max_results) {
+	// 1. Other title matches
+	for(const key of keys) {
+            if (key in matches) continue;
+            var name = xindexObj.topicRawname(key);
+            var tokens = searchTokenize(name);
+            // Check for exact phrase first (higher priority)
+            if (subarrayp(query,tokens) || name.toLowerCase().indexOf(query_str) !== -1) {
+		if (addResult(key, 1, null, null)) break;
+            }
+            // Fall back to individual word matching (lower priority)
+            else if (query.length > 1 && allWordsMatch(name.toLowerCase(), query)) {
+		if (addResult(key, 1.5, null, null)) break;
+            }
+	}
+    }
+    if (results.length < max_results) {
+	// 2. Short description matches
+	for(const key of keys) {
+            if (key in matches) continue;
+            var short_plain = topicShortPlaintext(key);
+            var tokens = searchTokenize(short_plain);
+            // Check for exact phrase first (higher priority)
+            if (subarrayp(query, tokens) || short_plain.toLowerCase().indexOf(query_str) !== -1) {
+		if (addResult(key, 2, null, null)) break;
+            }
+            // Fall back to individual word matching (lower priority)
+            else if (query.length > 1 && allWordsMatch(short_plain.toLowerCase(), query)) {
+		if (addResult(key, 2.5, null, null)) break;
+            }
+	}
     }
 
-    // Next expand to a short-string search
-    for(const key of keys) {
-        var tokens = short_tokens[key];
-        var uid = xindexObj.topicUid(key);
-        if (subarrayp(query, tokens))
-            searchAddHit(matches, hits, key);
-    }
-
-    var num_hits = Object.keys(matches).length;
+    num_hits = results.length;
     if (num_hits != 0) {
-        $("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
-        $("#data").append(hits);
-    }
-    else {
-        $("#data").append("<h3>No results</h3>");
-    }
+	if (num_hits === max_results) {
+            $("#data").append("<div style='color: orange; font-size: 110%; margin-bottom: 1em;'>Showing first " + max_results + " results. Please refine your search.</div>");
+	}
 
-    return;
+	// Sort results by rank, then ACL2 Sources priority, then frequency
+	results.sort(function(a, b) {
+            if (a.rank !== b.rank) return a.rank - b.rank;
+
+            // ACL2 Sources priority
+            var sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
+            var sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
+            if (sysA && !sysB) return -1;
+            if (!sysA && sysB) return 1;
+
+            // Then by frequency
+            return b.freq - a.freq;
+	});
+
+	$("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
+	var hits = jQuery("<dl></dl>");
+	for (const result of results) {
+            var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
+            searchAddHit({}, hits, result.key, result.snippet ? result.snippet + extra : extra);
+	}
+	$("#data").append(hits);
+    } else {
+	$("#data").append("<h3>No results</h3>");
+    }
 }
-
-
-
 
 
 // --------------------------------------------------------------------------
@@ -1068,6 +1176,19 @@ $(document).ready(function()
 		      });
 		      maybePowertip(".toolbutton", {placement: 'se'});
 		      maybePowertip(".rtoolbutton", {placement: 'sw'});
+
+		      // Background load xdata.js if in local mode
+		      if (typeof XDATAGET !== 'undefined' && XDATAGET === "") {
+			  // Show a subtle loading message
+			  //if (!$("#xdata-loading").length) {
+			  //    $("#data").append("<div id='xdata-loading' style='color: orange; margin-top: 1em;'>Indexing documentation in the background...</div>");
+			  //}
+			  loadJS("./xdata.js").then(() => {
+			      xdataObj.loadFromXdata(xdata);
+			      xdata_loaded = true;
+			      $("#xdata-loading").remove();
+			  });
+		      }
 		  });
 
 function jumpRender(datum) {
@@ -1078,7 +1199,7 @@ function jumpRender(datum) {
     ret += "<b class=\"sf\">" + xindexObj.topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
-        ret += " &mdash; " + shortmsg;
+	ret += " &mdash; " + shortmsg;
     }
     ret += "<br/><tt>" + key + "</tt></p>";
     return ret;
@@ -1191,42 +1312,43 @@ function jumpInit() {
 
 
     $("#jumpform").submit(function(event)
-    {
-	// Magic code that took me way too much hacking to get working.
-	//console.log("In form submitter.");
+			  {
+			      // Magic code that took me way too much hacking to get working.
+			      //console.log("In form submitter.");
 
-	// Don't actually try to "submit" the form.
-        event.preventDefault();
+			      // Don't actually try to "submit" the form.
+			      event.preventDefault();
 
-	// Act like the tab key was pressed, to trigger autocomplete.
-	// In the case where the user hasn't entered the entire input,
-	// this will trigger the jumpGo call all by itself.
+			      // Act like the tab key was pressed, to trigger autocomplete.
+			      // In the case where the user hasn't entered the entire input,
+			      // this will trigger the jumpGo call all by itself.
 
-        var e = jQuery.Event("keydown");
-        e.keyCode = e.which = 9; // 9 == tab
-        $("#jump").trigger(e);
+			      var e = jQuery.Event("keydown");
+			      e.keyCode = e.which = 9; // 9 == tab
+			      $("#jump").trigger(e);
 
-	// We seem to never get here EXCEPT in the case where the user
-	// has typed in the entire text for one of the entries.  In
-	// that case, for whatever reason, the autocomplete feature
-	// doesn't actually trigger the submit.  So, if we get here,
-	// figure out what we're looking at and submit it manually.
+			      // We seem to never get here EXCEPT in the case where the user
+			      // has typed in the entire text for one of the entries.  In
+			      // that case, for whatever reason, the autocomplete feature
+			      // doesn't actually trigger the submit.  So, if we get here,
+			      // figure out what we're looking at and submit it manually.
 
-        var value = $("#jump").typeahead('val');
-	// console.log("After tab, value is " + value);
-        jumpGo(null, {value:value});
-    });
+			      var value = $("#jump").typeahead('val');
+			      // console.log("After tab, value is " + value);
+			      jumpGo(null, {value:value});
+			  });
 }
+
 
 function jumpGo(obj,datum) {
     var key = datum["value"];
     if (xindexObj.topicExists(key)) {
-        actionGoKey(key);
-        $("#jump").typeahead('val', "");
-        // $("#jump").typeahead('setQuery', '');
+	actionGoKey(key);
+	$("#jump").typeahead('val', "");
+	// $("#jump").typeahead('setQuery', '');
     }
     else {
-        alert("Invalid key " + key);
+	alert("Invalid key " + key);
     }
 }
 
@@ -1256,22 +1378,22 @@ function loadJS(file, timeoutArg) {
     const timeout = timeoutArg == undefined ? -1 : timeoutArg;
     document.body.appendChild(scriptElt);
     return new Promise((resolve, reject) => {
-        let timeoutID;
-        if (timeout > 0) {
+	let timeoutID;
+	if (timeout > 0) {
             timeoutID = setTimeout(() => {
-                reject(new Error(`Timed out when loading ${file}`));
+		reject(new Error(`Timed out when loading ${file}`));
             }, timeout);
-        }
-        scriptElt.addEventListener("load", _ => {
+	}
+	scriptElt.addEventListener("load", _ => {
             if (timeout > 0)
-                clearTimeout(timeoutID);
+		clearTimeout(timeoutID);
             resolve();
-        });
-        scriptElt.addEventListener("error", e => {
+	});
+	scriptElt.addEventListener("error", e => {
             if (timeout > 0)
-                clearTimeout(timeoutID);
+		clearTimeout(timeoutID);
             reject(e.error);
-        });
+	});
     });
 }
 
@@ -1282,25 +1404,25 @@ function loadJS(file, timeoutArg) {
 function onIndexLoaded()
 {
     if (XDATAGET == "") {
-        // Load xdata.js after xindexInit() because that way we know the
-        // index is fully initialized by the time we run onDataLoaded.
-        loadJS("./xdata.js").then(() => {
+	// Load xdata.js after xindexInit() because that way we know the
+	// index is fully initialized by the time we run onDataLoaded.
+	loadJS("./xdata.js").then(() => {
             xdataObj.loadFromXdata(xdata);
             onDataLoaded();
-        });
+	});
     }
     else {
-        // Running with the support of a server.  We can just regard the data
-        // as already loaded.
-        onDataLoaded();
+	// Running with the support of a server.  We can just regard the data
+	// as already loaded.
+	onDataLoaded();
     }
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for(var i in chars) {
-        var c = chars.charAt(i);
-        acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
-        if (c == "M")
+	var c = chars.charAt(i);
+	acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
+	if (c == "M")
             acc += "<br/>";
     }
     $("#letters").html(acc);
@@ -1322,35 +1444,35 @@ function onDataLoaded()
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
     if (xindexObj.topicExists(BROKEN_KEY)) {
-        xdataLoadKeys([BROKEN_KEY]).then(() => {});
+	xdataLoadKeys([BROKEN_KEY]).then(() => {});
     }
 
     if ("search" in params) {
-        var str = params["search"];
-        var str_url = encodeURIComponent(str);
-        var str_html = htmlEncode(str);
-        //console.log("onDataLoaded: search for " + str + " --> 0");
-        window.history.replaceState({search:str,rtop:0},
+	var str = params["search"];
+	var str_url = encodeURIComponent(str);
+	var str_html = htmlEncode(str);
+	//console.log("onDataLoaded: search for " + str + " --> 0");
+	window.history.replaceState({search:str,rtop:0},
 				    str_html, "?search=" + str_url);
-        searchGo(str);
+	searchGo(str);
     }
 
     else {
-        var key = params["topic"] || TOP_KEY;
-        if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
-            $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
-            return;
-        }
-        //console.log("onDataLoaded: key " + key + " --> 0");
-        window.history.replaceState({key:key,rtop:0},
+	var key = params["topic"] || TOP_KEY;
+	if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
+	    $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
+	    return;
+	}
+	//console.log("onDataLoaded: key " + key + " --> 0");
+	window.history.replaceState({key:key,rtop:0},
 				    keyTitle(key), "?topic=" + key);
-        datLoadKey(key, 0);
+	datLoadKey(key, 0);
     }
 
     window.addEventListener('popstate',
                             function(event) {
 				event.preventDefault();
-                                actionGoBack(event.state);
+				actionGoBack(event.state);
                             });
 }
 
@@ -1358,20 +1480,19 @@ function getPageParameters ()
 {
     var ret = {};
     if (!window.location.toString().match(/\?(.+)$/)) {
-        return ret;
+	return ret;
     }
     var param_strs = RegExp.$1.split("&");
     var param_arr = {};
     for(var i in param_strs)
     {
-        var tmp = param_strs[i].split("=");
-        var key = decodeURI(tmp[0]);
-        var val = decodeURI(tmp[1]);
-        param_arr[key] = val;
+	var tmp = param_strs[i].split("=");
+	var key = decodeURI(tmp[0]);
+	var val = decodeURI(tmp[1]);
+	param_arr[key] = val;
     }
     return param_arr;
 }
-
 
 function srclink(key)
 {
@@ -1379,24 +1500,24 @@ function srclink(key)
     key = key.replace(".xdoc-link", "");
     var rawname = key;
     if (xindexObj.topicExists(key)) {
-        rawname = xindexObj.topicRawname(key);
+	rawname = xindexObj.topicRawname(key);
     }
 
     // Fancy Data URL generator
     var srclink_header =
-        "; -*- mode: xdoc-link -*-\n" +
-        "; This is an XDOC Link file.\n" +
-        "; Ordinarily, you should not see this file.\n" +
-        ";\n" +
-        "; If you are viewing this file in a web browser, you probably\n" +
-        "; have not configured your web browser to send .xdoc-link files\n" +
-        "; to Emacs.\n" +
-        ";\n" +
-        "; If you are viewing this file in Emacs, you probably have not\n" +
-        "; loaded xdoc.el from the xdoc/ directory.\n" +
-        ";\n" +
-        "; For more information, please see \"Emacs Links\" in the XDOC\n" +
-        "; manual.\n\n";
+	"; -*- mode: xdoc-link -*-\n" +
+	"; This is an XDOC Link file.\n" +
+	"; Ordinarily, you should not see this file.\n" +
+	";\n" +
+	"; If you are viewing this file in a web browser, you probably\n" +
+	"; have not configured your web browser to send .xdoc-link files\n" +
+	"; to Emacs.\n" +
+	";\n" +
+	"; If you are viewing this file in Emacs, you probably have not\n" +
+	"; loaded xdoc.el from the xdoc/ directory.\n" +
+	";\n" +
+	"; For more information, please see \"Emacs Links\" in the XDOC\n" +
+	"; manual.\n\n";
 
     window.open('data:application/x-acl2-xdoc-link;charset=utf-8,' +
 		encodeURIComponent(srclink_header + rawname));
@@ -1406,10 +1527,9 @@ function actionGoKey(key) {
 
     // Warning: if you change this, check for all uses of replaceState,
     // pushState, and popState, and update them to match.
-
     if (!xdata_loaded) {
-        pleaseWait();
-        return;
+	pleaseWait();
+	return;
     }
 
     // console.log("actionGoKey, going to new key " + key + " --> 0");
@@ -1428,10 +1548,10 @@ function historySavePlace() {
     var curr_state = history.state;
     var rtop = $("#right").scrollTop();
     if (curr_state) {
-        // Safari doesn't seem to implement history.state
-        //console.log("saving place: " + curr_state.key + " --> " + rtop);
-        curr_state["rtop"] = rtop;
-        window.history.replaceState(curr_state, "");
+	// Safari doesn't seem to implement history.state
+	//console.log("saving place: " + curr_state.key + " --> " + rtop);
+	curr_state["rtop"] = rtop;
+	window.history.replaceState(curr_state, "");
     }
 }
 
@@ -1443,10 +1563,10 @@ function actionGoBack(data) {
     //console.log("Going back with data = " + data);
 
     if (!data) {
-        // Browsers may do this when the page is initially loaded,
-        // so ignore this event.
-        // console.log("Empty data, so returning early.");
-        return;
+	// Browsers may do this when the page is initially loaded,
+	// so ignore this event.
+	// console.log("Empty data, so returning early.");
+	return;
     }
 
     //console.log("actionGoBack data: search = " + data.search
@@ -1459,20 +1579,18 @@ function actionGoBack(data) {
     // no forward-button re-scrolling for you.
 
     if ("search" in data) {
-        var str = data["search"];
-        searchGo(str);
+	var str = data["search"];
+	searchGo(str);
     }
 
     else if ("key" in data) {
-        var key = data.key;
-        var rtop = ("rtop" in data) ? data["rtop"] : 0;
-        if (key) {
-            datLoadKey(key, rtop);
-        }
+	var key = data.key;
+	var rtop = ("rtop" in data) ? data["rtop"] : 0;
+	if (key) {
+	    datLoadKey(key, rtop);
+	}
     }
 }
-
-
 
 function printerFriendly()
 {
@@ -1481,28 +1599,34 @@ function printerFriendly()
 			  "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
 
     const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <title>Printer Friendly</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-
-        <link rel="stylesheet" type="text/css" href="print.css"/>
-        <link rel="shortcut icon" href="favicon.png"/>
-        </head>
-        <body>
-        ${dataElement.innerHTML}
-        </body>
-        </html>`;
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <title>Printer Friendly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="print.css"/>
+  <link rel="shortcut icon" href="favicon.png"/>
+  </head>
+  <body>
+  ${dataElement.innerHTML}
+  </body>
+  </html>`;
 
     w.document.write(html);
 }
 
 function dolink(event, topic) {
     if (event.button == 1) {
-        return true;
+	return true;
+    }
+    // Store the last search term if present in the URL
+    var params = getPageParameters();
+    if (params && params.search) {
+	window.lastSearchTerm = params.search;
+    } else {
+	window.lastSearchTerm = null;
     }
     actionGoKey(topic);
     return false;
