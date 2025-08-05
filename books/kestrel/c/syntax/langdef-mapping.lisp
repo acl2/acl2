@@ -403,6 +403,7 @@
   (define ldm-declor-obj ((declor declorp))
     :guard (declor-unambp declor)
     :returns (mv erp (declor1 c::obj-declorp))
+    :parents (mapping-to-language-definition ldm-declors/dirdeclors-obj)
     :short "Map a declarator to
             an object declarator in the language definition."
     :long
@@ -423,6 +424,7 @@
   (define ldm-dirdeclor-obj ((dirdeclor dirdeclorp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (mv erp (declor1 c::obj-declorp))
+    :parents (mapping-to-language-definition ldm-declors/dirdeclors-obj)
     :short "Map a direct declarator to
             an object declarator in the language definition."
     :long
@@ -431,16 +433,11 @@
       "The abstract syntax in the language definition
        does not have a separate type for direct object declarators,
        so we return an object declarator here.
-       The input direct declarator must be an identifier
-       followed by zero or more
-       square-bracketed optional integer constant expressions.
-       These zero or more array declarator constructs
-       are handled recursively.")
-     (xdoc::p
-      "For now we disallow parenthesized declarators for simplicity.
-       To allow them, we need to make this function
-       mutually recursive with @(tsee ldm-declor-obj),
-       which we will at some point.")
+       The input direct declarator may be an identifier followed by
+       zero or more square-bracketed optional integer constant expressions;
+       these zero or more array declarator constructs are handled recursively.
+       We also allow a parenthesized declarator,
+       which we handle with the mutually recursive function.")
      (xdoc::p
       "This function will always result in a @(tsee c::obj-declor)
        of the @(':ident') or @(':array') kind;
