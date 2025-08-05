@@ -6071,163 +6071,220 @@
                           :defstatus (valid-defstatus-defined)))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__atomic_signal_fence") finfo table))
+                      (ident "__atomic_signal_fence") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_add_overflow") finfo table))
+                      (ident "__builtin___memcpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_bswap16") finfo table))
+                      (ident "__builtin___memmove_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_bswap32") finfo table))
+                      (ident "__builtin___mempcpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_bswap64") finfo table))
+                      (ident "__builtin___memset_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_choose_expr") finfo table))
+                      (ident "__builtin___snprintf_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_clz") finfo table))
+                      (ident "__builtin___sprintf_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_clzl") finfo table))
+                      (ident "__builtin___stpcpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_clzll") finfo table))
+                      (ident "__builtin___stpncpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_constant_p") finfo table))
+                      (ident "__builtin___strcat_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_ctzl") finfo table))
+                      (ident "__builtin___strcpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_dynamic_object_size") finfo table))
+                      (ident "__builtin___strncat_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_expect") finfo table))
+                      (ident "__builtin___strncpy_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_memchr") finfo table))
+                      (ident "__builtin___vsnprintf_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_memcmp") finfo table))
+                      (ident "__builtin___vsprintf_chk") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_memcpy") finfo table))
+                      (ident "__builtin_add_overflow") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_memset") finfo table))
+                      (ident "__builtin_alloca") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_mul_overflow") finfo table))
+                      (ident "__builtin_apply_args") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_object_size") finfo table))
+                      (ident "__builtin_apply") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_return_address") finfo table))
+                      (ident "__builtin_bswap16") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_strcpy") finfo table))
+                      (ident "__builtin_bswap32") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_strlen") finfo table))
+                      (ident "__builtin_bswap64") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_strncat") finfo table))
+                      (ident "__builtin_choose_expr") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_strncpy") finfo table))
+                      (ident "__builtin_clz") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_sub_overflow") finfo table))
+                      (ident "__builtin_clzl") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_unreachable") finfo table))
+                      (ident "__builtin_clzll") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_va_end") finfo table))
+                      (ident "__builtin_constant_p") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__builtin_va_start") finfo table))
+                      (ident "__builtin_ctzl") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__eax") oinfo table))
+                      (ident "__builtin_dynamic_object_size") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__ebx") oinfo table))
+                      (ident "__builtin_expect") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__ecx") oinfo table))
+                      (ident "__builtin_memchr") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__edx") oinfo table))
+                      (ident "__builtin_memcmp") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__esi") oinfo table))
+                      (ident "__builtin_memcpy") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__edi") oinfo table))
+                      (ident "__builtin_memset") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__ebp") oinfo table))
+                      (ident "__builtin_mul_overflow") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__esp") oinfo table))
+                      (ident "__builtin_object_size") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_add_and_fetch") finfo table))
+                      (ident "__builtin_return_address") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_and_and_fetch") finfo table))
+                      (ident "__builtin_strcpy") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_bool_compare_and_swap") finfo table))
+                      (ident "__builtin_strlen") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_add") finfo table))
+                      (ident "__builtin_strncat") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_and") finfo table))
+                      (ident "__builtin_strncpy") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_nand") finfo table))
+                      (ident "__builtin_sub_overflow") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_or") finfo table))
+                      (ident "__builtin_unreachable") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_sub") finfo table))
+                      (ident "__builtin_va_arg_pack") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_xor") finfo table))
+                      (ident "__builtin_va_arg_pack_len") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_lock_release") finfo table))
+                      (ident "__builtin_va_end") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_lock_test_and_set") finfo table))
+                      (ident "__builtin_va_start") finfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_nand_and_fetch") finfo table))
+                      (ident "__eax") oinfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_or_and_fetch") finfo table))
+                      (ident "__ebx") oinfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_sub_and_fetch") finfo table))
+                      (ident "__ecx") oinfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_synchronize") finfo table))
+                      (ident "__edx") oinfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_val_compare_and_swap") finfo table))
+                      (ident "__esi") oinfo table))
                   (table
                     (valid-add-ord-file-scope
-                     (ident "__sync_xor_and_fetch") finfo table)))
+                      (ident "__edi") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__ebp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__esp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_add_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_and_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_bool_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_add") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_and") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_nand") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_or") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_sub") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_fetch_and_xor") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_lock_release") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_lock_test_and_set") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_nand_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_or_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_sub_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_synchronize") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_val_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                      (ident "__sync_xor_and_fetch") finfo table)))
                table)
            table))
        ((erp new-edecls table)
