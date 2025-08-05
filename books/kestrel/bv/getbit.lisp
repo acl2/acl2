@@ -785,3 +785,13 @@
                       (getbit 1 x) ; odd case
                     (getbit (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable getbit slice logtail$inline expt))))
+
+;move to rules4?
+;not a great :linear rule?
+(defthmd getbit-of-0-bound-when-negative-linear
+  (implies (and (< x 0)
+                (equal 0 (getbit n x))
+                (integerp x)
+                (natp n))
+           (< x (- (expt 2 n))))
+  :rule-classes :linear)
