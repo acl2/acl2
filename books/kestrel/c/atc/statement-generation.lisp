@@ -524,7 +524,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-uterm-result-and-type-formula
+(define atc-gen-stmt-value-term-and-type-formula
   ((uterm "An untranslated term.")
    (type typep)
    (affect symbol-listp)
@@ -3845,11 +3845,11 @@
                                                  gin.context
                                                  new-context))
        ((mv stmt-value type-formula &)
-        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
-                                               items-type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+        (atc-gen-stmt-value-term-and-type-formula (untranslate$ term nil state)
+                                                  items-type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',all-items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
@@ -4036,11 +4036,11 @@
                                                  gin.context
                                                  new-context))
        ((mv stmt-value type-formula &)
-        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+        (atc-gen-stmt-value-term-and-type-formula (untranslate$ term nil state)
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
@@ -4636,17 +4636,17 @@
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
        ((mv then-stmt-value then-stmt-type-formula &)
-        (atc-gen-uterm-result-and-type-formula then-uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+        (atc-gen-stmt-value-term-and-type-formula then-uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        ((mv else-stmt-value else-stmt-type-formula &)
-        (atc-gen-uterm-result-and-type-formula else-uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+        (atc-gen-stmt-value-term-and-type-formula else-uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (then-context-end
         (atc-context-extend then-context-end
                             (list (make-atc-premise-compustate
@@ -4793,11 +4793,11 @@
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
        ((mv if-stmt-value if-stmt-type-formula if-stmt-type-thms)
-        (atc-gen-uterm-result-and-type-formula uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+        (atc-gen-stmt-value-term-and-type-formula uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-exec-formula `(equal (exec-stmt ',stmt
