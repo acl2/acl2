@@ -60,6 +60,7 @@
                   (equal sval (mv-nth 0 sval+compst1))
                   (equal compst1 (mv-nth 1 sval+compst1))
                   (stmt-valuep sval)
+                  (stmt-value-case sval :return)
                   (equal val? (stmt-value-return->value? sval))
                   (equal (type-of-value-option val?)
                          (tyname-to-type (fun-info->result info))))

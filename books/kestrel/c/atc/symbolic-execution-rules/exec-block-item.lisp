@@ -118,6 +118,7 @@
                   (equal sval (mv-nth 0 sval+compst1))
                   (stmt-valuep sval)
                   (equal compst1 (mv-nth 1 sval+compst1))
+                  (equal (stmt-value-kind sval) :return)
                   (equal val? (stmt-value-return->value? sval)))
              (equal (exec-block-item-list items compst fenv limit)
                     (if (valuep val?)
@@ -133,11 +134,19 @@
            (b* (((mv sval compst)
                  (exec-block-item-list items1 compst fenv limit))
                 ((when (errorp sval)) (mv sval compst))
+                ((when (stmt-value-case sval :none))
+                 (exec-block-item-list items2
+                                       compst
+                                       fenv
+                                       (- limit (len items1))))
                 (val? (stmt-value-return->value? sval))
                 ((when (valuep val?)) (mv (stmt-value-return val?) compst)))
              (exec-block-item-list items2 compst fenv (- limit (len items1)))))
     :induct (ind items1 compst fenv limit)
-    :enable (exec-block-item-list len fix)
+    :enable (exec-block-item-list
+             stmt-valuep-when-stmt-value-resultp-and-not-errorp
+             len
+             fix)
     :prep-lemmas
     ((defun ind (items compst fenv limit)
        (b* (((when (zp limit)) nil)
@@ -145,8 +154,9 @@
             ((mv sval compst)
              (exec-block-item (car items) compst fenv (1- limit)))
             ((when (errorp sval)) nil)
-            (val? (stmt-value-return->value? sval))
-            ((when (valuep val?)) nil))
+            ((when (and (stmt-value-case sval :return)
+                        (stmt-value-return->value? sval)))
+             nil))
          (ind (cdr items) compst fenv (1- limit))))))
 
   (defruled append-of-take-and-nthcdr

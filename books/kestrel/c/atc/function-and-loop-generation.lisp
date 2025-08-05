@@ -3708,7 +3708,8 @@
                (mv (stmt-value-return nil) (compustate-fix compst)))
               ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
               ((when (errorp sval)) (mv sval compst))
-              ((when (valuep (stmt-value-return->value? sval)))
+              ((when (and (stmt-value-case sval :return)
+                          (valuep (stmt-value-return->value? sval))))
                (mv sval compst)))
            (,exec-stmt-while-for-fn compst (1- limit))))
        (exec-stmt-while-for-fn-hints
