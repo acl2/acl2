@@ -271,25 +271,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-gcc ((options symbol-alistp))
-  :returns (mv erp (gcc booleanp))
-  :short "Process the @(':gcc') input."
-  (b* (((reterr) nil)
-       (gcc-option (assoc-eq :gcc options))
-       (gcc (if gcc-option
-                (cdr gcc-option)
-              nil))
-       ((unless (booleanp gcc))
-        (reterr (msg "The :GCC input must be a boolean, ~
-                      but it is ~x0 instead."
-                     gcc))))
-    (retok gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define input-files-process-ienv ((options symbol-alistp))
   :returns (mv erp (ienv ienvp))
   :short "Process the
+          @(':gcc'),
           @(':short-bytes'),
           @(':int-bytes'),
           @(':long-bytes'),
@@ -302,6 +287,15 @@
     "These are the inputs that define the implementation environment,
      which we return if the processing of these inputs is successful."))
   (b* (((reterr) (ienv-default))
+       ;; Process :GCC input.
+       (gcc-option (assoc-eq :gcc options))
+       (gcc (if gcc-option
+                (cdr gcc-option)
+              nil))
+       ((unless (booleanp gcc))
+        (reterr (msg "The :GCC input must be a boolean, ~
+                      but it is ~x0 instead."
+                     gcc)))
        ;; Process :SHORT-BYTES input.
        (short-bytes-option (assoc-eq :short-bytes options))
        (short-bytes (if short-bytes-option
@@ -369,7 +363,8 @@
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed)))
+                        :plain-char-signedp plain-char-signed
+                        :gcc gcc)))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -383,7 +378,6 @@
                (preprocess-extra-args string-listp)
                (process input-files-process-inputp)
                (const symbolp)
-               (gcc booleanp)
                (ienv ienvp))
   :short "Process the inputs."
   :long
@@ -396,7 +390,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil nil :parse nil nil (ienv-default))
+  (b* (((reterr) nil "" nil nil nil :parse nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -419,7 +413,6 @@
         (input-files-process-preprocess-args options preprocessor))
        ((erp process) (input-files-process-process options))
        ((erp const) (input-files-process-const options progp))
-       ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
     (retok files
            path
@@ -428,7 +421,6 @@
            preprocess-extra-args
            process
            const
-           gcc
            ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
@@ -487,7 +479,6 @@
                                 (preprocess-extra-args string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
-                                (gcc booleanp)
                                 (ienv ienvp)
                                 (progp booleanp)
                                 state)
@@ -521,7 +512,7 @@
                                  :preprocessor preprocessor))
                             (input-files-read-files files path state)))
        ;; Parsing is always required.
-       ((erp tunits) (parse-fileset files gcc))
+       ((erp tunits) (parse-fileset files (ienv->gcc ienv)))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
@@ -530,7 +521,7 @@
                        events)))
           (retok events tunits state)))
        ;; Disambiguation is required, if we get here.
-       ((erp tunits) (dimb-transunit-ensemble tunits gcc))
+       ((erp tunits) (dimb-transunit-ensemble tunits (ienv->gcc ienv)))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
@@ -539,7 +530,7 @@
                        events)))
           (retok events tunits state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits gcc ienv))
+       ((erp tunits) (valid-transunit-ensemble tunits ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
                    (rcons `(defconst ,const ',tunits) events)
@@ -579,7 +570,6 @@
              preprocess-extra-args
              process
              const
-             gcc
              ienv)
         (input-files-process-inputs args progp))
        ((erp events tunits state)
@@ -590,7 +580,6 @@
                                 preprocess-extra-args
                                 process
                                 const
-                                gcc
                                 ienv
                                 progp
                                 state)))
