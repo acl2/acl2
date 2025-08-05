@@ -530,10 +530,10 @@
    (affect symbol-listp)
    (inscope atc-symbol-varinfo-alist-listp)
    (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (result "An untranslated term.")
+  :returns (mv (stmt-value "An untranslated term.")
                (type-formula "An untranslated term.")
                (type-thms symbol-listp))
-  :short "Generates a result term and a type formula for a term."
+  :short "Generates a statement value term and a type formula for a term."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -544,9 +544,10 @@
      with @(tsee atc-gen-term-type-formula)."))
   (b* (((mv type-formula type-thms)
         (atc-gen-term-type-formula uterm type affect inscope prec-tags))
-       ((when (type-case type :void)) (mv nil type-formula type-thms))
+       ((when (type-case type :void))
+        (mv '(stmt-value-return nil) type-formula type-thms))
        ((mv uterms & &) (atc-uterm-to-components uterm (1+ (len affect)))))
-    (mv (car uterms) type-formula type-thms)))
+    (mv `(stmt-value-return ,(car uterms)) type-formula type-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3843,7 +3844,7 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       ((mv result type-formula &)
+       ((mv stmt-value type-formula &)
         (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
                                                items-type
                                                gin.affect
@@ -3853,7 +3854,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv (stmt-value-return ,result) ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -4034,7 +4035,7 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       ((mv result type-formula &)
+       ((mv stmt-value type-formula &)
         (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
                                                type
                                                gin.affect
@@ -4044,7 +4045,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv (stmt-value-return ,result) ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -4634,13 +4635,13 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       ((mv then-result then-stmt-type-formula &)
+       ((mv then-stmt-value then-stmt-type-formula &)
         (atc-gen-uterm-result-and-type-formula then-uterm
                                                type
                                                gin.affect
                                                gin.inscope
                                                gin.prec-tags))
-       ((mv else-result else-stmt-type-formula &)
+       ((mv else-stmt-value else-stmt-type-formula &)
         (atc-gen-uterm-result-and-type-formula else-uterm
                                                type
                                                gin.affect
@@ -4666,8 +4667,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv (stmt-value-return ,then-result)
-                                           ,then-new-compst)))
+                                       (mv ,then-stmt-value ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -4681,8 +4681,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv (stmt-value-return ,else-result)
-                                           ,else-new-compst)))
+                                       (mv ,else-stmt-value ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -4793,7 +4792,7 @@
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
-       ((mv if-result if-stmt-type-formula if-stmt-type-thms)
+       ((mv if-stmt-value if-stmt-type-formula if-stmt-type-thms)
         (atc-gen-uterm-result-and-type-formula uterm
                                                type
                                                gin.affect
@@ -4805,8 +4804,7 @@
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv (stmt-value-return ,if-result)
-                                         ,new-compst)))
+                                     (mv ,if-stmt-value ,new-compst)))
        (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
                                                 gin.context
                                                 gin.fn
@@ -4953,7 +4951,7 @@
                                  if-stmt-thm
                                  (untranslate$ term nil state)
                                  type
-                                 `(stmt-value-return ,if-result)
+                                 if-stmt-value
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5005,7 +5003,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
-                                  `(stmt-value-return ,if-result)
+                                  if-stmt-value
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
