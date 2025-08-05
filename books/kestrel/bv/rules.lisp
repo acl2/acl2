@@ -3533,11 +3533,9 @@
                 (natp n))
            (equal (getbit n (logext size x))
                   (getbit (+ -1 size) x)))
-  :hints (("Goal" :in-theory (e/d (getbit-when-val-is-not-an-integer slice getbit
-                                                                   logext)
+  :hints (("Goal" :in-theory (e/d (slice getbit logext)
                                   (slice-becomes-bvchop
-                                   bvchop-of-logtail
-                                    ))
+                                   bvchop-of-logtail))
            :use (:instance usb-0-1 (x (slice (+ -1 size) (+ -1 size) x)))
            :cases ((integerp x)))))
 
@@ -4347,10 +4345,17 @@
                 (natp size))
            (equal (getbit size x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (;BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
+  :hints (("Goal" :in-theory (enable bvlt))))
 
-                                   )))))
+;; todo:
+;; (defthmd getbit-when-bvlt-of-small-helper2
+;;   (implies (and (bvlt size2 x (expt 2 size))
+;;                 (< size size2)
+;;                 (natp size)
+;;                 (integerp size2))
+;;            (equal (getbit size x)
+;;                   0))
+;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm getbit-when-bvlt-of-small
   (implies (and (bvlt (+ 1 size) x free)
@@ -5063,7 +5068,6 @@
            :expand (bvlt 31 x y)
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer

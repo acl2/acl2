@@ -16,6 +16,7 @@
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
 (include-book "kestrel/memory/memory48" :dir :system)
+(local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regions48p len1 start1 len2 start2)
@@ -537,7 +538,7 @@
 
 ;move!
 (include-book "canonical-unsigned")
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: for acl2::getbit-when-<-of-constant-high
+(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce? why?
 (defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
   (equal (equal (bvsx 64 48 x) x)
          (and (unsigned-byte-p 64 x)
