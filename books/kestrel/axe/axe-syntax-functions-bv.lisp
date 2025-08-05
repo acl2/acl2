@@ -378,31 +378,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund unquote-if-possible (x)
-  (declare (xargs :guard t))
-  (if (and (quotep x)
-           (consp (cdr x)))
-      (unquote x)
-    nil))
-
 ;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
-;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
-;; cannot easily establish it.  TODO: Add a darg guard for the exclude-fns and
-;; it to be a quoted constant, like quoted-varname in other functions?
+;; but not one of the EXCLUDE-FNS.
 (defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
   (declare (xargs :guard (and (or (myquotep darg)
                                   (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep exclude-fns) ; should always be true
+                                  (and (natp exclude-fns)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 exclude-fns)))))))
   (and (not (consp darg)) ; test for nodenum
        (let ((expr (aref1 'dag-array dag-array darg)))
          (and (consp expr)
               (let ((fn (ffn-symb expr)))
                 (and (member-eq fn *functions-convertible-to-bv*)
-                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
-                       (if exclude-fns
-                           (and (true-listp exclude-fns) ; for guards
-                                (not (member-eq fn exclude-fns)))
-                         t))))))))
+                     (if (and (quotep exclude-fns)
+                              (symbol-listp (unquote exclude-fns)))
+                         (not (member-eq fn (unquote exclude-fns)))
+                       (er hard? 'term-should-be-converted-to-bvp "Bad exclude-fns: ~x0." exclude-fns))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
