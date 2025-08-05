@@ -96,10 +96,6 @@
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
-(local (in-theory (disable intersection-equal)))
-
-(local (in-theory (disable acl2::append-of-cons-arg1 acl2::append-of-cons))) ; bad?
-
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
 (acl2::ensure-rules-known (unroller-rules32))
@@ -113,24 +109,19 @@
 (local (defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv))))
 (local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
 
-(local (in-theory (disable ;; new-normal-form-rules-common
-                           ;; (:e new-normal-form-rules-common)
-                           ;; assumption-simplification-rules
-                           ;; (:e assumption-simplification-rules)
-                           ;; new-normal-form-rules64
-                    ;; (:e new-normal-form-rules64)
-                    (:e read-and-write-rules-bv)
-                    (:e read-and-write-rules-non-bv)
-                    )))
+(local (in-theory (disable
+                   ;; (:e new-normal-form-rules-common)
+                   ;; (:e assumption-simplification-rules)
+                   ;; (:e new-normal-form-rules64)
+                   ;;  (:e constant-opener-rules)
+                   (:e read-and-write-rules-bv)
+                   (:e read-and-write-rules-non-bv)
+                   intersection-equal
+                   acl2::append-of-cons-arg1 acl2::append-of-cons ; bad?
+                   )))
 
 ;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
 ;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
-
-;(local (in-theory (disable (:e read-and-write-rules-bv) read-and-write-rules-bv)))
-;(local (in-theory (disable (:e new-normal-form-rules64) new-normal-form-rules64)))
-;(local (in-theory (disable (:e constant-opener-rules) constant-opener-rules)))
-
-
 
 ;; ;move
 ;; ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -156,11 +147,11 @@
 (theory-invariant (not (active-runep '(:executable-counterpart sys-call))))
 
 (defttag invariant-risk)
-(set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
+(set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed (todo: which functions have invariant-risk?)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move this util
+;todo: move this util
 
 ;; Recognizes an alist from functions to boolean-lists representing which arguments to print.
 (defun elision-spec-alistp (alist)
@@ -597,6 +588,8 @@
                           step-increment
                           dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
                           state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
