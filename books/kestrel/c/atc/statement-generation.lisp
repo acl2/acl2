@@ -3632,7 +3632,7 @@
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
-   (result "An untranslated term.")
+   (stmt-value "An untranslated term.")
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3648,7 +3648,7 @@
      we also generate a theorem saying that
      @(tsee exec-block-item-list) applied to the quoted block item list
      yields an @(tsee mv) pair consisting of
-     a result term (or @('nil'))
+     a statement value term
      and a possibly updated computation state;
      these are the same as the ones for the single item theorem.")
    (xdoc::p
@@ -3699,7 +3699,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv (stmt-value-return ,result) ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -4316,7 +4316,7 @@
                                           item-limit
                                           item-events
                                           item-thm-name
-                                          expr.result
+                                          `(stmt-value-return ,expr.result)
                                           expr.new-compst
                                           gin.context
                                           nil
@@ -5005,7 +5005,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
-                                  if-result
+                                  `(stmt-value-return ,if-result)
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
@@ -5485,7 +5485,7 @@
                                           item-limit
                                           events
                                           item-thm-name
-                                          nil
+                                          '(stmt-value-return nil)
                                           new-compst
                                           new-context
                                           new-inscope
