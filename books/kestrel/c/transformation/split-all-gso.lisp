@@ -379,7 +379,7 @@
           ((erp tunits$)
            (c$::dimb-transunit-ensemble tunits$ gcc))
           ((erp tunits$)
-           (c$::valid-transunit-ensemble tunits$ gcc ienv))
+           (c$::valid-transunit-ensemble tunits$ ienv))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
            (retmsg$ "Invalid translation unit ensemble.")))

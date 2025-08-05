@@ -385,3 +385,29 @@
                                      floor-when-integerp-of-quotient
                                      *-of-expt-and-expt-of-1minus
                                      expt-of-+))))
+
+(defthm logtail-of-one-less-when-signed-byte-p
+  (implies (signed-byte-p size x)
+           (equal (logtail (+ -1 size) x)
+                  (if (< x 0)
+                      -1
+                    0)))
+  :hints (("Goal" :in-theory (enable logtail signed-byte-p))))
+
+(defthmd signed-byte-p-in-terms-of-logtail-when-negative
+  (implies (< x 0)
+           (equal (signed-byte-p size x)
+                  (and (integerp x)
+                       (posp size)
+                       (equal (logtail (+ -1 size) x)
+                              -1))))
+  :hints (("Goal" :in-theory (enable logtail))))
+
+;; the logtail is either all ones or all zeros depending on the sign
+(defthmd signed-byte-p-in-terms-of-logtail
+  (equal (signed-byte-p size x)
+         (and (integerp x)
+              (posp size)
+              (equal (logtail (+ -1 size) x)
+                     (if (< x 0) -1 0))))
+  :hints (("Goal" :in-theory (enable logtail))))
