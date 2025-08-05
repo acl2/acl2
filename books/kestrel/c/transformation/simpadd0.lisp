@@ -506,8 +506,10 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         ,(if (type-case type :void)
-                             '(not (c::stmt-value-return->value? result))
-                           `(and (c::stmt-value-return->value? result)
+                             '(and (equal (c::stmt-value-kind result) :return)
+                                   (not (c::stmt-value-return->value? result)))
+                           `(and (equal (c::stmt-value-kind result) :return)
+                                 (c::stmt-value-return->value? result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value? result))
                                         ',ctype)))))
@@ -523,9 +525,13 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            ,@(if (type-case type :void)
-                                 '((not (c::stmt-value-return->value?
+                                 '((equal (c::stmt-value-kind old-result)
+                                          :return)
+                                   (not (c::stmt-value-return->value?
                                          old-result)))
-                               `((c::stmt-value-return->value? old-result)
+                               `((equal (c::stmt-value-kind old-result)
+                                        :return)
+                                 (c::stmt-value-return->value? old-result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value?
                                           old-result))
@@ -606,8 +612,10 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         ,(if (type-case type :void)
-                             '(not (c::stmt-value-return->value? result))
-                           `(and (c::stmt-value-return->value? result)
+                             '(and (equal (c::stmt-value-kind result) :return)
+                                   (not (c::stmt-value-return->value? result)))
+                           `(and (equal (c::stmt-value-kind result) :return)
+                                 (c::stmt-value-return->value? result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value? result))
                                         ',ctype)))))
@@ -623,9 +631,13 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            ,@(if (type-case type :void)
-                                 '((not (c::stmt-value-return->value?
+                                 '((equal (c::stmt-value-kind old-result)
+                                          :return)
+                                   (not (c::stmt-value-return->value?
                                          old-result)))
-                               `((c::stmt-value-return->value? old-result)
+                               `((equal (c::stmt-value-kind old-result)
+                                        :return)
+                                 (c::stmt-value-return->value? old-result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value?
                                           old-result))
@@ -707,8 +719,10 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         ,(if (type-case type :void)
-                             '(not (c::stmt-value-return->value? result))
-                           `(and (c::stmt-value-return->value? result)
+                             '(and (equal (c::stmt-value-kind result) :return)
+                                   (not (c::stmt-value-return->value? result)))
+                           `(and (equal (c::stmt-value-kind result) :return)
+                                 (c::stmt-value-return->value? result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value? result))
                                         ',ctype)))))
@@ -724,9 +738,13 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            ,@(if (type-case type :void)
-                                 '((not (c::stmt-value-return->value?
+                                 '((equal (c::stmt-value-kind old-result)
+                                          :return)
+                                   (not (c::stmt-value-return->value?
                                          old-result)))
-                               `((c::stmt-value-return->value? old-result)
+                               `((equal (c::stmt-value-kind old-result)
+                                        :return)
+                                 (c::stmt-value-return->value? old-result)
                                  (equal (c::type-of-value
                                          (c::stmt-value-return->value?
                                           old-result))
@@ -2555,7 +2573,8 @@
     (b* ((stmt (c::stmt-null))
          ((mv result &) (c::exec-stmt stmt compst fenv limit)))
       (implies (not (c::errorp result))
-               (not (c::stmt-value-return->value? result))))
+               (and (equal (c::stmt-value-kind result) :return)
+                    (not (c::stmt-value-return->value? result)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-expr-asg-support-lemma
@@ -2575,6 +2594,7 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (not (c::stmt-value-return->value? old-result)))))
     :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
@@ -2713,6 +2733,7 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (c::stmt-value-return->value? old-result)
                     (equal (c::type-of-value
                             (c::stmt-value-return->value? old-result))
@@ -2728,7 +2749,8 @@
     (b* ((stmt (c::stmt-return nil))
          ((mv result &) (c::exec-stmt stmt compst fenv limit)))
       (implies (not (c::errorp result))
-               (not (c::stmt-value-return->value? result))))
+               (and (equal (c::stmt-value-kind result) :return)
+                    (not (c::stmt-value-return->value? result)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-return-support-lemma-error
@@ -2861,11 +2883,13 @@
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
+                    (equal (c::stmt-value-kind old-stmt-result) :return)
                     (c::stmt-value-return->value? old-stmt-result)
                     (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (c::stmt-value-return->value? old-result)
                     (equal (c::type-of-value
                             (c::stmt-value-return->value? old-result))
@@ -2889,10 +2913,12 @@
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
+                    (equal (c::stmt-value-kind old-stmt-result) :return)
                     (not (c::stmt-value-return->value? old-stmt-result)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (not (c::stmt-value-return->value? old-result)))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
@@ -3102,11 +3128,13 @@
                     (not (c::errorp new-item-result))
                     (equal old-item-result new-item-result)
                     (equal old-item-compst new-item-compst)
+                    (equal (c::stmt-value-kind old-item-result) :return)
                     (c::stmt-value-return->value? old-item-result)
                     (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (c::stmt-value-return->value? old-result)
                     (equal (c::type-of-value
                             (c::stmt-value-return->value? old-result))
@@ -3131,10 +3159,12 @@
                     (not (c::errorp new-item-result))
                     (equal old-item-result new-item-result)
                     (equal old-item-compst new-item-compst)
+                    (equal (c::stmt-value-kind old-item-result) :return)
                     (not (c::stmt-value-return->value? old-item-result)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
                     (not (c::stmt-value-return->value? old-result)))))
     :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
              (c::exec-block-item-list (list new-item) compst new-fenv limit))
