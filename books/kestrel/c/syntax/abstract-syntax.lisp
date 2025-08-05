@@ -902,6 +902,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod h-char
+  :short "Fixtype of characters usable in
+          header names between angle brackets [C17:6.4.7] [C17:A.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to <i>h-char</i> in the grammar in [C17].")
+   (xdoc::p
+    "As explained in @(see abstract-syntax),
+     the natural numbers represent Unicode code points.
+     We wrap the natural number in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the number,
+     namely that the character cannot be @('>') or a new-line,
+     but for now we do not capture this restriction."))
+  ((char nat))
+  :pred h-char-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist h-char-list
+  :short "Fixtype of lists of characters usable in
+          header names between angle brackets [C17:6.4.7] [C17:A.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Characters usable in header names between angle brackets
+     are defined in @(tsee h-char)."))
+  :elt-type h-char
+  :true-listp t
+  :elementp-of-nil nil
+  :pred h-char-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod q-char
+  :short "Fixtype of characters usable in
+          header names between double quotes [C17:6.4.7] [C17:A.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to <i>q-char</i> in the grammar in [C17].")
+   (xdoc::p
+    "As explained in @(see abstract-syntax),
+     the natural numbers represent Unicode code points.
+     We wrap the natural number in this fixtype for more abstraction,
+     and to facilitate the addition of restrictions on the number,
+     namely that the character cannot be @('>') or a new-line,
+     but for now we do not capture this restriction."))
+  ((char nat))
+  :pred q-char-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist q-char-list
+  :short "Fixtype of lists of characters usable in
+          header names between double quotes [C17:6.4.7] [C17:A.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Characters usable in header names between double quotes
+     are defined in @(tsee q-char)."))
+  :elt-type q-char
+  :true-listp t
+  :elementp-of-nil nil
+  :pred q-char-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum unop
   :short "Fixtype of unary operators
           [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
