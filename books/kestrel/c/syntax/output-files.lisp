@@ -12,7 +12,6 @@
 
 (include-book "files")
 (include-book "printer")
-(include-book "ascii-identifiers")
 (include-book "standard")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
