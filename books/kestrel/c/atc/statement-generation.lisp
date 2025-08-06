@@ -4001,12 +4001,11 @@
                                                     limit))
                        (equal sval (mv-nth 0 sval+compst1))
                        (stmt-valuep sval)
-                       (equal (stmt-value-kind sval) :return)
-                       (equal val? (stmt-value-return->value? sval))
                        (equal compst1 (mv-nth 1 sval+compst1)))
                   (equal (exec-block-item-list items compst fenv limit)
-                         (if (valuep val?)
-                             (mv (stmt-value-return val?) compst1)
+                         (if (and (equal (stmt-value-kind sval) :return)
+                                  (valuep (stmt-value-return->value? sval)))
+                             (mv sval compst1)
                            (exec-block-item-list (nthcdr ,n items)
                                                  compst1
                                                  fenv
