@@ -913,6 +913,11 @@ function searchGo(str) {
     $("#left").removeClass("active");
     closeAllPowertips();
 
+    if (!ta_data_initialized) {
+        $("#data").append("<p id='searching_message'>Searching...</p>");
+        ta_data_initialize();
+    }
+
     searchGoMain(str);
     return false;
 }
@@ -945,7 +950,6 @@ function searchGoMain(query_str) {
 
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    // Restore previous results collection and display
     var max_display = 100;
     // 10,000 is too much, visible stutter
     var max_results = 1000;
@@ -978,14 +982,14 @@ function searchGoMain(query_str) {
 
     // We borrow the ta_data structure from the "jump to" feature.
 
-    // 0. Exact matches
+    // 0. Exact matches of topics
     for(const key of ta_data) {
         if (key.rawlow === query_str_low) {
             if (addResult(key.value, 0)) break;
         }
     }
     if (results.length < max_display) {
-        // 0.5. Prefix matches
+        // 0.5. Prefix matches of topics
         for(const key of ta_data) {
             if (key.value in matches) continue;
             if (key.rawlow.startsWith(query_str_low)) {
@@ -994,7 +998,7 @@ function searchGoMain(query_str) {
         }
     }
     if (results.length < max_display) {
-        // 1. Other title matches
+        // 1. Substring matches in topics
         for(const key of ta_data) {
             if (key.value in matches) continue;
             // Check for exact phrase first (higher priority)
@@ -1009,7 +1013,6 @@ function searchGoMain(query_str) {
     }
     if (results.length < max_display) {
         // 2. Short description matches
-        // for(const key of keys) {
         for(const key of ta_data) {
             if (key.value in matches) continue;
             // Perhaps it would be better to use topicShortPlaintext,
@@ -1101,6 +1104,41 @@ $(document).ready(function()
 		  });
 
 var ta_data = [];
+var ta_data_initialized = false;
+
+function ta_data_initialize() {
+    var keys = xindexObj.allKeys();
+    for(const key of keys) {
+        ta_data.push({
+            value: key,
+            nicename: xindexObj.topicName(key),
+            rawname: xindexObj.topicRawname(key),
+            nicelow: xindexObj.topicName(key).toLowerCase(),
+            rawlow: xindexObj.topicRawname(key).toLowerCase(),
+            uid: xindexObj.topicUid(key)
+        });
+    }
+
+    // Sort topics. Topics from the ACL2 sources come first. After
+    // that, alphabetize (by topic name, then by value).
+    ta_data.sort(function(a, b) {
+        // Prioritize ACL2 sources
+        const sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
+        const sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
+        if (sysA && !sysB) {
+            return -1;
+        }
+        if (!sysA && sysB) {
+            return 1;
+        }
+        const compareNice = a.nicename.localeCompare(b.nicename);
+        if (compareNice !== 0) {
+            return compareNice;
+        }
+        return a.value.localeCompare(b.value);
+    });
+    ta_data_initialized = true;
+}
 
 function jumpRender(datum) {
     var key = datum["value"];
@@ -1117,37 +1155,8 @@ function jumpRender(datum) {
 }
 
 function jumpInit() {
-    var keys = xindexObj.allKeys();
-    for(const key of keys) {
-        ta_data.push({
-            value: key,
-            nicename: xindexObj.topicName(key),
-            rawname: xindexObj.topicRawname(key),
-            nicelow: xindexObj.topicName(key).toLowerCase(),
-            rawlow: xindexObj.topicRawname(key).toLowerCase(),
-            uid: xindexObj.topicUid(key)
-        });
-    }
     // Defer this sorting until after the page load.
-    setTimeout(() =>
-        // Sort topics. Topics from the ACL2 sources come first. After
-        // that, alphabetize (by topic name, then by value).
-        ta_data.sort(function(a, b) {
-            // Prioritize ACL2 sources
-            const sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
-            const sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
-            if (sysA && !sysB) {
-                return -1;
-            }
-            if (!sysA && sysB) {
-                return 1;
-            }
-            const compareNice = a.nicename.localeCompare(b.nicename);
-            if (compareNice !== 0) {
-                return compareNice;
-            }
-            return a.value.localeCompare(b.value);
-        }), 0);
+    setTimeout(ta_data_initialize, 0);
 
     // Take the first "count" number of elements from the "flattened"
     // (concatenated) arrays (but don't actually concatenate them all,
