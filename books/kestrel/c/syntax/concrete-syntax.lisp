@@ -54,9 +54,7 @@
      of the same unique concrete syntax of C.
      We are not defining a different concrete syntax of C here.
      However, we are instantiating certain aspects of the concrete syntax
-     which [C17] leaves open, such as the exact character set used.")
-   (xdoc::p
-    "We plan to add a parser and a pretty-printer."))
+     which [C17] leaves open, such as the exact character set used."))
   :order-subtopics t
   :default-parent (file-paths
                    files
