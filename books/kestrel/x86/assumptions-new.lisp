@@ -403,6 +403,7 @@
                     (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
                     ))
               nil)
+            `((equal (bvchop 6 ,base-var) 0)) ; the BASE-VAR is 64-byte aligned
             `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
               ;; Alignment checking is turned off:
               (not (alignment-checking-enabled-p ,state-var))
