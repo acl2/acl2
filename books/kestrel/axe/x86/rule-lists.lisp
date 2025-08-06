@@ -1206,6 +1206,8 @@
     acl2::bvif-of-+-arg3
     acl2::bvif-of---arg3
     acl2::bvif-of---arg4
+
+    acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
     ))
 
