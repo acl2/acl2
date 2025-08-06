@@ -2909,6 +2909,142 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lex-*-h-char ((parstate parstatep))
+  :returns (mv erp
+               (hchars h-char-listp)
+               (closing-angle-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex zero or more characters
+          in a header name between angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*h-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('h-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening angle bracker of a header name.
+     If successful, this reads up to and including the closing angle bracket,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a new-line.
+     If the character is a closing angle bracket,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
+  (b* (((reterr) nil (irr-position) parstate)
+       ((erp char pos parstate) (read-char parstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\>))) ; >
+        (retok nil pos parstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (hchar (h-char char))
+       ((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate)))
+    (retok (cons hchar hchars) closing-angle-pos parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-*-h-char-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret parsize-of-lex-*-h-char-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (- (parsize parstate)
+                        (len hchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-*-q-char ((parstate parstatep))
+  :returns (mv erp
+               (qchars q-char-listp)
+               (closing-dquote-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex zero or more characters
+          in a header name between double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*q-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('q-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening double quote of a header name.
+     If successful, this reads up to and including the closing double quote,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a new-line.
+     If the character is a closing double quote,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
+  (b* (((reterr) nil (irr-position) parstate)
+       ((erp char pos parstate) (read-char parstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\"))) ; "
+        (retok nil pos parstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (qchar (q-char char))
+       ((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate)))
+    (retok (cons qchar qchars) closing-dquote-pos parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-*-q-char-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret parsize-of-lex-*-q-char-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (- (parsize parstate)
+                        (len qchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-isuffix-if-present ((parstate parstatep))
   :returns (mv erp
                (isuffix? isuffix-optionp)

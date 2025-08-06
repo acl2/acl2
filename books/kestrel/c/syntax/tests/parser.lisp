@@ -1132,6 +1132,85 @@
  (list 10 (char-code #\"))
  :more-inputs (nil (position 1 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-h-char
+
+(test-lex
+ lex-*-h-char
+ "abc>"
+ :cond (equal ast (list (h-char (char-code #\a))
+                        (h-char (char-code #\b))
+                        (h-char (char-code #\c)))))
+
+(test-lex
+ lex-*-h-char
+ "\">"
+ :cond (equal ast (list (h-char (char-code #\")))))
+
+(test-lex
+ lex-*-h-char
+ "'>"
+ :cond (equal ast (list (h-char (char-code #\')))))
+
+(test-lex
+ lex-*-h-char
+ "<>"
+ :cond (equal ast (list (h-char (char-code #\<)))))
+
+(test-lex-fail
+ lex-*-h-char
+ "")
+
+(test-lex-fail
+ lex-*-h-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-h-char
+ (list (char-code #\U) 10 (char-code #\>)))
+
+(test-lex-fail
+ lex-*-h-char
+ (list (char-code #\U) 13 (char-code #\>)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-q-char
+
+(test-lex
+ lex-*-q-char
+ "abc\""
+ :cond (equal ast (list (q-char (char-code #\a))
+                        (q-char (char-code #\b))
+                        (q-char (char-code #\c)))))
+
+(test-lex
+ lex-*-q-char
+ ">\""
+ :cond (equal ast (list (q-char (char-code #\>)))))
+
+(test-lex
+ lex-*-q-char
+ "'\""
+ :cond (equal ast (list (q-char (char-code #\')))))
+
+(test-lex-fail
+ lex-*-q-char
+ "")
+
+(test-lex-fail
+ lex-*-q-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-q-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ lex-*-q-char
+ (list (char-code #\U) 13 (char-code #\")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
