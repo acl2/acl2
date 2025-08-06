@@ -11,9 +11,7 @@
 (in-package "C$")
 
 (include-book "concrete-syntax")
-(include-book "abstract-syntax-trees")
-(include-book "abstraction-mapping")
-(include-book "abstract-syntax-operations")
+(include-book "abstract-syntax")
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
@@ -199,9 +197,7 @@
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (concrete-syntax
                     abstract-syntax
-                    abstraction-mapping
                     defpred
-                    abstract-syntax-operations
                     unambiguity
                     validation-information
                     ascii-identifiers

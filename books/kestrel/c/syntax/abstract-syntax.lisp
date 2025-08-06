@@ -1,0 +1,33 @@
+; C Library
+;
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C$")
+
+(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-irrelevants")
+(include-book "abstract-syntax-operations")
+(include-book "abstraction-mapping")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ abstract-syntax
+  :parents (syntax-for-tools)
+  :short "An abstract syntax of C for use by tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see syntax-for-tools) for background.")
+   (xdoc::p
+    "We define abstract syntax trees (ASTs),
+     and operations on them."))
+  :order-subtopics (abstract-syntax-trees
+                    abstract-syntax-irrelevants
+                    abstract-syntax-operations
+                    abstraction-mapping))

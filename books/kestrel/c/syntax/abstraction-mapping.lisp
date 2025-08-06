@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstraction-mapping
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Syntax abstraction mapping."
   :long
   (xdoc::topstring

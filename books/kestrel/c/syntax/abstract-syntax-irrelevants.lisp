@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-irrelevants
-  :parents (abstract-syntax-operations)
+  :parents (abstract-syntax)
   :short "Irrelevant values of the abstract syntax fixtypes."
   :long
   (xdoc::topstring
