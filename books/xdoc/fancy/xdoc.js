@@ -872,6 +872,7 @@ function searchTokenize(plaintext) {
     return tokens;
 }
 
+// Case-insensitive counting of substring matches
 function countOccurrences(haystack, needle) {
     if (!needle) return 0;
     var re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
@@ -916,8 +917,7 @@ function searchGo(str) {
     return false;
 }
 
-// Patch searchAddHit to accept an optional extra content
-function searchAddHit(matches, hits, key, extra) {
+function searchAddHit(matches, hits, key) {
     if (key in matches) {
 	// already showed this result, don't show it again
 	return;
@@ -930,9 +930,6 @@ function searchAddHit(matches, hits, key, extra) {
 		+ "</dt>");
     var dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
-    if (extra) {
-	dd.append("<div style='margin-top:0.5em;color:#444;font-size:90%'>" + extra + "</div>");
-    }
     hits.append(dd);
 }
 
@@ -955,20 +952,18 @@ function searchGoMain(query_str) {
     var matches = {};
     var results = [];
     const keys = Array.from(xindexObj.allKeys());
-    var num_hits = 0;
 
     // Assumption: results.length < max_results
+    // Assumption: !(key in matches)
     function addResult(key, rank) {
-	if (!(key in matches)) {
-            var rawname = xindexObj.topicRawname(key);
-            var title = xindexObj.topicName(key);
-            var short_plain = topicShortPlaintext(key);
-            var freq = countOccurrences(rawname, query_str) +
-                countOccurrences(title, query_str) +
-                countOccurrences(short_plain, query_str);
-            matches[key] = true;
-            results.push({key, rank, freq});
-	}
+        var rawname = xindexObj.topicRawname(key);
+        var title = xindexObj.topicName(key);
+        var short_plain = topicShortPlaintext(key);
+        var freq = countOccurrences(rawname_lc, query_str) +
+            countOccurrences(title, query_str) +
+            countOccurrences(short_plain, query_str);
+        matches[key] = true;
+        results.push({key, rank, freq});
         return results.length >= max_results;
     }
 
@@ -984,12 +979,8 @@ function searchGoMain(query_str) {
 
     // 0. Exact matches
     for(const key of keys) {
-	var rawname = xindexObj.topicRawname(key);
-	var title = xindexObj.topicName(key);
-	var key_lc = key.toLowerCase();
-	var rawname_lc = rawname.toLowerCase();
-	var title_lc = title.toLowerCase();
-	if (key_lc === query_str_lc || rawname_lc === query_str_lc || title_lc === query_str_lc) {
+	var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
+	if (rawname_lc === query_str_lc) {
             if (addResult(key, 0)) break;
 	}
     }
@@ -997,12 +988,8 @@ function searchGoMain(query_str) {
 	// 0.5. Prefix matches
 	for(const key of keys) {
             if (key in matches) continue;
-            var rawname = xindexObj.topicRawname(key);
-            var title = xindexObj.topicName(key);
-            var key_lc = key.toLowerCase();
-            var rawname_lc = rawname.toLowerCase();
-            var title_lc = title.toLowerCase();
-            if (key_lc.startsWith(query_str_lc) || rawname_lc.startsWith(query_str_lc) || title_lc.startsWith(query_str_lc)) {
+            var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
+            if (rawname_lc.startsWith(query_str_lc)) {
 		if (addResult(key, 0.5)) break;
             }
 	}
@@ -1040,8 +1027,7 @@ function searchGoMain(query_str) {
 	}
     }
 
-    num_hits = results.length;
-    if (num_hits != 0) {
+    if (results.length != 0) {
 	// Sort results by rank, then ACL2 Sources priority, then frequency
 	results.sort(function(a, b) {
             if (a.rank !== b.rank) return a.rank - b.rank;
@@ -1056,15 +1042,18 @@ function searchGoMain(query_str) {
             return b.freq - a.freq;
 	});
 
-        if (num_hits > max_display) {
+        if (results.length > max_display) {
             $("#data").append("<h3><b>" + max_display + "+</b> Results</h3>");
         } else {
-            $("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
+            $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
         }
 	var hits = jQuery("<dl></dl>");
-	for (const result of results.slice(0, 100)) {
-            var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
-            searchAddHit({}, hits, result.key, result.snippet ? result.snippet + extra : extra);
+	for (const result of results.slice(0, max_display)) {
+            // We don't display the frequency, because not all results have a
+            // frequency. Furthermore, some results ranked higher will have
+            // lower frequenccy, which may be confusing to the user.
+            // var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
+            searchAddHit({}, hits, result.key);
 	}
 	$("#data").append(hits);
     } else {
