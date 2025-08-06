@@ -49,13 +49,12 @@ const xdocRenderer = new XdocRenderer();
 var short_plaintext_cache = {};
 function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
-	return short_plaintext_cache[key];
+        return short_plaintext_cache[key];
     }
     var ret = xdocRenderer.renderText(xindexObj.topicShort(key));
     short_plaintext_cache[key] = ret;
     return ret;
 }
-window.topicShortPlaintext = topicShortPlaintext;
 
 function htmlEncode(value){
     // copied from stackoverflow:1219860
@@ -844,34 +843,6 @@ function datLoadKey(key, scroll_to)
 	$("title").html(keyTitle(key));
 	renderMathFragments();
 	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
-
-	// Highlight first match if lastSearchTerm is set
-	if (window.lastSearchTerm && typeof window.lastSearchTerm === 'string' && window.lastSearchTerm.length > 0) {
-            var term = window.lastSearchTerm;
-            var $data = $("#data");
-            // Find the first text node containing the term (case-insensitive)
-            var found = false;
-            $data.find('*').addBack().contents().each(function() {
-		if (found) return;
-		if (this.nodeType === 3) { // Text node
-                    var idx = this.nodeValue.toLowerCase().indexOf(term.toLowerCase());
-                    if (idx !== -1) {
-			// Split the text node and wrap the match in a span
-			var before = this.nodeValue.slice(0, idx);
-			var match = this.nodeValue.slice(idx, idx + term.length);
-			var after = this.nodeValue.slice(idx + term.length);
-			var $span = $('<span>').text(match).css({background: '#ffff66', padding: '0 2px'});
-			var frag = document.createDocumentFragment();
-			if (before) frag.appendChild(document.createTextNode(before));
-			frag.appendChild($span[0]);
-			if (after) frag.appendChild(document.createTextNode(after));
-			$(this).replaceWith(frag);
-			found = true;
-                    }
-		}
-            });
-            window.lastSearchTerm = null;
-	}
     });
 }
 
@@ -885,9 +856,6 @@ function datReallyScrollTo(top) {
 //                          SEARCHING FEATURE
 //
 // --------------------------------------------------------------------------
-
-var short_tokens_initialized = false;
-var short_tokens = {};
 
 function searchTokenize(plaintext) {
     var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
@@ -904,52 +872,11 @@ function searchTokenize(plaintext) {
     return tokens;
 }
 
-function makeShortTokens() {
-    if (short_tokens_initialized)
-	return;
-    var keys = xindexObj.allKeys();
-    for(const key of keys) {
-	var name = xindexObj.topicName(key);
-	var rawname = xindexObj.topicRawname(key);
-	var plaintext = topicShortPlaintext(key);
-	var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
-	short_tokens[key] = tokens;
-    }
-    short_tokens_initialized = true;
-}
-
 function countOccurrences(haystack, needle) {
     if (!needle) return 0;
     var re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     var matches = haystack.match(re);
     return matches ? matches.length : 0;
-}
-
-function subarrayAtOffsetp (a, b, n) {
-    // Does array A occur at array B, starting from position N?
-    var al = a.length;
-    var bl = b.length - n;
-    if (al > bl) {
-	return false;
-    }
-    for(var i = 0; i < al; ++i) {
-	if (a[i] != b[(i+n)])
-	    return false;
-    }
-    return true;
-}
-
-function subarrayp (a, b) {
-    var al = a.length;
-    var bl = b.length;
-    if (al == 0) return true;
-    if (al > bl) return false;
-    var stop = (bl-al)+1;
-    for(var i = 0; i < stop; ++i) {
-	if (subarrayAtOffsetp(a,b,i))
-	    return true;
-    }
-    return false;
 }
 
 // Check if all words in query appear in text (for multi-word queries)
@@ -980,17 +907,12 @@ function searchGo(str) {
     $("#data").html("");
     $("#right").scrollTop(0);
 
-    $("#data").append("<p id='searching_message'>Searching...</p>");
-
-    var query = searchTokenize(str);
-
     // if we're in mobile mode, hide the navigation bar whenever the
     // user navigates to a new page.
     $("#left").removeClass("active");
     closeAllPowertips();
 
-    // Start search immediately since we only search titles and shorts
-    setTimeout(searchGoMain, 10, query);
+    searchGoMain(str);
     return false;
 }
 
@@ -1014,14 +936,12 @@ function searchAddHit(matches, hits, key, extra) {
     hits.append(dd);
 }
 
-function searchGoMain(query) {
-    makeShortTokens();
-
-    var query_str = query.join(" ");
-    var query_str_lc = query_str.toLowerCase();
+function searchGoMain(query_str) {
+    const query_str_lc = query_str.toLowerCase();
+    const query_tokenized = searchTokenize(query_str_lc);
 
     $("#searching_message").hide();
-    if (query.length == 0) {
+    if (query_tokenized.length === 0) {
 	$("#data").append("<h3>No results (empty search)</h3>");
 	return;
     }
@@ -1087,13 +1007,12 @@ function searchGoMain(query) {
 	for(const key of keys) {
             if (key in matches) continue;
             var name = xindexObj.topicRawname(key);
-            var tokens = searchTokenize(name);
             // Check for exact phrase first (higher priority)
-            if (subarrayp(query,tokens) || name.toLowerCase().indexOf(query_str) !== -1) {
+            if (name.toLowerCase().indexOf(query_str) !== -1) {
 		if (addResult(key, 1, null, null)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query.length > 1 && allWordsMatch(name.toLowerCase(), query)) {
+            else if (query_tokenized.length > 1 && allWordsMatch(name.toLowerCase(), query_tokenized)) {
 		if (addResult(key, 1.5, null, null)) break;
             }
 	}
@@ -1102,14 +1021,15 @@ function searchGoMain(query) {
 	// 2. Short description matches
 	for(const key of keys) {
             if (key in matches) continue;
-            var short_plain = topicShortPlaintext(key);
-            var tokens = searchTokenize(short_plain);
+            // Perhaps it would be better to use topicShortPlaintext,
+            // but this is *very* slow.
+            var short_plain = xindexObj.topicShort(key);
             // Check for exact phrase first (higher priority)
-            if (subarrayp(query, tokens) || short_plain.toLowerCase().indexOf(query_str) !== -1) {
+            if (short_plain.toLowerCase().indexOf(query_str) !== -1) {
 		if (addResult(key, 2, null, null)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query.length > 1 && allWordsMatch(short_plain.toLowerCase(), query)) {
+            else if (query_tokenized.length > 1 && allWordsMatch(short_plain.toLowerCase(), query_tokenized)) {
 		if (addResult(key, 2.5, null, null)) break;
             }
 	}
@@ -1176,19 +1096,6 @@ $(document).ready(function()
 		      });
 		      maybePowertip(".toolbutton", {placement: 'se'});
 		      maybePowertip(".rtoolbutton", {placement: 'sw'});
-
-		      // Background load xdata.js if in local mode
-		      if (typeof XDATAGET !== 'undefined' && XDATAGET === "") {
-			  // Show a subtle loading message
-			  //if (!$("#xdata-loading").length) {
-			  //    $("#data").append("<div id='xdata-loading' style='color: orange; margin-top: 1em;'>Indexing documentation in the background...</div>");
-			  //}
-			  loadJS("./xdata.js").then(() => {
-			      xdataObj.loadFromXdata(xdata);
-			      xdata_loaded = true;
-			      $("#xdata-loading").remove();
-			  });
-		      }
 		  });
 
 function jumpRender(datum) {
@@ -1620,13 +1527,6 @@ function printerFriendly()
 function dolink(event, topic) {
     if (event.button == 1) {
 	return true;
-    }
-    // Store the last search term if present in the URL
-    var params = getPageParameters();
-    if (params && params.search) {
-	window.lastSearchTerm = params.search;
-    } else {
-	window.lastSearchTerm = null;
     }
     actionGoKey(topic);
     return false;
