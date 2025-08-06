@@ -21,6 +21,7 @@
 (include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
+(include-book "builtin")
 (include-book "disambiguator")
 (include-book "validator")
 (include-book "printer")
