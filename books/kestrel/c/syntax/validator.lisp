@@ -3251,34 +3251,31 @@
               (b* (((reterr) (irr-expr)))
                 (initer-case
                  initer
-                 :single (mv nil initer.expr)
+                 :single (retok initer.expr)
                  :list (b* (((unless (and (consp initer.elems)
                                           (endp (cdr initer.elems))))
-                             (mv (msg$ "The initializer list ~x0 ~
-                                        for the target type ~x1 ~
-                                        is not a singleton."
-                                       (initer-fix initer)
-                                       (type-fix target-type))
-                                 (irr-expr)))
+                             (retmsg$ "The initializer list ~x0 ~
+                                       for the target type ~x1 ~
+                                       is not a singleton."
+                                      (initer-fix initer)
+                                      (type-fix target-type)))
                             ((desiniter desiniter) (car initer.elems))
                             ((unless (endp desiniter.designors))
-                             (mv (msg$ "The initializer list ~x0 ~
-                                        for the target type ~x1 ~
-                                        is a singleton ~
-                                        but it has designators."
-                                       (initer-fix initer)
-                                       (type-fix target-type))
-                                 (irr-expr)))
+                             (retmsg$ "The initializer list ~x0 ~
+                                       for the target type ~x1 ~
+                                       is a singleton ~
+                                       but it has designators."
+                                      (initer-fix initer)
+                                      (type-fix target-type)))
                             ((unless (initer-case desiniter.initer :single))
-                             (mv (msg$ "The initializer list ~x0 ~
-                                        for the target type ~x1 ~
-                                        is a singleton without designators ~
-                                        but the inner initializer ~
-                                        is not a single expression."
-                                       (initer-fix initer)
-                                       (type-fix target-type))
-                                 (irr-expr))))
-                         (mv nil (initer-single->expr desiniter.initer))))))
+                             (retmsg$ "The initializer list ~x0 ~
+                                       for the target type ~x1 ~
+                                       is a singleton without designators ~
+                                       but the inner initializer ~
+                                       is not a single expression."
+                                      (initer-fix initer)
+                                      (type-fix target-type))))
+                         (retok (initer-single->expr desiniter.initer))))))
              ((erp new-expr init-type types table) (valid-expr expr table ienv))
              (type (type-fpconvert (type-apconvert init-type)))
              ((unless (or (and (type-arithmeticp target-type)
