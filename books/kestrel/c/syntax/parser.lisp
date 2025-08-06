@@ -3045,7 +3045,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-isuffix-if-present ((parstate parstatep))
+(define lex-?-integer-suffix ((parstate parstatep))
   :returns (mv erp
                (isuffix? isuffix-optionp)
                (last/next-pos positionp)
@@ -3261,12 +3261,12 @@
 
   ///
 
-  (defret parsize-of-lex-isuffix-if-present-uncond
+  (defret parsize-of-lex-?-integer-suffix-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-isuffix-if-present-cond
+  (defret parsize-of-lex-?-integer-suffix-cond
     (implies (and (not erp)
                   isuffix?)
              (<= (parsize new-parstate)
@@ -3855,7 +3855,7 @@
          (t ; 0 x/X hexdigs other
           (b* ((parstate (unread-char parstate)) ; 0 x/X hexdigs
                ((erp isuffix? suffix-last/next-pos parstate)
-                (lex-isuffix-if-present parstate))
+                (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
                ((erp parstate) (check-full-ppnumber (and
                                                    (member (car (last hexdigs))
@@ -4025,7 +4025,7 @@
      (t ; 1-9 [decdigs] other
       (b* ((parstate (unread-char parstate)) ; 1-9 [decdigs]
            ((erp isuffix? suffix-last/next-pos parstate)
-            (lex-isuffix-if-present parstate))
+            (lex-?-integer-suffix parstate))
            ;; 1-9 [decdigs] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-int
@@ -4329,7 +4329,7 @@
        ((oct-digit-char-listp digits) ; 0 [octdigs] other
         (b* ((parstate (unread-char parstate)) ; 0 [octdigs]
              ((erp isuffix? suffix-last/next-pos parstate)
-              (lex-isuffix-if-present parstate))
+              (lex-?-integer-suffix parstate))
              ;; 0 [octdigs] [suffix]
              ((erp parstate) (check-full-ppnumber nil parstate)))
           (retok (const-int
