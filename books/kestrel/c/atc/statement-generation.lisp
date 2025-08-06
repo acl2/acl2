@@ -4013,7 +4013,12 @@
                                                  (- limit ,n))))))
        (lemma-hints
         `(("Goal"
-           :in-theory '(append-of-take-and-nthcdr
+           :in-theory '(stmt-value-return-of-fields
+                        stmt-value-fix-when-stmt-valuep
+                        valuep-when-value-optionp
+                        value-optionp-of-stmt-value-return->value?
+                        (:e valuep)
+                        append-of-take-and-nthcdr
                         (:e nfix)
                         value-optionp
                         not-errorp-when-stmt-valuep

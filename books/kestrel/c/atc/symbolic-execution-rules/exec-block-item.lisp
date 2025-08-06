@@ -133,13 +133,9 @@
            (b* (((mv sval compst)
                  (exec-block-item-list items1 compst fenv limit))
                 ((when (errorp sval)) (mv sval compst))
-                ((when (stmt-value-case sval :none))
-                 (exec-block-item-list items2
-                                       compst
-                                       fenv
-                                       (- limit (len items1))))
-                (val? (stmt-value-return->value? sval))
-                ((when (valuep val?)) (mv (stmt-value-return val?) compst)))
+                ((when (and (stmt-value-case sval :return)
+                            (stmt-value-return->value? sval)))
+                 (mv sval compst)))
              (exec-block-item-list items2 compst fenv (- limit (len items1)))))
     :induct (ind items1 compst fenv limit)
     :enable (exec-block-item-list
