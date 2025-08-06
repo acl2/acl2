@@ -2344,7 +2344,7 @@
 
 ;equal-of-myif-arg2 ;trying without this..
      plus-of-bvplus-of-minus1
-     boolif-of-myif-arg2
+     boolif-of-myif-arg2 ; also make one for arg1?
      boolif-of-myif-arg3
 
      ;;           not-of-booland ;trying without this? new4
