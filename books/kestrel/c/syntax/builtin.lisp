@@ -29,7 +29,7 @@
       code.")
    (xdoc::p
      "See the GCC manual, "
-     (xdoc::ahref ""
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Built-in-Functions.html"
                   "``Built-in Functions Provided by GCC''")
      "."))
   :order-subtopics t
