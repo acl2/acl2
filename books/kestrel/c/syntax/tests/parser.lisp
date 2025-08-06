@@ -1211,6 +1211,130 @@
  lex-*-q-char
  (list (char-code #\U) 13 (char-code #\")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-integer-suffix
+
+(test-lex
+ lex-?-integer-suffix
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-integer-suffix
+ "u"
+ :cond (equal ast (isuffix-u (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ul"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ull"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "uL"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "uLL"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "U"
+ :cond (equal ast (isuffix-u (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Ul"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Ull"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "UL"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ULL"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "l"
+ :cond (equal ast (isuffix-l (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ll"
+ :cond (equal ast (isuffix-l (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "L"
+ :cond (equal ast (isuffix-l (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LL"
+ :cond (equal ast (isuffix-l (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lu"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-l) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "llu"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-ll) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Lu"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-l) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LLu"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-ll) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lU"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-l) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "llU"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-ll) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LU"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-l) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LLU"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-ll) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lLu" ; only l is lexed
+ :cond (equal ast (isuffix-l (lsuffix-locase-l))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.

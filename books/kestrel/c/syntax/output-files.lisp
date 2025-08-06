@@ -12,7 +12,6 @@
 
 (include-book "files")
 (include-book "printer")
-(include-book "ascii-identifiers")
 (include-book "standard")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
@@ -140,9 +139,14 @@
     (implies (not erp)
              (transunit-ensemble-unambp tunits)))
 
+  (defret transunit-ensemble-aidentp-when-output-files-process-tunits
+    (implies (not erp)
+             (transunit-ensemble-aidentp tunits gcc)))
+
   (in-theory
    (disable transunit-ensemblep-when-output-files-process-tunits
-            transunit-ensemble-unambp-when-output-files-process-tunits)))
+            transunit-ensemble-unambp-when-output-files-process-tunits
+            transunit-ensemble-aidentp-when-output-files-process-tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +338,16 @@
     (("Goal"
       :in-theory
       (enable
-       transunit-ensemble-unambp-when-output-files-process-tunits)))))
+       transunit-ensemble-unambp-when-output-files-process-tunits))))
+
+  (defret transunit-ensemble-aidentp-of-output-files-process-inputs
+    (implies (not erp)
+             (transunit-ensemble-aidentp tunits gcc))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       transunit-ensemble-aidentp-when-output-files-process-tunits)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -344,7 +357,8 @@
                                 (paren-nested-conds booleanp)
                                 (gcc booleanp)
                                 state)
-  :guard (transunit-ensemble-unambp tunits)
+  :guard (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-aidentp tunits gcc))
   :returns (mv erp state)
   :short "Generate the files."
   (b* (((reterr) state)
