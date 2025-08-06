@@ -33,6 +33,12 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+(defthm bvsx-when-not-natp-arg1
+  (implies (not (natp new-size))
+           (equal (bvsx new-size old-size x)
+                  0))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
 (defthm bvsx-when-not-natp-arg2
   (implies (not (natp old-size))
            (equal (bvsx new-size old-size x)
@@ -247,7 +253,8 @@
 
 (defthm bvsx-too-high
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
-                (<= old-size new-size))
+                (<= old-size new-size)
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))

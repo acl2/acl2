@@ -117,6 +117,9 @@
          (bvnot size x))
   :hints (("Goal" :in-theory (enable trim bvnot))))
 
+;; TODO: Consider what happens if a TRIM gets introduced but these rules can't
+;; get rid of it due to their hyps:
+
 (defthmd trim-of-+-becomes-bvplus
   (implies (and (integerp x)
                 (integerp y))
@@ -146,13 +149,14 @@
 ;;   :hints (("Goal" :in-theory (enable trim bvminus))))
 
 (defthm trim-of-logext-becomes-bvsx
-  (implies (and (natp size)
+  (implies (and ;(natp size)
                 (posp size2))
            (equal (trim size (logext size2 x))
                   (if (< size2 size)
                       (bvsx size size2 x)
                     ;; no sign extension needed in this case:
                     (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (trim) (logext)))))
+  :hints (("Goal" :cases ((natp size))
+                  :in-theory (e/d (trim) (logext)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

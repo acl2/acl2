@@ -111,6 +111,7 @@
 (defthm bvsx-when-bvlt
   (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
                 (natp old-size)
+                (integerp new-size)
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   (bvchop old-size x)))
