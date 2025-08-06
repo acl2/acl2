@@ -950,21 +950,29 @@ function searchGoMain(query_str) {
 
     // Restore previous results collection and display
     var max_results = 100;
+    var hit_max = false;
     var matches = {};
     var results = [];
     const keys = Array.from(xindexObj.allKeys());
     var num_hits = 0;
 
+    // Assumption: results.length < max_results
     function addResult(key, rank, snippet, label) {
-	if (!(key in matches) && results.length < max_results) {
+	if (!(key in matches)) {
             var rawname = xindexObj.topicRawname(key);
             var title = xindexObj.topicName(key);
             var short_plain = topicShortPlaintext(key);
-            var freq = countOccurrences(rawname, query_str) + countOccurrences(title, query_str) + countOccurrences(short_plain, query_str);
+            var freq = countOccurrences(rawname, query_str) +
+                countOccurrences(title, query_str) +
+                countOccurrences(short_plain, query_str);
             matches[key] = true;
             results.push({key, rank, freq, snippet, label});
 	}
-	return results.length >= max_results;
+        if (results.length >= max_results) {
+            hit_max = true;
+            return true;
+        }
+        return false;
     }
 
     // Search Ranking System:
@@ -1037,9 +1045,9 @@ function searchGoMain(query_str) {
 
     num_hits = results.length;
     if (num_hits != 0) {
-	if (num_hits === max_results) {
-            $("#data").append("<div style='color: orange; font-size: 110%; margin-bottom: 1em;'>Showing first " + max_results + " results. Please refine your search.</div>");
-	}
+	// if (num_hits === max_results) {
+        //     $("#data").append("<div style='color: orange; font-size: 110%; margin-bottom: 1em;'>Showing first " + max_results + " results. Please refine your search.</div>");
+	// }
 
 	// Sort results by rank, then ACL2 Sources priority, then frequency
 	results.sort(function(a, b) {
@@ -1055,7 +1063,11 @@ function searchGoMain(query_str) {
             return b.freq - a.freq;
 	});
 
-	$("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
+        if (hit_max) {
+            $("#data").append("<h3><b>100+</b> Results</h3>");
+        } else {
+            $("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
+        }
 	var hits = jQuery("<dl></dl>");
 	for (const result of results) {
             var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
