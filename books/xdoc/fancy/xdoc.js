@@ -934,8 +934,8 @@ function searchAddHit(matches, hits, key) {
 }
 
 function searchGoMain(query_str) {
-    const query_str_lc = query_str.toLowerCase();
-    const query_tokenized = searchTokenize(query_str_lc);
+    const query_str_low = query_str.toLowerCase();
+    const query_tokenized = searchTokenize(query_str_low);
 
     $("#searching_message").hide();
     if (query_tokenized.length === 0) {
@@ -951,17 +951,16 @@ function searchGoMain(query_str) {
     var max_results = 1000;
     var matches = {};
     var results = [];
-    const keys = Array.from(xindexObj.allKeys());
 
     // Assumption: results.length < max_results
     // Assumption: !(key in matches)
     function addResult(key, rank) {
-        var rawname = xindexObj.topicRawname(key);
-        var title = xindexObj.topicName(key);
-        var short_plain = topicShortPlaintext(key);
-        var freq = countOccurrences(rawname_lc, query_str) +
-            countOccurrences(title, query_str) +
-            countOccurrences(short_plain, query_str);
+        var rawname = xindexObj.topicRawname(key).toLowerCase();
+        var title = xindexObj.topicName(key).toLowerCase();
+        var short_plain = topicShortPlaintext(key).toLowerCase();
+        var freq = countOccurrences(rawname, query_str_low) +
+            countOccurrences(title, query_str_low) +
+            countOccurrences(short_plain, query_str_low);
         matches[key] = true;
         results.push({key, rank, freq});
         return results.length >= max_results;
@@ -977,59 +976,59 @@ function searchGoMain(query_str) {
     // Within each rank, results are sorted by ACL2 Sources priority, then frequency
 
 
+    // We borrow the ta_data structure from the "jump to" feature.
+
     // 0. Exact matches
-    for(const key of keys) {
-	var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
-	if (rawname_lc === query_str_lc) {
-            if (addResult(key, 0)) break;
-	}
+    for(const key of ta_data) {
+        if (key.rawlow === query_str_low) {
+            if (addResult(key.value, 0)) break;
+        }
     }
     if (results.length < max_display) {
-	// 0.5. Prefix matches
-	for(const key of keys) {
-            if (key in matches) continue;
-            var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
-            if (rawname_lc.startsWith(query_str_lc)) {
-		if (addResult(key, 0.5)) break;
+        // 0.5. Prefix matches
+        for(const key of ta_data) {
+            if (key.value in matches) continue;
+            if (key.rawlow.startsWith(query_str_low)) {
+                if (addResult(key.value, 0.5)) break;
             }
-	}
+        }
     }
     if (results.length < max_display) {
-	// 1. Other title matches
-	for(const key of keys) {
-            if (key in matches) continue;
-            var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
+        // 1. Other title matches
+        for(const key of ta_data) {
+            if (key.value in matches) continue;
             // Check for exact phrase first (higher priority)
-            if (rawname_lc.indexOf(query_str) !== -1) {
-		if (addResult(key, 1)) break;
+            if (key.rawlow.indexOf(query_str_low) !== -1) {
+                if (addResult(key.value, 1)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(rawname_lc, query_tokenized)) {
-		if (addResult(key, 1.5)) break;
+            else if (query_tokenized.length > 1 && allWordsMatch(key.rawlow, query_tokenized)) {
+                if (addResult(key.value, 1.5)) break;
             }
-	}
+        }
     }
     if (results.length < max_display) {
-	// 2. Short description matches
-	for(const key of keys) {
-            if (key in matches) continue;
+        // 2. Short description matches
+        // for(const key of keys) {
+        for(const key of ta_data) {
+            if (key.value in matches) continue;
             // Perhaps it would be better to use topicShortPlaintext,
             // but this is *very* slow.
-            var short_plain_lc = xindexObj.topicShort(key).toLowerCase();
+            var short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
             // Check for exact phrase first (higher priority)
-            if (short_plain_lc.indexOf(query_str) !== -1) {
-		if (addResult(key, 2)) break;
+            if (short_plain_low.indexOf(query_str_low) !== -1) {
+                if (addResult(key.value, 2)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(short_plain_lc, query_tokenized)) {
-		if (addResult(key, 2.5)) break;
+            else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
+                if (addResult(key.value, 2.5)) break;
             }
-	}
+        }
     }
 
     if (results.length != 0) {
-	// Sort results by rank, then ACL2 Sources priority, then frequency
-	results.sort(function(a, b) {
+        // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
+        results.sort(function(a, b) {
             if (a.rank !== b.rank) return a.rank - b.rank;
 
             // ACL2 Sources priority
@@ -1039,25 +1038,34 @@ function searchGoMain(query_str) {
             if (!sysA && sysB) return 1;
 
             // Then by frequency
-            return b.freq - a.freq;
-	});
+            if (a.freq !== b.freq) {
+                return b.freq - a.freq;
+            }
+
+            // Then by alphabetical order
+            const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
+            if (compareNice !== 0) {
+                return compareNice;
+            }
+            return a.key.localeCompare(b.key);
+        });
 
         if (results.length > max_display) {
             $("#data").append("<h3><b>" + max_display + "+</b> Results</h3>");
         } else {
             $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
         }
-	var hits = jQuery("<dl></dl>");
-	for (const result of results.slice(0, max_display)) {
+        var hits = jQuery("<dl></dl>");
+        for (const result of results.slice(0, max_display)) {
             // We don't display the frequency, because not all results have a
             // frequency. Furthermore, some results ranked higher will have
             // lower frequenccy, which may be confusing to the user.
             // var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
             searchAddHit({}, hits, result.key);
-	}
-	$("#data").append(hits);
+        }
+        $("#data").append(hits);
     } else {
-	$("#data").append("<h3>No results</h3>");
+        $("#data").append("<h3>No results</h3>");
     }
 }
 
@@ -1092,6 +1100,8 @@ $(document).ready(function()
 		      maybePowertip(".rtoolbutton", {placement: 'sw'});
 		  });
 
+var ta_data = [];
+
 function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
@@ -1107,14 +1117,14 @@ function jumpRender(datum) {
 }
 
 function jumpInit() {
-    var ta_data = [];
     var keys = xindexObj.allKeys();
     for(const key of keys) {
         ta_data.push({
             value: key,
             nicename: xindexObj.topicName(key),
-            tokens: [xindexObj.topicRawname(key)],
+            rawname: xindexObj.topicRawname(key),
             nicelow: xindexObj.topicName(key).toLowerCase(),
+            rawlow: xindexObj.topicRawname(key).toLowerCase(),
             uid: xindexObj.topicUid(key)
         });
     }
