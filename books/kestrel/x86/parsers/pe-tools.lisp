@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed PE files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,9 @@
 ;; TODO: Should these be in the x86isa package?
 
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/bv-lists/byte-listp" :dir :system)
 
 (defund get-pe-sections (parsed-pe)
   (acl2::lookup-eq-safe :sections parsed-pe))
@@ -150,3 +152,28 @@
 
 (defun get-all-pe-symbols (parsed-pe)
   (get-all-symbols-from-pe-symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe) nil))
+
+(defun pe-sectionp (section)
+  (declare (xargs :guard t))
+  (and (consp section)
+       (let ((name (first section))
+             (info (rest section)))
+         (and (stringp name)
+              (symbol-alistp info)
+              (let ((header (lookup-eq :header info))
+                    (bytes (lookup-eq :raw-data info)))
+                (and (symbol-alistp header)
+                     (byte-listp bytes)))))))
+
+
+(defun pe-section-listp (sections)
+  (declare (xargs :guard t))
+  (if (not (consp sections))
+      (null sections)
+    (and (pe-sectionp (first sections))
+         (pe-section-listp (rest sections)))))
+
+(defun parsed-pe-p (pe)
+  (declare (xargs :guard t))
+  (and (symbol-alistp pe)
+       (pe-section-listp (lookup-eq :sections pe))))

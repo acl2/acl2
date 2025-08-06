@@ -792,31 +792,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun acl2::pe-sectionp (section)
-  (declare (xargs :guard t))
-  (and (consp section)
-       (let ((name (first section))
-             (info (rest section)))
-         (and (stringp name)
-              (symbol-alistp info)
-              (let ((header (lookup-eq :header info))
-                    (bytes (lookup-eq :raw-data info)))
-                (and (symbol-alistp header)
-                     (acl2::byte-listp bytes)))))))
 
-
-(defun acl2::pe-section-listp (sections)
-  (declare (xargs :guard t))
-  (if (not (consp sections))
-      (null sections)
-    (and (acl2::pe-sectionp (first sections))
-         (acl2::pe-section-listp (rest sections)))))
-
-;move
-(defun acl2::parsed-pe-p (pe)
-  (declare (xargs :guard t))
-  (and (symbol-alistp pe)
-       (acl2::pe-section-listp (lookup-eq :sections pe))))
 
 (defun pe64-regions-to-load-aux (sections acc)
   (declare (xargs :guard (and (acl2::pe-section-listp sections)
