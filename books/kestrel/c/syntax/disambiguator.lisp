@@ -3571,11 +3571,13 @@
     "If the GCC flag is @('nil') (i.e. no GCC extensions),
      the initial disambiguation table is empty.
      If the flag is @('t'), for now the only difference is that
-     we initialize the disambiguation table with some GCC built-ins.
-     For now we only add some built-ins
+     we initialize the disambiguation table with some "
+    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
+    ". For now we only add some built-ins
      that we have observed in some preprocessed files.
-     We should revisit this, adding all the GCC built-ins,
-     with clear and accurate references.")
+     We should revisit this, adding all the "
+    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
+    ", with clear and accurate references.")
    (xdoc::p
     "We also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.

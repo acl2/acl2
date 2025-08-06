@@ -40,6 +40,13 @@
 (defval *gcc-builtin-functions*
   :parents (*gcc-builtin*)
   :short "A partial list of functions built-in to GCC."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Some of the functions here do not seem to be documented in the GCC
+       manual, but have been observed in real-world code accepted by GCC.
+       In particular, the built-ins ending in @('\"_chk\"'),
+       which were observed in glibc."))
   (list (ident "__atomic_signal_fence")
         (ident "__builtin___memcpy_chk")
         (ident "__builtin___memmove_chk")
