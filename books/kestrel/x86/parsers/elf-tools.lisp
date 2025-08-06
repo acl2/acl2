@@ -226,7 +226,8 @@
            (parsed-elfp (mv-nth 1 (parse-elf filename state))))
   :hints (("Goal" :in-theory (enable parse-elf))))
 
-;; Returns an error triple (mv erp res state) where res contains information about the given ELF file.
+;; Reads the given ELF file and returns some info about it, or returns an error.
+;; Returns an error triple (mv erp info state).
 (defund elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
@@ -236,8 +237,10 @@
        ;; (sections (lookup-eq-safe :sections parsed-elf))
        ;; (section-names (strip-cars sections))
        (info nil) ; to be extended below
+       ;; TODO: Or just clear out the :bytes and :sections (which might be huge)
        (info (acons :type (lookup-eq-safe :type parsed-elf) info))
-       ;; (info (acons :section-names section-names info))
+       (info (acons :machine (lookup-eq-safe :machine parsed-elf) info))
+       (info (acons :entry (lookup-eq-safe :entry parsed-elf) info))
        (info (acons :section-header-table (lookup-eq-safe :section-header-table parsed-elf) info))
        (info (acons :program-header-table (lookup-eq-safe :program-header-table parsed-elf) info))
        (info (acons :symbol-table (lookup-eq-safe :symbol-table parsed-elf) info))
