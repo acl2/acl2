@@ -191,12 +191,6 @@
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthmd getbit-of-logand-becomes-bvand-of-getbit-and-getbit
-  (equal (getbit n (logand a b))
-         (bvand 1 (getbit n a)
-                (getbit n b)))
-  :hints (("Goal" :in-theory (enable bvand getbit-of-logand))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvand-with-mask-basic-arg2
@@ -335,6 +329,17 @@
   ;;                              unsigned-byte-p-of-bvand-simple)))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Introduces BVAND
+(defthmd getbit-of-logand-becomes-bvand-of-getbit-and-getbit
+  (equal (getbit n (logand a b))
+         (bvand 1 (getbit n a)
+                (getbit n b)))
+  :hints (("Goal" :in-theory (enable bvand getbit-of-logand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm getbit-of-bvand
   (implies (and (< n size)
                 (natp n)
@@ -345,6 +350,24 @@
   :hints (("Goal" :in-theory (enable bvand
                                      getbit-of-logand-becomes-bvand-of-getbit-and-getbit))))
 
+;drop?
+(defthmd getbit-of-bvand-core
+  (implies (and (< n size) (posp size))
+           (equal (getbit n (bvand size x y))
+                  (bvand 1 (getbit n x) (getbit n y))))
+  :hints (("Goal" :cases ((natp n))
+           :in-theory (enable bvand
+                              getbit-of-logand-becomes-bvand-of-getbit-and-getbit))))
+
+;bozo more like this, or a general rule with a syntaxp hyp?
+(defthm getbit-of-bvand-too-high
+  (implies (and (<= size n)
+                (natp n)
+                (natp size))
+           (equal (getbit n (bvand size x y))
+                  0))
+  :hints (("Goal" :in-theory (enable getbit-too-high))))
+
 (defthm getbit-of-bvand-eric
   (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?
                 (< n size) ;other case?
@@ -352,6 +375,18 @@
                 (integerp size))
            (equal (getbit n (bvand size x y))
                   (bvand 1 (getbit n x) (getbit n y)))))
+
+;BBOZO think more about this in the size > 1 case( ld "bvand.lisp") - do we want to push the getbit through?
+;in the size=1 case (common when bit blasting) we do NOT want to push the GETBIT through - can be expensive!
+(defthm getbit-of-bvand-eric-2
+  (implies (and (< 0 size)
+                (integerp size) ;drop?
+                )
+           (equal (getbit 0 (bvand size x y))
+                  (bvand 1 x y)))
+  :hints (("Goal" :in-theory (enable getbit slice logtail) :cases ((integerp size)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
  (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)

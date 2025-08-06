@@ -268,14 +268,6 @@
                   (getbit n y)))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
-;bozo more like this, or a general rule with a syntaxp hyp?
-(defthm getbit-of-bvand-too-high
-  (implies (and (<= size n)
-                (natp n)
-                (natp size))
-           (equal (getbit n (bvand size x y))
-                  0))
-  :hints (("Goal" :in-theory (enable getbit-too-high))))
 
 ;; this is x AND NOT(x) = 0 when we represent the NOT as an XOR with ones
 (defthm bvand-of-bvxor-of-ones-same
@@ -689,17 +681,6 @@
                   (slice (+ -1 size) low (bvand size x y))))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthmd getbit-of-bvand-core
-  (implies (and (< n size) (posp size))
-           (equal (getbit n (bvand size x y))
-                  (bvand 1 (getbit n x) (getbit n y))))
-  :hints
-  (("Goal"
-    :in-theory
-    (e/d
-     (getbit bvand bvchop-of-logtail slice)
-     (LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
-
 ;drop in favor of a general trim rule?
 (defthm bvand-of-bvnot-trim
   (implies (and (< low size)
@@ -710,17 +691,15 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm slice-of-bvand
-  (implies (and (< highbit size)
-                (integerp size)
-                (<= 0 size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvand size x y))
-                  (bvand (+ 1 highbit (- lowbit))
-                           (slice highbit lowbit x)
-                           (slice highbit lowbit y))))
-  :hints (("Goal" :cases ((natp (+ 1 highbit (- lowbit))))
+  (implies (and (< high size)
+                (natp size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvand size x y))
+                  (bvand (+ 1 high (- low))
+                         (slice high low x)
+                         (slice high low y))))
+  :hints (("Goal" :cases ((natp (+ 1 high (- low))))
            :in-theory (e/d (slice bvand natp logtail-of-bvchop)
                            (slice-becomes-bvchop)))))
 
