@@ -968,10 +968,10 @@ function searchGoMain(query_str) {
     }
 
     // Search Ranking System:
-    // Rank 0: Exact matches (key, rawname, title)
-    // Rank 0.5: Prefix matches (key, rawname, title)
-    // Rank 1: Exact phrase matches in titles
-    // Rank 1.5: Individual word matches in titles (multi-word queries)
+    // Rank 0: Exact matches of topics
+    // Rank 0.5: Prefix matches of topis
+    // Rank 1: Substring matches in topics
+    // Rank 1.5: Individual word matches in topics (multi-word queries)
     // Rank 2: Exact phrase matches in short descriptions
     // Rank 2.5: Individual word matches in short descriptions (multi-word queries)
     // Within each rank, results are sorted by ACL2 Sources priority, then frequency
@@ -998,13 +998,13 @@ function searchGoMain(query_str) {
 	// 1. Other title matches
 	for(const key of keys) {
             if (key in matches) continue;
-            var name_lc = xindexObj.topicRawname(key).toLowerCase();
+            var rawname_lc = xindexObj.topicRawname(key).toLowerCase();
             // Check for exact phrase first (higher priority)
-            if (name_lc.indexOf(query_str) !== -1) {
+            if (rawname_lc.indexOf(query_str) !== -1) {
 		if (addResult(key, 1)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(name_lc, query_tokenized)) {
+            else if (query_tokenized.length > 1 && allWordsMatch(rawname_lc, query_tokenized)) {
 		if (addResult(key, 1.5)) break;
             }
 	}
