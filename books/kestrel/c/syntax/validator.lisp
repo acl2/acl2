@@ -11,6 +11,7 @@
 
 (in-package "C$")
 
+(include-book "builtin")
 (include-book "unambiguity")
 (include-book "validation-information")
 
@@ -282,6 +283,26 @@
        (new-scopes (append (butlast scopes 1) (list new-scope))))
     (change-valid-table table :scopes new-scopes))
   :guard-hints (("Goal" :in-theory (enable acons)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define valid-add-ords-file-scope ((idents ident-listp)
+                                   (info valid-ord-infop)
+                                   (table valid-tablep))
+  :returns (new-table valid-tablep)
+  :short "Add a list of ordinary identifier
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee valid-add-ord-file-scope)."))
+  (cond ((endp idents) (valid-table-fix table))
+        (t (valid-add-ords-file-scope (cdr idents)
+                                      info
+                                      (valid-add-ord-file-scope (car idents)
+                                                                info
+                                                                table))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5833,7 +5854,13 @@
    (xdoc::p
     "We extend the validation table with the identifier @('__func__')
      [C17:6.4.2.2].
-     In our currently approximate type system, this has array type.")
+     In our currently approximate type system, this has array type.
+     If the GCC flag is enabled (i.e. GCC extensions are allowed),
+     we further extend the table with the identifiers @('__FUNCTION__') and
+     @('__PRETTY_FUNCTION__') (GCC manual, "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
+                 "``Function Names''")
+    ").")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -5922,12 +5949,18 @@
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
                  (fundef-fix fundef)))
-       (table (valid-add-ord (ident "__func__")
-                             (make-valid-ord-info-objfun
-                              :type (type-array)
-                              :linkage (linkage-none)
-                              :defstatus (valid-defstatus-defined))
-                             table))
+       (ainfo (make-valid-ord-info-objfun
+                :type (type-array)
+                :linkage (linkage-none)
+                :defstatus (valid-defstatus-defined)))
+       (table (valid-add-ord (ident "__func__") ainfo table))
+       (table (if (ienv->gcc ienv)
+                  (valid-add-ord (ident "__FUNCTION__")
+                                 ainfo
+                                 (valid-add-ord (ident "__PRETTY_FUNCTION__")
+                                                ainfo
+                                                table))
+                table))
        ((unless (stmt-case fundef.body :compound))
         (retmsg$ "The function definition ~x0 ~
                   does not have a compound statement as body."
@@ -6070,164 +6103,11 @@
                           :linkage (linkage-external)
                           :defstatus (valid-defstatus-defined)))
                   (table
-                    (valid-add-ord-file-scope
-                     (ident "__atomic_signal_fence") finfo table))
+                    (valid-add-ords-file-scope
+                      *gcc-builtin-functions* finfo table))
                   (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_add_overflow") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_bswap16") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_bswap32") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_bswap64") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_choose_expr") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_clz") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_clzl") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_clzll") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_constant_p") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_ctzl") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_dynamic_object_size") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_expect") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_memchr") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_memcmp") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_memcpy") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_memset") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_mul_overflow") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_object_size") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_return_address") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_strcpy") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_strlen") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_strncat") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_strncpy") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_sub_overflow") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_unreachable") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_va_end") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__builtin_va_start") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__eax") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__ebx") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__ecx") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__edx") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__esi") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__edi") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__ebp") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__esp") oinfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_add_and_fetch") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_and_and_fetch") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_bool_compare_and_swap") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_add") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_and") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_nand") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_or") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_sub") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_fetch_and_xor") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_lock_release") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_lock_test_and_set") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_nand_and_fetch") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_or_and_fetch") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_sub_and_fetch") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_synchronize") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_val_compare_and_swap") finfo table))
-                  (table
-                    (valid-add-ord-file-scope
-                     (ident "__sync_xor_and_fetch") finfo table)))
+                    (valid-add-ords-file-scope
+                      *gcc-builtin-vars* oinfo table)))
                table)
            table))
        ((erp new-edecls table)
