@@ -13,6 +13,7 @@
 (include-book "files")
 (include-book "grammar-characters")
 (include-book "unambiguity")
+(include-book "ascii-identifiers")
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
@@ -3769,7 +3770,8 @@
 (define print-fileset ((tunits transunit-ensemblep)
                        (options prioptp)
                        (gcc booleanp))
-  :guard (transunit-ensemble-unambp tunits)
+  :guard (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-aidentp tunits gcc))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
