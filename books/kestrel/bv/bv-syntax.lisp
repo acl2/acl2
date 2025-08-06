@@ -42,6 +42,7 @@
 (defconst *trimmable-arithmetic-operators* ; rename to *trimmable-arithmetic-bv-operators* ?
   '(bvplus bvmult bvminus bvuminus))
 
+;; WARNING: Keep in sync with trim-helper-rules in Axe.
 (defconst *trimmable-operators*
   (append *trimmable-arithmetic-operators*
           *trimmable-non-arithmetic-operators*))
