@@ -1743,6 +1743,7 @@
                           ,@value-kind-thms
                           not
                           return-type-of-stmt-value-return
+                          return-type-of-stmt-value-none
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
@@ -3083,7 +3084,9 @@
         (and result-var
              (atc-type-to-type-to-quoted-thms body-type prec-tags)))
        (lemma-hints
-        `(("Goal" :in-theory '(exec-fun-open
+        `(("Goal" :in-theory '(exec-fun-open-return
+                               exec-fun-open-noreturn
+                               (:e type-void)
                                not-zp-of-limit-variable
                                ,fn-fun-env-thm
                                ,init-scope-expand-thm
@@ -3094,6 +3097,7 @@
                                mv-nth-of-cons
                                (:e zp)
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                stmt-value-return->value?-of-stmt-value-return
                                value-option-fix-when-value-optionp
                                value-optionp-when-valuep
@@ -3705,12 +3709,10 @@
               (continuep (test-value test-val))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
               ((when (not continuep))
-               (mv (stmt-value-return nil) (compustate-fix compst)))
+               (mv (stmt-value-none) (compustate-fix compst)))
               ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
               ((when (errorp sval)) (mv sval compst))
-              ((when (and (stmt-value-case sval :return)
-                          (valuep (stmt-value-return->value? sval))))
-               (mv sval compst)))
+              ((when (stmt-value-case sval :return)) (mv sval compst)))
            (,exec-stmt-while-for-fn compst (1- limit))))
        (exec-stmt-while-for-fn-hints
         '(("Goal" :in-theory '(acl2::zp-compound-recognizer
@@ -4194,7 +4196,7 @@
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
-                        (mv (stmt-value-return nil) ,final-compst))))
+                        (mv (stmt-value-none) ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -4235,6 +4237,7 @@
                                ,@value-kind-thms
                                not
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                stmt-value-return->value?-of-stmt-value-return
                                stmt-value-return-of-value-option-fix-value?
                                (:e c::value-option-fix)
@@ -4380,14 +4383,14 @@
                                                     prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
-                              (mv (stmt-value-return nil) ,final-compst))))
+                              (mv (stmt-value-none) ,final-compst))))
        (concl-thm `(equal (exec-stmt-while ',loop-test
                                            ',loop-body
                                            ,compst-var
                                            ,fenv-var
                                            ,limit-var)
                           (b* ((,affect-binder (,fn ,@formals)))
-                            (mv (stmt-value-return nil) ,final-compst))))
+                            (mv (stmt-value-none) ,final-compst))))
        (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
@@ -4533,6 +4536,7 @@
                                 (:e value-option-fix)
                                 not-errorp-when-stmt-valuep
                                 return-type-of-stmt-value-return
+                                return-type-of-stmt-value-none
                                 ,exec-stmt-while-for-fn
                                 ,@struct-reader-return-thms
                                 ,@struct-writer-return-thms

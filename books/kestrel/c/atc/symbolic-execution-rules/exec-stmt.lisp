@@ -62,7 +62,7 @@
                                                 (1- limit)))
                   (compustatep compst1))
              (equal (exec-stmt s compst fenv limit)
-                    (mv (stmt-value-return nil) compst1)))
+                    (mv (stmt-value-none) compst1)))
     :enable exec-stmt)
 
   (defruled exec-stmt-when-if
@@ -79,7 +79,7 @@
              (equal (exec-stmt s compst fenv limit)
                     (if test
                         (exec-stmt (stmt-if->then s) compst fenv (1- limit))
-                      (mv (stmt-value-return nil) compst))))
+                      (mv (stmt-value-none) compst))))
     :enable exec-stmt)
 
   (defruled exec-stmt-when-if-and-true
@@ -111,7 +111,7 @@
                   (booleanp test)
                   (test* (not test)))
              (equal (exec-stmt s compst fenv limit)
-                    (mv (stmt-value-return nil) compst)))
+                    (mv (stmt-value-none) compst)))
     :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-ifelse

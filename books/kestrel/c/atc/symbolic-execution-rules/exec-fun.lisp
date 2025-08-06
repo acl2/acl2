@@ -42,7 +42,7 @@
      the recursive functions represent loops,
      and their correctness theorems do not involve @(tsee exec-fun)."))
 
-  (defruled exec-fun-open
+  (defruled exec-fun-open-return
     (implies (and (not (zp limit))
                   (equal info (fun-env-lookup fun fenv))
                   info
@@ -68,8 +68,34 @@
                     (mv val? (pop-frame compst1))))
     :enable exec-fun)
 
+  (defruled exec-fun-open-noreturn
+    (implies (and (not (zp limit))
+                  (equal info (fun-env-lookup fun fenv))
+                  info
+                  (equal scope (init-scope (fun-info->params info) args))
+                  (scopep scope)
+                  (equal sval+compst1
+                         (exec-block-item-list (fun-info->body info)
+                                               (push-frame (make-frame
+                                                            :function fun
+                                                            :scopes (list
+                                                                     scope))
+                                                           compst)
+                                    fenv
+                                    (1- limit)))
+                  (equal sval (mv-nth 0 sval+compst1))
+                  (equal compst1 (mv-nth 1 sval+compst1))
+                  (stmt-valuep sval)
+                  (stmt-value-case sval :none)
+                  (equal (type-void)
+                         (tyname-to-type (fun-info->result info))))
+             (equal (exec-fun fun args compst fenv limit)
+                    (mv nil (pop-frame compst1))))
+    :enable exec-fun)
+
   (defval *atc-exec-fun-rules*
-    '(exec-fun-open
+    '(exec-fun-open-return
+      exec-fun-open-noreturn
       (:e fun-info->params)
       (:e fun-info->result)
       (:e fun-info->body))))

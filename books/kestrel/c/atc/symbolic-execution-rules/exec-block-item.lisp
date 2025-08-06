@@ -49,7 +49,7 @@
                   (equal compst2 (create-var var val compst1))
                   (compustatep compst2))
              (equal (exec-block-item item compst fenv limit)
-                    (mv (stmt-value-return nil) compst2)))
+                    (mv (stmt-value-none) compst2)))
     :enable exec-block-item)
 
   (defruled exec-block-item-when-stmt
@@ -106,7 +106,7 @@
     (implies (and (not (zp limit))
                   (compustatep compst))
              (equal (exec-block-item-list nil compst fenv limit)
-                    (mv (stmt-value-return nil) compst)))
+                    (mv (stmt-value-none) compst)))
     :enable exec-block-item-list)
 
   (defruled exec-block-item-list-when-consp
@@ -119,8 +119,7 @@
                   (stmt-valuep sval)
                   (equal compst1 (mv-nth 1 sval+compst1)))
              (equal (exec-block-item-list items compst fenv limit)
-                    (if (and (equal (stmt-value-kind sval) :return)
-                             (valuep (stmt-value-return->value? sval)))
+                    (if (equal (stmt-value-kind sval) :return)
                         (mv sval compst1)
                       (exec-block-item-list (cdr items)
                                             compst1
@@ -133,9 +132,7 @@
            (b* (((mv sval compst)
                  (exec-block-item-list items1 compst fenv limit))
                 ((when (errorp sval)) (mv sval compst))
-                ((when (and (stmt-value-case sval :return)
-                            (stmt-value-return->value? sval)))
-                 (mv sval compst)))
+                ((when (stmt-value-case sval :return)) (mv sval compst)))
              (exec-block-item-list items2 compst fenv (- limit (len items1)))))
     :induct (ind items1 compst fenv limit)
     :enable (exec-block-item-list
@@ -149,9 +146,7 @@
             ((mv sval compst)
              (exec-block-item (car items) compst fenv (1- limit)))
             ((when (errorp sval)) nil)
-            ((when (and (stmt-value-case sval :return)
-                        (stmt-value-return->value? sval)))
-             nil))
+            ((when (stmt-value-case sval :return)) nil))
          (ind (cdr items) compst fenv (1- limit))))))
 
   (defruled append-of-take-and-nthcdr

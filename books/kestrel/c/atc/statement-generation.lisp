@@ -538,14 +538,13 @@
   (xdoc::topstring
    (xdoc::p
     "This extends @(tsee atc-gen-term-type-formula)
-     to also return a term that is the result (in the C sense) of @('uterm'),
-     if @('type') is not @('void'), otherwise the result is @('nil').
+     to also return a term that is the statement value result of @('uterm').
      We should probably integrate this code
      with @(tsee atc-gen-term-type-formula)."))
   (b* (((mv type-formula type-thms)
         (atc-gen-term-type-formula uterm type affect inscope prec-tags))
        ((when (type-case type :void))
-        (mv '(stmt-value-return nil) type-formula type-thms))
+        (mv '(stmt-value-none) type-formula type-thms))
        ((mv uterms & &) (atc-uterm-to-components uterm (1+ (len affect)))))
     (mv `(stmt-value-return ,(car uterms)) type-formula type-thms)))
 
@@ -1262,7 +1261,7 @@
    (xdoc::p
     "This is used to lift generated statements
      to generated block items.
-     Besdies the block item,
+     Besides the block item,
      we also generate a theorem saying that
      @(tsee exec-block-item) applied to the quoted block item
      yields an @(tsee mv) pair consisting of
@@ -1275,7 +1274,7 @@
      an assertion that the term returns a value, or values,
      of the expected type(s).
      Callers pass a non-@('nil') @('uterm?')
-     when the blok item corresponds to a full ACL2 term
+     when the block item corresponds to a full ACL2 term
      (e.g. a conditional);
      while they pass @('nil') otherwise
      (e.g. for an assignment).")
@@ -1383,9 +1382,8 @@
      We return not only the block item,
      and also a symbol table updated with the variable.")
    (xdoc::p
-    "We generate a theorem about executing the initializer.
-     We will soon generate an additional theorem,
-     about executing the block item."))
+    "We generate a theorem about executing the initializer,
+     and a theorem about executing the block item."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
@@ -1458,7 +1456,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv (stmt-value-return nil)
+                             (mv (stmt-value-none)
                                  ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula
                                         gin.context
@@ -1707,7 +1705,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv (stmt-value-return nil) ,new-compst)))
+                             (mv (stmt-value-none) ,new-compst)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -1738,7 +1736,7 @@
                              stmt-thm-name
                              nil
                              (type-void)
-                             '(stmt-value-return nil)
+                             '(stmt-value-none)
                              new-compst
                              (change-stmt-gin
                               gin
@@ -3558,7 +3556,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv (stmt-value-return nil) ,gin.compst-var)))
+                             (mv (stmt-value-none) ,gin.compst-var)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3739,6 +3737,7 @@
                                ,item-thm
                                exec-block-item-list-of-nil
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                stmt-value-return->value?-of-stmt-value-return
                                stmt-value-return-of-value-option-fix-value?
                                value-option-fix-when-value-optionp
@@ -3884,6 +3883,7 @@
                                (:e value-option-fix)
                                not-zp-of-limit-minus-const
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                stmt-value-return->value?-of-stmt-value-return
                                stmt-value-return-of-value-option-fix-value?
                                (:e valuep)
@@ -4003,8 +4003,7 @@
                        (stmt-valuep sval)
                        (equal compst1 (mv-nth 1 sval+compst1)))
                   (equal (exec-block-item-list items compst fenv limit)
-                         (if (and (equal (stmt-value-kind sval) :return)
-                                  (valuep (stmt-value-return->value? sval)))
+                         (if (equal (stmt-value-kind sval) :return)
                              (mv sval compst1)
                            (exec-block-item-list (nthcdr ,n items)
                                                  compst1
@@ -4083,6 +4082,7 @@
                                (:e valuep)
                                (:e value-option-fix)
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                stmt-value-return->value?-of-stmt-value-return
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4459,10 +4459,9 @@
                                                ,gin.compst-var
                                                ,gin.fenv-var
                                                ,gin.limit-var)
-                         (mv (stmt-value-return
-                              ,(if (type-case then-type :void)
-                                   nil
-                                 uterm))
+                         (mv ,(if (type-case then-type :void)
+                                  '(stmt-value-none)
+                                `(stmt-value-return ,uterm))
                              ,gin.compst-var)))
        (formula1 (atc-contextualize formula1
                                     gin.context
@@ -4730,6 +4729,7 @@
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -4761,6 +4761,7 @@
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -5326,7 +5327,7 @@
                                              ,gin.compst-var
                                              ,gin.fenv-var
                                              ,gin.limit-var)
-                                  (mv (stmt-value-return nil) ,new-compst)))
+                                  (mv (stmt-value-none) ,new-compst)))
        (stmt-exec-formula (atc-contextualize stmt-exec-formula
                                              gin.context
                                              gin.fn
@@ -5379,7 +5380,7 @@
                                  stmt-thm-name
                                  uterm
                                  (type-void)
-                                 '(stmt-value-return nil)
+                                 '(stmt-value-none)
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5487,7 +5488,7 @@
                                           item-limit
                                           events
                                           item-thm-name
-                                          '(stmt-value-return nil)
+                                          '(stmt-value-none)
                                           new-compst
                                           new-context
                                           new-inscope
