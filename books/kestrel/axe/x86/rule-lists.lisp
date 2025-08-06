@@ -2121,7 +2121,10 @@
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
           *signed-recognizers* ;; these are just signed-byte-p
-          '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
+          '(acl2::boolif-of-if-arg1
+            acl2::boolif-of-if-arg2
+            acl2::boolif-of-if-arg3
+            ;; It would be nice if all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
             ;; xw-of-rflags-and-set-flag
