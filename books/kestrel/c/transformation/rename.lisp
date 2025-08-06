@@ -19,7 +19,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
-(include-book "../syntax/abstract-syntax")
+(include-book "../syntax/abstract-syntax-trees")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

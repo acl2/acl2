@@ -336,8 +336,7 @@
             :in-theory (e/d (;ripple-carry-adder
                              (:induction ripple-carry-adder)
                              bvplus ;getbit-of-+
-                                                GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                                )
+                             )
                             ((:definition ripple-carry-adder)
                              ;;
                              ;BVCAT-OF-+-LOW ;looped

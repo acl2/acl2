@@ -21,7 +21,7 @@
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

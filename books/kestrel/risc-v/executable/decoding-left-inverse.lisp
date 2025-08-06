@@ -15,7 +15,7 @@
 
 (include-book "../specification/encoding")
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))

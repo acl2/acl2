@@ -2047,23 +2047,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this only contains a few components,
-     but we plan to add more components.")
+    "For now this only contains the following information:")
+   (xdoc::ul
+    (xdoc::li
+     "The formats of the three character types.")
+    (xdoc::li
+     "The formats of the standard signed integer types
+      and their unsigned counterparts.")
+    (xdoc::li
+     "A flag saying whether the GCC extensions are enabled or not."))
    (xdoc::p
-    "Currently we include the format of the three character types,
-     and the standard signed integer types and their unsigned counterparts.")
+    "We plan to add more information.")
    (xdoc::p
     "The reason for using
      the ``intermediate'' fixtype @(tsee char+short+int+long+llong-format)
      is the same as explained in @(tsee integer-format)
      about the ``intermediate'' fixtype used there.
-     We may eliminate this at some point."))
+     We may eliminate this at some point.")
+   (xdoc::p
+    "The GCC flag could evolve into a rich set of C versions."))
   ((char+short+int+long+llong-format
     char+short+int+long+llong-format
     :reqfix (if (char+short+int+long+llong-format-wfp
                  char+short+int+long+llong-format)
                 char+short+int+long+llong-format
-              (char8+short16+int16+long32+llong64-tcnt))))
+              (char8+short16+int16+long32+llong64-tcnt)))
+   (gcc bool))
   :require (char+short+int+long+llong-format-wfp
             char+short+int+long+llong-format)
   :pred ienvp)
@@ -2246,6 +2255,31 @@
     (>= size 16)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-short-wfp
+                                           ienv->char-size
+                                           ienv->short-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('short') objects."
+  (/ (ienv->short-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->short-byte-size)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->int-bit-size ((ienv ienvp))
@@ -2266,6 +2300,31 @@
   (defret ienv->int-bit-size-lower-bound
     (>= size 16)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-int-wfp
+                                           ienv->char-size
+                                           ienv->int-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('int') objects."
+  (/ (ienv->int-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->int-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2288,6 +2347,31 @@
     (>= size 32)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-long-wfp
+                                           ienv->char-size
+                                           ienv->long-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long') objects."
+  (/ (ienv->long-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->long-byte-size)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->llong-bit-size ((ienv ienvp))
@@ -2308,6 +2392,31 @@
   (defret ienv->llong-bit-size-lower-bound
     (>= size 64)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-llong-wfp
+                                           ienv->char-size
+                                           ienv->llong-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long long') objects."
+  (/ (ienv->llong-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->llong-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

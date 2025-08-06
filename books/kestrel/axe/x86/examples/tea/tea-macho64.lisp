@@ -48,23 +48,20 @@
   :target "_encrypt"
   :stack-slots 8
   :inputs ((v u32[2]) (k u32[4]))
-  ;; todo: have the tool translate the items in the tuple:
   ;; todo: allow the :output to be just "v":
   :output (:tuple (:mem32 (rdi x86)) ;extract v0
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
-  ;; TODO: How much of this can we automate?
-  ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
   :extra-assumptions '(;; Introduce byte vars for v:
-                 ;; Each of v0, etc is a u32, so we split it into 8 bytes:
-                 (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
-                 (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
-                 ;; Introduce byte vars for k:
-                 (equal k0 (bvcat2 8 key0 8 key1 8 key2 8 key3))
-                 (equal k1 (bvcat2 8 key4 8 key5 8 key6 8 key7))
-                 (equal k2 (bvcat2 8 key8 8 key9 8 key10 8 key11))
-                 (equal k3 (bvcat2 8 key12 8 key13 8 key14 8 key15)))
-   :produce-function nil ; we only need the dag
-   )
+                       ;; Each of v0, etc is a u32, so we split it into 8 bytes:
+                       (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
+                       (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
+                       ;; Introduce byte vars for k:
+                       (equal k0 (bvcat2 8 key0 8 key1 8 key2 8 key3))
+                       (equal k1 (bvcat2 8 key4 8 key5 8 key6 8 key7))
+                       (equal k2 (bvcat2 8 key8 8 key9 8 key10 8 key11))
+                       (equal k3 (bvcat2 8 key12 8 key13 8 key14 8 key15)))
+  :produce-function nil ; we only need the dag
+  )
 
 ;; Prove the equivalence of the code and the spec:
 (prove-equal-with-axe *tea*

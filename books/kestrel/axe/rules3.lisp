@@ -102,7 +102,7 @@
                            <-of-constant-when-unsigned-byte-p-size-param ;fixme why?
                            )))
 
-(local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
+;(local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
 
 ;todo: move these (and disable them)?
 
@@ -1023,7 +1023,7 @@
 ;;                 )
 ;;            (<= (+ z (* (expt 2 n) x))
 ;;                (* (expt 2 n) y)))
-;;   :hints (("Goal" :in-theory (disable  ineq-hack *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
+;;   :hints (("Goal" :in-theory (disable *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
 ;;            :use (:instance multiply-both-sides-hack (y y) (x x) (z (expt 2 n))))))
 
 ;; (defthm plus-of-times-expt-bound2
@@ -1886,7 +1886,7 @@
                     (bitnot (bitxor (getbit size x) (getbit size y))))))
   :hints (("Goal"
            :use (:instance getbit-of-+ (x (ifix x)) (y (ifix y)))
-           :in-theory (e/d (bvplus GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+           :in-theory (e/d (bvplus
                                    slice-of-bvplus-cases-helper)
                            (getbit-of-+)))))
 
@@ -2947,8 +2947,6 @@
                 (integerp free))
            (not (unsigned-byte-p n x))))
 
-;(include-book "rules2") ;drop but need ineq-hack below ;; old?: (but that breaks SBVDIV-OF-SUBTRACT-4-BY-MINUS-4 below)? need BVCHOP-OF-SBP-EQUAL-CONSTANT
-
 ;; (defthm unsigned-byte-p-of-*-of-expt-and-/-of-expt
 ;;   (implies (and (= (+ 1 (- high low)) size) ; gen
 ;;                 (<= low high)
@@ -3574,7 +3572,7 @@
                            (getbit-when-bvlt-of-small-helper
                             equal-of-bvchop-extend
                             bvcat-of-getbit-and-x-adjacent
-                            getbit-when-<=-of-bvchop-and-constant-high)))))
+                            getbit-when->=-of-bvchop-and-constant-high)))))
 
 (defthm equal-of-0-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -4374,7 +4372,7 @@
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (;bvlt
                                    bvplus getbit-of-+
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvchop-of-sum-cases sbvlt
                                    bvchop-when-i-is-not-an-integer
                                    bvchop-when-top-bit-1)
@@ -4454,7 +4452,7 @@
            (not (SBVLT 32 (BVPLUS 32 '1 x) '0)))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -4472,7 +4470,7 @@
 ;;                   ))
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
 ;;                                         GETBIT-TOO-HIGH
-;;                                         GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+;;
 ;;                                         UNSIGNED-BYTE-P
 ;;                                         bvchop-of-sum-cases sbvlt
 ;;                                         bvchop-when-i-is-not-an-integer
@@ -4490,7 +4488,7 @@
                   (not (equal x 255))))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -4511,7 +4509,7 @@
            (BVLT size x k))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -5357,7 +5355,7 @@
            (bvlt size x k))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
                                         GETBIT-TOO-HIGH
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         UNSIGNED-BYTE-P
                                         bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
@@ -6214,7 +6212,7 @@
                                           bvchop-of-minus
                                           bvminus
                                           bvlt
-                                          getbit-when-val-is-not-an-integer
+
                                           slice-becomes-getbit)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
@@ -6537,7 +6535,6 @@
                             +-OF-MINUS-1-AND-BV2
                             ;; for speed:
                             *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE
-                            ;INEQ-HACK
                             BOUND-WHEN-USB)))))
 
 ;gen!
@@ -6568,7 +6565,7 @@
            (getbit 31 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvchop-when-i-is-not-an-integer
-                                        GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
                                    bvminus-becomes-bvplus-of-bvuminus)))))
@@ -7129,7 +7126,7 @@
            :expand (bvlt 31 x y)
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7161,7 +7158,7 @@
                     )
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7192,7 +7189,7 @@
            :expand ((:with unsigned-byte-p (UNSIGNED-BYTE-P SIZE Y)))
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7223,7 +7220,7 @@
                                    bvchop-of-minus
                                    bvminus
                                    bvlt
-                                   getbit-when-val-is-not-an-integer)
+                                   )
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
                                    plus-1-and-bvchop-becomes-bvplus
@@ -7334,7 +7331,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7385,7 +7382,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvlt
                             bvplus
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7413,7 +7410,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7440,7 +7437,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7471,7 +7468,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7503,7 +7500,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7535,7 +7532,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7567,7 +7564,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7602,7 +7599,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7634,7 +7631,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7662,7 +7659,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7696,7 +7693,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7729,7 +7726,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7765,7 +7762,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7793,7 +7790,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -7820,7 +7817,7 @@
                             bvcat logapp
                             bvplus
                             bvmult
-                            getbit-when-val-is-not-an-integer
+
                             bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
@@ -9224,7 +9221,9 @@
                   (bvxor size (bvand size x y) (bvxor size (bvand size x z) (bvand size y z)))))
   :hints (("Goal"
            :do-not '(preprocess)
-           :in-theory (e/d (BVAND-1-BECOMES-BITAND BVOR-1-BECOMES-BITOR bitxor-of-bvand)
+           :in-theory (e/d (BVAND-1-BECOMES-BITAND BVOR-1-BECOMES-BITOR bitxor-of-bvand
+                                                   getbit-when-bvlt-of-small-helper
+)
                            (;GETBIT-OF-BVOR-ERIC
                             GETBIT-OF-BVand-ERIC
                             bvor-of-bvor-tighten-2 ; looped (but shouldn't have)
@@ -9868,7 +9867,7 @@
          (equal 0 (getbit 25 x)))
   :hints (("Goal"
            :use (:instance split-bv (x (bvchop 26 x)) (n 26) (m 25))
-           :in-theory (e/d (getbit-when-val-is-not-an-integer
+           :in-theory (e/d (
                             bvmult)
                            (bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
@@ -10228,7 +10227,8 @@
                                   logapp
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
-                            bvcat-equal-rewrite-alt)))))
+                            bvcat-equal-rewrite-alt
+                            getbit-when->-free)))))
 
 (defthm boolor-of-sbvlt-combine-gen-better-alt
   (implies (and (syntaxp (and (quotep k)
@@ -10527,7 +10527,7 @@
                       (bitxor (bv-array-read 1 (len data) n data) y)
                     (getbit 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -10539,7 +10539,7 @@
                       (bitxor y (bv-array-read 1 (len data) n data))
                     (getbit 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -10586,7 +10586,7 @@
                       (getbit m (bv-array-read (+ 1 m) (len data) n data))
                     0)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
+                                   )
                                   (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
@@ -11003,8 +11003,8 @@
                             bvplus bvlt bvchop-of-sum-cases lowbits-not-0-helper getbit-of-+
                                    bvcat
                             logapp sbvlt-rewrite)
-                           (GETBIT-WHEN-BOUND
-                            GETBIT-WHEN-BOUND4
+                           (GETBIT-WHEN-<-of-constant
+                            GETBIT-WHEN->=-OF-CONSTANT
                             BVCAT-OF-+-LOW
                             BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE)))))
@@ -12764,7 +12764,7 @@
                        (unsigned-byte-p 7 y))))
   :hints (("Goal"
            :use (:instance bvlt-of-one-more-when-not-bvlt-helper (z (bvchop 7 y)))
-           :in-theory (enable bvlt bvplus GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER bvchop-of-sum-cases))))
+           :in-theory (enable bvlt bvplus  bvchop-of-sum-cases))))
 
 (defthm cdr-of-bv-array-write-of-cons
   (implies (and (integerp len)
@@ -13294,7 +13294,7 @@
   (implies (and (not (sbvlt 32 x 0))
                 (sbvlt 32 x 100000)) ;gen!
            (not (sbvlt 32 (bvmult 32 '4 x) '0)))
-  :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable sbvlt-rewrite getbit-when-bvlt-of-small-helper))))
 
 ;if x<4 then 4x<16
 (defthm sbvlt-of-bvmult-4-and-16
@@ -13541,48 +13541,6 @@
            (equal (* (expt r i) (expt r (+ j (- i))))
                   (expt r j))))
 
-(local
- (DEFTHM GETBIT-OF-MINUS-EXPT-when->=
-  (IMPLIES (AND (>= SIZE SIZE2)
-                (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  1))))
-
-(DEFTHM GETBIT-OF-MINUS-EXPT-gen
-  (IMPLIES (AND (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  (if (>= SIZE SIZE2)
-                      1
-                    0))))
-
-(defthm getbit-when-<=-of-constant-high
-  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
-                (<= k x) ; k is a free var
-                (syntaxp (quotep k))
-                (< n (ceiling-of-lg k))
-                (<= (- (expt 2 (ceiling-of-lg k)) (expt 2 n)) k) ; k is a bit less than a power of 2
-                (unsigned-byte-p (ceiling-of-lg k) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (size (ceiling-of-lg k))))))
-
-(defthm getbit-when-<-of-constant-high
-  (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
-                (< k x) ; k is a free var
-                (syntaxp (quotep k))
-                (< n (ceiling-of-lg k))
-                (<= (+ -1 (- (expt 2 (ceiling-of-lg k)) (expt 2 n))) k) ; k is a bit less than a power of 2
-                (unsigned-byte-p (ceiling-of-lg k) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (size (ceiling-of-lg k))))))
-
 ;move
 (defthm <-of-bvchop-and-bvchop-when-not-<-of-bvchop-and-bvchop-smaller-cheap
   (implies (and (not (< (bvchop n-1 x) (bvchop n-1 y))) ; n-1 is a free var but we check it below
@@ -13730,7 +13688,7 @@
 ;;                             GETBIT-OF-ONE-LESS ; looped
 ;;                             exponents-add
 ;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
-;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN->=-OF-BVCHOP-AND-CONSTANT-HIGH
 ;;                             )))))
 
 ;; ;delete the more specific version
@@ -13764,7 +13722,7 @@
 ;;                            (GETBIT-OF-ONE-LESS ; looped
 ;;                             exponents-add
 ;;                             GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
-;;                             GETBIT-WHEN-<=-OF-BVCHOP-AND-CONSTANT-HIGH
+;;                             GETBIT-WHEN->=-OF-BVCHOP-AND-CONSTANT-HIGH
 ;;                             )))))
 
 ;; (defthm sbvlt-of-constant-and-bvsx

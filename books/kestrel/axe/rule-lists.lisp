@@ -648,10 +648,10 @@
     bvcat-trim-arg2-axe-all
     ;; bvcat-trim-arg2-axe
     ;; bvcat-trim-arg4-axe
-    bvif-trim-arg1-axe
-    bvif-trim-arg2-axe
-    ;; bvif-trim-arg1-axe-all ; use instead?
-    ;; bvif-trim-arg2-axe-all ; use instead?
+    bvif-trim-arg3-axe
+    bvif-trim-arg4-axe
+    ;; bvif-trim-arg3-axe-all ; use instead?
+    ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all))
 
 (defun trim-helper-rules ()
@@ -767,6 +767,7 @@
      bvminus-of-constant-and-bvplus-of-constant
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
+     bvminus-of-bvplus-and-bvplus-same-2-2
 
      bvplus-of-0-arg2
      bvplus-of-ifix-arg2
@@ -2345,7 +2346,7 @@
 
 ;equal-of-myif-arg2 ;trying without this..
      plus-of-bvplus-of-minus1
-     boolif-of-myif-arg2
+     boolif-of-myif-arg2 ; also make one for arg1?
      boolif-of-myif-arg3
 
      ;;           not-of-booland ;trying without this? new4
@@ -2605,8 +2606,8 @@
      bvlt-of-mod-hack
      equal-of-bvplus-and-bvplus-diff-sizes
      equal-of-bvplus-and-bvplus-diff-sizes-alt
-     bvif-trim-arg1-axe-all
-     bvif-trim-arg2-axe-all
+     bvif-trim-arg3-axe-all
+     bvif-trim-arg4-axe-all
      bvlt-of-bvplus-constants2
      equal-of-bvplus-and-bvplus-reduce-constants
 

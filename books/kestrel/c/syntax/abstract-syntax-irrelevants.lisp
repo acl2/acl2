@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "std/util/defirrelevant" :dir :system)
 
@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-irrelevants
-  :parents (abstract-syntax-operations)
+  :parents (abstract-syntax)
   :short "Irrelevant values of the abstract syntax fixtypes."
   :long
   (xdoc::topstring

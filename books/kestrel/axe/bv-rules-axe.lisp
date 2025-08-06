@@ -361,25 +361,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvif-trim-arg1-axe
+(defthmd bvif-trim-arg3-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvif size test x y)
                   (bvif size test (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvif-trim-arg2-axe
+(defthmd bvif-trim-arg4-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvif size test y x)
                   (bvif size test y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvif-trim-arg1-axe-all
+(defthmd bvif-trim-arg3-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvif size test x y)
                   (bvif size test (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvif-trim-arg2-axe-all
+(defthmd bvif-trim-arg4-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvif size test y x)
                   (bvif size test y (trim size x))))
@@ -2561,3 +2561,17 @@
                        (equal (slice (+ -1 lowsize highsize)
                                      lowsize x)
                               (bvchop highsize highval))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this "alt" version is only needed by Axe
+(defthm bvchop-subst-constant-alt
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k) ; this rule
+                (syntaxp (quotep k))
+                (<= size free)
+                (integerp free))
+           (equal (bvchop size x)
+                  (bvchop size k)))
+  :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
+           :in-theory (disable bvchop-subst-constant))))

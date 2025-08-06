@@ -139,108 +139,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp assumptions).
-;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
-;; Also generated assumptions that the addresses are canonical and that the chunk is disjoint from the saved return address and future stack words.
-(defund assumptions-for-memory-chunk (offset bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp new-canonicalp)
-  (declare (xargs :guard (and (natp offset)
-                              (acl2::byte-listp bytes)
-                              (booleanp relp)
-                              (symbolp state-var)
-                              (symbolp base-var) ; rename base-address-var? ; only used if relp
-                              (natp stack-slots-needed)
-                              (natp existing-stack-slots) ; number of *existing* 8-byte slots on the stack that may be written to by the program (usually at least 1 for the saved return address)
-                              (booleanp bvp)
-                              (booleanp new-canonicalp))))
-  (let ((numbytes (len bytes)))
-    (if relp
-        ;; Relative addresses make everything relative to the base-var:
-        (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 offset base-var) (symbolic-add-constant offset base-var)))
-               (last-addr-term (if bvp
-                                   (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                                   (+ -1 offset numbytes))
-                                                             base-var)
-                                 (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                           (+ -1 offset numbytes))
-                                                        base-var))) ; todo: use bvplus?
-               )
-          (mv nil ; no error
-              (append
-                ;; Assert that the addresses are canonical:
-                (if new-canonicalp
-                    `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
-                      (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
-                                         ,(if (= offset 0) base-var `(bvplus 64 ,offset ,base-var))))
-                  `((canonical-address-p ,first-addr-term)
-                    (canonical-address-p ,last-addr-term)))
-                ;; Assert that the chunk is loaded into memory:
-                ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                (if bvp
-                    ;; alternate formulation for bv/smt proofs:
-                    `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
-                  `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                ',bytes
-                                ,state-var)))
-                ;; Assert that the chunk is disjoint from the existing part of the stack that will be written to:
-                ;; ;; TODO: Do this only for writable chunks?
-                (if (posp existing-stack-slots)
-                    (if bvp
-                        `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 existing-stack-slots) (rsp ,state-var)))
-                      `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
-                  nil)
-                ;; Assert that the chunk is disjoint from the new part of the stack that may be written to:
-                ;; ;; TODO: Do this only for writable chunks?
-                (if (posp stack-slots-needed)
-                    (if bvp
-                        `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
-                      `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
-                  nil))))
-      ;; Absolute addresses are just numbers:
-      (let* ((first-addr offset)
-             (last-addr (+ -1 offset numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
-             (first-addr-term `',first-addr))
-        (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions
-                      (canonical-address-p last-addr)))
-            (mv :bad-address nil)
-          (mv nil ; no error
-              `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
-                ;; Assert that the chunk is loaded into memory:
-                ,(if bvp
-                     ;; alternate formulation for bv/smt proofs:
-                     `(equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
-                   `(program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                ',bytes
-                                ,state-var))
-                 ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
-                 ;; TODO: Do this only for writable chunks?
-                 ,@(if (posp existing-stack-slots)
-                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                       (if bvp
-                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                  ',(* 8 existing-stack-slots) (rsp ,state-var)))
-                         `((separate ':r ',(len bytes) ,first-addr-term
-                                     ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
-                     nil)
-                 ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
-                 ;; TODO: Do this only for writable chunks?
-                ,@(if (posp stack-slots-needed)
-                      ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                      (if bvp
-                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
-                        `((separate ':r ',(len bytes) ,first-addr-term
-                                    ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
-                    ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                    nil))))))))
+;; ;; Returns (mv erp assumptions).
+;; ;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
+;; ;; Also generated assumptions that the addresses are canonical and that the chunk is disjoint from the saved return address and future stack words.
+;; (defund assumptions-for-memory-chunk (offset bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp new-canonicalp)
+;;   (declare (xargs :guard (and (natp offset)
+;;                               (acl2::byte-listp bytes)
+;;                               (booleanp relp)
+;;                               (symbolp state-var)
+;;                               (symbolp base-var) ; rename base-address-var? ; only used if relp
+;;                               (natp stack-slots-needed)
+;;                               (natp existing-stack-slots) ; number of *existing* 8-byte slots on the stack that may be written to by the program (usually at least 1 for the saved return address)
+;;                               (booleanp bvp)
+;;                               (booleanp new-canonicalp))))
+;;   (let ((numbytes (len bytes)))
+;;     (if relp
+;;         ;; Relative addresses make everything relative to the base-var:
+;;         (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 offset base-var) (symbolic-add-constant offset base-var)))
+;;                (last-addr-term (if bvp
+;;                                    (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+;;                                                                    (+ -1 offset numbytes))
+;;                                                              base-var)
+;;                                  (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+;;                                                            (+ -1 offset numbytes))
+;;                                                         base-var))) ; todo: use bvplus?
+;;                )
+;;           (mv nil ; no error
+;;               (append
+;;                 ;; Assert that the addresses are canonical:
+;;                 (if new-canonicalp
+;;                     `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
+;;                       (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
+;;                                          ,(if (= offset 0) base-var `(bvplus 64 ,offset ,base-var))))
+;;                   `((canonical-address-p ,first-addr-term)
+;;                     (canonical-address-p ,last-addr-term)))
+;;                 ;; Assert that the chunk is loaded into memory:
+;;                 ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
+;;                 (if bvp
+;;                     ;; alternate formulation for bv/smt proofs:
+;;                     `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
+;;                   `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
+;;                                 ',bytes
+;;                                 ,state-var)))
+;;                 ;; Assert that the chunk is disjoint from the existing part of the stack that will be written to:
+;;                 ;; ;; TODO: Do this only for writable chunks?
+;;                 (if (posp existing-stack-slots)
+;;                     (if bvp
+;;                         `((disjoint-regions48p ',(len bytes) ,first-addr-term
+;;                                                ',(* 8 existing-stack-slots) (rsp ,state-var)))
+;;                       `((separate ':r ',(len bytes) ,first-addr-term
+;;                                   ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
+;;                   nil)
+;;                 ;; Assert that the chunk is disjoint from the new part of the stack that may be written to:
+;;                 ;; ;; TODO: Do this only for writable chunks?
+;;                 (if (posp stack-slots-needed)
+;;                     (if bvp
+;;                         `((disjoint-regions48p ',(len bytes) ,first-addr-term
+;;                                                ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
+;;                       `((separate ':r ',(len bytes) ,first-addr-term
+;;                                   ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+;;                   nil))))
+;;       ;; Absolute addresses are just numbers:
+;;       (let* ((first-addr offset)
+;;              (last-addr (+ -1 offset numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
+;;              (first-addr-term `',first-addr))
+;;         (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions
+;;                       (canonical-address-p last-addr)))
+;;             (mv :bad-address nil)
+;;           (mv nil ; no error
+;;               `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
+;;                 ;; Assert that the chunk is loaded into memory:
+;;                 ,(if bvp
+;;                      ;; alternate formulation for bv/smt proofs:
+;;                      `(equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
+;;                    `(program-at ,first-addr-term ; todo: use something better that includes the length, for speed
+;;                                 ',bytes
+;;                                 ,state-var))
+;;                  ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
+;;                  ;; TODO: Do this only for writable chunks?
+;;                  ,@(if (posp existing-stack-slots)
+;;                        ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+;;                        (if bvp
+;;                            `((disjoint-regions48p ',(len bytes) ,first-addr-term
+;;                                                   ',(* 8 existing-stack-slots) (rsp ,state-var)))
+;;                          `((separate ':r ',(len bytes) ,first-addr-term
+;;                                      ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
+;;                      nil)
+;;                  ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
+;;                  ;; TODO: Do this only for writable chunks?
+;;                 ,@(if (posp stack-slots-needed)
+;;                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+;;                       (if bvp
+;;                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
+;;                                                ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
+;;                         `((separate ':r ',(len bytes) ,first-addr-term
+;;                                     ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+;;                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+;;                     nil))))))))
 
-(defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
-  (true-listp (mv-nth 1 (assumptions-for-memory-chunk offset bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp new-canonicalp)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
+;; (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
+;;   (true-listp (mv-nth 1 (assumptions-for-memory-chunk offset bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp new-canonicalp)))
+;;   :rule-classes :type-prescription
+;;   :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -895,9 +895,6 @@
              (memory-regionsp (mv-nth 1 (pe64-regions-to-load parsed-pe))))
     :hints (("Goal" :in-theory (enable pe64-regions-to-load acl2::parsed-pe-p)))))
 
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
@@ -1034,8 +1031,7 @@
                         (if (natp target)
                             target ; explicit address given (relative iff position-independentp)
                           ;; target is the name of a function:
-                          (ec-call (acl2::subroutine-address-mach-o target parsed-macho)) ; todo on the ec-call
-                          )))
+                          (acl2::subroutine-address-mach-o target parsed-macho))))
        ((when (not (natp target-offset)))
         (er hard? 'assumptions-macho64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
@@ -1063,7 +1059,7 @@
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
             ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
-            (b* ((code-address (acl2::ec-call (acl2::get-mach-o-code-address parsed-macho))) ;todo on the ec-call
+            (b* ((code-address (acl2::get-mach-o-code-address parsed-macho))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
@@ -1072,7 +1068,7 @@
                                          (symbolic-add-constant code-address base-var))
                                      code-address)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len (acl2::ec-call (acl2::get-mach-o-code parsed-macho))) nil)))))) ; todo on the ec-call
+              (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future and existing stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)

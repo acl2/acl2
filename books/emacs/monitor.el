@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 

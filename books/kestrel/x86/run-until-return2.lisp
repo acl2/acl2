@@ -19,6 +19,7 @@
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
+(include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
 
 (defpun run-until-rsp-is (rsp x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work

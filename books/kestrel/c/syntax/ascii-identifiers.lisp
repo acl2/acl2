@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 (include-book "keywords")
 
 (include-book "../language/portable-ascii-identifiers")

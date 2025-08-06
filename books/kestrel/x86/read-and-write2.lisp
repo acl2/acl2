@@ -16,6 +16,7 @@
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
 (include-book "kestrel/memory/memory48" :dir :system)
+(local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regions48p len1 start1 len2 start2)
@@ -535,8 +536,9 @@
                         (:instance set-rip-of-logext (rip (+ x y z))))
            :in-theory (disable set-rip-of-logext))))
 
+;move!
 (include-book "canonical-unsigned")
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: for acl2::getbit-when-<-of-constant-high
+(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce? why?
 (defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
   (equal (equal (bvsx 64 48 x) x)
          (and (unsigned-byte-p 64 x)
@@ -569,6 +571,17 @@
   :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
                                   (x (bvplus 64 offset ad)))
            :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
+
+
+;move
+;; todo: prove that unsigned-canonical-address-p is equivalent to bvsx doing nothing
+(defthm bvsx-when-unsigned-canonical-address-p
+  (implies (and (unsigned-canonical-address-p x)
+                (unsigned-byte-p 64 x) ;todo
+                )
+           (equal (bvsx 64 48 x)
+                  x))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
 
 ;; can help clarify failures
 (defthm read-of-write-of-write-irrel-inner-bv

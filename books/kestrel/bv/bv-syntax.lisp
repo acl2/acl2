@@ -186,6 +186,7 @@
       (term-should-be-trimmed-helper width term operators))))
 
 ;; WARNING: Keep this in sync with the rules in convert-to-bv-rules.lisp.
+;; TODO: Consider adding IF and then getting rid of the rules that introduce BVIF
 (defconst *functions-convertible-to-bv*
   '(binary-logand
     binary-logior

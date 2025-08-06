@@ -412,7 +412,7 @@
 (acl2::def-constant-opener seg-regp)
 (acl2::def-constant-opener integer-range-p)
 
-(defopeners acl2::get-symbol-entry-mach-o)
+(defopeners acl2::get-symbol-table-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
 (defopeners acl2::get-section-number-mach-o-aux)
 
@@ -704,7 +704,7 @@
                                  (rex-byte acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|))
                             (if flg (!ms (let ((x86isa::erp nil))
                                            (cons (list ctx
-                                                       :rip (rip x86)
+                                                       :rip (x86isa::rip x86)
                                                        :error-in-reading-prefixes flg)
                                                  x86isa::erp))
                                          x86)
@@ -716,7 +716,7 @@
                                                       x86)
                                   (if flg (!ms (let ((x86isa::erp nil))
                                                  (cons (list ctx
-                                                             :rip (rip x86)
+                                                             :rip (x86isa::rip x86)
                                                              :increment-error flg)
                                                        x86isa::erp))
                                                x86)
@@ -728,7 +728,7 @@
                                           (mv nil 0 x86))
                                         (cond (flg (!ms (let ((x86isa::erp nil))
                                                           (cons (list ctx
-                                                                      :rip (rip x86)
+                                                                      :rip (x86isa::rip x86)
                                                                       :les/lds-distinguishing-byte-read-error flg)
                                                                 x86isa::erp))
                                                         x86))
@@ -740,7 +740,7 @@
                                                  (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                  (if flg (!ms (let ((x86isa::erp nil))
                                                                 (cons (list ctx
-                                                                            :rip (rip x86)
+                                                                            :rip (x86isa::rip x86)
                                                                             :vex-byte1-increment-error flg)
                                                                       x86isa::erp))
                                                               x86)
@@ -757,7 +757,7 @@
                                                        (mv nil 0 x86))
                                                      (cond (flg (!ms (let ((x86isa::erp nil))
                                                                        (cons (list ctx
-                                                                                   :rip (rip x86)
+                                                                                   :rip (x86isa::rip x86)
                                                                                    :bound-distinguishing-byte-read-error flg)
                                                                              x86isa::erp))
                                                                      x86))
@@ -769,7 +769,7 @@
                                                               (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                               (if flg (!ms (let ((x86isa::erp nil))
                                                                              (cons (list ctx
-                                                                                         :rip (rip x86)
+                                                                                         :rip (x86isa::rip x86)
                                                                                          :evex-byte1-increment-error flg)
                                                                                    x86isa::erp))
                                                                            x86)
@@ -791,7 +791,7 @@
                                                                   (let ((modr/m acl2::|(THE (UNSIGNED-BYTE 8) MODR/M)|))
                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                    (cons (list ctx
-                                                                                               :rip (rip x86)
+                                                                                               :rip (x86isa::rip x86)
                                                                                                :modr/m-byte-read-error flg)
                                                                                          x86isa::erp))
                                                                                  x86)
@@ -800,7 +800,7 @@
                                                                           (mv nil temp-rip))
                                                                         (if flg (!ms (let ((x86isa::erp nil))
                                                                                        (cons (list ctx
-                                                                                                   :rip (rip x86)
+                                                                                                   :rip (x86isa::rip x86)
                                                                                                    :increment-error flg)
                                                                                              x86isa::erp))
                                                                                      x86)
@@ -816,7 +816,7 @@
                                                                               (let ((sib acl2::|(THE (UNSIGNED-BYTE 8) SIB)|))
                                                                                 (if flg (!ms (let ((x86isa::erp nil))
                                                                                                (cons (list ctx
-                                                                                                           :rip (rip x86)
+                                                                                                           :rip (x86isa::rip x86)
                                                                                                            :sib-byte-read-error flg)
                                                                                                      x86isa::erp))
                                                                                              x86)
@@ -825,7 +825,7 @@
                                                                                       (mv nil temp-rip))
                                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                                    (cons (list ctx
-                                                                                                               :rip (rip x86)
+                                                                                                               :rip (x86isa::rip x86)
                                                                                                                :increment-error flg)
                                                                                                          x86isa::erp))
                                                                                                  x86)
@@ -1034,6 +1034,34 @@
                 (canonical-address-p y))
            (equal (logext 64 (+ x y))
                   (+ x y))))
+
+(defthm signed-byte-p-of-xr-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (xr :rip nil x86)))
+  :hints (("Goal" :use (:instance x86isa::i48p-xr-rip (i nil))
+           :in-theory (e/d (x86isa::rip) (x86isarip-becomes-rip
+                                          xr-becomes-rip
+                                          x86isa::i48p-xr-rip
+                                          x86isa::elem-p-of-xr-rip)))))
+
+(defthm signed-byte-p-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (x86isa::rip x86)))
+  :hints (("Goal" :in-theory (e/d (x86isa::rip)
+                                  (x86isarip-becomes-rip
+                                   xr-becomes-rip
+                                   )))))
+
+(defthm x86isa::canonical-address-p-of-rip
+  (canonical-address-p (x86isa::rip x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
+
+;; used in the loop-lifter?
+(defthm x86isa::canonical-address-p-of-xr-of-rip
+  (canonical-address-p (xr :rip nil x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

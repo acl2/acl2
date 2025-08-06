@@ -53,7 +53,7 @@
      from the @(tsee fty::defprod) that defines @(tsee stat).")
    (xdoc::p
     "The unconstrained @('xregs') and @('pc') of @('stat')
-     is turned into unconstrained scalar fields of the stobj.
+     are turned into unconstrained scalar fields of the stobj.
      The @('memory') list of bytes of @('stat')
      is turned into a resizable array of bytes in the stobj,
      initially of length 0 (the initial length does not matter here).
@@ -64,13 +64,11 @@
    (xdoc::p
     "We introduce a non-executable function
      to retrieve the whole memory array.
-     This cannot be executable, because it violates stobj usage rules;
-     however, it makes logical sense.")
+     This cannot be executable, because it violates stobj usage rules.")
    (xdoc::p
     "We introduce a function to build a stobj value
      from the values of its fields.
-     While this makes logical sense,
-     the values it returns are unrelated to the live stobj.")
+     The values it returns are unrelated to the live stobj.")
    (xdoc::p
     "We also introduce some equivalences between
      recognizers of stobj fields and recognizers of @(tsee stat) field types."))
@@ -241,7 +239,7 @@
                    (equal a (car x))
                    (equal b (cdr x)))))))
 
-  (acl2::defiso stat-stat1-iso
+  (acl2::defiso stat1-iso
     statp
     stat1p
     stat1-from-stat

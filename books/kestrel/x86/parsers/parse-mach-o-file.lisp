@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 (include-book "parser-utils")
-(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -584,12 +583,12 @@
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
-       (stabp (not (eql 0 (logand #xe0 n-type))))
+       (stabp (not (= 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
-                 (b* ((n-pext (not (eql 0 (logand #x10 n-type))))
+                 (b* ((n-pext (not (= 0 (logand #x10 n-type))))
                       (n-type (logand #x0e n-type))
-                      (n-ext (not (eql 0 (logand #x01 n-type)))))
+                      (n-ext (not (= 0 (logand #x01 n-type)))))
                      (list (cons :n-pext n-pext)
                            (cons :n-type (lookup-safe n-type *mach-o-symbol-n-types*))
                            (cons :n-ext n-ext))))))

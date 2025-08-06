@@ -5889,7 +5889,8 @@
                         its associated information is ~x1."
                        (fundef-fix fundef) info))
              ((valid-ord-info-objfun info) info)
-             ((unless (type-case info.type :function))
+             ((unless (or (type-case info.type :function)
+                          (type-case info.type :unknown)))
               (retmsg$ "The name of the function definition ~x0 ~
                         is already in the file scope, ~
                         but it has type ~x1."
@@ -6021,7 +6022,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
+(define valid-transunit ((tunit transunitp) (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv (erp maybe-msgp) (new-tunit transunitp))
   :short "Validate a translation unit."
@@ -6056,6 +6057,7 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit))
+       (gcc (ienv->gcc ienv))
        (table (valid-init-table))
        (table
          (if gcc
@@ -6243,9 +6245,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep)
-                                  (gcc booleanp)
-                                  (ienv ienvp))
+(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (mv (erp maybe-msgp) (new-tunits transunit-ensemblep))
   :short "Validate a translation unit ensemble."
@@ -6262,12 +6262,11 @@
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) gcc ienv)))
+         (transunit-ensemble->unwrap tunits) ienv)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
-                                          (gcc booleanp)
                                           (ienv ienvp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
@@ -6277,16 +6276,16 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp new-tunit) (valid-transunit (omap::head-val map) ienv))
           ((erp new-map)
-           (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
+           (valid-transunit-ensemble-loop (omap::tail map) ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((gcc booleanp) (ienv ienvp)))
+       :args ((ienv ienvp)))
 
      (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
        (implies (not erp)

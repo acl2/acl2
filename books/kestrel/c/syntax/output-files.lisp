@@ -12,7 +12,6 @@
 
 (include-book "files")
 (include-book "printer")
-(include-book "ascii-identifiers")
 (include-book "standard")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
@@ -140,9 +139,14 @@
     (implies (not erp)
              (transunit-ensemble-unambp tunits)))
 
+  (defret transunit-ensemble-aidentp-when-output-files-process-tunits
+    (implies (not erp)
+             (transunit-ensemble-aidentp tunits gcc)))
+
   (in-theory
    (disable transunit-ensemblep-when-output-files-process-tunits
-            transunit-ensemble-unambp-when-output-files-process-tunits)))
+            transunit-ensemble-unambp-when-output-files-process-tunits
+            transunit-ensemble-aidentp-when-output-files-process-tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +338,16 @@
     (("Goal"
       :in-theory
       (enable
-       transunit-ensemble-unambp-when-output-files-process-tunits)))))
+       transunit-ensemble-unambp-when-output-files-process-tunits))))
+
+  (defret transunit-ensemble-aidentp-of-output-files-process-inputs
+    (implies (not erp)
+             (transunit-ensemble-aidentp tunits gcc))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       transunit-ensemble-aidentp-when-output-files-process-tunits)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -342,15 +355,17 @@
                                 (path stringp)
                                 (indent-size posp)
                                 (paren-nested-conds booleanp)
+                                (gcc booleanp)
                                 state)
-  :guard (transunit-ensemble-unambp tunits)
+  :guard (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-aidentp tunits gcc))
   :returns (mv erp state)
   :short "Generate the files."
   (b* (((reterr) state)
        ;; Print the abstract syntax.
        (options (make-priopt :indent-size indent-size
                              :paren-nested-conds paren-nested-conds))
-       (files (print-fileset tunits options))
+       (files (print-fileset tunits options gcc))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) path state)))
@@ -392,13 +407,14 @@
              path
              indent-size
              paren-nested-conds
-             &) ; GCC flag only used in input processing
+             gcc)
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
                                 path
                                 indent-size
                                 paren-nested-conds
+                                gcc
                                 state)))
     (retok state)))
 
