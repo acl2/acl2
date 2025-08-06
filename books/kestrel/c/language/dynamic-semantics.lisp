@@ -1192,7 +1192,7 @@
                                                  (1- limit)))
                         ((when (errorp val?)) (mv val? compst))
                         ((when (not val?)) (mv (error (list :return-void-expr
-                                                        s.value))
+                                                            s.value))
                                                compst)))
                      (mv (stmt-value-return val?) compst))
                  (mv (stmt-value-return nil) (compustate-fix compst)))))
