@@ -949,8 +949,9 @@ function searchGoMain(query_str) {
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
     // Restore previous results collection and display
-    var max_results = 100;
-    var hit_max = false;
+    var max_display = 100;
+    // 10,000 is too much, visible stutter
+    var max_results = 1000;
     var matches = {};
     var results = [];
     const keys = Array.from(xindexObj.allKeys());
@@ -968,11 +969,7 @@ function searchGoMain(query_str) {
             matches[key] = true;
             results.push({key, rank, freq, snippet, label});
 	}
-        if (results.length >= max_results) {
-            hit_max = true;
-            return true;
-        }
-        return false;
+        return results.length >= max_results;
     }
 
     // Search Ranking System:
@@ -996,7 +993,7 @@ function searchGoMain(query_str) {
             if (addResult(key, 0, null, null)) break;
 	}
     }
-    if (results.length < max_results) {
+    if (results.length < max_display) {
 	// 0.5. Prefix matches
 	for(const key of keys) {
             if (key in matches) continue;
@@ -1010,7 +1007,7 @@ function searchGoMain(query_str) {
             }
 	}
     }
-    if (results.length < max_results) {
+    if (results.length < max_display) {
 	// 1. Other title matches
 	for(const key of keys) {
             if (key in matches) continue;
@@ -1025,7 +1022,7 @@ function searchGoMain(query_str) {
             }
 	}
     }
-    if (results.length < max_results) {
+    if (results.length < max_display) {
 	// 2. Short description matches
 	for(const key of keys) {
             if (key in matches) continue;
@@ -1045,10 +1042,6 @@ function searchGoMain(query_str) {
 
     num_hits = results.length;
     if (num_hits != 0) {
-	// if (num_hits === max_results) {
-        //     $("#data").append("<div style='color: orange; font-size: 110%; margin-bottom: 1em;'>Showing first " + max_results + " results. Please refine your search.</div>");
-	// }
-
 	// Sort results by rank, then ACL2 Sources priority, then frequency
 	results.sort(function(a, b) {
             if (a.rank !== b.rank) return a.rank - b.rank;
@@ -1063,13 +1056,13 @@ function searchGoMain(query_str) {
             return b.freq - a.freq;
 	});
 
-        if (hit_max) {
-            $("#data").append("<h3><b>100+</b> Results</h3>");
+        if (num_hits > max_display) {
+            $("#data").append("<h3><b>" + max_display + "+</b> Results</h3>");
         } else {
             $("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
         }
 	var hits = jQuery("<dl></dl>");
-	for (const result of results) {
+	for (const result of results.slice(0, 100)) {
             var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
             searchAddHit({}, hits, result.key, result.snippet ? result.snippet + extra : extra);
 	}
