@@ -958,7 +958,7 @@ function searchGoMain(query_str) {
     var num_hits = 0;
 
     // Assumption: results.length < max_results
-    function addResult(key, rank, snippet, label) {
+    function addResult(key, rank) {
 	if (!(key in matches)) {
             var rawname = xindexObj.topicRawname(key);
             var title = xindexObj.topicName(key);
@@ -967,7 +967,7 @@ function searchGoMain(query_str) {
                 countOccurrences(title, query_str) +
                 countOccurrences(short_plain, query_str);
             matches[key] = true;
-            results.push({key, rank, freq, snippet, label});
+            results.push({key, rank, freq});
 	}
         return results.length >= max_results;
     }
@@ -990,7 +990,7 @@ function searchGoMain(query_str) {
 	var rawname_lc = rawname.toLowerCase();
 	var title_lc = title.toLowerCase();
 	if (key_lc === query_str_lc || rawname_lc === query_str_lc || title_lc === query_str_lc) {
-            if (addResult(key, 0, null, null)) break;
+            if (addResult(key, 0)) break;
 	}
     }
     if (results.length < max_display) {
@@ -1003,7 +1003,7 @@ function searchGoMain(query_str) {
             var rawname_lc = rawname.toLowerCase();
             var title_lc = title.toLowerCase();
             if (key_lc.startsWith(query_str_lc) || rawname_lc.startsWith(query_str_lc) || title_lc.startsWith(query_str_lc)) {
-		if (addResult(key, 0.5, null, null)) break;
+		if (addResult(key, 0.5)) break;
             }
 	}
     }
@@ -1014,11 +1014,11 @@ function searchGoMain(query_str) {
             var name_lc = xindexObj.topicRawname(key).toLowerCase();
             // Check for exact phrase first (higher priority)
             if (name_lc.indexOf(query_str) !== -1) {
-		if (addResult(key, 1, null, null)) break;
+		if (addResult(key, 1)) break;
             }
             // Fall back to individual word matching (lower priority)
             else if (query_tokenized.length > 1 && allWordsMatch(name_lc, query_tokenized)) {
-		if (addResult(key, 1.5, null, null)) break;
+		if (addResult(key, 1.5)) break;
             }
 	}
     }
@@ -1031,11 +1031,11 @@ function searchGoMain(query_str) {
             var short_plain_lc = xindexObj.topicShort(key).toLowerCase();
             // Check for exact phrase first (higher priority)
             if (short_plain_lc.indexOf(query_str) !== -1) {
-		if (addResult(key, 2, null, null)) break;
+		if (addResult(key, 2)) break;
             }
             // Fall back to individual word matching (lower priority)
             else if (query_tokenized.length > 1 && allWordsMatch(short_plain_lc, query_tokenized)) {
-		if (addResult(key, 2.5, null, null)) break;
+		if (addResult(key, 2.5)) break;
             }
 	}
     }
