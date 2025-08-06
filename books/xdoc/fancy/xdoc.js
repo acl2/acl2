@@ -1011,13 +1011,13 @@ function searchGoMain(query_str) {
 	// 1. Other title matches
 	for(const key of keys) {
             if (key in matches) continue;
-            var name = xindexObj.topicRawname(key);
+            var name_lc = xindexObj.topicRawname(key).toLowerCase();
             // Check for exact phrase first (higher priority)
-            if (name.toLowerCase().indexOf(query_str) !== -1) {
+            if (name_lc.indexOf(query_str) !== -1) {
 		if (addResult(key, 1, null, null)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(name.toLowerCase(), query_tokenized)) {
+            else if (query_tokenized.length > 1 && allWordsMatch(name_lc, query_tokenized)) {
 		if (addResult(key, 1.5, null, null)) break;
             }
 	}
@@ -1028,13 +1028,13 @@ function searchGoMain(query_str) {
             if (key in matches) continue;
             // Perhaps it would be better to use topicShortPlaintext,
             // but this is *very* slow.
-            var short_plain = xindexObj.topicShort(key);
+            var short_plain_lc = xindexObj.topicShort(key).toLowerCase();
             // Check for exact phrase first (higher priority)
-            if (short_plain.toLowerCase().indexOf(query_str) !== -1) {
+            if (short_plain_lc.indexOf(query_str) !== -1) {
 		if (addResult(key, 2, null, null)) break;
             }
             // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(short_plain.toLowerCase(), query_tokenized)) {
+            else if (query_tokenized.length > 1 && allWordsMatch(short_plain_lc, query_tokenized)) {
 		if (addResult(key, 2.5, null, null)) break;
             }
 	}
