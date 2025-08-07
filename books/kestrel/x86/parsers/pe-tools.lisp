@@ -17,6 +17,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
+(include-book "kestrel/memory/memory-regions" :dir :system)
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 (in-theory (disable mv-nth))
@@ -410,3 +411,88 @@
   (declare (xargs :guard (parsed-pe-p parsed-pe)
                   :guard-hints (("Goal" :in-theory (enable parsed-pe-p)))))
   (get-all-symbols-from-pe-symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe) nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun pe64-regions-to-load-aux (sections acc)
+  (declare (xargs :guard (and (acl2::pe-section-listp sections)
+;                              (acl2::byte-listp all-bytes)
+;                              (equal all-bytes-len (len all-bytes))
+                              (true-listp acc))
+                  :guard-hints (("Goal" :expand (acl2::pe-section-listp sections)
+                                 :in-theory (enable acl2::pe-section-listp
+                                                    acl2::pe-sectionp
+                                                    acl2::pe-section-infop
+                                                    acl2::pe-section-headerp)))))
+  (if (endp sections)
+      (mv nil (reverse acc))
+    (b* ((section (first sections)) ; todo: do all section types get loaded?
+         ;; (name (first section))
+         (info (rest section))
+         (header (lookup-eq :header info))
+         (vaddr (lookup-eq :virtual-address header)) ; var names here match what we do for ELF
+         (memsz (lookup-eq :virtual-size header))
+         ;; (offset (lookup-eq :pointer-to-raw-data section)) ; todo: this is rel to what?
+         ;; (filesz (lookup-eq :filesize section))
+         (bytes (lookup-eq :raw-data info))
+         (len-bytes (len bytes))
+         ((when (not (and ;; (natp offset)
+                       ;; (natp filesz)
+                       (natp vaddr)
+                       (natp memsz)
+                       ;; The data length can't be larger than the memory size:
+                       (<= len-bytes memsz) ;; the size of the raw data may be rounded up, but that should all be handled by the parser
+                       )))
+          (er hard? 'pe64-regions-to-load-aux "Bad section: vaddr=~x0, memsz=~x1, len-bytes=~x2." vaddr memsz len-bytes)
+          (mv :bad-load-section nil))
+         ((when (not (equal memsz len-bytes)))
+          (er hard? 'pe64-regions-to-load-aux "Bad section length: memsz=~x0, bytes=~x1." memsz bytes)
+          (mv :bad-load-section nil))
+         ;; ttodo: do we ever need to pad with zeros?
+         ;; (last-byte-num (+ -1 filesz))
+         ;; ((when (not (< last-byte-num len-bytes)))
+         ;;  (mv :not-enough-bytes nil))
+         ;; ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
+         ;; (numzeros (- memsz filesz))
+         ;; ((when (> numzeros 10000)) ; allows padding with zeros up a multiple of 4k
+         ;;  (cw "Too many zeros (~x0)!  Skipping this segment!~%" numzeros) ; ttodo!
+         ;;  (pe64-regions-to-load-aux (rest sections) all-bytes-len all-bytes acc))
+         ;; (bytes (take filesz (nthcdr offset all-bytes)))
+         ;; ;; Zero bytes at the end of the segment may not be stored in the file:
+         ;; (bytes (if (posp numzeros)
+         ;;            (append bytes (acl2::repeat numzeros 0)) ; optimize?
+         ;;          bytes))
+         )
+      (pe64-regions-to-load-aux (rest sections)
+                                ;all-bytes-len all-bytes
+                                (cons (list memsz vaddr bytes)
+                                      acc)))))
+
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-pe64-regions-to-load-aux
+    (implies (and ;(not (mv-nth 0 (pe64-regions-to-load-aux sections acc))) ; no error
+                  (acl2::pe-section-listp sections)
+                  (x::memory-regionsp acc)
+                  ;;(acl2::byte-listp all-bytes)
+                  ;;(equal all-bytes-len (len all-bytes))
+                  )
+             (x::memory-regionsp (mv-nth 1 (pe64-regions-to-load-aux sections acc))))
+    :hints (("Goal" :expand (acl2::pe-section-listp sections)
+             :in-theory (enable pe64-regions-to-load-aux x::memory-regionsp x::memory-regionp
+                                acl2::pe-sectionp
+                                acl2::pe-section-infop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund pe64-regions-to-load (parsed-pe)
+  (declare (xargs :guard (acl2::parsed-pe-p parsed-pe)
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p)))))
+  (b* ((sections (lookup-eq :sections parsed-pe))
+       ;; (all-bytes (lookup-eq :bytes parsed-pe)) ; currently, each section stores its :raw-data
+       )
+    (pe64-regions-to-load-aux sections nil)))
+
+(defthm memory-regionsp-of-mv-nth-1-of-pe64-regions-to-load
+  (implies (acl2::parsed-pe-p parsed-pe)
+           (x::memory-regionsp (mv-nth 1 (pe64-regions-to-load parsed-pe))))
+  :hints (("Goal" :in-theory (enable pe64-regions-to-load acl2::parsed-pe-p))))
