@@ -67,18 +67,15 @@
 ; and hints.
 
 (defmacro test-instr-op-thm (&key funct (rs1 '1) (rs2 '2) (rd '3)
-                                  src1 src2 dst
-                                  src1-signedp src2-signedp dst-signedp
+                                  src1 src2 dst signedp
                                   enable disable cases)
-  (b* ((read-rs1 (if src1-signedp 'read-xreg-signed 'read-xreg-unsigned))
-       (read-rs2 (if src2-signedp 'read-xreg-signed 'read-xreg-unsigned))
-       (read-rd (if dst-signedp 'read-xreg-signed 'read-xreg-unsigned)))
+  (b* ((read (if signedp 'read-xreg-signed 'read-xreg-unsigned)))
     `(test-instr-thm
       :instr (make-instr-op :funct ,funct :rd ,rd :rs1 ,rs1 :rs2 ,rs2)
-      :pre ((equal (,read-rs1 ,rs1 stat feat) ,src1)
-            (equal (,read-rs2 ,rs2 stat feat) ,src2))
+      :pre ((equal (,read ,rs1 stat feat) ,src1)
+            (equal (,read ,rs2 stat feat) ,src2))
       :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
-             (equal (,read-rd ,rd stat1 feat) ,dst))
+             (equal (,read ,rd stat1 feat) ,dst))
       :enable (exec-op
                read-xreg-of-write-xreg
                read-pc-of-inc4-pc
@@ -91,15 +88,12 @@
 ; ADD
 
 (defmacro test-instr-add-thm (&key (rs1 '1) (rs2 '2) (rd '3)
-                                   src1 src2 dst
-                                   src1-signedp src2-signedp dst-signedp
+                                   src1 src2 dst signedp
                                    enable)
   `(test-instr-op-thm :funct (op-funct-add)
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
-                      :src1-signedp ,src1-signedp
-                      :src2-signedp ,src2-signedp
-                      :dst-signedp ,dst-signedp
+                      :signedp ,signedp
                       :enable ,enable
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
@@ -121,9 +115,7 @@
  :src1 -11
  :src2 -22
  :dst -33
- :src1-signedp t
- :src2-signedp t
- :dst-signedp t
+ :signedp t
  :enable (exec-add-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,15 +123,12 @@
 ; SUB
 
 (defmacro test-instr-sub-thm (&key (rs1 '1) (rs2 '2) (rd '3)
-                                   src1 src2 dst
-                                   src1-signedp src2-signedp dst-signedp
+                                   src1 src2 dst signedp
                                    enable)
   `(test-instr-op-thm :funct (op-funct-sub)
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
-                      :src1-signedp ,src1-signedp
-                      :src2-signedp ,src2-signedp
-                      :dst-signedp ,dst-signedp
+                      :signedp ,signedp
                       :enable ,enable
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
@@ -161,9 +150,7 @@
  :src1 11
  :src2 22
  :dst -11
- :src1-signedp t
- :src2-signedp t
- :dst-signedp t
+ :signedp t
  :enable (exec-sub-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,14 +159,11 @@
 
 (defmacro test-instr-slt-thm (&key (rs1 '1) (rs2 '2) (rd '3)
                                    src1 src2 dst
-                                   src1-signedp src2-signedp dst-signedp
                                    enable)
   `(test-instr-op-thm :funct (op-funct-slt)
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
-                      :src1-signedp ,src1-signedp
-                      :src2-signedp ,src2-signedp
-                      :dst-signedp ,dst-signedp
+                      :signedp t
                       :enable ,enable
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
@@ -193,8 +177,6 @@
  :src1 78
  :src2 934
  :dst 1
- :src1-signedp t
- :src2-signedp t
  :enable (exec-slt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,8 +188,6 @@
  :src1 1000
  :src2 1000
  :dst 0
- :src1-signedp t
- :src2-signedp t
  :enable (exec-slt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -219,8 +199,6 @@
  :src1 78
  :src2 -934
  :dst 0
- :src1-signedp t
- :src2-signedp t
  :enable (exec-slt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,14 +207,11 @@
 
 (defmacro test-instr-sltu-thm (&key (rs1 '1) (rs2 '2) (rd '3)
                                     src1 src2 dst
-                                    src1-signedp src2-signedp dst-signedp
                                     enable)
   `(test-instr-op-thm :funct (op-funct-sltu)
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
-                      :src1-signedp ,src1-signedp
-                      :src2-signedp ,src2-signedp
-                      :dst-signedp ,dst-signedp
+                      :signedp nil
                       :enable ,enable
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
@@ -279,15 +254,12 @@
 ; AND
 
 (defmacro test-instr-and-thm (&key (rs1 '1) (rs2 '2) (rd '3)
-                                   src1 src2 dst
-                                   src1-signedp src2-signedp dst-signedp
+                                   src1 src2 dst signedp
                                    enable)
   `(test-instr-op-thm :funct (op-funct-and)
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
-                      :src1-signedp ,src1-signedp
-                      :src2-signedp ,src2-signedp
-                      :dst-signedp ,dst-signedp
+                      :signedp ,signedp
                       :enable ,enable
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
