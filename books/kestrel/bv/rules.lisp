@@ -1357,22 +1357,6 @@
 ;;  :hints (("Goal" :in-theory (enable bvnot))))
 
 ;drop in favor of trim rules?
-(defthm slice-of-bvand-tighten
-  (implies (and (< (+ 1 highbit) size)
-;                (<= lowbit highbit)
-                (integerp size)
-                (< 0 size)
-                (natp lowbit)
-                (natp highbit)
-                (integerp x)
-                (integerp y))
-           (equal (slice highbit lowbit (bvand size x y))
-                  (slice highbit lowbit (bvand (+ 1 highbit) x y))))
-  :hints (("Goal" :cases ((<= lowbit highbit))
-          :in-theory (e/d (slice bvand natp  bvchop-of-logtail) (slice-becomes-bvchop
-                                               )))))
-
-;drop in favor of trim rules?
 (defthm slice-of-bvmult-tighten
   (implies (and (< (+ 1 highbit) size)
     ;                (<= lowbit highbit)
@@ -2093,14 +2077,6 @@
            (< x k)))
 
 ;stuff for rc6 recursive equivalence proof
-
-(defthm slice-of-bvand-too-high
-  (implies (and (<= n low)
-                (integerp low)
-                (natp n))
-           (equal (slice high low (bvand n x y))
-                  0))
-  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
 
 ;how does logtail even get introduced?
 ;bbozo

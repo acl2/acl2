@@ -545,6 +545,7 @@
                   (getbit n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
 
+;add rules like this for other ops?
 ;; For when x is obviously too narrow
 (defthm slice-of-bvor-when-narrow-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
@@ -570,7 +571,6 @@
            (equal (slice high low (bvor size x y))
                   (slice high low x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
-
 
 (defthm bvxor-of-slice-tighten
   (implies (and (<= size (- high low))
@@ -669,17 +669,6 @@
                   (bvxor size z (bvor size x y))))
  :hints (("Goal" :in-theory (e/d (bvxor) ()))))
 
-;gen the bvand to any op?
-(defthm slice-of-bvand-tighten-high-index
-  (implies (and (<= size high)
-                (<= low size) ;bozo
-                (< 0 size)
-                (natp high)
-                (natp size)
-                (natp low))
-           (equal (slice high low (bvand size x y))
-                  (slice (+ -1 size) low (bvand size x y))))
-  :hints (("Goal" :in-theory (enable bvand))))
 
 ;drop in favor of a general trim rule?
 (defthm bvand-of-bvnot-trim
@@ -689,19 +678,6 @@
            (equal (bvand low x (bvnot size y))
                   (bvand low x (bvnot low y))))
   :hints (("Goal" :in-theory (enable bvand))))
-
-(defthm slice-of-bvand
-  (implies (and (< high size)
-                (natp size)
-                (natp low)
-                (natp high))
-           (equal (slice high low (bvand size x y))
-                  (bvand (+ 1 high (- low))
-                         (slice high low x)
-                         (slice high low y))))
-  :hints (("Goal" :cases ((natp (+ 1 high (- low))))
-           :in-theory (e/d (slice bvand natp logtail-of-bvchop)
-                           (slice-becomes-bvchop)))))
 
 ;; helps simplify bvand with a mask like FF000000
 ;; looks for a mask whose low byte is 0

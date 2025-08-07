@@ -24,6 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logand-b"))
+(local (include-book "slice"))
 
 (defund bvand (size x y)
   (declare (type integer x y)
@@ -385,6 +386,55 @@
            (equal (getbit 0 (bvand size x y))
                   (bvand 1 x y)))
   :hints (("Goal" :in-theory (enable getbit slice logtail) :cases ((integerp size)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen the bvand to any op?
+(defthm slice-of-bvand-tighten-high-index
+  (implies (and (<= size high)
+                (<= low size) ;bozo
+                (< 0 size)
+                (natp high)
+                (natp size)
+                (natp low))
+           (equal (slice high low (bvand size x y))
+                  (slice (+ -1 size) low (bvand size x y))))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm slice-of-bvand
+  (implies (and (< high size)
+                (natp size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvand size x y))
+                  (bvand (+ 1 high (- low))
+                         (slice high low x)
+                         (slice high low y))))
+  :hints (("Goal" :cases ((natp (+ 1 high (- low))))
+           :in-theory (enable slice bvand logtail-of-bvchop))))
+
+;drop in favor of trim rules?
+(defthm slice-of-bvand-tighten
+  (implies (and (< (+ 1 high) size)
+;                (<= low high)
+                (integerp size)
+                (< 0 size)
+                (natp low)
+                (natp high)
+                (integerp x)
+                (integerp y))
+           (equal (slice high low (bvand size x y))
+                  (slice high low (bvand (+ 1 high) x y))))
+  :hints (("Goal" :cases ((<= low high))
+          :in-theory (enable slice bvand bvchop-of-logtail))))
+
+(defthm slice-of-bvand-too-high
+  (implies (and (<= n low)
+                (integerp low)
+                (natp n))
+           (equal (slice high low (bvand n x y))
+                  0))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
