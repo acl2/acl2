@@ -913,10 +913,7 @@ function searchGo(str) {
     $("#left").removeClass("active");
     closeAllPowertips();
 
-    if (!ta_data_initialized) {
-        $("#data").append("<p id='searching_message'>Searching...</p>");
-        ta_data_initialize();
-    }
+    ta_data_initialize();
 
     searchGoMain(str);
     return false;
@@ -1107,6 +1104,9 @@ var ta_data = [];
 var ta_data_initialized = false;
 
 function ta_data_initialize() {
+    if (ta_data_initialized) {
+        return;
+    }
     var keys = xindexObj.allKeys();
     for(const key of keys) {
         ta_data.push({
@@ -1155,8 +1155,7 @@ function jumpRender(datum) {
 }
 
 function jumpInit() {
-    // Defer this sorting until after the page load.
-    setTimeout(ta_data_initialize, 0);
+    ta_data_initialize();
 
     // Take the first "count" number of elements from the "flattened"
     // (concatenated) arrays (but don't actually concatenate them all,
