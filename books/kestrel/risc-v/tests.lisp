@@ -80,6 +80,8 @@
       :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
              (equal (,read-rd ,rd stat1 feat) ,dst))
       :enable (exec-op
+               read-xreg-of-write-xreg
+               read-pc-of-inc4-pc
                ,@enable)
       :disable ,disable
       :cases ,cases)))
@@ -99,9 +101,7 @@
  :src2 22
  :dst 33
  :enable (exec-add
-          read-xreg-of-write-xreg
-          read-xreg-signed
-          read-pc-of-inc4-pc)
+          read-xreg-signed)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -118,9 +118,7 @@
  :src1-signedp t
  :src2-signedp t
  :dst-signedp t
- :enable (exec-add-alt-def
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-add-alt-def)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -139,9 +137,7 @@
  :src2 23
  :dst 31
  :enable (exec-sub
-          read-xreg-of-write-xreg
-          read-xreg-signed
-          read-pc-of-inc4-pc)
+          read-xreg-signed)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -158,9 +154,7 @@
  :src1-signedp t
  :src2-signedp t
  :dst-signedp t
- :enable (exec-sub-alt-def
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-sub-alt-def)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -180,9 +174,7 @@
  :dst 1
  :src1-signedp t
  :src2-signedp t
- :enable (exec-slt
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-slt)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -198,9 +190,7 @@
  :dst 0
  :src1-signedp t
  :src2-signedp t
- :enable (exec-slt
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-slt)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -216,9 +206,7 @@
  :dst 0
  :src1-signedp t
  :src2-signedp t
- :enable (exec-slt
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-slt)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -236,9 +224,7 @@
  :src1 78
  :src2 934
  :dst 1
- :enable (exec-sltu
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-sltu)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -252,9 +238,7 @@
  :src1 1000
  :src2 1000
  :dst 0
- :enable (exec-sltu
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-sltu)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -268,9 +252,7 @@
  :src1 20000
  :src2 19999
  :dst 0
- :enable (exec-sltu
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-sltu)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -288,9 +270,7 @@
  :src1 #xffaa
  :src2 #x3333
  :dst #x3322
- :enable (exec-and
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-and)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -304,8 +284,6 @@
  :src1 #xabcdef
  :src2 #xabcdef
  :dst #xabcdef
- :enable (exec-and
-          read-xreg-of-write-xreg
-          read-pc-of-inc4-pc)
+ :enable (exec-and)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
