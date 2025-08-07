@@ -35,6 +35,7 @@
        ;;  (er hard? ctx "The :old-dir argument must be supplied."))
        ;; ((when (eq :none new-dir))
        ;;  (er hard? ctx "The :new-dir argument must be supplied."))
+       ;; TODO: Consider allowing this, perhaps if the user sets an overwrite-ok argument:
        ((when (equal old-dir new-dir))
         (er hard? ctx "The :old-dir and :new-dir arguments must be different.")))
     nil))
