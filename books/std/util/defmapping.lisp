@@ -144,7 +144,7 @@
    (domb pseudo-termfnp "Domain @($B$), in translated form.")
    (alpha pseudo-termfnp "Conversion @($\\alpha$), in translated form.")
    (beta pseudo-termfnp "Conversion @($\\beta$), in translated form.")
-   (stobjp booleanp "Whether @($A$) or @($B) has any input or output stobjs.")
+   (stobjp booleanp "Whether @($A$) or @($B$) has any input or output stobjs.")
    (alpha-image symbolp "Name of the @(':alpha-image') theorem.")
    (beta-image symbolp "Name of the @(':beta-image') theorem.")
    (beta-of-alpha symbolp "Name of the @(':beta-of-alpha') theorem,
