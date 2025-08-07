@@ -410,9 +410,7 @@
                         print
                         bvp ; whether to use new-style, BV-friendly assumptions
                         executable-type
-                        64-bitp
                         position-independentp
-                        new-canonicalp
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable ; todo: add a guard (even if it's weak for now)
@@ -453,7 +451,7 @@
                                      type-assumptions-for-array-varsp
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                      bvp
-                                     new-canonicalp
+                                     t
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil nil state))
            (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -463,7 +461,7 @@
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
               (mv nil assumptions nil state)))
            ((when erp) (mv erp nil nil nil nil state)))
         (mv nil assumptions
@@ -484,7 +482,7 @@
                                          type-assumptions-for-array-varsp
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                          bvp
-                                         new-canonicalp
+                                         t
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil nil state))
              (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -494,7 +492,7 @@
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
+                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
                 (mv nil assumptions nil state)))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions
@@ -515,7 +513,7 @@
                                         type-assumptions-for-array-varsp
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                         bvp
-                                        new-canonicalp
+                                        t
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil nil state))
                (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -525,7 +523,7 @@
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
+                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
                   (mv nil assumptions nil state)))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions
@@ -786,9 +784,7 @@
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
              ((mv erp assumptions assumption-rules state)
-              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules
-                                    64-bitp ; todo: always nil
-                                    count-hits bvp nil state))
+              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits bvp nil state))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
 
@@ -1199,9 +1195,7 @@
                          print
                          bvp
                          executable-type
-                         64-bitp
                          position-independentp
-                         new-canonicalp
                          state))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
