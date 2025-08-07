@@ -359,12 +359,12 @@
                       but it is ~x0 instead."
                      plain-char-signed)))
        ;; Build the implementation environment.
-       (ienv (make-ienv :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed
-                        :gcc gcc)))
+       (ienv (ienv-simple short-bytes
+                          int-bytes
+                          long-bytes
+                          long-long-bytes
+                          plain-char-signed
+                          gcc)))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
