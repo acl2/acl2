@@ -1483,7 +1483,7 @@
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
              posp))
 
-  (defruled integer-format-unsigned->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (uinteger-format->max
@@ -1496,7 +1496,7 @@
      uinteger-format->max-of-uinteger-format-inc-npnt
      uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
 
-  (defruled integer-format-signed->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (sinteger-format->max
@@ -1510,7 +1510,7 @@
      uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
      posp))
 
-  (defruled integer-format-signed->min-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (sinteger-format->min
