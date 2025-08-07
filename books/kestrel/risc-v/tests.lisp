@@ -100,8 +100,7 @@
  :src1 11
  :src2 22
  :dst 33
- :enable (exec-add
-          read-xreg-signed)
+ :enable (exec-add)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
@@ -136,8 +135,7 @@
  :src1 54
  :src2 23
  :dst 31
- :enable (exec-sub
-          read-xreg-signed)
+ :enable (exec-sub)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
 
