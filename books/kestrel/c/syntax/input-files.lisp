@@ -313,10 +313,10 @@
                       (cdr int-bytes-option)
                     4))
        ((unless (and (integerp int-bytes)
-                     (>= int-bytes 4)
+                     (>= int-bytes 2)
                      (>= int-bytes short-bytes)))
         (reterr (msg "The :INT-BYTES input must be ~
-                      an integer greater than or equal to 4, ~
+                      an integer greater than or equal to 2, ~
                       and greater than or equal to ~
                       the value ~x0 of :SHORT-BYTES, ~
                       but it is ~x1 instead."
@@ -327,10 +327,10 @@
                        (cdr long-bytes-option)
                      8))
        ((unless (and (integerp long-bytes)
-                     (>= long-bytes 8)
+                     (>= long-bytes 4)
                      (>= long-bytes int-bytes)))
         (reterr (msg "The :LONG-BYTES input must be ~
-                      an integer greater than or equal to 8, ~
+                      an integer greater than or equal to 4, ~
                       and greater than or equal to ~
                       the value ~x0 of :INT-BYTES, ~
                       but it is ~x1 instead."
@@ -359,12 +359,12 @@
                       but it is ~x0 instead."
                      plain-char-signed)))
        ;; Build the implementation environment.
-       (ienv (make-ienv :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed
-                        :gcc gcc)))
+       (ienv (ienv-simple short-bytes
+                          int-bytes
+                          long-bytes
+                          long-long-bytes
+                          plain-char-signed
+                          gcc)))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -131,22 +131,22 @@
 
   ///
 
-  (defret transunit-ensemblep-when-output-files-process-tunits
+  (defret transunit-ensemblep-when-output-files-process-const/arg
     (implies (not erp)
              (transunit-ensemblep tunits)))
 
-  (defret transunit-ensemble-unambp-when-output-files-process-tunits
+  (defret transunit-ensemble-unambp-when-output-files-process-const/arg
     (implies (not erp)
              (transunit-ensemble-unambp tunits)))
 
-  (defret transunit-ensemble-aidentp-when-output-files-process-tunits
+  (defret transunit-ensemble-aidentp-when-output-files-process-const/arg
     (implies (not erp)
              (transunit-ensemble-aidentp tunits gcc)))
 
   (in-theory
-   (disable transunit-ensemblep-when-output-files-process-tunits
-            transunit-ensemble-unambp-when-output-files-process-tunits
-            transunit-ensemble-aidentp-when-output-files-process-tunits)))
+   (disable transunit-ensemblep-when-output-files-process-const/arg
+            transunit-ensemble-unambp-when-output-files-process-const/arg
+            transunit-ensemble-aidentp-when-output-files-process-const/arg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +262,7 @@
                 (("Goal"
                   :in-theory
                   (enable
-                   transunit-ensemblep-when-output-files-process-tunits))))
+                   transunit-ensemblep-when-output-files-process-const/arg))))
                (path stringp)
                (indent-size posp)
                (paren-nested-conds booleanp)
@@ -338,7 +338,7 @@
     (("Goal"
       :in-theory
       (enable
-       transunit-ensemble-unambp-when-output-files-process-tunits))))
+       transunit-ensemble-unambp-when-output-files-process-const/arg))))
 
   (defret transunit-ensemble-aidentp-of-output-files-process-inputs
     (implies (not erp)
@@ -347,7 +347,7 @@
     (("Goal"
       :in-theory
       (enable
-       transunit-ensemble-aidentp-when-output-files-process-tunits)))))
+       transunit-ensemble-aidentp-when-output-files-process-const/arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

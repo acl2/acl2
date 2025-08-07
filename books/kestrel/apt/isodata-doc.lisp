@@ -832,10 +832,10 @@
         to the same or isomorphic value that @('old') maps
         the isomorphic argument tuple in the old representation."))
      (xdoc::p
-      "If @('old') has input or output "
+      "If any of the isomorphic conversions specified in @('isomaps')
+       has input or output "
       (xdoc::seetopic "acl2::stobj" "stobjs")
-      " whose representation is being transformed,
-       @('new') is "
+      ", @('new') is "
       (xdoc::seetopic "acl2::non-executable" "non-executable")
       ": it is generated as a @(tsee defun-nx) instead of a @(tsee defun).
        The reason is that, by applying the conversions to/from the stobjs,
