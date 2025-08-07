@@ -98,7 +98,7 @@
    described in the documentation."
 
   "@('stobjp') is a flag saying whether
-   any of the conversions has input or output stobjs."))
+   any of the domains has input or output stobjs."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,8 +144,7 @@
    (domb pseudo-termfnp "Domain @($B$), in translated form.")
    (alpha pseudo-termfnp "Conversion @($\\alpha$), in translated form.")
    (beta pseudo-termfnp "Conversion @($\\beta$), in translated form.")
-   (stobjp booleanp "Whether @($\\alpha$) or @($\\beta$) has
-                     any input or output stobjs.")
+   (stobjp booleanp "Whether @($A$) or @($B) has any input or output stobjs.")
    (alpha-image symbolp "Name of the @(':alpha-image') theorem.")
    (beta-image symbolp "Name of the @(':beta-image') theorem.")
    (beta-of-alpha symbolp "Name of the @(':beta-of-alpha') theorem,
@@ -310,13 +309,13 @@
   (xdoc::topstring-p
    "We call @(tsee defmapping-process-function) on each
     and then we check the constraints on the arities and numbers of results.")
-  (b* (((er (list doma$ doma-arity doma-numres &))
+  (b* (((er (list doma$ doma-arity doma-numres doma-stobjp))
         (defmapping-process-function doma 2 guard-thms$ ctx state))
-       ((er (list domb$ domb-arity domb-numres &))
+       ((er (list domb$ domb-arity domb-numres domb-stobjp))
         (defmapping-process-function domb 3 guard-thms$ ctx state))
-       ((er (list alpha$ alpha-arity alpha-numres alpha-stobjp))
+       ((er (list alpha$ alpha-arity alpha-numres &))
         (defmapping-process-function alpha 4 guard-thms$ ctx state))
-       ((er (list beta$ beta-arity beta-numres beta-stobjp))
+       ((er (list beta$ beta-arity beta-numres &))
         (defmapping-process-function beta 5 guard-thms$ ctx state))
        ((unless (= doma-numres 1))
         (er-soft+ ctx t nil
@@ -352,7 +351,7 @@
                    must equal the arity ~x1 of the domain ~x2, ~
                    but it is ~x3 instead."
                   beta doma-arity doma beta-numres)))
-    (value (list doma$ domb$ alpha$ beta$ (or alpha-stobjp beta-stobjp)))))
+    (value (list doma$ domb$ alpha$ beta$ (or doma-stobjp domb-stobjp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
