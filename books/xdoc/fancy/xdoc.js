@@ -1032,6 +1032,12 @@ function searchGoMain(query_str) {
             if (a.rank !== b.rank) return a.rank - b.rank;
 
             // ACL2 Sources priority
+            // Note: on the server-supported flavor of the manual, topicFrom may
+            //   return undefined for keys which have not been loaded. We can't
+            //   load the data for every key, so for now we accept this
+            //   restriction. Eventually, we may address this by adding this
+            //   information to the always-available XDocIndex, instead of the
+            //   larger, on-demand XDocData object.
             const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
             const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
             if (sysA && !sysB) return -1;
@@ -1155,8 +1161,6 @@ function jumpRender(datum) {
 }
 
 function jumpInit() {
-    ta_data_initialize();
-
     // Take the first "count" number of elements from the "flattened"
     // (concatenated) arrays (but don't actually concatenate them all,
     // since they may be much larger than the count).
@@ -1386,6 +1390,7 @@ function onDataLoaded()
 	window.history.replaceState({key:key,rtop:0},
 				    keyTitle(key), "?topic=" + key);
 	datLoadKey(key, 0);
+        setTimeout(ta_data_initialize, 20);
     }
 
     window.addEventListener('popstate',
