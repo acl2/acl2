@@ -188,3 +188,25 @@
 
 (test-instr-and-thm :src1 #xabcdef :src2 #xabcdef :dst #xabcdef
                     :rs1 4 :rs2 4 :rd 4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; OR
+
+(defmacro test-instr-or-thm (&key (rs1 '1) (rs2 '2) (rd '3)
+                                  src1 src2 dst signedp)
+  `(test-instr-op-thm :funct (op-funct-or)
+                      :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
+                      :src1 ,src1 :src2 ,src2 :dst ,dst
+                      :signedp ,signedp
+                      :enable (,(if signedp
+                                    'exec-or-alt-def-signed-signed
+                                  'exec-or))
+                      :disable ((:e tau-system)) ; for speed
+                      :cases ((feat-32p feat))))
+
+(test-instr-or-thm :src1 #xac80 :src2 #x4412 :dst #xec92)
+
+(test-instr-or-thm :src1 #xac80 :src2 0 :dst #xac80)
+
+(test-instr-or-thm :src1 0 :src2 #x4412 :dst #x4412)
