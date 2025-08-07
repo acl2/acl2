@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
+(include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
@@ -446,75 +447,11 @@
 (defthm true-listp-of-make-standard-assumptions64-new
   (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp bvp new-canonicalp)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognizes a representation of a memory region, of the form:
-;; (<len> <addr> <bytes>)
-;; todo: consider adding support for zero-fill (or partial zero-fill) regions
-(defund memory-regionp (reg)
-  (declare (xargs :guard t))
-  (and (true-listp reg)
-       (= 3 (len reg))
-       (natp (first reg)) ; length
-       ;; The address can be absolute (a natp) or relative (a term representing some base-var plus the addr):
-       (natp (second reg)) ; addr (agnostic on the size of the memory space, for now)
-       (acl2::byte-listp (third reg))
-       ;; the length must be correct, at least for now:
-       (= (first reg) (len (third reg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognizes a true-list of memory regions
-(defund memory-regionsp (regions)
-  (declare (xargs :guard t))
-  (if (not (consp regions))
-      (null regions)
-    (and (memory-regionp (first regions))
-         (memory-regionsp (rest regions)))))
-
-(local
-  (defthm memory-regionsp-of-revappend
-    (implies (and (memory-regionsp x)
-                  (memory-regionsp y))
-             (memory-regionsp (revappend x y)))
-    :hints (("Goal" :in-theory (enable revappend memory-regionsp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Strips out just the addresses and lens
-(defund memory-region-addresses-and-lens (regions acc)
-  (declare (xargs :guard (and (memory-regionsp regions)
-                              (alistp acc))
-                  :guard-hints (("Goal" :in-theory (enable memory-regionsp
-                                                           memory-regionp)))))
-  (if (endp regions)
-      (reverse acc)
-    (b* ((region (first regions))
-         (length (first region))
-         (addr (second region))
-         ;;(bytes (third region))
-         )
-      (memory-region-addresses-and-lens (rest regions)
-                                        (acons addr length acc)))))
-
-(local
-  (defthm alistp-of-memory-region-addresses-and-lens
-    (implies (alistp acc)
-             (alistp (memory-region-addresses-and-lens regions acc)))
-    :hints (("Goal" :in-theory (enable memory-region-addresses-and-lens)))))
-
-(local
-  (defthm nat-listp-of-strip-cdrs-of-memory-region-addresses-and-lens
-    (implies (and (memory-regionsp regions)
-;                  (true-listp acc)
-                  (nat-listp (strip-cdrs acc)))
-             (nat-listp (strip-cdrs (memory-region-addresses-and-lens regions acc))))
-    :hints (("Goal" :in-theory (enable memory-region-addresses-and-lens
-                                       memory-regionsp
-                                       memory-regionp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
 (defund assumptions-for-memory-regions (regions base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp acc)
   (declare (xargs :guard (and (memory-regionsp regions)
