@@ -668,6 +668,8 @@
                                     AXE-TREE-LISTP PSEUDO-TERM-LISTP
                                     DEFAULT-+-1
                                     DEFAULT-+-2
+                                    default-<-1
+                                    default-<-2
                                     SYMBOLP-OF-CAR-OF-CAR-WHEN-SYMBOL-TERM-ALISTP
                                     symbol-listp
                                     symbol-alistp axe-rule-hyp-listp
@@ -680,11 +682,12 @@
                                     dargp-less-than
                                     all-<-when-not-consp
                                     consp-of-car-when-pseudo-dagp
-                                    default-<-1
                                     alistp
                                     ;;axe-rule-hypp-when-simple ; caused case splits
                                     assoc-equal
                                     ilks-plist-worldp
+                                    integerp-of-nth-when-all-natp
+                                    acl2::natp-of-nth-when-nat-listp-type ; brought in above
                                     ;; for the smtp variant:
                                     w)))
 
