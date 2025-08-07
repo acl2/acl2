@@ -12,8 +12,8 @@
 (in-package "RISCV")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/basic/controlled-configuration" :dir :system)
 
-(include-book "../library-extensions/controlled-configuration")
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
