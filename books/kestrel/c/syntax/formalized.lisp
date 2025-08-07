@@ -605,7 +605,7 @@
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -647,7 +647,7 @@
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -663,7 +663,7 @@
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring

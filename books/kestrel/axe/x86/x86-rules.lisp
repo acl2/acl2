@@ -412,7 +412,7 @@
 (acl2::def-constant-opener seg-regp)
 (acl2::def-constant-opener integer-range-p)
 
-(defopeners acl2::get-symbol-entry-mach-o)
+(defopeners acl2::get-symbol-table-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
 (defopeners acl2::get-section-number-mach-o-aux)
 

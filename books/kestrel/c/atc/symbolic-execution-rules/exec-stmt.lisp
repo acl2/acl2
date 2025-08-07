@@ -39,16 +39,16 @@
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :compound)
                   (not (zp limit))
-                  (equal val?+compst1
+                  (equal sval+compst1
                          (exec-block-item-list (stmt-compound->items s)
                                                (enter-scope compst)
                                                fenv
                                                (1- limit)))
-                  (equal val? (mv-nth 0 val?+compst1))
-                  (equal compst1 (mv-nth 1 val?+compst1))
-                  (value-optionp val?))
+                  (equal sval (mv-nth 0 sval+compst1))
+                  (equal compst1 (mv-nth 1 sval+compst1))
+                  (stmt-valuep sval))
              (equal (exec-stmt s compst fenv limit)
-                    (mv val? (exit-scope compst1))))
+                    (mv sval (exit-scope compst1))))
     :enable exec-stmt)
 
   (defruled exec-stmt-when-expr
@@ -62,7 +62,7 @@
                                                 (1- limit)))
                   (compustatep compst1))
              (equal (exec-stmt s compst fenv limit)
-                    (mv nil compst1)))
+                    (mv (stmt-value-none) compst1)))
     :enable exec-stmt)
 
   (defruled exec-stmt-when-if
@@ -79,7 +79,7 @@
              (equal (exec-stmt s compst fenv limit)
                     (if test
                         (exec-stmt (stmt-if->then s) compst fenv (1- limit))
-                      (mv nil compst))))
+                      (mv (stmt-value-none) compst))))
     :enable exec-stmt)
 
   (defruled exec-stmt-when-if-and-true
@@ -111,7 +111,7 @@
                   (booleanp test)
                   (test* (not test)))
              (equal (exec-stmt s compst fenv limit)
-                    (mv nil compst)))
+                    (mv (stmt-value-none) compst)))
     :enable (exec-stmt test*))
 
   (defruled exec-stmt-when-ifelse
@@ -184,7 +184,7 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))
              (equal (exec-stmt s compst fenv limit)
-                    (mv val compst1)))
+                    (mv (stmt-value-return val) compst1)))
     :enable exec-stmt)
 
   (defval *atc-exec-stmt-rules*

@@ -403,6 +403,7 @@
                     (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
                     ))
               nil)
+            `((equal (bvchop 6 ,base-var) 0)) ; the BASE-VAR is 64-byte aligned
             `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
               ;; Alignment checking is turned off:
               (not (alignment-checking-enabled-p ,state-var))
@@ -1031,8 +1032,7 @@
                         (if (natp target)
                             target ; explicit address given (relative iff position-independentp)
                           ;; target is the name of a function:
-                          (ec-call (acl2::subroutine-address-mach-o target parsed-macho)) ; todo on the ec-call
-                          )))
+                          (acl2::subroutine-address-mach-o target parsed-macho))))
        ((when (not (natp target-offset)))
         (er hard? 'assumptions-macho64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
@@ -1060,7 +1060,7 @@
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
             ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
-            (b* ((code-address (acl2::ec-call (acl2::get-mach-o-code-address parsed-macho))) ;todo on the ec-call
+            (b* ((code-address (acl2::get-mach-o-code-address parsed-macho))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
@@ -1069,7 +1069,7 @@
                                          (symbolic-add-constant code-address base-var))
                                      code-address)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len (acl2::ec-call (acl2::get-mach-o-code parsed-macho))) nil)))))) ; todo on the ec-call
+              (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future and existing stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)

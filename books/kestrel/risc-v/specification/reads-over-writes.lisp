@@ -55,200 +55,23 @@
               ubyte8p
               logtail))
 
-   (defruled loghead-plus-1-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (1+ x))
+   (defruled loghead-plus-c-differs
+     (implies (and (integerp x)
+                   (posp c)
+                   (< c (expt 2 (nfix n))))
+              (not (equal (loghead n (+ c x))
                           (loghead n x))))
      :enable loghead)
 
-   (defruled loghead-plus-2-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 2 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n x))))
-     :enable loghead)
-
-   (defruled loghead-plus-2-differs-from-plus-1
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 2 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs-from-plus-1
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-3-differs-from-plus-2
-     (implies (and (> (nfix n) 1)
-                   (integerp x))
-              (not (equal (loghead n (+ 3 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-4-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 4 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-5-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 5 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-6-differs-from-plus-5
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 6 x))
-                          (loghead n (+ 5 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-1
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 1 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-2
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 2 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-3
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 3 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-4
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 4 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-5
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 5 x)))))
-     :enable loghead)
-
-   (defruled loghead-plus-7-differs-from-plus-6
-     (implies (and (> (nfix n) 2)
-                   (integerp x))
-              (not (equal (loghead n (+ 7 x))
-                          (loghead n (+ 6 x)))))
+   (defruled loghead-plus-c-differs-from-plus-d
+     (implies (and (integerp x)
+                   (posp c)
+                   (posp d)
+                   (< c (expt 2 (nfix n)))
+                   (< d (expt 2 (nfix n)))
+                   (not (equal c d)))
+              (not (equal (loghead n (+ c x))
+                          (loghead n (+ d x)))))
      :enable loghead)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -870,17 +693,17 @@
                                      (part-select (ubyte16-fix val)
                                                   :low 0 :high 7))))
                              (t (read-memory-unsigned8 addr1 stat feat)))))
+       :cases ((feat-32p feat))
        :enable (read-memory-unsigned8
                 write-memory-unsigned8
                 write-memory-unsigned16
                 loghead-upper-bound
-                loghead-plus-1-differs
+                loghead-plus-c-differs
                 ubyte8p-of-logtail-8-of-ubyte16
                 max))))
 
   (defruled read-memory-unsigned8-of-write-memory-unsigned32
-    (implies (and (stat-validp stat feat)
-                  (integerp addr2))
+    (implies (stat-validp stat feat)
              (equal (read-memory-unsigned8 addr1
                                            (write-memory-unsigned32
                                             addr2 val stat feat)
@@ -963,22 +786,18 @@
                                      (part-select (ubyte32-fix val)
                                                   :low 0 :high 7))))
                              (t (read-memory-unsigned8 addr1 stat feat)))))
+       :cases ((feat-32p feat))
        :enable (read-memory-unsigned8
                 write-memory-unsigned8
                 write-memory-unsigned32
                 loghead-upper-bound
-                loghead-plus-1-differs
-                loghead-plus-2-differs
-                loghead-plus-3-differs
-                loghead-plus-2-differs-from-plus-1
-                loghead-plus-3-differs-from-plus-1
-                loghead-plus-3-differs-from-plus-2
+                loghead-plus-c-differs
+                loghead-plus-c-differs-from-plus-d
                 ubyte8p-of-logtail-24-of-ubyte32
                 max))))
 
   (defruled read-memory-unsigned8-of-write-memory-unsigned64
-    (implies (and (stat-validp stat feat)
-                  (integerp addr2))
+    (implies (stat-validp stat feat)
              (equal (read-memory-unsigned8 addr1
                                            (write-memory-unsigned64
                                             addr2 val stat feat)
@@ -992,7 +811,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 56 :high 63))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 1 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 1 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 8 :high 15))
@@ -1000,7 +820,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 48 :high 55))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 2 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 2 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 16 :high 23))
@@ -1008,7 +829,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 40 :high 47))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 3 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 3 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 24 :high 31))
@@ -1016,7 +838,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 32 :high 39))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 4 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 4 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 32 :high 39))
@@ -1024,7 +847,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 24 :high 31))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 5 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 5 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 40 :high 47))
@@ -1032,7 +856,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 16 :high 23))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 6 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 6 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 48 :high 55))
@@ -1040,7 +865,8 @@
                                   (part-select (ubyte64-fix val)
                                                :low 8 :high 15))))
                           ((equal (loghead (feat->xlen feat) addr1)
-                                  (loghead (feat->xlen feat) (+ 7 addr2)))
+                                  (loghead (feat->xlen feat)
+                                           (+ 7 (ifix addr2))))
                            (cond ((feat-little-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 56 :high 63))
@@ -1048,41 +874,89 @@
                                   (part-select (ubyte64-fix val)
                                                :low 0 :high 7))))
                           (t (read-memory-unsigned8 addr1 stat feat)))))
-    :enable (read-memory-unsigned8
-             write-memory-unsigned8
-             write-memory-unsigned64
-             loghead-upper-bound
-             loghead-plus-1-differs
-             loghead-plus-2-differs
-             loghead-plus-3-differs
-             loghead-plus-4-differs
-             loghead-plus-5-differs
-             loghead-plus-6-differs
-             loghead-plus-7-differs
-             loghead-plus-2-differs-from-plus-1
-             loghead-plus-3-differs-from-plus-1
-             loghead-plus-3-differs-from-plus-2
-             loghead-plus-4-differs-from-plus-1
-             loghead-plus-4-differs-from-plus-2
-             loghead-plus-4-differs-from-plus-3
-             loghead-plus-5-differs-from-plus-1
-             loghead-plus-5-differs-from-plus-2
-             loghead-plus-5-differs-from-plus-3
-             loghead-plus-5-differs-from-plus-4
-             loghead-plus-6-differs-from-plus-1
-             loghead-plus-6-differs-from-plus-2
-             loghead-plus-6-differs-from-plus-3
-             loghead-plus-6-differs-from-plus-4
-             loghead-plus-6-differs-from-plus-5
-             loghead-plus-7-differs-from-plus-1
-             loghead-plus-7-differs-from-plus-2
-             loghead-plus-7-differs-from-plus-3
-             loghead-plus-7-differs-from-plus-4
-             loghead-plus-7-differs-from-plus-5
-             loghead-plus-7-differs-from-plus-6
-             ubyte8p-of-logtail-56-of-ubyte64
-             max)
-    :cases ((feat-32p feat)))
+    :use (:instance lemma (addr2 (ifix addr2)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (stat-validp stat feat)
+                     (integerp addr2))
+                (equal (read-memory-unsigned8 addr1
+                                              (write-memory-unsigned64
+                                               addr2 val stat feat)
+                                              feat)
+                       (cond ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) addr2))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 0 :high 7))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 56 :high 63))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 1 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 8 :high 15))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 48 :high 55))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 2 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 16 :high 23))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 40 :high 47))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 3 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 24 :high 31))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 32 :high 39))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 4 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 32 :high 39))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 24 :high 31))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 5 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 40 :high 47))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 16 :high 23))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 6 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 48 :high 55))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 8 :high 15))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (+ 7 addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 56 :high 63))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte64-fix val)
+                                                  :low 0 :high 7))))
+                             (t (read-memory-unsigned8 addr1 stat feat)))))
+       :enable (read-memory-unsigned8
+                write-memory-unsigned8
+                write-memory-unsigned64
+                loghead-upper-bound
+                loghead-plus-c-differs
+                loghead-plus-c-differs-from-plus-d
+                ubyte8p-of-logtail-56-of-ubyte64
+                max)
+       :cases ((feat-32p feat)))))
 
   (def-ruleset read-memory-of-write-memory
     '(read-memory-unsigned8-pf-write-memory-unsigned8

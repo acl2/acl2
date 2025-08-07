@@ -69,10 +69,10 @@
             x86isa::gpr-adc-spec-4-alt-def
             x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
             x86isa::open-carry-of-rflagsbits->cf
-            ;; open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
-            ;; open-carry-of-cf-spec16
-            ;; open-carry-of-cf-spec32
-            ;; open-carry-of-cf-spec64
+            open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
+            open-carry-of-cf-spec16
+            open-carry-of-cf-spec32
+            open-carry-of-cf-spec64
             open-carry-constant-opener ; also open when applied to a constant (or refrain from even this?)
             integerp-of-open-carry
 
@@ -1206,6 +1206,8 @@
     acl2::bvif-of-+-arg3
     acl2::bvif-of---arg3
     acl2::bvif-of---arg4
+
+    acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
     ))
 
@@ -2111,13 +2113,20 @@
           (acl2::bvif-rules)
           (bitops-rules)
           (acl2::if-becomes-bvif-rules)
+          '(acl2::if-becomes-bvif-1-axe
+            acl2::if-becomes-bvif-2-axe
+            acl2::if-becomes-bvif-3-axe
+            acl2::if-becomes-bvif-4-axe)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
           *signed-recognizers* ;; these are just signed-byte-p
-          '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
+          '(acl2::boolif-of-if-arg1
+            acl2::boolif-of-if-arg2
+            acl2::boolif-of-if-arg3
+            ;; It would be nice if all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
             ;; xw-of-rflags-and-set-flag
@@ -2658,11 +2667,11 @@
   (append
    '(standard-state-assumption
      standard-state-assumption-32
-     standard-assumptions-core-64
+     standard-assumptions-core-64 ; only needed by loop lifter?
      standard-state-assumption-64
-     standard-assumptions-mach-o-64
-     standard-assumptions-elf-64
-     standard-assumptions-pe-64
+     standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     standard-assumptions-elf-64 ; only needed by loop lifter?
+     standard-assumptions-pe-64 ; only needed by loop lifter?
      bytes-loaded-at-address-64
      ;; Mach-O stuff:
      acl2::get-mach-o-code
@@ -2676,9 +2685,9 @@
      acl2::get-mach-o-segment-base-2
      acl2::get-mach-o-segment-unroll-1
      acl2::get-mach-o-segment-unroll-2
-     acl2::get-symbol-entry-mach-o-base-1
-     acl2::get-symbol-entry-mach-o-base-2
-     acl2::get-symbol-entry-mach-o-unroll
+     acl2::get-symbol-table-entry-mach-o-base-1
+     acl2::get-symbol-table-entry-mach-o-base-2
+     acl2::get-symbol-table-entry-mach-o-unroll
      acl2::get-text-section-number-mach-o
      acl2::get-all-sections-from-mach-o
      acl2::get-all-sections-from-mach-o-load-commands-base
@@ -5618,7 +5627,6 @@
     acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
     ;; acl2::equal-of-myif-arg1-safe
     ;; acl2::equal-of-myif-arg2-safe
-    acl2::if-becomes-bvif-1-axe
     ;; acl2::boolif-of-t-and-nil-when-booleanp
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.

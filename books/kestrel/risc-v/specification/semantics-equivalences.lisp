@@ -45,7 +45,7 @@
 (defsection exec-addi-alt-defs
   :short "Equivalent semantic definitions of @('ADDI')."
 
-  (defruled exec-addi-alt-def
+  (defruled exec-addi-alt-def-signed-signed
     (equal (exec-addi rd rs1 imm stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (imm-operand (logext 12 (ubyte12-fix imm)))
@@ -58,55 +58,51 @@
              write-xreg
              inc4-pc
              write-pc)
-    :use (:instance lemma
-                    (imm (ubyte12-fix imm))
-                    (rs1 (ubyte5-fix rs1)))
-    :prep-lemmas
-    ((defruled lemma
-       (equal (loghead (feat->xlen feat)
-                       (+ (logext 12 imm)
-                          (logext (feat->xlen feat)
-                                  (read-xreg-unsigned rs1 stat feat))))
-              (loghead (feat->xlen feat)
-                       (+ (loghead (feat->xlen feat)
-                                   (logext 12 imm))
-                          (read-xreg-unsigned rs1 stat feat))))
-       :use (lemma1 lemma2 lemma3)
-       :disable bitops::loghead-of-+-of-loghead-same
-       :cases ((feat-32p feat))
-       :prep-lemmas
-       ((defruled lemma1
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat)))))
-          :cases ((feat-32p feat)))
-        (defruled lemma2
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat))))
-          :enable (loghead-of-logext-plus-logext
-                   ifix))
-        (defruled lemma3
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat)))
-                 (loghead (feat->xlen feat)
-                          (+ (loghead (feat->xlen feat)
-                                      (logext 12 imm))
-                             (loghead (feat->xlen feat)
-                                      (read-xreg-unsigned
-                                       rs1 stat feat)))))))))))
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (logext 12 (ubyte12-fix imm)))
+                    (y (read-xreg-signed (ubyte5-fix rs1) stat feat)))
+    :disable bitops::loghead-of-+-of-loghead-same)
+
+  (defruled exec-addi-alt-def-unsigned-signed
+    (equal (exec-addi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addi
+             write-xreg
+             inc4-pc
+             write-pc)
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (logext 12 (ubyte12-fix imm)))
+                    (y (read-xreg-unsigned (ubyte5-fix rs1) stat feat)))
+    :disable bitops::loghead-of-+-of-loghead-same)
+
+  (defruled exec-addi-alt-def-signed-unsigned
+    (equal (exec-addi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (loghead (feat->xlen feat)
+                                      (logext 12 (ubyte12-fix imm))))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addi
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc)
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (loghead (feat->xlen feat)
+                                (logext 12 (ubyte12-fix imm))))
+                    (y (read-xreg-signed (ubyte5-fix rs1) stat feat)))
+    :disable (bitops::loghead-of-+-of-loghead-same
+              acl2::loghead-+-cancel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

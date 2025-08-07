@@ -19,6 +19,7 @@
 
 (include-book "kestrel/c/transformation/splitgso" :dir :system)
 (include-book "kestrel/c/transformation/simpadd0" :dir :system)
+(include-book "kestrel/c/transformation/split-fn" :dir :system)
 (include-book "kestrel/c/syntax/input-files" :dir :system)
 (include-book "kestrel/c/syntax/output-files" :dir :system)
 (include-book "kestrel/utilities/lookup-keyword" :dir :system)
@@ -143,3 +144,33 @@
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
 (defmacro simpadd0 (&whole whole-form &rest kv-list)
   `(make-event (simpadd0-wrapper ',kv-list ',whole-form)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an event.
+;; todo: error checking
+;; todo: add preprocessor args, etc. (eventually make per-file)
+;; could all files to be "all" instead of a list
+(defun split-fn-wrapper (kv-list whole-form)
+  (b* ((ctx whole-form)
+       ;; Pick out the args that are for input-files and output-files:
+       ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
+        (handle-common-args kv-list ctx)))
+    `(progn
+       (c$::input-files :files ,files
+                        :path ,old-dir
+                        :const *old-const* ; todo: avoid name clash
+                        :preprocess ,preprocess
+                        ;; :preprocess-args ; todo
+                        :gcc ,gcc)
+       (c2c::split-fn *old-const*
+                      *new-const*
+                      ;; Pass through all other args (currently, none):
+                      ,@remaining-kv-list)
+       (c$::output-files :const *new-const*
+                         :path ,new-dir))))
+
+;; A wrapper for split-fn that takes all its arguments as alternating keywords/values.
+;; This wrapper is in the ACL2 package, for ease of use by run-json-command
+(defmacro split-fn (&whole whole-form &rest kv-list)
+  `(make-event (split-fn-wrapper ',kv-list ',whole-form)))

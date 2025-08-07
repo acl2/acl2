@@ -183,7 +183,7 @@
         inputs, which determine an "
        (xdoc::seetopic "implementation-environments"
                        "implementation environment")
-       "."))
+       " together with @(':gcc')."))
      (xdoc::p
       "These levels of processing are ordered as")
      (xdoc::codeblock

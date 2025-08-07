@@ -11,6 +11,7 @@
 
 (in-package "C$")
 
+(include-book "builtin")
 (include-book "unambiguity")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -359,6 +360,27 @@
         (t (dimb-add-idents-objfun (cdr idents)
                                    (dimb-add-ident-objfun (car idents)
                                                           table))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-ident-objfun-file-scope ((ident identp) (table dimb-tablep))
+  :returns (new-table dimb-tablep
+                      :hints (("Goal" :in-theory (enable acons))))
+  :short "Add an identifier to the file scope of a disambiguation table,
+          with object or function kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee dimb-add-ident-objfun), this skips any block scopes,
+     and directly updates the file scope at the bottom of the stack."))
+  (b* (((when (endp table)) (raise "Internal error: no scopes."))
+       (table (dimb-table-fix table))
+       (scope (car (last table)))
+       (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
+       (new-table (append (butlast table 1) (list new-scope))))
+    new-table)
+  :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3390,7 +3412,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-fundef ((fundef fundefp) (table dimb-tablep))
+(define dimb-fundef ((fundef fundefp) (table dimb-tablep) (gcc booleanp))
   :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-table dimb-tablep))
   :short "Disambiguate a function definition."
   :long
@@ -3417,14 +3439,28 @@
      but the declarator will be followed, in the function definition,
      by declarations for the identifiers (again, assuming the code is valid).")
    (xdoc::p
-    "We process those declarations, which will add the function parameters
+    "As with declarations, the scope of the function name
+     starts just after its declarator;
+     it must be added to the file scope of the disambiguation table.
+     However, recall that the disambiguation of the declarator
+     pushes a new scope for the outermost block of the function definition.
+     Thus, instead of using @(tsee dimb-add-ident-objfun) to add the function,
+     we use @(tsee dimb-add-ident-objfun-file-scope).")
+   (xdoc::p
+    "We process any declarations, which add function parameters
      to the scope that was added when processing the declarator.")
    (xdoc::p
     "Then we add the declared function to the disambiguation table,
      so that it can be referenced from the body, in a recursive call.")
    (xdoc::p
     "We extend the disambiguation table with the identifier @('__func__')
-     [C17:6.4.2.2].")
+     [C17:6.4.2.2].
+     If the GCC flag is enabled (i.e. GCC extensions are allowed),
+     we further extend the table with the identifiers @('__FUNCTION__') and
+     @('__PRETTY_FUNCTION__') (GCC manual, "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
+                 "``Function Names''")
+    ").")
    (xdoc::p
     "After all of that, we disambiguate the body of the function definition,
      which is a block (i.e. compound statement) in valid code.
@@ -3440,9 +3476,15 @@
        ((erp new-spec & table)
         (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
        ((erp new-declor & ident table) (dimb-declor fundef.declor t table))
+       (table (dimb-add-ident-objfun-file-scope ident table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
-       (table (dimb-add-ident-objfun ident table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
+       (table (if gcc
+                  (dimb-add-idents-objfun
+                    (list (ident "__FUNCTION__")
+                          (ident "__PRETTY_FUNCTION__"))
+                    table)
+                table))
        ((unless (stmt-case fundef.body :compound))
         (retmsg$ "The body of the function definition ~x0 ~
                   is not a compound statement; the code is invalid."
@@ -3467,14 +3509,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-extdecl ((extdecl extdeclp) (table dimb-tablep))
+(define dimb-extdecl ((extdecl extdeclp) (table dimb-tablep) (gcc booleanp))
   :returns (mv (erp maybe-msgp) (new-extdecl extdeclp) (new-table dimb-tablep))
   :short "Disambiguate an external declaration."
   (b* (((reterr) (irr-extdecl) (irr-dimb-table)))
     (extdecl-case
      extdecl
      :fundef
-     (b* (((erp new-fundef table) (dimb-fundef extdecl.unwrap table)))
+     (b* (((erp new-fundef table) (dimb-fundef extdecl.unwrap table gcc)))
        (retok (extdecl-fundef new-fundef) table))
      :decl
      (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
@@ -3493,15 +3535,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-extdecl-list ((edecls extdecl-listp) (table dimb-tablep))
+(define dimb-extdecl-list ((edecls extdecl-listp)
+                           (table dimb-tablep)
+                           (gcc booleanp))
   :returns (mv (erp maybe-msgp)
                (new-edecls extdecl-listp)
                (new-table dimb-tablep))
   :short "Disambiguate a list of external declarations."
   (b* (((reterr) nil (irr-dimb-table))
        ((when (endp edecls)) (retok nil (dimb-table-fix table)))
-       ((erp new-edecl table) (dimb-extdecl (car edecls) table))
-       ((erp new-edecls table) (dimb-extdecl-list (cdr edecls) table)))
+       ((erp new-edecl table) (dimb-extdecl (car edecls) table gcc))
+       ((erp new-edecls table) (dimb-extdecl-list (cdr edecls) table gcc)))
     (retok (cons new-edecl new-edecls) table))
   :hooks (:fix)
 
@@ -3527,11 +3571,13 @@
     "If the GCC flag is @('nil') (i.e. no GCC extensions),
      the initial disambiguation table is empty.
      If the flag is @('t'), for now the only difference is that
-     we initialize the disambiguation table with some GCC built-ins.
-     For now we only add some built-ins
+     we initialize the disambiguation table with some "
+    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
+    ". For now we only add some built-ins
      that we have observed in some preprocessed files.
-     We should revisit this, adding all the GCC built-ins,
-     with clear and accurate references.")
+     We should revisit this, adding all the "
+    (xdoc::seetopic "gcc-builtins" "GCC built-ins")
+    ", with clear and accurate references.")
    (xdoc::p
     "We also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.
@@ -3551,7 +3597,7 @@
      To add to the strangeness,
      one can change the above initializer to @('__eax + 1')
      (and presumably other similar expressions)
-     and the compiler acceptes it.")
+     and the compiler accepts it.")
    (xdoc::p
     "However, none of this matters for the disambiguator,
      which does not need to validate the code,
@@ -3575,63 +3621,9 @@
        (table (dimb-init-table))
        (table
          (if gcc
-             (dimb-add-idents-objfun
-              (list (ident "__atomic_signal_fence")
-                    (ident "__builtin_add_overflow")
-                    (ident "__builtin_bswap16")
-                    (ident "__builtin_bswap32")
-                    (ident "__builtin_bswap64")
-                    (ident "__builtin_choose_expr")
-                    (ident "__builtin_clz")
-                    (ident "__builtin_clzl")
-                    (ident "__builtin_clzll")
-                    (ident "__builtin_constant_p")
-                    (ident "__builtin_ctzl")
-                    (ident "__builtin_dynamic_object_size")
-                    (ident "__builtin_expect")
-                    (ident "__builtin_memchr")
-                    (ident "__builtin_memcmp")
-                    (ident "__builtin_memcpy")
-                    (ident "__builtin_memset")
-                    (ident "__builtin_mul_overflow")
-                    (ident "__builtin_object_size")
-                    (ident "__builtin_return_address")
-                    (ident "__builtin_strcpy")
-                    (ident "__builtin_strlen")
-                    (ident "__builtin_strncat")
-                    (ident "__builtin_strncpy")
-                    (ident "__builtin_sub_overflow")
-                    (ident "__builtin_unreachable")
-                    (ident "__builtin_va_end")
-                    (ident "__builtin_va_start")
-                    (ident "__eax")
-                    (ident "__ebx")
-                    (ident "__ecx")
-                    (ident "__edx")
-                    (ident "__esi")
-                    (ident "__edi")
-                    (ident "__ebp")
-                    (ident "__esp")
-                    (ident "__sync_add_and_fetch")
-                    (ident "__sync_and_and_fetch")
-                    (ident "__sync_bool_compare_and_swap")
-                    (ident "__sync_fetch_and_add")
-                    (ident "__sync_fetch_and_and")
-                    (ident "__sync_fetch_and_nand")
-                    (ident "__sync_fetch_and_or")
-                    (ident "__sync_fetch_and_sub")
-                    (ident "__sync_fetch_and_xor")
-                    (ident "__sync_lock_release")
-                    (ident "__sync_lock_test_and_set")
-                    (ident "__sync_nand_and_fetch")
-                    (ident "__sync_or_and_fetch")
-                    (ident "__sync_sub_and_fetch")
-                    (ident "__sync_synchronize")
-                    (ident "__sync_val_compare_and_swap")
-                    (ident "__sync_xor_and_fetch"))
-              table)
+             (dimb-add-idents-objfun *gcc-builtin* table)
            table))
-       ((erp new-edecls &) (dimb-extdecl-list edecls table)))
+       ((erp new-edecls &) (dimb-extdecl-list edecls table gcc)))
     (retok (make-transunit :decls new-edecls :info nil)))
   :hooks (:fix)
 

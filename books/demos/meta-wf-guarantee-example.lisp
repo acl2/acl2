@@ -9,7 +9,13 @@
 ; To Recertify:
 ; (certify-book "meta-wf-guarantee-example" ? nil)
 
-; SBCL does not have the capacity to handle this book as of June 2015:
+; SBCL does not have the capacity to handle this book as of June 2015 (and
+; likely many later versions).  THe problem is with the definition bodies of
+; val2 and val3 below, which are huge and can cause "Heap exhausted" failures.
+; CCL doesn't have this problem; perhaps that because it compiles less
+; aggressively (just a wild guess).  The other Lisps don't have this issue
+; because they don't compile on the fly and meta-wf-guarantee-example.acl2
+; specifies that this book is certified without compiling it.
 ; cert_param: (non-sbcl)
 
 ; About this Book

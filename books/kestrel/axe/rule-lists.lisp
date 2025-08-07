@@ -606,8 +606,7 @@
     bvchop-of-bvchop
     bvchop-of-bvcat-cases))
 
-
-;fixme a few of these are -all rules...
+;fixme a few of these are not -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
 ;; add bvlt-trim rules?
 (defun trim-rules ()
@@ -648,12 +647,13 @@
     bvcat-trim-arg2-axe-all
     ;; bvcat-trim-arg2-axe
     ;; bvcat-trim-arg4-axe
-    bvif-trim-arg1-axe
-    bvif-trim-arg2-axe
-    ;; bvif-trim-arg1-axe-all ; use instead?
-    ;; bvif-trim-arg2-axe-all ; use instead?
+    bvif-trim-arg3-axe
+    bvif-trim-arg4-axe
+    ;; bvif-trim-arg3-axe-all ; use instead?
+    ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all))
 
+;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
   (append ;(bvchop-of-bv-rules) ; why?
@@ -668,7 +668,7 @@
     trim-of-bvand
     trim-of-bvor
     trim-of-bvxor
-    trim-of-bv-array-read
+    trim-of-bv-array-read ; may not be needed
     trim-of-bvsx
     trim-of-slice
     trim-of-bvchop
@@ -677,12 +677,10 @@
     ;; trim-does-nothing-axe ; should not be needed?
     )))
 
+;; todo: deprecate (just use trim-rules)?
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(;;bvcat-trim-arg2-axe-all
-            ;;bvcat-trim-arg4-axe-all
-            )
-          (trim-rules)))
+  (trim-rules))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
@@ -2346,7 +2344,7 @@
 
 ;equal-of-myif-arg2 ;trying without this..
      plus-of-bvplus-of-minus1
-     boolif-of-myif-arg2
+     boolif-of-myif-arg2 ; also make one for arg1?
      boolif-of-myif-arg3
 
      ;;           not-of-booland ;trying without this? new4
@@ -2606,8 +2604,8 @@
      bvlt-of-mod-hack
      equal-of-bvplus-and-bvplus-diff-sizes
      equal-of-bvplus-and-bvplus-diff-sizes-alt
-     bvif-trim-arg1-axe-all
-     bvif-trim-arg2-axe-all
+     bvif-trim-arg3-axe-all
+     bvif-trim-arg4-axe-all
      bvlt-of-bvplus-constants2
      equal-of-bvplus-and-bvplus-reduce-constants
 

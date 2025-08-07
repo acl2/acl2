@@ -36,7 +36,7 @@
 (local (in-theory (enable acl2::slice-becomes-getbit)))
 (local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits ;todo: looped, should have 32 in the name
                            ;; for speed:
-                           ;acl2::getbit-when-bound
+                           ;acl2::getbit-when-<-of-constant
                            acl2::unsigned-byte-p-from-bounds
                            acl2::unsigned-byte-p-of-bvchop-bigger)))
 
