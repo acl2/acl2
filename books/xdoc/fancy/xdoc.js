@@ -875,14 +875,14 @@ function searchTokenize(plaintext) {
 // Case-insensitive counting of substring matches
 function countOccurrences(haystack, needle) {
     if (!needle) return 0;
-    var re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    var matches = haystack.match(re);
+    let re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let matches = haystack.match(re);
     return matches ? matches.length : 0;
 }
 
 // Check if all words in query appear in text (for multi-word queries)
 function allWordsMatch(text, query_words) {
-    for(var i = 0; i < query_words.length; i++) {
+    for(let i = 0; i < query_words.length; i++) {
 	if (text.indexOf(query_words[i]) === -1) {
             return false;
 	}
@@ -947,19 +947,19 @@ function searchGoMain(query_str) {
 
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    var max_display = 100;
+    const max_display = 100;
     // 10,000 is too much, visible stutter
-    var max_results = 1000;
-    var matches = {};
-    var results = [];
+    const max_results = 1000;
+    let matches = {};
+    let results = [];
 
     // Assumption: results.length < max_results
     // Assumption: !(key in matches)
     function addResult(key, rank) {
-        var rawname = xindexObj.topicRawname(key).toLowerCase();
-        var title = xindexObj.topicName(key).toLowerCase();
-        var short_plain = topicShortPlaintext(key).toLowerCase();
-        var freq = countOccurrences(rawname, query_str_low) +
+        const rawname = xindexObj.topicRawname(key).toLowerCase();
+        const title = xindexObj.topicName(key).toLowerCase();
+        const short_plain = topicShortPlaintext(key).toLowerCase();
+        const freq = countOccurrences(rawname, query_str_low) +
             countOccurrences(title, query_str_low) +
             countOccurrences(short_plain, query_str_low);
         matches[key] = true;
@@ -1014,7 +1014,7 @@ function searchGoMain(query_str) {
             if (key.value in matches) continue;
             // Perhaps it would be better to use topicShortPlaintext,
             // but this is *very* slow.
-            var short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
+            const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
             // Check for exact phrase first (higher priority)
             if (short_plain_low.indexOf(query_str_low) !== -1) {
                 if (addResult(key.value, 2)) break;
@@ -1032,8 +1032,8 @@ function searchGoMain(query_str) {
             if (a.rank !== b.rank) return a.rank - b.rank;
 
             // ACL2 Sources priority
-            var sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
-            var sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
+            const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
+            const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
             if (sysA && !sysB) return -1;
             if (!sysA && sysB) return 1;
 
@@ -1055,7 +1055,7 @@ function searchGoMain(query_str) {
         } else {
             $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
         }
-        var hits = jQuery("<dl></dl>");
+        let hits = jQuery("<dl></dl>");
         for (const result of results.slice(0, max_display)) {
             // We don't display the frequency, because not all results have a
             // frequency. Furthermore, some results ranked higher will have
@@ -1100,14 +1100,14 @@ $(document).ready(function()
 		      maybePowertip(".rtoolbutton", {placement: 'sw'});
 		  });
 
-var ta_data = [];
-var ta_data_initialized = false;
+let ta_data = [];
+let ta_data_initialized = false;
 
 function ta_data_initialize() {
     if (ta_data_initialized) {
         return;
     }
-    var keys = xindexObj.allKeys();
+    const keys = xindexObj.allKeys();
     for(const key of keys) {
         ta_data.push({
             value: key,
