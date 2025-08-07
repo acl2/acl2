@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/x86/portcullis" :dir :system)
 (include-book "make-memory-region-machinery")
 
 ;; Make the machinery for a 32-bit address space (e.g., for RISC-V in 32-bit
 ;; mode):
-(x::make-memory-region-machinery 32)
+(make-memory-region-machinery 32 "X")
