@@ -416,6 +416,21 @@
   (:return ((value? value-option)))
   :pred stmt-valuep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult stmt-value "statement values"
+  :enable (errorp stmt-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection stmt-value-result-theorems
+  :extension stmt-value-result
+
+  (defruled not-errorp-when-stmt-valuep
+    (implies (stmt-valuep x)
+             (not (errorp x)))
+    :enable (stmt-valuep errorp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bounds-of-integer-values
