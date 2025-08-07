@@ -1486,43 +1486,34 @@
   (defruled integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (uinteger-format->max
-                     (uinteger+sinteger-format->unsigned
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->unsigned-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 size))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     uinteger-format->max-of-uinteger-format-inc-npnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
+    :enable (integer-format->unsigned-max
+             uinteger-format->max-of-uinteger-format-inc-npnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
 
   (defruled integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->max
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp))
+    :enable (integer-format->signed-max
+             sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp))
 
   (defruled integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->min
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-min
+                     (integer-format-inc-sign-tcnpnt size))
                     (- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp)))
+    :enable (integer-format->signed-min
+             sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
