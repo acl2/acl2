@@ -66,7 +66,7 @@
 ; whether source and destination values are signed or unsigned,
 ; and hints.
 
-(defmacro test-instr-op-thm (&key funct rs1 rs2 rd
+(defmacro test-instr-op-thm (&key funct (rs1 '1) (rs2 '2) (rd '3)
                                   src1 src2 dst
                                   src1-signedp src2-signedp dst-signedp
                                   enable disable cases)
@@ -94,9 +94,6 @@
 
 (test-instr-op-thm
  :funct (op-funct-add)
- :rs1 1
- :rs2 2
- :rd 3
  :src1 11
  :src2 22
  :dst 33
@@ -129,9 +126,6 @@
 
 (test-instr-op-thm
  :funct (op-funct-sub)
- :rs1 1
- :rs2 2
- :rd 3
  :src1 54
  :src2 23
  :dst 31
