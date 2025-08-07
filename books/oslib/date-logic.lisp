@@ -38,7 +38,7 @@
 (local (xdoc::set-default-parents oslib))
 
 ;; These return theorems are justified by the specification for
-;; - get-decode-time: https://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm#get-decoded-time
+;; - get-decoded-time: https://www.lispworks.com/documentation/HyperSpec/Body/f_get_un.htm#get-decoded-time
 ;; - decoded time: https://www.lispworks.com/documentation/HyperSpec/Body/25_ada.htm
 ;; - time zone: https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_t.htm#time_zone
 (define get-decoded-time$ (state)
@@ -62,9 +62,9 @@ function.  In the logic, this is modeled as a read from the ACL2 oracle.</p>
   <li>@('second') &mdash; A natural number less than @('60').</li>
   <li>@('minute') &mdash; A natural number less than @('60').</li>
   <li>@('hour') &mdash; A natural number less than @('24').</li>
-  <li>@('date') &mdash; A positive natural number less than @('32').  This
-    represents the day of the month.</li>
-  <li>@('month') &mdash; A positive natural number less than @('13').  January
+  <li>@('date') &mdash; A positive integer less than @('32').  This represents
+    the day of the month.</li>
+  <li>@('month') &mdash; A positive integer less than @('13').  January
     is @('1'), February is @('2'), etc.</li>
   <li>@('year') &mdash; An integer number representing the year A.D.</li>
   <li>@('day') &mdash; A natural number less than @('7').  This represents the
@@ -112,27 +112,27 @@ the current time.</p>"
   ///
 
   (defret get-decoded-time$.second-linear
-    (< second 60)
+    (<= second 59)
     :rule-classes :linear)
 
   (defret get-decoded-time$.minute-linear
-    (< minute 60)
+    (<= minute 59)
     :rule-classes :linear)
 
   (defret get-decoded-time$.hour-linear
-    (< hour 24)
+    (<= hour 23)
     :rule-classes :linear)
 
   (defret get-decoded-time$.date-linear
-    (< date 32)
+    (<= date 31)
     :rule-classes :linear)
 
   (defret get-decoded-time$.month-linear
-    (< month 13)
+    (<= month 12)
     :rule-classes :linear)
 
   (defret get-decoded-time$.day-linear
-    (< day 7)
+    (<= day 6)
     :rule-classes :linear)
 
   (defret get-decoded-time$.zone-min-linear
