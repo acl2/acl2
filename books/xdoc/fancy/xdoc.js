@@ -1057,7 +1057,9 @@ function searchGoMain(query_str) {
         });
 
         if (results.length > max_display) {
-            $("#data").append("<h3><b>" + max_display + "+</b> Results</h3>");
+            $("#data").append("<h3><b>Over " + max_display +
+                              "</b> Results (Showing the First "
+                              + max_display + ")</h3>");
         } else {
             $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
         }
