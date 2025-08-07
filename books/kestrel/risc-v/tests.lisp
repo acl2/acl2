@@ -97,23 +97,10 @@
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-instr-add-thm :src1 11 :src2 22 :dst 33)
 
-(test-instr-add-thm
- :src1 11
- :src2 22
- :dst 33)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-add-thm
- :rs1 4
- :rs2 5
- :rd 6
- :src1 -11
- :src2 -22
- :dst -33
- :signedp t)
+(test-instr-add-thm :src1 -11 :src2 -22 :dst -33 :signedp t
+                    :rs1 4 :rs2 5 :rd 6)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,23 +116,10 @@
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-instr-sub-thm :src1 54 :src2 23 :dst 31)
 
-(test-instr-sub-thm
- :src1 54
- :src2 23
- :dst 31)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-sub-thm
- :rs1 4
- :rs2 5
- :rd 6
- :src1 11
- :src2 22
- :dst -11
- :signedp t)
+(test-instr-sub-thm :src1 11 :src2 22 :dst -11 :signedp t
+                    :rs1 4 :rs2 5 :rd 6)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,35 +135,14 @@
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-instr-slt-thm :src1 78 :src2 934 :dst 1
+                    :rs1 11 :rs2 12 :rd 13)
 
-(test-instr-slt-thm
- :rs1 11
- :rs2 12
- :rd 13
- :src1 78
- :src2 934
- :dst 1)
+(test-instr-slt-thm :src1 1000 :src2 1000 :dst 0
+                    :rs1 11 :rs2 12 :rd 13)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-slt-thm
- :rs1 11
- :rs2 12
- :rd 13
- :src1 1000
- :src2 1000
- :dst 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-slt-thm
- :rs1 11
- :rs2 12
- :rd 11
- :src1 78
- :src2 -934
- :dst 0)
+(test-instr-slt-thm :src1 78 :src2 -934 :dst 0
+                    :rs1 11 :rs2 12 :rd 11)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,35 +158,14 @@
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-instr-sltu-thm :src1 78 :src2 934 :dst 1
+                     :rs1 14 :rs2 1 :rd 1)
 
-(test-instr-sltu-thm
- :rs1 14
- :rs2 1
- :rd 1
- :src1 78
- :src2 934
- :dst 1)
+(test-instr-sltu-thm :src1 1000 :src2 1000 :dst 0
+                     :rs1 5 :rs2 3 :rd 5)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-sltu-thm
- :rs1 5
- :rs2 3
- :rd 5
- :src1 1000
- :src2 1000
- :dst 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-sltu-thm
- :rs1 14
- :rs2 1
- :rd 1
- :src1 20000
- :src2 19999
- :dst 0)
+(test-instr-sltu-thm :src1 20000 :src2 19999 :dst 0
+                     :rs1 14 :rs2 1 :rd 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,22 +183,8 @@
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(test-instr-and-thm :src1 #xffaa :src2 #x3333 :dst #x3322
+                    :rs1 8 :rs2 1 :rd 2)
 
-(test-instr-and-thm
- :rs1 8
- :rs2 1
- :rd 2
- :src1 #xffaa
- :src2 #x3333
- :dst #x3322)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-instr-and-thm
- :rs1 4
- :rs2 4
- :rd 4
- :src1 #xabcdef
- :src2 #xabcdef
- :dst #xabcdef)
+(test-instr-and-thm :src1 #xabcdef :src2 #xabcdef :dst #xabcdef
+                    :rs1 4 :rs2 4 :rd 4)
