@@ -790,6 +790,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; the presence of any of these indicates that the run did not finish
+(defconst *incomplete-run-fns*
+  '(run-until-stack-shorter-than ; todo: compare to other list below
+    run-until-stack-shorter-than-or-reach-pc
+    ;; new scheme:
+    run-until-rsp-is
+    run-until-rsp-is-or-reach-pc
+    ;; newer scheme:
+    run-until-rsp-is-above
+    run-until-rsp-is-above-or-reach-pc
+    run-until-esp-is-above
+    run-until-esp-is-above-or-reach-pc
+    ;; new:
+    x86-fetch-decode-execute
+    ))
+
+;; the presence of any of these indicates that we could not rule out an error branch
+(defconst *error-fns*
+  '(set-ms set-fault))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -852,20 +872,6 @@
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
          ((mv erp dag-or-constant limits state)
-          ;; (if (eq :legacy rewriter)
-          ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-          ;;                     :exhaustivep t
-          ;;                     :rule-alist rule-alist
-          ;;                     :assumptions assumptions
-          ;;                     :monitor rules-to-monitor
-          ;;                     ;; :fns-to-elide '(program-at) ; not supported
-          ;;                     :use-internal-contextsp use-internal-contextsp
-          ;;                     ;; pass print, so we can cause rule hits to be printed:
-          ;;                     :print print ; :brief ;nil
-          ;;                     ;; :print-interval 10000 ;todo: pass in
-          ;;                     :limits limits
-          ;;                     :memoizep memoizep
-          ;;                     :check-inputs nil)
           (acl2::simplify-dag-x86 dag
                                   assumptions
                                   rule-alist
@@ -879,9 +885,7 @@
                                   rules-to-monitor
                                   *no-warn-ground-functions*
                                   '(program-at) ; fns-to-elide ; todo: this is old
-                                  state)
-            ;)
-          )
+                                  state))
          ((when erp) (mv erp nil state))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
@@ -899,6 +903,7 @@
           (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-constant state))
          (dag dag-or-constant) ; it wasn't a quotep
+         ;; TODO: Consider not pruning if this increment didn't create any new branches:
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
                                                                               dag
@@ -955,39 +960,13 @@
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than ; todo: compare to other list below
-                                                 run-until-stack-shorter-than-or-reach-pc
-                                                 ;; new scheme:
-                                                 run-until-rsp-is
-                                                 run-until-rsp-is-or-reach-pc
-                                                 ;; newer scheme:
-                                                 run-until-rsp-is-above
-                                                 run-until-rsp-is-above-or-reach-pc
-                                                 run-until-esp-is-above
-                                                 run-until-esp-is-above-or-reach-pc
-                                                 ;; new:
-                                                 x86-fetch-decode-execute
-                                                 )
-                                               dag-fns))))
+         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
           ;; stop if the run is done
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
           (b* ((- (cw " The run has completed.~%"))
                (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
-                ;; (if (eq :legacy rewriter)
-                ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-                ;;                     :exhaustivep t
-                ;;                     :rule-alist rule-alist
-                ;;                     :assumptions assumptions
-                ;;                     :monitor rules-to-monitor
-                ;;                     :use-internal-contextsp use-internal-contextsp
-                ;;                     ;; pass print, so we can cause rule hits to be printed:
-                ;;                     :print print ; :brief ;nil
-                ;;                     ;; :print-interval 10000 ;todo: pass in
-                ;;                     :limits limits
-                ;;                     :memoizep memoizep
-                ;;                     :check-inputs nil)
                 (mv-let (erp result limits state)
                   (acl2::simplify-dag-x86 dag
                                           assumptions
@@ -1004,18 +983,13 @@
                                           '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                           state)
                   (declare (ignore limits)) ; todo: use the limits?
-                  (mv erp result state))
-                  ;)
-                ;; todo: also prune here?
-                )
+                  (mv erp result state)))
                ((when erp) (mv erp nil state))
+               ;; todo: also prune here?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches:
                (dag-fns (if (quotep dag-or-constant) nil (acl2::dag-fns dag-or-constant)))
-               (error-branch-functions (intersection-eq dag-fns
-                                                        ;; the presence of the indicates that we could not rule out an error branch
-                                                        '(set-ms
-                                                          set-fault)))
+               (error-branch-functions (intersection-eq dag-fns *error-fns*))
                ((when error-branch-functions)
                 (cw "~X01" dag nil)
                 (er hard? 'repeatedly-run "Unresolved error branches occur (offending functions in the DAG above: ~x0)." error-branch-functions)
