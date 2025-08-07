@@ -17,7 +17,6 @@
 (include-book "assumptions-for-inputs")
 ;(include-book "assumptions64")  ; reduce?
 (include-book "parsers/parsed-executable-tools")
-(include-book "parsers/elf-tools")
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -792,15 +791,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 (defun pe64-regions-to-load-aux (sections acc)
   (declare (xargs :guard (and (acl2::pe-section-listp sections)
 ;                              (acl2::byte-listp all-bytes)
 ;                              (equal all-bytes-len (len all-bytes))
                               (true-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable acl2::pe-section-listp
-                                                           acl2::pe-sectionp)))))
+                  :guard-hints (("Goal" :expand (acl2::pe-section-listp sections)
+                                 :in-theory (enable acl2::pe-section-listp
+                                                    acl2::pe-sectionp
+                                                    acl2::pe-section-infop
+                                                    acl2::pe-section-headerp)))))
   (if (endp sections)
       (mv nil (reverse acc))
     (b* ((section (first sections)) ; todo: do all section types get loaded?
@@ -854,7 +854,10 @@
                   ;;(equal all-bytes-len (len all-bytes))
                   )
              (memory-regionsp (mv-nth 1 (pe64-regions-to-load-aux sections acc))))
-    :hints (("Goal" :in-theory (enable pe64-regions-to-load-aux memory-regionsp memory-regionp)))))
+    :hints (("Goal" :expand (acl2::pe-section-listp sections)
+             :in-theory (enable pe64-regions-to-load-aux memory-regionsp memory-regionp
+                                acl2::pe-sectionp
+                                acl2::pe-section-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1074,6 +1077,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv erp assumptions assumption-vars).
 (defund assumptions-pe64-new (target
                               position-independentp
                               stack-slots-needed
@@ -1096,18 +1100,19 @@
                               (booleanp bvp)
                               (booleanp new-canonicalp)
                               (acl2::parsed-pe-p parsed-pe))
-                  :verify-guards nil ; todo
-                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pep acl2::true-listp-when-pseudo-term-listp-2))))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p acl2::true-listp-when-pseudo-term-listp-2))))
            (ignore type-assumptions-for-array-varsp) ; todo: use this
            )
   (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
        ;; Decide where to start lifting:
-       (target-offset (if (eq :entry-point target)
-                          (acl2::get-pe-entry-point parsed-pe)
-                        (if (natp target)
-                            target ; explicit address given (relative iff position-independentp)
-                          ;; target is the name of a function:
-                          (acl2::subroutine-address-pe-64 target parsed-pe))))
+       ((mv erp target-offset)
+        (if (eq :entry-point target)
+            (mv nil (acl2::get-pe-entry-point parsed-pe))
+          (if (natp target)
+              (mv nil target) ; explicit address given (relative iff position-independentp)
+            ;; target is the name of a function:
+            (acl2::subroutine-address-pe-64 target parsed-pe))))
+       ((when erp) (mv erp nil nil))
        ((when (not (natp target-offset)))
         (er hard? 'assumptions-pe64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
@@ -1136,16 +1141,19 @@
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
             ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
-            (b* ((code-address (acl2::get-pe-section-rva ".text" parsed-pe))
+            (b* (((mv erp code-address) (acl2::get-pe-section-rva ".text" parsed-pe))
+                 ((when erp) (mv erp nil))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
                                        (if bvp
                                            (symbolic-bvplus-constant 48 code-address base-var)
                                          (symbolic-add-constant code-address base-var))
-                                     code-address)))
+                                     code-address))
+                 ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
+                 ((when erp) (mv erp nil)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len (acl2::get-pe-text-section-bytes parsed-pe)) nil))))))
+              (mv nil (acons text-offset-term (len text-section-bytes) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future and existing stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)

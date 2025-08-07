@@ -184,9 +184,15 @@
                                        text-offset
                                        bvp
                                        x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
+  (declare (xargs :guard (and (stringp subroutine-name)
+                              (acl2::parsed-mach-o-p parsed-mach-o)
+                              (natp stack-slots-needed)
+                              (natp text-offset)
+                              (booleanp bvp))
+
+             :stobjs x86
+             :verify-guards nil ;todo
+             ))
   (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
         (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
         (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
@@ -208,7 +214,9 @@
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (standard-assumptions-core-64 (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-executable)) ; text-section-bytes, all the code, not just the given subroutine
+  (standard-assumptions-core-64 (b* (((mv erp info) (acl2::get-pe-text-section-info parsed-executable))
+                                     ((when erp) nil))
+                                  (acl2::lookup-eq :raw-data info)) ; text-section-bytes, all the code, not just the given subroutine
                                 text-offset
                                 (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
                                 stack-slots-needed
