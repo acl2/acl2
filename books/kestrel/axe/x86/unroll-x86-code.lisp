@@ -810,17 +810,26 @@
 (defconst *error-fns*
   '(set-ms set-fault))
 
+;; todo: respect the print-base?
+(defund print-dag-or-term (dag)
+  (declare (xargs :guard (acl2::pseudo-dagp dag)))
+  (if (acl2::dag-or-quotep-size-less-than dag 1000)
+      (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
+    (cw "~X01" dag nil)))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
 (defun repeatedly-run (steps-done step-limit step-increment
-                                  dag
+                                  dag ; the state may be wrapped in an output-extractor
                                   rule-alist pruning-rule-alist
                                   assumptions 64-bitp rules-to-monitor
                                   use-internal-contextsp ; todo: not used?
                                   prune-precise prune-approx
-                                  normalize-xors count-hits print print-base untranslatep memoizep state)
+                                  normalize-xors count-hits print print-base untranslatep memoizep
+                                  ;; could pass in the stop-pcs, if any
+                                  state)
   (declare (xargs :guard (and (natp steps-done)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
@@ -861,16 +870,18 @@
           (mv :termination-problem nil state))
          (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-         (old-dag dag)
+         (old-dag dag) ; so we can see if anything changed
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
+         ;; Limit the run to the given number of steps:
          (limits nil) ; todo: call this empty-rule-limits?
          (limits (acl2::add-limit-for-rules (if 64-bitp
                                                 (step-opener-rules64)
                                               (step-opener-rules32))
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
+         ;; Do the run:
          ((mv erp dag-or-constant limits state)
           (acl2::simplify-dag-x86 dag
                                   assumptions
@@ -902,7 +913,7 @@
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a quotep
+         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; TODO: Consider not pruning if this increment didn't create any new branches:
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
@@ -915,7 +926,7 @@
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a quotep
+         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
@@ -939,7 +950,7 @@
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a quotep
+         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          (- (and print ;(acl2::print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
                          (cw "~X01" dag nil)
@@ -950,21 +961,33 @@
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
          (dag-fns (acl2::dag-fns dag))
-         ;; Stop if we hit an unimplemented instruction (what if it's on an unreachable branch?):
-         ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns))
-          (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
-                  (cw "~%")
-                  (mv (erp-nil) dag state))) ; todo: return an error?  the instruction might be in dead code.
-         ((mv erp nothing-changedp) (acl2::equivalent-dagsp2 dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
+
+         ;; TODO: Maybe don't prune if the run completed and there are no error branches?
+         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))) ; todo: call contains-anyp-eq
+         ((mv erp nothing-changedp) (if run-completedp
+                                        (mv nil nil) ; we know something changed since the run is now complete
+                                      (acl2::equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
          ((when erp) (mv erp nil state))
-         ((when nothing-changedp)
-          (cw "Note: Stopping the run because nothing changed.~%")
-          (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))))
-      (if run-completedp
+
+         ;; Stop if we hit an unimplemented instruction (if may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
+         ;; ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns)) ;; fixme: wrong test!  We need to look for set-ms
+         ;;  (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%") ; todo: print the name of the instruction
+         ;;          (cw "~%")
+         ;;          (mv :unimplemented-instruction dag state)))
+
+         ;; ((when nothing-changedp)
+         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the *incomplete-run-fns* remains (but what if we hit one of the stop-pcs?)
+         ;;  ;; check how many steps used?
+         ;;  ;; todo: check for the error-fns here
+         ;;  (mv (erp-nil) dag state))
+ ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
+         )
+      (if (or run-completedp nothing-changedp)
           ;; stop if the run is done
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
-          (b* ((- (cw " The run has completed.~%"))
+          (b* ((- (if run-completedp
+                      (cw " The run completed normally.~%")
+                    (cw " The run completed abnormally (nothing changed).~%")))
                (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
                 (mv-let (erp result limits state)
@@ -985,15 +1008,23 @@
                   (declare (ignore limits)) ; todo: use the limits?
                   (mv erp result state)))
                ((when erp) (mv erp nil state))
-               ;; todo: also prune here?
+               ;; todo: also prune here, if the simplfication does anything?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
-               ;; Check for error branches:
+               ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (acl2::dag-fns dag-or-constant)))
-               (error-branch-functions (intersection-eq dag-fns *error-fns*))
+               (error-branch-functions (intersection-eq *error-fns* dag-fns))
+               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
                ((when error-branch-functions)
-                (cw "~X01" dag nil)
-                (er hard? 'repeatedly-run "Unresolved error branches occur (offending functions in the DAG above: ~x0)." error-branch-functions)
-                (mv :unresolved-error-branches nil state)))
+                (cw "~%")
+                (print-dag-or-term dag)
+                (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
+                (mv :unresolved-error-branches nil state))
+               ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
+               ((when incomplete-run-functions)
+                (cw "~%")
+                (print-dag-or-term dag)
+                (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
+                (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
