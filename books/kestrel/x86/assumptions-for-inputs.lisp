@@ -193,6 +193,7 @@
        (let ((names (strip-cars names-and-types))
              (types (strip-cadrs names-and-types)))
          (and (symbol-listp names)
+              (no-duplicatesp-eq names) ; can't use the same name for multiple inputs
               ;; Can't use the same name as a register (would make the output-indicator ambiguous):
               ;; todo: print a message when this check fails:
               (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with wrap-in-normal-output-extractor
