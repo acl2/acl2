@@ -481,6 +481,8 @@
            :in-theory (disable unsigned-byte-p-of-bvxor
                                unsigned-byte-p-of-bvxor-gen))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm slice-of-bvxor
   (implies (and (< high size)
                 ;; (<= low high)
@@ -533,17 +535,15 @@
 
 ;drop in favor of trim rules?
 (defthm slice-of-bvxor-tighten
-  (implies (and (< (+ 1 highbit) size)
-;                (<= lowbit highbit)
+  (implies (and (< (+ 1 high) size)
+;                (<= low high)
                 (integerp size)
                 (< 0 size)
-                (natp lowbit)
-                (natp highbit)
-                (integerp x)
-                (integerp y))
-           (equal (slice highbit lowbit (bvxor size x y))
-                  (slice highbit lowbit (bvxor (+ 1 highbit) x y))))
-  :hints (("Goal" :cases ((<= lowbit highbit))
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvxor size x y))
+                  (slice high low (bvxor (+ 1 high) x y))))
+  :hints (("Goal" :cases ((<= low high))
           :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (slice-becomes-bvchop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
