@@ -622,9 +622,11 @@
     "The theorem involving a single byte has a simple form.
      Theorems involving multiple bytes have more complex forms,
      because addresses may be disjoint or they may partially or totally overlap.
-     We add a few theorems for now, but we plan to add the remaining ones.")
+     We have some of the theorems, and we plan to add the remaining ones.")
    (xdoc::p
     "We provide a ruleset with these theorems."))
+
+  ;; read-memory-unsigned8-of-write-memory-unsigned8/16/32/64:
 
   (defruled read-memory-unsigned8-pf-write-memory-unsigned8
     (implies (stat-validp stat feat)
@@ -955,11 +957,103 @@
                 max)
        :cases ((feat-32p feat)))))
 
+  ;; read-memory-unsigned8-of-write-memory-unsigned8/16/32/64:
+
+  (defruled read-memory-unsigned16-of-write-memory-unsigned8
+    (implies (stat-validp stat feat)
+             (equal (read-memory-unsigned16 addr1
+                                            (write-memory-unsigned8
+                                             addr2 val stat feat)
+                                            feat)
+                    (cond ((equal (loghead (feat->xlen feat) addr2)
+                                  (loghead (feat->xlen feat) addr1))
+                           (cond ((feat-little-endianp feat)
+                                  (logappn 8 (ubyte8-fix val)
+                                           8 (read-memory-unsigned8
+                                              (loghead (feat->xlen feat)
+                                                       (+ 1 (ifix addr1)))
+                                              stat
+                                              feat)))
+                                 ((feat-big-endianp feat)
+                                  (logappn 8 (read-memory-unsigned8
+                                              (loghead (feat->xlen feat)
+                                                       (+ 1 (ifix addr1)))
+                                              stat
+                                              feat)
+                                           8 (ubyte8-fix val)))))
+                          ((equal (loghead (feat->xlen feat) addr2)
+                                  (loghead (feat->xlen feat)
+                                           (+ 1 (ifix addr1))))
+                           (cond ((feat-little-endianp feat)
+                                  (logappn 8 (read-memory-unsigned8
+                                              (loghead (feat->xlen feat) addr1)
+                                              stat
+                                              feat)
+                                           8 (ubyte8-fix val)))
+                                 ((feat-big-endianp feat)
+                                  (logappn 8 (ubyte8-fix val)
+                                           8 (read-memory-unsigned8
+                                              (loghead (feat->xlen feat) addr1)
+                                              stat
+                                              feat)))))
+                          (t (read-memory-unsigned16 addr1 stat feat)))))
+    :use (:instance lemma (addr1 (ifix addr1)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (stat-validp stat feat)
+                     (integerp addr1))
+                (equal (read-memory-unsigned16 addr1
+                                               (write-memory-unsigned8
+                                                addr2 val stat feat)
+                                               feat)
+                       (cond ((equal (loghead (feat->xlen feat) addr2)
+                                     (loghead (feat->xlen feat) addr1))
+                              (cond ((feat-little-endianp feat)
+                                     (logappn 8 (ubyte8-fix val)
+                                              8 (read-memory-unsigned8
+                                                 (loghead (feat->xlen feat)
+                                                          (+ 1 (ifix addr1)))
+                                                 stat
+                                                 feat)))
+                                    ((feat-big-endianp feat)
+                                     (logappn 8 (read-memory-unsigned8
+                                                 (loghead (feat->xlen feat)
+                                                          (+ 1 (ifix addr1)))
+                                                 stat
+                                                 feat)
+                                              8 (ubyte8-fix val)))))
+                             ((equal (loghead (feat->xlen feat) addr2)
+                                     (loghead (feat->xlen feat)
+                                              (+ 1 (ifix addr1))))
+                              (cond ((feat-little-endianp feat)
+                                     (logappn 8 (read-memory-unsigned8
+                                                 (loghead (feat->xlen feat)
+                                                          addr1)
+                                                 stat
+                                                 feat)
+                                              8 (ubyte8-fix val)))
+                                    ((feat-big-endianp feat)
+                                     (logappn 8 (ubyte8-fix val)
+                                              8 (read-memory-unsigned8
+                                                 (loghead (feat->xlen feat)
+                                                          addr1)
+                                                 stat
+                                                 feat)))))
+                             (t (read-memory-unsigned16 addr1 stat feat)))))
+       :cases ((feat-32p feat))
+       :enable (read-memory-unsigned8
+                read-memory-unsigned16
+                write-memory-unsigned8
+                loghead-plus-c-differs))))
+
+  ;; ruleset of the above rules:
+
   (def-ruleset read-memory-of-write-memory
     '(read-memory-unsigned8-pf-write-memory-unsigned8
       read-memory-unsigned8-of-write-memory-unsigned16
       read-memory-unsigned8-of-write-memory-unsigned32
-      read-memory-unsigned8-of-write-memory-unsigned64)))
+      read-memory-unsigned8-of-write-memory-unsigned64
+      read-memory-unsigned16-of-write-memory-unsigned8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

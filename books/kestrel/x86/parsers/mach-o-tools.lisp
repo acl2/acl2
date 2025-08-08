@@ -19,8 +19,16 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
-
+(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "kestrel/lists-light/repeat-def" :dir :system)
 (include-book "parse-mach-o-file") ; todo: reduce?
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp2" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/repeat" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable strip-cars symbol-alistp ; prevent induction
                            natp)))
@@ -471,3 +479,72 @@
       nil
     (acons addr (first code)
            (make-code-alist (+ 1 addr) (rest code)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun macho64-regions-to-load-aux (commands all-bytes-len all-bytes acc)
+  (declare (xargs :guard (and (acl2::mach-o-command-listp commands)
+                              (acl2::byte-listp all-bytes)
+                              (equal all-bytes-len (len all-bytes))
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::mach-o-command-listp
+                                                           acl2::mach-o-commandp)))))
+  (if (endp commands)
+      (mv nil (reverse acc))
+    (let* ((command (first commands))
+           (cmd-type (lookup-eq :cmd command)))
+      (if (not (member-eq cmd-type '(:LC_SEGMENT :LC_SEGMENT_64)))
+          ;; not a load command, so skip:
+          (macho64-regions-to-load-aux (rest commands) all-bytes-len all-bytes acc)
+        (b* ((vaddr (lookup-eq :vmaddr command)) ; var names here match what we do for ELF
+             (memsz (lookup-eq :vmsize command))
+             (offset (lookup-eq :fileoff command))
+             (filesz (lookup-eq :filesize command))
+             ((when (not (and (natp offset)
+                              (natp filesz)
+                              (natp vaddr)
+                              (natp memsz)
+                              ;; The file size can't be larger than the memory size:
+                              (<= filesz memsz))))
+              (er hard? 'macho64-regions-to-load-aux "Bad load command: vaddr=~x0, memsz=~x1, offset=~x2, filesz=~x3." vaddr memsz offset filesz)
+              (mv :bad-load-command nil))
+             (last-byte-num (+ -1 offset filesz))
+             ((when (not (< last-byte-num all-bytes-len)))
+              (mv :not-enough-bytes nil))
+             ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
+             (numzeros (- memsz filesz))
+             ((when (> numzeros 10000)) ; allows padding with zeros up a multiple of 4k
+              (cw "Too many zeros (~x0)!  Skipping this segment!~%" numzeros) ; ttodo!
+              (macho64-regions-to-load-aux (rest commands) all-bytes-len all-bytes acc))
+             (bytes (take filesz (nthcdr offset all-bytes)))
+             ;; Zero bytes at the end of the segment may not be stored in the file:
+             (bytes (if (posp numzeros)
+                        (append bytes (acl2::repeat numzeros 0)) ; optimize?
+                      bytes)))
+          (macho64-regions-to-load-aux (rest commands)
+                                       all-bytes-len all-bytes
+                                       (cons (list memsz vaddr bytes)
+                                             acc)))))))
+
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-macho64-regions-to-load-aux
+    (implies (and (x::memory-regionsp acc)
+                  (acl2::byte-listp all-bytes)
+                  (equal all-bytes-len (len all-bytes)))
+             (x::memory-regionsp (mv-nth 1 (macho64-regions-to-load-aux command all-bytes-len all-bytes acc))))
+    :hints (("Goal" :in-theory (enable macho64-regions-to-load-aux x::memory-regionsp x::memory-regionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp regions).
+(defund macho64-regions-to-load (parsed-macho)
+  (declare (xargs :guard (acl2::parsed-mach-o-p parsed-macho)
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-mach-o-p)))))
+  (b* ((commands (lookup-eq :cmds parsed-macho))
+       (all-bytes (lookup-eq :bytes parsed-macho)))
+    (macho64-regions-to-load-aux commands (len all-bytes) all-bytes nil)))
+
+(defthm memory-regionsp-of-mv-nth-1-of-macho64-regions-to-load
+  (implies (acl2::parsed-mach-o-p parsed-macho)
+           (x::memory-regionsp (mv-nth 1 (macho64-regions-to-load parsed-macho))))
+  :hints (("Goal" :in-theory (enable macho64-regions-to-load acl2::parsed-mach-o-p))))

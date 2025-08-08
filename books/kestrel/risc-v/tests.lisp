@@ -93,7 +93,9 @@
                       :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
                       :src1 ,src1 :src2 ,src2 :dst ,dst
                       :signedp ,signedp
-                      :enable (,(if signedp 'exec-add-alt-def 'exec-add))
+                      :enable (,(if signedp
+                                    'exec-add-alt-def-signed-signed
+                                  'exec-add))
                       :disable ((:e tau-system)) ; for speed
                       :cases ((feat-32p feat))))
 

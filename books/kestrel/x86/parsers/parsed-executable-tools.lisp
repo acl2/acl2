@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; todo: add and verify guards
+
 (include-book "elf-tools")
 (include-book "mach-o-tools")
 (include-book "pe-tools")

@@ -2702,13 +2702,13 @@
      acl2::get-mach-o-load-command-unroll
      ;; PE stuff:
      acl2::get-pe-sections
-     acl2::get-pe-section
-     acl2::get-pe-text-section
+     acl2::get-pe-section-info
+     acl2::get-pe-text-section-info
      acl2::get-pe-section-info-bytes
      acl2::get-pe-text-section-bytes
-     acl2::get-pe-section-aux-base-1
-     acl2::get-pe-section-aux-base-2
-     acl2::get-pe-section-aux-unroll
+     acl2::get-pe-section-info-aux-base-1
+     acl2::get-pe-section-info-aux-base-2
+     acl2::get-pe-section-info-aux-unroll
      acl2::lookup-pe-symbol-base-1
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll
