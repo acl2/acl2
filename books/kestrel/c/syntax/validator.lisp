@@ -2124,7 +2124,8 @@
        and the resulting type is the one of the second sub-expression
        [C17:6.5.17/2].")
      (xdoc::p
-      "For a statement expression, we validate the block items.
+      "For a statement expression, we push a new scope for the block
+       and we validate the block items. We then pop the scope.
        If a type is returned, that is the type of the expression.
        Otherwise, the expression has type @('void'),
        as described in the GCC documentation of statement expressions.")
