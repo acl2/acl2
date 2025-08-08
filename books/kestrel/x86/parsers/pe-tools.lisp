@@ -22,7 +22,7 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (e/d (rationalp-when-natp
+(local (in-theory (e/d (real/rationalp-when-natp
                         acl2-numberp-when-natp)
                        (natp))))
 
