@@ -46,7 +46,8 @@
      For the latter kinds of instructions,
      we read unsigned operands in the semntic functions;
      however, in @(see semantics-equivalences) we prove
-     equivalent definitions that read signed operands.")
+     equivalent definitions that read signed operands,
+     or a mix of signed and unsigned operands.")
    (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
