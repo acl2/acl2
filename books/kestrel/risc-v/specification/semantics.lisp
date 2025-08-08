@@ -23,10 +23,7 @@
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
