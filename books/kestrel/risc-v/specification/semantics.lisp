@@ -69,9 +69,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently leave it signed.
      We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -187,9 +191,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -225,9 +233,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -263,9 +275,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer;
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
