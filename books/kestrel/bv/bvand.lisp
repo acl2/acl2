@@ -377,7 +377,7 @@
            (equal (getbit n (bvand size x y))
                   (bvand 1 (getbit n x) (getbit n y)))))
 
-;BBOZO think more about this in the size > 1 case( ld "bvand.lisp") - do we want to push the getbit through?
+;BBOZO think more about this in the size > 1 case - do we want to push the getbit through?
 ;in the size=1 case (common when bit blasting) we do NOT want to push the GETBIT through - can be expensive!
 (defthm getbit-of-bvand-eric-2
   (implies (and (< 0 size)

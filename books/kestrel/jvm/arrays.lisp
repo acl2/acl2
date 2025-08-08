@@ -62,7 +62,7 @@
                   (all-null-or-addresses-bound-to-object-of-type contents element-type heap)))
   :hints (("Goal"
            :induct (all-null-or-addresses-bound-to-object-of-type contents element-type heap)
-           :expand ((all-null-or-addresses-bound-to-object-of-type contents element-type(set-field ad pair val heap)))
+           :expand ((all-null-or-addresses-bound-to-object-of-type contents element-type (set-field ad pair val heap)))
            :in-theory (enable all-null-or-addresses-bound-to-object-of-type
                               memberp-of-cons-when-constant))))
 

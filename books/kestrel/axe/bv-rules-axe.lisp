@@ -609,14 +609,14 @@
                 (natp size))
            (equal (bvmod size x y)
                   (bvmod size (trim size x) y)))
-  :hints(("Goal" :in-theory (enable trim))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvmod-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvmod size y x)
                   (bvmod size y (trim size x))))
-  :hints(("Goal" :in-theory (enable trim))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
