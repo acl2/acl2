@@ -4997,7 +4997,9 @@
                                       :init? new-init?)
                      (set::union types more-types)
                      table))))
-         ((unless (equal type info.type))
+         ((unless (or (equal type info.type)
+                      (equal type (type-unknown))
+                      (equal info.type (type-unknown))))
           (retmsg$ "The identifier ~x0 ~
                     is declared with type ~x1 ~
                     after being declared with type ~x2."

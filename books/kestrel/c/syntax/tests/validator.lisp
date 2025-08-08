@@ -583,3 +583,17 @@ __int128 __signed__ z;
 }
 "
  :gcc t)
+
+(test-valid
+ "int foo (void);
+int bar (void);
+typeof(bar) foo;
+"
+ :gcc t)
+
+(test-valid
+ "int foo (void);
+typeof(foo) bar;
+int bar (void);
+"
+ :gcc t)
