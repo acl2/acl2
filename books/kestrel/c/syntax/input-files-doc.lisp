@@ -255,7 +255,7 @@
       "Positive integer saying how many bytes are used to represent
        @('signed int') and @('unsigned int').")
      (xdoc::p
-      "This must be at least 4,
+      "This must be at least 2,
        and not less than @(':short-bytes')."))
 
     (xdoc::desc
@@ -264,7 +264,7 @@
       "Positive integer saying how many bytes are used to represent
        @('signed long int') and @('unsigned long int').")
      (xdoc::p
-      "This must be at least 8,
+      "This must be at least 4,
        and not less than @(':int-bytes')."))
 
     (xdoc::desc

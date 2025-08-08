@@ -357,23 +357,23 @@
           (cond
            ((not iconst.suffix?)
             (if (dec/oct/hex-const-case iconst.core :dec)
-                (cond ((sint-rangep value ienv) (retok (type-sint)))
-                      ((slong-rangep value ienv) (retok (type-slong)))
-                      ((sllong-rangep value ienv) (retok (type-sllong)))
+                (cond ((ienv-sint-rangep value ienv) (retok (type-sint)))
+                      ((ienv-slong-rangep value ienv) (retok (type-slong)))
+                      ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
                       (t (retmsg$ "The constant ~x0 is too large."
                                   (iconst-fix iconst))))
-              (cond ((sint-rangep value ienv) (retok (type-sint)))
-                    ((uint-rangep value ienv) (retok (type-uint)))
-                    ((slong-rangep value ienv) (retok (type-slong)))
-                    ((ulong-rangep value ienv) (retok (type-ulong)))
-                    ((sllong-rangep value ienv) (retok (type-sllong)))
-                    ((ullong-rangep value ienv) (retok (type-ullong)))
+              (cond ((ienv-sint-rangep value ienv) (retok (type-sint)))
+                    ((ienv-uint-rangep value ienv) (retok (type-uint)))
+                    ((ienv-slong-rangep value ienv) (retok (type-slong)))
+                    ((ienv-ulong-rangep value ienv) (retok (type-ulong)))
+                    ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
+                    ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                     (t (retmsg$ "The constant ~x0 is too large."
                                 (iconst-fix iconst))))))
            ((isuffix-case iconst.suffix? :u)
-            (cond ((uint-rangep value ienv) (retok (type-uint)))
-                  ((ulong-rangep value ienv) (retok (type-ulong)))
-                  ((ullong-rangep value ienv) (retok (type-ullong)))
+            (cond ((ienv-uint-rangep value ienv) (retok (type-uint)))
+                  ((ienv-ulong-rangep value ienv) (retok (type-ulong)))
+                  ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                   (t (retmsg$ "The constant ~x0 is too large."
                               (iconst-fix iconst)))))
            ((isuffix-case iconst.suffix? :l)
@@ -381,24 +381,24 @@
              ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
                          '(:locase-l :upcase-l))
               (if (dec/oct/hex-const-case iconst.core :dec)
-                  (cond ((slong-rangep value ienv) (retok (type-slong)))
-                        ((sllong-rangep value ienv) (retok (type-sllong)))
+                  (cond ((ienv-slong-rangep value ienv) (retok (type-slong)))
+                        ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
                         (t (retmsg$ "The constant ~x0 is too large."
                                     (iconst-fix iconst))))
-                (cond ((slong-rangep value ienv) (retok (type-slong)))
-                      ((ulong-rangep value ienv) (retok (type-ulong)))
-                      ((sllong-rangep value ienv) (retok (type-sllong)))
-                      ((ullong-rangep value ienv) (retok (type-ullong)))
+                (cond ((ienv-slong-rangep value ienv) (retok (type-slong)))
+                      ((ienv-ulong-rangep value ienv) (retok (type-ulong)))
+                      ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
+                      ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                       (t (retmsg$ "The constant ~x0 is too large."
                                   (iconst-fix iconst))))))
              ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
                          '(:locase-ll :upcase-ll))
               (if (dec/oct/hex-const-case iconst.core :dec)
-                  (cond ((sllong-rangep value ienv) (retok (type-sllong)))
+                  (cond ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
                         (t (retmsg$ "The constant ~x0 is too large."
                                     (iconst-fix iconst))))
-                (cond ((sllong-rangep value ienv) (retok (type-sllong)))
-                      ((ullong-rangep value ienv) (retok (type-ullong)))
+                (cond ((ienv-sllong-rangep value ienv) (retok (type-sllong)))
+                      ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                       (t (retmsg$ "The constant ~x0 is too large."
                                   (iconst-fix iconst))))))
              (t (prog2$ (impossible) (retmsg$ "")))))
@@ -410,8 +410,8 @@
                      (member-eq (lsuffix-kind
                                  (isuffix-lu->length iconst.suffix?))
                                 '(:locase-l :upcase-l))))
-            (cond ((ulong-rangep value ienv) (retok (type-ulong)))
-                  ((ullong-rangep value ienv) (retok (type-ullong)))
+            (cond ((ienv-ulong-rangep value ienv) (retok (type-ulong)))
+                  ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                   (t (retmsg$ "The constant ~x0 is too large."
                               (iconst-fix iconst)))))
            ((or (and (isuffix-case iconst.suffix? :ul)
@@ -422,7 +422,7 @@
                      (member-eq (lsuffix-kind
                                  (isuffix-lu->length iconst.suffix?))
                                 '(:locase-ll :upcase-ll))))
-            (cond ((ullong-rangep value ienv) (retok (type-ullong)))
+            (cond ((ienv-ullong-rangep value ienv) (retok (type-ullong)))
                   (t (retmsg$ "The constant ~x0 is too large."
                               (iconst-fix iconst)))))
            (t (prog2$ (impossible) (retmsg$ ""))))))
@@ -622,7 +622,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-c-char ((cchar c-char-p) (prefix? cprefix-optionp))
+(define valid-c-char ((cchar c-char-p) (prefix? cprefix-optionp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (code natp))
   :short "Validate a character of a character constant."
   :long
@@ -656,7 +656,7 @@
   (b* (((reterr) 0)
        (max (if prefix?
                 #x10ffff
-              (uchar-max))))
+              (ienv->uchar-max ienv))))
     (c-char-case
      cchar
      :char (cond ((= cchar.unwrap (char-code #\'))
@@ -679,19 +679,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-c-char-list ((cchars c-char-listp) (prefix? cprefix-optionp))
+(define valid-c-char-list ((cchars c-char-listp)
+                           (prefix? cprefix-optionp)
+                           (ienv ienvp))
   :returns (mv (erp maybe-msgp) (codes nat-listp))
   :short "Validate a list of characters of a character constant."
   (b* (((reterr) nil)
        ((when (endp cchars)) (retok nil))
-       ((erp code) (valid-c-char (car cchars) prefix?))
-       ((erp codes) (valid-c-char-list (cdr cchars) prefix?)))
+       ((erp code) (valid-c-char (car cchars) prefix? ienv))
+       ((erp codes) (valid-c-char-list (cdr cchars) prefix? ienv)))
     (retok (cons code codes)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-cconst ((cconst cconstp))
+(define valid-cconst ((cconst cconstp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a character constant."
   :long
@@ -717,7 +719,7 @@
      a full validation of character constants here."))
   (b* (((reterr) (irr-type))
        ((cconst cconst) cconst)
-       ((erp &) (valid-c-char-list cconst.cchars cconst.prefix?)))
+       ((erp &) (valid-c-char-list cconst.cchars cconst.prefix? ienv)))
     (if cconst.prefix?
         (retok (type-unknown))
       (retok (type-sint))))
@@ -770,13 +772,13 @@
               (retok (const-fix const) type))
      :enum (b* (((erp type) (valid-enum-const const.unwrap table)))
              (retok (const-fix const) type))
-     :char (b* (((erp type) (valid-cconst const.unwrap)))
+     :char (b* (((erp type) (valid-cconst const.unwrap ienv)))
              (retok (const-fix const) type))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp))
+(define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (code natp))
   :short "Validate a character of a string literal."
   :long
@@ -792,7 +794,7 @@
   (b* (((reterr) 0)
        (max (if prefix?
                 #x10ffff
-              (uchar-max))))
+              (ienv->uchar-max ienv))))
     (s-char-case
      schar
      :char (cond ((= schar.unwrap (char-code #\"))
@@ -815,19 +817,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-s-char-list ((cchars s-char-listp) (prefix? eprefix-optionp))
+(define valid-s-char-list ((cchars s-char-listp)
+                           (prefix? eprefix-optionp)
+                           (ienv ienvp))
   :returns (mv (erp maybe-msgp) (codes nat-listp))
   :short "Validate a list of characters of a string literal."
   (b* (((reterr) nil)
        ((when (endp cchars)) (retok nil))
-       ((erp code) (valid-s-char (car cchars) prefix?))
-       ((erp codes) (valid-s-char-list (cdr cchars) prefix?)))
+       ((erp code) (valid-s-char (car cchars) prefix? ienv))
+       ((erp codes) (valid-s-char-list (cdr cchars) prefix? ienv)))
     (retok (cons code codes)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-stringlit ((strlit stringlitp))
+(define valid-stringlit ((strlit stringlitp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a string literal."
   :long
@@ -842,13 +846,13 @@
      we just have a single type for arrays, so we return that."))
   (b* (((reterr) (irr-type))
        ((stringlit strlit) strlit)
-       ((erp &) (valid-s-char-list strlit.schars strlit.prefix?)))
+       ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (type-array)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-stringlit-list ((strlits stringlit-listp))
+(define valid-stringlit-list ((strlits stringlit-listp) (ienv ienvp))
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a list of string literals."
   :long
@@ -880,6 +884,7 @@
      but for now we allow all concatenations,
      and the resulting type is just our approximate type for all arrays."))
   (b* (((reterr) (irr-type))
+       ((erp) (valid-stringlit-list-loop strlits ienv))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        (prefixes (stringlit-list->prefix?-list strlits))
@@ -890,7 +895,16 @@
         (retmsg$ "Incompatible prefixes ~x0 in the list of string literals."
                  prefixes)))
     (retok (type-array)))
-  :hooks (:fix))
+  :hooks (:fix)
+  :prepwork
+  ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
+     :returns (erp maybe-msgp)
+     :parents nil
+     (b* (((reterr))
+          ((when (endp strlits)) (retok))
+          ((erp &) (valid-stringlit (car strlits) ienv)))
+       (valid-stringlit-list-loop (cdr strlits) ienv))
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2140,7 +2154,7 @@
                        (valid-table-fix table)))
        :const (b* (((erp const type) (valid-const expr.const table ienv)))
                 (retok (expr-const const) type nil (valid-table-fix table)))
-       :string (b* (((erp type) (valid-stringlit-list expr.strings)))
+       :string (b* (((erp type) (valid-stringlit-list expr.strings ienv)))
                  (retok (expr-fix expr) type nil (valid-table-fix table)))
        :paren (b* (((erp new-inner type types table)
                     (valid-expr expr.inner table ienv)))
@@ -3321,7 +3335,8 @@
              (initer-case initer :single)
              (expr-case (initer-single->expr initer) :string))
         (b* (((erp &) (valid-stringlit-list
-                       (expr-string->strings (initer-single->expr initer)))))
+                       (expr-string->strings (initer-single->expr initer))
+                       ienv)))
           (retok (initer-single
                   (expr-string
                    (expr-string->strings (initer-single->expr initer))))
@@ -4771,7 +4786,7 @@
                     has type ~x1."
                    (statassert-fix statassert)
                    type))
-         ((erp &) (valid-stringlit-list statassert.message)))
+         ((erp &) (valid-stringlit-list statassert.message ienv)))
       (retok (make-statassert :test new-test :message statassert.message)
              types
              table))
