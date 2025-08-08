@@ -27,35 +27,23 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "OSLIB")
 
-(defun date-fn (state)
+(defun get-decoded-time$ (state)
 
    (unless (live-state-p state)
-     (er hard? 'date "Date can only be called on a live state.")
-     (mv "Error reading date." state))
+     (er hard? 'get-decoded-time$ "Get-decoded-time$ can only be called on a live state.")
+     (mv 0 0 0 1 1 0 0 nil 0 state))
 
-   (multiple-value-bind
-    (second minute hour date month year day daylight-p zone)
-    (get-decoded-time)
-    (declare (ignore daylight-p zone day))
-    (let ((month (nth (- month 1) '("January" "February" "March" "April" "May"
-                                    "June" "July" "August" "September" "October"
-                                    "November" "December")))
-          (year    (str::natstr year))
-          (date    (str::natstr date))
-          (hour    (if (< hour 10)
-                       (str::cat "0" (str::natstr hour))
-                     (str::natstr hour)))
-          (minute  (if (< minute 10)
-                       (str::cat "0" (str::natstr minute))
-                     (str::natstr minute)))
-          (second  (if (< second 10)
-                       (str::cat "0" (str::natstr second))
-                     (str::natstr second))))
-      (mv (str::cat month " " date ", " year " " hour ":" minute ":" second)
-          state))))
+   (handler-case
+       (multiple-value-bind
+         (second minute hour date month year day daylight-p zone)
+         (get-decoded-time)
+         (mv second minute hour date month year day daylight-p zone state))
+     (error ()
+            (mv 0 0 0 1 1 0 0 nil 0 state))))
 
 
 (defun universal-time-fn (state)
@@ -68,4 +56,3 @@
      (unless (natp ans)
        (er hard? 'universal-time "Common Lisp's get-universal-time returned a non-natural: ~x0." ans))
      (mv ans state)))
-

@@ -35,5 +35,8 @@
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "date-raw.lsp")
 
+; handler-case is not defined in non-ANSI GCL.
+; cert_param: (ansi-only)
+
 (defttag oslib)
 (include-raw "date-raw.lsp")

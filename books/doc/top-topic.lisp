@@ -59,7 +59,8 @@ connecting ACL2 to other systems, productivity tools for better proof
 automation and debugging, and specialty libraries for areas like @(see
 hardware-verification).</p>
 
-<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It includes</p>
+<p>This manual was generated on <b>@(`(:raw (oslib::date state :zone t))`)</b>.
+It includes</p>
 
 <ul>
 
