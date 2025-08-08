@@ -2291,8 +2291,10 @@
                        type
                        (set::union types1 types2)
                        table))
-       :stmt (b* (((erp new-items types type? table)
+       :stmt (b* ((table (valid-push-scope table))
+                  ((erp new-items types type? table)
                    (valid-block-item-list expr.items table ienv))
+                  (table (valid-pop-scope table))
                   (type (or type? (type-void))))
                (retok (expr-stmt new-items) type types table))
        :tycompat (b* (((erp new-type1 & types1 table)
