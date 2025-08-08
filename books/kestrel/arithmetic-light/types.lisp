@@ -65,3 +65,15 @@
 ;; TODO: Uncomment, but that causes problems:
 ;; (theory-invariant (incompatible (:rewrite <=-of-0-when-natp)
 ;;                                 (:definition natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; for books we want to certify on acl2(r)
+(defthmd real/rationalp-when-natp
+  (implies (natp x)
+           (real/rationalp x)))
+
+;; for books we want to certify on acl2(r)
+(defthmd real/rationalp-when-integerp
+  (implies (integerp x)
+           (real/rationalp x)))
