@@ -292,7 +292,7 @@
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y))))
 ;            :use ( ;(:instance getbit-of-+ (size n) (y (+ carry y)))
 ;(:instance getbit-of-+ (size n) (x carry))
-;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1(BVCHOP (+ -1 N) Y))))
+;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1 (BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
 ;                  (:instance split-bv (x x) (n n) (m (+ -1 n)))
  ;                 (:instance split-bv (x y) (n n) (m (+ -1 n)))

@@ -121,8 +121,8 @@
                 ;; (natp highsize)
                 (natp size2)
                 (natp lowsize))
-           (equal(bvcat highsize (bvchop size2 highval) lowsize lowval)
-                 (bvcat highsize highval lowsize lowval)))
+           (equal (bvcat highsize (bvchop size2 highval) lowsize lowval)
+                  (bvcat highsize highval lowsize lowval)))
   :hints (("Goal"
            :cases ((integerp lowval))
            :in-theory (enable bvcat ;bvchop-logapp
