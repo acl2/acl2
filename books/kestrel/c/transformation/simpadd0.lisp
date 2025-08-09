@@ -372,19 +372,13 @@
      and throw a hard error if they are not satisfied,
      because that should never happen.")
    (xdoc::p
-    "If the two expressions are syntactically equal,
-     we generate a dummy theorem.
-     At this point we do not seem to need any actual theorem for this case,
-     but we want proof generation to proceed after this expression,
-     so we generate a theorem for uniformity,
-     so that code for larger constructs can uniformly check
-     whether a theorem was generated for this construct.")
-   (xdoc::p
-    "If the two expressions are syntactically unequal,
-     the theorem says that
-     if the old assignment expression does not cause an error,
-     neither does the new assignment expression,
-     and the two return the same updated computation state."))
+    "The theorem says that
+     if the execution of the old expression does not yield an error,
+     neither does the execution of the new expression,
+     and that the two executions give the same results.
+     This is generated even if the two expressions are syntactically equal,
+     because the two executions involve
+     two different variables for function environments."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-asg-formalp old))
@@ -430,13 +424,9 @@
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)))))
-       (thm-event (if (equal old-right new-right)
-                      `(defthm ,thm-name
-                         t
-                         :rule-classes nil)
-                    `(defthmd ,thm-name
-                       ,formula
-                       :hints ,hints))))
+       (thm-event `(defthmd ,thm-name
+                     ,formula
+                     :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
   (fty::deffixequiv simpadd0-gen-expr-asg-thm
@@ -459,35 +449,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee simpadd0-gen-expr-pure-thm),
-     but for statments instead of pure expressions;
-     see that function's documentation first.")
-   (xdoc::p
     "The theorem says that
-     the old statement returns a value of the appropriate type,
-     regardless of whether old and new statements
-     are syntactically equal or not;
-     if the type is @('void'),
-     then the theorem says that execution returns @('nil'),
-     according to our formal dynamic semantics.
-     If old and new statements are not syntactically equal,
-     the theorem also says that
-     their execution returns equal values (or both @('nil'))
-     and equal computation states,
-     and that the execution of the new statement does not yield an error."))
+     if the execution of the old statement does not yield an error,
+     neither does the execution of the new statement,
+     and that the two executions give the same results.
+     This is generated even if the two statements are syntactically equal,
+     because the two executions involve
+     two different variables for function environments
+     Additionally, the theorem says whether
+     the statement value is a return or not;
+     if it is a return with a value,
+     the theorem also says what the type of the value is."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       (equalp (equal old new))
-       ((unless (or equalp (stmt-formalp new)))
+       ((unless (stmt-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (type (stmt-type old))
-       ((unless (or equalp
-                    (equal (stmt-type new)
-                           type)))
+       ((unless (equal (stmt-type new)
+                       type))
         (raise "Internal error: ~
                 the type ~x0 of the new statement ~x1 differs from ~
                 the type ~x2 of the old statement ~x3."
@@ -504,51 +487,34 @@
                 nil))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
-        (if equalp
-            `(b* ((stmt (mv-nth 1 (ldm-stmt ',old)))
-                  ((mv result &) (c::exec-stmt stmt compst fenv limit)))
-               (implies (and ,@hyps
-                             (not (c::errorp result)))
-                        ,(cond
-                          ((not type)
-                           '(equal (c::stmt-value-kind result) :none))
-                          ((type-case type :void)
-                           '(and (equal (c::stmt-value-kind result) :return)
-                                 (not (c::stmt-value-return->value? result))))
-                          (t
-                           `(and (equal (c::stmt-value-kind result) :return)
-                                 (c::stmt-value-return->value? result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value? result))
-                                        ',ctype))))))
-          `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
-                (new-stmt (mv-nth 1 (ldm-stmt ',new)))
-                ((mv old-result old-compst)
-                 (c::exec-stmt old-stmt compst old-fenv limit))
-                ((mv new-result new-compst)
-                 (c::exec-stmt new-stmt compst new-fenv limit)))
-             (implies (and ,@hyps
-                           (not (c::errorp old-result)))
-                      (and (not (c::errorp new-result))
-                           (equal old-result new-result)
-                           (equal old-compst new-compst)
-                           ,@(cond
-                              ((not type)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :none)))
-                              ((type-case type :void)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (not (c::stmt-value-return->value?
-                                       old-result))))
-                              (t
-                               `((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (c::stmt-value-return->value? old-result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value?
-                                          old-result))
-                                        ',ctype)))))))))
+        `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
+              (new-stmt (mv-nth 1 (ldm-stmt ',new)))
+              ((mv old-result old-compst)
+               (c::exec-stmt old-stmt compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-stmt new-stmt compst new-fenv limit)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         ,@(cond
+                            ((not type)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :none)))
+                            ((type-case type :void)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (not (c::stmt-value-return->value?
+                                     old-result))))
+                            (t
+                             `((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (c::stmt-value-return->value? old-result)
+                               (equal (c::type-of-value
+                                       (c::stmt-value-return->value?
+                                        old-result))
+                                      ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -579,34 +545,18 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee simpadd0-gen-stmt-thm),
-     but for block items instead of statements;
-     see that function's documentation first.")
-   (xdoc::p
-    "The theorem says that
-     the old block item returns a value of the appropriate type,
-     regardless of whether old and new block items
-     are syntactically equal or not;
-     if the type is @('void') or @('nil'),
-     then the theorem says that execution returns @('nil'),
-     according to our formal dynamic semantics.
-     If old and new block items are not syntactically equal,
-     the theorem also says that
-     their execution returns equal values (or both @('nil'))
-     and equal computation states,
-     and that the execution of the new block item does not yield an error."))
+     but for block items instead of statements."))
   (b* ((old (block-item-fix old))
        (new (block-item-fix new))
        ((unless (block-item-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       (equalp (equal old new))
-       ((unless (or equalp (block-item-formalp new)))
+       ((unless (block-item-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (type (block-item-type old))
-       ((unless (or equalp
-                    (equal (block-item-type new)
-                           type)))
+       ((unless (equal (block-item-type new)
+                       type))
         (raise "Internal error: ~
                 the type ~x0 of the new block item ~x1 differs from ~
                 the type ~x2 of the old block item ~x3."
@@ -623,51 +573,34 @@
                 nil))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
-        (if equalp
-            `(b* ((item (mv-nth 1 (ldm-block-item ',old)))
-                  ((mv result &) (c::exec-block-item item compst fenv limit)))
-               (implies (and ,@hyps
-                             (not (c::errorp result)))
-                        ,(cond
-                          ((not type)
-                           '(equal (c::stmt-value-kind result) :none))
-                          ((type-case type :void)
-                           '(and (equal (c::stmt-value-kind result) :return)
-                                 (not (c::stmt-value-return->value? result))))
-                          (t
-                           `(and (equal (c::stmt-value-kind result) :return)
-                                 (c::stmt-value-return->value? result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value? result))
-                                        ',ctype))))))
-          `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
-                (new-item (mv-nth 1 (ldm-block-item ',new)))
-                ((mv old-result old-compst)
-                 (c::exec-block-item old-item compst old-fenv limit))
-                ((mv new-result new-compst)
-                 (c::exec-block-item new-item compst new-fenv limit)))
-             (implies (and ,@hyps
-                           (not (c::errorp old-result)))
-                      (and (not (c::errorp new-result))
-                           (equal old-result new-result)
-                           (equal old-compst new-compst)
-                           ,@(cond
-                              ((not type)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :none)))
-                              ((type-case type :void)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (not (c::stmt-value-return->value?
-                                       old-result))))
-                              (t
-                               `((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (c::stmt-value-return->value? old-result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value?
-                                          old-result))
-                                        ',ctype)))))))))
+        `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
+              (new-item (mv-nth 1 (ldm-block-item ',new)))
+              ((mv old-result old-compst)
+               (c::exec-block-item old-item compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-block-item new-item compst new-fenv limit)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         ,@(cond
+                            ((not type)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :none)))
+                            ((type-case type :void)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (not (c::stmt-value-return->value?
+                                     old-result))))
+                            (t
+                             `((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (c::stmt-value-return->value? old-result)
+                               (equal (c::type-of-value
+                                       (c::stmt-value-return->value?
+                                        old-result))
+                                      ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -698,34 +631,18 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee simpadd0-gen-block-item-thm),
-     but for lists of block items instead of single block items;
-     see that function's documentation first.")
-   (xdoc::p
-    "The theorem says that
-     the old block item list returns a value of the appropriate type,
-     regardless of whether old and new block item lists
-     are syntactically equal or not;
-     if the type is @('void') or @('nil'),
-     then the theorem says that execution returns @('nil'),
-     according to our formal dynamic semantics.
-     If old and new block item lists are not syntactically equal,
-     the theorem also says that
-     their execution returns equal values and equal computation states,
-     and that the execution of the new block item list
-     does not yield an error."))
+     but for lists of block items instead of single block items."))
   (b* ((old (block-item-list-fix old))
        (new (block-item-list-fix new))
        ((unless (block-item-list-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       (equalp (equal old new))
-       ((unless (or equalp (block-item-list-formalp new)))
+       ((unless (block-item-list-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (type (block-item-list-type old))
-       ((unless (or equalp
-                    (equal (block-item-list-type new)
-                           type)))
+       ((unless (equal (block-item-list-type new)
+                       type))
         (raise "Internal error: ~
                 the type ~x0 of the new block item list ~x1 differs from ~
                 the type ~x2 of the old block item list ~x3."
@@ -742,52 +659,34 @@
                 nil))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
-        (if equalp
-            `(b* ((items (mv-nth 1 (ldm-block-item-list ',old)))
-                  ((mv result &)
-                   (c::exec-block-item-list items compst fenv limit)))
-               (implies (and ,@hyps
-                             (not (c::errorp result)))
-                        ,(cond
-                          ((not type)
-                           '(equal (c::stmt-value-kind result) :none))
-                          ((type-case type :void)
-                           '(and (equal (c::stmt-value-kind result) :return)
-                                 (not (c::stmt-value-return->value? result))))
-                          (t
-                           `(and (equal (c::stmt-value-kind result) :return)
-                                 (c::stmt-value-return->value? result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value? result))
-                                        ',ctype))))))
-          `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
-                (new-items (mv-nth 1 (ldm-block-item-list ',new)))
-                ((mv old-result old-compst)
-                 (c::exec-block-item-list old-items compst old-fenv limit))
-                ((mv new-result new-compst)
-                 (c::exec-block-item-list new-items compst new-fenv limit)))
-             (implies (and ,@hyps
-                           (not (c::errorp old-result)))
-                      (and (not (c::errorp new-result))
-                           (equal old-result new-result)
-                           (equal old-compst new-compst)
-                           ,@(cond
-                              ((not type)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :none)))
-                              ((type-case type :void)
-                               '((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (not (c::stmt-value-return->value?
-                                       old-result))))
-                              (t
-                               `((equal (c::stmt-value-kind old-result)
-                                        :return)
-                                 (c::stmt-value-return->value? old-result)
-                                 (equal (c::type-of-value
-                                         (c::stmt-value-return->value?
-                                          old-result))
-                                        ',ctype)))))))))
+        `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
+              (new-items (mv-nth 1 (ldm-block-item-list ',new)))
+              ((mv old-result old-compst)
+               (c::exec-block-item-list old-items compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-block-item-list new-items compst new-fenv limit)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         ,@(cond
+                            ((not type)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :none)))
+                            ((type-case type :void)
+                             '((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (not (c::stmt-value-return->value?
+                                     old-result))))
+                            (t
+                             `((equal (c::stmt-value-kind old-result)
+                                      :return)
+                               (c::stmt-value-return->value? old-result)
+                               (equal (c::type-of-value
+                                       (c::stmt-value-return->value?
+                                        old-result))
+                                      ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -2524,13 +2423,10 @@
    (xdoc::p
     "We put the optional expression into an expression statement.")
    (xdoc::p
-    "We generate a theorem if there is no expression
+    "We generate a theorem
+     if there is no expression (i.e. the null statement),
      or if there is an assignment expression
-     for which a theorem was generated.
-     When instantiating the theorem for the assignment expression,
-     we use @(':extra-bindings-ok') because
-     that theorem may be a dummy @('t')
-     (see @(tsee simpadd0-gen-expr-asg-thm))."))
+     for which a theorem was generated."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-expr expr?))
        (stmt-new (stmt-expr expr?-new))
@@ -2567,20 +2463,15 @@
                             (:e c::stmt-expr))
                :use ((:instance
                       ,expr?-thm-name
-                      :extra-bindings-ok
                       (limit (- limit 2)))
                      (:instance
                       simpadd0-stmt-expr-asg-support-lemma
                       (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                      (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
-                      ,@(and (not expr?-diffp)
-                             '((old-fenv fenv)
-                               (new-fenv fenv))))
+                      (new-expr (mv-nth 1 (ldm-expr ',expr?-new))))
                      (:instance
                       simpadd0-stmt-expr-asg-error-support-lemma
                       (expr (mv-nth 1 (ldm-expr ',expr?)))
-                      ,@(and expr?-diffp
-                             '((fenv old-fenv)))))))
+                      (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e c::stmt-null))
@@ -2609,10 +2500,15 @@
     :hints (("Goal" :in-theory (enable irr-stmt))))
 
   (defruled simpadd0-stmt-null-support-lemma
-    (b* ((stmt (c::stmt-null))
-         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
-      (implies (not (c::errorp result))
-               (equal (c::stmt-value-kind result) :none)))
+    (b* ((old (c::stmt-null))
+         (new (c::stmt-null))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (not (c::errorp old-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :none))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-expr-asg-support-lemma
@@ -2667,7 +2563,7 @@
     "We generate a theorem iff
      the expression is absent
      or a theorem was generated for the expression.
-     Note that the expression if present in the old statement
+     Note that the expression is present in the old statement
      iff it is present in the new statement;
      also note that, if there is no expression,
      old and new statements cannot differ.
@@ -2713,15 +2609,11 @@
                            (:instance
                             simpadd0-stmt-return-value-support-lemma
                             (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                            (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
-                            ,@(and (not expr?-diffp)
-                                   '((old-fenv fenv)
-                                     (new-fenv fenv))))
+                            (new-expr (mv-nth 1 (ldm-expr ',expr?-new))))
                            (:instance
                             simpadd0-stmt-return-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr?)))
-                            ,@(and expr?-diffp
-                                   '((fenv old-fenv)))))))
+                            (fenv old-fenv)))))
                 '(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e c::stmt-return))
@@ -2783,11 +2675,16 @@
              c::type-nonchar-integerp))
 
   (defruled simpadd0-stmt-return-novalue-support-lemma
-    (b* ((stmt (c::stmt-return nil))
-         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
-      (implies (not (c::errorp result))
-               (and (equal (c::stmt-value-kind result) :return)
-                    (not (c::stmt-value-return->value? result)))))
+    (b* ((old (c::stmt-return nil))
+         (new (c::stmt-return nil))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (not (c::errorp old-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :return)
+                    (not (c::stmt-value-return->value? old-result)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-return-error-support-lemma
@@ -2857,15 +2754,11 @@
                        (:instance
                         ,support-lemma
                         (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
-                        ,@(and (not stmt-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
+                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new))))
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        ,@(and stmt-diffp
-                               '((fenv old-fenv))))))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
@@ -3414,15 +3307,11 @@
                        (:instance
                         ,support-lemma
                         (old-item (mv-nth 1 (ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                        ,@(and (not item-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
+                        (new-item (mv-nth 1 (ldm-block-item ',item-new))))
                        (:instance
                         simpadd0-block-item-list-error-support-lemma
                         (item (mv-nth 1 (ldm-block-item ',item)))
-                        ,@(and item-diffp
-                               '((fenv old-fenv))))))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items-new
@@ -6258,23 +6147,7 @@
                      ',(c::ident fun) (list ,@args) compst old-fenv limit)
                     (c::exec-fun
                      ',(c::ident fun) (list ,@args) compst new-fenv limit))
-           :use (,@(and (not gout-body.diffp)
-                        `((:instance c::exec-block-item-list-without-calls
-                                     (items
-                                      (mv-nth 1 (ldm-block-item-list ',items)))
-                                     (compst
-                                      (c::push-frame
-                                       (c::frame (mv-nth 1 (ldm-ident
-                                                            (ident ,fun)))
-                                                 (list
-                                                  (c::init-scope
-                                                   ',ldm-params
-                                                   (list ,@args))))
-                                       compst))
-                                     (fenv old-fenv)
-                                     (fenv1 new-fenv)
-                                     (limit (1- limit)))))
-                 ,init-scope-thm-name
+           :use (,init-scope-thm-name
                  ,@(simpadd0-fundef-loop param-thm-names fun)
                  (:instance ,gout-body.thm-name
                             (compst
@@ -6286,8 +6159,6 @@
                                           ',ldm-params
                                           (list ,@args))))
                               compst))
-                            ,@(and (not gout-body.diffp)
-                                   '((fenv old-fenv)))
                             (limit (1- limit))))
            :in-theory '((:e c::fun-info->body$inline)
                         (:e c::fun-info->params$inline)
