@@ -11,8 +11,10 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-irrelevants")
 (include-book "implementation-environments")
+
+(include-book "std/util/defirrelevant" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -40,3 +42,12 @@
   ((transunits transunit-ensemble)
    (ienv ienv))
   :pred code-ensemblep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-code-ensemble
+  :short "An irrelevant code ensemble."
+  :type code-ensemblep
+  :body (make-code-ensemble
+         :transunits (irr-transunit-ensemble)
+         :ienv (ienv-default)))
