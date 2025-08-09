@@ -575,3 +575,25 @@ __signed__ __int128 y;
 __int128 __signed__ z;
 "
  :gcc t)
+
+(test-valid
+ "void main(void) {
+  int x = ({ int a = 0; a; });
+  int y = ({ int a = 1; a; });
+}
+"
+ :gcc t)
+
+(test-valid
+ "int foo (void);
+int bar (void);
+typeof(bar) foo;
+"
+ :gcc t)
+
+(test-valid
+ "int foo (void);
+typeof(foo) bar;
+int bar (void);
+"
+ :gcc t)
