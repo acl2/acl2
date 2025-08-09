@@ -401,7 +401,7 @@
  Digital Library</a>.  Copyright ACL2 Steering Committee.</li>
 
  <li>Integrating CCG analysis into ACL2, Matt Kaufmann, Panagiotis Manolios, J Moore, and
- Daron Vroon).  <i>Proceedings of <a href='http://www.easychair.org/FLoC-06/WST.html'>The Eighth International Workshop on
+ Daron Vroon).  <i>Proceedings of <a href='https://resources.illc.uva.nl/LogicList/newsitem.php?id=1416'>The Eighth International Workshop on
  Termination (WST 2006)</a></i>,
  August, 2006.</li>
 
@@ -496,7 +496,7 @@
  Digital Library</a>.  Copyright ACL2 Steering Committee.</li>
 
  <li><a href='@(`(:raw (docpath \"non-linear.ps\"))`)'>Linear and Nonlinear Arithmetic in ACL2</a>, Warren A. Hunt Jr.,
- Robert Bellarmine Krug, and J Moore.  In <a href='http://www.di.univaq.it/charme2003/'>CHARME 2003</a>,
+ Robert Bellarmine Krug, and J Moore.  In <a href='https://link.springer.com/conference/charme'>CHARME 2003</a>,
  D. Geist (ed.), Springer Verlag LNCS 2860, pp. 319-333, 2003.
  This paper describes the mechanization of linear and nonlinear
  arithmetic in ACL2.</li>
@@ -604,7 +604,7 @@
   :long "
  <ul>
 
- <li><a href='http://www.cs.utexas.edu/users/jared/osets/Web/'>Finite set theory based on fully ordered lists</a>, by Jared Davis,
+ <li><a href='https://www.cs.utexas.edu/~moore/acl2/workshop-2004/contrib/davis/set-theory.pdf'>Finite set theory based on fully ordered lists</a>, by Jared Davis,
  describes the set theory implementation in <tt>books/finite-set-theory/osets/</tt>.  In this
  library, set equality is just ACL2's 'equal' and the typical set
  operations (union, intersection, difference, cardinality) are
@@ -650,7 +650,7 @@
  details of the results described in the article along with solutions to all
  the exercises in the article.</li>
 
- <li><a href='http://www.lim.com/~ruben/research/papers/powerlists.html'>
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=3c78488a4c039fd4da2d2dfb8e6dcbfc33a7623a'>
  Defthms About Zip and Tie: Reasoning About Powerlists in ACL2</a>, Ruben
  Gamboa, University of Texas Computer Sciences Technical Report No. TR97-02,
  February, 1998.  This work is based on Jay Misra's &ldquo;powerlist&rdquo; device, a
@@ -660,7 +660,7 @@
  (including bitonic and Batcher), a grey-code sequence generator, and a
  carry-lookahead adder.  ACL2 event lists are linked to the URL above.</li>
 
- <li><a href='http://www.lim.com/~ruben/research/papers/fft.html'> Mechanically
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=321954c2c5213f9306c3b64d57bead18a9f3b985'> Mechanically
  Verifying the Correctness of the Fast Fourier Transform in ACL2</a>, Ruben
  Gamboa, in Third International Workshop on Formal Methods for Parallel
  Programming: Theory and Applications (FMPPTA), 1998.  This paper is based on
@@ -709,7 +709,7 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/users/ckcuong/Publications/A%20Hierarchical%20Approach%20to%20Self-Timed%20Circuit%20Verification.pdf'>A
+ href='https://ieeexplore.ieee.org/document/8850663'>A
  Hierarchical Approach to Self-Timed Circuit Verification</a>.
  C. Chau, W. A. Hunt Jr., M. Kaufmann, M. Roncken, and I. Sutherland. In Proceedings of
  the 25th IEEE International Symposium on Asynchronous Circuits and Systems (<a
@@ -723,7 +723,7 @@
  Verification</a>.
  C. Chau, W. A. Hunt Jr., M. Kaufmann, M. Roncken, and I. Sutherland. In Proceedings of
  the 24th IEEE International Symposium on Asynchronous Circuits and Systems (<a
- href='http://asyncsymposium.org/async2018/'>ASYNC 2018</a>),
+ href='https://ieeexplore.ieee.org/xpl/conhome/8588203/proceeding'>ASYNC 2018</a>),
  Vienna, Austria, May 2018, pages 51-58. <a
  href='http://www.ieee.org'>IEEE</a>.</li>
 
@@ -802,7 +802,7 @@
  S. Ray and W. A. Hunt, Jr.
  In <a
  href='http://fmv.jku.at/biere'>A. Biere</a> and <a
- href='http://research.synopsys.com/cgi-bin/bios.cgi?bid=19'>C.
+ href='https://ieeexplore.ieee.org/author/37295705700'>C.
  Pixley</a>, editors, Proceedings of the <a
  href='http://fmv.jku.at/fmcad09'>9th International Conference on
  Formal Methods in Computer-aided Design (FMCAD 2009)</a>, Austin, TX,
@@ -817,7 +817,7 @@
  S. Ray, K. Hao, Y. Chen, F. Xie, and J. Yang.
  In <a
  href='http://www.iist.unu.edu/~lzm'>Z. Liu</a> and <a
- href='http://www.cs.aau.dk/~apr'>A. P. Ravn</a>, editors, Proceedings
+ href='https://scholar.google.com/citations?user=oz475ioAAAAJ&hl=en'>A. P. Ravn</a>, editors, Proceedings
  of the <a href='http://www.iist.unu.edu/atva09'>7th International
  Symposium on Automated Technology for Verification and Analysis (ATVA
  2009)</a>, Macao SAR, China, October 2009, volume 5799 of <a
@@ -828,7 +828,7 @@
  <a
  href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/nvmts08.pdf'>Abstracting
  and Verifying Flash Memories</a>, Sandip Ray and Jayanta Bhadra.  In K. Campbell, editor,
- Proceedings of the <a href='http://www.nvmts.org'>9th Non-Volatile
+ Proceedings of the <a href='https://ieeexplore.ieee.org/xpl/conhome/4731179/proceeding'>9th Non-Volatile
  Memory Technology Symposium (NVMTS 2008)</a>, Pacific Grove, CA,
  November 2008, pages 100-104.  <a
  href='http://www.ieee.org'>IEEE</a>.</li>
@@ -853,7 +853,7 @@
  A. Hunt, Jr.  In <a
  href='http://www.cerc.utexas.edu/~jay'>J. Bhadra</a>, <a
  href='http://mtv.ece.ucsb.edu/licwang/'>L. Wang</a>, and M. S. Abadir,
- editors, Proceedings of the <a href='http://mtv.ece.ucsb.edu/MTV/'>8th
+ editors, Proceedings of the <a href='https://dblp.org/db/conf/mtv/mtv2007.html'>8th
  International Workshop on Microprocessor Test and Verification, Common
  Challenges and Solutions (MTV 2007)</a>, Austin, TX, December 2007.
  <a href='http://www.computer.org/portal/site/ieeecs'>IEEE Computer
