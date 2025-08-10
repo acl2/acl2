@@ -392,6 +392,22 @@
      :hints (("Goal" :in-theory (enable o< o-finp nfix)))
      :guard-hints (("Goal" :in-theory (enable nfix))))))
 
+(define code-ensemble-split-all-gso
+  ((code code-ensemblep)
+   (blacklist ident-setp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (blacklist$ ident-setp)
+               (code$ code-ensemblep))
+  (b* (((reterr) nil (irr-code-ensemble))
+       ((code-ensemble code) code)
+       ((erp blacklist tunits)
+        (transunit-ensemble-split-all-gso code.transunits
+                                          blacklist
+                                          (c$::ienv->gcc code.ienv)
+                                          code.ienv)))
+    (retok blacklist (change-code-ensemble code :transunits tunits))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing split-all-gso)
@@ -401,34 +417,26 @@
 (define split-all-gso-process-inputs
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (and (transunit-ensemblep tunits)
-                            (c$::transunit-ensemble-annop tunits))
-                       :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
-               (const-new$ symbolp :rule-classes :type-prescription)
-               (gcc booleanp :rule-classes :type-prescription)
-               (ienv c$::ienvp))
+               (code (and (code-ensemblep code)
+                          (c$::transunit-ensemble-annop
+                           (code-ensemble->transunits code)))
+                     :hints (("Goal" :in-theory (enable irr-code-ensemble
+                                                        irr-transunit-ensemble))))
+               (const-new$ symbolp :rule-classes :type-prescription))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil (c$::ienv-default))
+  (b* (((reterr) (irr-code-ensemble) nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol" const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
-       ((unless (c$::transunit-ensemble-annop tunits))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       ((unless (c$::transunit-ensemble-annop (code-ensemble->transunits code)))
         (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
-        (retmsg$ "~x0 must be a symbol" const-new))
-       ((unless (booleanp gcc))
-        (retmsg$ "~x0 must be a boolean" gcc))
-       ((unless (or (c$::ienvp ienv)
-                    (not ienv)))
-        (retmsg$ "~x0 must be an @(see c$::ienv) or @('nil')." ienv))
-       (ienv (or ienv (c$::ienv-default))))
-    (retok tunits const-new gcc ienv)))
+        (retmsg$ "~x0 must be a symbol" const-new)))
+    (retok code const-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -437,20 +445,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-gen-everything
-  ((tunits transunit-ensemblep)
-   (const-new symbolp)
-   (gcc booleanp)
-   (ienv c$::ienvp))
-  :guard (c$::transunit-ensemble-annop tunits)
+  ((code code-ensemblep)
+   (const-new symbolp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp - tunits)
-        (transunit-ensemble-split-all-gso tunits nil gcc ienv))
+       ((erp - code)
+        (code-ensemble-split-all-gso code nil))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -458,36 +464,26 @@
 (define split-all-gso-process-inputs-and-gen-everything
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits
-             const-new
-             gcc
-             ienv)
+       ((erp code
+             const-new)
         (split-all-gso-process-inputs const-old
                                       const-new
-                                      gcc
-                                      ienv
                                       wrld))
        ((erp event)
-        (split-all-gso-gen-everything tunits
-                                      const-new
-                                      gcc
-                                      ienv)))
+        (split-all-gso-gen-everything code
+                                      const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-fn (const-old
                           const-new
-                          gcc
-                          ienv
                           (ctx ctxp)
                           state)
   :returns (mv (erp booleanp :rule-classes :type-prescription)
@@ -499,8 +495,6 @@
         (split-all-gso-process-inputs-and-gen-everything
           const-old
           const-new
-          gcc
-          ienv
           (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -512,13 +506,8 @@
   :short "Definition of @(tsee split-all-gso)."
   (defmacro split-all-gso
     (const-old
-     const-new
-     &key
-     gcc
-     ienv)
+     const-new)
     `(make-event (split-all-gso-fn ',const-old
                                    ',const-new
-                                   ',gcc
-                                   ',ienv
                                    'split-all-gso
                                    state))))

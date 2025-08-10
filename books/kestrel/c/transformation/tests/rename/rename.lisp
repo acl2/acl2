@@ -27,10 +27,10 @@
   ;; TODO: transformation should define the const
   ;; TODO: transformation should take strings, not idents
   (defconst *new*
-    (transunit-ensemble-rename *old*
-                               (acons (c$::ident "main") (c$::ident "entry")
-                                      (acons (c$::ident "x") (c$::ident "y")
-                                             nil))))
+    (code-ensemble-rename *old*
+                          (acons (c$::ident "main") (c$::ident "entry")
+                                 (acons (c$::ident "x") (c$::ident "y")
+                                        nil))))
   (c$::output-files :const *new*
                     :path "new")
 

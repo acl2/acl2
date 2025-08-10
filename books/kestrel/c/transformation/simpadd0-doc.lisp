@@ -61,9 +61,9 @@
       "Specifies the code to the transformed.")
      (xdoc::p
       "This must be a symbol that names an existing ACL2 constant
-       that contains an unambiguous validated translation unit ensemble,
-       i.e. a value of type @(tsee transunit-ensemble)
-       resulting from "
+       that contains an unambiguous validated code ensemble,
+       i.e. a value of type @(tsee code-ensemble)
+       whose translation unit ensemble results from "
       (xdoc::seetopic "c$::validator" "validation")
       ", and in particular containing "
       (xdoc::seetopic "c$::validation-information" "validation information")
@@ -93,8 +93,9 @@
      "@('*new*')"
      (xdoc::p
       "The named constant containing the result of the transformation.
-       This is a translation unit ensemble that is
-       the same as the one in @('*old*'), except that
+       This is a code ensemble that is
+       the same as the one in @('*old*'), except that,
+       in the translation unit ensemble,
        every occurrence of an expression of the form @('E + 0'),
        when @('E') is an expression that our current @(see c$::validator)
        annotates as having type @('int'),

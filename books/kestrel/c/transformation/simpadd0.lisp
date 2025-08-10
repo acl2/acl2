@@ -11,6 +11,7 @@
 (in-package "C2C")
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/purity")
 (include-book "../syntax/validation-information")
@@ -86,10 +87,10 @@
 
 (define simpadd0-process-inputs (const-old const-new (wrld plist-worldp))
   :returns (mv erp
-               (tunits-old transunit-ensemblep)
+               (code-old code-ensemblep)
                (const-new$ symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) (irr-transunit-ensemble) nil)
+  (b* (((reterr) (irr-code-ensemble) nil)
        ((unless (symbolp const-old))
         (reterr (msg "The first input must be a symbol, ~
                       but it is ~x0 instead."
@@ -102,35 +103,40 @@
         (reterr (msg "The first input, ~x0, must be a named constant, ~
                       but it is not."
                      const-old)))
-       (tunits-old (constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits-old))
+       (code-old (constant-value const-old wrld))
+       ((unless (code-ensemblep code-old))
         (reterr (msg "The value of the constant ~x0 ~
-                      must be a translation unit ensemble, ~
+                      must be a code ensemble, ~
                       but it is ~x1 instead."
-                     const-old tunits-old)))
+                     const-old code-old)))
+       (tunits-old (code-ensemble->transunits code-old))
        ((unless (transunit-ensemble-unambp tunits-old))
-        (reterr (msg "The translation unit ensemble ~x0 ~
+        (reterr (msg "The translation unit ensemble ~
+                      of the code ensemble ~x0 ~
                       that is the value of the constant ~x1 ~
                       must be unambiguous, ~
                       but it is not."
-                     tunits-old const-old)))
+                     code-old const-old)))
        ((unless (transunit-ensemble-annop tunits-old))
-        (reterr (msg "The translation unit ensemble ~x0 ~
+        (reterr (msg "The translation unit ensemble ~
+                      of the coee ensemble ~x0 ~
                       that is the value of the constant ~x1 ~
                       must contains validation information, ~
                       but it does not."
-                     tunits-old const-old))))
-    (retok tunits-old const-new))
+                     code-old const-old))))
+    (retok code-old const-new))
 
   ///
 
   (defret transunit-ensemble-unambp-of-simpadd0-process-inputs
     (implies (not erp)
-             (transunit-ensemble-unambp tunits-old)))
+             (transunit-ensemble-unambp
+              (code-ensemble->transunits code-old))))
 
   (defret transunit-ensemble-annop-of-simpadd0-process-inputs
     (implies (not erp)
-             (transunit-ensemble-annop tunits-old))))
+             (transunit-ensemble-annop
+              (code-ensemble->transunits code-old)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6389,8 +6395,7 @@
   :returns (mv (new-tunits transunit-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a translation unit ensemble."
-  (b* (((simpadd0-gin gin) gin)
-       ((transunit-ensemble tunits) tunits)
+  (b* (((transunit-ensemble tunits) tunits)
        ((mv new-map (simpadd0-gout gout-map))
         (simpadd0-filepath-transunit-map tunits.unwrap gin state)))
     (mv (transunit-ensemble new-map)
@@ -6410,20 +6415,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-everything ((tunits-old transunit-ensemblep)
+(define simpadd0-code-ensemble ((code code-ensemblep)
+                                (gin simpadd0-ginp)
+                                state)
+  :guard (transunit-ensemble-unambp (code-ensemble->transunits code))
+  :returns (mv (new-code code-ensemblep)
+               (gout simpadd0-goutp))
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code)
+       ((mv tunits-new (simpadd0-gout gout))
+        (simpadd0-transunit-ensemble code.transunits gin state)))
+    (mv (change-code-ensemble code :transunits tunits-new) gout))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-simpadd0-code-ensemble
+    (transunit-ensemble-unambp (code-ensemble->transunits new-code))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-everything ((code-old code-ensemblep)
                                  (const-new symbolp)
                                  state)
-  :guard (and (transunit-ensemble-unambp tunits-old)
-              (transunit-ensemble-annop tunits-old))
+  :guard (and (transunit-ensemble-unambp (code-ensemble->transunits code-old))
+              (transunit-ensemble-annop (code-ensemble->transunits code-old)))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :const-new const-new
                                :thm-index 1
                                :names-to-avoid nil))
-       ((mv tunits-new (simpadd0-gout gout))
-        (simpadd0-transunit-ensemble tunits-old gin state))
-       (const-event `(defconst ,const-new ',tunits-new)))
+       ((mv code-new (simpadd0-gout gout))
+        (simpadd0-code-ensemble code-old gin state))
+       (const-event `(defconst ,const-new ',code-new)))
     (retok `(encapsulate () ,const-event ,@gout.events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6435,9 +6460,9 @@
   :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits-old const-new)
+       ((erp code-old const-new)
         (simpadd0-process-inputs const-old const-new (w state))))
-    (simpadd0-gen-everything tunits-old const-new state)))
+    (simpadd0-gen-everything code-old const-new state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
