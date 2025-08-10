@@ -70,7 +70,7 @@ if (! -f "xdata.db") {
 }
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
-my $query = $dbh->prepare("SELECT * FROM XTABLE WHERE XKEY=?");
+my $query = $dbh->prepare("SELECT * FROM xtable WHERE xkey=?");
 
 my @results;
 my $json = JSON->new;
@@ -82,10 +82,10 @@ for my $key (@keys) {
         push @results, { error => "no such topic." };
     }
     else {
-        my $xparents = $json->decode($ret->{"XPARENTS"});
-        my $xsrc = $json->decode($ret->{"XSRC"});
-        my $xpkg = $json->decode($ret->{"XPKG"});
-        my $xlong = $json->decode($ret->{"XLONG"});
+        my $xparents = $json->decode($ret->{"xparents"});
+        my $xsrc = $json->decode($ret->{"xsrc"});
+        my $xpkg = $json->decode($ret->{"xpkg"});
+        my $xlong = $json->decode($ret->{"xlong"});
         push @results, {
             parents => $xparents,
             src => $xsrc,
