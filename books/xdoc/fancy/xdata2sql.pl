@@ -128,7 +128,7 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
                        {RaiseError=>1, AutoCommit=>0})
     or die $DBI::errstr;
 
-print "; Creating xdoc_data table.\n";
+print "; Creating xtable.\n";
 
 $dbh->do(q{
     CREATE TABLE xtable (
@@ -140,7 +140,7 @@ $dbh->do(q{
 });
 
 
-print "; Populating xdoc_data table.\n";
+print "; Populating xtable.\n";
 my $query = $dbh->prepare(q{
     INSERT INTO xtable (xkey, xparents, xsrc, xpkg, xlong)
     VALUES (?, ?, ?, ?, ?)
@@ -156,6 +156,18 @@ while(my ($key,$val) = each %$xdata)
 
     $query->execute();
 }
+
+print "; Creating xtable_fts.\n";
+
+$dbh->do(q{
+    CREATE VIRTUAL TABLE xtable_fts
+    USING fts5(xkey, xlong, content='xtable', content_rowid='rowid')
+});
+
+print "; Populating xtable_fts.\n";
+$dbh->do(q{
+    INSERT INTO xtable_fts(xkey, xlong) SELECT xkey, xlong FROM xtable
+});
 
 $dbh->commit();
 $dbh->disconnect();
