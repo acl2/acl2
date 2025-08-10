@@ -1335,6 +1335,35 @@
  "lLu" ; only l is lexed
  :cond (equal ast (isuffix-l (lsuffix-locase-l))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-floating-suffix
+
+(test-lex
+ lex-?-floating-suffix
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-floating-suffix
+ "f"
+ :cond (equal ast (fsuffix-locase-f)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F"
+ :cond (equal ast (fsuffix-upcase-f)))
+
+(test-lex
+ lex-?-floating-suffix
+ "l"
+ :cond (equal ast (fsuffix-locase-l)))
+
+(test-lex
+ lex-?-floating-suffix
+ "L"
+ :cond (equal ast (fsuffix-upcase-l)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.
