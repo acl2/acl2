@@ -425,7 +425,6 @@
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
 
-
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
 
@@ -1223,7 +1222,7 @@
                            (if 64-bitp
                                '(run-until-return3 x86)
                              '(run-until-return4 x86))))
-       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
+       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
