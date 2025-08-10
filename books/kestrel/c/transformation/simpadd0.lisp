@@ -2880,12 +2880,12 @@
    (xdoc::p
     "This is introduced mainly for uniformity.
      It actually takes and returns no block item list,
-     because there is only one empty block item list.
-     We just generate a dummy theorem for uniformity
-     and to facilitate compositional proof generation."))
+     because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (hints '(("Goal" :in-theory '((:e ldm-block-item-list)))))
+       (hints '(("Goal"
+                 :in-theory '((:e ldm-block-item-list))
+                 :use simpadd0-block-item-list-empty-support-lemma)))
        (vartys nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
@@ -2900,7 +2900,23 @@
                         :names-to-avoid (cons thm-name gin.names-to-avoid)
                         :vartys vartys
                         :diffp nil))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled simpadd0-block-item-list-empty-support-lemma
+    (b* ((old nil)
+         (new nil)
+         ((mv old-result old-compst)
+          (c::exec-block-item-list old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item-list new compst new-fenv limit)))
+      (implies (not (c::errorp old-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :none))))
+    :enable c::exec-block-item-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2959,6 +2975,20 @@
                      items-thm-name
                      nil)) ; temporary
         (mv item+items-new gout-no-thm))
+       (first-type (block-item-type item))
+       (rest-type (block-item-list-type items))
+       (support-lemma
+        (cond
+         ((not first-type)
+          (cond
+           ((not rest-type)
+            'simpadd0-block-item-list-cons-rest-none-support-lemma)
+           ((type-case rest-type :void)
+            'simpadd0-block-item-list-cons-rest-novalue-support-lemma)
+           (t 'simpadd0-block-item-list-cons-rest-value-support-lemma)))
+         ((type-case first-type :void)
+          'simpadd0-block-item-list-cons-first-novalue-support-lemma)
+         (t 'simpadd0-block-item-list-cons-first-value-support-lemma)))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-block-item)
@@ -2966,71 +2996,32 @@
                         (:e ldm-ident)
                         (:e ident)
                         (:e c::type-nonchar-integerp))
-           :use ((:instance ,item-thm-name
-                            ,@(and diffp
-                                   (not item-diffp)
-                                   '((fenv old-fenv))))
-                 (:instance ,items-thm-name
-                            ,@(and diffp
-                                   (not items-diffp)
-                                   '((fenv old-fenv))))
+           :use ((:instance
+                  ,item-thm-name
+                  (limit (1- limit)))
                  (:instance
-                  simpadd0-block-item-list-cons-first-value-support-lemma
+                  ,items-thm-name
+                  (compst
+                   (mv-nth 1 (c::exec-block-item
+                              (mv-nth 1 (ldm-block-item ',item))
+                              compst old-fenv (1- limit))))
+                  (limit (1- limit)))
+                 (:instance
+                  ,support-lemma
                   (old-item (mv-nth 1 (ldm-block-item ',item)))
                   (old-items (mv-nth 1 (ldm-block-item-list ',items)))
                   (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  ,@(and (not diffp)
-                         '((old-fenv fenv)
-                           (new-fenv fenv))))
-                 (:instance
-                  simpadd0-block-item-list-cons-first-novalue-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  ,@(and (not diffp)
-                         '((old-fenv fenv)
-                           (new-fenv fenv))))
-                 (:instance
-                  simpadd0-block-item-list-cons-rest-value-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  ,@(and (not diffp)
-                         '((old-fenv fenv)
-                           (new-fenv fenv))))
-                 (:instance
-                  simpadd0-block-item-list-cons-rest-novalue-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  ,@(and (not diffp)
-                         '((old-fenv fenv)
-                           (new-fenv fenv))))
-                 (:instance
-                  simpadd0-block-item-list-cons-rest-none-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  ,@(and (not diffp)
-                         '((old-fenv fenv)
-                           (new-fenv fenv))))
+                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new))))
                  (:instance
                   simpadd0-block-item-list-cons-first-error-support-lemma
                   (item (mv-nth 1 (ldm-block-item ',item)))
                   (items (mv-nth 1 (ldm-block-item-list ',items)))
-                  ,@(and diffp
-                         '((fenv old-fenv))))
+                  (fenv old-fenv))
                  (:instance
                   simpadd0-block-item-list-cons-rest-error-support-lemma
                   (item (mv-nth 1 (ldm-block-item ',item)))
                   (items (mv-nth 1 (ldm-block-item-list ',items)))
-                  ,@(and diffp
-                         '((fenv old-fenv))))))))
+                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm item+items
                                           item+items-new
@@ -5745,8 +5736,7 @@
     :short "Transform a list of block items."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
-          (mv nil
-              (simpadd0-block-item-list-empty gin)))
+          (mv nil (simpadd0-block-item-list-empty gin)))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin state))
          (gin (simpadd0-gin-update gin gout-item))
