@@ -222,10 +222,10 @@ function keyTitle(key)
 
 function applySuborder(subkeys, keys) {
     var ret = [];
-    for(var i in subkeys) {
+    for (var i in subkeys) {
         ret.push(subkeys[i]);
     }
-    for(var i in keys) {
+    for (var i in keys) {
         var k = keys[i];
         var idx = ret.indexOf(k);
         if (idx == -1) { // new key, add it
@@ -240,7 +240,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     var children = xindexObj.topicChildKeys(key);
 
     var tmp = [];
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         var rawname = xindexObj.topicRawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
@@ -248,7 +248,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
-    for(var i in tmp) {
+    for (var i in tmp) {
         ret.push(tmp[i].key);
     }
 
@@ -271,7 +271,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
 function xdataLoadKeys(keys) {
     // Optimization, don't load keys we've already loaded
     const missing = [];
-    for(const key of keys) {
+    for (const key of keys) {
         if (!xdataObj.topicExists(key))
             missing.push(key);
     }
@@ -283,7 +283,7 @@ function xdataLoadKeys(keys) {
     if (!XDATAGET) {
         // We're running in local mode, so we can't load any more data from
         // the server.  Any missing keys are errors!
-        for(const missingKey of missing)
+        for (const missingKey of missing)
             xdataObj.addError(missingKey, "Error: no such topic.");
         return Promise.resolve();
     }
@@ -316,7 +316,7 @@ function xdataLoadKeys(keys) {
     }).catch(err => {
         const val = `Error: AJAX query failed. ${err}`;
         console.error(err);
-        for(const missingKey of missing) {
+        for (const missingKey of missing) {
             xdataObj.addError(missingKey, val);
         }
     });
@@ -415,7 +415,7 @@ function navExpand(id) {
     $("#_nav_ilink" + id).attr("href", "javascript:navRetract(" + id + ")");
     var key = nav_id_table[id]["key"];
 
-    if(nav_id_table[id]["ever_expanded"]) {
+    if (nav_id_table[id]["ever_expanded"]) {
         $("#_navTree" + id).show();
         return;
     }
@@ -425,14 +425,14 @@ function navExpand(id) {
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
-    for(var i in children) {
+    for (var i in children) {
         exp += navMakeNode(children[i]);
     }
     $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
-    for(var i = start; i < nav_id_table.length; ++i) {
+    for (var i = start; i < nav_id_table.length; ++i) {
         navActivateTooltip(i);
     }
 }
@@ -488,7 +488,7 @@ function navFlat() {
 function navFlatSort(array)
 {
     var len = array.length;
-    if(len < 2) {
+    if (len < 2) {
         return array;
     }
     var pivot = Math.ceil(len/2);
@@ -498,7 +498,7 @@ function navFlatSort(array)
 function navFlatMerge(left, right)
 {
     var result = [];
-    while((left.length > 0) && (right.length > 0))
+    while ((left.length > 0) && (right.length > 0))
     {
         if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
             result.push(left.shift());
@@ -549,7 +549,7 @@ function navFlatReallyInstall()
     var keys = xindexObj.allKeys();
 
     // Preprocessing: upcase and chunkify everything
-    for(const key of keys) {
+    for (const key of keys) {
         var rawname = xindexObj.topicRawname(key).toUpperCase();
         myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
@@ -570,7 +570,7 @@ function navFlatReallyInstall()
     // alphabetic characters.  Now we inline this to gain some small
     // efficiency.
 
-    for(var i in myarr) {
+    for (var i in myarr) {
         var key = myarr[i].key;
         var name = xindexObj.topicName(key);
         var rawname = myarr[i].rawname;
@@ -653,7 +653,7 @@ function datLoadParents(key) {
         return;
     }
     acc += "<ul>";
-    for(var i in parent_keys) {
+    for (var i in parent_keys) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
@@ -679,7 +679,7 @@ function datShortSubtopics(key)
     var children = keySortedChildren(key);
 
     var dl = jQuery("<div></div>");
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
@@ -710,7 +710,7 @@ function datExpand(dat_id)
     var children = keySortedChildren(key);
     xdataLoadKeys(children).then(() => {
         var div = $("#_dat_long" + dat_id);
-        for(var i in children) {
+        for (var i in children) {
             var child_key = children[i];
             div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
@@ -867,7 +867,7 @@ function searchTokenize(plaintext) {
         // Correct for ridiculous behavior of string.split
         return [];
     }
-    for(var i in tokens) {
+    for (var i in tokens) {
         var orig = tokens[i];
         var trim = orig.replace(/^[()"'`.,;?!]*/, '')
             .replace(/[()"'`.,;?!]*$/, '');
@@ -886,7 +886,7 @@ function countOccurrences(haystack, needle) {
 
 // Check if all words in query appear in text (for multi-word queries)
 function allWordsMatch(text, query_words) {
-    for(let i = 0; i < query_words.length; i++) {
+    for (let i = 0; i < query_words.length; i++) {
         if (text.indexOf(query_words[i]) === -1) {
             return false;
         }
@@ -984,14 +984,14 @@ function searchGoMain(query_str) {
     // We borrow the ta_data structure from the "jump to" feature.
 
     // 0. Exact matches of topics
-    for(const key of ta_data) {
+    for (const key of ta_data) {
         if (key.rawlow === query_str_low) {
             if (addResult(key.value, 0)) break;
         }
     }
     if (results.length < max_display) {
         // 0.5. Prefix matches of topics
-        for(const key of ta_data) {
+        for (const key of ta_data) {
             if (key.value in matches) continue;
             if (key.rawlow.startsWith(query_str_low)) {
                 if (addResult(key.value, 0.5)) break;
@@ -1000,7 +1000,7 @@ function searchGoMain(query_str) {
     }
     if (results.length < max_display) {
         // 1. Substring matches in topics
-        for(const key of ta_data) {
+        for (const key of ta_data) {
             if (key.value in matches) continue;
             // Check for exact phrase first (higher priority)
             if (key.rawlow.indexOf(query_str_low) !== -1) {
@@ -1014,7 +1014,7 @@ function searchGoMain(query_str) {
     }
     if (results.length < max_display) {
         // 2. Short description matches
-        for(const key of ta_data) {
+        for (const key of ta_data) {
             if (key.value in matches) continue;
             // Perhaps it would be better to use topicShortPlaintext,
             // but this is *very* slow.
@@ -1120,7 +1120,7 @@ function ta_data_initialize() {
         return;
     }
     const keys = xindexObj.allKeys();
-    for(const key of keys) {
+    for (const key of keys) {
         ta_data.push({
             value: key,
             nicename: xindexObj.topicName(key),
@@ -1348,7 +1348,7 @@ function onIndexLoaded()
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for(var i in chars) {
+    for (var i in chars) {
         var c = chars.charAt(i);
         acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
         if (c == "M")
@@ -1414,7 +1414,7 @@ function getPageParameters ()
     }
     var param_strs = RegExp.$1.split("&");
     var param_arr = {};
-    for(var i in param_strs)
+    for (var i in param_strs)
     {
         var tmp = param_strs[i].split("=");
         var key = decodeURI(tmp[0]);
