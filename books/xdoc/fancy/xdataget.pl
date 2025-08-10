@@ -49,6 +49,7 @@ use warnings;
 use strict;
 use DBI;
 use CGI;
+use JSON;
 
 my $cgi = CGI->new;
 print $cgi->header("application/json");
@@ -71,24 +72,25 @@ if (! -f "xdata.db") {
 my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
 my $query = $dbh->prepare("SELECT * FROM XTABLE WHERE XKEY=?");
 
-print "{\"results\":[\n";
-for(my $i = 0; $i < @keys; ++$i)
-{
-    my $key = $keys[$i];
+my @results;
+my $json = JSON->new;
+for my $key (@keys) {
     $query->execute($key);
     my $ret = $query->fetchrow_hashref();
+
     if (!$ret) {
-        print "  \"Error: no such topic.\"";
+        push @results, "Error: no such topic.";
     }
     else {
-        my $val = $ret->{"XDATA"};
-        print "  $val";
-    }
-    if ($i != @keys-1) {
-        print ",\n";
+        my $xparents = $json->decode($ret->{"XPARENTS"});
+        my $xsrc = $json->decode($ret->{"XSRC"});
+        my $xpkg = $json->decode($ret->{"XPKG"});
+        my $xlong = $json->decode($ret->{"XLONG"});
+        push @results, [$xparents, $xsrc, $xpkg, $xlong];
     }
 }
-print "\n]}\n";
+my $output = { results => \@results };
+print $json->encode($output);
 
 $query->finish();
 $dbh->disconnect();
