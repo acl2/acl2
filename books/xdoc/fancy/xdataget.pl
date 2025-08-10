@@ -79,14 +79,19 @@ for my $key (@keys) {
     my $ret = $query->fetchrow_hashref();
 
     if (!$ret) {
-        push @results, "Error: no such topic.";
+        push @results, { error => "no such topic." };
     }
     else {
         my $xparents = $json->decode($ret->{"XPARENTS"});
         my $xsrc = $json->decode($ret->{"XSRC"});
         my $xpkg = $json->decode($ret->{"XPKG"});
         my $xlong = $json->decode($ret->{"XLONG"});
-        push @results, [$xparents, $xsrc, $xpkg, $xlong];
+        push @results, {
+            parents => $xparents,
+            src => $xsrc,
+            pkg => $xpkg,
+            long => $xlong
+        };
     }
 }
 my $output = { results => \@results };
