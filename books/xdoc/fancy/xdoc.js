@@ -68,24 +68,24 @@ function chunkify(t) {
     var tz = [], x = 0, y = -1, n = 0, i, j;
 
     while ((i = (j = t.charAt(x++)).charCodeAt(0))) {
-	var m = (i == 46 || (i >=48 && i <= 57));
-	if (m !== n) {
+        var m = (i == 46 || (i >=48 && i <= 57));
+        if (m !== n) {
             tz[++y] = "";
             n = m;
-	}
-	tz[y] += j;
+        }
+        tz[y] += j;
     }
     return tz;
 }
 
 function alphanumChunks(aa,bb) {
     for (var x = 0; aa[x] && bb[x]; x++) {
-	if (aa[x] !== bb[x]) {
-	    var c = Number(aa[x]), d = Number(bb[x]);
-	    if (c == aa[x] && d == bb[x]) {
-		return c - d;
-	    } else return (aa[x] > bb[x]) ? 1 : -1;
-	}
+        if (aa[x] !== bb[x]) {
+            var c = Number(aa[x]), d = Number(bb[x]);
+            if (c == aa[x] && d == bb[x]) {
+                return c - d;
+            } else return (aa[x] > bb[x]) ? 1 : -1;
+        }
     }
     return aa.length - bb.length;
 }
@@ -99,16 +99,16 @@ function alphanum(a, b) {
 var waitmsg = 0;
 function pleaseWait() {
     var msgs = ["Still loading",
-		"Gah, what's taking so long?",
-		"Man, tubes must be clogged...",
-		"The boy has no patience.",
-		"It's not ready yet!",
-		"Dude, stop clicking already!"];
+                "Gah, what's taking so long?",
+                "Man, tubes must be clogged...",
+                "The boy has no patience.",
+                "It's not ready yet!",
+                "Dude, stop clicking already!"];
     $("#still_loading").html("<p>" + msgs[waitmsg] + "</p>");
     $("#still_loading").fadeIn(100).delay(500).fadeOut(100);
     waitmsg = waitmsg + 1;
     if (waitmsg == msgs.length)
-	waitmsg = msgs.length - 1;
+        waitmsg = msgs.length - 1;
 }
 
 
@@ -126,39 +126,39 @@ function renderMathFragments ()
     // the page.
 
     if (! KATEX_LOADED) {
-	// just wait, it'll get loaded eventually
-	return;
+        // just wait, it'll get loaded eventually
+        return;
     }
 
     // console.log("Rendering math fragments.");
     $(".mathblock").each(function () {
-	var obj = $(this);
-	var formula_text = obj.text();
-	var newdiv = jQuery("<span></span>");
-	try {
-	    katex.render(formula_text, newdiv.get(0));
+        var obj = $(this);
+        var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+        try {
+            katex.render(formula_text, newdiv.get(0));
             obj.html(newdiv);
-	    obj.removeAttr("class");
-	    obj.attr("class", "mathblockrendered");
-	}
-	catch(e) {
-	    obj.html(htmlEncode("{{" + e.message + "}}"));
-	}
+            obj.removeAttr("class");
+            obj.attr("class", "mathblockrendered");
+        }
+        catch(e) {
+            obj.html(htmlEncode("{{" + e.message + "}}"));
+        }
     });
 
     $(".mathfrag").each(function () {
-	var obj = $(this);
-	var formula_text = obj.text();
-	var newdiv = jQuery("<span></span>");
-	try {
-	    katex.render(formula_text, newdiv.get(0));
-	    obj.html(newdiv);
-	    obj.removeAttr("class");
-	    obj.attr("class", "mathfragrendered");
-	}
-	catch (e) {
-	    obj.html(htmlEncode("{{" + e.message + "}}"));
-	}
+        var obj = $(this);
+        var formula_text = obj.text();
+        var newdiv = jQuery("<span></span>");
+        try {
+            katex.render(formula_text, newdiv.get(0));
+            obj.html(newdiv);
+            obj.removeAttr("class");
+            obj.attr("class", "mathfragrendered");
+        }
+        catch (e) {
+            obj.html(htmlEncode("{{" + e.message + "}}"));
+        }
     });
 }
 
@@ -215,23 +215,23 @@ function keyTitle(key)
     if (!prefix) { prefix = "XDOC"; }
 
     return (xindexObj.topicExists(key))
-	? (prefix + " &mdash; " + xindexObj.topicName(key))
-	: (prefix + " &mdash; " + key);
+        ? (prefix + " &mdash; " + xindexObj.topicName(key))
+        : (prefix + " &mdash; " + key);
 }
 
 
 function applySuborder(subkeys, keys) {
     var ret = [];
     for(var i in subkeys) {
-	ret.push(subkeys[i]);
+        ret.push(subkeys[i]);
     }
     for(var i in keys) {
-	var k = keys[i];
-	var idx = ret.indexOf(k);
-	if (idx == -1) { // new key, add it
-	    ret.push(k);
-	}
-	// else already have it.
+        var k = keys[i];
+        var idx = ret.indexOf(k);
+        if (idx == -1) { // new key, add it
+            ret.push(k);
+        }
+        // else already have it.
     }
     return ret;
 }
@@ -241,20 +241,20 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
 
     var tmp = [];
     for(var i in children) {
-	var child_key = children[i];
-	var rawname = xindexObj.topicRawname(child_key);
-	tmp.push({key:child_key, rawname:rawname});
+        var child_key = children[i];
+        var rawname = xindexObj.topicRawname(child_key);
+        tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
     for(var i in tmp) {
-	ret.push(tmp[i].key);
+        ret.push(tmp[i].key);
     }
 
     var suborder = xindexObj.topicSuborder(key);
     if (suborder.length > 0) {
-	return applySuborder(suborder, ret);
+        return applySuborder(suborder, ret);
     }
 
     return ret;
@@ -272,49 +272,49 @@ function xdataLoadKeys(keys) {
     // Optimization, don't load keys we've already loaded
     const missing = [];
     for(const key of keys) {
-	if (!xdataObj.topicExists(key))
+        if (!xdataObj.topicExists(key))
             missing.push(key);
     }
     // If no keys are missing, we don't need to load anything!
     if (missing.length == 0) {
-	return Promise.resolve();
+        return Promise.resolve();
     }
 
     if (!XDATAGET) {
-	// We're running in local mode, so we can't load any more data from
-	// the server.  Any missing keys are errors!
-	for(const missingKey of missing)
+        // We're running in local mode, so we can't load any more data from
+        // the server.  Any missing keys are errors!
+        for(const missingKey of missing)
             xdataObj.addError(missingKey, "Error: no such topic.");
-	return Promise.resolve();
+        return Promise.resolve();
     }
 
     // Else, running on a server and missing some keys.  Try to load them.
     const url = XDATAGET + "?keys=" + missing.join(":");
 
     return fetch(url, {
-	method: 'GET',
+        method: 'GET',
     }).then(res => res.json()).then(obj => {
-	const results = "results" in obj && obj["results"];
-	if (results && results.length == missing.length) {
+        const results = "results" in obj && obj["results"];
+        if (results && results.length == missing.length) {
             // TODO: we need to assume that the order of the returned
             // data is the same as the order of the requested keys.
             for(let i = 0; i < results.length; i++) {
-		xdataObj.add(missing[i], results[i]);
+                xdataObj.add(missing[i], results[i]);
             }
-	} else {
+        } else {
             let val = "Error: malformed reply from " + url;
             if ("error" in obj)
-		val = obj["error"];
+                val = obj["error"];
             for(const missingKey of missing) {
-		xdataObj.addError(missingKey, val);
+                xdataObj.addError(missingKey, val);
             }
-	}
+        }
     }).catch(err => {
-	const val = `Error: AJAX query failed. ${err}`;
-	console.error(err);
-	for(const missingKey of missing) {
+        const val = `Error: AJAX query failed. ${err}`;
+        console.error(err);
+        for(const missingKey of missing) {
             xdataObj.addError(missingKey, val);
-	}
+        }
     });
 }
 
@@ -375,18 +375,18 @@ function navMakeNode(key) {
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
     if (xindexObj.topicChildKeys(key).length == 0) {
-	node += "<img src=\"leaf.png\"/>";
+        node += "<img src=\"leaf.png\"/>";
     }
     else {
-	node += "<a id=\"_nav_ilink" + id + "\" ";
-	node += " href=\"javascript:navExpand(" + id + ")\">";
-	node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
-	node += "</a>";
+        node += "<a id=\"_nav_ilink" + id + "\" ";
+        node += " href=\"javascript:navExpand(" + id + ")\">";
+        node += "<img src=\"plus.png\" id=\"_nav_img" + id + "\"/>";
+        node += "</a>";
     }
     node += "<a id=\"_golink" + id + "\""
-	+ " href=\"index.html?topic=" + key + "\""
-	+ " onclick=\"return dolink(event, '" + key + "');\""
-	+ " data-powertip=\"" + tooltip + "\">";
+        + " href=\"index.html?topic=" + key + "\""
+        + " onclick=\"return dolink(event, '" + key + "');\""
+        + " data-powertip=\"" + tooltip + "\">";
     node += name;
     node += "</a>";
     node += "</nobr>";
@@ -412,8 +412,8 @@ function navExpand(id) {
     var key = nav_id_table[id]["key"];
 
     if(nav_id_table[id]["ever_expanded"]) {
-	$("#_navTree" + id).show();
-	return;
+        $("#_navTree" + id).show();
+        return;
     }
 
     nav_id_table[id]["ever_expanded"] = true;
@@ -422,14 +422,14 @@ function navExpand(id) {
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
     for(var i in children) {
-	exp += navMakeNode(children[i]);
+        exp += navMakeNode(children[i]);
     }
     $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
     for(var i = start; i < nav_id_table.length; ++i) {
-	navActivateTooltip(i);
+        navActivateTooltip(i);
     }
 }
 
@@ -447,8 +447,8 @@ var navFlat_ever_shown = false;
 
 function navTree() {
     if (!xindex_loaded) {
-	pleaseWait();
-	return;
+        pleaseWait();
+        return;
     }
     if (nav_mode == "tree") { return; }
     navFlat_top = $("#left").scrollTop();
@@ -461,8 +461,8 @@ function navTree() {
 
 function navFlat() {
     if (!xindex_loaded) {
-	pleaseWait();
-	return;
+        pleaseWait();
+        return;
     }
     if (nav_mode == "flat") { return; }
     navTree_top = $("#left").scrollTop();
@@ -473,8 +473,8 @@ function navFlat() {
     nav_mode = "flat";
 
     if (navFlat_ever_shown) {
-	// Nothing to do, we've already built the flat index.
-	return;
+        // Nothing to do, we've already built the flat index.
+        return;
     }
     $("#flat").html("<p>Loading...</p>");
     navFlat_ever_shown = true;
@@ -485,7 +485,7 @@ function navFlatSort(array)
 {
     var len = array.length;
     if(len < 2) {
-	return array;
+        return array;
     }
     var pivot = Math.ceil(len/2);
     return navFlatMerge(navFlatSort(array.slice(0,pivot)), navFlatSort(array.slice(pivot)));
@@ -496,10 +496,10 @@ function navFlatMerge(left, right)
     var result = [];
     while((left.length > 0) && (right.length > 0))
     {
-	if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
-	    result.push(left.shift());
-	else
-	    result.push(right.shift());
+        if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
+            result.push(left.shift());
+        else
+            result.push(right.shift());
     }
 
     result = result.concat(left, right);
@@ -546,8 +546,8 @@ function navFlatReallyInstall()
 
     // Preprocessing: upcase and chunkify everything
     for(const key of keys) {
-	var rawname = xindexObj.topicRawname(key).toUpperCase();
-	myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
+        var rawname = xindexObj.topicRawname(key).toUpperCase();
+        myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
 
     // Sort using faster algorithm
@@ -567,26 +567,26 @@ function navFlatReallyInstall()
     // efficiency.
 
     for(var i in myarr) {
-	var key = myarr[i].key;
-	var name = xindexObj.topicName(key);
-	var rawname = myarr[i].rawname;
+        var key = myarr[i].key;
+        var name = xindexObj.topicName(key);
+        var rawname = myarr[i].rawname;
 
-	// If you want to resurrect this, also need to add the data-powertip
-	// stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
-	// + "</p>";
+        // If you want to resurrect this, also need to add the data-powertip
+        // stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
+        // + "</p>";
 
-	var code = rawname.charCodeAt(0);
-	if ((rawname.charAt(0) != current_startchar) &&
-	    // Avoid headers unless it's alphabetic.  Only need to check for
-	    // upper-case things since we're upcasing everything to begin with.
-	    ((big_a <= code && code <= big_z)))
-	{
+        var code = rawname.charCodeAt(0);
+        if ((rawname.charAt(0) != current_startchar) &&
+            // Avoid headers unless it's alphabetic.  Only need to check for
+            // upper-case things since we're upcasing everything to begin with.
+            ((big_a <= code && code <= big_z)))
+        {
             current_startchar = rawname.charAt(0);
-	    dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
-		+ current_startchar + "</b></li>";
-	}
+            dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
+                + current_startchar + "</b></li>";
+        }
 
-	dl += "<li><a class=\"flatnav\""
+        dl += "<li><a class=\"flatnav\""
             + " href=\"index.html?topic=" + key + "\""
             + " onclick=\"return dolink(event, '" + key + "');\">"
             + name
@@ -644,25 +644,25 @@ function datLoadParents(key) {
     var parent_names = xdataObj.topicParentNames(key);
     var acc = "";
     if (parent_keys.length == 0) {
-	$("#parents").hide();
-	$("#parents").html("");
-	return;
+        $("#parents").hide();
+        $("#parents").html("");
+        return;
     }
     acc += "<ul>";
     for(var i in parent_keys) {
-	var pkey = parent_keys[i];
-	var pname = parent_names[i];
-	var tooltip = "Error: parent topic is missing!";
-	if (xindexObj.topicExists(key)) {
+        var pkey = parent_keys[i];
+        var pname = parent_names[i];
+        var tooltip = "Error: parent topic is missing!";
+        if (xindexObj.topicExists(key)) {
             tooltip = topicShortPlaintext(pkey);
-	}
-	acc += "<li>";
-	acc += "<a href=\"index.html?topic=" + pkey + "\""
-	    + " onclick=\"return dolink(event, '" + pkey + "');\""
+        }
+        acc += "<li>";
+        acc += "<a href=\"index.html?topic=" + pkey + "\""
+            + " onclick=\"return dolink(event, '" + pkey + "');\""
             + " data-powertip=\"<p>" + tooltip + "</p>\">";
-	acc += pname;
-	acc += "</a>";
-	acc += "</li>\n";
+        acc += pname;
+        acc += "</a>";
+        acc += "</li>\n";
     }
     acc += "</ul>";
     $("#parents").html(acc);
@@ -676,15 +676,15 @@ function datShortSubtopics(key)
 
     var dl = jQuery("<div></div>");
     for(var i in children) {
-	var child_key = children[i];
-	dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
+        var child_key = children[i];
+        dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
-		  + ">"
+                  + ">"
                   + xindexObj.topicName(child_key)
                   + "</dt>");
-	var dd = jQuery("<dd></dd>");
-	dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(child_key)));
-	dl.append(dd);
+        var dd = jQuery("<dd></dd>");
+        dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(child_key)));
+        dl.append(dd);
     }
     return dl;
 }
@@ -697,22 +697,22 @@ function datExpand(dat_id)
     $("#_dat_long" + dat_id).show();
 
     if (dat_id_table[dat_id]["ever_expanded"] == true) {
-	// Already showed it, nothing more to do
-	return;
+        // Already showed it, nothing more to do
+        return;
     }
 
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
     var children = keySortedChildren(key);
     xdataLoadKeys(children).then(() => {
-	var div = $("#_dat_long" + dat_id);
-	for(var i in children) {
+        var div = $("#_dat_long" + dat_id);
+        for(var i in children) {
             var child_key = children[i];
             div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
-		div.append("<hr></hr>");
+                div.append("<hr></hr>");
             }
-	}
+        }
     });
 
     maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
@@ -739,11 +739,11 @@ function datLongTopic(key)
 
     var curr_state = history.state;
     if (!curr_state && !warned_about_history_state) {
-	div.append(
-	    "<p>Warning: your browser does not implement the history.state "
-		+ "API, so your back button will lose your place.  You may wish "
-		+ "to use a browser like Firefox or Chrome, instead.</p>");
-	warned_about_history_state = true;
+        div.append(
+            "<p>Warning: your browser does not implement the history.state "
+                + "API, so your back button will lose your place.  You may wish "
+                + "to use a browser like Firefox or Chrome, instead.</p>");
+        warned_about_history_state = true;
     }
 
     // Special handling for broken links.  We want to give XDOC manuals to have
@@ -753,73 +753,73 @@ function datLongTopic(key)
     // internal manuals within, say, Centaur, might want to say, "please report
     // this broken link to Jared."
     if (!xindexObj.topicExists(key)) {
-	// I think it's nice to change the title dynamically, to say what topic
-	// they tried to access, instead of just generically saying Broken-Link.
-	div.append("<h1>" + key + " Not Found</h1>");
+        // I think it's nice to change the title dynamically, to say what topic
+        // they tried to access, instead of just generically saying Broken-Link.
+        div.append("<h1>" + key + " Not Found</h1>");
 
-	if (xindexObj.topicExists(BROKEN_KEY)) {
+        if (xindexObj.topicExists(BROKEN_KEY)) {
             div.append(xdocRenderer.renderHtml(xdataObj.topicLong(BROKEN_KEY)));
-	}
+        }
 
-	return div;
+        return div;
     }
 
     var from = xdataObj.topicFrom(key);
     var fromp;
     if (from == "Unknown") {
-	fromp = "<p class='from'>Unknown Origin</p>";
+        fromp = "<p class='from'>Unknown Origin</p>";
     }
     else if (from == "ACL2 Sources") {
-	// link to main ACL2 sources dir:
-	fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
+        // link to main ACL2 sources dir:
+        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2\">ACL2 Sources</a></p>";
     }
     else if (from.endsWith(":DIR :SYSTEM")) {
-	// link to the specific file on GitHub:
-	fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
+        // link to the specific file on GitHub:
+        fromp = "<p class='from'><a href=\"https://github.com/acl2/acl2/tree/master/books/"
             + from.slice(0,-13) // strip " :DIR :SYSTEM" from end
             + "\">" + from + "</a></p>";
     }
     else {
-	fromp = "<p class='from'>" + from + "</p>";
+        fromp = "<p class='from'>" + from + "</p>";
     }
 
     var basepkg = htmlEncode(xdataObj.topicBasepkg(key));
     var basediv = (basepkg == "ACL2")
-	? ""
-	: "<div class='basepkg' data-powertip='"
-	+ "<p>In links and code snippets here, symbols are "
-	+ "shown relative to the <b>" + basepkg
-	+ "</b> package.</p><p>You may need <b>" + basepkg
-	+ "::</b> prefixes to call these functions, etc.</p>'>"
-	+ "<b>" + basepkg + "</b><br/>Package</div>";
+        ? ""
+        : "<div class='basepkg' data-powertip='"
+        + "<p>In links and code snippets here, symbols are "
+        + "shown relative to the <b>" + basepkg
+        + "</b> package.</p><p>You may need <b>" + basepkg
+        + "::</b> prefixes to call these functions, etc.</p>'>"
+        + "<b>" + basepkg + "</b><br/>Package</div>";
 
     var shortp;
     if (key != TOP_KEY) {
-	div.append(basediv);
-	div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
-	shortp = jQuery("<p></p>");
+        div.append(basediv);
+        div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
+        shortp = jQuery("<p></p>");
     } else {
-	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
-	shortp = jQuery("<p align='center'></p>");
+        div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
+        shortp = jQuery("<p align='center'></p>");
     }
 
     shortp.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     div.append(shortp);
     div.append(xdocRenderer.renderHtml(xdataObj.topicLong(key)));
     if (xindexObj.topicChildKeys(key).length != 0) {
-	var acc = "<h3>";
-	acc += "Subtopics ";
-	acc += "<a id=\"_dat_ilink" + dat_id + "\""
+        var acc = "<h3>";
+        acc += "Subtopics ";
+        acc += "<a id=\"_dat_ilink" + dat_id + "\""
             + " href=\"javascript:datExpand(" + dat_id + ")\">";
-	acc += "<img id=\"_dat_img" + dat_id + "\""
+        acc += "<img id=\"_dat_img" + dat_id + "\""
             + " src=\"expand_subtopics.png\" align=\"top\"/>";
-	acc += "</a>";
-	acc += "</h3>";
-	var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
-	sub.append(datShortSubtopics(key));
-	div.append(acc);
-	div.append(sub);
-	div.append("<div id=\"_dat_long" + dat_id + "\" "
+        acc += "</a>";
+        acc += "</h3>";
+        var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
+        sub.append(datShortSubtopics(key));
+        div.append(acc);
+        div.append(sub);
+        div.append("<div id=\"_dat_long" + dat_id + "\" "
                    + "style=\"display:none\" class=\"dat_long\"></dl>");
     }
 
@@ -833,16 +833,16 @@ function datLoadKey(key, scroll_to)
     var keys = [key];
 
     xdataLoadKeys(keys).then(() => {
-	$("#parents").html("");
-	$("#data").html("");
-	$("#right").scrollTop(0);
-	dat_id_table = [];
-	datLoadParents(key);
-	$("#data").append(datLongTopic(key));
-	maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
-	$("title").html(keyTitle(key));
-	renderMathFragments();
-	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
+        $("#parents").html("");
+        $("#data").html("");
+        $("#right").scrollTop(0);
+        dat_id_table = [];
+        datLoadParents(key);
+        $("#data").append(datLongTopic(key));
+        maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
+        $("title").html(keyTitle(key));
+        renderMathFragments();
+        setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
     });
 }
 
@@ -860,14 +860,14 @@ function datReallyScrollTo(top) {
 function searchTokenize(plaintext) {
     var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
     if (tokens.length == 1 && tokens[0] == "") {
-	// Correct for ridiculous behavior of string.split
-	return [];
+        // Correct for ridiculous behavior of string.split
+        return [];
     }
     for(var i in tokens) {
-	var orig = tokens[i];
-	var trim = orig.replace(/^[()"'`.,;?!]*/, '')
-	    .replace(/[()"'`.,;?!]*$/, '');
-	tokens[i] = trim;
+        var orig = tokens[i];
+        var trim = orig.replace(/^[()"'`.,;?!]*/, '')
+            .replace(/[()"'`.,;?!]*$/, '');
+        tokens[i] = trim;
     }
     return tokens;
 }
@@ -883,9 +883,9 @@ function countOccurrences(haystack, needle) {
 // Check if all words in query appear in text (for multi-word queries)
 function allWordsMatch(text, query_words) {
     for(let i = 0; i < query_words.length; i++) {
-	if (text.indexOf(query_words[i]) === -1) {
+        if (text.indexOf(query_words[i]) === -1) {
             return false;
-	}
+        }
     }
     return true;
 }
@@ -921,15 +921,15 @@ function searchGo(str) {
 
 function searchAddHit(matches, hits, key) {
     if (key in matches) {
-	// already showed this result, don't show it again
-	return;
+        // already showed this result, don't show it again
+        return;
     }
     matches[key] = 1;
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
-		+ " onclick=\"return dolink(event, '" + key + "');\">"
-		+ xindexObj.topicName(key)
-		+ "</a>"
-		+ "</dt>");
+                + " onclick=\"return dolink(event, '" + key + "');\">"
+                + xindexObj.topicName(key)
+                + "</a>"
+                + "</dt>");
     var dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
@@ -941,8 +941,8 @@ function searchGoMain(query_str) {
 
     $("#searching_message").hide();
     if (query_tokenized.length === 0) {
-	$("#data").append("<h3>No results (empty search)</h3>");
-	return;
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
     }
 
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
@@ -1089,24 +1089,24 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 $(document).ready(function()
-		  {
-		      // Load the xindex content.
-		      const xindexLoad = loadJS("./xindex.js").then(() => {
-			  xindexObj.loadFromXindex(xindex);
-			  xindex_loaded = true;
-		      });
-		      const xsltLoad = loadJS("./render.js").then(() => {
-			  const xsltDecoded = atob(xslt_base64);
-			  xdocRenderer.init(xsltDecoded);
-		      });
-		      // Ensure that both the index and the XSL template are loaded before
-		      // continuing.
-		      Promise.all([xindexLoad, xsltLoad]).then(_ => {
-			  onIndexLoaded();
-		      });
-		      maybePowertip(".toolbutton", {placement: 'se'});
-		      maybePowertip(".rtoolbutton", {placement: 'sw'});
-		  });
+                  {
+                      // Load the xindex content.
+                      const xindexLoad = loadJS("./xindex.js").then(() => {
+                          xindexObj.loadFromXindex(xindex);
+                          xindex_loaded = true;
+                      });
+                      const xsltLoad = loadJS("./render.js").then(() => {
+                          const xsltDecoded = atob(xslt_base64);
+                          xdocRenderer.init(xsltDecoded);
+                      });
+                      // Ensure that both the index and the XSL template are loaded before
+                      // continuing.
+                      Promise.all([xindexLoad, xsltLoad]).then(_ => {
+                          onIndexLoaded();
+                      });
+                      maybePowertip(".toolbutton", {placement: 'se'});
+                      maybePowertip(".rtoolbutton", {placement: 'sw'});
+                  });
 
 let ta_data = [];
 let ta_data_initialized = false;
@@ -1156,7 +1156,7 @@ function jumpRender(datum) {
     ret += "<b class=\"sf\">" + xindexObj.topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
-	ret += " &mdash; " + shortmsg;
+        ret += " &mdash; " + shortmsg;
     }
     ret += "<br/><tt>" + key + "</tt></p>";
     return ret;
@@ -1237,43 +1237,43 @@ function jumpInit() {
 
 
     $("#jumpform").submit(function(event)
-			  {
-			      // Magic code that took me way too much hacking to get working.
-			      //console.log("In form submitter.");
+                          {
+                              // Magic code that took me way too much hacking to get working.
+                              //console.log("In form submitter.");
 
-			      // Don't actually try to "submit" the form.
-			      event.preventDefault();
+                              // Don't actually try to "submit" the form.
+                              event.preventDefault();
 
-			      // Act like the tab key was pressed, to trigger autocomplete.
-			      // In the case where the user hasn't entered the entire input,
-			      // this will trigger the jumpGo call all by itself.
+                              // Act like the tab key was pressed, to trigger autocomplete.
+                              // In the case where the user hasn't entered the entire input,
+                              // this will trigger the jumpGo call all by itself.
 
-			      var e = jQuery.Event("keydown");
-			      e.keyCode = e.which = 9; // 9 == tab
-			      $("#jump").trigger(e);
+                              var e = jQuery.Event("keydown");
+                              e.keyCode = e.which = 9; // 9 == tab
+                              $("#jump").trigger(e);
 
-			      // We seem to never get here EXCEPT in the case where the user
-			      // has typed in the entire text for one of the entries.  In
-			      // that case, for whatever reason, the autocomplete feature
-			      // doesn't actually trigger the submit.  So, if we get here,
-			      // figure out what we're looking at and submit it manually.
+                              // We seem to never get here EXCEPT in the case where the user
+                              // has typed in the entire text for one of the entries.  In
+                              // that case, for whatever reason, the autocomplete feature
+                              // doesn't actually trigger the submit.  So, if we get here,
+                              // figure out what we're looking at and submit it manually.
 
-			      var value = $("#jump").typeahead('val');
-			      // console.log("After tab, value is " + value);
-			      jumpGo(null, {value:value});
-			  });
+                              var value = $("#jump").typeahead('val');
+                              // console.log("After tab, value is " + value);
+                              jumpGo(null, {value:value});
+                          });
 }
 
 
 function jumpGo(obj,datum) {
     var key = datum["value"];
     if (xindexObj.topicExists(key)) {
-	actionGoKey(key);
-	$("#jump").typeahead('val', "");
-	// $("#jump").typeahead('setQuery', '');
+        actionGoKey(key);
+        $("#jump").typeahead('val', "");
+        // $("#jump").typeahead('setQuery', '');
     }
     else {
-	alert("Invalid key " + key);
+        alert("Invalid key " + key);
     }
 }
 
@@ -1303,22 +1303,22 @@ function loadJS(file, timeoutArg) {
     const timeout = timeoutArg == undefined ? -1 : timeoutArg;
     document.body.appendChild(scriptElt);
     return new Promise((resolve, reject) => {
-	let timeoutID;
-	if (timeout > 0) {
+        let timeoutID;
+        if (timeout > 0) {
             timeoutID = setTimeout(() => {
-		reject(new Error(`Timed out when loading ${file}`));
+                reject(new Error(`Timed out when loading ${file}`));
             }, timeout);
-	}
-	scriptElt.addEventListener("load", _ => {
+        }
+        scriptElt.addEventListener("load", _ => {
             if (timeout > 0)
-		clearTimeout(timeoutID);
+                clearTimeout(timeoutID);
             resolve();
-	});
-	scriptElt.addEventListener("error", e => {
+        });
+        scriptElt.addEventListener("error", e => {
             if (timeout > 0)
-		clearTimeout(timeoutID);
+                clearTimeout(timeoutID);
             reject(e.error);
-	});
+        });
     });
 }
 
@@ -1329,25 +1329,25 @@ function loadJS(file, timeoutArg) {
 function onIndexLoaded()
 {
     if (XDATAGET == "") {
-	// Load xdata.js after xindexInit() because that way we know the
-	// index is fully initialized by the time we run onDataLoaded.
-	loadJS("./xdata.js").then(() => {
+        // Load xdata.js after xindexInit() because that way we know the
+        // index is fully initialized by the time we run onDataLoaded.
+        loadJS("./xdata.js").then(() => {
             xdataObj.loadFromXdata(xdata);
             onDataLoaded();
-	});
+        });
     }
     else {
-	// Running with the support of a server.  We can just regard the data
-	// as already loaded.
-	onDataLoaded();
+        // Running with the support of a server.  We can just regard the data
+        // as already loaded.
+        onDataLoaded();
     }
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for(var i in chars) {
-	var c = chars.charAt(i);
-	acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
-	if (c == "M")
+        var c = chars.charAt(i);
+        acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
+        if (c == "M")
             acc += "<br/>";
     }
     $("#letters").html(acc);
@@ -1369,36 +1369,36 @@ function onDataLoaded()
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
     if (xindexObj.topicExists(BROKEN_KEY)) {
-	xdataLoadKeys([BROKEN_KEY]).then(() => {});
+        xdataLoadKeys([BROKEN_KEY]).then(() => {});
     }
 
     if ("search" in params) {
-	var str = params["search"];
-	var str_url = encodeURIComponent(str);
-	var str_html = htmlEncode(str);
-	//console.log("onDataLoaded: search for " + str + " --> 0");
-	window.history.replaceState({search:str,rtop:0},
-				    str_html, "?search=" + str_url);
-	searchGo(str);
+        var str = params["search"];
+        var str_url = encodeURIComponent(str);
+        var str_html = htmlEncode(str);
+        //console.log("onDataLoaded: search for " + str + " --> 0");
+        window.history.replaceState({search:str,rtop:0},
+                                    str_html, "?search=" + str_url);
+        searchGo(str);
     }
 
     else {
-	var key = params["topic"] || TOP_KEY;
-	if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
-	    $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
-	    return;
-	}
-	//console.log("onDataLoaded: key " + key + " --> 0");
-	window.history.replaceState({key:key,rtop:0},
-				    keyTitle(key), "?topic=" + key);
-	datLoadKey(key, 0);
+        var key = params["topic"] || TOP_KEY;
+        if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
+            $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
+            return;
+        }
+        //console.log("onDataLoaded: key " + key + " --> 0");
+        window.history.replaceState({key:key,rtop:0},
+                                    keyTitle(key), "?topic=" + key);
+        datLoadKey(key, 0);
         setTimeout(ta_data_initialize, 20);
     }
 
     window.addEventListener('popstate',
                             function(event) {
-				event.preventDefault();
-				actionGoBack(event.state);
+                                event.preventDefault();
+                                actionGoBack(event.state);
                             });
 }
 
@@ -1406,16 +1406,16 @@ function getPageParameters ()
 {
     var ret = {};
     if (!window.location.toString().match(/\?(.+)$/)) {
-	return ret;
+        return ret;
     }
     var param_strs = RegExp.$1.split("&");
     var param_arr = {};
     for(var i in param_strs)
     {
-	var tmp = param_strs[i].split("=");
-	var key = decodeURI(tmp[0]);
-	var val = decodeURI(tmp[1]);
-	param_arr[key] = val;
+        var tmp = param_strs[i].split("=");
+        var key = decodeURI(tmp[0]);
+        var val = decodeURI(tmp[1]);
+        param_arr[key] = val;
     }
     return param_arr;
 }
@@ -1426,27 +1426,27 @@ function srclink(key)
     key = key.replace(".xdoc-link", "");
     var rawname = key;
     if (xindexObj.topicExists(key)) {
-	rawname = xindexObj.topicRawname(key);
+        rawname = xindexObj.topicRawname(key);
     }
 
     // Fancy Data URL generator
     var srclink_header =
-	"; -*- mode: xdoc-link -*-\n" +
-	"; This is an XDOC Link file.\n" +
-	"; Ordinarily, you should not see this file.\n" +
-	";\n" +
-	"; If you are viewing this file in a web browser, you probably\n" +
-	"; have not configured your web browser to send .xdoc-link files\n" +
-	"; to Emacs.\n" +
-	";\n" +
-	"; If you are viewing this file in Emacs, you probably have not\n" +
-	"; loaded xdoc.el from the xdoc/ directory.\n" +
-	";\n" +
-	"; For more information, please see \"Emacs Links\" in the XDOC\n" +
-	"; manual.\n\n";
+        "; -*- mode: xdoc-link -*-\n" +
+        "; This is an XDOC Link file.\n" +
+        "; Ordinarily, you should not see this file.\n" +
+        ";\n" +
+        "; If you are viewing this file in a web browser, you probably\n" +
+        "; have not configured your web browser to send .xdoc-link files\n" +
+        "; to Emacs.\n" +
+        ";\n" +
+        "; If you are viewing this file in Emacs, you probably have not\n" +
+        "; loaded xdoc.el from the xdoc/ directory.\n" +
+        ";\n" +
+        "; For more information, please see \"Emacs Links\" in the XDOC\n" +
+        "; manual.\n\n";
 
     window.open('data:application/x-acl2-xdoc-link;charset=utf-8,' +
-		encodeURIComponent(srclink_header + rawname));
+                encodeURIComponent(srclink_header + rawname));
 }
 
 function actionGoKey(key) {
@@ -1454,14 +1454,14 @@ function actionGoKey(key) {
     // Warning: if you change this, check for all uses of replaceState,
     // pushState, and popState, and update them to match.
     if (!xdata_loaded) {
-	pleaseWait();
-	return;
+        pleaseWait();
+        return;
     }
 
     // console.log("actionGoKey, going to new key " + key + " --> 0");
     historySavePlace();
     window.history.pushState({key:key,rtop:0}, keyTitle(key),
-			     "?topic=" + key);
+                             "?topic=" + key);
     datLoadKey(key, 0);
 
     // if we're in mobile mode, hide the navigation bar whenever the
@@ -1474,10 +1474,10 @@ function historySavePlace() {
     var curr_state = history.state;
     var rtop = $("#right").scrollTop();
     if (curr_state) {
-	// Safari doesn't seem to implement history.state
-	//console.log("saving place: " + curr_state.key + " --> " + rtop);
-	curr_state["rtop"] = rtop;
-	window.history.replaceState(curr_state, "");
+        // Safari doesn't seem to implement history.state
+        //console.log("saving place: " + curr_state.key + " --> " + rtop);
+        curr_state["rtop"] = rtop;
+        window.history.replaceState(curr_state, "");
     }
 }
 
@@ -1489,10 +1489,10 @@ function actionGoBack(data) {
     //console.log("Going back with data = " + data);
 
     if (!data) {
-	// Browsers may do this when the page is initially loaded,
-	// so ignore this event.
-	// console.log("Empty data, so returning early.");
-	return;
+        // Browsers may do this when the page is initially loaded,
+        // so ignore this event.
+        // console.log("Empty data, so returning early.");
+        return;
     }
 
     //console.log("actionGoBack data: search = " + data.search
@@ -1505,16 +1505,16 @@ function actionGoBack(data) {
     // no forward-button re-scrolling for you.
 
     if ("search" in data) {
-	var str = data["search"];
-	searchGo(str);
+        var str = data["search"];
+        searchGo(str);
     }
 
     else if ("key" in data) {
-	var key = data.key;
-	var rtop = ("rtop" in data) ? data["rtop"] : 0;
-	if (key) {
-	    datLoadKey(key, rtop);
-	}
+        var key = data.key;
+        var rtop = ("rtop" in data) ? data["rtop"] : 0;
+        if (key) {
+            datLoadKey(key, rtop);
+        }
     }
 }
 
@@ -1522,7 +1522,7 @@ function printerFriendly()
 {
     const dataElement = document.getElementById("data");
     const w = window.open("", "Printer",
-			  "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
+                          "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
 
     const html = `
   <!DOCTYPE html>
@@ -1545,7 +1545,7 @@ function printerFriendly()
 
 function dolink(event, topic) {
     if (event.button == 1) {
-	return true;
+        return true;
     }
     actionGoKey(topic);
     return false;
