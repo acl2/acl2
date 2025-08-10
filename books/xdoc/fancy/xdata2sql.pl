@@ -130,19 +130,30 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
 
 print "; Creating xdoc_data table.\n";
 
-$dbh->do("CREATE TABLE XTABLE ("
-         . "XKEY TEXT PRIMARY KEY NOT NULL,"
-         . "XDATA TEXT)");
+$dbh->do(q{
+    CREATE TABLE XTABLE (
+        XKEY TEXT PRIMARY KEY NOT NULL,
+        XPARENTS TEXT,
+        XSRC TEXT,
+        XPKG TEXT,
+        XLONG TEXT)
+});
 
 
 print "; Populating xdoc_data table.\n";
-my $query = $dbh->prepare("INSERT INTO XTABLE (XKEY, XDATA) VALUES (?, ?)");
+my $query = $dbh->prepare(q{
+    INSERT INTO XTABLE (XKEY, XPARENTS, XSRC, XPKG, XLONG)
+    VALUES (?, ?, ?, ?, ?)
+});
 
 while(my ($key,$val) = each %$xdata)
 {
-    my $enc = $xs->encode($val);
     $query->bind_param(1, $key);
-    $query->bind_param(2, $enc);
+    $query->bind_param(2, $xs->encode($val->[0]));
+    $query->bind_param(3, $xs->encode($val->[1]));
+    $query->bind_param(4, $xs->encode($val->[2]));
+    $query->bind_param(5, $xs->encode($val->[3]));
+
     $query->execute();
 }
 
