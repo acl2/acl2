@@ -298,16 +298,20 @@ function xdataLoadKeys(keys) {
         if (results && results.length == missing.length) {
             // TODO: we need to assume that the order of the returned
             // data is the same as the order of the requested keys.
-            for(let i = 0; i < results.length; i++) {
-                xdataObj.add(missing[i], results[i]);
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].error !== undefined) {
+                    xdataObj.addError(missing[i], `Error: ${results[i].error}`);
+                } else {
+                    const xdata = [results[i].parents,
+                                   results[i].src,
+                                   results[i].pkg,
+                                   results[i].long];
+                    xdataObj.add(missing[i], xdata);
+                }
             }
         } else {
-            let val = "Error: malformed reply from " + url;
-            if ("error" in obj)
-                val = obj["error"];
-            for(const missingKey of missing) {
-                xdataObj.addError(missingKey, val);
-            }
+            const val = "Error: malformed response: " + obj;
+            console.error(err);
         }
     }).catch(err => {
         const val = `Error: AJAX query failed. ${err}`;
