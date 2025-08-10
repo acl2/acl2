@@ -131,18 +131,18 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
 print "; Creating xdoc_data table.\n";
 
 $dbh->do(q{
-    CREATE TABLE XTABLE (
-        XKEY TEXT PRIMARY KEY NOT NULL,
-        XPARENTS TEXT,
-        XSRC TEXT,
-        XPKG TEXT,
-        XLONG TEXT)
+    CREATE TABLE xtable (
+        xkey TEXT PRIMARY KEY NOT NULL,
+        xparents TEXT,
+        xsrc TEXT,
+        xpkg TEXT,
+        xlong TEXT)
 });
 
 
 print "; Populating xdoc_data table.\n";
 my $query = $dbh->prepare(q{
-    INSERT INTO XTABLE (XKEY, XPARENTS, XSRC, XPKG, XLONG)
+    INSERT INTO xtable (xkey, xparents, xsrc, xpkg, xlong)
     VALUES (?, ?, ?, ?, ?)
 });
 
