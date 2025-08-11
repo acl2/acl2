@@ -24,6 +24,7 @@
 (include-book "bv-array-rules") ; for stuff like bv-array-clear-of-bv-array-write-both
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
 (include-book "convert-to-bv-rules-axe")
+(include-book "trim-intro-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
@@ -54,6 +55,7 @@
 (include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
 (include-book "kestrel/bv/std" :dir :system)
+(include-book "kestrel/bv/trim-elim-rules-bv" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)

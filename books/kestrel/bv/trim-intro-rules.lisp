@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See also ../axe/trim-intro-rules-axe.lisp
+
 (include-book "bv-syntax")
 (include-book "trim")
 ;(include-book "bvsx")
@@ -25,7 +27,7 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvlt")
-(include-book "trim-rules") ; need these whenever we introduce trim
+(include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 

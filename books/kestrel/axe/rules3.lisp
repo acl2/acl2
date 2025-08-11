@@ -28,7 +28,6 @@
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/sbvdivdown" :dir :system)
-(include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
@@ -56,7 +55,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
-(local (include-book "kestrel/bv/trim-rules" :dir :system))
+(local (include-book "kestrel/bv/trim-intro-rules" :dir :system)) ; remove? needed for bvlt-of-bvmult-of-slice-and-slice
 (local (include-book "kestrel/bv/pick-a-bit" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
@@ -1085,7 +1084,7 @@
                                EQUAL-OF-SLICE-AND-SLICE-same-low
                                BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TRIM-ARG4
+                               ;BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1101,7 +1100,7 @@
                                   )
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TRIM-ARG4
+                               ;BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1201,7 +1200,7 @@
                                   (x (bvchop (+ 1 size) x)))
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TRIM-ARG4
+                               ;BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -1294,7 +1293,7 @@
            :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT
                                ;hack1112
                                SLICE-WHEN-LOW-SLICE-KNOWN
-                               BVCAT-TRIM-ARG4
+                               ;BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
@@ -3768,7 +3767,7 @@
                 (equal (getbit 3 x) 0))
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
-  :hints (("Goal" :in-theory (e/d (;bvcat logapp
+  :hints (("Goal" :in-theory (e/d (bvcat logapp
                                    slice-becomes-getbit)
                                   (GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                                    BVCAT-EQUAL-REWRITE-ALT
