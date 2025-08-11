@@ -650,7 +650,7 @@
  details of the results described in the article along with solutions to all
  the exercises in the article.</li>
 
- <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=3c78488a4c039fd4da2d2dfb8e6dcbfc33a7623a'>
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=3c78488a4c039fd4da2d2dfb8e6dcbfc33a7623a'>
  Defthms About Zip and Tie: Reasoning About Powerlists in ACL2</a>, Ruben
  Gamboa, University of Texas Computer Sciences Technical Report No. TR97-02,
  February, 1998.  This work is based on Jay Misra's &ldquo;powerlist&rdquo; device, a
@@ -660,7 +660,7 @@
  (including bitonic and Batcher), a grey-code sequence generator, and a
  carry-lookahead adder.  ACL2 event lists are linked to the URL above.</li>
 
- <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=321954c2c5213f9306c3b64d57bead18a9f3b985'> Mechanically
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=321954c2c5213f9306c3b64d57bead18a9f3b985'> Mechanically
  Verifying the Correctness of the Fast Fourier Transform in ACL2</a>, Ruben
  Gamboa, in Third International Workshop on Formal Methods for Parallel
  Programming: Theory and Applications (FMPPTA), 1998.  This paper is based on
@@ -817,7 +817,7 @@
  S. Ray, K. Hao, Y. Chen, F. Xie, and J. Yang.
  In <a
  href='http://www.iist.unu.edu/~lzm'>Z. Liu</a> and <a
- href='https://scholar.google.com/citations?user=oz475ioAAAAJ&hl=en'>A. P. Ravn</a>, editors, Proceedings
+ href='https://scholar.google.com/citations?user=oz475ioAAAAJ&amp;hl=en'>A. P. Ravn</a>, editors, Proceedings
  of the <a href='http://www.iist.unu.edu/atva09'>7th International
  Symposium on Automated Technology for Verification and Analysis (ATVA
  2009)</a>, Macao SAR, China, October 2009, volume 5799 of <a
@@ -1442,7 +1442,7 @@
      argument based on well-founded multiset extensions.</li>
 
  <li>
- <a href='https://www.researchgate.net/publication/220896163_A_formal_proof_of_Dickson's_Lemma_in_ACL2'>
+ <a href='https://www.researchgate.net/publication/220896163_A_formal_proof_of_Dickson%27s_Lemma_in_ACL2'>
      A Formal Proof of Dickson's Lemma in ACL2</a>,
      F.J. Martin-Mateos, J.A. Alonso, M.J. Hidalgo and J.L. Ruiz-Reina.
      <i>LPAR 2003 - LNAI 2850</i>, pp. 49-58, 2003.
