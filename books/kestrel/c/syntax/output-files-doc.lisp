@@ -66,16 +66,14 @@
       "Name of the existing ACL2 constant that contains
        the representation of the C code to write to the file system.")
      (xdoc::p
-      "This constant must contain a code ensemble
-       (i.e. a value of type @(tsee code-ensemble)),
-       whose translation unit ensemble is "
+      "This constant must contain a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " that is "
       (xdoc::seetopic "unambiguity" "unambiguous")
-      ". The translation unit ensemble must also contain only "
+      " and only contains "
       (xdoc::seetopic "ascii-identifiers" "ASCII identifiers")
-      " (i.e. it must satisfy @(tsee transunit-ensemble-aidentp),
-       w.r.t. the GCC flag in the implementation environment
-       in the code ensemble).
-       The translation unit is printed to a file set,
+      ". The translation unit ensemble of the code ensemble
+       is printed to a file set,
        whose files are written to the file system.
        The keys of the file set map are the same as
        the keys of the translation unit ensemble map.")
@@ -143,6 +141,7 @@
 
     (xdoc::p
      "This macro generates one file in the file system
-      for each element of the translation unit ensemble in @('*const*'),
-      at the paths that are obtained by prepending the keys of the maps
+      for translation unit in @('*const*'),
+      at the paths that are obtained by
+      prepending the keys of the translation unit ensemble map
       with the path specified by the @(':path') input."))))
