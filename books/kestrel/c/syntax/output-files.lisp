@@ -112,7 +112,7 @@
         (reterr (msg "~@0 must be a code ensemble, ~
                       but it is ~x1 instead."
                      desc code)))
-       ((unless (transunit-ensemble-unambp (code-ensemble->transunits code)))
+       ((unless (code-ensemble-unambp code))
         (reterr (msg "The translation unit ensemble ~
                       of the code ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
@@ -139,9 +139,9 @@
     (implies (not erp)
              (code-ensemblep code)))
 
-  (defret transunit-ensemble-unambp-when-output-files-process-const/arg
+  (defret code-ensemble-unambp-when-output-files-process-const/arg
     (implies (not erp)
-             (transunit-ensemble-unambp (code-ensemble->transunits code))))
+             (code-ensemble-unambp code)))
 
   (defret transunit-ensemble-aidentp-when-output-files-process-const/arg
     (implies (not erp)
@@ -151,7 +151,7 @@
 
   (in-theory
    (disable code-ensemblep-when-output-files-process-const/arg
-            transunit-ensemble-unambp-when-output-files-process-const/arg
+            code-ensemble-unambp-when-output-files-process-const/arg
             transunit-ensemble-aidentp-when-output-files-process-const/arg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,14 +318,13 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-output-files-process-inputs
+  (defret code-ensemble-unambp-of-output-files-process-inputs
     (implies (not erp)
-             (transunit-ensemble-unambp (code-ensemble->transunits code)))
+             (code-ensemble-unambp code))
     :hints
     (("Goal"
       :in-theory
-      (enable
-       transunit-ensemble-unambp-when-output-files-process-const/arg))))
+      (enable code-ensemble-unambp-when-output-files-process-const/arg))))
 
   (defret transunit-ensemble-aidentp-of-output-files-process-inputs
     (implies (not erp)
@@ -345,7 +344,7 @@
                                 (indent-size posp)
                                 (paren-nested-conds booleanp)
                                 state)
-  :guard (and (transunit-ensemble-unambp (code-ensemble->transunits code))
+  :guard (and (code-ensemble-unambp code)
               (transunit-ensemble-aidentp
                (code-ensemble->transunits code)
                (ienv->gcc (code-ensemble->ienv code))))

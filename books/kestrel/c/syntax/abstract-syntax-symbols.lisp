@@ -520,6 +520,7 @@
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
+    code-ensemble-unambp
 
     ;; purity:
     expr-purep
