@@ -819,7 +819,7 @@
 
 (define ldm-type ((type typep))
   :returns (mv erp (type1 c::typep))
-  :short "Map a type to a type in the language definition."
+  :short "Map a type in @(tsee type) to a type in the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -885,4 +885,36 @@
       (type-kind type)
     (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
             :irrelevant))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-type ((ctype c::typep))
+  :returns (type typep)
+  :short "Map a type in the language formalization to a type in @(tsee type)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee ldm-type),
+     hence the @('i') for `inverse'.")
+   (xdoc::p
+    "Since our current type system is approximate (see @(tsee type)),
+     this mapping abstracts away information in some cases."))
+  (c::type-case
+   ctype
+   :void (type-void)
+   :char (type-char)
+   :schar (type-schar)
+   :uchar (type-uchar)
+   :sshort (type-sshort)
+   :ushort (type-ushort)
+   :sint (type-sint)
+   :uint (type-uint)
+   :slong (type-slong)
+   :ulong (type-ulong)
+   :sllong (type-sllong)
+   :ullong (type-ullong)
+   :struct (type-struct (ident (c::ident->name ctype.tag)))
+   :pointer (type-pointer)
+   :array (type-array))
   :hooks (:fix))
