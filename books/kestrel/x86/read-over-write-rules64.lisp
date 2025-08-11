@@ -280,6 +280,8 @@
 
 ;; This section contains rules for various readers applied to the 17 register writers (including SET-RIP)
 
+(local (in-theory (disable xw-becomes-set-rip)))
+
 (defthm read-of-set-rip (equal (read n addr (set-rip rip x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm read-of-set-rax (equal (read n addr (set-rax val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rax))))
 (defthm read-of-set-rbx (equal (read n addr (set-rbx val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rbx))))
@@ -1241,6 +1243,16 @@
          (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
   :hints (("Goal" :in-theory (enable set-rax))))
 
+(defthm mv-nth-0-of-get-prefixes-of-set-rbx
+  (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbx rbx x86)))
+         (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbx))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rcx
+  (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rcx rcx x86)))
+         (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rcx))))
+
 (defthm mv-nth-0-of-get-prefixes-of-set-rdx
   (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))
          (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
@@ -1278,6 +1290,16 @@
   (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rax rax x86)))
          (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
   :hints (("Goal" :in-theory (enable set-rax))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rbx
+  (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbx rbx x86)))
+         (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbx))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rcx
+  (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rcx rcx x86)))
+         (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rcx))))
 
 (defthm mv-nth-1-of-get-prefixes-of-set-rdx
   (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))

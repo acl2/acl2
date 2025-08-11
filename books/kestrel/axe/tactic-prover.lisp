@@ -124,7 +124,7 @@
 
 ;; TODO: Add a tactic for the Axe prover
 ;; TODO: Add a bit-blasting tactic?
-;; TODO: Add case-splitting
+;; TODO: Add splitting based on IFs in the goal
 ;; TODO: What about increasing the timeout and trying again?
 (defun tacticp (tac)
   (declare (xargs :guard t))
@@ -323,16 +323,17 @@
             (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
                     (mv *valid* nil state))
           ;; The dag is the constant nil:
-          (prog2$
-           (cw "Note: The DAG is the constant NIL.~%")
-           (mv *invalid* nil state))))
+          (prog2$ (cw "Note: The DAG is the constant NIL.~%")
+                  (mv *invalid* nil state))))
        ((when (not (<= (len dag) *max-1d-array-length*)))
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter with precise contexts~%")))
+       ;; Converting to a term ensures that precise contexts are used.
+       ;; WARNING: This can blow up:
        (term (dag-to-term dag))
        ;; Call the rewriter:
-       ((mv erp new-dag)
+       ((mv erp dag-or-quotep)
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -344,29 +345,39 @@
                              t ; count-hits ; todo: pass in
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv *error* nil state))
-       ((when (quotep dag))
+       ((when (quotep dag-or-quotep))
         ;; todo: factor out:
-        (if (unquote dag)
-            ;; Non-nil constant:
-            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
-                    (mv *valid* nil state))
-          ;; The dag is the constant nil:
-          (prog2$
-           (cw "Note: The DAG is the constant NIL.~%")
-           (mv *invalid* nil state))))
-       ((when (not (< (+ (len new-dag) (len dag))
+        (let ((val (unquote dag-or-quotep)))
+          (if val
+              ;; Non-nil constant:
+              (prog2$ (cw "Note: The DAG is the non-nil constant ~x0.~%" val)
+                      (mv *valid* nil state))
+            ;; The dag is the constant nil:
+            (prog2$ (cw "Note: The DAG is the constant NIL.~%")
+                    (mv *invalid* nil state)))))
+       ;; dag-or-quotep is a dag:
+       ((when (not (< (+ (len dag-or-quotep) (len dag)) ; so we can check for equivalence later
                       *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
-                         (dag-or-quotep-size new-dag)
-                         (if (quotep new-dag)
+                         (dag-or-quotep-size dag-or-quotep)
+                         (if (quotep dag-or-quotep)
                              1
-                           (len new-dag))))))
-    (make-tactic-result new-dag dag assumptions state)))
+                           (len dag-or-quotep))))))
+    (make-tactic-result dag-or-quotep dag assumptions state)))
+
+;; Sanity check
+(local
+  (defthm tactic-resultp-of-mv-nth-0-of-apply-tactic-rewrite-with-precise-contexts
+    (implies (and (proof-problemp problem)
+                  (rule-alistp rule-alist)
+                  (interpreted-function-alistp interpreted-function-alist))
+             (tactic-resultp (mv-nth 0 (apply-tactic-rewrite-with-precise-contexts problem rule-alist interpreted-function-alist monitor normalize-xors print state))))))
 
 ;;
 ;; The :prune tactic
@@ -595,6 +606,7 @@
                             nil ; count-hits
                             print
                             monitor ; monitored-symbols
+                            nil ; no-warn-ground-functions
                             nil ; fns-to-elide
                             ))
        ((when erp) (mv *error* nil state))
@@ -667,7 +679,9 @@
                   (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
                           (mv *no-change*
                               (append result ;; return the counterexample in the info
-                                      (list :dag dag-array :disjuncts disjunct-nodenums))
+                                      ;; todo: print the disjunction as a term if small:
+                                      (list :disjuncts disjunct-nodenums
+                                            :dag (dag-array-to-alist 'dag-array dag-array dag-len)))
                               state))
                 (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))
@@ -848,8 +862,10 @@
                    :mode :program))
    ;; TODO: What if the DAG is a constant?
    (if (endp tactics)
-       (let ((dag (first problem)))
+       (let ((dag (first problem))
+             (assumptions (second problem)))
          (progn$ (cw "~%FAILED: No more tactics!~%~%")
+                 (cw "The assumptions are:~%~X01.~%" assumptions nil)
                  (cw "The DAG is:~%")
                  (print-dag-or-quotep dag)
                  (if (< (dag-or-quotep-size dag) 10000)

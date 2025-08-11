@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,9 +223,12 @@
                          get-called-fns-in-untranslated-term
                          get-calls-in-untranslated-term
                          get-event
+                         get-measure
+                         get-measure+
                          get-unambiguous-xargs-flg1/edcls1
                          get-unnormalized-bodies
                          get-vars-in-untranslated-term
+                         get-well-founded-relation
                          guard-raw
                          guard-verified-p
                          guard-verified-p+
@@ -265,7 +268,6 @@
                          make-paired-name
                          maybe-pseudo-event-formp
                          mbt$
-                         measure
                          merge-sort-lexorder
                          msg-downcase-first
                          must-eval-to-t
@@ -358,8 +360,7 @@
                          untranslated-term-listp
                          untranslated-termp
                          unwrapped-nonexec-body
-                         variablep
-                         well-founded-relation)
+                         variablep)
                        )
 
 ; It's not clear why acl2::simplify is in *acl2-exports*.  That may change, but

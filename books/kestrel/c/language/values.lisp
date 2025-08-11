@@ -373,6 +373,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum init-value
+  :short "Fixtype of initializer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of values for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer value has the same structure as an initializer,
+     but expressions are replaced with (their) values.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     out model of initializer values will be extended accordingly."))
+  (:single ((get value)))
+  (:list ((get value-list)))
+  :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum stmt-value
+  :short "Fixtype of statement values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our dynamic semantics,
+     a statement may end its execution
+     by moving to the next statement without yielding a value,
+     by returning no value,
+     or by returning a value;
+     in full C, there are other ways in which a statement may end its execution,
+     but here we only focus on our formalized subset.
+     We capture this notion as a statement value,
+     i.e. the value yielded by a statement.")
+   (xdoc::p
+    "Note the distinction between yielding no value without a @('return'),
+     e.g. after executing a null or expression statement (e.g. assignment),
+     and returning without a value,
+     i.e. with a @('return') without expression.
+     The distinction affects how execution proceeds
+     just after the statement in question."))
+  (:none ())
+  (:return ((value? value-option)))
+  :pred stmt-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult stmt-value "statement values"
+  :enable (errorp stmt-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection stmt-value-result-theorems
+  :extension stmt-value-result
+
+  (defruled not-errorp-when-stmt-valuep
+    (implies (stmt-valuep x)
+             (not (errorp x)))
+    :enable (stmt-valuep errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection bounds-of-integer-values
   :short "Linear rules about the bounds of the integer values."
 
@@ -505,24 +565,6 @@
   (defruled unsigned-byte-p-of-value-ullong->get
     (unsigned-byte-p (llong-bits) (value-ullong->get val))
     :enable (ullong-max)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum init-value
-  :short "Fixtype of initializer values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a notion of values for "
-    (xdoc::seetopic "initer" "initializers")
-    ". An initializer value has the same structure as an initializer,
-     but expressions are replaced with (their) values.")
-   (xdoc::p
-    "As our model of initializers is extended,
-     out model of initializer values will be extended accordingly."))
-  (:single ((get value)))
-  (:list ((get value-list)))
-  :pred init-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

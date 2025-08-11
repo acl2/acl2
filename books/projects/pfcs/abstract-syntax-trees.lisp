@@ -17,6 +17,8 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -43,6 +45,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum name
+  :short "Fixtype of names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Names are used for variables and relations.")
+   (xdoc::p
+    "We define name as either (wrapped) strings
+     or (wrapped) pairs consisting of a string and a natural number.
+     The former are simple names,
+     while the latter are indexed names.
+     Our current "
+    (xdoc::seetopic "concrete-syntax" "concrete syntax")
+    " only covers simple names,
+     but we may extend it to also cover indexed names at some point,
+     as part of a larger extension to add syntax for parameterized circuits.
+     In the meanwhile, indexed names are useful
+     to construct parameterized circuits directly in abstract syntax."))
+  (:simple ((string string)))
+  (:indexed ((base string)
+             (index nat)))
+  :pred namep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist name-list
+  :short "Fixtype of lists of names."
+  :elt-type name
+  :true-listp t
+  :elementp-of-nil nil
+  :pred name-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset name-set
+  :short "Fixtype of sets of names."
+  :elt-type name
+  :elementp-of-nil nil
+  :pred name-setp
+
+  ///
+
+  (defrule name-setp-of-mergesort-of-name-list
+    (implies (name-listp x)
+             (name-setp (set::mergesort x)))
+    :induct t
+    :enable set::mergesort))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult name-result
+  :short "Fixtype of errors and names."
+  :ok name
+  :pred name-resultp
+  :prepwork ((local (in-theory (enable name-kind)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult name-list-result
+  :short "Fixtype of errors and lists of names."
+  :ok name-list
+  :pred name-list-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum expression
   :short "Fixtype of expressions."
   :long
@@ -53,8 +120,6 @@
      (and of the other syntactic entities)
      does not depend on (the prime number that defines) the prime field.
      Semantically, integers are treated modulo the prime.")
-   (xdoc::p
-    "We use (any) strings for variables.")
    (xdoc::p
     "Two field operations, addition and multiplication,
      suffice for arithmetic circuits.
@@ -67,7 +132,7 @@
      Some of these operations will introduce the issue of well-definedness,
      e.g. non-zero divisors."))
   (:const ((value int)))
-  (:var ((name string)))
+  (:var ((name name)))
   (:neg ((arg expression)))
   (:add ((arg1 expression) (arg2 expression)))
   (:sub ((arg1 expression) (arg2 expression)))
@@ -107,14 +172,13 @@
   (xdoc::topstring
    (xdoc::p
     "A constraint is either an equality of expressions,
-     or the application of a named relation to argument expressions.
-     We use (any) strings for relation names.")
+     or the application of a named relation to argument expressions.")
    (xdoc::p
     "In the future, this may be extended with propositional connectives
      to combine equalities and applications of named relations."))
   (:equal ((left expression)
            (right expression)))
-  (:relation ((name string)
+  (:relation ((name name)
               (args expression-list)))
   :pred constraintp)
 
@@ -151,8 +215,8 @@
   (xdoc::topstring
    (xdoc::p
     "A relation definition consists of
-     the name of the relation (any string),
-     a list of formal parameters (any strings),
+     the name of the relation,
+     a list of formal parameters (any names),
      and a body consisting of a list of constraints.
      The constraints are taken conjunctively;
      but see the discussion in @(tsee constraint)
@@ -160,8 +224,8 @@
      (in which case the body of a definition
      would presumably be just a single constraint,
      which may be a conjunction)."))
-  ((name string)
-   (para string-list)
+  ((name name)
+   (para name-list)
    (body constraint-list))
   :tag :definition
   :pred definitionp)

@@ -1,7 +1,7 @@
 ; A parser for Mach-O executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 (include-book "parser-utils")
-(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -46,6 +45,12 @@
 ;; https://github.com/apple/darwin-xnu/blob/main/EXTERNAL_HEADERS/mach-o/loader.h
 
 (local (in-theory (disable mv-nth)))
+
+(local
+ (defthm symbolp-of-lookup-equal
+   (implies (symbol-listp (strip-cdrs alist))
+            (symbolp (lookup-equal key alist)))
+   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cdrs)))))
 
 ;;;
 ;;; magic numbers
@@ -578,12 +583,12 @@
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
-       (stabp (not (eql 0 (logand #xe0 n-type))))
+       (stabp (not (= 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
-                 (b* ((n-pext (not (eql 0 (logand #x10 n-type))))
+                 (b* ((n-pext (not (= 0 (logand #x10 n-type))))
                       (n-type (logand #x0e n-type))
-                      (n-ext (not (eql 0 (logand #x01 n-type)))))
+                      (n-ext (not (= 0 (logand #x01 n-type)))))
                      (list (cons :n-pext n-pext)
                            (cons :n-type (lookup-safe n-type *mach-o-symbol-n-types*))
                            (cons :n-ext n-ext))))))
@@ -615,6 +620,7 @@
     (#x8 . :SG_PROTECTED_VERSION_1)))
 
 ; Returns (mv erp cmd-data).
+;; Note that the caller adds the cmd itself to the alist returned.
 (defun parse-mach-o-load-command (cmd ; the type of the command
                                   architecture
                                   all-bytes
@@ -624,6 +630,7 @@
                               (byte-listp all-bytes)
                               (byte-listp bytes))))
   (let ((cmd-data nil)) ;empty accumulator (TODO: remove)
+    ;; for all of the options below, the cmd and cmdsize are already parsed:
     (cond ((eq cmd :LC_UUID)
            (b* (((mv erp uuid &) (parse-n-bytes 16 bytes)) ;todo: assemble the value
                 ((when erp) (mv erp nil))
@@ -745,13 +752,7 @@
              ;;     bytes)
              ))))
 
-(local
- (defthm symbolp-of-lookup-equal
-   (implies (symbol-listp (strip-cdrs alist))
-            (symbolp (lookup-equal key alist)))
-   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cdrs)))))
-
-; Returns (mv erp cmd-data-list).
+; Returns (mv erp cmds).
 (defun parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
   (declare (xargs :guard (and (natp ncmds)
                               (true-listp acc)
@@ -770,15 +771,16 @@
           (b* ((- (cw "NOTE: Ignoring unsupported load command: ~x0.~%" cmd-u32))
                (bytes (nthcdr cmdsize orig-bytes)))
             (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))
-        (b* (;; for all of the options below, the cmd and cmdsize are already parsed:
-             ((mv erp cmd-data)
+        (b* (((mv erp cmd-data)
               (parse-mach-o-load-command cmd architecture all-bytes bytes))
              ((when erp) (mv erp nil))
              (acc (cons (acons :cmd cmd ; (acons :cmdsize cmdsize
                                cmd-data ;)
                                )
                         acc))
-             ;; For robustness, we discard exactly cmdsize bytes here, regardless of how many were actually consumed (TODO: add a check)
+             ;; For robustness, we discard exactly cmdsize bytes here,
+             ;; regardless of how many were actually consumed (TODO: add a
+             ;; check):
              (bytes (nthcdr cmdsize orig-bytes)))
           (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))))))
 
@@ -794,18 +796,22 @@
         (er hard? 'parse-mach-o-file-bytes "Bad magic number: ~x0." magic)
         (mv :bad-magic-number nil))
        (architecture (if (member-eq magic *32-bit-magic-numbers*) 32 64)) ; todo: change to pass a 64-bitp value
+       ;; Parse the header:
        ((mv erp header bytes)
         (if (eql architecture 32)
             (parse-mach-o-header-32 bytes)
           (parse-mach-o-header-64 bytes)))
        ((when erp) (mv erp nil))
+       ;; Parse the load-commands:
        (ncmds (lookup-eq-safe :ncmds header))
        ((mv erp cmds) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
        ((when erp) (mv erp nil)))
     (mv nil
         (list (cons :magic magic)
               (cons :header header)
-              (cons :cmds cmds)))))
+              (cons :cmds cmds)
+              (cons :bytes all-bytes) ; todo: some bytes are replicated in the :contents fields of sections!  avoid that.
+              ))))
 
 ;; ;; Parse a file that is known to be a Mach-O executable.  Returns (mv
 ;; ;; erp contents state) where contents in an alist representing the
@@ -814,7 +820,6 @@
 ;;   (declare (xargs :guard (stringp filename)
 ;;                   :stobjs state
 ;; ;                  :mode :program
-;;                   :verify-guards nil ; todo
 ;;                   ))
 ;;   (b* (((mv existsp state) (file-existsp filename state))
 ;;        ((when (not existsp))

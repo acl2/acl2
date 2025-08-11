@@ -37,12 +37,13 @@
 (include-book "bvcat2")
 
 (local (include-book "sbvdiv")) ;; the verifies the guard of sbvdiv
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
-(defun bvdiv (n x y)
+(defund bvdiv (n x y)
   (declare (type (integer 1 *) n)
            (type integer x)
            (type integer y)

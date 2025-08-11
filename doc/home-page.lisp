@@ -25,8 +25,8 @@
 (program)
 
 (defun topic-to-url-list (url chars names)
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
   (cond ((endp names) nil)
         (t (cons (cons (car chars)
                        (concatenate 'string
@@ -38,21 +38,21 @@
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
 
 (defconst *bleeding-edge-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
+  "https://acl2.org/doc/")
 
 (defconst *home-page-references*
   '(tours                               ;;; a
     ACL2-Tutorial                       ;;; b
-    events                              ;;; c
-    programming                         ;;; d
-    rule-classes                        ;;; e
+    releases                            ;;; c
+    workshops                           ;;; d
+    course-materials                    ;;; e
     books                               ;;; f
     note-8-6                            ;;; g   ; current release notes
     the-method                          ;;; h
-    introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
+    git-quick-start                     ;;; i
     interesting-applications            ;;; j
     acknowledgments                     ;;; k
     real                                ;;; l
@@ -67,6 +67,9 @@
     git-quick-start                     ;;; u
     talks                               ;;; v
     start-here                          ;;; w
+    publications                        ;;; x
+    mailing-lists                       ;;; y
+    installation                        ;;; z
   ))
 
 (defconst *home-page*
@@ -178,20 +181,17 @@ Software System Award</a>.<p>
 <table CELLPADDING=3 align=\"center\">
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"~sa\"><img src=\"HTML/door02.gif\" alt=\"door icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-Start Here: <a href=\"~sj\">Applications</a>, <a href=\"~sv\">Talks</a>, <a href=\"~sa\">Tours</a>, and <a href=\"~sb\">Tutorials/Demos</a>
+<a href=\"~sw\">Start Here</a> (including <a href=\"~sj\">applications</a>, <a href=\"~sv\">talks</a>, <a href=\"~sa\">tours</a>, and <a href=\"~sb\">tutorials/demos</a>)
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\"><img
-src=\"HTML/teacher2.gif\" alt=\"teacher icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\">ACL2
-Workshops, UT Seminar, and Course Materials</a>
+<a href=\"~sd\">ACL2
+Workshops</a>, <a
+href=\"http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html\">UT Seminar</a>,
+and <a href=\"~se\">Course Materials</a>
 </td>
 <!--
 
@@ -216,18 +216,13 @@ entry is left blank.
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
-<img src=\"HTML/doc03.gif\" alt=\"papers icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
+<a href=\"~sx\">
 Publications about ACL2 and Its Applications</a>
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"#User's-Manual\"><img src=\"HTML/info04.gif\" alt=\"info bubble icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"#User's-Manual\">The User's Manual</a>
 and <a href=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\">Hyper-Card</a>
@@ -235,55 +230,39 @@ and <a href=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"#Tools\"><img src=\"HTML/tools3.gif\" alt=\"hammer and pliers icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"#Tools\">Community Books: Lemma Libraries and Utilities</a>
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"HTML/installation/misc.html#Addresses\"><img
-src=\"HTML/mailbox1.gif\" alt=\"mailbox icon\"  border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/installation/misc.html#Addresses\">Mailing Lists</a>
+<a href=\"~sy\">Mailing Lists</a>
 </td>
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/new.html\">
-<img src=\"HTML/new04.gif\" alt=\"NEW! icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"HTML/new.html\">
 Recent changes to this page</a>
 </td>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/installation/installation.html\"><img src=\"HTML/ftp2.gif\"
-alt=\"FTP icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/installation/installation.html\">Obtaining, Installing, and License</a>
+<a href=\"~sz\">Obtaining, Installing, and License</a>
 </td>
 
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"~sg\"><img src=\"HTML/note02.gif\" alt=\"paper note icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"~sg\">Differences from Version 8.5</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/other-releases.html\">
-<img src=\"HTML/file04.gif\" alt=\"filing cabinet icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~sc\">
 Other Releases</a>
 </td>
 </tr>
@@ -383,7 +362,7 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 <li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.6)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
-<a href=\"HTML/installation/obtaining-and-installing.html#GitHub\">GitHub</a> distributions)</li>
+<a href=\"~si\">GitHub</a> distributions)</li>
 
 </ul>
 
@@ -414,12 +393,10 @@ some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
 href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
-the pages on <a
-href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS'>
-Books and Papers about ACL2 and Its Applications</a> and the <a
-href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
-Series</a>.  The <a href=\"HTML/installation/installation.html\">installation
-instructions</a> explain how to download and install the community books.
+the pages on <a href='~sx'> Books and Papers about ACL2 and Its
+Applications</a> and the <a href='~sd'>ACL2 Workshops Series</a>.  The <a
+href=\"~sz\">installation instructions</a> explain how to download and install
+the community books.
 
 <p>
 
@@ -447,7 +424,7 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">ACL2
 Manual</a> allow you to search the short strings of the documentation (which
 are typically summaries of a line or so).  To search the full content for a
 string or regular expression, you may use the Emacs-based <a
-href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
+href=\"~so\">ACL2-Doc browser</a>.
 
 <br><br>
 <hr>
@@ -459,8 +436,8 @@ href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
 
 (defun write-home-page (channel state url)
 
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
 
   (mv-let
    (n state)

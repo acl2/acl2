@@ -15,7 +15,6 @@
 
 (include-book "kestrel/utilities/typed-lists/bit-listp" :dir :system)
 (include-book "projects/pfcs/convenience-constructors" :dir :system)
-(include-book "projects/pfcs/indexed-names" :dir :system)
 
 (local (include-book "../library-extensions/omaps"))
 (local (include-book "../library-extensions/osets"))
@@ -42,17 +41,17 @@
    (xdoc::p
     "This is a family of PFCS relations of the form")
    (xdoc::codeblock
-    "boolean_assert_all_<n>(x_0, ..., x_<n-1>) := {
-     boolean_assert(x_0),
+    "boolean_assert_all[n](x[0], ..., x[n-1]) := {
+     boolean_assert(x[0]),
      ...
-     boolean_assert(x_<n-1>)
+     boolean_assert(x[n-1])
      }")
    (xdoc::p
-    "where @('<n>') is a natural number that parameterizes the relation.
+    "where @('n') is a natural number that parameterizes the relation.
      This relation calls @(see boolean-assert) on each parameter.")
    (xdoc::p
     "Currently our PFCS library does not provide
-     a concrete syntax for parameterized PFCS relations.
+     a concrete syntax for parameterized PFCS relations such as above.
      So we construct PFCS abstract syntax,
      which we lift ``manually'' (not via the lifter).
      Proofs of correctness are by induction,
@@ -77,7 +76,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-assert-all-circuit-body ((xs string-listp))
+(define boolean-assert-all-circuit-body ((xs name-listp))
   :returns (constrs pfcs::constraint-listp)
   :short "Construct the defining body of the PFCS relation."
   :long
@@ -87,16 +86,22 @@
      applied to each parameter.
      To facilitate proofs by induction,
      we define this construction over an arbitrary list of variable names,
-     which are then instantiated to @('(x_0 ... x_<n-1>)')."))
+     which are then instantiated to @('(x[0] ... x[n-1])')."))
   (cond ((endp xs) nil)
-        (t (cons (pfcall "boolean_assert" (pfvar (car xs)))
+        (t (cons (pfcall (pfname "boolean_assert") (pfvar (car xs)))
                  (boolean-assert-all-circuit-body (cdr xs)))))
 
   ///
 
+  (more-returns
+   (constrs pfcs::sr1cs-constraint-listp
+            :hints (("Goal"
+                     :induct t
+                     :in-theory (enable pfcs::sr1cs-constraintp)))))
+
   (defrule constraint-list-vars-of-boolean-assert-all-circuit-body
     (equal (pfcs::constraint-list-vars (boolean-assert-all-circuit-body xs))
-           (set::mergesort (str::string-list-fix xs)))
+           (set::mergesort (name-list-fix xs)))
     :induct t
     :enable (pfcs::constraint-list-vars
              pfcs::constraint-vars
@@ -118,25 +123,29 @@
      so that a larger circuit can include
      different instances of this circuit without conflict.")
    (xdoc::p
-    "The parameter list is @('(x_0 ... x_<n-1>)')."))
-  (b* ((para (iname-list "x" n)))
-    (pfdef (iname "boolean_assert_all" n)
+    "The parameter list is @('(x_0 ... x[n-1>)')."))
+  (b* ((para (pfnames "x" n)))
+    (pfdef (pfname "boolean_assert_all" n)
            para
            (boolean-assert-all-circuit-body para)))
 
   ///
 
+  (more-returns
+   (pdef pfcs::sr1cs-definitionp
+         :hints (("Goal" :in-theory (enable pfcs::sr1cs-definitionp)))))
+
   (defrule definition->name-of-boolean-assert-all-circuit
     (equal (pfcs::definition->name (boolean-assert-all-circuit n))
-           (iname "boolean_assert_all" n)))
+           (pfname "boolean_assert_all" n)))
 
   (defrule definition->para-of-boolean-assert-all-circuit
     (equal (pfcs::definition->para (boolean-assert-all-circuit n))
-           (iname-list "x" n)))
+           (pfnames "x" n)))
 
   (defrule definition->body-of-boolean-assert-all-circuit
     (equal (pfcs::definition->body (boolean-assert-all-circuit n))
-           (boolean-assert-all-circuit-body (iname-list "x" n))))
+           (boolean-assert-all-circuit-body (pfnames "x" n))))
 
   (defrule definition-free-vars-of-boolean-assert-all-circuit
     (set::emptyp (pfcs::definition-free-vars (boolean-assert-all-circuit n)))
@@ -188,12 +197,12 @@
         (and (boolean-assert-pred (car xs) p)
              (boolean-assert-all-pred (cdr xs) p))))
 
-
   (defruled constraint-list-satp-to-boolean-assert-all-circuit-body
-    (implies (and (equal (pfcs::lookup-definition "boolean_assert" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
-                  (string-listp xs-vars)
+                  (name-listp xs-vars)
                   (no-duplicatesp-equal xs-vars)
                   (pfield::fe-listp xs-vals prime)
                   (equal (len xs-vars) (len xs-vals))
@@ -220,15 +229,16 @@
 
   (defruled definition-satp-to-boolean-assert-all
     (implies (and (equal (pfcs::lookup-definition
-                          (iname "boolean_assert_all" (len xs))
+                          (pfname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition "boolean_assert" defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))
              (equal (pfcs::definition-satp
-                      (iname "boolean_assert_all" (len xs)) defs xs prime)
+                      (pfname "boolean_assert_all" (len xs)) defs xs prime)
                     (boolean-assert-all-pred xs prime)))
     :enable (pfcs::definition-satp
               pfcs::constraint-satp-of-relation-when-nofreevars
@@ -263,15 +273,16 @@
 
   (defruled boolean-assert-all-circuit-to-spec
     (implies (and (equal (pfcs::lookup-definition
-                          (iname "boolean_assert_all" (len xs))
+                          (pfname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition "boolean_assert" defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))
              (equal (pfcs::definition-satp
-                      (iname "boolean_assert_all" (len xs)) defs xs prime)
+                      (pfname "boolean_assert_all" (len xs)) defs xs prime)
                     (bit-listp xs)))
     :enable (boolean-assert-all-pred-to-spec
              definition-satp-to-boolean-assert-all)))

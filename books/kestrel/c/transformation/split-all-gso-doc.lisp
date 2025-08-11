@@ -27,8 +27,6 @@
      (xdoc::codeblock
        "(split-all-gso const-old"
        "               const-new"
-       "               :gcc  ... ; optional"
-       "               :ienv ... ; optional"
        "  )"
       ))
    (xdoc::evmac-section-inputs
@@ -38,9 +36,9 @@
          "Specifies the code to be transformed.")
        (xdoc::p
          "This must be a symbol that names an existing ACL2 constant
-          that contains a  validated translation unit ensemble,
-          i.e. a value of type @(tsee transunit-ensemble)
-          resulting from "
+          that contains a  validated code ensemble,
+          i.e. a value of type @(tsee code-ensemble)
+          whose translation unit ensemble results from "
          (xdoc::seetopic "c$::validator" "validation")
          ", and in particular containing "
          (xdoc::seetopic "c$::validation-information" "validation information")
@@ -53,17 +51,5 @@
        (xdoc::p
          "Specifies the name of the constant for the transformed code.")
        (xdoc::p
-         "This must be a symbol that is valid name for a new ACL2 constant."))
-     (xdoc::desc
-       "@(':gcc') &mdash; default @('nil')"
-       (xdoc::p
-         "Boolean flag saying whether certain GCC extensions should be accepted
-          or not. This is used when re-validating intermediate outputs (see
-          @(see c$::validator))."))
-     (xdoc::desc
-       "@(':ienv') &mdash; default @('(c$::ienv-default)')"
-       (xdoc::p
-         "The "
-         (xdoc::seetopic "c$::ienv" "implementation environment")
-         " under which re-validation is performed."))))
+         "This must be a symbol that is valid name for a new ACL2 constant."))))
   :order-subtopics t)

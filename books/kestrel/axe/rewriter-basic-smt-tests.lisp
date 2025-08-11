@@ -33,6 +33,7 @@
                                                     (count-hits 'nil)
                                                     (print 't)
                                                     (monitor 'nil)
+                                                    (no-warn-ground-functions 'nil)
                                                     (fns-to-elide 'nil))
   `(simplify-term-to-term-basic-smt ,term
                                     ,assumptions
@@ -45,6 +46,7 @@
                                     ,count-hits
                                     ,print
                                     ,monitor
+                                    ,no-warn-ground-functions
                                     ,fns-to-elide
                                     state))
 

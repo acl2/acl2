@@ -2440,23 +2440,19 @@
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule
   (implies (not (< tp x))
-           (equal (< (IF test tp ep)
-                     x)
-                  (if test nil
-                    (< ep
-                       x)))))
+           (equal (< (if test tp ep) x)
+                  (if test nil (< ep x)))))
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule2
   (implies (< x tp)
-           (equal (< x
-                     (IF test tp ep))
-                  (if test t
-                    (< x
-                       ep)))))
+           (equal (< x (if test tp ep))
+                  (if test t (< x ep)))))
 
 ;; ;bozo drop some hyps?
 ;; (defthm byte-fix-list-of-update-subrange

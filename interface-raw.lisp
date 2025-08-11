@@ -6363,6 +6363,8 @@
 
 (defun proclaim-dfs (fn &aux (wrld (w *the-live-state*)))
 
+; This function can enhance efficiency of df computations.
+
 ; We understand, from Stas Boukarev, that the use of &optional to terminate the
 ; input and output types allows SBCL to make use of these declarations to avoid
 ; memory usage caused by double-floats crossing function boundaries.  This has
@@ -6376,6 +6378,12 @@
 ; Also see *proclaim-dfs-ht*.
 
   (cond
+   #+sbcl
+   ((string>= (lisp-implementation-version) "2.5.6")
+; Work around SBCL Bug #2115955.  When the bug is fixed, we should add a
+; conjunct to the test,
+; (string< (lisp-implementation-version) "<fixed_version>").
+    nil)
    ((member-eq fn *stobjs-out-invalid*)
     nil)
    (t (let ((stobjs-in (getpropc fn 'stobjs-in nil wrld))
@@ -9198,8 +9206,22 @@
                 (if (f-get-global 'wormhole-name state)
                     nil
                     (and (f-get-global 'abort-soft state)
+
+; We expect the following (the 'continue restart) to be non-nil after a
+; control-C interrupt; see the discussion of BREAK in the CL HyperSpec.  It
+; also probably happens to be non-nil if the user has never exited (lp) after
+; initial start-up (e.g., after saved_acl2 invokes CCL with command line option
+; -e "(acl2::acl2-default-restart)"); but that is probably not important.  In
+; fact, in function chk-for-live-stobj we work around that unfortunate
+; 'continue restart by binding state global abort-soft to nil to make the
+; present conjunction false when causing an error.
+
                          (find-restart 'continue)
                          *acl2-time-limit-boundp*
+
+; If you change the following, consider changing chk-for-live-stobj
+; accordingly.
+
                          (not (eql *acl2-time-limit* 0))))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
@@ -9239,7 +9261,8 @@
              (cond
               #+ccl
               ((and (fboundp 'ccl::%real-err-fn-name)
-                    (boundp 'ccl::*top-error-frame*))
+                    (boundp 'ccl::*top-error-frame*)
+                    (not *suppress-while-executing-msg*))
                (format t
                        "~&Error:  ~A~&While executing: ~S"
                        condition

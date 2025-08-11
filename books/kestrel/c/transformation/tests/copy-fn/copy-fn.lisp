@@ -27,9 +27,9 @@
   ;; TODO: transformation should define the const
   ;; TODO: transformation should take strings, not idents
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "foo")
-                                (c$::ident "bar")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -55,9 +55,9 @@ int bar(int y, int z) {
                    :const *old*)
 
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "fibonacci")
-                                (c$::ident "fib")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "fibonacci")
+                           (c$::ident "fib")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -94,9 +94,9 @@ int fib(int x) {
                    :const *old*)
 
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "foo")
-                                (c$::ident "bar")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
 
   (c$::output-files :const *new*
                     :path "new")

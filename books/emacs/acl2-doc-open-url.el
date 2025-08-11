@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
@@ -43,18 +44,18 @@
   (interactive)
   (let ((topic (acl2-doc-topic-at-point)))
     (if (not topic)
-	(error "No topic at point."))
+        (error "No topic at point."))
     (let* ((topic (downcase (symbol-name topic)))
-	   (len (length topic)))
+           (len (length topic)))
       (if (equal (aref topic (1- len)) ?})
-	  (setq topic (substring topic 0 (1- len))))
+          (setq topic (substring topic 0 (1- len))))
       (let ((url (if (and (> len 4)
-			  (equal (substring topic 0 4) "res/"))
-		     (concat "file://" (manual-dir) "/" topic)
-		   (if (and (> len 4)
-			    (equal (substring topic 0 4) "http"))
-		       topic
-		     (error "No available topic at point.")))))
-	(browse-url url)))))
+                          (equal (substring topic 0 4) "res/"))
+                     (concat "file://" (manual-dir) "/" topic)
+                   (if (and (> len 4)
+                            (equal (substring topic 0 4) "http"))
+                       topic
+                     (error "No available topic at point.")))))
+        (browse-url url)))))
 
 (define-key acl2-doc-mode-map "U" 'acl2-doc-open-url)

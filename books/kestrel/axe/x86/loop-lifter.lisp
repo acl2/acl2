@@ -47,7 +47,6 @@
 (include-book "../merge-term-into-dag-array-simple")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
-;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
 (include-book "rewriter-x86")
@@ -56,6 +55,7 @@
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
 (include-book "../arithmetic-rules-axe")
+(include-book "../convert-to-bv-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
@@ -91,6 +91,8 @@
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
+(include-book "kestrel/bv/ash" :dir :system)
+(include-book "kestrel/bv/std" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -210,6 +212,7 @@
                                      nil
                                      t ;:brief  ;nil
                                      monitor
+                                     nil ; no-warn-ground-functions
                                      nil))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
@@ -227,7 +230,7 @@
 ;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
 (defun get-pc (x86)
   (declare (xargs :stobjs x86))
-  (rip x86))
+  (x86isa::rip x86))
 
 ;;TODO: How can we determine whether we are in a subroutine call (can't just
 ;;look at RSP)?  I guess we could include subroutine PCs as part of the code
@@ -389,6 +392,7 @@
                             t ; count-hits
                             nil ;print
                             nil
+                            nil ; no-warn-ground-functions
                             nil)))
 
 ;; Returns (mv erp rbp-dag limits).
@@ -418,6 +422,7 @@
                             t   ; count-hits
                             nil ;print
                             nil
+                            nil ; no-warn-ground-functions
                             nil)))
 
 ;; Returns (mv erp pc-dag limits).
@@ -451,6 +456,7 @@
                               ;;acl2::integerp-of-+
                               ;;x86isa::integerp-when-canonical-address-p-cheap
                               )
+                            nil ; no-warn-ground-functions
                             nil)))
 
 (defun offsets-up-to (num)
@@ -549,6 +555,7 @@
                                     (append '( ;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
+                                    nil ; no-warn-ground-functions
                                     nil
                                     state)))
          ((when erp) (mv erp nil nil state)))
@@ -658,6 +665,7 @@
            nil ; count-hits
            :brief ; print
            nil ; monitored-symbols
+           nil ; no-warn-ground-functions
            nil ; fns-to-elide
            state))
          ((when erp) (mv erp nil nil nil state)))
@@ -830,7 +838,7 @@
                             `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2)
                           `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2)))
        ((mv erp result state)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil nil state))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -907,7 +915,7 @@
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result state)
           (acl2::simplify-term-to-term-x86 address-unchanged-term nil ; assumptions
-                                           rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
+                                           rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil nil state))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1181,6 +1189,7 @@
           (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
                                nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
+                               nil ; no-warn-ground-functions
                                nil state))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
@@ -1776,7 +1785,7 @@
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
+                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil nil state))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
@@ -1799,6 +1808,7 @@
                                    ;;x86p-of-write
                                    ;;x86isa::x86p-xw
                                    )
+                                 nil ; no-warn-ground-functions
                                  nil
                                  state))
         ((when erp) (mv erp nil nil nil state))
@@ -2026,6 +2036,7 @@
                                            x86-fetch-decode-execute-opener-safe-64
                                            )
                                          rules-to-monitor)
+                                 nil ; no-warn-ground-functions
                                  nil
                                  state))
         ((when erp) (mv erp nil nil nil state))
@@ -2119,6 +2130,7 @@
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
          (make-rule-alist (append (old-normal-form-rules) ; don't use the new normal forms
+                                  '(x86isa::rip) ; open this (at least for now), to expose xr
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
@@ -2130,6 +2142,7 @@
         ;;                                   state))
         ((mv erp assumptions)
          (acl2::simplify-conjunction-basic assumptions rule-alist (acl2::known-booleans (w state)) rules-to-monitor
+                                           nil ; no-warn-ground-functions
                                            nil ; don't memoize (avoids time spent making empty-memoizations)
                                            nil ; count-hits
                                            t ; todo: do this warning just once?
@@ -2278,7 +2291,9 @@
                                    (read-and-write-rules-bv)
                                  (read-and-write-rules-non-bv))
                                (if nil ; for now
-                                   (canonical-rules-bv) (canonical-rules-non-bv))
+                                   (append (unsigned-canonical-rules)
+                                           (canonical-rules-bv))
+                                 (canonical-rules-non-bv))
                                (loop-lifter-rules64))))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
@@ -2318,7 +2333,9 @@
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
-                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor nil state))
+                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor
+                                nil ; no-warn-ground-functions
+                                nil state))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:

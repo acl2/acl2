@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "assumptions")
+(include-book "readers-and-writers64")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
 (include-book "kestrel/memory/memory48" :dir :system)
@@ -154,7 +155,8 @@
   (and (standard-state-assumption-64 x86)
        (bytes-loaded-at-address-64 text-section-bytes text-offset bvp x86)
        ;; The program counter is at the start of the routine to lift:
-       (equal (rip x86) (+ text-offset offset-to-subroutine))
+       (equal (x86isa::rip x86) ; note that this is not x::rip!
+              (+ text-offset offset-to-subroutine))
 
        ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
        (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots stack-slots-needed (rgfi *rsp* x86)))
@@ -175,15 +177,22 @@
          ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
          t)))
 
+;; still used in loop-lifter
 (defun standard-assumptions-mach-o-64 (subroutine-name
                                        parsed-mach-o
                                        stack-slots-needed
                                        text-offset
                                        bvp
                                        x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
+  (declare (xargs :guard (and (stringp subroutine-name)
+                              (acl2::parsed-mach-o-p parsed-mach-o)
+                              (natp stack-slots-needed)
+                              (natp text-offset)
+                              (booleanp bvp))
+
+             :stobjs x86
+             :verify-guards nil ;todo
+             ))
   (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
         (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
         (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
@@ -195,6 +204,7 @@
                                   x86)))
 
 ;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
+;; still used in loop-lifter
 (defun standard-assumptions-pe-64 (subroutine-name
                                    parsed-executable
                                    stack-slots-needed
@@ -204,7 +214,9 @@
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (standard-assumptions-core-64 (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-executable)) ; text-section-bytes, all the code, not just the given subroutine
+  (standard-assumptions-core-64 (b* (((mv erp info) (acl2::get-pe-text-section-info parsed-executable))
+                                     ((when erp) nil))
+                                  (acl2::lookup-eq :raw-data info)) ; text-section-bytes, all the code, not just the given subroutine
                                 text-offset
                                 (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
                                 stack-slots-needed
@@ -213,6 +225,7 @@
 
 ;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
 ;; text section)?  Transition to just generating a list of terms?
+;; should be used in loop-lifter?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf
                                     stack-slots-needed
@@ -226,10 +239,10 @@
                               (booleanp bvp)
                               )
                   :stobjs x86
-                  :verify-guards nil ;todo, first do acl2::get-elf-code-address and acl2::subroutine-address-elf
+                  :verify-guards nil ;todo, first do acl2::get-elf-text-section-address and acl2::subroutine-address-elf
                   ))
   (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
-        (text-section-address (acl2::get-elf-code-address parsed-elf))
+        (text-section-address (acl2::get-elf-text-section-address parsed-elf))
         (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
     (standard-assumptions-core-64 text-section-bytes
                                   text-offset

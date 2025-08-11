@@ -1,7 +1,7 @@
 ; Tools for processing parsed executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; todo: add and verify guards
 
 (include-book "elf-tools")
 (include-book "mach-o-tools")
@@ -21,9 +23,9 @@
   (let ((magic (lookup-eq :magic parsed-executable)))
     (if (member-eq magic '(:elf-32 :elf-64))
         magic
-      (if (equal :MH_MAGIC magic)
+      (if (eq :MH_MAGIC magic)
           :mach-o-32
-        (if (equal :MH_MAGIC_64 magic)
+        (if (eq :MH_MAGIC_64 magic)
             :mach-o-64
           (if (assoc-eq :MS-DOS-STUB parsed-executable)
               (let* ((coff-file-header (lookup-eq-safe :COFF-FILE-HEADER parsed-executable))

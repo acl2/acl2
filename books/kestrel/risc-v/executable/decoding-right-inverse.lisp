@@ -17,12 +17,9 @@
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +38,10 @@
      As a consequence, decoding is injective over valid encodings:
      if two different encodings were decoded in the same way,
      the encoder would have to restore both from the same instruction,
-     which is impossible since encoding is a function."))
+     which is impossible since encoding is a function.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 

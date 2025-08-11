@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-(include-book "projects/x86isa/machine/instructions/conditional" :dir :system)
+(include-book "projects/x86isa/machine/instructions/conditional" :dir :system) ; reduce?
 (include-book "flags") ;for get-flag
 (include-book "rflags-spec-sub")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -19,6 +19,7 @@
 (include-book "kestrel/bv/defs" :dir :system) ;for bvplus, etc.
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
+(include-book "kestrel/bv/bvcount" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules10" :dir :system))
@@ -35,7 +36,7 @@
 (local (in-theory (enable acl2::slice-becomes-getbit)))
 (local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits ;todo: looped, should have 32 in the name
                            ;; for speed:
-                           ;acl2::getbit-when-bound
+                           ;acl2::getbit-when-<-of-constant
                            acl2::unsigned-byte-p-from-bounds
                            acl2::unsigned-byte-p-of-bvchop-bigger)))
 
@@ -1921,6 +1922,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm add-af-spec8-becomes-bvlt (equal (add-af-spec8 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec8 bvlt bvplus))))
+(defthm add-af-spec16-becomes-bvlt (equal (add-af-spec16 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec16 bvlt bvplus))))
+(defthm add-af-spec32-becomes-bvlt (equal (add-af-spec32 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec32 bvlt bvplus))))
+(defthm add-af-spec64-becomes-bvlt (equal (add-af-spec64 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec64 bvlt bvplus))))
+
+;; drop the hyps?
+(defthm adc-af-spec8-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec8 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec8 bvlt bvplus))))
+(defthm adc-af-spec16-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec16 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec16 bvlt bvplus))))
+(defthm adc-af-spec32-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec32 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec32 bvlt bvplus))))
+(defthm adc-af-spec64-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec64 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec64 bvlt bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; maybe ok because it reduces the CF-SPEC call to a constant
 ;; or maybe open CF-SPEC64 when it's an arg to bvplus
 (defthm cf-spec32-when-unsigned-byte-p (implies (unsigned-byte-p 32 raw-result) (equal (cf-spec32 raw-result) 0)) :hints (("Goal" :in-theory (enable cf-spec32))))
@@ -1951,3 +1965,27 @@
            (equal (cf-spec64 x)
                   (getbit 64 x)))
   :hints (("Goal" :in-theory (enable cf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm sf-spec8-becomes-getbit (equal (sf-spec8 x) (getbit 7 x)) :hints (("Goal" :in-theory (enable sf-spec8))))
+(defthm sf-spec16-becomes-getbit (equal (sf-spec16 x) (getbit 15 x)) :hints (("Goal" :in-theory (enable sf-spec16))))
+(defthm sf-spec32-becomes-getbit (equal (sf-spec32 x) (getbit 31 x)) :hints (("Goal" :in-theory (enable sf-spec32))))
+(defthm sf-spec64-becomes-getbit (equal (sf-spec64 x) (getbit 63 x)) :hints (("Goal" :in-theory (enable sf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;(defthm pf-spec8-becomes-bvcount (equal (pf-spec8 result) (acl2::bvcount 8 result)) :hints (("Goal" :in-theory (enable pf-spec8 acl2::bvcount))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm sub-af-spec8-becomes-bvlt (equal (sub-af-spec8 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec8 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec16-becomes-bvlt (equal (sub-af-spec16 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec16 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec32-becomes-bvlt (equal (sub-af-spec32 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec32 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec64-becomes-bvlt (equal (sub-af-spec64 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec64 bvlt bvminus acl2::bvchop-of-sum-cases))))
+
+; drop the hyps?
+(defthm sbb-af-spec8-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec8 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec8 bvlt bvminus bvplus))))
+(defthm sbb-af-spec16-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec16 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec16 bvlt bvminus bvplus))))
+(defthm sbb-af-spec32-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec32 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec32 bvlt bvminus bvplus))))
+(defthm sbb-af-spec64-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec64 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec64 bvlt bvminus bvplus))))

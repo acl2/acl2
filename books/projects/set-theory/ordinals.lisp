@@ -35,54 +35,6 @@
                             (y (mv-nth 1 (in-is-linear-witness y)))
                             (s x))))))
 
-(defthmz pair-non-empty ; needed for in-asymmetric-3
-  (not (equal (pair x y)
-              0))
-  :hints (("Goal"
-           :use ((:instance in-pair (a x)))
-           :in-theory (disable in-pair
-                               subset-preserves-in-1))))
-
-(encapsulate
-  ()
-
-; It turns out that we don't need in-asymmetric for ordinals-closure-2, as I'd
-; originally thought.  However, we need something like it,  and it's not a bad
-; rule, so I'll keep it here.
-
-; Proof of in-asymmetric.  Consider (min-in (pair x y)).  It's either x or y;
-; wlog, say, x.  Then by min-in-2, y \notin x.
-
-  (local (defthmz in-asymmetric-1
-           (implies (and (in x y)
-                         (equal (min-in (pair x y)) x))
-                    (not (in y x)))
-           :rule-classes nil))
-
-  (local (defthmz in-asymmetric-2
-           (implies (and (in x y)
-                         (equal (min-in (pair x y)) y))
-                    (not (in y x)))
-           :rule-classes nil))
-
-  (local (defthmz in-asymmetric-3
-           (or (equal (min-in (pair x y)) x)
-               (equal (min-in (pair x y)) y))
-           :hints (("Goal"
-                    :use ((:instance min-in-1
-                                     (z (pair x y))))
-                    :in-theory (disable min-in-1)))
-           :rule-classes nil))
-
-  (defthmz in-asymmetric
-    (implies (in x y)
-             (not (in y x)))
-    :hints (("Goal" :use (in-asymmetric-1
-                          in-asymmetric-2
-                          in-asymmetric-3)))
-    :rule-classes (:forward-chaining
-                   (:rewrite :backchain-limit-lst 0))))
-
 ; Start proof of in-has-no-3-cycle.
 
 (defun triple (x y z)
@@ -400,9 +352,6 @@
              (in b a))
     :hints (("Goal" :use ordinal-proper-subset-is-element-3))
     :props (zfc diff$prop)))
-
-(defthmz in-irreflexive ; follows by forward-chaining from in-asymmetric
-  (not (in x x)))
 
 (defthmz ordinal-trichotomy-lemma-1
 

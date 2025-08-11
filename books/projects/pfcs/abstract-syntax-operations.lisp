@@ -13,9 +13,10 @@
 
 (include-book "abstract-syntax-trees")
 
-(include-book "kestrel/fty/string-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "std/lists/intersectp" :dir :system))
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -33,12 +34,156 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection expression-var-list (x)
+(std::defprojection name-simple-list (x)
   :guard (string-listp x)
+  :returns (names name-listp)
+  :short "Lift @(tsee name-simple) to lists."
+  (name-simple x)
+
+  ///
+
+  (fty::deffixequiv name-simple-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define names-indexed-below ((base stringp) (n natp))
+  :returns (names name-listp)
+  :short "Create a list of indexed names,
+          with the same base and indices from 0 to @('n-1')
+          (i.e. below @('n'))."
+  (rev (names-indexed-below-rev base n))
+
+  :prepwork
+  ((define names-indexed-below-rev ((base stringp) (n natp))
+     :returns (names-rev name-listp)
+     :parents nil
+     (b* (((when (zp n)) nil)
+          (n-1 (1- n))
+          (name (name-indexed base n-1))
+          (names (names-indexed-below-rev base n-1)))
+       (cons name names))
+
+     ///
+
+     (defret len-of-names-indexed-below-rev
+       (equal (len names-rev)
+              (nfix n))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable names-indexed-below-rev nfix fix len))))
+
+     (defret consp-of-names-indexed-below-rev
+       (equal (consp names-rev)
+              (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
+     (defret names-indexed-below-rev-iff
+       (iff names-rev
+            (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
+     (defruled base-not-member-of-names-indexed-below-rev
+       (implies (stringp base)
+                (not (member-equal (name-simple base)
+                                   (names-indexed-below-rev base n))))
+       :induct t
+       :enable names-indexed-below-rev)
+
+     (defruled member-equal-of-name-indexed-and-names-indexed-below-rev
+       (iff (member-equal (name-indexed base i)
+                          (names-indexed-below-rev base1 n))
+            (and (equal (str-fix base)
+                        (str-fix base1))
+                 (< (nfix i) (nfix n))))
+       :induct t
+       :enable nfix)
+
+     (defruled member-equal-of-names-indexed-below-rev
+       (iff (member-equal x (names-indexed-below-rev base n))
+            (and (namep x)
+                 (equal (name-kind x) :indexed)
+                 (equal (name-indexed->base x) (str-fix base))
+                 (< (name-indexed->index x) (nfix n))))
+       :induct t
+       :enable nfix)
+
+     (defrule no-duplicatesp-equal-of-names-indexed-below-rev
+       (no-duplicatesp-equal (names-indexed-below-rev base n))
+       :induct t
+       :enable (no-duplicatesp-equal
+                member-equal-of-name-indexed-and-names-indexed-below-rev))
+
+     (defruled intersectp-equal-of-names-indexed-below-rev
+       (equal (intersectp-equal (names-indexed-below-rev base1 n1)
+                                (names-indexed-below-rev base2 n2))
+              (and (equal (str-fix base1)
+                          (str-fix base2))
+                   (not (zp n1))
+                   (not (zp n2))))
+       :induct t
+       :enable (member-equal-of-names-indexed-below-rev nfix zp))))
+
+  ///
+
+  (defret len-of-names-indexed-below
+    (equal (len names)
+           (nfix n)))
+
+  (defret consp-of-names-indexed-below
+    (equal (consp names)
+           (> (nfix n) 0)))
+
+  (defret names-indexed-below-iff
+    (iff names
+         (> (nfix n) 0)))
+
+  (in-theory (disable consp-of-names-indexed-below
+                      consp-of-names-indexed-below-rev))
+
+  (defruled base-not-member-of-names-indexed-below
+    (implies (stringp base)
+             (not (member-equal (name-simple base) (names-indexed-below base n))))
+    :use base-not-member-of-names-indexed-below-rev
+    :enable names-indexed-below)
+
+  (defruled member-equal-of-names-indexed-below
+    (iff (member-equal x (names-indexed-below base n))
+         (and (namep x)
+              (equal (name-kind x) :indexed)
+              (equal (name-indexed->base x) (str-fix base))
+              (< (name-indexed->index x) (nfix n))))
+    :enable member-equal-of-names-indexed-below-rev)
+
+  (defruled member-equal-of-name-indexed-and-names-indexed-below
+    (iff (member-equal (name-indexed base i)
+                       (names-indexed-below base1 n))
+         (and (equal (str-fix base)
+                     (str-fix base1))
+              (< (nfix i) (nfix n))))
+    :enable member-equal-of-name-indexed-and-names-indexed-below-rev)
+
+  (defrule no-duplicatesp-equal-of-names-indexed-below
+    (no-duplicatesp-equal (names-indexed-below base n)))
+
+  (defruled intersectp-equal-of-names-indexed-below
+    (equal (intersectp-equal (names-indexed-below base1 n1)
+                             (names-indexed-below base2 n2))
+           (and (equal (str-fix base1)
+                       (str-fix base2))
+                (not (zp n1))
+                (not (zp n2))))
+    :enable intersectp-equal-of-names-indexed-below-rev))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expression-var-list (x)
+  :guard (name-listp x)
   :returns (exprs expression-listp)
   :short "Lift @(tsee expression-var) to lists."
   (expression-var x)
+
   ///
+
   (fty::deffixequiv expression-var-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +206,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-vars ((expr expressionp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in an expression."
   (expression-case
    expr
@@ -81,26 +226,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-list-vars ((exprs expression-listp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a list of expressions."
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
                        (expression-list-vars (cdr exprs)))))
   :verify-guards :after-returns
+
   ///
 
   (defrule expression-list-vars-of-expression-var-list
     (equal (expression-list-vars (expression-var-list vars))
-           (set::mergesort (string-list-fix vars)))
+           (set::mergesort (name-list-fix vars)))
     :induct t
     :enable (expression-vars
              expression-var-list
-             set::mergesort)))
+             set::mergesort))
+
+  (defrule expression-list-vars-of-cons
+    (equal (expression-list-vars (cons expr exprs))
+           (set::union (expression-vars expr)
+                       (expression-list-vars exprs))))
+
+  (defrule expression-list-vars-of-append
+    (equal (expression-list-vars (append exprs1 exprs2))
+           (set::union (expression-list-vars exprs1)
+                       (expression-list-vars exprs2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-vars ((constr constraintp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a constraint."
   (constraint-case
    constr
@@ -111,17 +268,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-vars ((constrs constraint-listp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a list of constraints."
   (cond ((endp constrs) nil)
         (t (set::union (constraint-vars (car constrs))
                        (constraint-list-vars (cdr constrs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule constraint-list-vars-of-cons
+    (equal (constraint-list-vars (cons constr constrs))
+           (set::union (constraint-vars constr)
+                       (constraint-list-vars constrs))))
+
+  (defrule constraint-list-vars-of-append
+    (equal (constraint-list-vars (append constrs1 constrs2))
+           (set::union (constraint-list-vars constrs1)
+                       (constraint-list-vars constrs2)))
+    :induct t)
+
+  (defrule constraint-list-vars-of-rev
+    (equal (constraint-list-vars (rev constrs))
+           (constraint-list-vars constrs))
+    :induct t
+    :enable set::union-symmetric))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define definition-free-vars ((def definitionp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of free variables in a definition."
   :long
   (xdoc::topstring
@@ -132,7 +308,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-definition ((name stringp) (defs definition-listp))
+(define lookup-definition ((name namep) (defs definition-listp))
   :returns (def? definition-optionp)
   :short "Look up a definition in a list of definitions."
   :long
@@ -149,7 +325,7 @@
   (b* (((when (endp defs)) nil)
        (def (car defs))
        ((when (equal (definition->name def)
-                     (str-fix name)))
+                     (name-fix name)))
         (definition-fix def)))
     (lookup-definition name (cdr defs)))
   :hooks (:fix))
@@ -164,14 +340,14 @@
     "This is isomorphic to the @(':relation') kind of @(tsee constraint),
      but it is convenient to have a separate fixtype here,
      for certain purposes."))
-  ((name string)
+  ((name name)
    (args expression-list))
   :pred constrelp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset constrel-set
-  :short "Fixtype of osets of relation constraints."
+  :short "Fixtype of sets of relation constraints."
   :elt-type constrel
   :elementp-of-nil nil
   :pred constrel-setp
@@ -217,7 +393,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-rels ((constr constraintp))
-  :returns (rels string-setp)
+  :returns (rels name-setp)
   :short "Set of (names of) relations in a constraint."
   :long
   (xdoc::topstring
@@ -234,7 +410,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-rels ((constrs constraint-listp))
-  :returns (rels string-setp)
+  :returns (rels name-setp)
   :short "Set of (names of) relations in a list of constraints."
   :long
   (xdoc::topstring

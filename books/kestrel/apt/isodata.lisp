@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,13 +32,16 @@
 (include-book "std/system/non-executablep" :dir :system)
 (include-book "std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "std/system/recursive-calls" :dir :system)
+(include-book "std/system/stobjs-in-plus" :dir :system)
+(include-book "std/system/stobjs-out-plus" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
+(include-book "kestrel/utilities/typed-tuples" :dir :system)
 
 (include-book "std/basic/mbt-dollar" :dir :system)
 (include-book "std/util/defiso" :dir :system)
@@ -50,6 +53,8 @@
 (include-book "utilities/transformation-table")
 (include-book "utilities/untranslate-specifiers")
 (include-book "utilities/find-a-base-case")
+
+(local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,6 +141,10 @@
    the alist is @('nil').
    @('res-isomaps') results from processing @('isomaps')."
 
+  "@('dom-stobjs-p') is a flag indicating whether
+   any of the isomorphic domain in @('isomaps')
+   have input or output stobjs."
+
   "@('appcond-thm-names') is an alist
    from the applicability condition keywords
    to the corresponding theorem names."
@@ -169,44 +178,41 @@
     with @(tsee defmapping-infop),
     but it has a few extra fields and omits a few fields.
     This aggregate is only for @(tsee isodata)'s internal use.")
-  ((isoname "Name of the @(tsee defiso)." symbolp)
-   (localp "Flag saying whether the @(tsee defiso) is locally generated or not."
-           booleanp)
-   (oldp "Recognizer of the old representation." pseudo-termfnp)
-   (newp "Recognizer of the new representation." pseudo-termfnp)
-   (forth "Conversion from old to new representation." pseudo-termfnp)
-   (back "Conversion from new to old representation." pseudo-termfnp)
-   (forth-image "Name of the @(':alpha-image') theorem of the @(tsee defiso)."
-                symbolp)
-   (back-image "Name of the @(':beta-image') theorem of the @(tsee defiso)."
-               symbolp)
-   (back-of-forth "Name of the @(':beta-of-alpha') theorem
-                   of the @(tsee defiso)."
-                  symbolp)
-   (forth-of-back "Name of the @(':alpha-of-beta') theorem
-                   of the @(tsee defiso)."
-                  symbolp)
-   (forth-injective "Name of the @(':alpha-injective') theorem
-                     of the @(tsee defiso)."
-                    symbolp)
-   (back-injective "Name of the @(':beta-injective') theorem
-                    of the @(tsee defiso)."
-                   symbolp)
-   (oldp-guard "Name of the @(':doma-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (newp-guard "Name of the @(':domb-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (forth-guard "Name of the @(':alpha-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-                symbolp)
-   (back-guard "Name of the @(':beta-guard') theorem
-                of the @(tsee defiso), if present (otherwise @('nil'))."
-               symbolp)
-   (hints "Optional hints for the @(tsee defiso),
-           if locally generated (otherwise @('nil'))."
-          keyword-value-listp))
+  ((isoname symbolp "Name of the @(tsee defiso).")
+   (localp booleanp "Flag saying whether the @(tsee defiso)
+                     is locally generated or not.")
+   (oldp pseudo-termfnp "Recognizer of the old representation.")
+   (newp pseudo-termfnp "Recognizer of the new representation.")
+   (forth pseudo-termfnp "Conversion from old to new representation.")
+   (back pseudo-termfnp "Conversion from new to old representation.")
+   (stobjp booleanp "Whether @('oldp') or @('newp') has
+                     input or output stobjs.")
+   (forth-image symbolp "Name of the @(':alpha-image') theorem
+                         of the @(tsee defiso).")
+   (back-image symbolp "Name of the @(':beta-image') theorem
+                        of the @(tsee defiso).")
+   (back-of-forth symbolp "Name of the @(':beta-of-alpha') theorem
+                           of the @(tsee defiso).")
+   (forth-of-back symbolp "Name of the @(':alpha-of-beta') theorem
+                           of the @(tsee defiso).")
+   (forth-injective symbolp "Name of the @(':alpha-injective') theorem
+                             of the @(tsee defiso).")
+   (back-injective symbolp "Name of the @(':beta-injective') theorem
+                            of the @(tsee defiso).")
+   (oldp-guard symbolp "Name of the @(':doma-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (newp-guard symbolp "Name of the @(':domb-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (forth-guard symbolp "Name of the @(':alpha-guard') theorem
+                         of the @(tsee defiso),
+                         if present (otherwise @('nil')).")
+   (back-guard symbolp "Name of the @(':beta-guard') theorem
+                        of the @(tsee defiso),
+                        if present (otherwise @('nil')).")
+   (hints keyword-value-listp "Optional hints for the @(tsee defiso),
+                               if locally generated (otherwise @('nil'))."))
   :pred isodata-isomapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,6 +267,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-symbol-isomap-alist-stobjp
+  ((alist isodata-symbol-isomap-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if at least one conversion in one isomorphic mapping
+          in the alist from symbols to isomorphic mappings
+          has input or output stobjs."
+  (and (mbt (isodata-symbol-isomap-alistp alist))
+       (not (endp alist))
+       (or (isodata-isomap->stobjp (cdar alist))
+           (isodata-symbol-isomap-alist-stobjp (cdr alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-pos-isomap-alist-stobjp
+  ((alist isodata-pos-isomap-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if at least one conversion in one isomorphic mapping
+          in the alist from positive integers to isomorphic mappings
+          has input or output stobjs."
+  (and (mbt (isodata-pos-isomap-alistp alist))
+       (not (endp alist))
+       (or (isodata-isomap->stobjp (cdar alist))
+           (isodata-pos-isomap-alist-stobjp (cdr alist)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-process-old (old predicate verify-guards ctx state)
   :returns (mv erp
                (old$ "A @(tsee symbolp) that is
@@ -270,13 +302,23 @@
                state)
   :mode :program
   :short "Process the @('old') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We explicitly exclude the functions in @('acl2::*stobjs-out-invalid*'),
+     because otherwise calling @(tsee stobjs-out) would throw an error."))
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
        ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
        ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-has-args$ old$ description t nil))
-       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
+       ((er &) (if (member-eq old acl2::*stobjs-out-invalid*)
+                   (er-soft+ ctx t nil
+                             "The first input cannot be one of ~v0, ~
+                              for which output stobjs cannot be calculated."
+                             acl2::*stobjs-out-invalid*)
+                 (value nil)))
        ((er &) (if (eq predicate t)
                    (ensure-function-number-of-results$ old$ 1
                                                        description t nil)
@@ -305,8 +347,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-res (res (m posp) (err-msg-preamble msgp) ctx state)
-  :returns (mv erp (j posp) state)
+(define isodata-process-res (res
+                             (m posp)
+                             (err-msg-preamble msgp)
+                             (old$ symbolp)
+                             ctx
+                             state)
+  :guard (not (member-eq old$ acl2::*stobjs-out-invalid*))
+  :returns (mv erp
+               (result posp)
+               state)
   :short "Process a result specification in the @('isomap') input."
   :long
   (xdoc::topstring
@@ -319,16 +369,24 @@
    (xdoc::p
     "If @('m') is 1, we also accept the keyword @(':result'),
      treating it the same as @(':result1')."))
-  (b* ((err-msg (msg "~@0 But ~x1 is none of those." err-msg-preamble res))
-       ((unless (keywordp res)) (er-soft+ ctx t 1 "~@0" err-msg))
-       ((when (and (= m 1) (eq res :result))) (value 1))
+  (b* ((irr-result 1) ; irrelevant result, returned with soft error
+       (err-msg (msg "~@0 But ~x1 is none of those." err-msg-preamble res))
+       (stobjs-out (acl2::stobjs-out+ old$ (w state)))
+       ((unless (= (len stobjs-out) m))
+        (raise "Internal error: m is ~x0 but output stobjs are ~x1."
+               m stobjs-out)
+        (value irr-result))
+       ((unless (keywordp res)) (er-soft+ ctx t irr-result "~@0" err-msg))
+       ((when (and (= m 1) (eq res :result)))
+        (value 1))
        (name (symbol-name res))
        ((unless (and (> (length name) 6)
                      (equal (subseq name 0 6) "RESULT")))
-        (er-soft+ ctx t 1 "~@0" err-msg))
+        (er-soft+ ctx t irr-result "~@0" err-msg))
        (j (str::strval (subseq name 6 (length name))))
-       ((unless j) (er-soft+ ctx t 1 "~@0" err-msg))
-       ((unless (and (<= 1 j) (<= j m))) (er-soft+ ctx t 1 "~@0" err-msg)))
+       ((unless j) (er-soft+ ctx t irr-result "~@0" err-msg))
+       ((unless (and (<= 1 j) (<= j m)))
+        (er-soft+ ctx t irr-result "~@0" err-msg)))
     (value j)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,7 +399,9 @@
    state)
   :returns (mv erp
                (result "A tuple @('(args ress)') satisfying
-                        @('(typed-tuplep symbol-listp pos-listp result)').")
+                        @('(typed-tuplep symbol-listp
+                                         pos-listp
+                                         result)').")
                state)
   :verify-guards nil
   :short "Process an @('arg/res-list') component of the @('isomaps') input."
@@ -355,7 +415,8 @@
      the list of 1-based indices of results of @('old') in @('arg/res-list')."))
   (b* ((wrld (w state))
        (x1...xn (formals old$ wrld))
-       (m (number-of-results old$ wrld))
+       (stobjs-out (acl2::stobjs-out+ old$ wrld))
+       (m (len stobjs-out))
        (err-msg-part (if (= m 1)
                          (msg "must be either a formal argument of ~x0, ~
                                or the keyword :RESULT, ~
@@ -374,8 +435,13 @@
                                        of the second input ~
                                        is a non-NIL atom, it ~@1"
                                       (list k) err-msg-part))
-               ((er j) (isodata-process-res arg/res-list m
-                                            err-msg-preamble ctx state)))
+               ((er j)
+                (isodata-process-res arg/res-list
+                                     m
+                                     err-msg-preamble
+                                     old$
+                                     ctx
+                                     state)))
             (value (list nil (list j)))))
       (b* (((er &) (ensure-value-is-symbol-list$
                     arg/res-list
@@ -395,29 +461,36 @@
                                    ~@1"
                                   (list k) err-msg-part)))
         (isodata-process-arg/res-list-aux arg/res-list x1...xn m
-                                          err-msg-preamble ctx state))))
+                                          err-msg-preamble old$ ctx state))))
 
   :prepwork
   ((define isodata-process-arg/res-list-aux ((arg/res-list symbol-listp)
                                              (x1...xn symbol-listp)
                                              (m posp)
                                              (err-msg-preamble msgp)
+                                             (old$ symbolp)
                                              ctx
                                              state)
+     :guard (not (member-eq old$ acl2::*stobjs-out-invalid*))
      :returns (mv erp
                   result ; tuple (SYMBOL-LISTP POS-LISTP)
                   state)
+     :parents nil
+     :verify-guards nil
      (b* (((when (endp arg/res-list)) (value (list nil nil)))
           (arg/res (car arg/res-list))
           ((when (member-eq arg/res x1...xn))
-           (b* (((er (list args ress)) (isodata-process-arg/res-list-aux
-                                        (cdr arg/res-list) x1...xn m
-                                        err-msg-preamble ctx state)))
+           (b* (((er (list args ress))
+                 (isodata-process-arg/res-list-aux
+                  (cdr arg/res-list) x1...xn m
+                  err-msg-preamble old$ ctx state)))
              (value (list (cons arg/res args) ress))))
-          ((er j) (isodata-process-res arg/res m err-msg-preamble ctx state))
-          ((er (list args ress)) (isodata-process-arg/res-list-aux
-                                  (cdr arg/res-list) x1...xn m
-                                  err-msg-preamble ctx state)))
+          ((er j)
+           (isodata-process-res arg/res m err-msg-preamble old$ ctx state))
+          ((er (list args ress))
+           (isodata-process-arg/res-list-aux
+            (cdr arg/res-list) x1...xn m
+            err-msg-preamble old$ ctx state)))
        (value (list args (cons j ress)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -444,6 +517,7 @@
   ((define isodata-fresh-defiso-name-with-*s-suffix-aux ((name symbolp)
                                                          (table alistp))
      :returns fresh-name ; SYMBOLP
+     :parents nil
      :mode :program
      (if (consp (assoc-eq name table))
          (isodata-fresh-defiso-name-with-*s-suffix-aux (packn-pos (list name '*)
@@ -671,6 +745,7 @@
                     :newp info.domb
                     :forth info.alpha
                     :back info.beta
+                    :stobjp info.stobjp
                     :forth-image info.alpha-image
                     :back-image info.beta-image
                     :back-of-forth info.beta-of-alpha
@@ -727,7 +802,7 @@
                     (fifth iso) (list k) iso))
          (hints (and (= (len iso) 6) (sixth iso)))
          (ctx-defiso (cons 'defiso isoname))
-         ((er (list oldp$ newp$ forth$ back$))
+         ((er (list oldp$ newp$ forth$ back$ stobjp))
           (acl2::defmapping-process-functions
            oldp newp forth back verify-guards$ ctx-defiso state))
          (oldp-arity (arity oldp$ wrld))
@@ -753,6 +828,7 @@
                   :newp newp$
                   :forth forth$
                   :back back$
+                  :stobjp stobjp
                   :forth-image forth-image
                   :back-image back-image
                   :back-of-forth back-of-forth
@@ -780,7 +856,9 @@
    state)
   :returns (mv erp
                (result "A tuple
-                        @('(arg-isomaps res-isomaps updated-names-to-avoid)')
+                        @('(arg-isomaps
+                            res-isomaps
+                            updated-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -859,6 +937,7 @@
       (isomap isodata-isomapp)
       (arg-isomaps isodata-symbol-isomap-alistp))
      :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
+     :parents nil
      (cond ((endp args) arg-isomaps)
            (t (isodata-process-arg/res-list-iso-add-args
                (cdr args)
@@ -870,6 +949,7 @@
       (isomap isodata-isomapp)
       (res-isomaps isodata-pos-isomap-alistp))
      :returns (new-res-isomaps isodata-pos-isomap-alistp :hyp :guard)
+     :parents nil
      (cond ((endp ress) res-isomaps)
            (t (isodata-process-arg/res-list-iso-add-ress
                (cdr ress) isomap (acons (car ress) isomap res-isomaps)))))))
@@ -888,7 +968,9 @@
    state)
   :returns (mv erp
                (result "A tuple
-                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
+                        @('(arg-isomaps
+                            res-isomaps
+                            update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -928,7 +1010,9 @@
                                  state)
   :returns (mv erp
                (result "A tuple
-                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
+                        @('(arg-isomaps
+                            res-isomaps
+                            update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -1020,6 +1104,7 @@
       (arg-isomaps isodata-symbol-isomap-alistp)
       (isomap-id isodata-isomapp))
      :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
+     :parents nil
      (b* (((when (endp formals)) nil)
           (pair (assoc-eq (car formals) arg-isomaps)))
        (if (consp pair)
@@ -1043,6 +1128,7 @@
                                          (res-isomaps isodata-pos-isomap-alistp)
                                          (isomap-id isodata-isomapp))
      :returns (new-res-isomaps isodata-pos-isomap-alistp :hyp :guard)
+     :parents nil
      (b* (((unless (mbt (and (posp j) (posp m)))) nil)
           ((when (> j m)) nil)
           (pair (assoc j res-isomaps)))
@@ -1119,17 +1205,19 @@
                                    ctx
                                    state)
   :returns (mv erp
-               (undefined$ "Either @(':base-case-then'), @(':base-case-else'), or
-                            a @(tsee pseudo-termp).")
+               (undefined$ "Either @(':base-case-then'),
+                            or @(':base-case-else'),
+                            or a @(tsee pseudo-termp).")
                state)
   :mode :program
   :short "Process the @(':undefined') input."
   (b* ((wrld (w state))
-       (m (number-of-results old$ wrld))
+       (stobjs-out (acl2::stobjs-out+ old$ (w state)))
+       (m (len stobjs-out))
        ((when (eq :auto undefined))
         (value (if (< 1 m)
-                   (fcons-term 'mv (repeat m nil))
-                 nil)))
+                   `(mv ,@stobjs-out)
+                 (car stobjs-out))))
        ((when (member-eq undefined '(:base-case-then :base-case-else)))
         (value undefined))
        ((er (list term stobjs-out))
@@ -1180,6 +1268,7 @@
                (result "A tuple @('(old$
                                     arg-isomaps
                                     res-isomaps
+                                    dom-stobjs-p
                                     undefined$
                                     new$
                                     new-enable$
@@ -1196,6 +1285,7 @@
                         @('(typed-tuplep symbolp
                                          isodata-symbol-isomap-alistp
                                          isodata-pos-isomap-alistp
+                                         booleanp
                                          pseudo-termp
                                          symbolp
                                          booleanp
@@ -1249,6 +1339,8 @@
                                  names-to-avoid
                                  ctx
                                  state))
+       (dom-stobjs-p (or (isodata-symbol-isomap-alist-stobjp arg-isomaps)
+                         (isodata-pos-isomap-alist-stobjp res-isomaps)))
        ((er &) (ensure-value-is-boolean$ predicate
                                          "The :PREDICATE input" t nil))
        ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
@@ -1300,6 +1392,7 @@
     (value (list old$
                  arg-isomaps
                  res-isomaps
+                 dom-stobjs-p
                  undefined$
                  new$
                  new-enable$
@@ -1514,6 +1607,7 @@
   :prepwork
   ((define isodata-gen-result-vars-aux ((old$ symbolp) (j posp) (m posp))
      :returns (vars symbol-listp)
+     :parents nil
      (b* (((unless (mbt (posp j))) nil)
           ((unless (mbt (posp m))) nil)
           ((when (> j m)) nil)
@@ -1612,6 +1706,7 @@
                                    (res-isomaps isodata-pos-isomap-alistp)
                                    (new$ symbolp))
     :returns new-term ; PSEUDO-TERMP
+    :parents nil
     (b* (((when (or (variablep term) (fquotep term))) term)
          (fn (ffn-symb term))
          ((when (eq fn old$))
@@ -1655,6 +1750,7 @@
      (res-isomaps isodata-pos-isomap-alistp)
      (new$ symbolp))
     :returns new-terms ; PSEUDO-TERM-LISTP
+    :parents nil
     (cond ((endp terms) nil)
           (t (cons (isodata-xform-rec-calls (car terms)
                                             old$
@@ -1912,7 +2008,8 @@
                        (back-of-forth "backi-of-forthi")
                        (forth-guard "forthi-guard")
                        (t (impossible)))))
-      `(progn
+      `(encapsulate
+         ()
          (define ,name1 ((terms pseudo-term-listp)
                          (old$ symbolp)
                          (arg-isomaps isodata-symbol-isomap-alistp)
@@ -1940,6 +2037,7 @@
                                 (wrld plist-worldp))
               :guard (= (len terms) (len arg-isomaps))
               :returns (lemma-instances true-list-listp)
+              :parents nil
               :verify-guards nil
               (b* (((when (endp terms)) nil)
                    (term (car terms))
@@ -2300,23 +2398,28 @@
 
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (arg-isomaps isodata-symbol-isomap-alistp)
+                                  (dom-stobjs-p booleanp)
                                   (predicate$ booleanp)
                                   (wrld plist-worldp))
   :returns (new-guard "A @(tsee pseudo-termp).")
   :mode :program
   :short "Generate the guard of the new function."
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
-    (if predicate$
-        (conjoin newp-of-x1...xn)
-      (b* ((old-guard (uguard old$ wrld))
-           (old-guard-with-back-of-x1...xn
-            (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-guard
-                                                            old$
-                                                            arg-isomaps
-                                                            wrld)))
-        (conjoin (append newp-of-x1...xn
-                         (list old-guard-with-back-of-x1...xn)))))))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (guard
+        (if predicate$
+            (conjoin newp-of-x1...xn)
+          (b* ((old-guard (uguard old$ wrld))
+               (old-guard-with-back-of-x1...xn
+                (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-guard
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld)))
+            (conjoin (append newp-of-x1...xn
+                             (list old-guard-with-back-of-x1...xn)))))))
+    (if dom-stobjs-p
+        `(non-exec ,guard)
+      guard)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2476,7 +2579,7 @@
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the measure of the function, if recursive."
-  (b* ((old-measure (measure old$ wrld)))
+  (b* ((old-measure (get-measure old$ wrld)))
     (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-measure
                                                     old$
                                                     arg-isomaps
@@ -2521,6 +2624,7 @@
 (define isodata-gen-new-fn ((old$ symbolp)
                             (arg-isomaps isodata-symbol-isomap-alistp)
                             (res-isomaps isodata-pos-isomap-alistp)
+                            (dom-stobjs-p booleanp)
                             (predicate$ booleanp)
                             (undefined$ "Either @(':base-case-then'),
                                               @(':base-case-else'), or a
@@ -2542,7 +2646,8 @@
     "The macro used to introduce the new function is determined by
      whether the new function must be
      enabled or not, and non-executable or not.
-     We make it non-executable if and only if @('old') is non-executable.")
+     We make it non-executable if and only if
+     @('old') is non-executable or some stobjs are transformed.")
    (xdoc::p
     "The new function has the same formal arguments as the old function.")
    (xdoc::p
@@ -2556,7 +2661,8 @@
    (xdoc::p
     "If the old function returns a multi-value result,
      we adjust the body of the new function to do the same."))
-  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
+  (b* ((non-executablep (or (non-executablep old$ wrld) dom-stobjs-p))
+       (macro (function-intro-macro new-enable$ non-executablep))
        (formals (formals old$ wrld))
        (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps
                                       predicate$ undefined$ new$ compatibility wrld))
@@ -2572,12 +2678,13 @@
                  (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
                ((nil) body)
                (t (untranslate body nil wrld))))
-       (guard (isodata-gen-new-fn-guard old$ arg-isomaps predicate$ wrld))
+       (guard (isodata-gen-new-fn-guard
+               old$ arg-isomaps dom-stobjs-p predicate$ wrld))
        (guard (conjoin (flatten-ands-in-lit guard)))
        (guard (untranslate guard nil wrld))
        (recursive (recursivep old$ nil wrld))
        (wfrel? (if recursive
-                   (well-founded-relation old$ wrld)
+                   (get-well-founded-relation old$ wrld)
                  nil))
        (measure? (if recursive
                      (isodata-gen-new-fn-measure old$ arg-isomaps wrld)
@@ -4080,6 +4187,7 @@
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
+   (dom-stobjs-p booleanp)
    (predicate$ booleanp)
    (undefined$ "Either @(':base-case-then'), @(':base-case-else'), or a
                 @(tsee pseudo-termp).")
@@ -4183,6 +4291,7 @@
         (isodata-gen-new-fn old$
                             arg-isomaps
                             res-isomaps
+                            dom-stobjs-p
                             predicate$
                             undefined$
                             new$
@@ -4413,6 +4522,7 @@
        ((er (list old$
                   arg-isomaps
                   res-isomaps
+                  dom-stobjs-p
                   undefined$
                   new$
                   new-enable$
@@ -4453,6 +4563,7 @@
        ((er event) (isodata-gen-everything old$
                                            arg-isomaps
                                            res-isomaps
+                                           dom-stobjs-p
                                            predicate
                                            undefined$
                                            new$

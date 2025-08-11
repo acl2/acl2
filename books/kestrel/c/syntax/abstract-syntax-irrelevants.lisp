@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "std/util/defirrelevant" :dir :system)
 
@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-irrelevants
-  :parents (abstract-syntax-operations)
+  :parents (abstract-syntax)
   :short "Irrelevant values of the abstract syntax fixtypes."
   :long
   (xdoc::topstring
@@ -322,10 +322,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-strunispec
+(defirrelevant irr-struni-spec
   :short "An irrelevant structure or union specifier."
-  :type strunispecp
-  :body (make-strunispec :name nil :members nil))
+  :type struni-specp
+  :body (make-struni-spec :name? nil :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

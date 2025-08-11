@@ -1096,10 +1096,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-stringlit
+; lex-string-literal
 
 (test-lex
- lex-stringlit
+ lex-string-literal
  "\""
  :pos (position 1 1)
  :more-inputs (nil (position 1 0))
@@ -1109,7 +1109,7 @@
                 (stringlit nil nil)))))
 
 (test-lex
- lex-stringlit
+ lex-string-literal
  "helo\""
  :pos (position 10 10)
  :more-inputs ((eprefix-upcase-l) (position 10 9))
@@ -1123,14 +1123,246 @@
                                  (s-char-char (char-code #\o))))))))
 
 (test-lex-fail
- lex-stringlit
+ lex-string-literal
  "wrong'"
  :more-inputs (nil (position 1 0)))
 
 (test-lex-fail
- lex-stringlit
+ lex-string-literal
  (list 10 (char-code #\"))
  :more-inputs (nil (position 1 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-h-char
+
+(test-lex
+ lex-*-h-char
+ "abc>"
+ :cond (equal ast (list (h-char (char-code #\a))
+                        (h-char (char-code #\b))
+                        (h-char (char-code #\c)))))
+
+(test-lex
+ lex-*-h-char
+ "\">"
+ :cond (equal ast (list (h-char (char-code #\")))))
+
+(test-lex
+ lex-*-h-char
+ "'>"
+ :cond (equal ast (list (h-char (char-code #\')))))
+
+(test-lex
+ lex-*-h-char
+ "<>"
+ :cond (equal ast (list (h-char (char-code #\<)))))
+
+(test-lex-fail
+ lex-*-h-char
+ "")
+
+(test-lex-fail
+ lex-*-h-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-h-char
+ (list (char-code #\U) 10 (char-code #\>)))
+
+(test-lex-fail
+ lex-*-h-char
+ (list (char-code #\U) 13 (char-code #\>)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-*-q-char
+
+(test-lex
+ lex-*-q-char
+ "abc\""
+ :cond (equal ast (list (q-char (char-code #\a))
+                        (q-char (char-code #\b))
+                        (q-char (char-code #\c)))))
+
+(test-lex
+ lex-*-q-char
+ ">\""
+ :cond (equal ast (list (q-char (char-code #\>)))))
+
+(test-lex
+ lex-*-q-char
+ "'\""
+ :cond (equal ast (list (q-char (char-code #\')))))
+
+(test-lex-fail
+ lex-*-q-char
+ "")
+
+(test-lex-fail
+ lex-*-q-char
+ "noclose")
+
+(test-lex-fail
+ lex-*-q-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ lex-*-q-char
+ (list (char-code #\U) 13 (char-code #\")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-integer-suffix
+
+(test-lex
+ lex-?-integer-suffix
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-integer-suffix
+ "u"
+ :cond (equal ast (isuffix-u (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ul"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ull"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "uL"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "uLL"
+ :cond (equal ast (isuffix-ul (usuffix-locase-u) (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "U"
+ :cond (equal ast (isuffix-u (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Ul"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Ull"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "UL"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ULL"
+ :cond (equal ast (isuffix-ul (usuffix-upcase-u) (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "l"
+ :cond (equal ast (isuffix-l (lsuffix-locase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "ll"
+ :cond (equal ast (isuffix-l (lsuffix-locase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "L"
+ :cond (equal ast (isuffix-l (lsuffix-upcase-l))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LL"
+ :cond (equal ast (isuffix-l (lsuffix-upcase-ll))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lu"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-l) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "llu"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-ll) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "Lu"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-l) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LLu"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-ll) (usuffix-locase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lU"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-l) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "llU"
+ :cond (equal ast (isuffix-lu (lsuffix-locase-ll) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LU"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-l) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "LLU"
+ :cond (equal ast (isuffix-lu (lsuffix-upcase-ll) (usuffix-upcase-u))))
+
+(test-lex
+ lex-?-integer-suffix
+ "lLu" ; only l is lexed
+ :cond (equal ast (isuffix-l (lsuffix-locase-l))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-floating-suffix
+
+(test-lex
+ lex-?-floating-suffix
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-floating-suffix
+ "f"
+ :cond (equal ast (fsuffix-locase-f)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F"
+ :cond (equal ast (fsuffix-upcase-f)))
+
+(test-lex
+ lex-?-floating-suffix
+ "l"
+ :cond (equal ast (fsuffix-locase-l)))
+
+(test-lex
+ lex-?-floating-suffix
+ "L"
+ :cond (equal ast (fsuffix-upcase-l)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

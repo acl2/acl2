@@ -43,7 +43,6 @@ hons.lisp
 hons-raw.lisp
 induct.lisp
 init.lisp
-installation
 interface-raw.lisp
 ld.lisp
 LICENSE
@@ -59,7 +58,6 @@ non-linear.lisp
 openmcl-acl2-trace.lisp
 other-events.lisp
 other-processes.lisp
-other-releases.html
 parallel.lisp
 parallel-raw.lisp
 proof-builder-a.lisp
@@ -120,21 +118,8 @@ write-acl2-code-size.lisp
 # The following is distributed but is not under source control
 doc/HTML:
 LICENSE
-installation
 *.html
 *.gif
-
-# The following is distributed but is not under source control
-doc/HTML/installation:
-ccl.html
-installation.html
-installing-make.html
-misc.html
-obtaining-and-installing.html
-requirements.html
-using.html
-windows7.html
-windows-gcl-jared.html
 
 emacs:
 acl2-doc.el
@@ -146,17 +131,6 @@ README
 
 graphics:
 *.gif
-
-installation:
-ccl.html
-installation.html
-installing-make.html
-misc.html
-obtaining-and-installing.html
-requirements.html
-using.html
-windows7.html
-windows-gcl-jared.html
 
 # The following is distributed but is not under source control
 saved:

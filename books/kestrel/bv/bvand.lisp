@@ -24,6 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logand-b"))
+(local (include-book "slice"))
 
 (defund bvand (size x y)
   (declare (type integer x y)
@@ -191,12 +192,6 @@
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthmd getbit-of-logand-becomes-bvand-of-getbit-and-getbit
-  (equal (getbit n (logand a b))
-         (bvand 1 (getbit n a)
-                (getbit n b)))
-  :hints (("Goal" :in-theory (enable bvand getbit-of-logand))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvand-with-mask-basic-arg2
@@ -335,6 +330,17 @@
   ;;                              unsigned-byte-p-of-bvand-simple)))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Introduces BVAND
+(defthmd getbit-of-logand-becomes-bvand-of-getbit-and-getbit
+  (equal (getbit n (logand a b))
+         (bvand 1 (getbit n a)
+                (getbit n b)))
+  :hints (("Goal" :in-theory (enable bvand getbit-of-logand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm getbit-of-bvand
   (implies (and (< n size)
                 (natp n)
@@ -345,6 +351,24 @@
   :hints (("Goal" :in-theory (enable bvand
                                      getbit-of-logand-becomes-bvand-of-getbit-and-getbit))))
 
+;drop?
+(defthmd getbit-of-bvand-core
+  (implies (and (< n size) (posp size))
+           (equal (getbit n (bvand size x y))
+                  (bvand 1 (getbit n x) (getbit n y))))
+  :hints (("Goal" :cases ((natp n))
+           :in-theory (enable bvand
+                              getbit-of-logand-becomes-bvand-of-getbit-and-getbit))))
+
+;bozo more like this, or a general rule with a syntaxp hyp?
+(defthm getbit-of-bvand-too-high
+  (implies (and (<= size n)
+                (natp n)
+                (natp size))
+           (equal (getbit n (bvand size x y))
+                  0))
+  :hints (("Goal" :in-theory (enable getbit-too-high))))
+
 (defthm getbit-of-bvand-eric
   (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?
                 (< n size) ;other case?
@@ -352,6 +376,67 @@
                 (integerp size))
            (equal (getbit n (bvand size x y))
                   (bvand 1 (getbit n x) (getbit n y)))))
+
+;BBOZO think more about this in the size > 1 case - do we want to push the getbit through?
+;in the size=1 case (common when bit blasting) we do NOT want to push the GETBIT through - can be expensive!
+(defthm getbit-of-bvand-eric-2
+  (implies (and (< 0 size)
+                (integerp size) ;drop?
+                )
+           (equal (getbit 0 (bvand size x y))
+                  (bvand 1 x y)))
+  :hints (("Goal" :in-theory (enable getbit slice logtail) :cases ((integerp size)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen the bvand to any op?
+(defthm slice-of-bvand-tighten-high-index
+  (implies (and (<= size high)
+                (<= low size) ;bozo
+                (< 0 size)
+                (natp high)
+                (natp size)
+                (natp low))
+           (equal (slice high low (bvand size x y))
+                  (slice (+ -1 size) low (bvand size x y))))
+  :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm slice-of-bvand
+  (implies (and (< high size)
+                (natp size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvand size x y))
+                  (bvand (+ 1 high (- low))
+                         (slice high low x)
+                         (slice high low y))))
+  :hints (("Goal" :cases ((natp (+ 1 high (- low))))
+           :in-theory (enable slice bvand logtail-of-bvchop))))
+
+;drop in favor of trim rules?
+(defthm slice-of-bvand-tighten
+  (implies (and (< (+ 1 high) size)
+;                (<= low high)
+                (integerp size)
+                (< 0 size)
+                (natp low)
+                (natp high)
+                (integerp x)
+                (integerp y))
+           (equal (slice high low (bvand size x y))
+                  (slice high low (bvand (+ 1 high) x y))))
+  :hints (("Goal" :cases ((<= low high))
+          :in-theory (enable slice bvand bvchop-of-logtail))))
+
+(defthm slice-of-bvand-too-high
+  (implies (and (<= n low)
+                (integerp low)
+                (natp n))
+           (equal (slice high low (bvand n x y))
+                  0))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
  (defun induct-floor-by-2-floor-by-2-sub-1 (x y n)

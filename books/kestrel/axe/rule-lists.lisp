@@ -190,6 +190,7 @@
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
+            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -483,17 +484,40 @@
     bvplus-convert-arg3-to-bv-axe-restricted
     bvmult-convert-arg2-to-bv-axe
     bvmult-convert-arg3-to-bv-axe
-    ;; logext-convert-arg2-to-bv-axe ; todo: try
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
+    bvnot-convert-arg2-to-bv-axe
+    bitnot-convert-arg1-to-bv-axe
     bvand-convert-arg2-to-bv-axe
     bvand-convert-arg3-to-bv-axe
     bvor-convert-arg2-to-bv-axe
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
-    getbit-convert-arg2-to-bv-axe ; todo: more!
+    bitand-convert-arg1-to-bv-axe
+    bitand-convert-arg2-to-bv-axe
+    bitor-convert-arg1-to-bv-axe
+    bitor-convert-arg2-to-bv-axe
+    bitxor-convert-arg1-to-bv-axe
+    bitxor-convert-arg2-to-bv-axe
+    getbit-convert-arg2-to-bv-axe
+    bvif-convert-arg3-to-bv-axe
+    bvif-convert-arg4-to-bv-axe
+    bvshl-convert-arg2-to-bv-axe
+    bvshr-convert-arg2-to-bv-axe
+    bvashr-convert-arg2-to-bv-axe
+    bvlt-convert-arg2-to-bv-axe
+    bvlt-convert-arg3-to-bv-axe
+    sbvlt-convert-arg2-to-bv-axe
+    sbvlt-convert-arg3-to-bv-axe
+    bvdiv-convert-arg2-to-bv-axe
+    bvdiv-convert-arg3-to-bv-axe
+    bvmod-convert-arg2-to-bv-axe
+    bvmod-convert-arg3-to-bv-axe
+    ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
+    ;bvcat-convert-arg4-to-bv-axe ; todo: more!
+    ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
@@ -501,7 +525,16 @@
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    ;; todo: replace these with a more general scheme:
+    bvplus-of-logext-arg2-convert-to-bv
+    bvplus-of-logext-arg3-convert-to-bv
+    bvminus-of-logext-arg2-convert-to-bv
+    bvminus-of-logext-arg3-convert-to-bv
+    bool->bit-becomes-bool-to-bit
+    bit->bool-becomes-bit-to-bool
+    acl2::logbitp-to-getbit-equal-1 ;rename
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -573,8 +606,7 @@
     bvchop-of-bvchop
     bvchop-of-bvcat-cases))
 
-
-;fixme a few of these are -all rules...
+;fixme a few of these are not -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
 ;; add bvlt-trim rules?
 (defun trim-rules ()
@@ -615,12 +647,13 @@
     bvcat-trim-arg2-axe-all
     ;; bvcat-trim-arg2-axe
     ;; bvcat-trim-arg4-axe
-    bvif-trim-arg1-axe
-    bvif-trim-arg2-axe
-    ;; bvif-trim-arg1-axe-all ; use instead?
-    ;; bvif-trim-arg2-axe-all ; use instead?
+    bvif-trim-arg3-axe
+    bvif-trim-arg4-axe
+    ;; bvif-trim-arg3-axe-all ; use instead?
+    ;; bvif-trim-arg4-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all))
 
+;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
   (append ;(bvchop-of-bv-rules) ; why?
@@ -635,7 +668,7 @@
     trim-of-bvand
     trim-of-bvor
     trim-of-bvxor
-    trim-of-bv-array-read
+    trim-of-bv-array-read ; may not be needed
     trim-of-bvsx
     trim-of-slice
     trim-of-bvchop
@@ -644,12 +677,10 @@
     ;; trim-does-nothing-axe ; should not be needed?
     )))
 
+;; todo: deprecate (just use trim-rules)?
 (defun all-trim-rules ()
   (declare (xargs :guard t))
-  (append '(;;bvcat-trim-arg2-axe-all
-            ;;bvcat-trim-arg4-axe-all
-            )
-          (trim-rules)))
+  (trim-rules))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
@@ -734,8 +765,11 @@
      bvminus-of-constant-and-bvplus-of-constant
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
+     bvminus-of-bvplus-and-bvplus-same-2-2
 
      bvplus-of-0-arg2
+     bvplus-of-ifix-arg2
+     bvplus-of-ifix-arg3
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -830,6 +864,7 @@
      equal-of-0-and-bvxor
      ;; equal-of-0-and-bitxor
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
+     getbit-of-bvxor-when-quotep
 
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
      bitxor-of-unary-minus-arg2
@@ -883,6 +918,7 @@
      equal-of-slice-and-slice-same-low
 
      getbit-of-bvcat-all ;newly moved here
+     getbit-of-bvmult-of-expt-constant-version
 
 ;slice-of-bvplus-cases-no-split-case-no-carry-constant-version ;new
      bitxor-of-ifix-arg1
@@ -957,6 +993,9 @@
 
      bvmult-of-0-arg2
      bvmult-of-1-arg2
+     bvmult-of-ifix-arg2
+     bvmult-of-ifix-arg3
+
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -1096,6 +1135,10 @@
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
      ;; getbit-of-bvor-eric-2
+     getbit-of-bvor-when-narrow-arg2-axe  ; todo: make versions for AND and XOR
+     getbit-of-bvor-when-narrow-arg3-axe
+     slice-of-bvor-when-narrow-arg2-axe
+     slice-of-bvor-when-narrow-arg3-axe
      ;; getbit-of-bvand-eric
      ;; getbit-of-bvand-eric-2
      ;; getbit-0-of-bvxor-eric
@@ -1180,6 +1223,7 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
+     putbit
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
@@ -1199,6 +1243,12 @@
 
      ;; this made one of the mavlink dags much longer (too big) but the culprit was the subsequent xor normalization:
      getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
+
+     unsigned-byte-p-of-+-with-carry
+     slice-of-bvmult-of-expt-gen-constant-version
+
+     bvcat-equal-rewrite-constant ; previously caused problems for aes?
+     bvcat-equal-rewrite-constant-alt
      )))
 
 ;todo combine this with core-rules-bv
@@ -2294,7 +2344,7 @@
 
 ;equal-of-myif-arg2 ;trying without this..
      plus-of-bvplus-of-minus1
-     boolif-of-myif-arg2
+     boolif-of-myif-arg2 ; also make one for arg1?
      boolif-of-myif-arg3
 
      ;;           not-of-booland ;trying without this? new4
@@ -2540,7 +2590,7 @@
      cdr-of-nthcdr-of-bvplus
 ;bv-array-write-equal-rewrite ;introduces bv-array-clear
 
-     integerp-implies-acl2-numberp
+     acl2-numberp-when-integerp
      bvlt-of-bvmod-hack
      bvplus-of-1-33-32
      unsigned-byte-p-of-bvmod-hack
@@ -2554,8 +2604,8 @@
      bvlt-of-mod-hack
      equal-of-bvplus-and-bvplus-diff-sizes
      equal-of-bvplus-and-bvplus-diff-sizes-alt
-     bvif-trim-arg1-axe-all
-     bvif-trim-arg2-axe-all
+     bvif-trim-arg3-axe-all
+     bvif-trim-arg4-axe-all
      bvlt-of-bvplus-constants2
      equal-of-bvplus-and-bvplus-reduce-constants
 

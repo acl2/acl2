@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2020-2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020-2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -55,11 +55,13 @@
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
+(include-book "ordinals")
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
 (include-book "print-levels")
 (include-book "proof-builder-macros")
+(include-book "run-json-command")
 (include-book "show-books")
 (include-book "signed-byte-fixing")
 (include-book "signed-byte-list-fixing")

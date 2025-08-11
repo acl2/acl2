@@ -3407,6 +3407,69 @@
 
 (defvar *inside-do$* nil)
 
+#+ccl
+(defvar *suppress-while-executing-msg* nil)
+
+(declaim (inline chk-for-live-stobj))
+(defun chk-for-live-stobj (fn val stobjs-out latches)
+
+; This function is called by raw-ev-fncall and is of particular interest during
+; proofs.  It is intended to cause an error when a live stobj is encountered
+; during a proof; see :DOC live-stobj-in-proof.  In a proof, the latches
+; argument will be nil, so we concern ourselves only with that case.
+
+; We use fn, which is the function being called, and stobjs-out only for error
+; reporting.  Val is the value that should not be a live stobj when stobjs-out
+; is a singleton.  Otherwise val is expected to be a true-list corresponding to
+; stobjs-out.  When latches is nil, we cause an error if any member of val is a
+; live stobj.
+
+; We considered causing a normal ACL2 "error" that can result in a call of
+; hide, by way of function hide-with-comment, rather than terminating the proof
+; immediately as we do here.  However, we would then be obligated to modify
+; ev-fncall-rec-logical to match that behavior, which seemed more or less
+; impossible since there is no obvious way to identify a live stobj by purely
+; logical means.  The error produced here is likely very rare, and if it shows
+; up by any means other than using swap-stobjs to swap a live and not-live
+; stobj, it would probably be good to highlight that surprising situation.
+
+; We use the CCL-specific variable *suppress-while-executing-msg* below to
+; inform our-abort not to print "While executing: RAW-EV-FNCALL" in the error
+; message.  One might wonder why we don't just call the variable something like
+; *in-chk-for-live-stobj* and test that in our-abort in addition to state
+; global abort-soft, rather than binding our-abort here just below.  The
+; reasons, which are admittedly weak, are that this way we save one special
+; variable reference in our-abort (since we already test abort-soft there) and
+; we also decouple the continue-p aspect of our-abort from what is printed in
+; the error message.
+
+  (and (null latches)
+       (let ((index (cond ((cdr stobjs-out)
+
+; We could use (loop for x in val ...) instead.  But that would rely on
+; (true-listp val), which we expect to be true, and we prefer not to depend on
+; that.
+
+                           (loop for tail on val
+                                 when (live-stobjp (car tail))
+                                 do (return (- (len val) (len tail)))))
+                          (t (and (live-stobjp val)
+                                  0)))))
+         (when index
+           (state-free-global-let*
+            ((abort-soft nil)) ; Abort now (see our-abort).
+            (let ((st (nth index stobjs-out))
+                  #+ccl
+                  (*suppress-while-executing-msg* t))
+              (error
+               "A live stobj~a was unexpectedly encountered~
+               ~%        when evaluating a call of the function, ~s.~
+               ~%        See :DOC live-stobj-in-proof."
+               (if st
+                   (format nil " (for stobj ~s)" st)
+                 "")
+               fn)))))))
+
 (defun raw-ev-fncall (fn arg-values arg-exprs latches w user-stobj-alist
                          hard-error-returns-nilp aok)
 
@@ -3517,13 +3580,14 @@
                (ev-fncall-msg val w user-stobj-alist)
                latches))
           (t ; val already adjusted for multiple value case
-             (mv nil
-                 val
+           (chk-for-live-stobj fn val stobjs-out latches)
+           (mv nil
+               val
 ; The next form was originally conditionalized with #+acl2-extra-checks, with
 ; value latches when #-acl2-extra-checks; but we want this unconditionally.
-                 (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
-                               val
-                               latches)))))))
+               (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
+                             val
+                             latches)))))))
 )
 
 (defun cltl-def-from-name2 (fn stobj-function axiomatic-p wrld)
@@ -17858,34 +17922,45 @@
              (not (true-listp (cdr x)))
              (not (symbolp (car x)))
              (not (getpropc (car x) 'macro-body nil wrld))
-             (member-eq (car x)
+             (cond ((member-eq (car x)
 
 ; The following list should include every macro name on which translate11
 ; imposes requirements before expanding that macro.
 
-                        '(ld
-                          loop$
-                          mv
-                          mv-let
-                          pargs
-                          read-user-stobj-alist
-                          stobj-let
-                          swap-stobjs
-                          translate-and-test
-                          with-global-stobj
-                          with-local-stobj))
-             (and (eq (car x) 'progn!)
-                  (not (ttag wrld)))
-             (and (eq (car x) 'the)
-                  (consp (cdr x))
-                  (consp (cddr x))
-                  (null (cdddr x))
-                  (eq (cadr x) 'double-float))
-             (hons-get (car x) *syms-not-callable-in-code-fal*)
-             (and (member-eq (car x) '(pand por plet))
-                  (eq (access state-vars state-vars
-                              :parallel-execution-enabled)
-                      t)))
+                               '(ld
+                                 loop$
+                                 mv
+                                 mv-let
+                                 pargs
+                                 read-user-stobj-alist
+                                 stobj-let
+                                 swap-stobjs
+                                 translate-and-test
+                                 with-global-stobj
+                                 with-local-stobj))
+                    t)
+                   ((eq (car x) 'progn!)
+                    (not (ttag wrld)))
+                   ((eq (car x) 'the)
+                    (and (consp (cdr x))
+                         (eq (cadr x) 'double-float)
+                         (consp (cddr x))
+                         (null (cdddr x))))
+                   ((member-eq (car x) '(pand por plet))
+                    (eq (access state-vars state-vars
+                                :parallel-execution-enabled)
+                        t))
+                   (t (and (not (eq (access state-vars state-vars :ld-skip-proofsp)
+                                    'include-book))
+
+; If we are translating with ld-skip-proofsp = 'include-book, then we trust
+; that we are not inside code where we are calling a macro in
+; *syms-not-callable-in-code-fal*.  Otherwise we need to make that check rather
+; than just passing control to macroexpand1-cmp.  We have seen significant
+; speed-up with this change, in particular for processing with-output calls, as
+; noted in :DOC note-8-7.
+
+                           (hons-get (car x) *syms-not-callable-in-code-fal*)))))
          (value-cmp x))
         (t
          (mv-let
@@ -27277,6 +27352,8 @@
 ; Spec for this function: Both arguments are duplicate-free symbol alists.  For
 ; every (key . val) in alist2 we a put-assoc-eq of key and val into alist1.
 
+  (declare (xargs :guard (and (symbol-alistp alist1) (symbol-alistp alist2))
+                  :measure (len alist2)))
   (cond ((endp alist2) alist1)
 
 ; The following clause is an optimization.  If alist1 and alist2 are equal and

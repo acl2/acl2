@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,12 +31,18 @@
 (local (in-theory (disable DEFAULT-+-2 DEFAULT-*-2
                            )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun full-adder-sum (bit1 bit2 carryin)
   (bitxor bit1 (bitxor bit2 carryin)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun full-adder-carry (bit1 bit2 carryin)
   (bitor (bitand bit1 bit2)
          (bitand carryin (bitxor bit1 bit2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns n+1 bits, one bit of carry followed by n bits of sum
 (defund ripple-carry-adder (n
@@ -79,6 +85,8 @@
                                               carryin)
                             (+ -1 n) sumin))))
   :hints (("Goal" :in-theory (enable ripple-carry-adder))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm equal-of-sum-of-low-bits
   (implies (and (unsigned-byte-p n y)
@@ -201,8 +209,8 @@
 
 (defthm <-expt-cancel-1
   (implies (natp n)
-           (equal (< (+ a X (EXPT 2 (+ -1 N)) y) (EXPT 2 N))
-                  (< (+ a x y) (EXPT 2 (+ -1 N)))))
+           (equal (< (+ a x (expt 2 (+ -1 n)) y) (expt 2 n))
+                  (< (+ a x y) (expt 2 (+ -1 n)))))
   :hints (("Goal" :in-theory (enable expt))))
 
 (local
@@ -284,7 +292,7 @@
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y))))
 ;            :use ( ;(:instance getbit-of-+ (size n) (y (+ carry y)))
 ;(:instance getbit-of-+ (size n) (x carry))
-;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1(BVCHOP (+ -1 N) Y))))
+;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1 (BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
 ;                  (:instance split-bv (x x) (n n) (m (+ -1 n)))
  ;                 (:instance split-bv (x y) (n n) (m (+ -1 n)))
@@ -301,9 +309,8 @@
                              bvplus
                              expt-hack)
                             (;EQUAL-OF-SUM-OF-LOW-BITS
-;full-adder-sum
+                             ;;full-adder-sum
                              ;full-adder-carry
-                             ;
                              ;;BVCAT-OF-+-LOW
                              BVCAT-EQUAL-REWRITE-ALT
                              BVCAT-EQUAL-REWRITE
@@ -338,8 +345,7 @@
             :in-theory (e/d (;ripple-carry-adder
                              (:induction ripple-carry-adder)
                              bvplus ;getbit-of-+
-                                                GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                                )
+                             )
                             ((:definition ripple-carry-adder)
                              ;;
                              ;BVCAT-OF-+-LOW ;looped

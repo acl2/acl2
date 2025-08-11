@@ -22,6 +22,7 @@
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/langdef-mapping")
+(include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -45,15 +46,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::defomap env-block
-    :parents (env)
-    :short "A scope block within an environment."
-    :key-type ident
-    :val-type c::value-option
-    :pred env-blockp))
+(fty::defomap env-block
+  :parents (env)
+  :short "A scope block within an environment."
+  :key-type ident
+  :val-type c::value-option
+  :pred env-blockp)
 
 (defrule value-optionp-of-cdr-assoc-when-env-blockp
   (implies (env-blockp block)
@@ -960,10 +958,10 @@
                       (const-prop-tyname tyspec.type env)))
                   (mv (type-spec-atomic type) env))
         :struct (b* (((mv spec env)
-                      (const-prop-strunispec tyspec.spec env)))
+                      (const-prop-struni-spec tyspec.spec env)))
                   (mv (type-spec-struct spec) env))
         :union (b* (((mv spec env)
-                     (const-prop-strunispec tyspec.spec env)))
+                     (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
         :enum (b* (((mv spec env)
                     (const-prop-enumspec tyspec.spec env)))
@@ -1457,30 +1455,30 @@
          ((tyname tyname) tyname)
          ((mv specquals env)
           (const-prop-spec/qual-list tyname.specquals env))
-         ((mv decl? env)
-          (const-prop-absdeclor-option tyname.decl? env)))
+         ((mv declor? env)
+          (const-prop-absdeclor-option tyname.declor? env)))
       (mv (make-tyname
             :specquals specquals
-            :decl? decl?
+            :declor? declor?
             :info tyname.info)
           env))
     :measure (tyname-count tyname))
 
-  (define const-prop-strunispec
-    ((strunispec strunispecp)
+  (define const-prop-struni-spec
+    ((struni-spec struni-specp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::strunispec)."
-    :returns (mv (new-strunispec strunispecp)
+    :short "Propagate a constant through a @(see c$::struni-spec)."
+    :returns (mv (new-struni-spec struni-specp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((strunispec strunispec) strunispec)
+         ((struni-spec struni-spec) struni-spec)
          ((mv members env)
-          (const-prop-structdecl-list strunispec.members env)))
-      (mv (make-strunispec
-            :name strunispec.name
+          (const-prop-structdecl-list struni-spec.members env)))
+      (mv (make-struni-spec
+            :name? struni-spec.name?
             :members members)
           env))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   (define const-prop-structdecl
     ((structdecl structdeclp)
@@ -1967,3 +1965,12 @@
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
       (const-prop-filepath-transunit-map tunits.unwrap))))
+
+(define const-prop-code-ensemble
+  ((code code-ensemblep))
+  :returns (new-code code-ensemblep)
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code))
+    (make-code-ensemble
+     :transunits (const-prop-transunit-ensemble code.transunits)
+     :ienv code.ienv)))

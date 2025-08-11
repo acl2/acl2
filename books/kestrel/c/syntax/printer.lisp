@@ -10,8 +10,12 @@
 
 (in-package "C$")
 
-(include-book "concrete-syntax")
+(include-book "files")
+(include-book "grammar-characters")
 (include-book "unambiguity")
+(include-book "ascii-identifiers")
+
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
@@ -135,16 +139,21 @@
      in reverse order, which makes extending the data more efficent
      (by @(tsee cons)ing).")
    (xdoc::p
-    "We also keep track of the current indentation level,
+    "We keep track of the current indentation level,
      as a natural number starting from 0 (where 0 means left margin).
      This is used to print indented code, as typical.")
    (xdoc::p
-    "We also keep track of the printing options (see @(tsee priopt)).
+    "We keep track of the printing options (see @(tsee priopt)).
      These do not change in the course of the printing,
      but they are convenient to keep in the printing state,
      to avoid passing them around as an extra parameter.
      They are set when the printing state is initially created,
      and they never change.")
+   (xdoc::p
+    "We include a boolean flag saying whether GCC extensions are enabled or not.
+     This printer state component is set at the beginning and never changes.
+     This printer state component could potentially evolve into
+     a richer set of options for different versions and dialects of C.")
    (xdoc::p
     "In the future, we may make printer states richer,
      in order to support more elaborate printing strategies,
@@ -156,23 +165,26 @@
      if efficiency is an issue."))
   ((bytes-rev byte-list)
    (indent-level nat)
-   (options priopt))
+   (options priopt)
+   (gcc bool))
   :pred pristatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-pristate ((options prioptp))
+(define init-pristate ((options prioptp) (gcc booleanp))
   :returns (pstate pristatep)
   :short "Initial printer state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass the printing options, which must be provided externally.")
+    "We pass the printing options and the GCC flag,
+     which must be provided externally.")
    (xdoc::p
     "Initially, no data has been printed, and the indentation level is 0."))
   (make-pristate :bytes-rev nil
                  :indent-level 0
-                 :options options)
+                 :options options
+                 :gcc gcc)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,7 +263,9 @@
                                            bytep
                                            unsigned-byte-p
                                            integer-range-p)))
+
   ///
+
   (fty::deffixequiv print-char
     :args ((pstate pristatep))))
 
@@ -269,7 +283,9 @@
   (b* (((when (endp chars)) (pristate-fix pstate))
        (pstate (print-char (car chars) pstate)))
     (print-chars (cdr chars) pstate))
+
   ///
+
   (fty::deffixequiv print-chars
     :args ((pstate pristatep))))
 
@@ -333,7 +349,9 @@
      and therefore are not ASCII.
      But we always call this printing function with ASCII strings."))
   (print-chars (acl2::string=>nats string) pstate)
+
   ///
+
   (fty::deffixequiv print-astring
     :args ((pstate pristatep))))
 
@@ -356,7 +374,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            dec-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-dec-digit-achar
     :args ((pstate pristatep))))
 
@@ -369,7 +389,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-dec-digit-achar (car achars) pstate)))
     (print-dec-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-dec-digit-achars
     :args ((pstate pristatep))))
 
@@ -392,7 +414,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            oct-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-oct-digit-achar
     :args ((pstate pristatep))))
 
@@ -405,7 +429,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-oct-digit-achar (car achars) pstate)))
     (print-oct-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-oct-digit-achars
     :args ((pstate pristatep))))
 
@@ -428,7 +454,9 @@
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            hex-digit-char-p)))
+
   ///
+
   (fty::deffixequiv print-hex-digit-achar
     :args ((pstate pristatep))))
 
@@ -441,7 +469,9 @@
   (b* (((when (endp achars)) (pristate-fix pstate))
        (pstate (print-hex-digit-achar (car achars) pstate)))
     (print-hex-digit-achars (cdr achars) pstate))
+
   ///
+
   (fty::deffixequiv print-hex-digit-achars
     :args ((pstate pristatep))))
 
@@ -1951,10 +1981,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.spec pstate)))
+                  (pstate (print-struni-spec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.spec pstate)))
+                 (pstate (print-struni-spec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.spec pstate)))
@@ -2604,17 +2634,17 @@
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
          (pstate (print-spec/qual-list tyname.specquals pstate))
-         ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
+         ((unless (absdeclor-option-case tyname.declor? :some)) pstate)
          (pstate (print-astring " " pstate))
-         (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)
+         (pstate (print-absdeclor (absdeclor-option-some->val tyname.declor?)
                                   pstate)))
       pstate)
     :measure (two-nats-measure (tyname-count tyname) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-strunispec ((strunispec strunispecp) (pstate pristatep))
-    :guard (strunispec-unambp strunispec)
+  (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
+    :guard (struni-spec-unambp struni-spec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -2639,25 +2669,25 @@
        Nonetheless, under certain conditions,
        e.g. when it is a lone top-level construct,
        we should print it on multiple lines."))
-    (b* (((strunispec strunispec) strunispec)
-         ((unless (or (ident-option-case strunispec.name :some)
-                      strunispec.members))
+    (b* (((struni-spec struni-spec) struni-spec)
+         ((unless (or (ident-option-case struni-spec.name? :some)
+                      struni-spec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
          (pstate (ident-option-case
-                  strunispec.name
-                  :some (print-ident strunispec.name.val pstate)
+                  struni-spec.name?
+                  :some (print-ident struni-spec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and strunispec.name
-                          strunispec.members)
+         (pstate (if (and struni-spec.name?
+                          struni-spec.members)
                      (print-astring " " pstate)
                    pstate))
-         ((when (not strunispec.members)) pstate)
+         ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
-         (pstate (print-structdecl-list strunispec.members pstate))
+         (pstate (print-structdecl-list struni-spec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
-    :measure (two-nats-measure (strunispec-count strunispec) 0))
+    :measure (two-nats-measure (struni-spec-count struni-spec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2713,7 +2743,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As mentioned in @(tsee print-strunispec),
+      "As mentioned in @(tsee print-struni-spec),
        for now we print all of them in one line,
        since a structure or union specifier may occur
        in the middle of a list of declaration specifiers,
@@ -3677,7 +3707,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-file ((tunit transunitp) (options prioptp))
+(define print-file ((tunit transunitp) (options prioptp) (gcc booleanp))
   :guard (transunit-unambp tunit)
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
@@ -3690,7 +3720,7 @@
      We print the translation unit,
      we extract the data bytes from the final printing state,
      and we reverse them (see @(tsee pristate))."))
-  (b* ((pstate (init-pristate options))
+  (b* ((pstate (init-pristate options gcc))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
@@ -3698,8 +3728,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-fileset ((tunits transunit-ensemblep) (options prioptp))
-  :guard (transunit-ensemble-unambp tunits)
+(define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
+                                      (options prioptp)
+                                      (gcc booleanp))
+  :guard (and (filepath-transunit-map-unambp tunitmap)
+              (filepath-transunit-map-aidentp tunitmap gcc))
+  :returns (filemap filepath-filedata-mapp)
+  :short "Print the files in a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input is a map from file paths to translation units,
+     i.e. the core content of a translation unit ensemble.
+     We also pass the printer options as additional input.
+     We go through each translation unit in the map and print it,
+     obtaining a file for each.
+     We return a map from file paths to files
+     that corresponds to the map from file paths to translation units.
+     The two maps have the same keys."))
+  (b* (((when (omap::emptyp tunitmap)) nil)
+       ((mv filepath tunit) (omap::head tunitmap))
+       (data (print-file tunit options gcc))
+       (filemap (print-filepath-transunit-map (omap::tail tunitmap)
+                                              options
+                                              gcc)))
+    (omap::update (filepath-fix filepath) (filedata data) filemap))
+  :verify-guards :after-returns
+  :guard-hints
+  (("Goal" :in-theory (enable filepath-transunit-map-aidentp-of-tail)))
+
+  ///
+
+  (defret keys-of-print-filepath-transunit-map
+    (equal (omap::keys filemap)
+           (omap::keys tunitmap))
+    :hyp (filepath-transunit-mapp tunitmap)
+    :hints (("Goal" :induct t)))
+
+  (fty::deffixequiv print-filepath-transunit-map
+    :args ((options prioptp) (gcc booleanp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-fileset ((tunits transunit-ensemblep)
+                       (options prioptp)
+                       (gcc booleanp))
+  :guard (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-aidentp tunits gcc))
   :returns (fileset filesetp)
   :short "Print a file set."
   :long
@@ -3707,38 +3782,18 @@
    (xdoc::p
     "The input is a translation unit ensemble in the abstract syntax.
      We also pass the printer options as additional input.
-     We go through each translation unit in the ensemble and print it,
-     obtaining a file for each.
-     We return a file set that corresponds to the translation unit ensemble.
-     The file paths are the same
-     for the translation unit ensemble and for the file set
-     (they are the keys of the maps)."))
-  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
+     We unwrap the translation unit ensemble obtainining a map,
+     we print the translation units of the map to files into a file map,
+     and we wrap the file map into a file set."))
+  (fileset
+   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
+                                 options
+                                 gcc))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap)))
   :hooks (:fix)
-
-  :prepwork
-  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
-                               (options prioptp))
-     :guard (filepath-transunit-map-unambp tunitmap)
-     :returns (filemap filepath-filedata-mapp)
-     :parents nil
-     (b* (((when (omap::emptyp tunitmap)) nil)
-          ((mv filepath tunit) (omap::head tunitmap))
-          (data (print-file tunit options))
-          (filemap (print-fileset-loop (omap::tail tunitmap) options)))
-       (omap::update (filepath-fix filepath) (filedata data) filemap))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret keys-of-print-fileset-loop
-       (equal (omap::keys filemap)
-              (omap::keys tunitmap))
-       :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t)))
-
-     (fty::deffixequiv print-fileset-loop
-       :args ((options prioptp)))))
 
   ///
 

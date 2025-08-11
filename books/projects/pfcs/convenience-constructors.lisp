@@ -65,11 +65,10 @@
     (implies (constraint-listp x)
              (constraint/constraintlist-p x)))
 
-  (defrule not-constraintp-when-constraint-listp
-    (implies (pfcs::constraint-listp x)
-             (not (pfcs::constraintp x)))
-    :rule-classes :tau-system
-    :enable pfcs::constraintp))
+  (defruled not-constraintp-when-constraint-listp
+    (implies (constraint-listp x)
+             (not (constraintp x)))
+    :enable constraintp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,22 +80,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ pfname (&rest args)
+  (declare (xargs :guard (and (consp args)
+                              (or (endp (cdr args))
+                                  (and (consp (cdr args))
+                                       (endp (cddr args)))))))
+  :short "Construct a name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This macro accepts one or two arguments.
+     If one argument is passed, it must be a string,
+     and the macro returns a simple name containing that string.
+     If two arguments are passed, they must be a string and a natural number,
+     and the macro returns an indexed name
+     containing the string and natural number."))
+  (if (consp (cdr args))
+      `(name-indexed ,(car args) ,(cadr args))
+    `(name-simple ,(car args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ pfnames (base n)
+  :short "Construct a list of indexed names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first argument must be a string that is used as the base for the names.
+     The second argument is a natural number @('n'):
+     the list of names has indices 0 to @('n-1'), in that order."))
+  `(names-indexed-below ,base ,n))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ pfconst (c)
-  :short "Construct a constant expression."
-  `(pfcs::expression-const ,c))
+  :short "Construct a constant expression from an integer."
+  `(expression-const ,c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ pfvar (v)
-  :short "Construct a variable expression."
-  `(pfcs::expression-var ,v))
+  :short "Construct a variable expression from a name."
+  `(expression-var ,v))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ pfmon (c v)
-  :short "Construct a monomial, i.e. a product of a constant by a variable."
-  `(pfcs::expression-mul (pfcs::expression-const ,c)
-                         (pfcs::expression-var ,v)))
+  :short "Construct a monomial, i.e. a product of a constant by a variable,
+          from an integer and a name."
+  `(expression-mul (expression-const ,c)
+                   (expression-var ,v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,7 +148,7 @@
      we return their left-associated product."))
   (cond ((endp exprs) '(pfconst 1))
         ((endp (cdr exprs)) (car exprs))
-        (t (yyyjoin 'pfcs::expression-mul (rev exprs)))))
+        (t (yyyjoin 'expression-mul (rev exprs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,13 +167,13 @@
      we return their left-associated sum."))
   (cond ((endp exprs) '(pfconst 0))
         ((endp (cdr exprs)) (car exprs))
-        (t (yyyjoin 'pfcs::expression-add (rev exprs)))))
+        (t (yyyjoin 'expression-add (rev exprs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ pf= (left right)
   :short "Construct an equality constraint."
-  `(pfcs::make-constraint-equal :left ,left :right ,right))
+  `(make-constraint-equal :left ,left :right ,right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,7 +199,7 @@
     :guard-hints (("Goal" :in-theory (enable constraint/constraintlist-p))))
 
   (defmacro pfdef (defname params &rest constraints)
-    `(pfcs::make-definition
+    `(make-definition
       :name ,defname
       :para ,params
       :body (pfdef-join (list ,@constraints)))))
@@ -175,4 +208,4 @@
 
 (defmacro+ pfcall (name &rest args)
   :short "Construct a relation call constraint."
-  `(pfcs::make-constraint-relation :name ,name :args (list ,@args)))
+  `(make-constraint-relation :name ,name :args (list ,@args)))

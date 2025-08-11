@@ -25,6 +25,7 @@
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
 (include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
+(include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
@@ -408,13 +409,16 @@
 (def-constant-opener disjoint-regions64p)
 (def-constant-opener unsigned-canonical-address-p)
 
-(defopeners acl2::get-symbol-entry-mach-o)
+(acl2::def-constant-opener seg-regp)
+(acl2::def-constant-opener integer-range-p)
+
+(defopeners acl2::get-symbol-table-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
 (defopeners acl2::get-section-number-mach-o-aux)
 
 (defopeners addresses-of-subsequent-stack-slots-aux)
 
-(defopeners acl2::get-pe-section-aux)
+(defopeners acl2::get-pe-section-info-aux)
 (defopeners acl2::lookup-pe-symbol)
 
 (defopeners simd-add-spec)
@@ -586,6 +590,50 @@
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-opener))))
 
+;; newer scheme, 32-bit:
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-esp-is-above-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (esp-is-abovep old-esp x86))
+           (equal (run-until-esp-is-above old-esp x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-esp-is-above-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (esp-is-abovep old-esp x86)))
+           (equal (run-until-esp-is-above old-esp x86)
+                  (run-until-esp-is-above old-esp (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-opener))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-esp-is-above-or-reach-pc-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (or (esp-is-abovep old-esp x86)
+                    (member-equal (rip x86) stop-pcs)))
+           (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-esp-is-above-or-reach-pc-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (esp-is-abovep old-esp x86))
+                (not (member-equal (rip x86) stop-pcs)))
+           (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
+                  (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-opener))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; probably only needed for axe
@@ -656,7 +704,7 @@
                                  (rex-byte acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|))
                             (if flg (!ms (let ((x86isa::erp nil))
                                            (cons (list ctx
-                                                       :rip (rip x86)
+                                                       :rip (x86isa::rip x86)
                                                        :error-in-reading-prefixes flg)
                                                  x86isa::erp))
                                          x86)
@@ -668,7 +716,7 @@
                                                       x86)
                                   (if flg (!ms (let ((x86isa::erp nil))
                                                  (cons (list ctx
-                                                             :rip (rip x86)
+                                                             :rip (x86isa::rip x86)
                                                              :increment-error flg)
                                                        x86isa::erp))
                                                x86)
@@ -680,7 +728,7 @@
                                           (mv nil 0 x86))
                                         (cond (flg (!ms (let ((x86isa::erp nil))
                                                           (cons (list ctx
-                                                                      :rip (rip x86)
+                                                                      :rip (x86isa::rip x86)
                                                                       :les/lds-distinguishing-byte-read-error flg)
                                                                 x86isa::erp))
                                                         x86))
@@ -692,7 +740,7 @@
                                                  (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                  (if flg (!ms (let ((x86isa::erp nil))
                                                                 (cons (list ctx
-                                                                            :rip (rip x86)
+                                                                            :rip (x86isa::rip x86)
                                                                             :vex-byte1-increment-error flg)
                                                                       x86isa::erp))
                                                               x86)
@@ -709,7 +757,7 @@
                                                        (mv nil 0 x86))
                                                      (cond (flg (!ms (let ((x86isa::erp nil))
                                                                        (cons (list ctx
-                                                                                   :rip (rip x86)
+                                                                                   :rip (x86isa::rip x86)
                                                                                    :bound-distinguishing-byte-read-error flg)
                                                                              x86isa::erp))
                                                                      x86))
@@ -721,7 +769,7 @@
                                                               (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                               (if flg (!ms (let ((x86isa::erp nil))
                                                                              (cons (list ctx
-                                                                                         :rip (rip x86)
+                                                                                         :rip (x86isa::rip x86)
                                                                                          :evex-byte1-increment-error flg)
                                                                                    x86isa::erp))
                                                                            x86)
@@ -743,7 +791,7 @@
                                                                   (let ((modr/m acl2::|(THE (UNSIGNED-BYTE 8) MODR/M)|))
                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                    (cons (list ctx
-                                                                                               :rip (rip x86)
+                                                                                               :rip (x86isa::rip x86)
                                                                                                :modr/m-byte-read-error flg)
                                                                                          x86isa::erp))
                                                                                  x86)
@@ -752,7 +800,7 @@
                                                                           (mv nil temp-rip))
                                                                         (if flg (!ms (let ((x86isa::erp nil))
                                                                                        (cons (list ctx
-                                                                                                   :rip (rip x86)
+                                                                                                   :rip (x86isa::rip x86)
                                                                                                    :increment-error flg)
                                                                                              x86isa::erp))
                                                                                      x86)
@@ -768,7 +816,7 @@
                                                                               (let ((sib acl2::|(THE (UNSIGNED-BYTE 8) SIB)|))
                                                                                 (if flg (!ms (let ((x86isa::erp nil))
                                                                                                (cons (list ctx
-                                                                                                           :rip (rip x86)
+                                                                                                           :rip (x86isa::rip x86)
                                                                                                            :sib-byte-read-error flg)
                                                                                                      x86isa::erp))
                                                                                              x86)
@@ -777,7 +825,7 @@
                                                                                       (mv nil temp-rip))
                                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                                    (cons (list ctx
-                                                                                                               :rip (rip x86)
+                                                                                                               :rip (x86isa::rip x86)
                                                                                                                :increment-error flg)
                                                                                                          x86isa::erp))
                                                                                                  x86)
@@ -986,3 +1034,43 @@
                 (canonical-address-p y))
            (equal (logext 64 (+ x y))
                   (+ x y))))
+
+(defthm signed-byte-p-of-xr-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (xr :rip nil x86)))
+  :hints (("Goal" :use (:instance x86isa::i48p-xr-rip (i nil))
+           :in-theory (e/d (x86isa::rip) (x86isarip-becomes-rip
+                                          xr-becomes-rip
+                                          x86isa::i48p-xr-rip
+                                          x86isa::elem-p-of-xr-rip)))))
+
+(defthm signed-byte-p-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (x86isa::rip x86)))
+  :hints (("Goal" :in-theory (e/d (x86isa::rip)
+                                  (x86isarip-becomes-rip
+                                   xr-becomes-rip
+                                   )))))
+
+(defthm x86isa::canonical-address-p-of-rip
+  (canonical-address-p (x86isa::rip x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
+
+;; used in the loop-lifter?
+(defthm x86isa::canonical-address-p-of-xr-of-rip
+  (canonical-address-p (xr :rip nil x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-!rflagsbits->af (integerp (!rflagsbits->af af rflags)))
+(defthm integerp-of-!rflagsbits->cf (integerp (!rflagsbits->cf cf rflags)))
+(defthm integerp-of-!rflagsbits->of (integerp (!rflagsbits->of of rflags)))
+(defthm integerp-of-!rflagsbits->pf (integerp (!rflagsbits->pf pf rflags)))
+(defthm integerp-of-!rflagsbits->sf (integerp (!rflagsbits->sf sf rflags)))
+(defthm integerp-of-!rflagsbits->zf (integerp (!rflagsbits->zf zf rflags)))
+(defthm integerp-of-!rflagsbits->res1 (integerp (!rflagsbits->res1 res1 rflags)))
+(defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
+(defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))

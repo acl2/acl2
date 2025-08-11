@@ -1,10 +1,10 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +137,7 @@
                    (fundef-enabledp sofun state))))
        (sofun-body (ubody sofun wrld))
        (sofun-measure (if (recursivep sofun nil wrld)
-                          (measure sofun wrld)
+                          (get-measure sofun wrld)
                         nil))
        (sofun-guard (uguard sofun wrld))
        (fsbs (if sofun-measure (acons sofun fun inst) inst))

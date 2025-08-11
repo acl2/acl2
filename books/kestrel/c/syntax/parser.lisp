@@ -2867,9 +2867,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-stringlit ((eprefix? eprefix-optionp)
-                       (first-pos positionp)
-                       (parstate parstatep))
+(define lex-string-literal ((eprefix? eprefix-optionp)
+                            (first-pos positionp)
+                            (parstate parstatep))
   :returns (mv erp
                (lexeme lexemep)
                (span spanp)
@@ -2896,12 +2896,12 @@
 
   ///
 
-  (defret parsize-of-lex-stringlit-uncond
+  (defret parsize-of-lex-string-literal-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-stringlit-cond
+  (defret parsize-of-lex-string-literal-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -2909,7 +2909,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-isuffix-if-present ((parstate parstatep))
+(define lex-*-h-char ((parstate parstatep))
+  :returns (mv erp
+               (hchars h-char-listp)
+               (closing-angle-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex zero or more characters
+          in a header name between angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*h-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('h-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening angle bracker of a header name.
+     If successful, this reads up to and including the closing angle bracket,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a new-line.
+     If the character is a closing angle bracket,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
+  (b* (((reterr) nil (irr-position) parstate)
+       ((erp char pos parstate) (read-char parstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\>))) ; >
+        (retok nil pos parstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (hchar (h-char char))
+       ((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate)))
+    (retok (cons hchar hchars) closing-angle-pos parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-*-h-char-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret parsize-of-lex-*-h-char-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (- (parsize parstate)
+                        (len hchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-*-q-char ((parstate parstatep))
+  :returns (mv erp
+               (qchars q-char-listp)
+               (closing-dquote-pos positionp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex zero or more characters
+          in a header name between double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, lex a @('*q-char'), in ABNF notation,
+     i.e. a repetition of zero or more instances of @('q-char').")
+   (xdoc::p
+    "This is called when we expect a header name,
+     after reading the opening double quote of a header name.
+     If successful, this reads up to and including the closing double quote,
+     and returns the position of the latter,
+     along with the sequence of characters.")
+   (xdoc::p
+    "We read the next character;
+     it is an error if there is none.
+     It is also an error if the character is a new-line.
+     If the character is a closing double quote,
+     we end the recursion and return.
+     In all other cases,
+     we take the character as is,
+     we read zero or more additional characters and escape sequences,
+     and we combine them with the character."))
+  (b* (((reterr) nil (irr-position) parstate)
+       ((erp char pos parstate) (read-char parstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\"))) ; "
+        (retok nil pos parstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (qchar (q-char char))
+       ((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate)))
+    (retok (cons qchar qchars) closing-dquote-pos parstate))
+  :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-*-q-char-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret parsize-of-lex-*-q-char-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (- (parsize parstate)
+                        (len qchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-?-integer-suffix ((parstate parstatep))
   :returns (mv erp
                (isuffix? isuffix-optionp)
                (last/next-pos positionp)
@@ -3125,12 +3261,12 @@
 
   ///
 
-  (defret parsize-of-lex-isuffix-if-present-uncond
+  (defret parsize-of-lex-?-integer-suffix-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-isuffix-if-present-cond
+  (defret parsize-of-lex-?-integer-suffix-cond
     (implies (and (not erp)
                   isuffix?)
              (<= (parsize new-parstate)
@@ -3139,7 +3275,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-fsuffix-if-present ((parstate parstatep))
+(define lex-?-floating-suffix ((parstate parstatep))
   :returns (mv erp
                (fsuffix? fsuffix-optionp)
                (last/next-pos positionp)
@@ -3175,12 +3311,12 @@
 
   ///
 
-  (defret parsize-of-lex-fsuffix-if-present-uncond
+  (defret parsize-of-lex-?-floating-suffix-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-fsuffix-if-present-cond
+  (defret parsize-of-lex-?-floating-suffix-cond
     (implies (and (not erp)
                   fsuffix?)
              (<= (parsize new-parstate)
@@ -3620,7 +3756,7 @@
                     (lex-bin-expo parstate)))
                 ;; 0 x/X . hexdigs2 expo
                 (b* (((erp fsuffix? suffix-last/next-pos parstate)
-                      (lex-fsuffix-if-present parstate))
+                      (lex-?-floating-suffix parstate))
                      ;; 0 x/X . hexdigs2 expo [fsuffix]
                      ((erp parstate) (check-full-ppnumber nil parstate)))
                   (retok (const-float
@@ -3662,7 +3798,7 @@
                     (lex-bin-expo parstate))
                    ;; 0 x/X hexdigs . expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
-                    (lex-fsuffix-if-present parstate))
+                    (lex-?-floating-suffix parstate))
                    ;; 0 x/X hexdigs . expo [suffix]
                    ((erp parstate) (check-full-ppnumber nil parstate)))
                 (retok (const-float
@@ -3682,7 +3818,7 @@
                     (lex-bin-expo parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
-                    (lex-fsuffix-if-present parstate))
+                    (lex-?-floating-suffix parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo [suffix]
                    ((erp parstate) (check-full-ppnumber nil parstate)))
                 (retok (const-float
@@ -3703,7 +3839,7 @@
                ((erp expo expo-last-pos parstate) (lex-bin-expo parstate))
                ;; 0 x/X hexdigs expo
                ((erp fsuffix? suffix-last/next-pos parstate)
-                (lex-fsuffix-if-present parstate))
+                (lex-?-floating-suffix parstate))
                ;; 0 x/X hexdigs expo [suffix]
                ((erp parstate) (check-full-ppnumber nil parstate)))
             (retok (const-float
@@ -3719,7 +3855,7 @@
          (t ; 0 x/X hexdigs other
           (b* ((parstate (unread-char parstate)) ; 0 x/X hexdigs
                ((erp isuffix? suffix-last/next-pos parstate)
-                (lex-isuffix-if-present parstate))
+                (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
                ((erp parstate) (check-full-ppnumber (and
                                                    (member (car (last hexdigs))
@@ -3829,7 +3965,7 @@
             (lex-dec-expo-if-present parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate))
            (core (if decdigs2
@@ -3873,7 +4009,7 @@
            ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
            ;; 1-9 [decdigs] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 1-9 [decdigs] expo [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-float
@@ -3889,7 +4025,7 @@
      (t ; 1-9 [decdigs] other
       (b* ((parstate (unread-char parstate)) ; 1-9 [decdigs]
            ((erp isuffix? suffix-last/next-pos parstate)
-            (lex-isuffix-if-present parstate))
+            (lex-?-integer-suffix parstate))
            ;; 1-9 [decdigs] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-int
@@ -3950,7 +4086,7 @@
         (lex-dec-expo-if-present parstate))
        ;; . decdig [decdigs] [expo]
        ((erp fsuffix? suffix-last/next-pos parstate)
-        (lex-fsuffix-if-present parstate))
+        (lex-?-floating-suffix parstate))
        ;; . decdig [decdigs] [expo] [suffix]
        ((erp parstate) (check-full-ppnumber nil parstate))
        (core (if expo?
@@ -4130,7 +4266,7 @@
             (lex-dec-expo-if-present parstate))
            ;; 0 [digits] . [digits2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 0 [digits] . [digits2] [expo] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate))
            (core (cond
@@ -4176,7 +4312,7 @@
            ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
            ;; 0 [digits] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 0 [digits] expo [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-float
@@ -4193,7 +4329,7 @@
        ((oct-digit-char-listp digits) ; 0 [octdigs] other
         (b* ((parstate (unread-char parstate)) ; 0 [octdigs]
              ((erp isuffix? suffix-last/next-pos parstate)
-              (lex-isuffix-if-present parstate))
+              (lex-?-integer-suffix parstate))
              ;; 0 [octdigs] [suffix]
              ((erp parstate) (check-full-ppnumber nil parstate)))
           (retok (const-int
@@ -4663,7 +4799,7 @@
          ((= char2 (char-code #\')) ; u '
           (lex-character-constant (cprefix-locase-u) first-pos parstate))
          ((= char2 (char-code #\")) ; u "
-          (lex-stringlit (eprefix-locase-u) first-pos parstate))
+          (lex-string-literal (eprefix-locase-u) first-pos parstate))
          ((= char2 (char-code #\8)) ; u 8
           (b* (((erp char3 & parstate) (read-char parstate)))
             (cond
@@ -4672,7 +4808,7 @@
                      (make-span :start first-pos :end pos2)
                      parstate))
              ((= char3 (char-code #\")) ; u 8 "
-              (lex-stringlit (eprefix-locase-u8) first-pos parstate))
+              (lex-string-literal (eprefix-locase-u8) first-pos parstate))
              (t ; u 8 other
               (b* ((parstate (unread-char parstate)) ; u 8
                    (parstate (unread-char parstate))) ; u
@@ -4691,7 +4827,7 @@
          ((= char2 (char-code #\')) ; U '
           (lex-character-constant (cprefix-upcase-u) first-pos parstate))
          ((= char2 (char-code #\")) ; U "
-          (lex-stringlit (eprefix-upcase-u) first-pos parstate))
+          (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
           (b* ((parstate (unread-char parstate))) ; U
             (lex-identifier/keyword char first-pos parstate))))))
@@ -4706,7 +4842,7 @@
          ((= char2 (char-code #\')) ; L '
           (lex-character-constant (cprefix-upcase-l) first-pos parstate))
          ((= char2 (char-code #\")) ; L "
-          (lex-stringlit (eprefix-upcase-l) first-pos parstate))
+          (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
           (b* ((parstate (unread-char parstate))) ; L
             (lex-identifier/keyword char first-pos parstate))))))
@@ -4764,7 +4900,7 @@
       (lex-character-constant nil first-pos parstate))
 
      ((= char (char-code #\")) ; "
-      (lex-stringlit nil first-pos parstate))
+      (lex-string-literal nil first-pos parstate))
 
      ((= char (char-code #\/)) ; /
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
@@ -9938,8 +10074,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-specifier/qualifier ((tyspec-seenp booleanp)
-                                     (parstate parstatep))
+  (define parse-specifier/qualifier ((parstate parstatep))
     :returns (mv erp
                  (specqual spec/qual-p)
                  (span spanp)
@@ -9953,7 +10088,9 @@
        @('specifier-qualifier-list') in the ABNF grammar;
        the grammar does not have a rule name for that.
        But this is like an alternation of
-       a type specifier, a type qualifier, or an alignment specifier.")
+       a type specifier, a type qualifier, or an alignment specifier;
+       if GCC extensions are enabled,
+       the alternation also includes attribute specifiers.")
      (xdoc::p
       "This function is called when we expect a specifier or qualifier,
        which is the case at the start of a specifier and qualifier list
@@ -9961,29 +10098,20 @@
        and when the caller @(tsee parse-specifier-qualifier-list)
        determines that there must be another specifier or qualifier.")
      (xdoc::p
-      "There is an overlap in the tokens that may start the three cases of
-       type specifiers, type qualifiers, and alignment specifiers:
+      "There is an overlap in the tokens that may start two cases:
        the @('_Atomic') keyword could start a type specifier,
        in which case it must be followed by a parenthesized type name,
        or it could be a type qualifier (as is).
        So we cannot simply look at the next token
        and call separate functions to parse
-       a type specifier or a type qualifier or an alignment specifier.
-       We need to read more tokens if we see @('_Atomic'),
-       but if we find a parenthesized identifier after that,
-       it could be a type name, forming an atomic type specifier,
-       but it could instead be a declarator following an atomic type qualifier
-       (if the boolean flag passed to this function is @('t')).
-       However, we can exploit the fact discussed in
-       @(tsee parse-declaration-specifiers),
-       using the flag also discussed there.
-       If the flag is @('t'), the @('_Atomic') must be a type qualifier;
-       if the flag is @('nil'),
-       and an open parenthesis follows the @('_Atomic'),
-       since no specifier or qualifier may start with an open parenthesis,
-       the @('_Atomic') must start a type specifier,
-       so we must parse a type name after the open parenthesis,
-       and finally the closing parenthesis."))
+       a type specifier or a type qualifier or an alignment specifier
+       (or an attribute specifier, if GCC extensions are enabled).
+       We need to read more tokens if we see @('_Atomic').
+       [C17:6.7.2.4/4] says that
+       an @('_Atomic') immediately followed by a left parentheses
+       is interpreted as a type specifier (not a type qualifier).
+       Thus, we read an additional token to decide whether
+       we are parsing a type specifier or a type qualifier."))
     (b* (((reterr) (irr-spec/qual) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -9995,34 +10123,22 @@
                parstate))
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
-       ;; so we examine more tokens.
+       ;; so we examine an additional token.
        ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open parenthesis,
-           ;; we check the TYSPEC-SEENP flag,
-           ;; as explained in the documentation.
+           ;; we must be parsing a type specifier.
            ((token-punctuatorp token2 "(") ; _Atomic (
-            (if tyspec-seenp
-                ;; If we have already seen a type specifier,
-                ;; this must be a type qualifier.
-                (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (spec/qual-typequal (type-qual-atomic))
-                         span
-                         parstate))
-              ;; If we have not already seen a type specifier,
-              ;; this must be a type specifier,
-              ;; because the open parenthesis cannot be
-              ;; another specifier or qualifier.
-              (b* (((erp tyname & parstate) ; _Atomic ( typename
-                    (parse-type-name parstate))
-                   ((erp last-span parstate) ; _Atomic ( typename )
-                    (read-punctuator ")" parstate)))
-                (retok (spec/qual-typespec (type-spec-atomic tyname))
-                       (span-join span last-span)
-                       parstate))))
-           ;; If token2 is not an open parenthesis,
-           ;; we must have an atomic type qualifier.
+            (b* (((erp tyname & parstate) ; _Atomic ( typename
+                  (parse-type-name parstate))
+                 ((erp last-span parstate) ; _Atomic ( typename )
+                  (read-punctuator ")" parstate)))
+              (retok (spec/qual-typespec (type-spec-atomic tyname))
+                     (span-join span last-span)
+                     parstate)))
+           ;; If token 2 is not an open parenthesis,
+           ;; we must be parsing a type qualifier.
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
@@ -10032,7 +10148,7 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp tyspec last-span parstate) ; struct strunispec
+        (b* (((erp tyspec last-span parstate) ; struct struni-spec
               (parse-struct-or-union-specifier t span parstate)))
           (retok (spec/qual-typespec tyspec)
                  (span-join span last-span)
@@ -10040,7 +10156,7 @@
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp tyspec last-span parstate) ; union strunispec
+        (b* (((erp tyspec last-span parstate) ; union struni-spec
               (parse-struct-or-union-specifier nil span parstate)))
           (retok (spec/qual-typespec tyspec)
                  (span-join span last-span)
@@ -10171,7 +10287,7 @@
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp specqual first-span parstate) ; specqual
-          (parse-specifier/qualifier tyspec-seenp parstate))
+          (parse-specifier/qualifier parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
@@ -10225,8 +10341,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-declaration-specifier ((tyspec-seenp booleanp)
-                                       (parstate parstatep))
+  (define parse-declaration-specifier ((parstate parstatep))
     :returns (mv erp
                  (declspec decl-specp)
                  (span spanp)
@@ -10270,8 +10385,7 @@
        but more complex because there are more alternatives.
        The syntactic overlap between
        the @('_Atomic') type qualifier and the @('_Atomic') type specifier
-       is resolved in the same way as in @(tsee parse-specifier/qualifier),
-       which motivates the @('tyspec-seenp') flag passed to this function;
+       is resolved in the same way as in @(tsee parse-specifier/qualifier);
        see that function's documentation."))
     (b* (((reterr) (irr-decl-spec) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -10291,34 +10405,22 @@
                parstate))
        ;; If token is the keyword _Atomic,
        ;; it may be either a type specifier or a type qualifier,
-       ;; so we examine more tokens.
+       ;; so we examine an additional token.
        ((token-keywordp token "_Atomic") ; _Atomic
         (b* (((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open parenthesis,
-           ;; we check the TYSPEC-SEENP flag,
-           ;; as explained in the documentation.
+           ;; we must be parsing a type specifier.
            ((token-punctuatorp token2 "(") ; _Atomic (
-            (if tyspec-seenp
-                ;; If we have already seen a type specifier,
-                ;; this must be a type qualifier.
-                (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (decl-spec-typequal (type-qual-atomic))
-                         span
-                         parstate))
-              ;; If we have not already seen a type specifier,
-              ;; this must be a type specifier,
-              ;; because the open parenthesis cannot be
-              ;; another declaration specifier.
-              (b* (((erp tyname & parstate) ; _Atomic ( typename
-                    (parse-type-name parstate))
-                   ((erp last-span parstate) ; _Atomic ( typename )
-                    (read-punctuator ")" parstate)))
-                (retok (decl-spec-typespec (type-spec-atomic tyname))
-                       (span-join span last-span)
-                       parstate))))
+            (b* (((erp tyname & parstate) ; _Atomic ( typename
+                  (parse-type-name parstate))
+                 ((erp last-span parstate) ; _Atomic ( typename )
+                  (read-punctuator ")" parstate)))
+              (retok (decl-spec-typespec (type-spec-atomic tyname))
+                     (span-join span last-span)
+                     parstate)))
            ;; If token2 is not an open parenthesis,
-           ;; we must have an atomic type qualifier.
+           ;; we must be parsing a type qualifier.
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
@@ -10328,7 +10430,7 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp tyspec last-span parstate) ; struct strunispec
+        (b* (((erp tyspec last-span parstate) ; struct struni-spec
               (parse-struct-or-union-specifier t span parstate)))
           (retok (decl-spec-typespec tyspec)
                  (span-join span last-span)
@@ -10336,7 +10438,7 @@
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp tyspec last-span parstate) ; union strunispec
+        (b* (((erp tyspec last-span parstate) ; union struni-spec
               (parse-struct-or-union-specifier nil span parstate)))
           (retok (decl-spec-typespec tyspec)
                  (span-join span last-span)
@@ -10520,7 +10622,7 @@
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declspec first-span parstate) ; declspec
-          (parse-declaration-specifier tyspec-seenp parstate))
+          (parse-declaration-specifier parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
@@ -10737,7 +10839,7 @@
        the parsed structure or union specifier
        with the information from the boolean input.
        The reason why we do that,
-       instead of just returning a @(tsee strunispec)
+       instead of just returning a @(tsee struni-spec)
        and letting the callers build the @(tsee type-spec),
        is that we also accommodate the GCC extension of
        a structure specifier without members (and with optional name);
@@ -10789,8 +10891,8 @@
                           ;; struct ident { structdecls }
                           (read-punctuator "}" parstate)))
                       (retok (type-spec-struct
-                              (make-strunispec :name ident
-                                               :members structdecls))
+                              (make-struni-spec :name? ident
+                                                :members structdecls))
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
@@ -10805,11 +10907,11 @@
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (type-spec-struct
-                             (make-strunispec :name ident
-                                              :members structdecls))
+                             (make-struni-spec :name? ident
+                                               :members structdecls))
                          (type-spec-union
-                             (make-strunispec :name ident
-                                              :members structdecls)))
+                             (make-struni-spec :name? ident
+                                               :members structdecls)))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -10820,11 +10922,11 @@
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
                          (type-spec-struct
-                          (make-strunispec :name ident
-                                           :members nil))
+                          (make-struni-spec :name? ident
+                                            :members nil))
                        (type-spec-union
-                        (make-strunispec :name ident
-                                         :members nil)))
+                        (make-struni-spec :name? ident
+                                          :members nil)))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -10860,8 +10962,8 @@
                       ;; struct { structdecls }
                       (read-punctuator "}" parstate)))
                   (retok (type-spec-struct
-                          (make-strunispec :name nil
-                                           :members structdecls))
+                          (make-struni-spec :name? nil
+                                            :members structdecls))
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
@@ -10873,11 +10975,11 @@
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (type-spec-struct
-                        (make-strunispec :name nil
-                                         :members structdecls))
+                        (make-struni-spec :name? nil
+                                          :members structdecls))
                      (type-spec-union
-                      (make-strunispec :name nil
-                                       :members structdecls)))
+                      (make-struni-spec :name? nil
+                                        :members structdecls)))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,
@@ -12295,7 +12397,7 @@
              ((erp absdeclor last-span parstate) ; specquals absdeclor
               (parse-abstract-declarator parstate)))
           (retok (make-tyname :specquals specquals
-                              :decl? absdeclor
+                              :declor? absdeclor
                               :info nil)
                  (span-join span last-span)
                  parstate)))
@@ -12303,7 +12405,7 @@
        (t ; specquals other
         (b* ((parstate (if token (unread-token parstate) parstate)))
           (retok (make-tyname :specquals specquals
-                              :decl? nil
+                              :declor? nil
                               :info nil)
                  span
                  parstate)))))
@@ -15340,16 +15442,14 @@
        '(:expand (parse-enumerator-list parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
                         clause)
-       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
-                  (parse-specifier/qualifier nil parstate))))
+       '(:expand (parse-specifier/qualifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
        '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
                   (parse-specifier-qualifier-list nil parstate))))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
                         clause)
-       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
-                  (parse-declaration-specifier nil parstate))))
+       '(:expand (parse-declaration-specifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
                         clause)
        '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
@@ -16094,8 +16194,7 @@
        '(:expand (parse-enumerator-list parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
                         clause)
-       '(:expand ((parse-specifier/qualifier tyspec-seenp parstate)
-                  (parse-specifier/qualifier nil parstate))))
+       '(:expand (parse-specifier/qualifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
        '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
@@ -16105,8 +16204,7 @@
        '(:expand (parse-statement parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
                         clause)
-       '(:expand ((parse-declaration-specifier tyspec-seenp parstate)
-                  (parse-declaration-specifier nil parstate))))
+       '(:expand (parse-declaration-specifier parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
                         clause)
        '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)

@@ -407,6 +407,14 @@
            (symbol-listp (strip-cdrs alist)))
   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp))))
 
+;; Disabled since hung on natp
+(defthmd natp-of-car-of-rassoc-equal-when-param-slot-to-name-alistp
+  (implies (and (param-slot-to-name-alistp param-slot-to-name-alist)
+                (rassoc-equal x param-slot-to-name-alist) ; it is present
+                )
+           (natp (car (rassoc-equal x param-slot-to-name-alist))))
+  :hints (("Goal" :in-theory (enable rassoc-equal param-slot-to-name-alistp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The alist returned is ordered by slot.

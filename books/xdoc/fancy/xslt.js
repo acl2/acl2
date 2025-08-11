@@ -35,9 +35,8 @@
 // Compatibility wrapper for lack of XSLT standards in browsers.
 //
 
-// Warning: Keep this in sync with *entity-strings* and
-// *entitytok-as-plaintext-fal* in ../parse-xml.lisp,
-// *xml-entity-stuff* in ../prepare-topic.lisp, and
+// Warning: Keep this in sync with *entity-info*
+// in ../parse-xml.lisp, and
 // (defxdoc entities ...) in topics.lisp, and
 // wrap_xdoc_fragment in xdata2html.pl
 /**
@@ -127,6 +126,67 @@ function wrapXdocFragment(str) {
         <!ENTITY notin "&#8713;">
         <!ENTITY prod "&#8719;">
         <!ENTITY sum "&#8721;">
+        <!ENTITY ccedil "&#231;">
+        <!ENTITY aacute "&#225;">
+        <!ENTITY agrave "&#224;">
+        <!ENTITY acirc "&#226;">
+        <!ENTITY atilde "&#227;">
+        <!ENTITY auml "&#228;">
+        <!ENTITY aring "&#229;">
+        <!ENTITY aogon "&#261;">
+        <!ENTITY egrave "&#232;">
+        <!ENTITY eacute "&#233;">
+        <!ENTITY ecirc "&#234;">
+        <!ENTITY euml "&#235;">
+        <!ENTITY eogon "&#281;">
+        <!ENTITY igrave "&#236;">
+        <!ENTITY iacute "&#237;">
+        <!ENTITY icirc "&#238;">
+        <!ENTITY iuml "&#239;">
+        <!ENTITY iogon "&#303;">
+        <!ENTITY ntilde "&#241;">
+        <!ENTITY nacute "&#324;">
+        <!ENTITY ograve "&#242;">
+        <!ENTITY oacute "&#243;">
+        <!ENTITY ocirc "&#244;">
+        <!ENTITY otilde "&#245;">
+        <!ENTITY ouml "&#246;">
+        <!ENTITY ugrave "&#249;">
+        <!ENTITY uacute "&#250;">
+        <!ENTITY ucirc "&#251;">
+        <!ENTITY uuml "&#252;">
+        <!ENTITY uogon "&#371;">
+        <!ENTITY Ccedil "&#199;">
+        <!ENTITY Aacute "&#193;">
+        <!ENTITY Agrave "&#192;">
+        <!ENTITY Acirc "&#194;">
+        <!ENTITY Atilde "&#195;">
+        <!ENTITY Auml "&#196;">
+        <!ENTITY Aring "&#197;">
+        <!ENTITY Aogon "&#260;">
+        <!ENTITY Egrave "&#200;">
+        <!ENTITY Eacute "&#201;">
+        <!ENTITY Ecirc "&#202;">
+        <!ENTITY Euml "&#203;">
+        <!ENTITY Eogon "&#280;">
+        <!ENTITY Igrave "&#204;">
+        <!ENTITY Iacute "&#205;">
+        <!ENTITY Icirc "&#206;">
+        <!ENTITY Iuml "&#207;">
+        <!ENTITY Iogon "&#302;">
+        <!ENTITY Ntilde "&#209;">
+        <!ENTITY Nacute "&#323;">
+        <!ENTITY Ograve "&#210;">
+        <!ENTITY Oacute "&#211;">
+        <!ENTITY Ocirc "&#212;">
+        <!ENTITY Otilde "&#213;">
+        <!ENTITY Ouml "&#214;">
+        <!ENTITY Ugrave "&#217;">
+        <!ENTITY Uacute "&#218;">
+        <!ENTITY Ucirc "&#219;">
+        <!ENTITY Uuml "&#220;">
+        <!ENTITY Uogon "&#370;">
+
     ]>
     <root>${str}</root>`;
 }

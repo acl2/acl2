@@ -42,6 +42,7 @@
 (defconst *trimmable-arithmetic-operators* ; rename to *trimmable-arithmetic-bv-operators* ?
   '(bvplus bvmult bvminus bvuminus))
 
+;; WARNING: Keep in sync with trim-helper-rules in Axe.
 (defconst *trimmable-operators*
   (append *trimmable-arithmetic-operators*
           *trimmable-non-arithmetic-operators*))
@@ -185,7 +186,14 @@
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-helper width term operators))))
 
-;; TODO: Consider adding logext
 ;; WARNING: Keep this in sync with the rules in convert-to-bv-rules.lisp.
+;; TODO: Consider adding IF and then getting rid of the rules that introduce BVIF
 (defconst *functions-convertible-to-bv*
-  '(binary-logand binary-logior binary-logxor lognot binary-+ unary--))
+  '(binary-logand
+    binary-logior
+    binary-logxor
+    lognot
+    ;; logext ; todo: uncomment?
+    binary-+
+    unary--
+    binary-*))

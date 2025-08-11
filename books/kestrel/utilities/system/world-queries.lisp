@@ -6,7 +6,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors:
-;   Alessandro Coglio (coglio@kestrel.edu)
+;   Alessandro Coglio (www.alessandrocoglio.info)
 ;   Eric Smith (eric.smith@kestrel.edu)
 ;   Matt Kaufmann (kaufmann@cs.utexas.edu)
 
@@ -32,6 +32,12 @@
 (include-book "std/system/function-symbol-listp" :dir :system)
 (include-book "std/system/fundef-disabledp" :dir :system)
 (include-book "std/system/fundef-enabledp" :dir :system)
+(include-book "std/system/get-measure" :dir :system)
+(include-book "std/system/get-measure-plus" :dir :system)
+(include-book "std/system/get-ruler-extenders" :dir :system)
+(include-book "std/system/get-ruler-extenders-plus" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation-plus" :dir :system)
 (include-book "std/system/guard-verified-p" :dir :system)
 (include-book "std/system/guard-verified-p-plus" :dir :system)
 (include-book "std/system/included-books" :dir :system)
@@ -52,8 +58,6 @@
 (include-book "std/system/macro-namep" :dir :system)
 (include-book "std/system/macro-symbol-listp" :dir :system)
 (include-book "std/system/macro-symbolp" :dir :system)
-(include-book "std/system/measure" :dir :system)
-(include-book "std/system/measure-plus" :dir :system)
 (include-book "std/system/measured-subset" :dir :system)
 (include-book "std/system/measured-subset-plus" :dir :system)
 (include-book "std/system/no-stobjs-p" :dir :system)
@@ -69,8 +73,6 @@
 (include-book "std/system/primitivep" :dir :system)
 (include-book "std/system/primitivep-plus" :dir :system)
 (include-book "std/system/recursive-calls" :dir :system)
-(include-book "std/system/ruler-extenders" :dir :system)
-(include-book "std/system/ruler-extenders-plus" :dir :system)
 (include-book "std/system/rune-disabledp" :dir :system)
 (include-book "std/system/rune-enabledp" :dir :system)
 (include-book "std/system/stobjs-in-plus" :dir :system)
@@ -88,5 +90,3 @@
 (include-book "std/system/uguard-plus" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body-plus" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
-(include-book "std/system/well-founded-relation-plus" :dir :system)

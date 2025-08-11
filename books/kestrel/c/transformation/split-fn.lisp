@@ -17,34 +17,33 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 (include-book "utilities/free-vars")
+(include-book "utilities/subst-free")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ split-fn
-  :parents (transformation-tools)
-  :short "A C-to-C transformation to split a function in two."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This transformation takes the identifier of the function it is to split,
-       the name of the new function to be generated, and the location of the
-       split, represented as a natural number corresponding to the number of
-       block items in the function body before the split.")
-    (xdoc::p
-      "This transformation is a work in progress, and may fail in certain
-       cases. For instance, it may fail given variables which have been
-       declared but not yet initialized at the split point, or variables which
-       are passed by reference after the split point."))
-  :order-subtopics t
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-implementation split-fn
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,41 +58,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
+(fty::defomap ident-param-declon-map
+  :key-type ident
+  :val-type param-declon
+  :pred ident-param-declon-mapp)
 
-  (fty::defomap ident-paramdeclon-map
-    :key-type ident
-    :val-type param-declon
-    :pred ident-paramdeclon-mapp))
-
-(defrulel ident-listp-of-keys-when-ident-paramdeclon-mapp
-  (implies (ident-paramdeclon-mapp map)
+(defrulel ident-listp-of-keys-when-ident-param-declon-mapp
+  (implies (ident-param-declon-mapp map)
            (ident-listp (omap::keys map)))
   :induct t
   :enable omap::keys)
 
-(defrulel param-declon-listp-of-strip-cdrs-when-ident-paramdeclon-mapp
-  (implies (ident-paramdeclon-mapp map)
+(defrulel param-declon-listp-of-strip-cdrs-when-ident-param-declon-mapp
+  (implies (ident-param-declon-mapp map)
            (param-declon-listp (strip-cdrs map)))
   :induct t
   :enable (strip-cdrs
-           ident-paramdeclon-mapp))
+           ident-param-declon-mapp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-ident-list
+(define map-address-ident-list
   ((idents ident-listp))
-  :short "Map @(tsee c$::expr-list) over a list."
+  :short "Map @(tsee c$::expr-unary) @(tsee c$::unop-address) over a list of
+          identifiers."
   :returns (exprs expr-listp)
   (if (endp idents)
       nil
-    (cons (make-expr-ident :ident (first idents) :info nil)
-          (expr-ident-list (rest idents)))))
+    (cons (make-expr-unary :op (c$::unop-address)
+                           :arg (make-expr-ident :ident (first idents)))
+          (map-address-ident-list (rest idents)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declon-to-ident-paramdeclon-map
+(define param-declon-to-ident-param-declon-map
   ((paramdecl param-declonp))
   :short "Convert a parameter declaration into a singleton omap associating the
           declared identifier to the declaration."
@@ -102,7 +100,7 @@
    (xdoc::p
      "If the parameter declaration is unnamed, or if it has not been
       disambiguated, the empty map is returned instead."))
-  :returns (map ident-paramdeclon-mapp)
+  :returns (map ident-param-declon-mapp)
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
@@ -111,19 +109,19 @@
                                  nil)
       :otherwise nil)))
 
-(define param-declon-list-to-ident-paramdeclon-map
+(define param-declon-list-to-ident-param-declon-map
   ((paramdecls param-declon-listp))
-  :short "Fold @(tsee param-declon-to-ident-paramdeclon-map) over a list."
-  :returns (map ident-paramdeclon-mapp)
+  :short "Fold @(tsee param-declon-to-ident-param-declon-map) over a list."
+  :returns (map ident-param-declon-mapp)
   (if (endp paramdecls)
         nil
-    (omap::update* (param-declon-to-ident-paramdeclon-map (first paramdecls))
-                   (param-declon-list-to-ident-paramdeclon-map (rest paramdecls))))
+    (omap::update* (param-declon-to-ident-param-declon-map (first paramdecls))
+                   (param-declon-list-to-ident-param-declon-map (rest paramdecls))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-to-ident-paramdeclon-map
+(define decl-to-ident-param-declon-map
   ((decl declp))
   :short "Convert a regular declaration into an omap of identifiers to
           parameter declarations."
@@ -145,17 +143,17 @@
      "This is used by @(tsee split-fn) to track declared variables and to
       create parameters for the newly generated function (with the subset of
       declared variables which are used)."))
-  :returns (map ident-paramdeclon-mapp)
+  :returns (map ident-param-declon-mapp)
   (decl-case
    decl
-   :decl (decl-to-ident-paramdeclon-map0 decl.specs decl.init)
+   :decl (decl-to-ident-param-declon-map0 decl.specs decl.init)
    :statassert nil)
   :prepwork
-  ((define decl-to-ident-paramdeclon-map0
+  ((define decl-to-ident-param-declon-map0
      ((declspecs decl-spec-listp)
       (initdeclors initdeclor-listp))
      :returns
-     (map ident-paramdeclon-mapp)
+     (map ident-param-declon-mapp)
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
@@ -165,27 +163,118 @@
          (make-param-declon
            :specs declspecs
            :declor (param-declor-nonabstract initdeclor.declor))
-         (decl-to-ident-paramdeclon-map0 declspecs (rest initdeclors))))
+         (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
-(define decl-list-to-ident-paramdeclon-map
+(define decl-list-to-ident-param-declon-map
   ((decls decl-listp))
-  :short "Fold @(tsee decl-to-ident-paramdeclon-map) over a list."
-  :returns (map ident-paramdeclon-mapp)
+  :short "Fold @(tsee decl-to-ident-param-declon-map) over a list."
+  :returns (map ident-param-declon-mapp)
   (if (endp decls)
         nil
-    (omap::update* (decl-to-ident-paramdeclon-map (first decls))
-                   (decl-list-to-ident-paramdeclon-map (rest decls))))
+    (omap::update* (decl-to-ident-param-declon-map (first decls))
+                   (decl-list-to-ident-param-declon-map (rest decls))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: avoid excessive parentheses
+(defines add-pointer-declor/dirdeclor
+  (define add-pointer-declor
+    ((declor declorp))
+    :returns (declor$ declorp)
+    (b* (((declor declor) declor))
+      (dirdeclor-case
+        declor.direct
+        :ident (make-declor
+                 :pointers (append declor.pointers (list nil))
+                 :direct declor.direct)
+        :otherwise (make-declor
+                     :pointers declor.pointers
+                     :direct (add-pointer-dirdeclor declor.direct))))
+    :measure (declor-count declor))
+
+  (define add-pointer-dirdeclor
+    ((dirdeclor dirdeclorp))
+    :returns (dirdeclor$ dirdeclorp)
+    (dirdeclor-case
+     dirdeclor
+     :ident (dirdeclor-paren (make-declor :pointers (list nil)
+                                          :direct (dirdeclor-fix dirdeclor)))
+     :paren (dirdeclor-paren (add-pointer-declor dirdeclor.inner))
+     :array (make-dirdeclor-array
+              :declor (add-pointer-dirdeclor dirdeclor.declor)
+              :qualspecs dirdeclor.qualspecs
+              :size? dirdeclor.size?)
+     :array-static1 (make-dirdeclor-array-static1
+                      :declor (add-pointer-dirdeclor dirdeclor.declor)
+                      :qualspecs dirdeclor.qualspecs
+                      :size dirdeclor.size)
+     :array-static2 (make-dirdeclor-array-static2
+                      :declor (add-pointer-dirdeclor dirdeclor.declor)
+                      :qualspecs dirdeclor.qualspecs
+                      :size dirdeclor.size)
+     :array-star (make-dirdeclor-array-star
+                   :declor (add-pointer-dirdeclor dirdeclor.declor)
+                   :qualspecs dirdeclor.qualspecs)
+     :function-params (make-dirdeclor-function-params
+                        :declor (add-pointer-dirdeclor dirdeclor.declor)
+                        :params dirdeclor.params
+                        :ellipsis dirdeclor.ellipsis)
+     :function-names (make-dirdeclor-function-names
+                        :declor (add-pointer-dirdeclor dirdeclor.declor)
+                        :names dirdeclor.names))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+(define add-pointer-param-declon
+  ((param-declon param-declonp))
+  :returns (param-declon$ param-declonp)
+  (b* (((param-declon param-declon) param-declon))
+    (make-param-declon
+      :specs param-declon.specs
+      :declor (param-declor-case
+                param-declon.declor
+                :nonabstract (param-declor-nonabstract
+                               (add-pointer-declor param-declon.declor.declor))
+                ;; TODO (not used here, but should be implemented for a general
+                ;; utility).
+                :abstract (param-declor-fix param-declon.declor)
+                :none (param-declor-fix param-declon.declor)
+                :ambig (param-declor-fix param-declon.declor)))))
+
+(define map-add-pointer-param-declon
+  ((param-declons param-declon-listp))
+  :returns (param-declons$ param-declon-listp)
+  (if (endp param-declons)
+      nil
+    (cons (add-pointer-param-declon (first param-declons))
+          (map-add-pointer-param-declon (rest param-declons)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-deref-subst
+  ((idents ident-listp))
+  :returns (subst ident-expr-mapp)
+  (if (endp idents)
+      nil
+    (omap::update (ident-fix (first idents))
+                  (expr-paren
+                    (c$::make-expr-unary
+                      :op (c$::unop-indir)
+                      :arg (make-expr-ident :ident (first idents))))
+                  (make-deref-subst (rest idents))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-fn
   ((new-fn-name identp)
    (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
-   (decls ident-paramdeclon-mapp))
+   (decls ident-param-declon-mapp))
   :short "Create a new function from the block items following the @(tsee
           split-fn) split point."
   :long
@@ -200,22 +289,23 @@
       for general equivalence. It may be sufficient to take an argument by
       reference when its address is taken in an expression of the new function
       body.)"))
-  :returns (mv er
-               (idents ident-listp
+  :returns (mv (idents ident-listp
                        "The identifiers appearing in argument @('decls')
                         corresponding to the function parameters (in the same
                         order).")
                (new-fn fundefp
                        "The new function definition."))
-  (b* (((reterr) nil (c$::irr-fundef))
-       ((mv idents -)
+  (b* (((mv idents -)
         (free-vars-block-item-list items nil))
-       (decls (ident-paramdeclon-map-filter decls idents))
+       (decls (ident-param-declon-map-filter decls idents))
        (idents (omap::keys decls))
        ;; We use strip-cdrs instead of omap::values because we need these in
        ;; the same order as idents.
-       (params (strip-cdrs decls)))
-    (retok
+       (params (strip-cdrs decls))
+       (deref-subst (make-deref-subst idents))
+       ((mv items -)
+        (block-item-list-subst-free items deref-subst nil)))
+    (mv
       idents
       (make-fundef
         :spec spec
@@ -223,14 +313,15 @@
                   :pointers pointers
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
-                            :params params))
+                            :params (map-add-pointer-param-declon params)))
         :body (stmt-compound items))))
+  :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
-  ((define ident-paramdeclon-map-filter
-     ((map ident-paramdeclon-mapp)
+  ((define ident-param-declon-map-filter
+     ((map ident-param-declon-mapp)
       (idents ident-setp))
-     :returns (new-map ident-paramdeclon-mapp)
-     (b* ((map (ident-paramdeclon-map-fix map))
+     :returns (new-map ident-param-declon-mapp)
+     (b* ((map (ident-param-declon-map-fix map))
           ((when (omap::emptyp map))
            nil)
           ((mv key val)
@@ -238,12 +329,11 @@
        (if (in key idents)
            (omap::update key
                          val
-                         (ident-paramdeclon-map-filter (omap::tail map) idents))
-         (ident-paramdeclon-map-filter
+                         (ident-param-declon-map-filter (omap::tail map) idents))
+         (ident-param-declon-map-filter
            (omap::tail map)
            idents)))
-     :measure (acl2-count (ident-paramdeclon-map-fix map))
-     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :measure (acl2-count (ident-param-declon-map-fix map))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,7 +343,7 @@
    (items block-item-listp)
    (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
-   (decls ident-paramdeclon-mapp)
+   (decls ident-param-declon-mapp)
    (split-point natp))
   :short "Transform a list of block items."
   :long
@@ -267,13 +357,13 @@
       parameters derived from this parameter declaration map. The previous
       function is truncated at this point, and a return statement added calling
       the newly split-out function."))
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-fn fundefp)
                (truncated-items block-item-listp))
   (b* ((items (block-item-list-fix items))
        ((reterr) (c$::irr-fundef) items)
        ((when (zp split-point))
-        (b* (((erp idents new-fn)
+        (b* (((mv idents new-fn)
               (abstract-fn new-fn-name spec pointers items decls)))
           (retok new-fn
                  (list
@@ -281,15 +371,15 @@
                      (stmt-return
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (expr-ident-list idents))))))))
+                         :args (map-address-ident-list idents))))))))
        ((when (endp items))
-        (reterr (msg "Bad split point specifier")))
+        (retmsg$ "Bad split point specifier"))
        (item (first items))
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-paramdeclon-map item.unwrap)
-                               (ident-paramdeclon-map-fix decls))
+          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+                               (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
         (split-fn-block-item-list new-fn-name
@@ -302,9 +392,7 @@
            (cons (first items)
                  truncated-items)))
   :measure (block-item-list-count items)
-  :hints (("Goal" :in-theory (enable o<
-                                     o-finp
-                                     block-item-list-fix))))
+  :hints (("Goal" :in-theory (enable block-item-list-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +403,7 @@
    (split-point natp))
   :short "Transform a function definition, splitting it if matches the target
           identifier, or else leaving it untouched."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
   (b* (((reterr) (c$::irr-fundef) nil)
@@ -324,27 +412,36 @@
     (stmt-case
       fundef.body
       :compound
-      (dirdeclor-case
-        fundef.declor.direct
-        :function-params
-        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.declor)))
-              (retok (fundef-fix fundef) nil))
-             ((erp new-fn truncated-items)
+      (b* (((mv well-formedp fundef-name params)
+             (dirdeclor-case
+               fundef.declor.direct
+               :function-params
+               (mv t
+                   (c$::dirdeclor->ident fundef.declor.direct.declor)
+                   fundef.declor.direct.params)
+               :function-names
+               (mv t
+                   (c$::dirdeclor->ident fundef.declor.direct.declor)
+                   nil)
+               :otherwise (mv nil nil nil)))
+           ((unless (and well-formedp
+                         (equal target-fn fundef-name)))
+            (retok (fundef-fix fundef) nil))
+           ((erp new-fn truncated-items)
               (split-fn-block-item-list
                 new-fn-name
                 fundef.body.items
                 fundef.spec
                 fundef.declor.pointers
-                (param-declon-list-to-ident-paramdeclon-map fundef.declor.direct.params)
+                (param-declon-list-to-ident-param-declon-map params)
                 split-point)))
-          (retok new-fn
+        (retok new-fn
                  (make-fundef
                    :extension fundef.extension
                    :spec fundef.spec
                    :declor fundef.declor
                    :decls fundef.decls
                    :body (stmt-compound truncated-items))))
-        :otherwise (retok (fundef-fix fundef) nil))
       :otherwise (retok (fundef-fix fundef) nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -355,7 +452,7 @@
    (extdecl extdeclp)
    (split-point natp))
   :short "Transform an external declaration."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (target-found booleanp)
                (extdecls extdecl-listp))
   (b* (((reterr) nil nil))
@@ -374,7 +471,10 @@
                   :none (retok nil (list (extdecl-fundef fundef1)))))
       :decl (retok nil (list (extdecl-fix extdecl)))
       :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl))))))
+      :asm (retok nil (list (extdecl-fix extdecl)))))
+  ///
+  (more-returns
+   (extdecls true-listp :rule-classes :type-prescription)))
 
 (define split-fn-extdecl-list
   ((target-fn identp)
@@ -382,7 +482,7 @@
    (extdecls extdecl-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-extdecls extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
@@ -403,7 +503,7 @@
    (tunit transunitp)
    (split-point natp))
   :short "Transform a translation unit."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
@@ -418,7 +518,7 @@
    (map filepath-transunit-mapp)
    (split-point natp))
   :short "Transform a filepath."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-map filepath-transunit-mapp
                         :hyp (filepath-transunit-mapp map)))
   (b* (((reterr) nil)
@@ -443,7 +543,7 @@
    (tunits transunit-ensemblep)
    (split-point natp))
   :short "Transform a translation unit ensemble."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)
        ((mv er map)
@@ -452,3 +552,146 @@
                                          tunits.unwrap
                                          split-point)))
     (mv er (transunit-ensemble map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-code-ensemble
+  ((target-fn identp)
+   (new-fn-name identp)
+   (code code-ensemblep)
+   (split-point natp))
+  :returns (mv (er? maybe-msgp)
+               (new-code code-ensemblep))
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code)
+       ((reterr) (irr-code-ensemble))
+       ((erp tunits) (split-fn-transunit-ensemble target-fn
+                                                  new-fn-name
+                                                  code.transunits
+                                                  split-point)))
+    (retok (change-code-ensemble code :transunits tunits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing split-fn)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-process-inputs
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (wrld plist-worldp))
+  :returns (mv (er? maybe-msgp)
+               (code (code-ensemblep code))
+               (const-new$ symbolp)
+               (target$ identp)
+               (new-fn$ identp)
+               (split-point natp))
+  :short "Process the inputs."
+  (b* (((reterr)
+        (irr-code-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
+       ((unless (symbolp const-old))
+        (retmsg$ "~x0 must be a symbol." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       ((unless (symbolp const-new))
+        (retmsg$ "~x0 must be a symbol." const-new))
+       ((unless (stringp target))
+        (retmsg$ "~x0 must be a string." target))
+       (target (ident target))
+       ((unless (stringp new-fn))
+        (retmsg$ "~x0 must be a string." new-fn))
+       (new-fn (ident new-fn))
+       ((unless (natp split-point))
+        (retmsg$ "~x0 must be a natural number." split-point)))
+    (retok code const-new target new-fn split-point)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation split-fn)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-gen-everything
+  ((code code-ensemblep)
+   (const-new symbolp)
+   (target identp)
+   (new-fn identp)
+   (split-point natp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
+  :short "Generate all the events."
+  (b* (((reterr) '(_))
+       ((erp code)
+        (split-fn-code-ensemble
+          target
+          new-fn
+          code
+          split-point))
+       (defconst-event
+         `(defconst ,const-new
+            ',code)))
+    (retok defconst-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-process-inputs-and-gen-everything
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (wrld plist-worldp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((erp code const-new target new-fn split-point)
+        (split-fn-process-inputs
+          const-old const-new target new-fn split-point wrld))
+       ((erp event)
+        (split-fn-gen-everything code const-new target new-fn split-point)))
+    (retok event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-fn
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (ctx ctxp)
+   state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
+  :short "Event expansion of @(tsee split-fn)."
+  (b* (((mv erp event)
+        (split-fn-process-inputs-and-gen-everything
+          const-old const-new target new-fn split-point (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection split-fn-macro-definition
+  :short "Definition of @(tsee split-fn)."
+  (defmacro split-fn
+    (const-old
+     const-new
+     &key
+     target
+     new-fn
+     split-point)
+    `(make-event (split-fn-fn ',const-old
+                              ',const-new
+                              ',target
+                              ',new-fn
+                              ',split-point
+                              'split-fn
+                              state))))

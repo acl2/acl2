@@ -13,6 +13,7 @@
 (include-book "file-paths")
 (include-book "files")
 (include-book "grammar")
+(include-book "grammar-characters")
 (include-book "keywords")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -53,42 +54,9 @@
      of the same unique concrete syntax of C.
      We are not defining a different concrete syntax of C here.
      However, we are instantiating certain aspects of the concrete syntax
-     which [C17] leaves open, such as the exact character set used.")
-   (xdoc::p
-    "We plan to add a parser and a pretty-printer."))
-  :order-subtopics t
-  :default-parent (file-paths
-                   files
-                   grammar
-                   keywords
-                   t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define grammar-character-p ((char natp))
-  :returns (yes/no booleanp)
-  :short "Check if a character (code) is valid according to the ABNF grammar."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is based on the definition of @('character') in the ABNF grammar.
-     At some point we should prove that
-     this definition is consistent with that ABNF grammar rule."))
-  (or (and (<= 9 char) (<= char 13))
-      (and (<= 32 char) (<= char 126))
-      (and (<= #x80 char) (<= char #x2029))
-      (and (<= #x202f char) (<= char #x2065))
-      (and (<= #x206a char) (<= char #xd7ff))
-      (and (<= #xe000 char) (<= char #x10ffff))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist grammar-character-listp (x)
-  :guard (nat-listp x)
-  :short "Check if all the characters (codes) in a list
-          are valid according to the ABNF grammar."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This lifts @(tsee grammar-character-p) to lists of natural numbers."))
-  (grammar-character-p x))
+     which [C17] leaves open, such as the exact character set used."))
+  :order-subtopics (file-paths
+                    files
+                    grammar
+                    grammar-characters
+                    keywords))

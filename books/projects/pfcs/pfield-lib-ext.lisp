@@ -104,6 +104,14 @@
   :induct t
   :enable (update-nth nfix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-rev
+  (equal (pfield::fe-listp (rev x) prime)
+         (pfield::fe-listp (true-list-fix x) prime))
+  :induct t
+  :enable rev)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled pfield::nat-listp-when-fe-listp

@@ -13,6 +13,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "kestrel/utilities/messages" :dir :system)
+
 (include-book "../syntax/disambiguator")
 (include-book "../syntax/validator")
 (include-book "splitgso")
@@ -20,9 +22,11 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,9 +74,9 @@
          nil))
      (type-spec-case
        type-spec?
-       :struct (b* (((strunispec strunispec) type-spec?.spec))
-                 (if (equal strunispec.name struct-tag)
-                     (structdecls-find-first-field-name strunispec.members)
+       :struct (b* (((struni-spec struni-spec) type-spec?.spec))
+                 (if (equal struni-spec.name? struct-tag)
+                     (structdecls-find-first-field-name struni-spec.members)
                    nil))
        :otherwise nil))
    :statassert nil))
@@ -202,7 +206,7 @@
   ((tunit transunitp)
    (blacklist ident-setp))
   :guard (c$::transunit-annop tunit)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (gso identp)
                (field-name identp)
                (internal booleanp :rule-classes :type-prescription))
@@ -217,7 +221,7 @@
       (blacklist ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-annop tunit)
-     :returns (mv erp
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
                   (gso identp)
                   (field-name identp)
                   (internal booleanp :rule-classes :type-prescription))
@@ -251,7 +255,7 @@
   ((map filepath-transunit-mapp)
    (blacklist ident-setp))
   :guard (c$::filepath-transunit-map-annop map)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
@@ -273,7 +277,7 @@
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
@@ -287,7 +291,7 @@
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-any-gso0
@@ -301,7 +305,7 @@
       (blacklist ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
                   (blacklist$ ident-setp)
                   (tunits$ transunit-ensemblep))
      (b* (((reterr) nil (c$::transunit-ensemble-fix tunits))
@@ -337,7 +341,7 @@
    (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-all-gso0 tunits
@@ -354,7 +358,7 @@
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (er? maybe-msgp)
                   (blacklist$ ident-setp)
                   ;; add annop
                   (tunits$ transunit-ensemblep))
@@ -363,7 +367,7 @@
           ((reterr) nil tunits)
           ((when (int= 0 (mbe :logic (nfix steps)
                               :exec (acl2::the-fixnat steps))))
-           (reterr t))
+           (retmsg$ "Out of steps."))
           ((mv erp blacklist tunits$)
            (transunit-ensemble-split-any-gso
              tunits
@@ -375,10 +379,10 @@
           ((erp tunits$)
            (c$::dimb-transunit-ensemble tunits$ gcc))
           ((erp tunits$)
-           (c$::valid-transunit-ensemble tunits$ gcc ienv))
+           (c$::valid-transunit-ensemble tunits$ ienv))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
-           (reterr t)))
+           (retmsg$ "Invalid translation unit ensemble.")))
        (transunit-ensemble-split-all-gso0 tunits$
                                           blacklist
                                           gcc
@@ -387,6 +391,22 @@
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable o< o-finp nfix)))
      :guard-hints (("Goal" :in-theory (enable nfix))))))
+
+(define code-ensemble-split-all-gso
+  ((code code-ensemblep)
+   (blacklist ident-setp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (blacklist$ ident-setp)
+               (code$ code-ensemblep))
+  (b* (((reterr) nil (irr-code-ensemble))
+       ((code-ensemble code) code)
+       ((erp blacklist tunits)
+        (transunit-ensemble-split-all-gso code.transunits
+                                          blacklist
+                                          (c$::ienv->gcc code.ienv)
+                                          code.ienv)))
+    (retok blacklist (change-code-ensemble code :transunits tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -397,34 +417,26 @@
 (define split-all-gso-process-inputs
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
-  :returns (mv erp
-               (tunits (and (transunit-ensemblep tunits)
-                            (c$::transunit-ensemble-annop tunits))
-                       :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
-               (const-new$ symbolp :rule-classes :type-prescription)
-               (gcc booleanp :rule-classes :type-prescription)
-               (ienv c$::ienvp))
+  :returns (mv (er? maybe-msgp)
+               (code (and (code-ensemblep code)
+                          (c$::transunit-ensemble-annop
+                           (code-ensemble->transunits code)))
+                     :hints (("Goal" :in-theory (enable irr-code-ensemble
+                                                        irr-transunit-ensemble))))
+               (const-new$ symbolp :rule-classes :type-prescription))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil (c$::ienv-default))
+  (b* (((reterr) (irr-code-ensemble) nil)
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol" const-old)))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
-       ((unless (c$::transunit-ensemble-annop tunits))
-        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
+        (retmsg$ "~x0 must be a symbol" const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       ((unless (c$::transunit-ensemble-annop (code-ensemble->transunits code)))
+        (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol" const-new)))
-       ((unless (booleanp gcc))
-        (reterr (msg "~x0 must be a boolean" gcc)))
-       ((unless (or (c$::ienvp ienv)
-                    (not ienv)))
-        (reterr (msg "~x0 must be an @(see c$::ienv) or @('nil')." ienv)))
-       (ienv (or ienv (c$::ienv-default))))
-    (retok tunits const-new gcc ienv)))
+        (retmsg$ "~x0 must be a symbol" const-new)))
+    (retok code const-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -433,19 +445,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-gen-everything
-  ((tunits transunit-ensemblep)
-   (const-new symbolp)
-   (gcc booleanp)
-   (ienv c$::ienvp))
-  :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp (event pseudo-event-formp))
+  ((code code-ensemblep)
+   (const-new symbolp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp - tunits)
-        (transunit-ensemble-split-all-gso tunits nil gcc ienv))
+       ((erp - code)
+        (code-ensemble-split-all-gso code nil))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,46 +464,37 @@
 (define split-all-gso-process-inputs-and-gen-everything
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits
-             const-new
-             gcc
-             ienv)
+       ((erp code
+             const-new)
         (split-all-gso-process-inputs const-old
                                       const-new
-                                      gcc
-                                      ienv
                                       wrld))
        ((erp event)
-        (split-all-gso-gen-everything tunits
-                                      const-new
-                                      gcc
-                                      ienv)))
+        (split-all-gso-gen-everything code
+                                      const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-fn (const-old
                           const-new
-                          gcc
-                          ienv
                           (ctx ctxp)
                           state)
-  :returns (mv erp (event pseudo-event-formp) state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
   :parents (split-all-gso-implementation)
   :short "Event expansion of @(tsee split-all-gso)."
   (b* (((mv erp event)
         (split-all-gso-process-inputs-and-gen-everything
           const-old
           const-new
-          gcc
-          ienv
           (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -504,13 +506,8 @@
   :short "Definition of @(tsee split-all-gso)."
   (defmacro split-all-gso
     (const-old
-     const-new
-     &key
-     gcc
-     ienv)
+     const-new)
     `(make-event (split-all-gso-fn ',const-old
                                    ',const-new
-                                   ',gcc
-                                   ',ienv
                                    'split-all-gso
                                    state))))

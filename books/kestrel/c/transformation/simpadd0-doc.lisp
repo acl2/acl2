@@ -32,13 +32,13 @@
      "This is a simple proof-of-concept transformation,
       which replaces expressions of the form @('E + 0') with @('E'),
       when @('E') is an expression that our current @(see c$::validator)
-      annotates as having type @('int'),
+      annotated as having type @('int'),
       and @('0') is the octal constant for zero
       without other leading zeros and without suffixes.")
     (xdoc::p
      "The transformation also generates proofs of equivalence
       between old (original) and new (transformed) constructs,
-      for a subset of the constructs.
+      for a growing subset of the constructs.
       In particular, the transformation generates equivalence proofs
       for C functions of a certain form, detailed below."))
 
@@ -61,9 +61,9 @@
       "Specifies the code to the transformed.")
      (xdoc::p
       "This must be a symbol that names an existing ACL2 constant
-       that contains a  validated translation unit ensemble,
-       i.e. a value of type @(tsee transunit-ensemble)
-       resulting from "
+       that contains an unambiguous validated code ensemble,
+       i.e. a value of type @(tsee code-ensemble)
+       whose translation unit ensemble results from "
       (xdoc::seetopic "c$::validator" "validation")
       ", and in particular containing "
       (xdoc::seetopic "c$::validation-information" "validation information")
@@ -93,8 +93,9 @@
      "@('*new*')"
      (xdoc::p
       "The named constant containing the result of the transformation.
-       This is a translation unit ensemble that is
-       the same as the one in @('*old*'), except that
+       This is a code ensemble that is
+       the same as the one in @('*old*'), except that,
+       in the translation unit ensemble,
        every occurrence of an expression of the form @('E + 0'),
        when @('E') is an expression that our current @(see c$::validator)
        annotates as having type @('int'),
@@ -109,17 +110,19 @@
      "Equivalence theorems."
      (xdoc::p
       "One theorem is generated for every function definition in @('*old*')
-       that has all @('int') parameters and
+       that has all integer parameters
+       (except plain @('char') and except @('_Bool')) and
        whose body consists of a single @('return') statement
        with an expression consisting of
-       @('int') constants,
+       integer constants,
        function parameters,
        the unary operators that do not involve pointers
        (i.e. @('+'), @('-'), @('~'), @('!')),
-       and the binary operators that are pure and strict
+       the binary operators that are pure
        (i.e. @('*'), @('/'), @('%'), @('+'), @('-'), @('<<'), @('>>'),
        @('<'), @('>'), @('<='), @('>='), @('=='), @('!='),
-       @('&'), @('^'), @('|')).
+       @('&'), @('^'), @('|'), @('&&'), @('||')),
+       and the ternary conditional operator @('? :').
        Note that the transformed function definition in @('*new*')
        satisfies the same restrictions.")
      (xdoc::p

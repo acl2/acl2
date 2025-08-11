@@ -47,6 +47,7 @@
                            character-resultp
                            define-sk
                            defmacro+
+                           defund-sk
                            defxdoc+
                            enable*
                            impossible
@@ -182,6 +183,14 @@
                            fty::stack
                            pfcs::iname
                            pfcs::iname-list
+                           pfcs::name
+                           pfcs::namep
+                           pfcs::name-fix
+                           pfcs::name-list
+                           pfcs::name-listp
+                           pfcs::name-list-fix
+                           pfcs::name-simple
+                           pfcs::name-indexed
                            pfcs::pf+
                            pfcs::pf*
                            pfcs::pf=
@@ -189,6 +198,8 @@
                            pfcs::pfconst
                            pfcs::pfdef
                            pfcs::pfmon
+                           pfcs::pfname
+                           pfcs::pfnames
                            pfcs::pfvar
                            std::defret-mutual
                            str::string-list)))

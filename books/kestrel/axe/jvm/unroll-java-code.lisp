@@ -32,7 +32,7 @@
 (include-book "rewriter-jvm")
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
-;(include-book "../rewriter") ; for simp-dag ; todo: use rewriter-jvm
+;(include-book "../rewriter") ; for simp-dag
 (include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
@@ -266,7 +266,6 @@
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
-         ;; todo: try using a function from rewriter-jvm here (see below) but need to support multiple rule-alists:
          (limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
                    (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration)))
          ;; ((mv erp dag-or-quotep state)
@@ -297,6 +296,7 @@
                                                    (print-level-at-least-verbosep print) ; count-hits ; todo: pass in separately
                                                    (reduce-print-level print)
                                                    rules-to-monitor
+                                                   nil ; no-warn-ground-functions
                                                    '(program-at) ; fns-to-elide
                                                    ))
          ((when erp) (mv erp dag state))
@@ -406,7 +406,6 @@
 
 (local
   (in-theory (disable unroll-java-code-rules (:e unroll-java-code-rules)
-                      nice-output-indicatorp
                       natp
                       nat-listp
                       alistp
@@ -421,7 +420,6 @@
                       jvm::method-staticp
                       jvm::method-namep
                       method-designator-stringp
-                      output-indicatorp-aux
                       no-duplicatesp-equal ; why?
                       strip-cars-of-non-consp
                       assoc-equal-when-member-equal-of-strip-cars
@@ -443,6 +441,47 @@
     (implies (symbol-listp x)
              (eqlable-listp x))))
 
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+(defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
+  (declare (xargs :guard t))
+  (or (eq :all classes-to-assume-initialized)
+      (jvm::all-class-namesp classes-to-assume-initialized)))
+
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+(defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
+  (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
+                              (class-table-alistp class-alist))))
+  (if (eq :all classes-to-assume-initialized)
+      (strip-cars class-alist)
+    classes-to-assume-initialized))
+
+(defund steps-optionp (steps)
+  (declare (xargs :guard t))
+  (or (eq :auto steps)
+      (natp steps)))
+
+(defund branches-optionp (branches)
+  (declare (xargs :guard t))
+  (or (eq :smart branches)
+      (eq :split branches)))
+
+(defund choose-symbolic-execution-rules (steps branches)
+  (declare (xargs :guard (and (steps-optionp steps)
+                              (or (eq :smart branches)
+                                  (eq :split branches)))))
+  (if (eq :auto steps)
+      (if (eq branches :smart)
+          (run-until-return-from-stack-height-rules-smart)
+        (if (eq branches :split)
+            (run-until-return-from-stack-height-rules-split)
+          (er hard? 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
+    (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
+    ))
+
+(defthm symbol-listp-of-choose-symbolic-execution-rules
+  (symbol-listp (choose-symbolic-execution-rules steps branches))
+  :hints (("Goal" :in-theory (enable choose-symbolic-execution-rules))))
+
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
 ;; This uses all classes currently in the global-class-alist.
 ;; Why does this return the dag-fns?
@@ -451,7 +490,7 @@
 ;;when working with this function.
 ;; Very slow guard proof
 (defun unroll-java-code-fn-aux (method-designator-string
-                                maybe-nice-output-indicator
+                                nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
@@ -476,8 +515,7 @@
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
-                              (or (eq :auto maybe-nice-output-indicator)
-                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (nice-output-indicatorp nice-output-indicator)
                               (array-length-alistp array-length-alist)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -485,8 +523,7 @@
                               (symbol-listp monitored-rules)
                               (pseudo-term-listp user-assumptions)
                               (booleanp normalize-xors)
-                              (or (eq :all classes-to-assume-initialized)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (booleanp ignore-exceptions)
                               (booleanp ignore-errors)
                               (print-levelp print)
@@ -496,10 +533,8 @@
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
                               (call-stp-optionp call-stp)
-                              (or (eq :auto steps)
-                                  (natp steps))
-                              (or (eq :smart branches)
-                                  (eq :split branches))
+                              (steps-optionp steps)
+                              (branches-optionp branches)
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
@@ -508,7 +543,9 @@
                   :stobjs state
 ;                  :verify-guards nil ; todo: works but slow!
                   ;; :guard-simplify :limited
-                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules)
+                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
+                                                         steps-optionp ; todo
+                                                         )
                                                         (quotep
                                                          myquotep
                                                          integerp-of-nth-when-all-natp))
@@ -528,7 +565,6 @@
        (class-alist (jvm::global-class-alist state))
        ((when (not (class-table-alistp class-alist)))
         (mv :bad-global-class-alist nil nil nil nil nil state))
-       (all-class-names (strip-cars class-alist))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Class ~x0 not found." method-class)
@@ -583,9 +619,7 @@
             nil nil nil nil
             state))
        (- (and print (cw "(Parameter assumptions: ~x0.)~%" parameter-assumptions)))
-       (classes-to-assume-initialized (if (eq :all classes-to-assume-initialized)
-                                          all-class-names
-                                        classes-to-assume-initialized))
+       (classes-to-assume-initialized (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist))
        (- (and print (cw "(Assuming the following classes are initialized: ~x0.)~%" classes-to-assume-initialized)))
 
        ;; TODO: The term generated here could be improved by using a let:
@@ -622,23 +656,15 @@
                        (jvm::typep return-type))))
         (mv :bad-return-type nil nil nil nil nil state))
        (parameter-types (lookup-eq :parameter-types method-info))
-       ;; Handle an output-indicator of :auto:
-       (output-indicator (if (eq :auto maybe-nice-output-indicator)
-                             (output-indicator-for-return-type return-type)
-                           (desugar-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
-       ((when (not output-indicator))
+       ;; Handle an output-indicator of :rv or a param-name:
+       (simple-output-indicator (desugar-nice-output-indicator nice-output-indicator param-slot-to-name-alist parameter-types return-type))
+       ((when (not simple-output-indicator))
         (mv :failed-to-resolve-output-indicator nil nil nil nil nil state))
-       (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
+       ;;todo: can we call output-extraction-term here?
+       (term-to-run-with-output-extractor (wrap-term-with-output-extractor simple-output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        ;; Decide which symbolic execution rule to use:
-       (symbolic-execution-rules (if (eq :auto steps)
-                                     (if (eq branches :smart)
-                                         (run-until-return-from-stack-height-rules-smart)
-                                       (if (eq branches :split)
-                                           (run-until-return-from-stack-height-rules-split)
-                                         (er hard? 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
-                                   (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
-                                   ))
+       (symbolic-execution-rules (choose-symbolic-execution-rules steps branches))
        ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
        ((mv erp rule-alists)
         (if rule-alists ;use user-supplied rule-alists, if any
@@ -672,6 +698,7 @@
           (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) rule-alists) ; could use a separate rules for this assumption simplification
           (acl2::known-booleans (w state))
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           (print-level-at-least-tp print) ; count-hits ; todo: pass in
           t   ; todo: warn just once
@@ -734,7 +761,7 @@
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
-                             maybe-nice-output-indicator
+                             nice-output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
@@ -760,8 +787,7 @@
                              chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                              whole-form
                              state)
-  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
-                                  (nice-output-indicatorp maybe-nice-output-indicator))
+  (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
@@ -806,7 +832,7 @@
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
         (unroll-java-code-fn-aux method-designator-string
-                                 maybe-nice-output-indicator
+                                 nice-output-indicator
                                  array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
@@ -904,7 +930,7 @@
                                       (ignore-errors 'nil)
                                       (vars-for-array-elements 't) ;whether to introduce vars for individual array elements
                                       (param-names ':auto)
-                                      (output ':auto)
+                                      (output ':rv)
                                       (steps ':auto) ; todo: can this ever be less than the whole run, other than to debug a failed run?
                                       ;; Options affecting how the lifting goes:
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules

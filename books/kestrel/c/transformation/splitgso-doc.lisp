@@ -16,7 +16,7 @@
 
 (defxdoc+ splitgso
   :parents (transformation-tools)
-  :short "A transformation to split a global struct object."
+  :short "A C-to-C transformation to split a global struct object."
   :long
   (xdoc::topstring
     (xdoc::evmac-section-intro
@@ -55,9 +55,9 @@
          "Specifies the code to be transformed.")
        (xdoc::p
          "This must be a symbol that names an existing ACL2 constant
-          that contains a  validated translation unit ensemble,
-          i.e. a value of type @(tsee transunit-ensemble)
-          resulting from "
+          that contains a  validated code ensemble,
+          i.e. a value of type @(tsee code-ensemble)
+          whose translation unit ensemble results from "
          (xdoc::seetopic "c$::validator" "validation")
          ", and in particular containing "
          (xdoc::seetopic "c$::validation-information" "validation information")

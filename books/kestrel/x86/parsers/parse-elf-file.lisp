@@ -19,7 +19,6 @@
 ;; https://gabi.xinuos.com/elf/a-emachine.html
 
 (include-book "parser-utils")
-(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; reduce?
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -38,23 +37,10 @@
 
 (in-theory (disable mv-nth))
 
-(local (defthm integerp-when-unsigned-byte-p-32
-         (implies (unsigned-byte-p 32 x)
-                  (integerp x))))
-
-(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
-                          byte-listp-of-mv-nth-2-of-parse-u8
-                          byte-listp-of-mv-nth-2-of-parse-u16
-                          byte-listp-of-mv-nth-2-of-parse-u32
-                          byte-listp-of-mv-nth-2-of-parse-u64
-                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
-                          acl2-numberp-when-integerp
-                          <=-of-0-when-natp)))
-
-(local (in-theory (disable natp)))
+(local
+  (defthm integerp-when-unsigned-byte-p-32
+    (implies (unsigned-byte-p 32 x)
+             (integerp x))))
 
 (local
   (defthm acl2-numberp-when-bytep
@@ -72,6 +58,22 @@
     (implies (symbol-listp (strip-cdrs alist))
              (symbolp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal)))))
+
+(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
+                          byte-listp-of-mv-nth-2-of-parse-u8
+                          byte-listp-of-mv-nth-2-of-parse-u16
+                          byte-listp-of-mv-nth-2-of-parse-u32
+                          byte-listp-of-mv-nth-2-of-parse-u64
+                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
+                          acl2-numberp-when-integerp
+                          <=-of-0-when-natp)))
+
+(local (in-theory (disable natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
 
@@ -393,8 +395,8 @@
                               (byte-listp bytes))
                   :measure (nfix (- count index))))
   (if (or (<= count index)
-          (not (natp index))
-          (not (natp count)))
+          (not (mbt (natp index)))
+          (not (mbt (natp count))))
       (mv nil (reverse acc))
     (mv-let (erp section-header bytes)
       (parse-elf-section-header 64-bitp bytes)
@@ -611,6 +613,17 @@
              (alistp (mv-nth 1 (extract-elf-sections section-header-table all-bytes acc))))
     :hints (("Goal" :in-theory (enable extract-elf-sections)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an entry in the program-header-table
+(defund elf-program-header-table-entryp (entry)
+  (declare (xargs :guard t))
+  (and (symbol-alistp entry)
+       (natp (lookup-eq :vaddr entry))
+       (natp (lookup-eq :memsz entry))
+       ;; todo: more
+       ))
+
 ;move up
 ;; Returns (mv erp program-header bytes).
 (defund parse-elf-program-header (64-bitp bytes)
@@ -647,6 +660,14 @@
        ((when erp) (mv erp nil bytes))
        ((mv erp p_align bytes) (if 64-bitp (parse-xword bytes) (parse-word bytes)))
        ((when erp) (mv erp nil bytes))
+       ;; Check for errors:
+       ((when (not (unsigned-byte-p 47 p_vaddr)))
+        (er hard? 'parse-elf-program-header "Segment address ~x0 too large." p_vaddr)
+        (mv :vaddr-too-large nil bytes))
+       ((when (not (or (and (= 0 p_vaddr) (= 0 p_memsz)) ; would give -1 in the computation below
+                       (unsigned-byte-p 47 (+ p_vaddr p_memsz -1)))))
+        (er hard? 'parse-elf-program-header "Segment with vaddr ~x0 and size ~x1 too large." p_vaddr p_memsz)
+        (mv :segment-too-large nil bytes))
        ;; Assemble the result:
        (result nil) ; an alist, to be extended
        (result (acons :type p_type result))
@@ -660,10 +681,17 @@
        (result (acons :align p_align result)))
     (mv nil (reverse result) bytes)))
 
+;drop?
 (local
   (defthm alistp-of-mv-nth-1-of-parse-elf-program-header
     (alistp (mv-nth 1 (parse-elf-program-header 64-bitp bytes)))
     :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
+
+(local
+  (defthm elf-program-header-table-entryp-of-mv-nth-1-of-parse-elf-program-header
+    (implies (not (mv-nth 0 (parse-elf-program-header 64-bitp bytes)))
+             (elf-program-header-table-entryp (mv-nth 1 (parse-elf-program-header 64-bitp bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-program-header elf-program-header-table-entryp)))))
 
 (local
   (defthm byte-listp-of-mv-nth-2-of-parse-elf-program-header
@@ -671,10 +699,23 @@
              (byte-listp (mv-nth 2 (parse-elf-program-header 64-bitp bytes))))
     :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+;; Recognizes a program-header-table.
 (defund elf-program-header-tablep (program-header-table)
   (declare (xargs :guard t))
-  (alist-listp program-header-table))
+  (if (not (consp program-header-table))
+      (null program-header-table)
+    (and (elf-program-header-table-entryp (first program-header-table))
+         (elf-program-header-tablep (rest program-header-table)))))
+
+(local
+  (defthm elf-program-header-tablep-of-revappend
+    (implies (and (elf-program-header-tablep x)
+                  (elf-program-header-tablep y))
+             (elf-program-header-tablep (revappend x y)))
+    :hints (("Goal" :in-theory (enable elf-program-header-tablep revappend)))))
 
 ;move up
 ;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
@@ -688,8 +729,8 @@
                   :measure (nfix (- num-entries index))
                   :hints (("Goal" :in-theory (enable natp)))))
   (if (or (<= num-entries index)
-          (not (natp index))
-          (not (natp num-entries)))
+          (not (mbt (natp index)))
+          (not (mbt (natp num-entries))))
       (mv nil (reverse acc))
     (mv-let (erp program-header bytes)
       (parse-elf-program-header 64-bitp bytes)
@@ -703,7 +744,9 @@
 
 (local
   (defthm elf-program-header-tablep-of-mv-nth-1-of-parse-elf-program-header-table
-    (implies (elf-program-header-tablep acc)
+    (implies (and (elf-program-header-tablep acc)
+                  (not (mv-nth 0 (parse-elf-program-header-table index num-entries 64-bitp acc bytes)))
+                  )
              (elf-program-header-tablep (mv-nth 1 (parse-elf-program-header-table index num-entries 64-bitp acc bytes))))
     :hints (("Goal" :in-theory (enable parse-elf-program-header-table elf-program-header-tablep)))))
 
@@ -812,7 +855,7 @@
        ((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
        ((when erp) (mv erp nil))
 
-       ;; Rewsolve the names of the section headers:
+       ;; Resolve the names of the section headers:
        ((when (= e_shstrndx *shn_undef*))
         (mv :no-section-contains-a-section-name-string-table nil))
        (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))

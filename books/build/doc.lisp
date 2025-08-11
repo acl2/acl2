@@ -1045,7 +1045,7 @@ corresponding update.</p>")
 
 
 (defxdoc using-extended-acl2-images ; Step 7
-  :parents (cert.pl ACL2::building-acl2 ACL2::books-certification)
+  :parents (cert.pl ACL2::creating-executable ACL2::books-certification)
   :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
 to certify parts of your project."
 
@@ -1436,8 +1436,8 @@ certification using @('make')."
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
- <li>@('uses-cpp'): only certify when cpp is available. See @(see
- c$::preprocessing).</li>
+ <li>@('uses-gcc-c17'): only certify when GCC is available with @('-std=c17').
+ See @(see c$::preprocessing).</li>
 
  </ul>
 
@@ -1468,7 +1468,7 @@ certification using @('make')."
 (acl2::defpointer uses-stp cert_param)
 (acl2::defpointer uses-quicklisp cert_param)
 
-(acl2::defpointer uses-cpp cert_param)
+(acl2::defpointer uses-gcc-c17 cert_param)
 
 ;; Added by Eric Smith
 (acl2::defpointer cert-flags custom-certify-book-commands)

@@ -1,7 +1,7 @@
 ; Utilities for making symbols from strings, nats, chars, and other symbols.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -150,7 +150,7 @@
 ;; Helper function for pack-in-package.  Note that when code containing a call to
 ;; pack-in-package is executed, it does not cons up a list of the given items.
 (defund pack-in-package-fn (package items)
-  (declare (xargs :guard (and (stringp package)
+  (declare (xargs :guard (and ; (stringp package)
                               (true-listp items))))
   (let ((forms (to-string-forms-for-items items)))
     (if (endp forms)

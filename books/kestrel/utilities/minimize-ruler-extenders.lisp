@@ -10,7 +10,7 @@
 (set-state-ok t)
 
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
-(include-book "kestrel/utilities/system/world-queries" :dir :system) ; for ruler-extenders
+(include-book "kestrel/utilities/system/world-queries" :dir :system) ; for get-ruler-extenders
 
 (defun not-none (r)
 
@@ -167,7 +167,7 @@
      (t (let* ((fns (list fn))
                (body (body fn nil wrld))
                (ruler-extenders
-                (init-ruler-extenders fn (ruler-extenders fn wrld) body)))
+                (init-ruler-extenders fn (get-ruler-extenders fn wrld) body)))
           (min-old-ruler-extenders-1 fns
                                      body
                                      ruler-extenders
@@ -214,8 +214,8 @@
                                                    state)
                                      (f-put-global
                                       'minimal-r-e-ruler-extenders
-                                      (ruler-extenders ',(cadr form)
-                                                       (w state))
+                                      (get-ruler-extenders ',(cadr form)
+                                                           (w state))
                                       state))
                                    state)))
              (cond
@@ -251,7 +251,7 @@
                    (evens (if (consp (cdr x))
                               (foo (cddr x))
                             nil)))))))
-   (assert-event (equal (ruler-extenders 'foo (w state))
+   (assert-event (equal (get-ruler-extenders 'foo (w state))
                         '(car)))
    (defun bar (x)
      (declare (xargs :ruler-extenders :all))

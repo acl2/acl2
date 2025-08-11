@@ -216,15 +216,18 @@
      that denote integer types except plain @('char').
      For the other uses, we also allow
      type specifier sequences that denote structure types,
-     of the form supported by @(tsee ldm-type-spec-list)."))
+     of the form supported by @(tsee ldm-type-spec-list).
+     We also allow @('void'), needed, in particular, for function types."))
   (or (type-spec-list-integer-formalp tyspecs)
       (and (consp tyspecs)
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct)
-           (b* ((strunispec (type-spec-struct->spec (car tyspecs))))
-             (and (check-strunispec-no-members strunispec)
-                  (ident-formalp (strunispec->name strunispec))))))
-  :guard-hints (("Goal" :in-theory (enable check-strunispec-no-members)))
+           (b* ((struni-spec (type-spec-struct->spec (car tyspecs))))
+             (and (check-struni-spec-no-members struni-spec)
+                  (ident-formalp (struni-spec->name? struni-spec)))))
+      (and (equal (type-spec-list-fix tyspecs)
+                  (list (type-spec-void)))))
+  :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -266,7 +269,7 @@
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
-         (not tyname.decl?)))
+         (not tyname.declor?)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -602,7 +605,7 @@
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -617,9 +620,9 @@
      stmt
      :labeled nil
      :compound (block-item-list-formalp stmt.items)
-     :expr (and stmt.expr?
-                (or (expr-call-formalp stmt.expr?)
-                    (expr-asg-formalp stmt.expr?)))
+     :expr (or (not stmt.expr?)
+               (expr-call-formalp stmt.expr?)
+               (expr-asg-formalp stmt.expr?))
      :if (and (expr-pure-formalp stmt.test)
               (stmt-formalp stmt.then))
      :ifelse (and (expr-pure-formalp stmt.test)
@@ -644,7 +647,7 @@
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -660,7 +663,7 @@
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents nil
+    :parents (formalized-subset stmts/blocks-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -844,8 +847,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define strunispec-formalp ((strunispec strunispecp))
-  :guard (strunispec-unambp strunispec)
+(define struni-spec-formalp ((struni-spec struni-specp))
+  :guard (struni-spec-unambp struni-spec)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -853,10 +856,10 @@
    (xdoc::p
     "The name must be present,
      and each structure declaration must be supported."))
-  (b* (((strunispec strunispec) strunispec))
-    (and strunispec.name
-         (ident-formalp strunispec.name)
-         (structdecl-list-formalp strunispec.members)))
+  (b* (((struni-spec struni-spec) struni-spec))
+    (and struni-spec.name?
+         (ident-formalp struni-spec.name?)
+         (structdecl-list-formalp struni-spec.members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -882,8 +885,8 @@
               (decl-spec-case (car decl.specs) :typespec)
               (b* ((tyspec (decl-spec-typespec->spec (car decl.specs))))
                 (and (type-spec-case tyspec :struct)
-                     (b* ((strunispec (type-spec-struct->spec tyspec)))
-                       (and (strunispec-formalp strunispec)
+                     (b* ((struni-spec (type-spec-struct->spec tyspec)))
+                       (and (struni-spec-formalp struni-spec)
                             (endp decl.init))))))
    :statassert nil)
   :hooks (:fix))

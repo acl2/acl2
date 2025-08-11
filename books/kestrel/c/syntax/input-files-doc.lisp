@@ -111,8 +111,7 @@
         which must be in the current system path for executables.")
       (xdoc::li
        "@(':auto'),
-        which implicitly names the preprocessor @('\"cpp\"')
-        (a common default),
+        which implicitly names the preprocessor @('\"gcc\"'),
         which must be in the current system path for executables."))
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),
@@ -175,15 +174,6 @@
         obtained from the disambiguator,
         which annotated the abstract syntax with "
        (xdoc::seetopic "validation-information" "validation information")
-       ". Validation depends on the
-        @(':short-bytes'),
-        @(':int-bytes'),
-        @(':long-bytes'),
-        @(':long-long-bytes'), and
-        @(':plain-char-signed')
-        inputs, which determine an "
-       (xdoc::seetopic "implementation-environments"
-                       "implementation environment")
        "."))
      (xdoc::p
       "These levels of processing are ordered as")
@@ -201,33 +191,34 @@
      "@(':const')"
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
-       the final result of processing (and preprocessing)
+       the result of processing (and possibly preprocessing)
        the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       resulting from the parser.
+       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
+       whose translation unit is the result of the parser,
+       paired with the implementation environment
+       determined by the inputs described below.
        Since the parser captures ambiguous constructs without resolving them,
        this representation may include ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':disambiguate'),
        the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       obtained by disambiguating the one resulting from the parser.")
+       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
+       containing the result of the disambiguator,
+       paired with the implementation environment
+       determined by the inputs described below.
+       This representation has no ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':validate'),
        the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       obtained by disambiguating the one resulting from the parser,
-       and such that the abstract syntax representation passed validation;
-       this abstract syntax is annotated with validation information.")
+       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
+       containing the result of the validator,
+       paired with the implementation environment
+       determined by the inputs described below.
+       This representation has no ambiguous constructs
+       and is annotated with validation information.")
      (xdoc::p
       "In all cases, the keys of the translation unit ensemble map
        are the file paths specified in the @(':files') input,
@@ -256,7 +247,7 @@
       "Positive integer saying how many bytes are used to represent
        @('signed int') and @('unsigned int').")
      (xdoc::p
-      "This must be at least 4,
+      "This must be at least 2,
        and not less than @(':short-bytes')."))
 
     (xdoc::desc
@@ -265,7 +256,7 @@
       "Positive integer saying how many bytes are used to represent
        @('signed long int') and @('unsigned long int').")
      (xdoc::p
-      "This must be at least 8,
+      "This must be at least 4,
        and not less than @(':int-bytes')."))
 
     (xdoc::desc
@@ -281,7 +272,21 @@
      "@(':plain-char-signed') &mdash; default nil"
      (xdoc::p
       "Boolean saying whether the plain @('char') type consists of
-       the same value as the @('signed char') or @('unsigned char') type.")))
+       the same value as the @('signed char') or @('unsigned char') type."))
+
+    (xdoc::p
+     "Together, the inputs
+      @(':gcc'),
+      @(':short-bytes'),
+      @(':int-bytes'),
+      @(':long-bytes'),
+      @(':long-long-bytes'), and
+      @(':plain-char-signed')
+      determine an "
+     (xdoc::seetopic "implementation-environments"
+                     "implementation environment")
+     ". This is part of the code ensemble
+      that is the value of the constant @('*const*')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -245,7 +245,12 @@
      We will extend this fixtype to contain additional information,
      particularly about tag of structure, union, and enumeration types."))
   ((ord valid-ord-scope))
-  :pred valid-scopep)
+  :pred valid-scopep
+  ///
+
+  (defrule alistp-of-valid-scope->ord
+    (alistp (valid-scope->ord x))
+    :enable alistp-when-valid-ord-scopep-rewrite))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -589,7 +594,7 @@
                                      dummy base case of ~
                                      direct abstract declarator."))
    (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                (absdeclor-option-annop (tyname->decl? tyname))
+                (absdeclor-option-annop (tyname->declor? tyname))
                 (tyname-infop (tyname->info tyname))))
    (attrib t)
    (attrib-spec t)
@@ -638,7 +643,7 @@
      of the kind performed by the validator
      (e.g. this function does not attempt to calculate
      the type of a binary expression based on
-     the operator and the types of the operands.
+     the operator and the types of the operands).
      If there is not enough information,
      the unknown type is returned.")
    (xdoc::p
@@ -692,13 +697,21 @@
 
 (define stmt-type ((stmt stmtp))
   :guard (stmt-unambp stmt)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a statement, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited.
-     If the statement is a return statement with an expression,
+    "We return an optional type:
+     @('nil') means that the statement's execution falls through,
+     while the @('void') type means that
+     the statement terminates execution with a @('return') without expression.")
+   (xdoc::p
+    "Similarly to @(tsee expr-type),
+     the type calculated by this function is an approximation.
+     We return the unknown type in cases that we do not handle yet.")
+   (xdoc::p
+    "If the statement is a return statement with an expression,
      the type of the expression is returned;
      if the return statement has no expression, @('void') is returned.
      For the other kinds of statement, the unknown type is returned.")
@@ -707,12 +720,16 @@
      but it will need to be suitably extended.
      In particular, a statement may have multiple types,
      in the sense of returning values of possibly different types;
-     cf. @(tsee valid-stmt)."))
+     cf. @(tsee valid-stmt).")
+   (xdoc::p
+    "We relax the return theorem of this function to an optional type,
+     as a step towards generalizing this function
+     to actually return optional types."))
   (stmt-case
    stmt
    :labeled (stmt-type stmt.stmt)
    :compound (type-unknown)
-   :expr (type-unknown)
+   :expr nil
    :if (type-unknown)
    :ifelse (type-unknown)
    :switch (type-unknown)
@@ -727,7 +744,7 @@
    :return (expr-option-case
             stmt.expr?
             :some (expr-type stmt.expr?.val)
-            :none (type-unknown))
+            :none (type-void))
    :asm (type-unknown))
   :measure (stmt-count stmt)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -737,17 +754,19 @@
 
 (define block-item-type ((item block-itemp))
   :guard (block-item-unambp item)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a block item, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited,
-     but adequate to our current purposes.
-     We only need to handle block item that are statements for now."))
+    "We return an optional type:
+     @('nil') means that the block item's execution falls through,
+     while the @('void') type means that
+     the block item terminates execution
+     with a @('return') without expression."))
   (block-item-case
    item
-   :decl (type-unknown)
+   :decl nil
    :stmt (stmt-type item.unwrap)
    :ambig (prog2$ (impossible) (type-unknown)))
   :hooks (:fix))
@@ -756,15 +775,20 @@
 
 (define block-item-list-type ((items block-item-listp))
   :guard (block-item-list-unambp items)
-  :returns (type typep)
+  :returns (type? type-optionp)
   :short "Type of a list of block items, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited,
-     but adequate to our current purposes.
-     We only need to handle singleton lists of block items."))
-  (cond ((endp items) (type-unknown))
-        ((endp (cdr items)) (block-item-type (car items)))
-        (t (type-unknown)))
+    "An empty list returns nothing, so its type is @('nil').
+     For a non-empty list, we look at the types of
+     the first block items and the rest of the block items.
+     If the former is @('nil'), we return the latter.
+     If the former is not @('nil'), we return it."))
+  (b* (((when (endp items)) nil)
+       (item-type? (block-item-type (car items)))
+       (items-type? (block-item-list-type (cdr items))))
+    (if item-type?
+        item-type?
+      items-type?))
   :hooks (:fix))

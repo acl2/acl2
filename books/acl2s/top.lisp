@@ -13,7 +13,7 @@
  for doing that here:
  https://gitlab.com/acl2s/external-tool-support/scripts. That's useful
  for the emacs version. For the eclipse version see
- https://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2S____ACL2S-INSTALLATION.
+ https://acl2.org/doc/?topic=ACL2S____ACL2S-INSTALLATION.
 
  If you're interested in using acl2 to certify books developed with
  acl2s, you can use a cert.acl2 file that contains the following forms
@@ -84,6 +84,7 @@
 (include-book "acl2s/match" :dir :system :ttags :all)
 (include-book "acl2s/sorting/permp" :dir :system :ttags :all)
 (include-book "acl2s/sorting/sorting" :dir :system :ttags :all)
+(include-book "acl2s/sorting/msort" :dir :system :ttags :all)
 (include-book "acl2s/mode-acl2s-dependencies-lite" :dir :system :ttags :all)
 (include-book "acl2s/defdata-testing" :dir :system :ttags :all)
 (include-book "acl2s/properties-testing" :dir :system :ttags :all)

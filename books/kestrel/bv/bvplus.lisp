@@ -522,3 +522,15 @@
            (equal (bvplus size x (bvplus size2 y z))
                   (bvplus size x (bvplus size y z))))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-ifix-arg2
+  (equal (bvplus size (ifix x) y)
+         (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-ifix-arg3
+  (equal (bvplus size x (ifix y))
+         (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus))))

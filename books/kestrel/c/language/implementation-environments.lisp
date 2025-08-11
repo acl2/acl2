@@ -1483,46 +1483,37 @@
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
              posp))
 
-  (defruled integer-format-unsigned->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (uinteger-format->max
-                     (uinteger+sinteger-format->unsigned
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->unsigned-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 size))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     uinteger-format->max-of-uinteger-format-inc-npnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
+    :enable (integer-format->unsigned-max
+             uinteger-format->max-of-uinteger-format-inc-npnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
 
-  (defruled integer-format-signed->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->max
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp))
+    :enable (integer-format->signed-max
+             sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp))
 
-  (defruled integer-format-signed->min-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->min
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-min
+                     (integer-format-inc-sign-tcnpnt size))
                     (- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp)))
+    :enable (integer-format->signed-min
+             sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1730,6 +1721,149 @@
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format llong-format))
              :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection integer-format-short/int/long/llong-wfp-of-inc-sign-tcnpnt
+  :short "Theorems about the well-formedness of
+          @('short')s, @('int')s, @('long')s, and @('long long')s
+          specified via @(tsee integer-format-inc-sign-tcnpnt)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When these integer formats are specified
+     via @(tsee integer-format-inc-sign-tcnpnt),
+     their well-formedness reduces to
+     simple conditions on the sizes."))
+
+  (defruled integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-short-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     schar-format)
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 16)
+                         (>= size (uchar-format->size uchar-format)))))
+    :enable (integer-format-short-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
+             schar-format->min
+             schar-format->max
+             uchar-format->max)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 15)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 16)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m (uchar-format->size uchar-format))
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-int-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 16)
+                         (>= size size0))))
+    :enable (integer-format-int-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 15)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 16)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-long-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 32)
+                         (>= size size0))))
+    :enable (integer-format-long-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 31)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 32)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-llong-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 64)
+                         (>= size size0))))
+    :enable (integer-format-llong-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 63)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 64)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2047,23 +2181,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this only contains a few components,
-     but we plan to add more components.")
+    "For now this only contains the following information:")
+   (xdoc::ul
+    (xdoc::li
+     "The formats of the three character types.")
+    (xdoc::li
+     "The formats of the standard signed integer types
+      and their unsigned counterparts.")
+    (xdoc::li
+     "A flag saying whether the GCC extensions are enabled or not."))
    (xdoc::p
-    "Currently we include the format of the three character types,
-     and the standard signed integer types and their unsigned counterparts.")
+    "We plan to add more information.")
    (xdoc::p
     "The reason for using
      the ``intermediate'' fixtype @(tsee char+short+int+long+llong-format)
      is the same as explained in @(tsee integer-format)
      about the ``intermediate'' fixtype used there.
-     We may eliminate this at some point."))
+     We may eliminate this at some point.")
+   (xdoc::p
+    "The GCC flag could evolve into a rich set of C versions."))
   ((char+short+int+long+llong-format
     char+short+int+long+llong-format
     :reqfix (if (char+short+int+long+llong-format-wfp
                  char+short+int+long+llong-format)
                 char+short+int+long+llong-format
-              (char8+short16+int16+long32+llong64-tcnt))))
+              (char8+short16+int16+long32+llong64-tcnt)))
+   (gcc bool))
   :require (char+short+int+long+llong-format-wfp
             char+short+int+long+llong-format)
   :pred ienvp)
@@ -2246,6 +2389,31 @@
     (>= size 16)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-short-wfp
+                                           ienv->char-size
+                                           ienv->short-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('short') objects."
+  (/ (ienv->short-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->short-byte-size)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->int-bit-size ((ienv ienvp))
@@ -2266,6 +2434,31 @@
   (defret ienv->int-bit-size-lower-bound
     (>= size 16)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-int-wfp
+                                           ienv->char-size
+                                           ienv->int-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('int') objects."
+  (/ (ienv->int-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->int-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2288,6 +2481,31 @@
     (>= size 32)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-long-wfp
+                                           ienv->char-size
+                                           ienv->long-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long') objects."
+  (/ (ienv->long-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->long-byte-size)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->llong-bit-size ((ienv ienvp))
@@ -2308,6 +2526,31 @@
   (defret ienv->llong-bit-size-lower-bound
     (>= size 64)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-byte-size ((ienv ienvp))
+  :returns (size posp
+                 :hints (("Goal"
+                          :in-theory (e/d (posp
+                                           char+short+int+long+llong-format-wfp
+                                           integer-format-llong-wfp
+                                           ienv->char-size
+                                           ienv->llong-bit-size)
+                                          (ienv-requirements))
+                          :use (:instance ienv-requirements (x ienv))
+                         )))
+  :short "Number of bytes of unsigned and signed @('long long') objects."
+  (/ (ienv->llong-bit-size ienv)
+     (ienv->char-size ienv))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-byte-size-type-prescription
+    (posp size)
+    :rule-classes :type-prescription
+    ::hints (("Goal" :in-theory (disable ienv->llong-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2451,4 +2694,114 @@
     (integer-format->pair
      (char+short+int+long+llong-format->llong
       (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uchar-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned char')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uchar-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-schar-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed char')."
+  (and (<= (ienv->schar-min ienv) (ifix val))
+       (<= (ifix val) (ienv->schar-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-char-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('char')."
+  (and (<= (ienv->char-min ienv) (ifix val))
+       (<= (ifix val) (ienv->char-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ushort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned short')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ushort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sshort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= (ienv->sshort-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sshort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned int')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= (ienv->sint-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ulong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned long')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ulong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-slong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= (ienv->slong-min ienv) (ifix val))
+       (<= (ifix val) (ienv->slong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ullong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned long long')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ullong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sllong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed long long')."
+  (and (<= (ienv->sllong-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sllong-max ienv)))
   :hooks (:fix))

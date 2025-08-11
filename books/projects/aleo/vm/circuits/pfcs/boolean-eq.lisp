@@ -167,13 +167,13 @@
           boolean-eq-pred-completeness))
 
   (defruled boolean-eq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_eq" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_eq") defs)
                          (boolean-eq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_neq" defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_neq") defs)
                          (boolean-neq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_not" defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_not") defs)
                          (boolean-not-circuit))
-                  (equal (pfcs::lookup-definition "boolean_xor" defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_xor") defs)
                          (boolean-xor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -182,11 +182,12 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_eq" defs (list x y z) prime)
+                      (pfname "boolean_eq") defs (list x y z) prime)
                     (boolean-eq-spec x y z prime)))
     :in-theory '((:e boolean-eq-circuit)
                  (:e boolean-neq-circuit)
                  (:e boolean-not-circuit)
                  (:e boolean-xor-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-eq-pred
                  boolean-eq-pred-to-spec)))

@@ -20,7 +20,7 @@
 (defconst *abstract-syntax-symbols*
   '(
 
-    ;; fixtypes operations:
+    ;; code representation:
 
     identp
     ident
@@ -83,6 +83,9 @@
     make-expr-alignof
     make-expr-cast
     make-expr-binary
+    expr-binary->op
+    expr-binary->arg1
+    expr-binary->arg2
     make-expr-cond
     make-expr-comma
     expr-stmt
@@ -287,11 +290,11 @@
     tyname
     make-tyname
 
-    strunispecp
-    strunispec-fix
-    strunispec-count
-    strunispec
-    make-strunispec
+    struni-specp
+    struni-spec-fix
+    struni-spec-count
+    struni-spec
+    make-struni-spec
 
     structdeclp
     structdecl-fix
@@ -435,12 +438,20 @@
     fileset
     fileset->unwrap
 
+    code-ensemble
+    code-ensemblep
+    code-ensemble->transunits
+    code-ensemble->ienv
+    make-code-ensemble
+    change-code-ensemble
+
     ;; irrelevants:
 
     irr-expr
     irr-const-expr
     irr-type-spec
     irr-align-spec
+    irr-dirdeclor
     irr-absdeclor
     irr-dirabsdeclor
     irr-param-declon
@@ -450,6 +461,7 @@
     irr-block-item
     irr-fundef
     irr-transunit-ensemble
+    irr-code-ensemble
 
     ;; unambiguity:
 
@@ -485,7 +497,7 @@
     param-declon-list-unambp
     param-declor-unambp
     tyname-unambp
-    strunispec-unambp
+    struni-spec-unambp
     structdecl-unambp
     structdecl-list-unambp
     structdeclor-unambp
@@ -509,9 +521,13 @@
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
+    ;; purity:
+    expr-purep
+
     ;; formalized:
 
     expr-pure-formalp
+    expr-asg-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
@@ -533,6 +549,7 @@
 
     type-case
     type-kind
+    type-void
     type-sint
 
     ident-type-map
@@ -542,6 +559,7 @@
     type-formalp
     ldm-type
     type-to-value-kind
+    type-integerp
 
     iconst-info
     coerce-iconst-info

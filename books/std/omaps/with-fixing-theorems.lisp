@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,13 +12,9 @@
 
 (include-book "core")
 
-(include-book "centaur/fty/fixequiv" :dir :system)
-(include-book "centaur/fty/basetypes" :dir :system)
-(local (include-book "std/lists/list-fix" :dir :system))
+(include-book "kestrel/fty/map" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deffixtype map :pred omap::mapp :fix omap::mfix :equiv map-equiv :define t)
 
 (defsection emptyp-fix
   :extension emptyp
@@ -62,6 +58,16 @@
   (fty::deffixequiv in*
     :hints (("Goal" :in-theory (enable in*)))))
 
+(defsection list-in-fix
+  :extension list-in
+  (fty::deffixequiv list-in
+    :hints (("Goal" :in-theory (enable list-in)))))
+
+(defsection list-notin-fix
+  :extension list-notin
+  (fty::deffixequiv list-notin
+    :hints (("Goal" :in-theory (enable list-notin)))))
+
 (defsection lookup-fix
   :extension lookup
   (fty::deffixequiv lookup))
@@ -70,6 +76,11 @@
   :extension lookup*
   (fty::deffixequiv lookup*
     :hints (("Goal" :in-theory (enable lookup*)))))
+
+(defsection list-lookup-fix
+  :extension list-lookup
+  (fty::deffixequiv list-lookup
+    :hints (("Goal" :in-theory (enable list-lookup)))))
 
 (defsection rlookup-fix
   :extension rlookup

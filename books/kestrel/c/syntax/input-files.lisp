@@ -14,6 +14,7 @@
 (include-book "parser")
 (include-book "disambiguator")
 (include-book "validator")
+(include-book "code-ensembles")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
@@ -175,7 +176,7 @@
                       but it is ~x0 instead."
                      preprocess)))
        (preprocessor (if (eq preprocess :auto)
-                         "cpp"
+                         "gcc"
                        preprocess)))
     (retok preprocessor)))
 
@@ -271,25 +272,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-gcc ((options symbol-alistp))
-  :returns (mv erp (gcc booleanp))
-  :short "Process the @(':gcc') input."
-  (b* (((reterr) nil)
-       (gcc-option (assoc-eq :gcc options))
-       (gcc (if gcc-option
-                (cdr gcc-option)
-              nil))
-       ((unless (booleanp gcc))
-        (reterr (msg "The :GCC input must be a boolean, ~
-                      but it is ~x0 instead."
-                     gcc))))
-    (retok gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define input-files-process-ienv ((options symbol-alistp))
   :returns (mv erp (ienv ienvp))
   :short "Process the
+          @(':gcc'),
           @(':short-bytes'),
           @(':int-bytes'),
           @(':long-bytes'),
@@ -302,6 +288,15 @@
     "These are the inputs that define the implementation environment,
      which we return if the processing of these inputs is successful."))
   (b* (((reterr) (ienv-default))
+       ;; Process :GCC input.
+       (gcc-option (assoc-eq :gcc options))
+       (gcc (if gcc-option
+                (cdr gcc-option)
+              nil))
+       ((unless (booleanp gcc))
+        (reterr (msg "The :GCC input must be a boolean, ~
+                      but it is ~x0 instead."
+                     gcc)))
        ;; Process :SHORT-BYTES input.
        (short-bytes-option (assoc-eq :short-bytes options))
        (short-bytes (if short-bytes-option
@@ -319,10 +314,10 @@
                       (cdr int-bytes-option)
                     4))
        ((unless (and (integerp int-bytes)
-                     (>= int-bytes 4)
+                     (>= int-bytes 2)
                      (>= int-bytes short-bytes)))
         (reterr (msg "The :INT-BYTES input must be ~
-                      an integer greater than or equal to 4, ~
+                      an integer greater than or equal to 2, ~
                       and greater than or equal to ~
                       the value ~x0 of :SHORT-BYTES, ~
                       but it is ~x1 instead."
@@ -333,10 +328,10 @@
                        (cdr long-bytes-option)
                      8))
        ((unless (and (integerp long-bytes)
-                     (>= long-bytes 8)
+                     (>= long-bytes 4)
                      (>= long-bytes int-bytes)))
         (reterr (msg "The :LONG-BYTES input must be ~
-                      an integer greater than or equal to 8, ~
+                      an integer greater than or equal to 4, ~
                       and greater than or equal to ~
                       the value ~x0 of :INT-BYTES, ~
                       but it is ~x1 instead."
@@ -365,11 +360,12 @@
                       but it is ~x0 instead."
                      plain-char-signed)))
        ;; Build the implementation environment.
-       (ienv (make-ienv :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed)))
+       (ienv (ienv-simple short-bytes
+                          int-bytes
+                          long-bytes
+                          long-long-bytes
+                          plain-char-signed
+                          gcc)))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -383,7 +379,6 @@
                (preprocess-extra-args string-listp)
                (process input-files-process-inputp)
                (const symbolp)
-               (gcc booleanp)
                (ienv ienvp))
   :short "Process the inputs."
   :long
@@ -396,7 +391,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil nil :parse nil nil (ienv-default))
+  (b* (((reterr) nil "" nil nil nil :parse nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -419,7 +414,6 @@
         (input-files-process-preprocess-args options preprocessor))
        ((erp process) (input-files-process-process options))
        ((erp const) (input-files-process-const options progp))
-       ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
     (retok files
            path
@@ -428,7 +422,6 @@
            preprocess-extra-args
            process
            const
-           gcc
            ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
@@ -487,24 +480,24 @@
                                 (preprocess-extra-args string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
-                                (gcc booleanp)
                                 (ienv ienvp)
                                 (progp booleanp)
                                 state)
   :returns (mv erp
                (events pseudo-event-form-listp)
-               (tunits transunit-ensemblep)
+               (code code-ensemblep)
                state)
   :short "Generate the events."
   :long
   (xdoc::topstring
    (xdoc::p
     "We perform all the necessary preprocessing and processing.
-     Besides the events, we also return the translation unit ensemble
-     resulting from processing the (possibly preprocessed) files.
+     Besides the events, we also return the code ensemble
+     resulting from processing the (possibly preprocessed) files,
+     together with the implementation environment.
      If the programmatic interface is being used,
      no events are actually generated."))
-  (b* (((reterr) nil (irr-transunit-ensemble) state)
+  (b* (((reterr) nil (irr-code-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Preprocess if required, or read files from file system.
@@ -521,36 +514,39 @@
                                  :preprocessor preprocessor))
                             (input-files-read-files files path state)))
        ;; Parsing is always required.
-       ((erp tunits) (parse-fileset files gcc))
+       ((erp tunits) (parse-fileset files (ienv->gcc ienv)))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((events (if (not progp)
-                         (rcons `(defconst ,const ',tunits) events)
+        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+             (events (if (not progp)
+                         (rcons `(defconst ,const ',code) events)
                        events)))
-          (retok events tunits state)))
+          (retok events code state)))
        ;; Disambiguation is required, if we get here.
-       ((erp tunits) (dimb-transunit-ensemble tunits gcc))
+       ((erp tunits) (dimb-transunit-ensemble tunits (ienv->gcc ienv)))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
-        (b* ((events (if (not progp)
-                         (rcons `(defconst ,const ',tunits) events)
+        (b* ((code (make-code-ensemble :transunits tunits :ienv ienv))
+             (events (if (not progp)
+                         (rcons `(defconst ,const ',code) events)
                        events)))
-          (retok events tunits state)))
+          (retok events code state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits gcc ienv))
+       ((erp tunits) (valid-transunit-ensemble tunits ienv))
+       (code (make-code-ensemble :transunits tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
-                   (rcons `(defconst ,const ',tunits) events)
+                   (rcons `(defconst ,const ',code) events)
                  events)))
-    (retok events tunits state))
+    (retok events code state))
 
   ///
 
   (defret transunit-ensemble-unambp-of-input-files-gen-events
     (implies (not erp)
-             (transunit-ensemble-unambp tunits))
+             (transunit-ensemble-unambp (code-ensemble->transunits code)))
     :hyp (or (equal process :disambiguate)
              (equal process :validate))))
 
@@ -561,7 +557,7 @@
                                                    state)
   :returns (mv erp
                (event pseudo-event-formp)
-               (tunits transunit-ensemblep)
+               (code code-ensemblep)
                state)
   :short "Process the inputs and generate the events."
   :long
@@ -571,7 +567,7 @@
      this is called via the programmatic interface.
      We also return the translation unit ensemble
      resulting from processing the (possibly preprocessed) files."))
-  (b* (((reterr) '(_) (irr-transunit-ensemble) state)
+  (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files
              path
              preprocessor
@@ -579,10 +575,9 @@
              preprocess-extra-args
              process
              const
-             gcc
              ienv)
         (input-files-process-inputs args progp))
-       ((erp events tunits state)
+       ((erp events code state)
         (input-files-gen-events files
                                 path
                                 preprocessor
@@ -590,17 +585,16 @@
                                 preprocess-extra-args
                                 process
                                 const
-                                gcc
                                 ienv
                                 progp
                                 state)))
-    (retok `(progn ,@events) tunits state))
+    (retok `(progn ,@events) code state))
 
   ///
 
   (defret transunit-ensemble-unambp-of-input-files-process-inputs-and-gen-events
     (implies (not erp)
-             (transunit-ensemble-unambp tunits))
+             (transunit-ensemble-unambp (code-ensemble->transunits code)))
     :hyp (b* (((mv & & options)
                (partition-rest-and-keyword-args
                 args *input-files-allowed-options*))
@@ -672,9 +666,9 @@
      These are the results of the error-value tuple, in order:")
    (xdoc::ul
     (xdoc::li
-     "@('tunits'):
-      the translation unit ensemble
-      (a value of type @(tsee transunit-ensemble))
+     "@('code'):
+      the code unit ensemble
+      (a value of type @(tsee code-ensemble))
       resulting from processing, according to the @(':process') input,
       the files read from the paths specified by @(':files')
       (if @(':preprocess') is @('nil'))
@@ -692,7 +686,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-prog-fn ((args true-listp) state)
-  :returns (mv erp (tunits transunit-ensemblep) state)
+  :returns (mv erp (code code-ensemblep) state)
   :short "Implementation of @(tsee input-files-prog)."
   :long
   (xdoc::topstring
@@ -700,16 +694,16 @@
     "We set the flag @('progp') for the programmatic interface to @('t').
      We ignore the event returned as result,
      and just return the artifacts."))
-  (b* (((reterr) (irr-transunit-ensemble) state)
-       ((erp & tunits state)
+  (b* (((reterr) (irr-code-ensemble) state)
+       ((erp & code state)
         (input-files-process-inputs-and-gen-events args t state)))
-    (retok tunits state))
+    (retok code state))
 
   ///
 
   (defret transunit-ensemble-unambp-of-input-files-prog-fn
     (implies (not erp)
-             (transunit-ensemble-unambp tunits))
+             (transunit-ensemble-unambp (code-ensemble->transunits code)))
     :hyp (b* (((mv & & options)
                (partition-rest-and-keyword-args
                 args *input-files-allowed-options*))

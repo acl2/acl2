@@ -26,6 +26,7 @@
 
 (in-package "PUBS")
 (include-book "xdoc/top" :dir :system)
+(include-book "kestrel/bibtex/xdoc-generation" :dir :system)
 
 (defun docpath (s)
 
@@ -46,7 +47,7 @@
                s))
 
 (defxdoc publications
-  :parents (documentation)
+  :parents (documentation about-acl2)
   :short "ACL2 Annotated Bibliography"
   :long "<p>This is the top-level topic for an annotated bibliography
   containing books and Papers about <a
@@ -1389,8 +1390,9 @@
  International Workshop on the ACL2 Theorem Prover and Its Applications (ACL2
  2003)</a>, Boulder, CO, July 2003.</li>
 
- <li>Mu-Calculus Model-Checking, Panagiotis Manolios, Chapter 7 of <a
- href='acl2-books/acs/index.html'>Computer-Aided Reasoning: ACL2 Case
+ <li>Mu-Calculus Model-Checking, Panagiotis Manolios, Chapter 7 of
+ <a href='@(`(:raw (docpath \"acl2-books/acs/index.html\"))`)'>
+ Computer-Aided Reasoning: ACL2 Case
  Studies</a> (Kaufmann, Manolios, Moore, eds.)  Kluwer, 2000.
  (ACL2 scripts are available from
    directory <tt>1999/mu-calculus/</tt> in the @(see community-books).)
@@ -1751,3 +1753,40 @@
  </ul>
 
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun generate-workshop-documentation-xdoc (entries)
+  "Generate single XDOC documentation for all workshop entries"
+  (let ((entry-count (len entries))
+        (entries (acl2::generate-bibtex-entries-XDOC entries)))
+    `(defxdoc pubs-workshops
+       :parents (pubs-papers)
+       :short "ACL2 Workshop Papers and Publications"
+       :long ,(concatenate 'string
+                           "<p>This section contains documentation for papers and publications related to ACL2 workshops and conferences.</p>"
+                           "<p><b>Total number of entries:</b> "(if (natp entry-count)
+                                                                    (coerce (explode-atom entry-count 10) 'string)
+                                                                  "unknown")
+                           "</p>"
+                           "<ul>"
+                           entries
+                           "</ul>"))))
+
+; generate XDOC documentation from BibTeX file along with the state
+(defun generate-workshop-documentation-fn (bibtex-filename state)
+  (declare (xargs :stobjs state
+                  :verify-guards nil))
+  (mv-let (entries state)
+    (acl2::parse-bibtex-file bibtex-filename state)
+    (if entries
+        (let ((xdoc-form (generate-workshop-documentation-xdoc entries)))
+          (mv nil xdoc-form state))
+      (mv "no-entries-found" nil state))))
+
+(defmacro generate-workshop-documentation (bibtex-filename)
+  `(make-event
+    (generate-workshop-documentation-fn ,bibtex-filename state)))
+
+;Submit documentation for ACL2 workshops file
+(generate-workshop-documentation "../workshops/references/workshops.bib")

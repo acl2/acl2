@@ -12,15 +12,17 @@
 
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
-(include-book "abstraction-mapping")
-(include-book "abstract-syntax-operations")
+(include-book "code-ensembles")
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
+(include-book "standard")
+(include-book "purity")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
+(include-book "builtin")
 (include-book "disambiguator")
 (include-book "validator")
 (include-book "printer")
@@ -30,7 +32,6 @@
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
-(include-book "implementation-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,6 +153,15 @@
      only contain ASCII letters, digits, and underscores,
      and are distinct from keywords.")
    (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "standard"
+                    "abstract syntax for standard C")
+    ", i.e. that does not use any GCC extensions.")
+   (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "purity" "pure abstract syntax")
+    ", i.e. without side effects.")
+   (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
                     "other operations on the abstract syntax")
@@ -188,11 +198,13 @@
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (concrete-syntax
                     abstract-syntax
-                    abstraction-mapping
+                    code-ensembles
                     defpred
-                    abstract-syntax-operations
                     unambiguity
                     validation-information
+                    ascii-identifiers
+                    standard
+                    purity
                     preprocessing
                     parser
                     disambiguator

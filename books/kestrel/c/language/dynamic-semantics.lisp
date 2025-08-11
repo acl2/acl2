@@ -1102,12 +1102,16 @@
          ((when (errorp scope)) (mv scope (compustate-fix compst)))
          (frame (make-frame :function fun :scopes (list scope)))
          (compst (push-frame frame compst))
-         ((mv val? compst) (exec-block-item-list info.body
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+         ((mv sval compst) (exec-block-item-list info.body
+                                                  compst
+                                                  fenv
+                                                  (1- limit)))
          (compst (pop-frame compst))
-         ((when (errorp val?)) (mv val? compst))
+         ((when (errorp sval)) (mv sval compst))
+         (val? (stmt-value-case
+                sval
+                :none nil
+                :return sval.value?))
          ((unless (equal (type-of-value-option val?)
                          (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
@@ -1124,7 +1128,7 @@
                      (fenv fun-envp)
                      (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-option-resultp)
+    :returns (mv (result stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a statement."
@@ -1132,9 +1136,6 @@
     (xdoc::topstring
      (xdoc::p
       "For now we only support the execution of certain statements.")
-     (xdoc::p
-      "We only allow, and in fact require,
-       assignment expressions in expression statements.")
      (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
@@ -1145,17 +1146,17 @@
        s
        :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :compound (b* ((compst (enter-scope compst))
-                      ((mv value? compst)
+                      ((mv sval compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
-                   (mv value? (exit-scope compst)))
+                   (mv sval (exit-scope compst)))
        :expr (b* ((compst/error (exec-expr-call-or-asg s.get
                                                        compst
                                                        fenv
                                                        (1- limit)))
                   ((when (errorp compst/error))
                    (mv compst/error (compustate-fix compst))))
-               (mv nil compst/error))
-       :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
+               (mv (stmt-value-none) compst/error))
+       :null (mv (stmt-value-none) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst)))
                 (test (apconvert-expr-value test))
@@ -1165,7 +1166,7 @@
                 ((when (errorp test)) (mv test (compustate-fix compst))))
              (if test
                  (exec-stmt s.then compst fenv (1- limit))
-               (mv nil (compustate-fix compst))))
+               (mv (stmt-value-none) (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr-pure s.test compst))
                     ((when (errorp test)) (mv test (compustate-fix compst)))
                     (test (apconvert-expr-value test))
@@ -1191,10 +1192,10 @@
                                                  (1- limit)))
                         ((when (errorp val?)) (mv val? compst))
                         ((when (not val?)) (mv (error (list :return-void-expr
-                                                        s.value))
+                                                            s.value))
                                                compst)))
-                     (mv val? compst))
-                 (mv nil (compustate-fix compst)))))
+                     (mv (stmt-value-return val?) compst))
+                 (mv (stmt-value-return nil) (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1205,7 +1206,7 @@
                            (fenv fun-envp)
                            (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-option-resultp)
+    :returns (mv (result stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a @('while') statement."
@@ -1230,10 +1231,10 @@
          (test-val (expr-value->value test-eval))
          (continuep (test-value test-val))
          ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-         ((when (not continuep)) (mv nil (compustate-fix compst)))
-         ((mv val? compst) (exec-stmt body compst fenv (1- limit)))
-         ((when (errorp val?)) (mv val? compst))
-         ((when (valuep val?)) (mv val? compst)))
+         ((when (not continuep)) (mv (stmt-value-none) (compustate-fix compst)))
+         ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst)))
       (exec-stmt-while test body compst fenv (1- limit)))
     :measure (nfix limit))
 
@@ -1287,7 +1288,7 @@
                            (limit natp))
     :guard (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
-    :returns (mv (result value-option-resultp)
+    :returns (mv (result stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a block item."
@@ -1332,7 +1333,7 @@
             ((when (errorp val)) (mv val compst))
             (new-compst (create-var var val compst))
             ((when (errorp new-compst)) (mv new-compst compst)))
-         (mv nil new-compst))
+         (mv (stmt-value-none) new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1344,7 +1345,7 @@
                                 (limit natp))
     :guard (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
-    :returns (mv (result value-option-resultp)
+    :returns (mv (result stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a list of block items."
@@ -1353,10 +1354,10 @@
      (xdoc::p
       "We thread the computation state through the block items."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         ((when (endp items)) (mv nil (compustate-fix compst)))
-         ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
-         ((when (errorp val?)) (mv val? compst))
-         ((when (valuep val?)) (mv val? compst)))
+         ((when (endp items)) (mv (stmt-value-none) (compustate-fix compst)))
+         ((mv sval compst) (exec-block-item (car items) compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function assoc-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -161,4 +161,18 @@
          (if (assoc-equal x alist)
              x
            nil))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(defthm acl2-count-of-assoc-equal-linear
+  (<= (acl2-count (assoc-equal x alist))
+      (acl2-count alist))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+(defthm acl2-count-of-assoc-equal-when-consp-linear
+  (implies (or (assoc-equal x alist)
+               (consp alist))
+           (< (acl2-count (assoc-equal x alist))
+              (acl2-count alist)))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable assoc-equal))))

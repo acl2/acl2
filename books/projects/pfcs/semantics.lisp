@@ -26,7 +26,6 @@
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
-(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (in-theory (disable primep)))
 
@@ -127,7 +126,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are assignments of field elements to variables,
+    "These are assignments of field elements to (names of) variables,
      used to express the semantics of PFCSes
      (see @(see semantics)).")
    (xdoc::p
@@ -136,9 +135,10 @@
      which are a superset of every possible prime field.
      This way, we can have a fixtype of assignments
      (recall that fixtypes cannot be parameterized, currently)."))
-  :key-type string
+  :key-type name
   :val-type nat
   :pred assignmentp
+
   ///
 
   (defrule natp-of-cdr-of-in-when-assignmentp-type
@@ -148,7 +148,7 @@
     :rule-classes :type-prescription)
 
   (defrule assignmentp-of-from-lists
-    (implies (and (string-listp keys)
+    (implies (and (name-listp keys)
                   (nat-listp vals)
                   (equal (len keys) (len vals)))
              (assignmentp (omap::from-lists keys vals)))
@@ -161,8 +161,7 @@
   :elt-type assignment
   :true-listp t
   :elementp-of-nil t
-  :pred assignment-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred assignment-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,6 +182,7 @@
           (and (fep nat p)
                (assignment-wfp (omap::tail asg) p)))))
   :hooks (:fix)
+
   ///
 
   (defruled fep-of-cdr-of-in-when-assignment-wfp
@@ -235,14 +235,32 @@
     :enable omap::delete*)
 
   (defrule assignment-wfp-of-from-lists
-    (implies (and (string-listp keys)
+    (implies (and (name-listp keys)
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
              (assignment-wfp (omap::from-lists keys vals) p))
     :induct t
     :enable (len
              omap::from-lists
-             pfield::nat-listp-when-fe-listp)))
+             pfield::nat-listp-when-fe-listp))
+
+  (defruled fep-of-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::assoc var asg))
+             (pfield::fep (omap::lookup var asg) prime))
+    :enable (omap::lookup
+             fep-of-cdr-of-in-when-assignment-wfp))
+
+  (defruled fe-listp-of-list-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::list-in vars asg))
+             (pfield::fe-listp (omap::list-lookup vars asg) prime))
+    :induct t
+    :enable (omap::list-lookup
+             omap::list-in
+             fep-of-lookup-when-assignment-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,6 +310,7 @@
   :hooks (:fix)
   :verify-guards nil ; done below
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+
   ///
 
   (defrule fep-of-eval-expr
@@ -305,7 +324,7 @@
   (verify-guards eval-expr)
 
   (defruled eval-expr-of-omap-update-of-var-not-in-expr
-    (implies (and (stringp var)
+    (implies (and (namep var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-vars expr))))
@@ -344,6 +363,7 @@
     (in-theory
      (enable acl2::natp-when-nat-resultp-and-not-reserrp
              acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+
   ///
 
   (defrule fe-listp-of-eval-expr-list
@@ -360,7 +380,7 @@
     :hints (("Goal" :induct t :in-theory (enable len))))
 
   (defruled eval-expr-list-of-omap-udpate-of-var-not-in-exprs
-    (implies (and (stringp var)
+    (implies (and (namep var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-list-vars exprs))))
@@ -372,7 +392,7 @@
              eval-expr-of-omap-update-of-var-not-in-expr))
 
   (defruled eval-expr-list-of-expression-var-list-and-omap-from-lists
-    (implies (and (string-listp vars)
+    (implies (and (name-listp vars)
                   (no-duplicatesp-equal vars)
                   (fe-listp vals p)
                   (equal (len vars)
@@ -388,7 +408,50 @@
              no-duplicatesp-equal
              omap::from-lists
              acl2::not-reserrp-when-nat-listp
-             eval-expr-list-of-omap-udpate-of-var-not-in-exprs)))
+             eval-expr-list-of-omap-udpate-of-var-not-in-exprs))
+
+  (defruled not-reserrp-of-eval-expr-list-of-atom
+    (implies (and (primep p)
+                  (atom exprs))
+             (not (reserrp (eval-expr-list exprs asg p)))))
+
+  (defruled reserrp-of-eval-expr-list-of-cons
+    (implies (primep p)
+             (equal (reserrp (eval-expr-list (cons expr exprs) asg p))
+                    (or (reserrp (eval-expr expr asg p))
+                        (reserrp (eval-expr-list exprs asg p)))))
+    :enable (acl2::not-reserrp-when-nat-listp
+             acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))
+
+  (defruled reserrp-of-eval-expr-list-of-append
+    (implies (primep p)
+             (equal (reserrp (eval-expr-list (append exprs1 exprs2) asg p))
+                    (or (reserrp (eval-expr-list exprs1 asg p))
+                        (reserrp (eval-expr-list exprs2 asg p)))))
+    :induct t
+    :enable (append
+             not-reserrp-of-eval-expr-list-of-atom
+             reserrp-of-eval-expr-list-of-cons)
+    :disable eval-expr-list)
+
+  (defruled eval-expr-list-of-cons-when-not-error
+    (implies (and (not (reserrp (pfcs::eval-expr expr asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs asg p))))
+             (equal (eval-expr-list (cons expr exprs) asg p)
+                    (cons (eval-expr expr asg p)
+                          (eval-expr-list exprs asg p)))))
+
+  (defruled eval-expr-list-of-append-when-not-error
+    (implies (and (primep p)
+                  (not (reserrp (pfcs::eval-expr-list exprs1 asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs2 asg p))))
+             (equal (eval-expr-list (append exprs1 exprs2) asg p)
+                    (append (eval-expr-list exprs1 asg p)
+                            (eval-expr-list exprs2 asg p))))
+    :induct t
+    :enable (append
+             reserrp-of-eval-expr-list-of-append)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,8 +484,7 @@
   :elt-type assertion
   :true-listp t
   :elementp-of-nil nil
-  :pred assertion-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred assertion-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,7 +492,9 @@
   :returns (asgs assignment-listp)
   :short "Lift @(tsee assertion->asg) to lists."
   (assertion->asg x)
+
   ///
+
   (fty::deffixequiv assertion-list->asg-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -439,7 +503,9 @@
   :returns (constrs constraint-listp)
   :short "Lift @(tsee assertion->constr) to lists."
   (assertion->constr x)
+
   ///
+
   (fty::deffixequiv assertion-list->constr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -454,6 +520,7 @@
                  (assertion-list-from (cdr asgs) (cdr constrs)))))
   :guard-hints (("Goal" :in-theory (enable len)))
   :hooks (:fix)
+
   ///
 
   (defrule assertion-list->asg-list-of-assertion-list-from
@@ -538,7 +605,7 @@
              (left expression)
              (right expression)))
     (:relation ((asg assignment)
-                (name string)
+                (name name)
                 (args expression-list)
                 (sub proof-tree-list)
                 (asgfree assignment)))
@@ -549,9 +616,7 @@
     :elt-type proof-tree
     :true-listp t
     :elementp-of-nil nil
-    :pred proof-tree-listp)
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :pred proof-tree-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -823,7 +888,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((name stringp)
+(define definition-satp ((name namep)
                          (defs definition-listp)
                          (vals (fe-listp vals p))
                          (p primep))

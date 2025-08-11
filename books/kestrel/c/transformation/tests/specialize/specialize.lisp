@@ -24,17 +24,14 @@
   (c$::input-files :files ("test1.c")
                    :const *old*)
 
-  ;; TODO: transformation should define the const
-  ;; TODO: transformation should take strings, not idents
-  (defconst *new*
-    (b* ((const
-           (expr-const
-             (c$::const-int
-               (c$::make-iconst :core (c$::dec/oct/hex-const-dec 1))))))
-      (specialize-transunit-ensemble *old*
-                                     (c$::ident "foo")
-                                     (c$::ident "y")
-                                     const)))
+  (specialize *old*
+              *new*
+              :target "foo"
+              :param "y"
+              :const (expr-const
+                       (c$::const-int
+                         (c$::make-iconst
+                           :core (c$::dec/oct/hex-const-dec 1)))))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -56,15 +53,14 @@
   (c$::input-files :files ("test2.c")
                    :const *old*)
 
-  (defconst *new*
-    (b* ((const
-           (expr-const
-             (c$::const-int
-               (c$::make-iconst :core (c$::dec/oct/hex-const-dec 42))))))
-      (specialize-transunit-ensemble *old*
-                                     (c$::ident "foo")
-                                     (c$::ident "z")
-                                     const)))
+  (specialize *old*
+              *new*
+              :target "foo"
+              :param "z"
+              :const (expr-const
+                       (c$::const-int
+                         (c$::make-iconst
+                           :core (c$::dec/oct/hex-const-dec 42)))))
 
   (c$::output-files :const *new*
                     :path "new")

@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -123,15 +124,16 @@
              boolean-not-spec))
 
   (defruled boolean-not-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_not" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_not") defs)
                          (boolean-not-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "boolean_not" defs (list x y) prime)
+                      (pfname "boolean_not") defs (list x y) prime)
                     (boolean-not-spec x y prime)))
     :in-theory '((:e boolean-not-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-not-pred
                  boolean-not-pred-to-spec)))

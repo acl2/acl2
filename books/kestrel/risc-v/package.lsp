@@ -28,6 +28,7 @@
                           lifix
                           lnfix
                           logapp
+                          logappn
                           logbit
                           logext
                           loghead
@@ -80,6 +81,7 @@
                           ubyte8-listp
                           ubyte32-list
                           ubyte32-listp
+                          ubyte32-optionp
                           ubyte64-list
                           ubyte64-listp
                           unsigned-byte-fix

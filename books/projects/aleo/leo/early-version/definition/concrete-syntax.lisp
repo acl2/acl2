@@ -29,7 +29,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
-  :parents (language)
+  :parents (definition)
   :short "Concrete syntax of Leo."
   :long
   (xdoc::topstring

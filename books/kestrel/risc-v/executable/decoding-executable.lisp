@@ -13,24 +13,19 @@
 
 (include-book "../specification/instructions")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/ubyte5-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte6-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +45,10 @@
      the instructions defined in @(see instructions).
      We only handle the normal encodings,
      i.e. not the compressed ones in the C extension [ISA:27];
-     thus, our decoder operates on 32-bit encodings."))
+     thus, our decoder operates on 32-bit encodings.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 

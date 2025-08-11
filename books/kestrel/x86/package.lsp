@@ -57,6 +57,7 @@
     x86isa::n48
     x86isa::app-view$inline
     x86isa::app-view
+    x86isa::app-view$a
     x86isa::canonical-address-p$inline
     x86isa::canonical-address-p
     x86isa::xr
@@ -453,7 +454,7 @@
     x86isa::!rgfi-size
     x86isa::!rgfi-size$inline
 
-    x86isa::rip
+    ;; x86isa::rip ; we define our own RIP function that returns an unsigned value
     x86isa::rip$a
     x86isa::!rip
     x86isa::!rip$a
@@ -1302,13 +1303,21 @@
     x86isa::sib->index
     x86isa::sib->scale
 
-    ))
+    x86isa::bitcount8))
 
 (defconst *symbols-from-acl2-package*
   '(loghead
     loghead$inline
-    logapp
+    logtail
+    logtail$inline
+    logcar
+    logcar$inline
+    logcdr
+    logcdr$inline
+
+    logapp ; not inline
     logmask
+    logmask$inline
 
     expt2$inline ; from IHS
 
@@ -1336,15 +1345,17 @@
     sbvdiv
     bvmod
     sbvrem
-    logtail
     slice ;note that we don't get the slice from x86isa
     putbits
     putbit
     putbyte
     trim
+    bvcount
 
     bool->bit$inline
     bool->bit
+    bit->bool$inline
+    bit->bool
     boolif
     boolor
     booland
@@ -1368,7 +1379,8 @@
     leftrotate32
     rightrotate32
 
-    acl2::bfix$
+    acl2::bfix
+    ;; acl2::bfix$ ; doesn't seem to exist
     acl2::bfix$inline
 
     binary-logand

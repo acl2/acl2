@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,9 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "misc/total-order" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 (local (include-book "tools/rulesets" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,6 +149,7 @@
                   (consp (cadr x))
                   (fast-<< (caar x) (caadr x))
                   (mapp (cdr x))))))
+
   ///
 
   (defruled setp-when-mapp
@@ -182,6 +185,7 @@
    "This is similar to @(tsee set::sfix) for osets.")
   (mbe :logic (if (mapp x) x nil)
        :exec x)
+
   ///
 
   (defrule mfix-when-mapp
@@ -201,6 +205,7 @@
   (xdoc::topstring-p
    "This is similar to @(tsee set::emptyp) for osets.")
   (null (mfix map))
+
   ///
 
   (defrule mapp-when-not-emptyp
@@ -236,6 +241,7 @@
   (let ((pair (car (mfix map))))
     (mv (car pair) (cdr pair)))
   :guard-hints (("Goal" :in-theory (enable emptyp mapp)))
+
   ///
 
   (defrule head-key-when-emptyp
@@ -319,6 +325,7 @@
    "This is similar to @(tsee set::tail) for osets.")
   (cdr (mfix map))
   :guard-hints (("Goal" :in-theory (enable emptyp alistp-when-mapp)))
+
   ///
 
   (defrule tail-when-emptyp
@@ -376,6 +383,7 @@
                    ((<< key key0) (cons (cons key val) map))
                    (t (cons (cons key0 val0)
                             (update key val (tail map))))))))
+
   ///
 
   (in-theory (disable (:type-prescription update)))
@@ -546,6 +554,7 @@
              (update new-key new-val
                      (update* (tail new) old)))))
   :verify-guards :after-returns
+
   ///
 
   (defrule update*-when-left-emptyp
@@ -574,6 +583,7 @@
                               val0
                               (delete key (tail map))))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule delete-when-emptyp
@@ -591,6 +601,7 @@
   (cond ((set::emptyp keys) (mfix map))
         (t (delete (set::head keys) (delete* (set::tail keys) map))))
   :verify-guards :after-returns
+
   ///
 
   (defrule delete*-when-left-emptyp
@@ -620,6 +631,7 @@
              (head map)
              (cond ((equal key key0) (cons key0 val0))
                    (t (assoc key (tail map)))))))
+
   ///
 
   (defrule assoc-of-mfix
@@ -711,6 +723,7 @@
   (cond ((set::emptyp keys) t)
         (t (and (assoc (set::head keys) map)
                 (in* (set::tail keys) map))))
+
   ///
 
   (defrule in*-when-left-emptyp
@@ -725,6 +738,32 @@
   (defrule in*-of-tail
     (implies (in* keys map)
              (in* (set::tail keys) map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-in ((keys true-listp) (map mapp))
+  :returns (yes/no booleanp)
+  :short "Check if every key in a list is in an omap."
+  (cond ((endp keys) t)
+        (t (and (assoc (car keys) map)
+                (list-in (cdr keys) map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-notin ((keys true-listp) (map mapp))
+  :returns (yes/no booleanp)
+  :short "Check if none of the keys in a list is in an omap."
+  (or (endp keys)
+      (and (not (assoc (car keys) map))
+           (list-notin (cdr keys) map)))
+
+  ///
+
+  (defruled not-assoc-map-when-member-of-list-notin
+    (implies (and (list-notin keys map)
+                  (member-equal key keys))
+             (not (assoc key map)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -803,6 +842,7 @@
   :returns (val)
   :short "Value associated to a key in an omap."
   (cdr (assoc key map))
+
   ///
 
   (defrule lookup-when-emptyp
@@ -821,7 +861,23 @@
     (implies (assoc key (tail map))
              (equal (lookup key (tail map))
                     (lookup key map)))
-    :enable assoc-of-tail-when-assoc-of-tail))
+    :enable assoc-of-tail-when-assoc-of-tail)
+
+  (defruled lookup-of-update
+    (equal (lookup key1 (update key val map))
+           (if (equal key1 key)
+               val
+             (lookup key1 map)))
+    :enable lookup)
+
+  (defruled lookup-of-update*
+    (equal (lookup key (update* map1 map2))
+           (if (assoc key map1)
+               (lookup key map1)
+             (lookup key (mfix map2))))
+    :induct t
+    :enable (update*
+             lookup-of-update)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -838,7 +894,9 @@
                       (lookup* (set::tail keys) map)))
         (t (lookup* (set::tail keys) map)))
   :verify-guards nil ; done below
+
   ///
+
   (verify-guards lookup* :hints (("Goal" :in-theory (enable in*))))
 
   (defrule lookup*-when-left-emptyp
@@ -851,6 +909,61 @@
     (implies (emptyp map)
              (equal (lookup* keys map)
                     nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define list-lookup ((keys true-listp) (map mapp))
+  :guard (list-in keys map)
+  :returns (vals true-listp)
+  :short "List of values associated to a list of keys in an omap."
+  (cond ((endp keys) nil)
+        (t (cons (lookup (car keys) map)
+                 (list-lookup (cdr keys) map))))
+  :guard-hints (("Goal" :in-theory (enable list-in)))
+
+  ///
+
+  (defruled list-lookup-of-cons
+    (equal (list-lookup (cons key keys) map)
+           (cons (lookup key map)
+                 (list-lookup keys map))))
+
+  (defruled list-lookup-of-append
+    (equal (list-lookup (append keys1 keys2) map)
+           (append (list-lookup keys1 map)
+                   (list-lookup keys2 map)))
+    :induct t
+    :enable append)
+
+  (defruled list-lookup-of-rev
+    (equal (list-lookup (rev keys) map)
+           (rev (list-lookup keys map)))
+    :induct t
+    :enable (rev
+             list-lookup-of-append))
+
+  (defruled list-lookup-of-update*-when-list-in
+    (implies (list-in keys map1)
+             (equal (list-lookup keys (update* map1 map2))
+                    (list-lookup keys map1)))
+    :induct t
+    :enable (list-in
+             lookup-of-update*))
+
+  (defruled list-lookup-of-update*-when-list-notin
+    (implies (list-notin keys map1)
+             (equal (list-lookup keys (update* map1 map2))
+                    (list-lookup keys (mfix map2))))
+    :induct t
+    :enable (list-notin
+             lookup-of-update*))
+
+  (defruled list-lookup-of-update-of-non-member
+    (implies (not (member-equal key keys))
+             (equal (list-lookup keys (update key val map))
+                    (list-lookup keys map)))
+    :induct t
+    :enable lookup-of-update))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -874,6 +987,7 @@
                  (set::insert key0 (rlookup val (tail map)))
                (rlookup val (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule rlookup-when-emptyp
@@ -893,6 +1007,7 @@
         (t (set::union (rlookup (set::head vals) map)
                        (rlookup* (set::tail vals) map))))
   :verify-guards :after-returns
+
   ///
 
   (defrule rlookup*-when-left-emptyp
@@ -921,6 +1036,7 @@
                  (update key val (restrict keys (tail map)))
                (restrict keys (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule restrict-when-left-emptyp
@@ -954,6 +1070,7 @@
                (head map)
              (declare (ignore val))
              (set::insert key (keys (tail map))))))
+
   ///
 
   (defrule keys-of-mfix
@@ -988,6 +1105,14 @@
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
                                   (:rewrite in-of-keys-to-assoc)))
+
+  (defruled list-in-to-subset-keys
+    (iff (list-in keys map)
+         (set::subset (set::mergesort keys) (keys map)))
+    :induct t
+    :enable (set::mergesort
+             list-in
+             assoc-to-in-of-keys))
 
   (defruled in-keys-when-assoc-forward
     (implies (assoc key map)
@@ -1057,6 +1182,7 @@
              (declare (ignore key))
              (set::insert val (values (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule values-when-emptyp
@@ -1095,6 +1221,7 @@
                   (not (equal val1 (cdr pair2))))))
          nil)
         (t (compatiblep (tail map1) map2)))
+
   ///
 
   (defrule compatiblep-when-left-emptyp
@@ -1123,6 +1250,7 @@
              (and (equal (assoc key sup)
                          (cons key val))
                   (submap (tail sub) sup)))))
+
   ///
 
   (defrule submap-when-left-emptyp
@@ -1154,6 +1282,7 @@
     " for lists."))
   (cond ((emptyp map) 0)
         (t (1+ (size (tail map)))))
+
   ///
 
   (defruled unfold-equal-size-const
@@ -1226,7 +1355,32 @@
      the leftmost key, and the corresponding value,
      will be in the resulting omap."))
   (cond ((endp keys) nil)
-        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))
+        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals)))))
+
+  ///
+
+  (defruled list-lookup-of-from-lists-of-append-first
+    (implies (and (equal (len keys1) (len vals1))
+                  (no-duplicatesp-equal keys1))
+             (equal (list-lookup keys1
+                                 (from-lists (append keys1 keys2)
+                                             (append vals1 vals2)))
+                    (true-list-fix vals1)))
+    :induct (acl2::cdr-cdr-induct keys1 vals1)
+    :enable (list-lookup
+             lookup-of-update
+             list-lookup-of-update-of-non-member))
+
+  (defruled list-lookup-of-from-lists-of-append-second
+    (implies (and (equal (len keys1) (len vals1))
+                  (not (intersectp-equal keys keys1)))
+             (equal (list-lookup keys
+                                 (from-lists (append keys1 keys2)
+                                             (append vals1 vals2)))
+                    (list-lookup keys (from-lists keys2 vals2))))
+    :induct (acl2::cdr-cdr-induct keys1 vals1)
+    :enable (list-lookup
+             list-lookup-of-update-of-non-member)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

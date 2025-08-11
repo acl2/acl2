@@ -249,7 +249,7 @@
                                    LOGTAIL-OF-BVCHOP
                                    slice
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                    BITXOR-SPLIT)
                            (
                             anti-slice
@@ -1174,7 +1174,6 @@
            :in-theory (e/d (bvplus ;bvchop-of-sum-cases
                                    slice-of-sum-cases
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    bitxor
                                    bvxor
                                    expt-of-+)
@@ -1293,7 +1292,6 @@
 ;;            (equal (bitxor (bitand x y) (bitxor 1 x))
 ;;                   (bitor (bitand x y) (bitxor 1 x))))
 ;;   :hints (("Goal"
-;;            :in-theory (disable)
 ;;            :cases ((and (equal 0 x) (equal 0 y))
 ;;                           (and (equal 0 x) (equal 1 y))
 ;;                           (and (equal 1 x) (equal 0 y))
@@ -1533,14 +1531,6 @@
                (bvplus size x a)
                (bvplus size x b)))
   :hints (("Goal" :in-theory (enable myif))))
-
-;expensive?
-(defthm integerp-implies-acl2-numberp
-  (implies (integerp x)
-           (acl2-numberp x)))
-
-(defthm acl2-numberp-of-sum
-  (acl2-numberp (+ x y)))
 
 (defthm <-from-<=-free
   (implies (and (equal (< free x) ; i think we have this rather than (not (< free x))

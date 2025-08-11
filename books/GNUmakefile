@@ -158,12 +158,17 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
-# The build of saved_acl2 may succeed even if the directory name has
-# spaces, but book certification will almost surely fail, so we
-# disallow such a build.  Comment out the three lines below if you
-# want to take your chances nonetheless!
+# The build system for books does not tolerate spaces in the books/
+# directory's full pathname, as of this writing (in July 2025).  The
+# message below provides a workaround, using a variable that is also
+# used in the parent directory's GNUmakefile.
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
 ifneq (,$(word 2, $(ACL2_SYSTEM_BOOKS)))
+$(info - Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+$(info -   To avoid this error, you can set variable ACL2_ALLOW_SPACES_IN_DIRECTORIES)
+$(info -   to a non-empty value.  But that will likely result in other errors.)
 $(error Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+endif
 endif
 
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
@@ -233,7 +238,7 @@ $(info OS_HAS_GLUCOSE      := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR       := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK      := $(OS_HAS_SMTLINK))
 $(info OS_HAS_STP          := $(OS_HAS_STP))
-$(info OS_HAS_CPP          := $(OS_HAS_CPP))
+$(info OS_HAS_GCC_C17      := $(OS_HAS_GCC_C17))
 $(info USE_QUICKLISP       := $(USE_QUICKLISP))
 $(info ACL2_USELESS_RUNES  := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
@@ -413,9 +418,9 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-ifeq ($(OS_HAS_CPP), )
-$(info Excluding books that invoke cpp: [$(CERT_PL_USES_CPP)])
-OK_CERTS := $(filter-out $(CERT_PL_USES_CPP), $(OK_CERTS))
+ifeq ($(OS_HAS_GCC_C17), )
+$(info Excluding books that require a GCC with \"-std=c17\": [$(CERT_PL_USES_GCC_C17)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_GCC_C17), $(OK_CERTS))
 endif
 
 ifeq ($(ACL2_HAS_REALS), )

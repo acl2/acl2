@@ -80,6 +80,15 @@
   :hints (("Goal" :in-theory (enable logtail
                                      floor-when-multiple))))
 
+(defthm logtail-of-sum2
+  (implies (and (integerp (/ b (expt 2 m)))
+                (integerp a)
+                (integerp b))
+           (equal (logtail m (+ a b))
+                  (+ (logtail m a) (logtail m b))))
+  :hints (("Goal" :use (:instance logtail-of-sum (a b) (b a))
+           :in-theory (disable logtail-of-sum))))
+
 ;; (defthm logtail-of-logtail-worse
 ;;   (implies (and (natp i)
 ;;                 (integerp x)
@@ -185,15 +194,6 @@
          (and (natp n)
               (unsigned-byte-p (+ n (nfix pos)) (ifix i))))
   :hints (("Goal" :cases ((integerp x)))))
-
-(defthm logtail-of-sum2
-  (implies (and (integerp (/ b (expt 2 m)))
-                (integerp a)
-                (integerp b))
-           (equal (logtail m (+ a b))
-                  (+ (logtail m a) (logtail m b))))
-  :hints (("Goal" :use (:instance logtail-of-sum (a b) (b a))
-           :in-theory (disable logtail-of-sum))))
 
 (defthm logtail-shift-gen2
   (implies (and (<= size n) ;this case
@@ -385,3 +385,29 @@
                                      floor-when-integerp-of-quotient
                                      *-of-expt-and-expt-of-1minus
                                      expt-of-+))))
+
+(defthm logtail-of-one-less-when-signed-byte-p
+  (implies (signed-byte-p size x)
+           (equal (logtail (+ -1 size) x)
+                  (if (< x 0)
+                      -1
+                    0)))
+  :hints (("Goal" :in-theory (enable logtail signed-byte-p))))
+
+(defthmd signed-byte-p-in-terms-of-logtail-when-negative
+  (implies (< x 0)
+           (equal (signed-byte-p size x)
+                  (and (integerp x)
+                       (posp size)
+                       (equal (logtail (+ -1 size) x)
+                              -1))))
+  :hints (("Goal" :in-theory (enable logtail))))
+
+;; the logtail is either all ones or all zeros depending on the sign
+(defthmd signed-byte-p-in-terms-of-logtail
+  (equal (signed-byte-p size x)
+         (and (integerp x)
+              (posp size)
+              (equal (logtail (+ -1 size) x)
+                     (if (< x 0) -1 0))))
+  :hints (("Goal" :in-theory (enable logtail))))

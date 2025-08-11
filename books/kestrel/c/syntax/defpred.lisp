@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "kestrel/fty/database" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)

@@ -14,10 +14,7 @@
 (include-book "decoding")
 (include-book "semantics")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,11 +44,14 @@
      we read the 32-bit encoding of the instruction from there,
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
-     if decoding fails, we set the error flag instead."))
+     if the alignment check fails,
+     or if decoding fails,
+     we set the error flag instead."))
   (b* (((when (errorp stat feat)) (stat-fix stat))
        (pc (read-pc stat feat))
-       (enc (read-instruction pc stat feat))
-       (instr? (decode enc feat))
+       (enc? (read-instruction pc stat feat))
+       ((unless enc?) (error stat feat))
+       (instr? (decode enc? feat))
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
   :guard-hints (("Goal" :in-theory (enable decode-iff-encoding-validp)))

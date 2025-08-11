@@ -12,6 +12,8 @@
 (in-package "X")
 
 (include-book "read-and-write")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -23,6 +25,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system))
 
 (local (in-theory (disable ;(:linear x86isa::n08p-xr-mem)
                     acl2::unsigned-byte-p-from-bounds

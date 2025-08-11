@@ -13,8 +13,6 @@
 
 (include-book "instructions")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
@@ -23,14 +21,11 @@
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +55,10 @@
      that are valid according to the @(see features).")
    (xdoc::p
     "We also provide a characterization of the valid encodings
-     as the image of the encoding function."))
+     as the image of the encoding function.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 
@@ -501,7 +499,7 @@
    (xdoc::p
     "The witness function decodes the valid encoding
      to the corresponding valid instruction.
-     Encoding if left inverse of the witness function,
+     Encoding is left inverse of the witness function,
      over valid encodings."))
   (exists (instr)
           (and (instrp instr)
