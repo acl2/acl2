@@ -158,3 +158,11 @@
 ;;                                                        bv-array-read
 ;;                                                        ) ((:i len)
 ;;                                                           bv-array-read-chunk-little-unroll expt)))))
+
+;gen
+(defthm bvchop-of-bv-array-read-chunk-little-same
+  (implies (natp element-size)
+           (equal (bvchop element-size (bv-array-read-chunk-little element-count element-size array-len index array))
+                  (if (posp element-count)
+                      (bv-array-read element-size array-len index array)
+                    0))))
