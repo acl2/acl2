@@ -1918,6 +1918,10 @@ around the single variable binding.</li>
 generated body of each function, where @(':body') is replaced by that generated
 body.  Advanced use.</li>
 
+<li>@(':defines-args'), @(':define-args') -- additional keyword arguments to
+pass to (respectively) invocations of @('defines') and @('define'); these may
+be overridden by invocations of @('defvisitor') and @('defvisitor-multi').</li>
+
 </ul>
 
 <p>See also @('defvisitor'), @('defvisitors'), and @('defvisitor-multi').</p>")

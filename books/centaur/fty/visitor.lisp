@@ -918,7 +918,9 @@
     :fixequivs
     :reversep
     :wrapper
-    :binder))
+    :binder
+    :define-args
+    :defines-args))
 
 (define visitor-process-fnspecs (kwd-alist wrld)
   (b* ((type-fns (cdr (assoc :type-fns kwd-alist)))
@@ -995,6 +997,8 @@
            :wrapper (std::getarg :wrapper :body kwd-alist)
            :renames (std::getarg :renames nil kwd-alist)
            :binder (std::getarg :binder nil kwd-alist)
+           :define-args (std::getarg :define-args nil kwd-alist)
+           :defines-args (std::getarg :defines-args nil kwd-alist)
            :macrop macrop)))
     x))
 
@@ -1107,8 +1111,8 @@
                             :wrld wrld
                             :fnname-template fnname-template
                             :renames renames
-                            :defines-args (cdr (assoc :defines-args kwd-alist))
-                            :define-args (cdr (assoc :define-args kwd-alist))
+                            :defines-args (std::getarg :defines-args x1.defines-args kwd-alist)
+                            :define-args (std::getarg :define-args x1.define-args kwd-alist)
                             :measure (cdr (assoc :measure kwd-alist))
                             :order (cdr (assoc :order kwd-alist)))))
     (mv local-template store-template types)))
