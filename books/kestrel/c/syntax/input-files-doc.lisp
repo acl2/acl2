@@ -195,26 +195,29 @@
        the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       whose translation unit is the result of the parser,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the parser,
        paired with the implementation environment
        determined by the inputs described below.
        Since the parser captures ambiguous constructs without resolving them,
        this representation may include ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':disambiguate'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       containing the result of the disambiguator,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the disambiguator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':validate'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       containing the result of the validator,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the validator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs
