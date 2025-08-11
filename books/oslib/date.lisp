@@ -30,8 +30,6 @@
 
 (in-package "OSLIB")
 (include-book "date-logic")
-(include-book "std/strings/cat" :dir :system)
-(include-book "std/strings/decimal" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "date-raw.lsp")
 
