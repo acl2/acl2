@@ -788,7 +788,6 @@
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
-                (c::valuep val)
                 (equal (c::type-of-value val) ',type))))
        ((mv okp
             more-args
