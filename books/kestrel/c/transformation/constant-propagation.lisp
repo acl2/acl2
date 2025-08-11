@@ -22,6 +22,7 @@
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/langdef-mapping")
+(include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -1964,3 +1965,12 @@
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
       (const-prop-filepath-transunit-map tunits.unwrap))))
+
+(define const-prop-code-ensemble
+  ((code code-ensemblep))
+  :returns (new-code code-ensemblep)
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code))
+    (make-code-ensemble
+     :transunits (const-prop-transunit-ensemble code.transunits)
+     :ienv code.ienv)))

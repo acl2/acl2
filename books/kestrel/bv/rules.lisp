@@ -99,7 +99,9 @@
                            ;; todo: eventually remove these when not brought in:
                            logapp-0
                            logand-with-mask
-                           unsigned-byte-p-plus)))
+                           unsigned-byte-p-plus
+                           bvchop-identity ; for speed
+                           )))
 
 ;rename
 (defthm bvchop-shift-gen-constant-version
@@ -1355,22 +1357,6 @@
 ;;  :hints (("Goal" :in-theory (enable bvnot))))
 
 ;drop in favor of trim rules?
-(defthm slice-of-bvand-tighten
-  (implies (and (< (+ 1 highbit) size)
-;                (<= lowbit highbit)
-                (integerp size)
-                (< 0 size)
-                (natp lowbit)
-                (natp highbit)
-                (integerp x)
-                (integerp y))
-           (equal (slice highbit lowbit (bvand size x y))
-                  (slice highbit lowbit (bvand (+ 1 highbit) x y))))
-  :hints (("Goal" :cases ((<= lowbit highbit))
-          :in-theory (e/d (slice bvand natp  bvchop-of-logtail) (slice-becomes-bvchop
-                                               )))))
-
-;drop in favor of trim rules?
 (defthm slice-of-bvmult-tighten
   (implies (and (< (+ 1 highbit) size)
     ;                (<= lowbit highbit)
@@ -2092,14 +2078,6 @@
 
 ;stuff for rc6 recursive equivalence proof
 
-(defthm slice-of-bvand-too-high
-  (implies (and (<= n low)
-                (integerp low)
-                (natp n))
-           (equal (slice high low (bvand n x y))
-                  0))
-  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
-
 ;how does logtail even get introduced?
 ;bbozo
 ;drop or gen
@@ -2417,8 +2395,8 @@
   (implies (posp k)
            (equal (getbit (+ -1 (integer-length k)) k)
                   1))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (
-                                                  )))))
+  :hints (("Goal" :in-theory (e/d (getbit slice bvchop-identity)
+                                  ()))))
 
 ;bvand-of-constant-when-power-of-2p should usually be enough
 (defthmd bvand-of-expt
@@ -2587,7 +2565,8 @@
 (defthm slice-bound-hack-31-64-6
   (implies (unsigned-byte-p 31 x)
            (< (- x 64) (* 64 (SLICE 30 6 X))))
-  :hints (("Goal" :in-theory (e/d (slice logtail) (anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (slice logtail bvchop-identity)
+                                  (anti-slice)))))
 
 ;bozo think more about this...
 (defthmd bvxor-with-smaller-arg-1-special
@@ -3367,16 +3346,6 @@
   :hints (("Goal" :in-theory (enable bvlt
                                      bvchop-of-floor-of-expt-of-2-constant-version))))
 
-;BBOZO think more about this in the size > 1 case!! - do we want to push the getbit through?
-;in the size=1 case (common when bit blasting) we do NOT want to push the GETBIT through - can be expensive!
-(defthm getbit-of-bvand-eric-2
-  (implies (and (< 0 size)
-                (integerp size) ;drop?
-                )
-           (equal (getbit 0 (bvand size x y))
-                  (bvand 1 x y)))
-  :hints (("Goal" :cases ((integerp size)))))
-
 (defthmd bvand-1-split
   (equal (bvand 1 x y)
          (if (equal 1 (getbit 0 y))
@@ -3501,7 +3470,8 @@
                          (bitnot (getbit (+ -1 size) x))
                          (+ -1 size)
                          (bvnot (+ -1 size) x)
-                         ))))
+                         )))
+  :hints (("Goal" :in-theory (enable bvchop-identity))))
 
 (defthm not-equal-constant-when-unsigned-byte-p
   (implies (and (syntaxp (quotep k))
@@ -4262,7 +4232,8 @@
                   (and (unsigned-byte-p size k1)
                        (equal (bvminus size k1 k2) (bvchop size x)))))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p bvlt bvchop-of-sum-cases bvplus bvuminus bvminus
-                                                   bvchop-when-i-is-not-an-integer)
+                                                   bvchop-when-i-is-not-an-integer
+                                                   bvchop-identity)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm equal-of-bvplus-constant-and-constant-alt
@@ -4800,7 +4771,8 @@
                       0
                     (bvplus size (- (expt 2 size) (expt 2 free)) (bvuminus free x)))))
 ;   :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvplus unsigned-byte-p) (bvminus-becomes-bvplus-of-bvuminus)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvplus unsigned-byte-p bvchop-identity)
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;simplify the lhs?
 (defthmd bvlt-add-to-both-sides-constant-lemma-helper
@@ -5764,7 +5736,7 @@
                                   (x (bvchop size x))
                                   (n size)
                                   (m (+ -1 size)))
-           :in-theory (enable bvcat logapp))))
+           :in-theory (enable bvcat logapp bvchop-identity))))
 
 (defthm bvcat-of-slice-of-bvsx-same
   (implies (and (equal highsize-1 (+ -1 highsize))

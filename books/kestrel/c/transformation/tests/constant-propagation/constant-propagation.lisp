@@ -26,7 +26,7 @@
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -51,7 +51,7 @@
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -76,7 +76,7 @@
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
   (c$::output-files :const *new*
                     :path "new")

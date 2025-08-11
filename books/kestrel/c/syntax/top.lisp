@@ -12,6 +12,7 @@
 
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "code-ensembles")
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
@@ -21,6 +22,7 @@
 (include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
+(include-book "builtin")
 (include-book "disambiguator")
 (include-book "validator")
 (include-book "printer")
@@ -30,7 +32,6 @@
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
-(include-book "implementation-environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,6 +198,7 @@
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (concrete-syntax
                     abstract-syntax
+                    code-ensembles
                     defpred
                     unambiguity
                     validation-information

@@ -54,7 +54,6 @@
      "(output-files :const           ...  ; required"
      "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
-     "              :gcc             ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,14 +66,15 @@
       "Name of the existing ACL2 constant that contains
        the representation of the C code to write to the file system.")
      (xdoc::p
-      "This constant must contain an "
+      "This constant must contain a code ensemble
+       (i.e. a value of type @(tsee code-ensemble)),
+       whose translation unit ensemble is "
       (xdoc::seetopic "unambiguity" "unambiguous")
-      " translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)
-       that additionally satisfies @(tsee transunit-ensemble-unambp)).
-       The translation unit ensemble must also contain only "
+      ". The translation unit ensemble must also contain only "
       (xdoc::seetopic "ascii-identifiers" "ASCII identifiers")
-      " (i.e. it must satisfy @(tsee transunit-ensemble-aidentp)).
+      " (i.e. it must satisfy @(tsee transunit-ensemble-aidentp),
+       w.r.t. the GCC flag in the implementation environment
+       in the code ensemble).
        The translation unit is printed to a file set,
        whose files are written to the file system.
        The keys of the file set map are the same as
@@ -135,20 +135,7 @@
         but the second one is more readable.
         If this option is @('t'), the printer adds the parentheses;
         if thie option is @('nil'), no extra parentheses are added.
-        If this option is not supplied, it defaults to @('nil').")))
-
-    (xdoc::desc
-     "@(':gcc') &mdash; default @('nil')"
-     (xdoc::p
-      "Boolean flag saying whether certain GCC extensions
-       should be accepted or not.")
-     (xdoc::p
-      "If this flag is @('nil'),
-       the translation unit ensemble must use @(see standard) syntax,
-       i.e. no GCC exensions.")
-     (xdoc::p
-      "This flag also affects the aforementioned checks for ASCII identifiers:
-       GCC extensions turn some otherwise legal identifiers into keywords.")))
+        If this option is not supplied, it defaults to @('nil')."))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

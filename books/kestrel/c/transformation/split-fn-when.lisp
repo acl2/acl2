@@ -23,6 +23,7 @@
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/disambiguator")
 (include-book "../syntax/validator")
+(include-book "../syntax/code-ensembles")
 (include-book "split-fn")
 (include-book "utilities/fresh-ident")
 
@@ -278,6 +279,17 @@
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable nfix))))))
 
+(define code-ensemble-split-fn-when
+  ((code code-ensemblep)
+   (triggers ident-setp))
+  :returns (mv (er? maybe-msgp)
+               (code$ code-ensemblep))
+  (b* (((code-ensemble code) code)
+       ((reterr) (irr-code-ensemble))
+       ((erp tunits) (transunit-ensemble-split-fn-when code.transunits
+                                                      triggers)))
+    (retok (change-code-ensemble code :transunits tunits))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing split-fn-when)
@@ -290,18 +302,21 @@
    triggers
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (and (transunit-ensemblep tunits)
-                            (c$::transunit-ensemble-annop tunits))
-                       :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
+               (code (and (code-ensemblep code)
+                          (c$::transunit-ensemble-annop
+                           (code-ensemble->transunits code)))
+                     :hints (("Goal" :in-theory (enable irr-code-ensemble
+                                                        irr-transunit-ensemble))))
                (const-new$ symbolp :rule-classes :type-prescription)
                (triggers string-listp))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil)
+  (b* (((reterr) (irr-code-ensemble) nil nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol" const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       (tunits (code-ensemble->transunits code))
        ((unless (c$::transunit-ensemble-annop tunits))
         (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
@@ -313,7 +328,7 @@
         (retmsg$ "~x0 must be a string or string list" triggers))
        ((when (endp triggers))
         (retmsg$ "~x0 must be a list with at least one element" triggers)))
-    (retok tunits const-new triggers))
+    (retok code const-new triggers))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,20 +348,20 @@
   :verify-guards :after-returns)
 
 (define split-fn-when-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (const-new symbolp)
    (triggers string-listp))
-  :guard (c$::transunit-ensemble-annop tunits)
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp tunits)
-        (transunit-ensemble-split-fn-when tunits
-                                          (string-list-to-ident-set triggers)))
+       ((erp code)
+        (code-ensemble-split-fn-when code
+                                     (string-list-to-ident-set triggers)))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 (define split-fn-when-process-inputs-and-gen-everything
@@ -358,13 +373,13 @@
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits const-new triggers)
+       ((erp code const-new triggers)
         (split-fn-when-process-inputs const-old
                                       const-new
                                       triggers
                                       wrld))
        ((erp event)
-        (split-fn-when-gen-everything tunits
+        (split-fn-when-gen-everything code
                                       const-new
                                       triggers)))
     (retok event)))

@@ -23,10 +23,7 @@
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -49,7 +46,8 @@
      For the latter kinds of instructions,
      we read unsigned operands in the semntic functions;
      however, in @(see semantics-equivalences) we prove
-     equivalent definitions that read signed operands.")
+     equivalent definitions that read signed operands,
+     or a mix of signed and unsigned operands.")
    (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
@@ -71,9 +69,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently leave it signed.
      We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -189,9 +191,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -227,9 +233,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -265,9 +275,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer;
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))

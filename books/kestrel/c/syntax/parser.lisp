@@ -3275,7 +3275,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-fsuffix-if-present ((parstate parstatep))
+(define lex-?-floating-suffix ((parstate parstatep))
   :returns (mv erp
                (fsuffix? fsuffix-optionp)
                (last/next-pos positionp)
@@ -3311,12 +3311,12 @@
 
   ///
 
-  (defret parsize-of-lex-fsuffix-if-present-uncond
+  (defret parsize-of-lex-?-floating-suffix-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-fsuffix-if-present-cond
+  (defret parsize-of-lex-?-floating-suffix-cond
     (implies (and (not erp)
                   fsuffix?)
              (<= (parsize new-parstate)
@@ -3756,7 +3756,7 @@
                     (lex-bin-expo parstate)))
                 ;; 0 x/X . hexdigs2 expo
                 (b* (((erp fsuffix? suffix-last/next-pos parstate)
-                      (lex-fsuffix-if-present parstate))
+                      (lex-?-floating-suffix parstate))
                      ;; 0 x/X . hexdigs2 expo [fsuffix]
                      ((erp parstate) (check-full-ppnumber nil parstate)))
                   (retok (const-float
@@ -3798,7 +3798,7 @@
                     (lex-bin-expo parstate))
                    ;; 0 x/X hexdigs . expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
-                    (lex-fsuffix-if-present parstate))
+                    (lex-?-floating-suffix parstate))
                    ;; 0 x/X hexdigs . expo [suffix]
                    ((erp parstate) (check-full-ppnumber nil parstate)))
                 (retok (const-float
@@ -3818,7 +3818,7 @@
                     (lex-bin-expo parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
-                    (lex-fsuffix-if-present parstate))
+                    (lex-?-floating-suffix parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo [suffix]
                    ((erp parstate) (check-full-ppnumber nil parstate)))
                 (retok (const-float
@@ -3839,7 +3839,7 @@
                ((erp expo expo-last-pos parstate) (lex-bin-expo parstate))
                ;; 0 x/X hexdigs expo
                ((erp fsuffix? suffix-last/next-pos parstate)
-                (lex-fsuffix-if-present parstate))
+                (lex-?-floating-suffix parstate))
                ;; 0 x/X hexdigs expo [suffix]
                ((erp parstate) (check-full-ppnumber nil parstate)))
             (retok (const-float
@@ -3965,7 +3965,7 @@
             (lex-dec-expo-if-present parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate))
            (core (if decdigs2
@@ -4009,7 +4009,7 @@
            ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
            ;; 1-9 [decdigs] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 1-9 [decdigs] expo [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-float
@@ -4086,7 +4086,7 @@
         (lex-dec-expo-if-present parstate))
        ;; . decdig [decdigs] [expo]
        ((erp fsuffix? suffix-last/next-pos parstate)
-        (lex-fsuffix-if-present parstate))
+        (lex-?-floating-suffix parstate))
        ;; . decdig [decdigs] [expo] [suffix]
        ((erp parstate) (check-full-ppnumber nil parstate))
        (core (if expo?
@@ -4266,7 +4266,7 @@
             (lex-dec-expo-if-present parstate))
            ;; 0 [digits] . [digits2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 0 [digits] . [digits2] [expo] [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate))
            (core (cond
@@ -4312,7 +4312,7 @@
            ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
            ;; 0 [digits] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
-            (lex-fsuffix-if-present parstate))
+            (lex-?-floating-suffix parstate))
            ;; 0 [digits] expo [suffix]
            ((erp parstate) (check-full-ppnumber nil parstate)))
         (retok (const-float

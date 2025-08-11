@@ -3731,7 +3731,8 @@
 (define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
                                       (options prioptp)
                                       (gcc booleanp))
-  :guard (filepath-transunit-map-unambp tunitmap)
+  :guard (and (filepath-transunit-map-unambp tunitmap)
+              (filepath-transunit-map-aidentp tunitmap gcc))
   :returns (filemap filepath-filedata-mapp)
   :short "Print the files in a file set."
   :long
@@ -3753,6 +3754,8 @@
                                               gcc)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
+  :guard-hints
+  (("Goal" :in-theory (enable filepath-transunit-map-aidentp-of-tail)))
 
   ///
 
@@ -3786,6 +3789,10 @@
    (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
                                  options
                                  gcc))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap)))
   :hooks (:fix)
 
   ///

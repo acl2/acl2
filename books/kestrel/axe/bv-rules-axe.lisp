@@ -105,7 +105,6 @@
   :hints (("Goal" :use (:instance floor-of-expt2-becomes-slice-when-bv-axe (n (lg k)))
            :in-theory (e/d (power-of-2p) (floor-of-expt2-becomes-slice-when-bv-axe)))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvchop-identity-axe

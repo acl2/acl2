@@ -23,6 +23,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 (include-book "utilities/free-vars")
 (include-book "utilities/subst-free")
 
@@ -552,6 +553,24 @@
                                          split-point)))
     (mv er (transunit-ensemble map))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-code-ensemble
+  ((target-fn identp)
+   (new-fn-name identp)
+   (code code-ensemblep)
+   (split-point natp))
+  :returns (mv (er? maybe-msgp)
+               (new-code code-ensemblep))
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code)
+       ((reterr) (irr-code-ensemble))
+       ((erp tunits) (split-fn-transunit-ensemble target-fn
+                                                  new-fn-name
+                                                  code.transunits
+                                                  split-point)))
+    (retok (change-code-ensemble code :transunits tunits))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing split-fn)
@@ -566,19 +585,19 @@
    split-point
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (transunit-ensemblep tunits))
+               (code (code-ensemblep code))
                (const-new$ symbolp)
                (target$ identp)
                (new-fn$ identp)
                (split-point natp))
   :short "Process the inputs."
   (b* (((reterr)
-        (c$::irr-transunit-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
+        (irr-code-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
@@ -589,7 +608,7 @@
        (new-fn (ident new-fn))
        ((unless (natp split-point))
         (retmsg$ "~x0 must be a natural number." split-point)))
-    (retok tunits const-new target new-fn split-point)))
+    (retok code const-new target new-fn split-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,7 +617,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-fn-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (const-new symbolp)
    (target identp)
    (new-fn identp)
@@ -607,15 +626,15 @@
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp tunits)
-        (split-fn-transunit-ensemble
+       ((erp code)
+        (split-fn-code-ensemble
           target
           new-fn
-          tunits
+          code
           split-point))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -631,11 +650,11 @@
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits const-new target new-fn split-point)
+       ((erp code const-new target new-fn split-point)
         (split-fn-process-inputs
           const-old const-new target new-fn split-point wrld))
        ((erp event)
-        (split-fn-gen-everything tunits const-new target new-fn split-point)))
+        (split-fn-gen-everything code const-new target new-fn split-point)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -28,10 +28,10 @@
              :process :parse
              :const *parsed-simple*)
 
-(acl2::assert! (transunit-ensemblep *parsed-simple*))
+(acl2::assert! (code-ensemblep *parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths *parsed-simple*)
+ (transunit-ensemble-paths (code-ensemble->transunits *parsed-simple*))
  (set::mergesort (list (filepath "simple.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -47,10 +47,10 @@
              :process :parse
              :const *parsed-simple/stdbool*)
 
-(acl2::assert! (transunit-ensemblep *parsed-simple/stdbool*))
+(acl2::assert! (code-ensemblep *parsed-simple/stdbool*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths *parsed-simple/stdbool*)
+ (transunit-ensemble-paths (code-ensemble->transunits *parsed-simple/stdbool*))
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c"))))
 
@@ -64,7 +64,7 @@
              :process :disambiguate
              :const *disamb-simple*)
 
-(acl2::assert! (transunit-ensemblep *disamb-simple*))
+(acl2::assert! (code-ensemblep *disamb-simple*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,7 +79,7 @@
              :process :disambiguate
              :const *disamb-simple/stdbool*)
 
-(acl2::assert! (transunit-ensemblep *disamb-simple/stdbool*))
+(acl2::assert! (code-ensemblep *disamb-simple/stdbool*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,7 +91,7 @@
              :process :validate
              :const *valid-simple*)
 
-(acl2::assert! (transunit-ensemblep *valid-simple*))
+(acl2::assert! (code-ensemblep *valid-simple*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,4 +106,4 @@
              :process :validate
              :const *valid-simple/stdbool*)
 
-(acl2::assert! (transunit-ensemblep *valid-simple/stdbool*))
+(acl2::assert! (code-ensemblep *valid-simple/stdbool*))

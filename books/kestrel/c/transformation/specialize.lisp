@@ -22,6 +22,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -240,6 +241,23 @@
                                          target-param
                                          const))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define specialize-code-ensemble
+  ((code code-ensemblep)
+   (target-fn identp)
+   (target-param identp)
+   (const exprp))
+  :short "Transform a code ensemble."
+  :returns (new-code code-ensemblep)
+  (b* (((code-ensemble code) code))
+    (make-code-ensemble
+     :transunits (specialize-transunit-ensemble code.transunits
+                                                target-fn
+                                                target-param
+                                                const)
+     :ienv code.ienv)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing specialize)
@@ -254,23 +272,23 @@
    const
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (transunit-ensemblep tunits))
+               (code (code-ensemblep code))
                (const-new$ symbolp)
                (target$ identp)
                (param$ identp)
                (const exprp))
   :short "Process the inputs."
   (b* (((reterr)
-        (c$::irr-transunit-ensemble)
+        (irr-code-ensemble)
         nil
         (c$::irr-ident)
         (c$::irr-ident)
         (c$::irr-expr))
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
@@ -281,7 +299,7 @@
        (param (ident param))
        ((unless (exprp const))
         (retmsg$ "~x0 must be a C expression." const)))
-    (retok tunits const-new target param const)))
+    (retok code const-new target param const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,17 +308,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define specialize-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (const-new symbolp)
    (target identp)
    (param identp)
    (const exprp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
-  (b* ((tunits (specialize-transunit-ensemble tunits target param const))
+  (b* ((code (specialize-code-ensemble code target param const))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     defconst-event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,10 +334,10 @@
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits const-new target param const)
+       ((erp code const-new target param const)
         (specialize-process-inputs
           const-old const-new target param const wrld))
-       (event (specialize-gen-everything tunits const-new target param const)))
+       (event (specialize-gen-everything code const-new target param const)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

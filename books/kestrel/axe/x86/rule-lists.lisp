@@ -1206,6 +1206,8 @@
     acl2::bvif-of-+-arg3
     acl2::bvif-of---arg3
     acl2::bvif-of---arg4
+
+    acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
     ))
 
@@ -2121,7 +2123,10 @@
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
           *signed-recognizers* ;; these are just signed-byte-p
-          '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
+          '(acl2::boolif-of-if-arg1
+            acl2::boolif-of-if-arg2
+            acl2::boolif-of-if-arg3
+            ;; It would be nice if all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
             ;; xw-of-rflags-and-set-flag
@@ -2697,13 +2702,13 @@
      acl2::get-mach-o-load-command-unroll
      ;; PE stuff:
      acl2::get-pe-sections
-     acl2::get-pe-section
-     acl2::get-pe-text-section
+     acl2::get-pe-section-info
+     acl2::get-pe-text-section-info
      acl2::get-pe-section-info-bytes
      acl2::get-pe-text-section-bytes
-     acl2::get-pe-section-aux-base-1
-     acl2::get-pe-section-aux-base-2
-     acl2::get-pe-section-aux-unroll
+     acl2::get-pe-section-info-aux-base-1
+     acl2::get-pe-section-info-aux-base-2
+     acl2::get-pe-section-info-aux-unroll
      acl2::lookup-pe-symbol-base-1
      acl2::lookup-pe-symbol-base-2
      acl2::lookup-pe-symbol-unroll

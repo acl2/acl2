@@ -20,6 +20,7 @@
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-information")
+(include-book "../syntax/code-ensembles")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 
@@ -1107,6 +1108,30 @@
     (retok
       (transunit-ensemble (splitgso-rename-filepaths map)))))
 
+(define splitgso-code-ensemble
+  ((filepath? c$::filepath-optionp)
+   (orig-struct identp)
+   (new-struct1 ident-optionp)
+   (new-struct2 ident-optionp)
+   (new-struct-tag1 ident-optionp)
+   (new-struct-tag2 ident-optionp)
+   (split-members ident-listp)
+   (code code-ensemblep))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (code$ code-ensemblep))
+  (b* (((reterr) (irr-code-ensemble))
+       ((code-ensemble code) code)
+       ((erp tunits) (splitgso-transunit-ensemble filepath?
+                                                  orig-struct
+                                                  new-struct1
+                                                  new-struct2
+                                                  new-struct-tag1
+                                                  new-struct-tag2
+                                                  split-members
+                                                  code.transunits)))
+    (retok (change-code-ensemble code :transunits tunits))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing splitgso)
@@ -1122,10 +1147,11 @@
           (ident-map (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
-(defrulel transunit-ensemble-annop-of-irr-transunit-ensemble
-  (c$::transunit-ensemble-annop (c$::irr-transunit-ensemble))
+(defrulel transunit-ensemble-annop-of-irr-code-ensemble
+  (c$::transunit-ensemble-annop
+   (code-ensemble->transunits (c$::irr-code-ensemble)))
   :enable ((:e c$::transunit-ensemble-annop)
-           (:e c$::irr-transunit-ensemble)))
+           (:e c$::irr-code-ensemble)))
 
 (define splitgso-process-inputs (const-old
                                  const-new
@@ -1138,8 +1164,9 @@
                                  split-members
                                  (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (and (transunit-ensemblep tunits)
-                            (c$::transunit-ensemble-annop tunits)))
+               (code (and (code-ensemblep code)
+                          (c$::transunit-ensemble-annop
+                           (code-ensemble->transunits code))))
                (object-ident identp)
                (filepath? c$::filepath-optionp)
                (new-object1 ident-optionp)
@@ -1150,7 +1177,7 @@
                (const-new$ symbolp))
   :short "Process the inputs."
   (b* (((reterr)
-        (c$::irr-transunit-ensemble)
+        (c$::irr-code-ensemble)
         (c$::irr-ident)
         nil
         (c$::irr-ident)
@@ -1161,9 +1188,10 @@
         nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol" const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       (tunits (code-ensemble->transunits code))
        ((unless (c$::transunit-ensemble-annop tunits))
         (retmsg$ "~x0 must be an annotated with validation information."
                  const-old))
@@ -1197,7 +1225,7 @@
        (split-members (ident-map split-members))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new)))
-    (retok tunits
+    (retok code
            object-ident
            object-filepath
            new-object1
@@ -1214,7 +1242,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define splitgso-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (object-ident identp)
    (filepath? c$::filepath-optionp)
    (new-object1 ident-optionp)
@@ -1223,13 +1251,13 @@
    (new-type2 ident-optionp)
    (split-members ident-listp)
    (const-new symbolp))
-  :guard (c$::transunit-ensemble-annop tunits)
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp tunits)
-        (splitgso-transunit-ensemble
+       ((erp code)
+        (splitgso-code-ensemble
           filepath?
           object-ident
           new-object1
@@ -1237,10 +1265,10 @@
           new-type1
           new-type2
           split-members
-          tunits))
+          code))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1261,7 +1289,7 @@
   :parents (splitgso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits
+       ((erp code
              object-ident
              filepath?
              new-object1
@@ -1281,7 +1309,7 @@
                                  split-members
                                  wrld))
        ((erp event)
-        (splitgso-gen-everything tunits
+        (splitgso-gen-everything code
                                  object-ident
                                  filepath?
                                  new-object1

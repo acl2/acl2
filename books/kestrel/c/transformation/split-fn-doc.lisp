@@ -42,8 +42,8 @@
          "Specifies the code to be transformed.")
        (xdoc::p
          "This must be a symbol that names an existing ACL2 constant
-          that contains a translation unit ensemble,
-          i.e. a value of type @(tsee transunit-ensemble).
+          that contains a code ensemble,
+          i.e. a value of type @(tsee code-ensemble).
           This constant could result from @(tsee c$::input-files),
           or from some other "
          (xdoc::seetopic "transformation-tools" "transformation")

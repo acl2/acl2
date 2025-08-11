@@ -19,6 +19,7 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -224,3 +225,17 @@
       (copy-fn-filepath-transunit-map tunits.unwrap
                                       target-fn
                                       new-fn))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define copy-fn-code-ensemble
+  ((code code-ensemblep)
+   (target-fn identp)
+   (new-fn identp))
+  :returns (new-code code-ensemblep)
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code))
+    (change-code-ensemble
+     code
+     :transunits
+     (copy-fn-transunit-ensemble code.transunits target-fn new-fn))))

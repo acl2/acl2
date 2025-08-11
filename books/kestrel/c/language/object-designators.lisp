@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "identifiers")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

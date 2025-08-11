@@ -1483,46 +1483,37 @@
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
              posp))
 
-  (defruled integer-format-unsigned->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (uinteger-format->max
-                     (uinteger+sinteger-format->unsigned
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->unsigned-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 size))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     uinteger-format->max-of-uinteger-format-inc-npnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
+    :enable (integer-format->unsigned-max
+             uinteger-format->max-of-uinteger-format-inc-npnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
 
-  (defruled integer-format-signed->max-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->max
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-max
+                     (integer-format-inc-sign-tcnpnt size))
                     (1- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp))
+    :enable (integer-format->signed-max
+             sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp))
 
-  (defruled integer-format-signed->min-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (sinteger-format->min
-                     (uinteger+sinteger-format->signed
-                      (integer-format->pair
-                       (integer-format-inc-sign-tcnpnt size))))
+             (equal (integer-format->signed-min
+                     (integer-format-inc-sign-tcnpnt size))
                     (- (expt 2 (1- size)))))
-    :enable
-    (integer-format-inc-sign-tcnpnt
-     sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
-     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
-     posp)))
+    :enable (integer-format->signed-min
+             sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1730,6 +1721,149 @@
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format llong-format))
              :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection integer-format-short/int/long/llong-wfp-of-inc-sign-tcnpnt
+  :short "Theorems about the well-formedness of
+          @('short')s, @('int')s, @('long')s, and @('long long')s
+          specified via @(tsee integer-format-inc-sign-tcnpnt)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When these integer formats are specified
+     via @(tsee integer-format-inc-sign-tcnpnt),
+     their well-formedness reduces to
+     simple conditions on the sizes."))
+
+  (defruled integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-short-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     schar-format)
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 16)
+                         (>= size (uchar-format->size uchar-format)))))
+    :enable (integer-format-short-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
+             schar-format->min
+             schar-format->max
+             uchar-format->max)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 15)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 16)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m (uchar-format->size uchar-format))
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-int-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 16)
+                         (>= size size0))))
+    :enable (integer-format-int-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 15)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 16)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-long-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 32)
+                         (>= size size0))))
+    :enable (integer-format-long-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 31)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 32)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents)))
+
+  (defruled integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size0)
+                  (not (equal size0 1))
+                  (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format-llong-wfp
+                     (integer-format-inc-sign-tcnpnt size)
+                     uchar-format
+                     (integer-format-inc-sign-tcnpnt size0))
+                    (and (integerp (/ size (uchar-format->size uchar-format)))
+                         (>= size 64)
+                         (>= size size0))))
+    :enable (integer-format-llong-wfp
+             integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
+             integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
+             integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt)
+    :use ((:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 63)
+                     (n (1- size))
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m 64)
+                     (n size)
+                     (x 2))
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (m size0)
+                     (n size)
+                     (x 2)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1
+    :prep-books ((acl2::scatter-exponents))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

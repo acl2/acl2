@@ -28,14 +28,16 @@
   ;; Create a term representing the extraction of the indicated output from TERM.
   ;; why "normal"?  maybe "component" ?  or non-trivial?
   ;; This can translate some parts of the output-indicator.
-  (defun wrap-in-normal-output-extractor (output-indicator term wrld)
-    (declare (xargs :guard (plist-worldp wrld)
+  (defun wrap-in-normal-output-extractor (output-indicator term 64-bitp wrld)
+    (declare (xargs :guard (and ;; see above comment on output-indicator
+                             (booleanp 64-bitp)
+                             (plist-worldp wrld))
                     :mode :program ; because of translate-term
                     ))
     (if (symbolp output-indicator)
         (case output-indicator
           ;; Extract a 64-bit register:
-          (:rax `(rax ,term))
+          (:rax `(rax ,term)) ; todo: error if any of these is used and 64-bitp is false
           (:rbx `(rbx ,term))
           (:rcx `(rcx ,term))
           (:rdx `(rdx ,term))
@@ -51,8 +53,16 @@
           (:r15 `(r15 ,term))
           (:rsp `(rsp ,term))
           (:rbp `(rbp ,term))
-          ;; todo: call eax or use choped rax here?
-          (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
+          ;; Extract a 32-bit register:
+          (:eax (if 64-bitp
+                    `(bvchop '32 (rax ,term))
+                  `(eax ,term)))
+          (:ax (if 64-bitp
+                   `(bvchop '16 (rax ,term))
+                 `(bvchop '16 (eax ,term))))
+          (:al (if 64-bitp
+                   `(bvchop '8 (rax ,term))
+                 `(bvchop '8 (eax ,term))))
           ;; (:eax (rax ,term))
           (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
           (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
@@ -122,28 +132,29 @@
              (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
-          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))
-          (otherwise (er hard? 'wrap-in-output-extractor "Bad output indicator: ~x0" output-indicator))))))
+          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term 64-bitp wrld)))
+          (otherwise (er hard? 'wrap-in-normal-output-extractor "Bad output indicator: ~x0" output-indicator))))))
 
-  (defun wrap-in-normal-output-extractors (output-indicators term wrld)
+  (defun wrap-in-normal-output-extractors (output-indicators term 64-bitp wrld)
     (declare (xargs :guard (and (true-listp output-indicators)
+                                (booleanp 64-bitp)
                                 (plist-worldp wrld))
                     :mode :program ; because of translate-term
                     ))
     (if (endp output-indicators)
         nil
-      (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
-            (wrap-in-normal-output-extractors (rest output-indicators) term wrld)))))
+      (cons (wrap-in-normal-output-extractor (first output-indicators) term 64-bitp wrld)
+            (wrap-in-normal-output-extractors (rest output-indicators) term 64-bitp wrld)))))
 
 ;; Wraps TERM as indicated by OUTPUT-INDICATOR.
 ;; todo: reorder args?
-(defun wrap-in-output-extractor (output-indicator term wrld)
+(defun wrap-in-output-extractor (output-indicator term 64-bitp wrld)
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program ; because of translate-term
                   ))
   (if (eq :all output-indicator)
       term
-    (wrap-in-normal-output-extractor output-indicator term wrld)))
+    (wrap-in-normal-output-extractor output-indicator term 64-bitp wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

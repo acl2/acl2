@@ -65,6 +65,10 @@ gcc -o or.macho64 or.c
 gcc -o xor.macho64 xor.c
 gcc -o cmp.macho64 cmp.c
 gcc -o padd.macho64 padd.c
+gcc -o psub.macho64 psub.c
+gcc -o pand.macho64 pand.c
+gcc -o por.macho64 por.c
+gcc -o pxor.macho64 pxor.c
 
 ;; Done on Dell Latitude 5480, Intel Core i5 64-bit Windows
 
@@ -75,6 +79,7 @@ gcc -o or.pe64 or.c
 gcc -o xor.pe64 xor.c
 gcc -o cmp.pe64 cmp.c
 
+
 ;; Done on Linux 12th Gen Intel Core i9
 
 gcc padd.c -o padd.elf64
@@ -84,4 +89,8 @@ gcc -o and.c and.elf64
 gcc -o or.c or.elf64
 gcc -o xor.c xor.elf64
 gcc -o cmp.c cmp.elf64
+gcc -o psub.c psub.elf64
+gcc -o pand.c pand.elf64
+gcc -o por.c por.elf64
+gcc -o pxor.c pxor.elf64
 

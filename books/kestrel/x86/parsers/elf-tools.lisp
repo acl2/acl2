@@ -16,6 +16,15 @@
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
+(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "kestrel/lists-light/repeat-def" :dir :system)
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp2" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/repeat" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; todo: use the section-header-table?
 (defund elf-section-presentp (section-name parsed-elf)
@@ -226,7 +235,8 @@
            (parsed-elfp (mv-nth 1 (parse-elf filename state))))
   :hints (("Goal" :in-theory (enable parse-elf))))
 
-;; Returns an error triple (mv erp res state) where res contains information about the given ELF file.
+;; Reads the given ELF file and returns some info about it, or returns an error.
+;; Returns an error triple (mv erp info state).
 (defund elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
@@ -236,8 +246,10 @@
        ;; (sections (lookup-eq-safe :sections parsed-elf))
        ;; (section-names (strip-cars sections))
        (info nil) ; to be extended below
+       ;; TODO: Or just clear out the :bytes and :sections (which might be huge)
        (info (acons :type (lookup-eq-safe :type parsed-elf) info))
-       ;; (info (acons :section-names section-names info))
+       (info (acons :machine (lookup-eq-safe :machine parsed-elf) info))
+       (info (acons :entry (lookup-eq-safe :entry parsed-elf) info))
        (info (acons :section-header-table (lookup-eq-safe :section-header-table parsed-elf) info))
        (info (acons :program-header-table (lookup-eq-safe :program-header-table parsed-elf) info))
        (info (acons :symbol-table (lookup-eq-safe :symbol-table parsed-elf) info))
@@ -248,3 +260,86 @@
 
 (defmacro elf-info (filename)
   `(elf-info-fn ,filename state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp regions).
+(defund elf64-regions-to-load-aux (program-header-table all-bytes-len all-bytes acc)
+  (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
+                              (acl2::byte-listp all-bytes)
+                              (equal all-bytes-len (len all-bytes))
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::elf-program-header-table-entryp)))))
+  (if (endp program-header-table)
+      (mv nil (reverse acc))
+    (b* ((program-header-table-entry (first program-header-table))
+         (type (lookup-eq :type program-header-table-entry))
+         ;; We skip any segment that is not a LOAD segment:
+         ((when (not (eq type :pt_load)))
+          (elf64-regions-to-load-aux (rest program-header-table) all-bytes-len all-bytes acc))
+         ;; It is a LOAD segment:
+         (offset (lookup-eq :offset program-header-table-entry))
+         (filesz (lookup-eq :filesz program-header-table-entry))
+         (vaddr (lookup-eq :vaddr program-header-table-entry)) ; we don't use the paddr for anything
+         (memsz (lookup-eq :memsz program-header-table-entry)) ; todo: do anything with flags or align?
+         ((when (not (and (natp offset)
+                          (natp filesz)
+                          (natp vaddr)
+                          (natp memsz)
+                          ;; The file size can't be larger than the memory size:
+                          (<= filesz memsz))))
+          (mv :bad-program-header-table-entry-value nil))
+         (last-byte-num (+ -1 offset filesz))
+         ((when (not (< last-byte-num all-bytes-len)))
+          (mv :not-enough-bytes nil))
+         ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
+         (numzeros (- memsz filesz))
+         (bytes (take filesz (nthcdr offset all-bytes)))
+         ;; Zero bytes at the end of the segment may not be stored in the file:
+         (bytes (if (posp numzeros)
+                    (append bytes (acl2::repeat numzeros 0)) ; optimize?
+                  bytes))
+         ;; ((when (not (= memsz filesz))) ; todo
+         ;;  (cw "Warning: filesz is ~x0 but memsz is ~x1.~%" filesz memsz)
+         ;;  (mv :filesz-memsz-mismatch nil))
+         )
+      (elf64-regions-to-load-aux (rest program-header-table)
+                                 all-bytes-len all-bytes
+                                 (cons (list memsz vaddr bytes)
+                                       acc)))))
+
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load-aux
+    (implies (and (x::memory-regionsp acc)
+                  (acl2::byte-listp all-bytes)
+                  (equal all-bytes-len (len all-bytes)))
+             (x::memory-regionsp (mv-nth 1 (elf64-regions-to-load-aux program-header-table all-bytes-len all-bytes acc))))
+    :hints (("Goal" :in-theory (enable elf64-regions-to-load-aux x::memory-regionsp x::memory-regionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp regions).
+(defund elf64-regions-to-load (parsed-elf)
+  (declare (xargs :guard (acl2::parsed-elfp parsed-elf)))
+  (b* ((program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
+       (all-bytes (acl2::parsed-elf-bytes parsed-elf))
+       ;; For now, we only look at the segments, not the sections, as the segments
+       ;; are what is actually loaded into memory when the program runs.
+       ;; TODO: Consider implementing some sort of dynamic loading using the
+       ;; sections (but call instructions (and others?) may need to be fixed up):
+       ((when (not (consp program-header-table)))
+        (er hard? 'assumptions-elf64-new "Program header table is empty. Please link the executable") ; todo: print the name
+        (mv :empty-program-header-table nil))
+       ;; (if (null program-header-table) ; todo: simplify this:
+       ;;     (prog2$ (er hard? 'assumptions-elf64-new "No program-header-table.  Please link the executbable.")
+       ;;             ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
+       ;;             (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
+       ;;                                                 position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp nil))
+       )
+    (elf64-regions-to-load-aux program-header-table (len all-bytes) all-bytes nil)))
+
+(defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load
+  (implies (acl2::parsed-elfp parsed-elf)
+           (x::memory-regionsp (mv-nth 1 (elf64-regions-to-load parsed-elf))))
+  :hints (("Goal" :in-theory (enable elf64-regions-to-load))))

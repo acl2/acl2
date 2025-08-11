@@ -36,14 +36,15 @@
                             cond)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
-         (int-bytes (or ,int-bytes 4))
-         (long-bytes (or ,long-bytes 8))
+         (int-bytes (or ,int-bytes 2))
+         (long-bytes (or ,long-bytes 4))
          (llong-bytes (or ,llong-bytes 8))
-         (ienv (make-ienv :short-bytes short-bytes
-                          :int-bytes int-bytes
-                          :long-bytes long-bytes
-                          :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-char-signedp))
+         (ienv (ienv-simple short-bytes
+                            int-bytes
+                            long-bytes
+                            llong-bytes
+                            ,plain-char-signedp
+                            ,gcc))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
@@ -66,11 +67,12 @@
          (int-bytes (or ,int-bytes 4))
          (long-bytes (or ,long-bytes 8))
          (llong-bytes (or ,llong-bytes 8))
-         (ienv (make-ienv :short-bytes short-bytes
-                          :int-bytes int-bytes
-                          :long-bytes long-bytes
-                          :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-char-signedp))
+         (ienv (ienv-simple short-bytes
+                            int-bytes
+                            long-bytes
+                            llong-bytes
+                            ,plain-char-signedp
+                            ,gcc))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
@@ -571,5 +573,27 @@ __int128 __signed z;
  "__int128 x;
 __signed__ __int128 y;
 __int128 __signed__ z;
+"
+ :gcc t)
+
+(test-valid
+ "void main(void) {
+  int x = ({ int a = 0; a; });
+  int y = ({ int a = 1; a; });
+}
+"
+ :gcc t)
+
+(test-valid
+ "int foo (void);
+int bar (void);
+typeof(bar) foo;
+"
+ :gcc t)
+
+(test-valid
+ "int foo (void);
+typeof(foo) bar;
+int bar (void);
 "
  :gcc t)

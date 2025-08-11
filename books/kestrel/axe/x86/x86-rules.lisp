@@ -418,7 +418,7 @@
 
 (defopeners addresses-of-subsequent-stack-slots-aux)
 
-(defopeners acl2::get-pe-section-aux)
+(defopeners acl2::get-pe-section-info-aux)
 (defopeners acl2::lookup-pe-symbol)
 
 (defopeners simd-add-spec)

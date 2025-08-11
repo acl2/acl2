@@ -19,10 +19,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,7 +247,7 @@
 (defsection exec-add-alt-defs
   :short "Equivalent semantic definitions of @('ADD')."
 
-  (defruled exec-add-alt-def
+  (defruled exec-add-alt-def-signed-signed
     (equal (exec-add rd rs1 rs2 stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
@@ -261,10 +258,47 @@
     :enable (exec-add
              read-xreg-signed
              write-xreg
-             inc4-pc
-             write-pc
-             loghead-of-logext-plus-logext
-             ifix)))
+             loghead-of-logext-plus-logext))
+
+  (defruled exec-add-alt-def-unsigned-signed
+    (equal (exec-add rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (+ rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-add
+             read-xreg-signed
+             write-xreg)
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                    (y (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs2)
+                                                   stat feat))))
+    :disable (bitops::loghead-of-+-of-loghead-same
+              acl2::loghead-+-cancel))
+
+  (defruled exec-add-alt-def-signed-unsigned
+    (equal (exec-add rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
+                (result (+ rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-add
+             read-xreg-signed
+             write-xreg)
+    :use (:instance bitops::loghead-of-+-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs1)
+                                                   stat feat)))
+                    (y (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
+    :disable (bitops::loghead-of-+-of-loghead-same
+              acl2::loghead-+-cancel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

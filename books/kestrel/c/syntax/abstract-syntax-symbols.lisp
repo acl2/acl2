@@ -20,7 +20,7 @@
 (defconst *abstract-syntax-symbols*
   '(
 
-    ;; fixtypes operations:
+    ;; code representation:
 
     identp
     ident
@@ -438,6 +438,13 @@
     fileset
     fileset->unwrap
 
+    code-ensemble
+    code-ensemblep
+    code-ensemble->transunits
+    code-ensemble->ienv
+    make-code-ensemble
+    change-code-ensemble
+
     ;; irrelevants:
 
     irr-expr
@@ -454,6 +461,7 @@
     irr-block-item
     irr-fundef
     irr-transunit-ensemble
+    irr-code-ensemble
 
     ;; unambiguity:
 

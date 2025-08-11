@@ -524,29 +524,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-uterm-result-and-type-formula
+(define atc-gen-stmt-value-term-and-type-formula
   ((uterm "An untranslated term.")
    (type typep)
    (affect symbol-listp)
    (inscope atc-symbol-varinfo-alist-listp)
    (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (result "An untranslated term.")
+  :returns (mv (stmt-value "An untranslated term.")
                (type-formula "An untranslated term.")
                (type-thms symbol-listp))
-  :short "Generates a result term and a type formula for a term."
+  :short "Generates a statement value term and a type formula for a term."
   :long
   (xdoc::topstring
    (xdoc::p
     "This extends @(tsee atc-gen-term-type-formula)
-     to also return a term that is the result (in the C sense) of @('uterm'),
-     if @('type') is not @('void'), otherwise the result is @('nil').
+     to also return a term that is the statement value result of @('uterm').
      We should probably integrate this code
      with @(tsee atc-gen-term-type-formula)."))
   (b* (((mv type-formula type-thms)
         (atc-gen-term-type-formula uterm type affect inscope prec-tags))
-       ((when (type-case type :void)) (mv nil type-formula type-thms))
+       ((when (type-case type :void))
+        (mv '(stmt-value-none) type-formula type-thms))
        ((mv uterms & &) (atc-uterm-to-components uterm (1+ (len affect)))))
-    (mv (car uterms) type-formula type-thms)))
+    (mv `(stmt-value-return ,(car uterms)) type-formula type-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1244,7 +1244,7 @@
                                  (stmt-thm symbolp)
                                  (uterm? "An untranslated term.")
                                  (type typep)
-                                 (result "An untranslated term.")
+                                 (stmt-value "An untranslated term.")
                                  (new-compst "An untranslated term.")
                                  (gin stmt-ginp)
                                  state)
@@ -1261,11 +1261,11 @@
    (xdoc::p
     "This is used to lift generated statements
      to generated block items.
-     Besdies the block item,
+     Besides the block item,
      we also generate a theorem saying that
      @(tsee exec-block-item) applied to the quoted block item
      yields an @(tsee mv) pair consisting of
-     a result term (or @('nil'))
+     a statement value term
      and a possibly updated computation state;
      these are the same as the ones for the statement theorem.")
    (xdoc::p
@@ -1274,7 +1274,7 @@
      an assertion that the term returns a value, or values,
      of the expected type(s).
      Callers pass a non-@('nil') @('uterm?')
-     when the blok item corresponds to a full ACL2 term
+     when the block item corresponds to a full ACL2 term
      (e.g. a conditional);
      while they pass @('nil') otherwise
      (e.g. for an assignment).")
@@ -1298,7 +1298,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1382,9 +1382,8 @@
      We return not only the block item,
      and also a symbol table updated with the variable.")
    (xdoc::p
-    "We generate a theorem about executing the initializer.
-     We will soon generate an additional theorem,
-     about executing the block item."))
+    "We generate a theorem about executing the initializer,
+     and a theorem about executing the block item."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
@@ -1457,7 +1456,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv nil
+                             (mv (stmt-value-none)
                                  ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula
                                         gin.context
@@ -1706,7 +1705,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil ,new-compst)))
+                             (mv (stmt-value-none) ,new-compst)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -1737,7 +1736,7 @@
                              stmt-thm-name
                              nil
                              (type-void)
-                             nil
+                             '(stmt-value-none)
                              new-compst
                              (change-stmt-gin
                               gin
@@ -3557,7 +3556,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv nil ,gin.compst-var)))
+                             (mv (stmt-value-none) ,gin.compst-var)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3632,7 +3631,7 @@
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
-   (result "An untranslated term.")
+   (stmt-value "An untranslated term.")
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3648,7 +3647,7 @@
      we also generate a theorem saying that
      @(tsee exec-block-item-list) applied to the quoted block item list
      yields an @(tsee mv) pair consisting of
-     a result term (or @('nil'))
+     a statement value term
      and a possibly updated computation state;
      these are the same as the ones for the single item theorem.")
    (xdoc::p
@@ -3699,7 +3698,7 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3737,6 +3736,11 @@
                                                                gin.prec-tags)))
                                ,item-thm
                                exec-block-item-list-of-nil
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
+                               value-option-fix-when-value-optionp
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
                                compustatep-of-update-object
@@ -3839,17 +3843,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       ((mv result type-formula &)
-        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
-                                               items-type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+       ((mv stmt-value type-formula &)
+        (atc-gen-stmt-value-term-and-type-formula (untranslate$ term nil state)
+                                                  items-type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',all-items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3876,7 +3880,12 @@
                                mv-nth-of-cons
                                (:e zp)
                                (:e value-optionp)
+                               (:e value-option-fix)
                                not-zp-of-limit-minus-const
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
                                (:e valuep)
                                ,items-thm
                                uchar-array-length-of-uchar-array-write
@@ -3985,26 +3994,32 @@
                                      (equal (len (cadr items)) ,m)))
                        (equal (len items) ,m)
                        (not (zp limit))
-                       (equal val?+compst1
+                       (equal sval+compst1
                               (exec-block-item-list (take ,n items)
                                                     compst
                                                     fenv
                                                     limit))
-                       (equal val? (mv-nth 0 val?+compst1))
-                       (value-optionp val?)
-                       (equal compst1 (mv-nth 1 val?+compst1)))
+                       (equal sval (mv-nth 0 sval+compst1))
+                       (stmt-valuep sval)
+                       (equal compst1 (mv-nth 1 sval+compst1)))
                   (equal (exec-block-item-list items compst fenv limit)
-                         (if (valuep val?)
-                             (mv val? compst1)
+                         (if (equal (stmt-value-kind sval) :return)
+                             (mv sval compst1)
                            (exec-block-item-list (nthcdr ,n items)
                                                  compst1
                                                  fenv
                                                  (- limit ,n))))))
        (lemma-hints
         `(("Goal"
-           :in-theory '(append-of-take-and-nthcdr
+           :in-theory '(stmt-value-return-of-fields
+                        stmt-value-fix-when-stmt-valuep
+                        valuep-when-value-optionp
+                        value-optionp-of-stmt-value-return->value?
+                        (:e valuep)
+                        append-of-take-and-nthcdr
                         (:e nfix)
                         value-optionp
+                        not-errorp-when-stmt-valuep
                         (:e errorp)
                         len-of-take
                         commutativity-of-+)
@@ -4023,17 +4038,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       ((mv result type-formula &)
-        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+       ((mv stmt-value type-formula &)
+        (atc-gen-stmt-value-term-and-type-formula (untranslate$ term nil state)
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv ,stmt-value ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -4065,6 +4080,10 @@
                                (:e value-optionp)
                                ,items2-thm
                                (:e valuep)
+                               (:e value-option-fix)
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
+                               stmt-value-return->value?-of-stmt-value-return
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
                                ushort-array-length-of-ushort-array-write
@@ -4235,7 +4254,8 @@
                                          ,gin.compst-var
                                          ,gin.fenv-var
                                          ,gin.limit-var)
-                              (mv ,expr.result ,expr.new-compst)))
+                              (mv (stmt-value-return ,expr.result)
+                                  ,expr.new-compst)))
        (stmt-formula1 (atc-contextualize stmt-formula1
                                          gin.context
                                          gin.fn
@@ -4288,7 +4308,7 @@
                                  stmt-thm-name
                                  uterm
                                  expr.type
-                                 expr.result
+                                 `(stmt-value-return ,expr.result)
                                  expr.new-compst
                                  (change-stmt-gin
                                   gin
@@ -4301,7 +4321,7 @@
                                           item-limit
                                           item-events
                                           item-thm-name
-                                          expr.result
+                                          `(stmt-value-return ,expr.result)
                                           expr.new-compst
                                           gin.context
                                           nil
@@ -4440,8 +4460,8 @@
                                                ,gin.fenv-var
                                                ,gin.limit-var)
                          (mv ,(if (type-case then-type :void)
-                                  nil
-                                uterm)
+                                  '(stmt-value-none)
+                                `(stmt-value-return ,uterm))
                              ,gin.compst-var)))
        (formula1 (atc-contextualize formula1
                                     gin.context
@@ -4618,18 +4638,18 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       ((mv then-result then-stmt-type-formula &)
-        (atc-gen-uterm-result-and-type-formula then-uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
-       ((mv else-result else-stmt-type-formula &)
-        (atc-gen-uterm-result-and-type-formula else-uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+       ((mv then-stmt-value then-stmt-type-formula &)
+        (atc-gen-stmt-value-term-and-type-formula then-uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
+       ((mv else-stmt-value else-stmt-type-formula &)
+        (atc-gen-stmt-value-term-and-type-formula else-uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (then-context-end
         (atc-context-extend then-context-end
                             (list (make-atc-premise-compustate
@@ -4650,7 +4670,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,then-result ,then-new-compst)))
+                                       (mv ,then-stmt-value ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -4664,7 +4684,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,else-result ,else-new-compst)))
+                                       (mv ,else-stmt-value ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -4708,6 +4728,8 @@
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -4738,6 +4760,8 @@
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -4773,19 +4797,19 @@
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
-       ((mv if-result if-stmt-type-formula if-stmt-type-thms)
-        (atc-gen-uterm-result-and-type-formula uterm
-                                               type
-                                               gin.affect
-                                               gin.inscope
-                                               gin.prec-tags))
+       ((mv if-stmt-value if-stmt-type-formula if-stmt-type-thms)
+        (atc-gen-stmt-value-term-and-type-formula uterm
+                                                  type
+                                                  gin.affect
+                                                  gin.inscope
+                                                  gin.prec-tags))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-exec-formula `(equal (exec-stmt ',stmt
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,if-result ,new-compst)))
+                                     (mv ,if-stmt-value ,new-compst)))
        (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
                                                 gin.context
                                                 gin.fn
@@ -4932,7 +4956,7 @@
                                  if-stmt-thm
                                  (untranslate$ term nil state)
                                  type
-                                 if-result
+                                 if-stmt-value
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -4984,7 +5008,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
-                                  if-result
+                                  if-stmt-value
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
@@ -5303,7 +5327,7 @@
                                              ,gin.compst-var
                                              ,gin.fenv-var
                                              ,gin.limit-var)
-                                  (mv nil ,new-compst)))
+                                  (mv (stmt-value-none) ,new-compst)))
        (stmt-exec-formula (atc-contextualize stmt-exec-formula
                                              gin.context
                                              gin.fn
@@ -5356,7 +5380,7 @@
                                  stmt-thm-name
                                  uterm
                                  (type-void)
-                                 nil
+                                 '(stmt-value-none)
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5464,7 +5488,7 @@
                                           item-limit
                                           events
                                           item-thm-name
-                                          nil
+                                          '(stmt-value-none)
                                           new-compst
                                           new-context
                                           new-inscope
