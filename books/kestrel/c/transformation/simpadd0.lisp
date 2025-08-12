@@ -365,10 +365,7 @@
     "The theorem says that
      if the execution of the old expression does not yield an error,
      neither does the execution of the new expression,
-     and that the two executions give the same results.
-     This is generated even if the two expressions are syntactically equal,
-     because the two executions involve
-     two different variables for function environments."))
+     and that the two executions give the same results."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-asg-formalp old))
@@ -444,9 +441,6 @@
      if the execution of the old statement does not yield an error,
      neither does the execution of the new statement,
      and that the two executions give the same results.
-     This is generated even if the two statements are syntactically equal,
-     because the two executions involve
-     two different variables for function environments
      Additionally, the theorem says whether
      the statement value is a return or not;
      if it is a return with a value,
