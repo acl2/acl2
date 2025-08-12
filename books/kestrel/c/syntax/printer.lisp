@@ -1297,7 +1297,7 @@
    :static (print-astring "static" pstate)
    :thread (if stor-spec.local
                (print-astring "_Thread_local" pstate)
-             (print-astring "_Thread_local" pstate))
+             (print-astring "__thread" pstate))
    :auto (print-astring "auto" pstate)
    :register (print-astring "register" pstate))
   :hooks (:fix))
