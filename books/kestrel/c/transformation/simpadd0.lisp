@@ -189,11 +189,7 @@
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
    (vartys ident-type-map
-           "Variables in scope, with their types.")
-   (diffp bool
-          "Flag saying whether the C construct was transformed
-           into something syntactically different
-           by the transformation function."))
+           "Variables in scope, with their types."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -205,8 +201,7 @@
                             :thm-name nil
                             :thm-index 1
                             :names-to-avoid nil
-                            :vartys nil
-                            :diffp nil))
+                            :vartys nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1058,8 +1053,7 @@
                                 :thm-name nil
                                 :thm-index gin.thm-index
                                 :names-to-avoid gin.names-to-avoid
-                                :vartys nil
-                                :diffp nil)))
+                                :vartys nil)))
        (vartys (omap::update ident info.type nil))
        ((unless (type-formalp info.type))
         (raise "Internal error: variable ~x0 has type ~x1." ident info.type)
@@ -1086,8 +1080,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys vartys
-                            :diffp nil)))
+                            :vartys vartys)))
   :hooks (:fix)
 
   ///
@@ -1155,8 +1148,7 @@
                                         :thm-name nil
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :vartys nil
-                                        :diffp nil))
+                                        :vartys nil))
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
        ((iconst-info info) (coerce-iconst-info iconst.info))
@@ -1196,8 +1188,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys vartys
-                            :diffp nil)))
+                            :vartys vartys)))
   :hooks (:fix)
 
   ///
@@ -1212,7 +1203,6 @@
                              (inner-events pseudo-event-form-listp)
                              (inner-thm-name symbolp)
                              (inner-vartys ident-type-mapp)
-                             (inner-diffp booleanp)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp inner)
               (expr-unambp inner-new))
@@ -1239,8 +1229,7 @@
                                 :thm-name nil
                                 :thm-index gin.thm-index
                                 :names-to-avoid gin.names-to-avoid
-                                :vartys inner-vartys
-                                :diffp inner-diffp)))
+                                :vartys inner-vartys)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr))
                  :use ,inner-thm-name)))
@@ -1257,8 +1246,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys inner-vartys
-                            :diffp inner-diffp)))
+                            :vartys inner-vartys)))
 
   ///
 
@@ -1274,7 +1262,6 @@
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
                              (arg-vartys ident-type-mapp)
-                             (arg-diffp booleanp)
                              (info unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
@@ -1303,8 +1290,7 @@
                                 :thm-name nil
                                 :thm-index gin.thm-index
                                 :names-to-avoid gin.names-to-avoid
-                                :vartys arg-vartys
-                                :diffp arg-diffp)))
+                                :vartys arg-vartys)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e c::unop-nonpointerp)
@@ -1350,8 +1336,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys arg-vartys
-                            :diffp arg-diffp)))
+                            :vartys arg-vartys)))
 
   ///
 
@@ -1428,13 +1413,11 @@
                             (type-events pseudo-event-form-listp)
                             (type-thm-name symbolp)
                             (type-vartys ident-type-mapp)
-                            (type-diffp booleanp)
                             (arg exprp)
                             (arg-new exprp)
                             (arg-events pseudo-event-form-listp)
                             (arg-thm-name symbolp)
                             (arg-vartys ident-type-mapp)
-                            (arg-diffp booleanp)
                             (info tyname-infop)
                             (gin simpadd0-ginp))
   :guard (and (tyname-unambp type)
@@ -1465,7 +1448,6 @@
                type-vartys arg-vartys)
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* type-vartys arg-vartys))
-       (diffp (or type-diffp arg-diffp))
        ((when type-thm-name)
         (raise "Internal error: ~
                 unexpected type name transformation theorem ~x0."
@@ -1473,7 +1455,6 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        ((c$::tyname-info info) info)
        ((unless (and arg-thm-name
-                     (not type-diffp)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
@@ -1483,8 +1464,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys vartys
-             :diffp diffp)))
+             :vartys vartys)))
        ((unless (equal type type-new))
         (raise "Internal error: ~
                 type names ~x0 and ~x1 differ."
@@ -1520,8 +1500,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys vartys
-                            :diffp diffp)))
+                            :vartys vartys)))
 
   ///
 
@@ -1573,13 +1552,11 @@
                               (arg1-events pseudo-event-form-listp)
                               (arg1-thm-name symbolp)
                               (arg1-vartys ident-type-mapp)
-                              (arg1-diffp booleanp)
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-events pseudo-event-form-listp)
                               (arg2-thm-name symbolp)
                               (arg2-vartys ident-type-mapp)
-                              (arg2-diffp booleanp)
                               (info binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
@@ -1624,14 +1601,12 @@
                arg1-vartys arg2-vartys)
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* arg1-vartys arg2-vartys))
-       (diffp (or arg1-diffp arg2-diffp simpp))
        (gout-no-thm
         (make-simpadd0-gout :events (append arg1-events arg2-events)
                             :thm-name nil
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :vartys vartys
-                            :diffp diffp))
+                            :vartys vartys))
        ((unless (and arg1-thm-name
                      arg2-thm-name))
         (mv expr-new gout-no-thm)))
@@ -1691,8 +1666,7 @@
                                 :thm-index thm-index
                                 :names-to-avoid (cons thm-name
                                                       gin.names-to-avoid)
-                                :vartys vartys
-                                :diffp diffp))))
+                                :vartys vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
       (b* ((hints
             `(("Goal"
@@ -1758,8 +1732,7 @@
                                 :thm-index thm-index
                                 :names-to-avoid (cons thm-name
                                                       gin.names-to-avoid)
-                                :vartys vartys
-                                :diffp diffp))))
+                                :vartys vartys))))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
                          (expr-purep arg2)
@@ -1808,8 +1781,7 @@
                                 :thm-index thm-index
                                 :names-to-avoid (cons thm-name
                                                       gin.names-to-avoid)
-                                :vartys vartys
-                                :diffp diffp))))
+                                :vartys vartys))))
      (t (mv expr-new gout-no-thm))))
 
   ///
@@ -2151,19 +2123,16 @@
                             (test-events pseudo-event-form-listp)
                             (test-thm-name symbolp)
                             (test-vartys ident-type-mapp)
-                            (test-diffp booleanp)
                             (then expr-optionp)
                             (then-new expr-optionp)
                             (then-events pseudo-event-form-listp)
                             (then-thm-name symbolp)
                             (then-vartys ident-type-mapp)
-                            (then-diffp booleanp)
                             (else exprp)
                             (else-new exprp)
                             (else-events pseudo-event-form-listp)
                             (else-thm-name symbolp)
                             (else-vartys ident-type-mapp)
-                            (else-diffp booleanp)
                             (gin simpadd0-ginp))
   :guard (and (expr-unambp test)
               (expr-unambp test-new)
@@ -2204,7 +2173,6 @@
                test-vartys vartys)
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* test-vartys vartys))
-       (diffp (or test-diffp then-diffp else-diffp))
        ((unless (and test-thm-name
                      then-thm-name
                      else-thm-name))
@@ -2216,8 +2184,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys vartys
-             :diffp diffp)))
+             :vartys vartys)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-ident)
@@ -2273,8 +2240,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys vartys
-                            :diffp diffp)))
+                            :vartys vartys)))
 
   ///
 
@@ -2396,7 +2362,6 @@
                             (expr?-events pseudo-event-form-listp)
                             (expr?-thm-name symbolp)
                             (expr?-vartys ident-type-mapp)
-                            (expr?-diffp booleanp)
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2422,11 +2387,6 @@
                 return statement with optional expression ~x1."
                expr? expr?-new)
         (mv (irr-stmt) (irr-simpadd0-gout)))
-       ((when (and (not expr?)
-                   expr?-diffp))
-        (raise "Internal error: ~
-                unchanged return statement marked as changed.")
-        (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
                          (not (expr-purep expr?)))))
@@ -2436,8 +2396,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys expr?-vartys
-             :diffp expr?-diffp)))
+             :vartys expr?-vartys)))
        (hints
         (if expr?
             `(("Goal"
@@ -2474,8 +2433,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys expr?-vartys
-                            :diffp expr?-diffp)))
+                            :vartys expr?-vartys)))
 
   ///
 
@@ -2533,7 +2491,6 @@
                               (expr?-events pseudo-event-form-listp)
                               (expr?-thm-name symbolp)
                               (expr?-vartys ident-type-mapp)
-                              (expr?-diffp booleanp)
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2566,11 +2523,6 @@
                 return statement with optional expression ~x1."
                expr? expr?-new)
         (mv (irr-stmt) (irr-simpadd0-gout)))
-       ((when (and (not expr?)
-                   expr?-diffp))
-        (raise "Internal error: ~
-                unchanged return statement marked as changed.")
-        (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     expr?-thm-name))
         (mv stmt-new
@@ -2579,8 +2531,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys expr?-vartys
-             :diffp expr?-diffp)))
+             :vartys expr?-vartys)))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
@@ -2616,8 +2567,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys expr?-vartys
-                            :diffp expr?-diffp)))
+                            :vartys expr?-vartys)))
 
   ///
 
@@ -2691,7 +2641,6 @@
                                   (stmt-events pseudo-event-form-listp)
                                   (stmt-thm-name symbolp)
                                   (stmt-vartys ident-type-mapp)
-                                  (stmt-diffp booleanp)
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new))
@@ -2719,8 +2668,7 @@
                                 :thm-name nil
                                 :thm-index gin.thm-index
                                 :names-to-avoid gin.names-to-avoid
-                                :vartys stmt-vartys
-                                :diffp stmt-diffp)))
+                                :vartys stmt-vartys)))
        (type (stmt-type stmt))
        (support-lemma
         (cond ((not type)
@@ -2757,8 +2705,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys stmt-vartys
-                            :diffp stmt-diffp)))
+                            :vartys stmt-vartys)))
 
   ///
 
@@ -2883,8 +2830,7 @@
                         :thm-name thm-name
                         :thm-index thm-index
                         :names-to-avoid (cons thm-name gin.names-to-avoid)
-                        :vartys vartys
-                        :diffp nil))
+                        :vartys vartys))
   :hooks (:fix)
 
   ///
@@ -2910,13 +2856,11 @@
                                        (item-events pseudo-event-form-listp)
                                        (item-thm-name symbolp)
                                        (item-vartys ident-type-mapp)
-                                       (item-diffp booleanp)
                                        (items block-item-listp)
                                        (items-new block-item-listp)
                                        (items-events pseudo-event-form-listp)
                                        (items-thm-name symbolp)
                                        (items-vartys ident-type-mapp)
-                                       (items-diffp booleanp)
                                        (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new)
@@ -2948,14 +2892,12 @@
                item-vartys items-vartys)
         (mv nil (irr-simpadd0-gout)))
        (vartys (omap::update* item-vartys items-vartys))
-       (diffp (or item-diffp items-diffp))
        (gout-no-thm
         (make-simpadd0-gout :events (append item-events items-events)
                             :thm-name nil
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :vartys vartys
-                            :diffp diffp))
+                            :vartys vartys))
        ((unless (and item-thm-name
                      items-thm-name
                      nil)) ; temporary
@@ -3021,8 +2963,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys vartys
-                            :diffp diffp)))
+                            :vartys vartys)))
 
   ///
 
@@ -3238,7 +3179,6 @@
                                       (item-events pseudo-event-form-listp)
                                       (item-thm-name symbolp)
                                       (item-vartys ident-type-mapp)
-                                      (item-diffp booleanp)
                                       (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new))
@@ -3264,8 +3204,7 @@
                                 :thm-name nil
                                 :thm-index gin.thm-index
                                 :names-to-avoid gin.names-to-avoid
-                                :vartys item-vartys
-                                :diffp item-diffp)))
+                                :vartys item-vartys)))
        (type (block-item-type item))
        (support-lemma
         (cond ((not type)
@@ -3301,8 +3240,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys item-vartys
-                            :diffp item-diffp)))
+                            :vartys item-vartys)))
 
   ///
 
@@ -3432,8 +3370,7 @@
                                        :thm-name nil
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :vartys nil
-                                       :diffp nil))
+                                       :vartys nil))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
              (simpadd0-expr expr.inner gin state))
@@ -3443,7 +3380,6 @@
                               gout-inner.events
                               gout-inner.thm-name
                               gout-inner.vartys
-                              gout-inner.diffp
                               gin))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
@@ -3458,8 +3394,7 @@
               :thm-name nil
               :thm-index gout-assocs.thm-index
               :names-to-avoid gout-assocs.names-to-avoid
-              :vartys (omap::update* gout-control.vartys gout-assocs.vartys)
-              :diffp (or gout-control.diffp gout-assocs.diffp))))
+              :vartys (omap::update* gout-control.vartys gout-assocs.vartys))))
        :arrsub
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
              (simpadd0-expr expr.arg1 gin state))
@@ -3474,8 +3409,7 @@
               :thm-name nil
               :thm-index gout-arg2.thm-index
               :names-to-avoid gout-arg2.names-to-avoid
-              :vartys (omap::update* gout-arg1.vartys gout-arg2.vartys)
-              :diffp (or gout-arg1.diffp gout-arg2.diffp))))
+              :vartys (omap::update* gout-arg1.vartys gout-arg2.vartys))))
        :funcall
        (b* (((mv new-fun (simpadd0-gout gout-fun))
              (simpadd0-expr expr.fun gin state))
@@ -3489,8 +3423,7 @@
               :thm-name nil
               :thm-index gout-args.thm-index
               :names-to-avoid gout-args.names-to-avoid
-              :vartys (omap::update* gout-fun.vartys gout-args.vartys)
-              :diffp (or gout-fun.diffp gout-args.diffp))))
+              :vartys (omap::update* gout-fun.vartys gout-args.vartys))))
        :member
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state)))
@@ -3501,8 +3434,7 @@
               :thm-name nil
               :thm-index gout-arg.thm-index
               :names-to-avoid gout-arg.names-to-avoid
-              :vartys gout-arg.vartys
-              :diffp gout-arg.diffp)))
+              :vartys gout-arg.vartys)))
        :memberp
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state)))
@@ -3513,8 +3445,7 @@
               :thm-name nil
               :thm-index gout-arg.thm-index
               :names-to-avoid gout-arg.names-to-avoid
-              :vartys gout-arg.vartys
-              :diffp gout-arg.diffp)))
+              :vartys gout-arg.vartys)))
        :complit
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -3529,8 +3460,7 @@
               :thm-name nil
               :thm-index gout-elems.thm-index
               :names-to-avoid gout-elems.names-to-avoid
-              :vartys (omap::update* gout-type.vartys gout-elems.vartys)
-              :diffp (or gout-type.diffp gout-elems.diffp))))
+              :vartys (omap::update* gout-type.vartys gout-elems.vartys))))
        :unary
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state))
@@ -3541,7 +3471,6 @@
                               gout-arg.events
                               gout-arg.thm-name
                               gout-arg.vartys
-                              gout-arg.diffp
                               (coerce-unary-info expr.info)
                               gin))
        :sizeof
@@ -3553,8 +3482,7 @@
               :thm-name nil
               :thm-index gout-type.thm-index
               :names-to-avoid gout-type.names-to-avoid
-              :vartys gout-type.vartys
-              :diffp gout-type.diffp)))
+              :vartys gout-type.vartys)))
        :alignof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state)))
@@ -3565,8 +3493,7 @@
               :thm-name nil
               :thm-index gout-type.thm-index
               :names-to-avoid gout-type.names-to-avoid
-              :vartys gout-type.vartys
-              :diffp gout-type.diffp)))
+              :vartys gout-type.vartys)))
        :cast
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -3579,13 +3506,11 @@
                              gout-type.events
                              gout-type.thm-name
                              gout-type.vartys
-                             gout-type.diffp
                              expr.arg
                              new-arg
                              gout-arg.events
                              gout-arg.thm-name
                              gout-arg.vartys
-                             gout-arg.diffp
                              (coerce-tyname-info (c$::tyname->info expr.type))
                              gin))
        :binary
@@ -3601,13 +3526,11 @@
                                gout-arg1.events
                                gout-arg1.thm-name
                                gout-arg1.vartys
-                               gout-arg1.diffp
                                expr.arg2
                                new-arg2
                                gout-arg2.events
                                gout-arg2.thm-name
                                gout-arg2.vartys
-                               gout-arg2.diffp
                                (coerce-binary-info expr.info)
                                gin))
        :cond
@@ -3625,19 +3548,16 @@
                              gout-test.events
                              gout-test.thm-name
                              gout-test.vartys
-                             gout-test.diffp
                              expr.then
                              new-then
                              gout-then.events
                              gout-then.thm-name
                              gout-then.vartys
-                             gout-then.diffp
                              expr.else
                              new-else
                              gout-else.events
                              gout-else.thm-name
                              gout-else.vartys
-                             gout-else.diffp
                              gin))
        :comma
        (b* (((mv new-first (simpadd0-gout gout-first))
@@ -3652,8 +3572,7 @@
               :thm-name nil
               :thm-index gout-next.thm-index
               :names-to-avoid gout-next.names-to-avoid
-              :vartys (omap::update* gout-first.vartys gout-next.vartys)
-              :diffp (or gout-first.diffp gout-next.diffp))))
+              :vartys (omap::update* gout-first.vartys gout-next.vartys))))
        :stmt
        (b* (((mv new-items (simpadd0-gout gout-items))
              (simpadd0-block-item-list expr.items gin state)))
@@ -3663,8 +3582,7 @@
               :thm-name nil
               :thm-index gout-items.thm-index
               :names-to-avoid gout-items.names-to-avoid
-              :vartys gout-items.vartys
-              :diffp gout-items.diffp)))
+              :vartys gout-items.vartys)))
        :tycompat
        (b* (((mv new-type1 (simpadd0-gout gout-type1))
              (simpadd0-tyname expr.type1 gin state))
@@ -3678,8 +3596,7 @@
               :thm-name nil
               :thm-index gout-type2.thm-index
               :names-to-avoid gout-type2.names-to-avoid
-              :vartys (omap::update* gout-type1.vartys gout-type2.vartys)
-              :diffp (or gout-type1.diffp gout-type1.diffp))))
+              :vartys (omap::update* gout-type1.vartys gout-type2.vartys))))
        :offsetof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -3693,8 +3610,7 @@
               :thm-name nil
               :thm-index gout-member.thm-index
               :names-to-avoid gout-member.names-to-avoid
-              :vartys (omap::update* gout-type.vartys gout-member.vartys)
-              :diffp (or gout-type.diffp gout-member.diffp))))
+              :vartys (omap::update* gout-type.vartys gout-member.vartys))))
        :va-arg
        (b* (((mv new-list (simpadd0-gout gout-list))
              (simpadd0-expr expr.list gin state))
@@ -3708,8 +3624,7 @@
               :thm-name nil
               :thm-index gout-type.thm-index
               :names-to-avoid gout-type.names-to-avoid
-              :vartys (omap::update* gout-list.vartys gout-type.vartys)
-              :diffp (or gout-list.diffp gout-type.diffp))))
+              :vartys (omap::update* gout-list.vartys gout-type.vartys))))
        :extension
        (b* (((mv new-expr (simpadd0-gout gout-expr))
              (simpadd0-expr expr.expr gin state)))
@@ -3719,8 +3634,7 @@
               :thm-name nil
               :thm-index gout-expr.thm-index
               :names-to-avoid gout-expr.names-to-avoid
-              :vartys gout-expr.vartys
-              :diffp gout-expr.diffp)))
+              :vartys gout-expr.vartys)))
        :otherwise (prog2$ (impossible) (mv (irr-expr) (irr-simpadd0-gout)))))
     :measure (expr-count expr))
 
@@ -3739,8 +3653,7 @@
                                   :thm-name nil
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
-                                  :vartys nil
-                                  :diffp nil)))
+                                  :vartys nil)))
          ((mv new-expr (simpadd0-gout gout-expr))
           (simpadd0-expr (car exprs) gin state))
          (gin (simpadd0-gin-update gin gout-expr))
@@ -3752,8 +3665,7 @@
            :thm-name nil
            :thm-index gout-exprs.thm-index
            :names-to-avoid gout-exprs.names-to-avoid
-           :vartys (omap::update* gout-expr.vartys gout-exprs.vartys)
-           :diffp (or gout-expr.diffp gout-exprs.diffp))))
+           :vartys (omap::update* gout-expr.vartys gout-exprs.vartys))))
     :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3773,8 +3685,7 @@
                                      :thm-name nil
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :vartys nil
-                                     :diffp nil))))
+                                     :vartys nil))))
     :measure (expr-option-count expr?)
 
     ///
@@ -3799,8 +3710,7 @@
                               :thm-name nil
                               :thm-index gout-expr.thm-index
                               :names-to-avoid gout-expr.names-to-avoid
-                              :vartys gout-expr.vartys
-                              :diffp gout-expr.diffp)))
+                              :vartys gout-expr.vartys)))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3822,8 +3732,7 @@
                                      :thm-name nil
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :vartys nil
-                                     :diffp nil))))
+                                     :vartys nil))))
     :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3850,8 +3759,7 @@
               :thm-name nil
               :thm-index gout-expr.thm-index
               :names-to-avoid gout-expr.names-to-avoid
-              :vartys (omap::update* gout-type.vartys gout-expr.vartys)
-              :diffp (or gout-type.diffp gout-expr.diffp))))
+              :vartys (omap::update* gout-type.vartys gout-expr.vartys))))
        :default
        (b* (((mv new-expr (simpadd0-gout gout-expr))
              (simpadd0-expr genassoc.expr gin state)))
@@ -3861,8 +3769,7 @@
               :thm-name nil
               :thm-index gout-expr.thm-index
               :names-to-avoid gout-expr.names-to-avoid
-              :vartys gout-expr.vartys
-              :diffp gout-expr.diffp)))))
+              :vartys gout-expr.vartys)))))
     :measure (genassoc-count genassoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3882,8 +3789,7 @@
                                   :thm-name nil
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
-                                  :vartys nil
-                                  :diffp nil)))
+                                  :vartys nil)))
          ((mv new-assoc (simpadd0-gout gout-assoc))
           (simpadd0-genassoc (car genassocs) gin state))
          (gin (simpadd0-gin-update gin gout-assoc))
@@ -3895,8 +3801,7 @@
            :thm-name nil
            :thm-index gout-assocs.thm-index
            :names-to-avoid gout-assocs.names-to-avoid
-           :vartys (omap::update* gout-assoc.vartys gout-assocs.vartys)
-           :diffp (or gout-assoc.diffp gout-assocs.diffp))))
+           :vartys (omap::update* gout-assoc.vartys gout-assocs.vartys))))
     :measure (genassoc-list-count genassocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3917,8 +3822,7 @@
                                       :thm-name nil
                                       :thm-index gin.thm-index
                                       :names-to-avoid gin.names-to-avoid
-                                      :vartys nil
-                                      :diffp nil))
+                                      :vartys nil))
        :dot
        (b* (((mv new-member (simpadd0-gout gout-member))
              (simpadd0-member-designor memdes.member gin state)))
@@ -3929,8 +3833,7 @@
               :thm-name nil
               :thm-index gout-member.thm-index
               :names-to-avoid gout-member.names-to-avoid
-              :vartys gout-member.vartys
-              :diffp gout-member.diffp)))
+              :vartys gout-member.vartys)))
        :sub
        (b* (((mv new-member (simpadd0-gout gout-member))
              (simpadd0-member-designor memdes.member gin state))
@@ -3944,8 +3847,7 @@
               :thm-name nil
               :thm-index gout-index.thm-index
               :names-to-avoid gout-index.names-to-avoid
-              :vartys (omap::update* gout-member.vartys gout-index.vartys)
-              :diffp (or gout-member.diffp gout-index.diffp))))))
+              :vartys (omap::update* gout-member.vartys gout-index.vartys))))))
     :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3961,8 +3863,7 @@
                                     :thm-name nil
                                     :thm-index gin.thm-index
                                     :names-to-avoid gin.names-to-avoid
-                                    :vartys nil
-                                    :diffp nil)))
+                                    :vartys nil)))
       (type-spec-case
        tyspec
        :void (mv (type-spec-fix tyspec) gout0)
@@ -3984,8 +3885,7 @@
                       :thm-name nil
                       :thm-index gout-type.thm-index
                       :names-to-avoid gout-type.names-to-avoid
-                      :vartys gout-type.vartys
-                      :diffp gout-type.diffp)))
+                      :vartys gout-type.vartys)))
        :struct (b* (((mv new-spec (simpadd0-gout gout-spec))
                      (simpadd0-struni-spec tyspec.spec gin state)))
                  (mv (type-spec-struct new-spec)
@@ -3994,8 +3894,7 @@
                       :thm-name nil
                       :thm-index gout-spec.thm-index
                       :names-to-avoid gout-spec.names-to-avoid
-                      :vartys gout-spec.vartys
-                      :diffp gout-spec.diffp)))
+                      :vartys gout-spec.vartys)))
        :union (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin state)))
                 (mv (type-spec-union new-spec)
@@ -4004,8 +3903,7 @@
                      :thm-name nil
                      :thm-index gout-spec.thm-index
                      :names-to-avoid gout-spec.names-to-avoid
-                     :vartys gout-spec.vartys
-                     :diffp gout-spec.diffp)))
+                     :vartys gout-spec.vartys)))
        :enum (b* (((mv new-spec (simpadd0-gout gout-spec))
                    (simpadd0-enumspec tyspec.spec gin state)))
                (mv (type-spec-enum new-spec)
@@ -4014,8 +3912,7 @@
                     :thm-name nil
                     :thm-index gout-spec.thm-index
                     :names-to-avoid gout-spec.names-to-avoid
-                    :vartys gout-spec.vartys
-                    :diffp gout-spec.diffp)))
+                    :vartys gout-spec.vartys)))
        :typedef (mv (type-spec-fix tyspec) gout0)
        :int128 (mv (type-spec-fix tyspec) gout0)
        :float32 (mv (type-spec-fix tyspec) gout0)
@@ -4035,8 +3932,7 @@
                            :thm-name nil
                            :thm-index gout-expr.thm-index
                            :names-to-avoid gout-expr.names-to-avoid
-                           :vartys gout-expr.vartys
-                           :diffp gout-expr.diffp)))
+                           :vartys gout-expr.vartys)))
        :typeof-type (b* (((mv new-type (simpadd0-gout gout-type))
                           (simpadd0-tyname tyspec.type gin state)))
                       (mv (make-type-spec-typeof-type :type new-type
@@ -4046,8 +3942,7 @@
                            :thm-name nil
                            :thm-index gout-type.thm-index
                            :names-to-avoid gout-type.names-to-avoid
-                           :vartys gout-type.vartys
-                           :diffp gout-type.diffp)))
+                           :vartys gout-type.vartys)))
        :typeof-ambig (prog2$ (impossible)
                              (mv (irr-type-spec) (irr-simpadd0-gout)))
        :auto-type (mv (type-spec-fix tyspec) gout0)))
@@ -4074,16 +3969,14 @@
                         :thm-name nil
                         :thm-index gout-spec.thm-index
                         :names-to-avoid gout-spec.names-to-avoid
-                        :vartys gout-spec.vartys
-                        :diffp gout-spec.diffp)))
+                        :vartys gout-spec.vartys)))
        :typequal (mv (spec/qual-fix specqual)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))
+                      :vartys nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec specqual.spec gin state)))
                 (mv (spec/qual-align new-spec)
@@ -4092,16 +3985,14 @@
                      :thm-name nil
                      :thm-index gout-spec.thm-index
                      :names-to-avoid gout-spec.names-to-avoid
-                     :vartys gout-spec.vartys
-                     :diffp gout-spec.diffp)))
+                     :vartys gout-spec.vartys)))
        :attrib (mv (spec/qual-fix specqual)
                    (make-simpadd0-gout
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
                     :names-to-avoid gin.names-to-avoid
-                    :vartys nil
-                    :diffp nil))))
+                    :vartys nil))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4122,8 +4013,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-specqual (simpadd0-gout gout-specqual))
           (simpadd0-spec/qual (car specquals) gin state))
          (gin (simpadd0-gin-update gin gout-specqual))
@@ -4135,8 +4025,7 @@
            :thm-name nil
            :thm-index gout-specquals.thm-index
            :names-to-avoid gout-specquals.names-to-avoid
-           :vartys (omap::update* gout-specqual.vartys gout-specquals.vartys)
-           :diffp (or gout-specqual.diffp gout-specquals.diffp))))
+           :vartys (omap::update* gout-specqual.vartys gout-specquals.vartys))))
     :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4160,8 +4049,7 @@
                             :thm-name nil
                             :thm-index gout-type.thm-index
                             :names-to-avoid gout-type.names-to-avoid
-                            :vartys gout-type.vartys
-                            :diffp gout-type.diffp)))
+                            :vartys gout-type.vartys)))
        :alignas-expr (b* (((mv new-expr (simpadd0-gout gout-expr))
                            (simpadd0-const-expr alignspec.expr gin state)))
                        (mv (align-spec-alignas-expr new-expr)
@@ -4170,8 +4058,7 @@
                             :thm-name nil
                             :thm-index gout-expr.thm-index
                             :names-to-avoid gout-expr.names-to-avoid
-                            :vartys gout-expr.vartys
-                            :diffp gout-expr.diffp)))
+                            :vartys gout-expr.vartys)))
        :alignas-ambig (prog2$ (impossible)
                               (mv (irr-align-spec) (irr-simpadd0-gout)))))
     :measure (align-spec-count alignspec))
@@ -4193,8 +4080,7 @@
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))
+                      :vartys nil))
        :typespec (b* (((mv new-spec (simpadd0-gout gout-spec))
                        (simpadd0-type-spec declspec.spec gin state)))
                    (mv (decl-spec-typespec new-spec)
@@ -4203,24 +4089,21 @@
                         :thm-name nil
                         :thm-index gout-spec.thm-index
                         :names-to-avoid gout-spec.names-to-avoid
-                        :vartys gout-spec.vartys
-                        :diffp gout-spec.diffp)))
+                        :vartys gout-spec.vartys)))
        :typequal (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))
+                      :vartys nil))
        :function (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))
+                      :vartys nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec declspec.spec gin state)))
                 (mv (decl-spec-align new-spec)
@@ -4229,32 +4112,28 @@
                      :thm-name nil
                      :thm-index gout-spec.thm-index
                      :names-to-avoid gout-spec.names-to-avoid
-                     :vartys gout-spec.vartys
-                     :diffp gout-spec.diffp)))
+                     :vartys gout-spec.vartys)))
        :attrib (mv (decl-spec-fix declspec)
                    (make-simpadd0-gout
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
                     :names-to-avoid gin.names-to-avoid
-                    :vartys nil
-                    :diffp nil))
+                    :vartys nil))
        :stdcall (mv (decl-spec-fix declspec)
                     (make-simpadd0-gout
                      :events nil
                      :thm-name nil
                      :thm-index gin.thm-index
                      :names-to-avoid gin.names-to-avoid
-                     :vartys nil
-                     :diffp nil))
+                     :vartys nil))
        :declspec (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))))
+                      :vartys nil))))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4275,8 +4154,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-declspec (simpadd0-gout gout-declspec))
           (simpadd0-decl-spec (car declspecs) gin state))
          (gin (simpadd0-gin-update gin gout-declspec))
@@ -4288,8 +4166,7 @@
            :thm-name nil
            :thm-index gout-declspecs.thm-index
            :names-to-avoid gout-declspecs.names-to-avoid
-           :vartys (omap::update* gout-declspec.vartys gout-declspecs.vartys)
-           :diffp (or gout-declspec.diffp gout-declspecs.diffp))))
+           :vartys (omap::update* gout-declspec.vartys gout-declspecs.vartys))))
     :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4311,8 +4188,7 @@
                       :thm-name nil
                       :thm-index gout-expr.thm-index
                       :names-to-avoid gout-expr.names-to-avoid
-                      :vartys gout-expr.vartys
-                      :diffp gout-expr.diffp)))
+                      :vartys gout-expr.vartys)))
        :list (b* (((mv new-elems (simpadd0-gout gout-elems))
                    (simpadd0-desiniter-list initer.elems gin state)))
                (mv (make-initer-list :elems new-elems
@@ -4322,8 +4198,7 @@
                     :thm-name nil
                     :thm-index gout-elems.thm-index
                     :names-to-avoid gout-elems.names-to-avoid
-                    :vartys gout-elems.vartys
-                    :diffp gout-elems.diffp)))))
+                    :vartys gout-elems.vartys)))))
     :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4346,8 +4221,7 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))))
+                  :vartys nil))))
     :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4372,8 +4246,7 @@
            :thm-name nil
            :thm-index gout-initer.thm-index
            :names-to-avoid gout-initer.names-to-avoid
-           :vartys (omap::update* gout-designors.vartys gout-initer.vartys)
-           :diffp (or gout-designors.diffp gout-initer.diffp))))
+           :vartys (omap::update* gout-designors.vartys gout-initer.vartys))))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4394,8 +4267,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-desiniter (simpadd0-gout gout-desiniter))
           (simpadd0-desiniter (car desiniters) gin state))
          (gin (simpadd0-gin-update gin gout-desiniter))
@@ -4407,8 +4279,7 @@
            :thm-name nil
            :thm-index gout-desiniters.thm-index
            :names-to-avoid gout-desiniters.names-to-avoid
-           :vartys (omap::update* gout-desiniter.vartys gout-desiniters.vartys)
-           :diffp (or gout-desiniter.diffp gout-desiniters.diffp))))
+           :vartys (omap::update* gout-desiniter.vartys gout-desiniters.vartys))))
     :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4430,16 +4301,14 @@
                    :thm-name nil
                    :thm-index gout-index.thm-index
                    :names-to-avoid gout-index.names-to-avoid
-                   :vartys gout-index.vartys
-                   :diffp gout-index.diffp)))
+                   :vartys gout-index.vartys)))
        :dot (mv (designor-fix designor)
                 (make-simpadd0-gout
                  :events nil
                  :thm-name nil
                  :thm-index gin.thm-index
                  :names-to-avoid gin.names-to-avoid
-                 :vartys nil
-                 :diffp nil))))
+                 :vartys nil))))
     :measure (designor-count designor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4460,8 +4329,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-designor (simpadd0-gout gout-designor))
           (simpadd0-designor (car designors) gin state))
          (gin (simpadd0-gin-update gin gout-designor))
@@ -4473,8 +4341,7 @@
            :thm-name nil
            :thm-index gout-designors.thm-index
            :names-to-avoid gout-designors.names-to-avoid
-           :vartys (omap::update* gout-designor.vartys gout-designors.vartys)
-           :diffp (or gout-designor.diffp gout-designors.diffp))))
+           :vartys (omap::update* gout-designor.vartys gout-designors.vartys))))
     :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4496,8 +4363,7 @@
            :thm-name nil
            :thm-index gout-direct.thm-index
            :names-to-avoid gout-direct.names-to-avoid
-           :vartys gout-direct.vartys
-           :diffp gout-direct.diffp)))
+           :vartys gout-direct.vartys)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4520,8 +4386,7 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))))
+                  :vartys nil))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4541,8 +4406,7 @@
                    :thm-name nil
                    :thm-index gin.thm-index
                    :names-to-avoid gin.names-to-avoid
-                   :vartys nil
-                   :diffp nil))
+                   :vartys nil))
        :paren (b* (((mv new-declor (simpadd0-gout gout-declor))
                     (simpadd0-declor dirdeclor.inner gin state)))
                 (mv (dirdeclor-paren new-declor)
@@ -4551,8 +4415,7 @@
                      :thm-name nil
                      :thm-index gout-declor.thm-index
                      :names-to-avoid gout-declor.names-to-avoid
-                     :vartys gout-declor.vartys
-                     :diffp gout-declor.diffp)))
+                     :vartys gout-declor.vartys)))
        :array (b* (((mv new-decl (simpadd0-gout gout-decl))
                     (simpadd0-dirdeclor dirdeclor.declor gin state))
                    (gin (simpadd0-gin-update gin gout-decl))
@@ -4566,8 +4429,7 @@
                      :thm-name nil
                      :thm-index gout-expr?.thm-index
                      :names-to-avoid gout-expr?.names-to-avoid
-                     :vartys (omap::update* gout-decl.vartys gout-expr?.vartys)
-                     :diffp (or gout-decl.diffp gout-expr?.diffp))))
+                     :vartys (omap::update* gout-decl.vartys gout-expr?.vartys))))
        :array-static1 (b* (((mv new-decl (simpadd0-gout gout-decl))
                             (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
@@ -4583,8 +4445,7 @@
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
                              :vartys (omap::update* gout-decl.vartys
-                                                    gout-expr.vartys)
-                             :diffp (or gout-decl.diffp gout-expr.diffp))))
+                                                    gout-expr.vartys))))
        :array-static2 (b* (((mv new-decl (simpadd0-gout gout-decl))
                             (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
@@ -4600,8 +4461,7 @@
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
                              :vartys (omap::update* gout-decl.vartys
-                                                    gout-expr.vartys)
-                             :diffp (or gout-decl.diffp gout-expr.diffp))))
+                                                    gout-expr.vartys))))
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
                          (simpadd0-dirdeclor dirdeclor.declor gin state)))
                      (mv (make-dirdeclor-array-star
@@ -4612,8 +4472,7 @@
                           :thm-name nil
                           :thm-index gout-decl.thm-index
                           :names-to-avoid gout-decl.names-to-avoid
-                          :vartys gout-decl.vartys
-                          :diffp gout-decl.diffp)))
+                          :vartys gout-decl.vartys)))
        :function-params (b* (((mv new-decl (simpadd0-gout gout-decl))
                               (simpadd0-dirdeclor dirdeclor.declor gin state))
                              (gin (simpadd0-gin-update gin gout-decl))
@@ -4632,8 +4491,7 @@
                                :thm-index gout-params.thm-index
                                :names-to-avoid gout-params.names-to-avoid
                                :vartys (omap::update* gout-decl.vartys
-                                                      gout-params.vartys)
-                               :diffp (or gout-decl.diffp gout-params.diffp))))
+                                                      gout-params.vartys))))
        :function-names (b* (((mv new-decl (simpadd0-gout gout-decl))
                              (simpadd0-dirdeclor dirdeclor.declor gin state)))
                          (mv (make-dirdeclor-function-names
@@ -4644,8 +4502,7 @@
                               :thm-name nil
                               :thm-index gout-decl.thm-index
                               :names-to-avoid gout-decl.names-to-avoid
-                              :vartys gout-decl.vartys
-                              :diffp gout-decl.diffp)))))
+                              :vartys gout-decl.vartys)))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4667,8 +4524,7 @@
            :thm-name nil
            :thm-index gout-direct?.thm-index
            :names-to-avoid gout-direct?.names-to-avoid
-           :vartys gout-direct?.vartys
-           :diffp gout-direct?.diffp)))
+           :vartys gout-direct?.vartys)))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4691,8 +4547,7 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))))
+                  :vartys nil))))
     :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4720,8 +4575,7 @@
                      :thm-name nil
                      :thm-index gout-inner.thm-index
                      :names-to-avoid gout-inner.names-to-avoid
-                     :vartys gout-inner.vartys
-                     :diffp gout-inner.diffp)))
+                     :vartys gout-inner.vartys)))
        :array (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                     (simpadd0-dirabsdeclor-option
                      dirabsdeclor.declor? gin state))
@@ -4738,8 +4592,7 @@
                      :thm-index gout-expr?.thm-index
                      :names-to-avoid gout-expr?.names-to-avoid
                      :vartys (omap::update* gout-declor?.vartys
-                                            gout-expr?.vartys)
-                     :diffp (or gout-declor?.diffp gout-expr?.diffp))))
+                                            gout-expr?.vartys))))
        :array-static1 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin
@@ -4758,8 +4611,7 @@
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
                              :vartys (omap::update* gout-declor?.vartys
-                                                    gout-expr.vartys)
-                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+                                                    gout-expr.vartys))))
        :array-static2 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin state))
@@ -4777,8 +4629,7 @@
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
                              :vartys (omap::update* gout-declor?.vartys
-                                                    gout-expr.vartys)
-                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+                                                    gout-expr.vartys))))
        :array-star (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                          (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                        gin
@@ -4789,8 +4640,7 @@
                           :thm-name nil
                           :thm-index gout-declor?.thm-index
                           :names-to-avoid gout-declor?.names-to-avoid
-                          :vartys gout-declor?.vartys
-                          :diffp gout-declor?.diffp)))
+                          :vartys gout-declor?.vartys)))
        :function (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                        (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                      gin
@@ -4808,8 +4658,7 @@
                         :thm-index gout-params.thm-index
                         :names-to-avoid gout-params.names-to-avoid
                         :vartys (omap::update* gout-declor?.vartys
-                                               gout-params.vartys)
-                        :diffp (or gout-declor?.diffp gout-params.diffp))))))
+                                               gout-params.vartys))))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4832,8 +4681,7 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))))
+                  :vartys nil))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4858,8 +4706,7 @@
            :thm-name nil
            :thm-index gout-declor.thm-index
            :names-to-avoid gout-declor.names-to-avoid
-           :vartys (omap::update* gout-specs.vartys gout-declor.vartys)
-           :diffp (or gout-specs.diffp gout-declor.diffp))))
+           :vartys (omap::update* gout-specs.vartys gout-declor.vartys))))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4880,8 +4727,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-paramdecl (simpadd0-gout gout-paramdecl))
           (simpadd0-param-declon (car paramdecls) gin state))
          (gin (simpadd0-gin-update gin gout-paramdecl))
@@ -4893,8 +4739,7 @@
            :thm-name nil
            :thm-index gout-paramdecls.thm-index
            :names-to-avoid gout-paramdecls.names-to-avoid
-           :vartys (omap::update* gout-paramdecl.vartys gout-paramdecls.vartys)
-           :diffp (or gout-paramdecl.diffp gout-paramdecls.diffp))))
+           :vartys (omap::update* gout-paramdecl.vartys gout-paramdecls.vartys))))
     :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4918,8 +4763,7 @@
                            :thm-name nil
                            :thm-index gout-declor.thm-index
                            :names-to-avoid gout-declor.names-to-avoid
-                           :vartys gout-declor.vartys
-                           :diffp gout-declor.diffp)))
+                           :vartys gout-declor.vartys)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin state)))
                    (mv (param-declor-abstract new-absdeclor)
@@ -4928,16 +4772,14 @@
                         :thm-name nil
                         :thm-index gout-absdeclor.thm-index
                         :names-to-avoid gout-absdeclor.names-to-avoid
-                        :vartys gout-absdeclor.vartys
-                        :diffp gout-absdeclor.diffp)))
+                        :vartys gout-absdeclor.vartys)))
        :none (mv (param-declor-none)
                  (make-simpadd0-gout
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))
+                  :vartys nil))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-simpadd0-gout)))))
     :measure (param-declor-count paramdeclor))
 
@@ -4964,8 +4806,7 @@
            :thm-name nil
            :thm-index gout-declor?.thm-index
            :names-to-avoid gout-declor?.names-to-avoid
-           :vartys (omap::update* gout-specqual.vartys gout-declor?.vartys)
-           :diffp (or gout-specqual.diffp gout-declor?.diffp))))
+           :vartys (omap::update* gout-specqual.vartys gout-declor?.vartys))))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4989,8 +4830,7 @@
            :thm-name nil
            :thm-index gout-members.thm-index
            :names-to-avoid gout-members.names-to-avoid
-           :vartys gout-members.vartys
-           :diffp gout-members.diffp)))
+           :vartys gout-members.vartys)))
     :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5023,8 +4863,7 @@
                       :thm-index gout-declor.thm-index
                       :names-to-avoid gout-declor.names-to-avoid
                       :vartys (omap::update* gout-specqual.vartys
-                                             gout-declor.vartys)
-                      :diffp (or gout-specqual.diffp gout-declor.diffp))))
+                                             gout-declor.vartys))))
        :statassert (b* (((mv new-structdecl (simpadd0-gout gout-structdecl))
                          (simpadd0-statassert structdecl.unwrap gin state)))
                      (mv (structdecl-statassert new-structdecl)
@@ -5033,16 +4872,14 @@
                           :thm-name nil
                           :thm-index gout-structdecl.thm-index
                           :names-to-avoid gout-structdecl.names-to-avoid
-                          :vartys gout-structdecl.vartys
-                          :diffp gout-structdecl.diffp)))
+                          :vartys gout-structdecl.vartys)))
        :empty (mv (structdecl-empty)
                   (make-simpadd0-gout
                    :events nil
                    :thm-name nil
                    :thm-index gin.thm-index
                    :names-to-avoid gin.names-to-avoid
-                   :vartys nil
-                   :diffp nil))))
+                   :vartys nil))))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5063,8 +4900,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-structdecl (simpadd0-gout gout-structdecl))
           (simpadd0-structdecl (car structdecls) gin state))
          (gin (simpadd0-gin-update gin gout-structdecl))
@@ -5077,8 +4913,7 @@
            :thm-index gout-structdecls.thm-index
            :names-to-avoid gout-structdecls.names-to-avoid
            :vartys (omap::update* gout-structdecl.vartys
-                                  gout-structdecls.vartys)
-           :diffp (or gout-structdecl.diffp gout-structdecls.diffp))))
+                                  gout-structdecls.vartys))))
     :measure (structdecl-list-count structdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5105,8 +4940,7 @@
            :thm-name nil
            :thm-index gout-expr?.thm-index
            :names-to-avoid gout-expr?.names-to-avoid
-           :vartys (omap::update* gout-declor?.vartys gout-expr?.vartys)
-           :diffp (or gout-declor?.diffp gout-expr?.diffp))))
+           :vartys (omap::update* gout-declor?.vartys gout-expr?.vartys))))
     :measure (structdeclor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5127,8 +4961,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
           (simpadd0-structdeclor (car structdeclors) gin state))
          (gin (simpadd0-gin-update gin gout-structdeclor))
@@ -5142,8 +4975,7 @@
            :thm-index gout-structdeclors.thm-index
            :names-to-avoid gout-structdeclors.names-to-avoid
            :vartys (omap::update* gout-structdeclor.vartys
-                                  gout-structdeclors.vartys)
-           :diffp (or gout-structdeclor.diffp gout-structdeclors.diffp))))
+                                  gout-structdeclors.vartys))))
     :measure (structdeclor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5166,8 +4998,7 @@
            :thm-name nil
            :thm-index gout-list.thm-index
            :names-to-avoid gout-list.names-to-avoid
-           :vartys gout-list.vartys
-           :diffp gout-list.diffp)))
+           :vartys gout-list.vartys)))
     :measure (enumspec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5189,8 +5020,7 @@
            :thm-name nil
            :thm-index gout-value.thm-index
            :names-to-avoid gout-value.names-to-avoid
-           :vartys gout-value.vartys
-           :diffp gout-value.diffp)))
+           :vartys gout-value.vartys)))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5211,8 +5041,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-enumer (simpadd0-gout gout-enumer))
           (simpadd0-enumer (car enumers) gin state))
          (gin (simpadd0-gin-update gin gout-enumer))
@@ -5224,8 +5053,7 @@
            :thm-name nil
            :thm-index gout-enumers.thm-index
            :names-to-avoid gout-enumers.names-to-avoid
-           :vartys (omap::update* gout-enumer.vartys gout-enumers.vartys)
-           :diffp (or gout-enumer.diffp gout-enumers.diffp))))
+           :vartys (omap::update* gout-enumer.vartys gout-enumers.vartys))))
     :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5249,8 +5077,7 @@
            :thm-name nil
            :thm-index gout-test.thm-index
            :names-to-avoid gout-test.names-to-avoid
-           :vartys gout-test.vartys
-           :diffp gout-test.diffp)))
+           :vartys gout-test.vartys)))
     :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5279,8 +5106,7 @@
            :thm-name nil
            :thm-index gout-init?.thm-index
            :names-to-avoid gout-init?.names-to-avoid
-           :vartys (omap::update* gout-declor.vartys gout-init?.vartys)
-           :diffp (or gout-declor.diffp gout-init?.diffp))))
+           :vartys (omap::update* gout-declor.vartys gout-init?.vartys))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5301,8 +5127,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
           (simpadd0-initdeclor (car initdeclors) gin state))
          (gin (simpadd0-gin-update gin gout-initdeclor))
@@ -5316,8 +5141,7 @@
            :thm-index gout-initdeclors.thm-index
            :names-to-avoid gout-initdeclors.names-to-avoid
            :vartys (omap::update* gout-initdeclor.vartys
-                                  gout-initdeclors.vartys)
-           :diffp (or gout-initdeclor.diffp gout-initdeclors.diffp))))
+                                  gout-initdeclors.vartys))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5345,8 +5169,7 @@
                     :thm-name nil
                     :thm-index gout-init.thm-index
                     :names-to-avoid gout-init.names-to-avoid
-                    :vartys (omap::update* gout-specs.vartys gout-init.vartys)
-                    :diffp (or gout-specs.diffp gout-init.diffp))))
+                    :vartys (omap::update* gout-specs.vartys gout-init.vartys))))
        :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
                          (simpadd0-statassert decl.unwrap gin state)))
                      (mv (decl-statassert new-decl)
@@ -5355,8 +5178,7 @@
                           :thm-name nil
                           :thm-index gout-decl.thm-index
                           :names-to-avoid gout-decl.names-to-avoid
-                          :vartys gout-decl.vartys
-                          :diffp gout-decl.diffp)))))
+                          :vartys gout-decl.vartys)))))
     :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5375,8 +5197,7 @@
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil)))
+               :vartys nil)))
          ((mv new-decl (simpadd0-gout gout-decl))
           (simpadd0-decl (car decls) gin state))
          (gin (simpadd0-gin-update gin gout-decl))
@@ -5388,8 +5209,7 @@
            :thm-name nil
            :thm-index gout-decls.thm-index
            :names-to-avoid gout-decls.names-to-avoid
-           :vartys (omap::update* gout-decl.vartys gout-decls.vartys)
-           :diffp (or gout-decl.diffp gout-decls.diffp))))
+           :vartys (omap::update* gout-decl.vartys gout-decls.vartys))))
     :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5409,8 +5229,7 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))
+                  :vartys nil))
        :casexpr (b* (((mv new-expr (simpadd0-gout gout-expr))
                       (simpadd0-const-expr label.expr gin state))
                      (gin (simpadd0-gin-update gin gout-expr))
@@ -5424,16 +5243,14 @@
                        :thm-index gout-range?.thm-index
                        :names-to-avoid gout-range?.names-to-avoid
                        :vartys (omap::update* gout-expr.vartys
-                                              gout-range?.vartys)
-                       :diffp (or gout-expr.diffp gout-range?.diffp))))
+                                              gout-range?.vartys))))
        :default (mv (label-fix label)
                     (make-simpadd0-gout
                      :events nil
                      :thm-name nil
                      :thm-index gin.thm-index
                      :names-to-avoid gin.names-to-avoid
-                     :vartys nil
-                     :diffp nil))))
+                     :vartys nil))))
     :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5461,8 +5278,7 @@
                        :thm-index gout-stmt.thm-index
                        :names-to-avoid gout-stmt.names-to-avoid
                        :vartys (omap::update* gout-label.vartys
-                                              gout-stmt.vartys)
-                       :diffp (or gout-label.diffp gout-stmt.diffp))))
+                                              gout-stmt.vartys))))
        :compound (b* (((mv new-items (simpadd0-gout gout-items))
                        (simpadd0-block-item-list stmt.items gin state)))
                    (mv (stmt-compound new-items)
@@ -5471,8 +5287,7 @@
                         :thm-name nil
                         :thm-index gout-items.thm-index
                         :names-to-avoid gout-items.names-to-avoid
-                        :vartys gout-items.vartys
-                        :diffp gout-items.diffp)))
+                        :vartys gout-items.vartys)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                    (simpadd0-expr-option stmt.expr? gin state))
                   (gin (simpadd0-gin-update gin gout-expr?)))
@@ -5481,7 +5296,6 @@
                                    gout-expr?.events
                                    gout-expr?.thm-name
                                    gout-expr?.vartys
-                                   gout-expr?.diffp
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
@@ -5495,8 +5309,7 @@
                   :thm-name nil
                   :thm-index gout-then.thm-index
                   :names-to-avoid gout-then.names-to-avoid
-                  :vartys (omap::update* gout-test.vartys gout-then.vartys)
-                  :diffp (or gout-test.diffp gout-then.diffp))))
+                  :vartys (omap::update* gout-test.vartys gout-then.vartys))))
        :ifelse (b* (((mv new-test (simpadd0-gout gout-test))
                      (simpadd0-expr stmt.test gin state))
                     (gin (simpadd0-gin-update gin gout-test))
@@ -5517,10 +5330,7 @@
                       :names-to-avoid gout-else.names-to-avoid
                       :vartys (omap::update* gout-test.vartys
                                              (omap::update* gout-then.vartys
-                                                            gout-else.vartys))
-                      :diffp (or gout-test.diffp
-                                 gout-then.diffp
-                                 gout-else.diffp))))
+                                                            gout-else.vartys)))))
        :switch (b* (((mv new-target (simpadd0-gout gout-target))
                      (simpadd0-expr stmt.target gin state))
                     (gin (simpadd0-gin-update gin gout-target))
@@ -5534,8 +5344,7 @@
                       :thm-index gout-body.thm-index
                       :names-to-avoid gout-body.names-to-avoid
                       :vartys (omap::update* gout-target.vartys
-                                             gout-body.vartys)
-                      :diffp (or gout-target.diffp gout-body.diffp))))
+                                             gout-body.vartys))))
        :while (b* (((mv new-test (simpadd0-gout gout-test))
                     (simpadd0-expr stmt.test gin state))
                    (gin (simpadd0-gin-update gin gout-test))
@@ -5548,8 +5357,7 @@
                      :thm-name nil
                      :thm-index gout-body.thm-index
                      :names-to-avoid gout-body.names-to-avoid
-                     :vartys (omap::update* gout-test.vartys gout-body.vartys)
-                     :diffp (or gout-test.diffp gout-body.diffp))))
+                     :vartys (omap::update* gout-test.vartys gout-body.vartys))))
        :dowhile (b* (((mv new-body (simpadd0-gout gout-body))
                       (simpadd0-stmt stmt.body gin state))
                      (gin (simpadd0-gin-update gin gout-body))
@@ -5562,8 +5370,7 @@
                        :thm-name nil
                        :thm-index gout-test.thm-index
                        :names-to-avoid gout-test.names-to-avoid
-                       :vartys (omap::update* gout-body.vartys gout-test.vartys)
-                       :diffp (or gout-body.diffp gout-test.diffp))))
+                       :vartys (omap::update* gout-body.vartys gout-test.vartys))))
        :for-expr (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-expr-option stmt.init gin state))
                       (gin (simpadd0-gin-update gin gout-init))
@@ -5592,11 +5399,7 @@
                                                 gout-test.vartys
                                                 (omap::update*
                                                  gout-next.vartys
-                                                 gout-body.vartys)))
-                        :diffp (or gout-init.diffp
-                                   gout-test.diffp
-                                   gout-next.diffp
-                                   gout-body.diffp))))
+                                                 gout-body.vartys))))))
        :for-decl (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-decl stmt.init gin state))
                       (gin (simpadd0-gin-update gin gout-init))
@@ -5625,11 +5428,7 @@
                                                 gout-test.vartys
                                                 (omap::update*
                                                  gout-next.vartys
-                                                 gout-body.vartys)))
-                        :diffp (or gout-init.diffp
-                                   gout-test.diffp
-                                   gout-next.diffp
-                                   gout-body.diffp))))
+                                                 gout-body.vartys))))))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-simpadd0-gout)))
        :goto (mv (stmt-fix stmt)
                  (make-simpadd0-gout
@@ -5637,24 +5436,21 @@
                   :thm-name nil
                   :thm-index gin.thm-index
                   :names-to-avoid gin.names-to-avoid
-                  :vartys nil
-                  :diffp nil))
+                  :vartys nil))
        :continue (mv (stmt-fix stmt)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :vartys nil
-                      :diffp nil))
+                      :vartys nil))
        :break (mv (stmt-fix stmt)
                   (make-simpadd0-gout
                    :events nil
                    :thm-name nil
                    :thm-index gin.thm-index
                    :names-to-avoid gin.names-to-avoid
-                   :vartys nil
-                   :diffp nil))
+                   :vartys nil))
        :return (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                      (simpadd0-expr-option stmt.expr? gin state))
                     (gin (simpadd0-gin-update gin gout-expr?)))
@@ -5663,7 +5459,6 @@
                                        gout-expr?.events
                                        gout-expr?.thm-name
                                        gout-expr?.vartys
-                                       gout-expr?.diffp
                                        gin))
        :asm (mv (stmt-fix stmt)
                 (make-simpadd0-gout
@@ -5671,8 +5466,7 @@
                  :thm-name nil
                  :thm-index gin.thm-index
                  :names-to-avoid gin.names-to-avoid
-                 :vartys nil
-                 :diffp nil))))
+                 :vartys nil))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5694,8 +5488,7 @@
                     :thm-name nil
                     :thm-index gout-item.thm-index
                     :names-to-avoid gout-item.names-to-avoid
-                    :vartys gout-item.vartys
-                    :diffp gout-item.diffp)))
+                    :vartys gout-item.vartys)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.unwrap gin state))
                   (gin (simpadd0-gin-update gin gout-stmt)))
@@ -5704,7 +5497,6 @@
                                          gout-stmt.events
                                          gout-stmt.thm-name
                                          gout-stmt.vartys
-                                         gout-stmt.diffp
                                          gin))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
     :measure (block-item-count item))
@@ -5731,7 +5523,6 @@
                                         gout-item.events
                                         gout-item.thm-name
                                         gout-item.vartys
-                                        gout-item.diffp
                                         gin))
          ((mv new-items (simpadd0-gout gout-items))
           (simpadd0-block-item-list (cdr items) gin state))
@@ -5741,13 +5532,11 @@
                                      gout-item.events
                                      gout-item.thm-name
                                      gout-item.vartys
-                                     gout-item.diffp
                                      (cdr items)
                                      new-items
                                      gout-items.events
                                      gout-items.thm-name
                                      gout-items.vartys
-                                     gout-items.diffp
                                      gin))
     :measure (block-item-list-count items))
 
@@ -5992,12 +5781,11 @@
      at the beginning of the execution of the function body.")
    (xdoc::p
     "If the body of the function underwent no transformation,
-     which we can see from the @('diffp') component of @(tsee simpadd0-gout),
      the theorem generated for the body just talks about its type
      (or @('nil') if the body returns no value),
      but the theorem for the function always involves
      an equality between @(tsee c::exec-fun) calls.
-     If @('diffp') is @('nil'),
+     If the body of the function did undergo some transformation,
      we make use of a theorem from the language formalization
      that says that execution without function calls
      does not depend on the function environment:
@@ -6042,11 +5830,7 @@
                   gout-spec.vartys
                   (omap::update* gout-declor.vartys
                                  (omap::update* gout-decls.vartys
-                                                gout-body.vartys)))
-         :diffp (or gout-spec.diffp
-                    gout-declor.diffp
-                    gout-decls.diffp
-                    gout-body.diffp)))
+                                                gout-body.vartys)))))
        ((unless gout-body.thm-name)
         (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef))
@@ -6167,11 +5951,7 @@
                   gout-spec.vartys
                   (omap::update* gout-declor.vartys
                                  (omap::update* gout-decls.vartys
-                                                gout-body.vartys)))
-         :diffp (or gout-spec.diffp
-                    gout-declor.diffp
-                    gout-decls.diffp
-                    gout-body.diffp))))
+                                                gout-body.vartys))))))
   :hooks (:fix)
 
   :prepwork
@@ -6212,8 +5992,7 @@
                     :thm-name nil
                     :thm-index gout-fundef.thm-index
                     :names-to-avoid gout-fundef.names-to-avoid
-                    :vartys gout-fundef.vartys
-                    :diffp gout-fundef.diffp)))
+                    :vartys gout-fundef.vartys)))
      :decl (b* (((mv new-decl (simpadd0-gout gout-decl))
                  (simpadd0-decl extdecl.unwrap gin state)))
              (mv (extdecl-decl new-decl)
@@ -6222,24 +6001,21 @@
                   :thm-name nil
                   :thm-index gout-decl.thm-index
                   :names-to-avoid gout-decl.names-to-avoid
-                  :vartys gout-decl.vartys
-                  :diffp gout-decl.diffp)))
+                  :vartys gout-decl.vartys)))
      :empty (mv (extdecl-empty)
                 (make-simpadd0-gout
                  :events nil
                  :thm-name nil
                  :thm-index gin.thm-index
                  :names-to-avoid gin.names-to-avoid
-                 :vartys nil
-                 :diffp nil))
+                 :vartys nil))
      :asm (mv (extdecl-fix extdecl)
               (make-simpadd0-gout
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
                :names-to-avoid gin.names-to-avoid
-               :vartys nil
-               :diffp nil))))
+               :vartys nil))))
   :hooks (:fix)
 
   ///
@@ -6264,8 +6040,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys nil
-             :diffp nil)))
+             :vartys nil)))
        ((mv new-edecl (simpadd0-gout gout-edecl))
         (simpadd0-extdecl (car extdecls) gin state))
        (gin (simpadd0-gin-update gin gout-edecl))
@@ -6277,8 +6052,7 @@
          :thm-name nil
          :thm-index gout-edecls.thm-index
          :names-to-avoid gout-edecls.names-to-avoid
-         :vartys (omap::update* gout-edecl.vartys gout-edecls.vartys)
-         :diffp (or gout-edecl.diffp gout-edecls.diffp))))
+         :vartys (omap::update* gout-edecl.vartys gout-edecls.vartys))))
   :verify-guards :after-returns
   :hooks (:fix)
 
@@ -6306,8 +6080,7 @@
           :thm-name nil
           :thm-index gout-decls.thm-index
           :names-to-avoid gout-decls.names-to-avoid
-          :vartys gout-decls.vartys
-          :diffp gout-decls.diffp)))
+          :vartys gout-decls.vartys)))
   :hooks (:fix)
 
   ///
@@ -6337,8 +6110,7 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys nil
-             :diffp nil)))
+             :vartys nil)))
        ((mv path tunit) (omap::head map))
        ((mv new-tunit (simpadd0-gout gout-tunit))
         (simpadd0-transunit tunit gin state))
@@ -6351,8 +6123,7 @@
          :thm-name nil
          :thm-index gout-map.thm-index
          :names-to-avoid gout-map.names-to-avoid
-         :vartys (omap::update* gout-tunit.vartys gout-map.vartys)
-         :diffp (or gout-tunit.diffp gout-map.diffp))))
+         :vartys (omap::update* gout-tunit.vartys gout-map.vartys))))
   :verify-guards :after-returns
 
   ///
@@ -6383,8 +6154,7 @@
          :thm-name nil
          :thm-index gout-map.thm-index
          :names-to-avoid gout-map.names-to-avoid
-         :vartys gout-map.vartys
-         :diffp gout-map.diffp)))
+         :vartys gout-map.vartys)))
   :hooks (:fix)
 
   ///
