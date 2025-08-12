@@ -174,8 +174,6 @@
 
 ;(in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
-(in-theory (disable integer-length)) ; todo
-
 ;todo: just use a trim rule?
 (defthm getbit-of-bvmult-tighten
   (implies (and (< (+ 1 SIZE1) SIZE2)
