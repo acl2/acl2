@@ -343,8 +343,9 @@
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
        (thm-event
-        `(defthmd ,thm-name
+        `(defrule ,thm-name
            ,formula
+           :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
@@ -430,8 +431,9 @@
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)))))
-       (thm-event `(defthmd ,thm-name
+       (thm-event `(defrule ,thm-name
                      ,formula
+                     :rule-classes nil
                      :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
@@ -525,8 +527,9 @@
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
        (thm-event
-        `(defthmd ,thm-name
+        `(defrule ,thm-name
            ,formula
+           :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
@@ -611,8 +614,9 @@
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
        (thm-event
-        `(defthmd ,thm-name
+        `(defrule ,thm-name
            ,formula
+           :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
@@ -697,8 +701,9 @@
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
        (thm-event
-        `(defthmd ,thm-name
+        `(defrule ,thm-name
            ,formula
+           :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
