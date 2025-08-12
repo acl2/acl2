@@ -585,6 +585,7 @@
     block-item-list-type
 
     transunit-ensemble-annop
+    code-ensemble-annop
 
     ;; other operations:
 
