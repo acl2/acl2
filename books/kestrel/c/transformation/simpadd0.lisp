@@ -77,7 +77,21 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."))
+   from the aforementioned @(tsee simpadd0-gout)."
+
+  "The generated theorems involve hypotheses about
+   variables in scope having values of appropriate types,
+   as ACL2 values of type @(tsee ident-type-map).
+   Our initial approach has been to take the variables from the constructs,
+   joining the ones for sub-constructs via @(tsee simpadd0-join-vartys)
+   to obtain the ones for super-constructs.
+   This is adequate for some of the constructs,
+   but we need to generalize this approach for other constructs.
+   Specifically, we are moving towards having
+   information about the variables in scope in the AST validation annotations,
+   and using that instead of calculating the information from the constructs.
+   As we move towards the new approach,
+   we may have a mix of the new and old appraoches."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
