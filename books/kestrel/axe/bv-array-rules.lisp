@@ -37,7 +37,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
-;; (local (include-book "kestrel/bv/trim-rules" :dir :system))
+;; (local (include-book "kestrel/bv/trim-elim-rules-bv" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

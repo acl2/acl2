@@ -17,7 +17,7 @@
 ;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
-(include-book "kestrel/bv/trim-intro-rules" :dir :system)
+(include-book "kestrel/bv/trim-intro-rules" :dir :system) ; needed for a proof below
 (include-book "kestrel/bv/putbits" :dir :system) ; todo: split out putbit
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -928,18 +928,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: more like this
-;; or should we use a "convert-to-bv" function?
-;; todo: install these in a rule-list
-(defthm trim-of-!rflagsbits->cf
-  (implies (and (unsigned-byte-p 1 cf)
-                (<= 1 size)
-                (<= size 32)
-                (integerp size))
-           (equal (trim size (!rflagsbits->cf cf rflags))
-                  (bvcat (+ -1 size) (slice 31 1 rflags)
-                         1 cf)))
-  :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
+;; ;; todo: more like this
+;; ;; or should we use a "convert-to-bv" function?
+;; ;; todo: install these in a rule-list
+;; (defthm trim-of-!rflagsbits->cf
+;;   (implies (and (unsigned-byte-p 1 cf)
+;;                 (<= 1 size)
+;;                 (<= size 32)
+;;                 (integerp size))
+;;            (equal (trim size (!rflagsbits->cf cf rflags))
+;;                   (bvcat (+ -1 size) (slice 31 1 rflags)
+;;                          1 cf)))
+;;   :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

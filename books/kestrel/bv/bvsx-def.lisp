@@ -1,7 +1,7 @@
 ; Sign-extension
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,9 +24,9 @@
                   :split-types t
                   :guard-hints (("Goal" :in-theory (enable repeatbit))))
            (type integer val)
-           (type (integer 1 *) old-size)
-           (type integer new-size))
-  (if (not (mbt (posp old-size)))
+           (type (integer 1 *) old-size new-size))
+  (if (not (mbt (and (posp old-size)
+                     (natp new-size))))
       0 ;; special case guarantees the result fits in 0 bits
     (if (not (mbt (<= old-size new-size)))
         (bvchop new-size val) ;ensure the result fits in new-size bits (any sign extension is happening above the relevant bits)

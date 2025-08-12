@@ -27,14 +27,14 @@
 (local (include-book "slice"))
 (local (include-book "bvshr"))
 (local (include-book "bvsx"))
-(local (include-book "logxor-b"))
-(local (include-book "logior-b"))
-(local (include-book "logand-b"))
-(local (include-book "logext"))
 
 ;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
 ;; its own version of such rules, since they use complex syntaxp hyps.  See
 ;; books/kestrel/axe/bv-rules-axe.lisp.)
+
+;; Step 2 is done by the rules in trim-elim-rules-non-bv.lisp
+
+;; See also ../axe/convert-to-bv-rules-axe.lisp
 
 (defthmd bvplus-convert-arg2-to-bv
   (implies (syntaxp (and (consp x)
@@ -90,69 +90,5 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 ;; TODO: Add more of these, baseed on axe/bv-rules-axe.lisp.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Step 2: These rules finish the conversion after other rules introduce trim.
-
-;; WARNING: Keep these in sync with *functions-convertible-to-bv*.
-
-(defthmd trim-of-logand-becomes-bvand
-  (equal (trim size (logand x y))
-         (bvand size x y))
-  :hints (("Goal" :in-theory (enable trim bvand))))
-
-(defthmd trim-of-logior-becomes-bvor
-  (equal (trim size (logior x y))
-         (bvor size x y))
-  :hints (("Goal" :in-theory (enable trim bvor))))
-
-(defthmd trim-of-logxor-becomes-bvxor
-  (equal (trim size (logxor x y))
-         (bvxor size x y))
-  :hints (("Goal" :in-theory (enable trim bvxor))))
-
-(defthmd trim-of-lognot-becomes-bvnot
-  (equal (trim size (lognot x))
-         (bvnot size x))
-  :hints (("Goal" :in-theory (enable trim bvnot))))
-
-(defthmd trim-of-+-becomes-bvplus
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (trim size (+ x y))
-                  (bvplus size x y)))
-  :hints (("Goal" :in-theory (enable trim bvplus))))
-
-(defthmd trim-of-unary---becomes-bvuminus
-  (implies (integerp x)
-           (equal (trim size (- x))
-                  (bvuminus size x)))
-  :hints (("Goal" :in-theory (enable trim bvuminus))))
-
-(defthmd trim-of-*-becomes-bvmult
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (trim size (* x y))
-                  (bvmult size x y)))
-  :hints (("Goal" :in-theory (enable trim bvmult))))
-
-;; not needed because (- x y) translates to a call of +
-;; (defthmd trim-of---becomes-bvminus
-;;   (implies (and (integerp x)
-;;                 (integerp y))
-;;            (equal (trim size (- x y))
-;;                   (bvminus size x y)))
-;;   :hints (("Goal" :in-theory (enable trim bvminus))))
-
-(defthm trim-of-logext-becomes-bvsx
-  (implies (and (natp size)
-                (posp size2))
-           (equal (trim size (logext size2 x))
-                  (if (< size2 size)
-                      (bvsx size size2 x)
-                    ;; no sign extension needed in this case:
-                    (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (trim) (logext)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

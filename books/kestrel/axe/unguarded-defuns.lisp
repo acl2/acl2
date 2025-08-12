@@ -559,7 +559,8 @@
 
 (defund bvsx-unguarded (new-size old-size val)
   (declare (xargs :guard t))
-  (if (not (posp old-size))
+  (if (not (and (posp old-size)
+                (natp new-size)))
       0
       (if (<-unguarded new-size old-size)
           (bvchop-unguarded new-size val)

@@ -5445,8 +5445,9 @@
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize old-size)
                 (natp old-size)
-                (<= old-size new-size)
-                (unsigned-byte-p-forced xsize x))
+                (integerp new-size)
+                (unsigned-byte-p-forced xsize x)
+                (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :use bvsx-too-high
