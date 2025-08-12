@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-trees")
+(include-book "code-ensembles")
 (include-book "keywords")
 
 (include-book "../language/portable-ascii-identifiers")
@@ -140,3 +140,18 @@
            (filepath-transunit-map-aidentp
             (transunit-ensemble->unwrap tunits) gcc))
   :enable transunit-ensemble-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define code-ensemble-aidentp ((code code-ensemblep))
+  :returns (yes/no booleanp)
+  :short "Check if a code ensemble only uses, in its translation unit ensemble,
+          ASCII identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The condition is checked w.r.t.
+     the GCC flag in the implementation environment."))
+  (transunit-ensemble-aidentp (code-ensemble->transunits code)
+                              (ienv->gcc (code-ensemble->ienv code)))
+  :hooks (:fix))
