@@ -109,17 +109,14 @@
                       must be a code ensemble, ~
                       but it is ~x1 instead."
                      const-old code-old)))
-       (tunits-old (code-ensemble->transunits code-old))
-       ((unless (transunit-ensemble-unambp tunits-old))
-        (reterr (msg "The translation unit ensemble ~
-                      of the code ensemble ~x0 ~
+       ((unless (code-ensemble-unambp code-old))
+        (reterr (msg "The code ensemble ~x0 ~
                       that is the value of the constant ~x1 ~
                       must be unambiguous, ~
                       but it is not."
                      code-old const-old)))
-       ((unless (transunit-ensemble-annop tunits-old))
-        (reterr (msg "The translation unit ensemble ~
-                      of the coee ensemble ~x0 ~
+       ((unless (code-ensemble-annop code-old))
+        (reterr (msg "The code ensemble ~x0 ~
                       that is the value of the constant ~x1 ~
                       must contains validation information, ~
                       but it does not."
@@ -128,15 +125,13 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-simpadd0-process-inputs
+  (defret code-ensemble-unambp-of-simpadd0-process-inputs
     (implies (not erp)
-             (transunit-ensemble-unambp
-              (code-ensemble->transunits code-old))))
+             (code-ensemble-unambp code-old)))
 
-  (defret transunit-ensemble-annop-of-simpadd0-process-inputs
+  (defret code-ensemble-annop-of-simpadd0-process-inputs
     (implies (not erp)
-             (transunit-ensemble-annop
-              (code-ensemble->transunits code-old)))))
+             (code-ensemble-annop code-old))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6420,7 +6415,7 @@
 (define simpadd0-code-ensemble ((code code-ensemblep)
                                 (gin simpadd0-ginp)
                                 state)
-  :guard (transunit-ensemble-unambp (code-ensemble->transunits code))
+  :guard (code-ensemble-unambp code)
   :returns (mv (new-code code-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a code ensemble."
@@ -6432,16 +6427,18 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-simpadd0-code-ensemble
-    (transunit-ensemble-unambp (code-ensemble->transunits new-code))))
+  (defret code-ensemble-unambp-of-simpadd0-code-ensemble
+    (code-ensemble-unambp new-code)
+    :hints
+    (("Goal" :in-theory (enable c$::code-ensemble-unambp-of-code-ensemble)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-gen-everything ((code-old code-ensemblep)
                                  (const-new symbolp)
                                  state)
-  :guard (and (transunit-ensemble-unambp (code-ensemble->transunits code-old))
-              (transunit-ensemble-annop (code-ensemble->transunits code-old)))
+  :guard (and (code-ensemble-unambp code-old)
+              (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
   (b* (((reterr) '(_))

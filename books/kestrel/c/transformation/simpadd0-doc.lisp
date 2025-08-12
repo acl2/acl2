@@ -61,13 +61,15 @@
       "Specifies the code to the transformed.")
      (xdoc::p
       "This must be a symbol that names an existing ACL2 constant
-       that contains an unambiguous validated code ensemble,
-       i.e. a value of type @(tsee code-ensemble)
-       whose translation unit ensemble results from "
-      (xdoc::seetopic "c$::validator" "validation")
-      ", and in particular containing "
+       that contains a"
+      (xdoc::seetopic "c$::validator" "validated")
+      " (and thus "
+      (xdoc::seetopic "c$::unambiguity" "unambiguous")
+      ") "
+      (xdoc::seetopic "c$::code-ensembles" "code ensemble")
+      ", in particular containing "
       (xdoc::seetopic "c$::validation-information" "validation information")
-      ". This constant could result from @(tsee c$::input-files),
+      ". This constant could result from @(tsee c$::input-files)
        or from some other "
       (xdoc::seetopic "transformation-tools" "transformation")
       ".")

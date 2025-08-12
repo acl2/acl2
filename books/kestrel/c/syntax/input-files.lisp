@@ -544,11 +544,12 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-input-files-gen-events
+  (defret code-ensemble-unambp-of-input-files-gen-events
     (implies (not erp)
-             (transunit-ensemble-unambp (code-ensemble->transunits code)))
+             (code-ensemble-unambp code))
     :hyp (or (equal process :disambiguate)
-             (equal process :validate))))
+             (equal process :validate))
+    :hints (("Goal" :in-theory (enable code-ensemble-unambp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -592,9 +593,9 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-input-files-process-inputs-and-gen-events
+  (defret code-ensemble-unambp-of-input-files-process-inputs-and-gen-events
     (implies (not erp)
-             (transunit-ensemble-unambp (code-ensemble->transunits code)))
+             (code-ensemble-unambp code))
     :hyp (b* (((mv & & options)
                (partition-rest-and-keyword-args
                 args *input-files-allowed-options*))
@@ -701,9 +702,9 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-of-input-files-prog-fn
+  (defret code-ensemble-unambp-of-input-files-prog-fn
     (implies (not erp)
-             (transunit-ensemble-unambp (code-ensemble->transunits code)))
+             (code-ensemble-unambp code))
     :hyp (b* (((mv & & options)
                (partition-rest-and-keyword-args
                 args *input-files-allowed-options*))
