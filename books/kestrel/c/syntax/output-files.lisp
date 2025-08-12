@@ -113,23 +113,22 @@
                       but it is ~x1 instead."
                      desc code)))
        ((unless (code-ensemble-unambp code))
-        (reterr (msg "The translation unit ensemble ~
-                      of the code ensemble ~x0 passed as ~@1 ~
+        (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
                      code desc)))
        ((unless (transunit-ensemble-aidentp
                  (code-ensemble->transunits code)
                  (ienv->gcc (code-ensemble->ienv code))))
-        (reterr (msg "The translation unit ensemble ~
-                      of the code ensemble ~x0 passed as ~@1 ~
+        (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       contains non-all-ASCII identifiers."
                      code desc)))
        ((unless (or (ienv->gcc (code-ensemble->ienv code))
                     (transunit-ensemble-standardp
                      (code-ensemble->transunits code))))
-        (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
+        (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       uses non-standard syntax (i.e. GCC extensions), ~
-                      but the :GCC input is NIL."
+                      but the implementation environment indicates that ~
+                      GCC extensions are not enabled."
                      code desc))))
     (retok code))
 
@@ -268,10 +267,10 @@
      of the (event or programmatic) macro.")
    (xdoc::p
     "If @('progp') is @('nil'),
-     the translation unit ensemble
+     the code ensemble
      is taken from the @(':const') input, which must be present.
      If instead @('progp') is @('t'),
-     the translation unit ensemble or file set
+     the code ensemble or file set
      is taken from the required input @('arg'),
      and the @(':const') input must be absent.")
    (xdoc::p
@@ -287,10 +286,7 @@
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args args *output-files-allowed-options*))
-       (inputs-desc (msg "~s0the options ~&1"
-                         (if progp
-                             "a file set or translation unit ensemble and "
-                           "")
+       (inputs-desc (msg "a code ensemble and the options ~&0"
                          *output-files-allowed-options*))
        ((when erp)
         (reterr (msg "The inputs must be ~@0, ~
@@ -450,7 +446,7 @@
     "This is the same as @(tsee output-files),
      except that there is no @(':const') input,
      and there is a required (i.e. non-keyword-option) input
-     which must be the translation unit ensemble.
+     which must be the code ensemble.
      This macro writes the files,
      and returns an "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuple")
