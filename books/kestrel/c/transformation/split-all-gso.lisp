@@ -338,23 +338,21 @@
 (define transunit-ensemble-split-all-gso
   ((tunits transunit-ensemblep)
    (blacklist ident-setp)
-   (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
-  (transunit-ensemble-split-all-gso0 tunits
-                                     blacklist
-                                     gcc
-                                     ienv
-                                     (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+  (transunit-ensemble-split-all-gso0
+   tunits
+   blacklist
+   ienv
+   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
 
   :prepwork
   ((define transunit-ensemble-split-all-gso0
      ((tunits transunit-ensemblep)
       (blacklist ident-setp)
-      (gcc booleanp)
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
@@ -377,7 +375,7 @@
           ;; TODO: prove that splitgso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ gcc))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv)))
           ((erp tunits$)
            (c$::valid-transunit-ensemble tunits$ ienv))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
@@ -385,7 +383,6 @@
            (retmsg$ "Invalid translation unit ensemble.")))
        (transunit-ensemble-split-all-gso0 tunits$
                                           blacklist
-                                          gcc
                                           ienv
                                           (- steps 1)))
      :measure (nfix steps)
@@ -404,7 +401,6 @@
        ((erp blacklist tunits)
         (transunit-ensemble-split-all-gso code.transunits
                                           blacklist
-                                          (c$::ienv->gcc code.ienv)
                                           code.ienv)))
     (retok blacklist (change-code-ensemble code :transunits tunits))))
 
@@ -470,14 +466,10 @@
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp code
-             const-new)
-        (split-all-gso-process-inputs const-old
-                                      const-new
-                                      wrld))
+       ((erp code const-new)
+        (split-all-gso-process-inputs const-old const-new wrld))
        ((erp event)
-        (split-all-gso-gen-everything code
-                                      const-new)))
+        (split-all-gso-gen-everything code const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
