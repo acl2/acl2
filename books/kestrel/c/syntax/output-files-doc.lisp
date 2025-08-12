@@ -72,11 +72,10 @@
       (xdoc::seetopic "ascii-identifiers" "ASCII-identifiers-only")
       " "
       (xdoc::seetopic "code-ensembles" "code ensemble")
-      ". The translation unit ensemble of the code ensemble
-       is printed to a file set,
-       whose files are written to the file system.
-       The keys of the file set map are the same as
-       the keys of the translation unit ensemble map.")
+      ". This constant could result from @(tsee input-files)
+       or from some "
+      (xdoc::seetopic "c2c::transformation-tools" "transformation")
+      ".")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
@@ -141,7 +140,7 @@
 
     (xdoc::p
      "This macro generates one file in the file system
-      for translation unit in @('*const*'),
+      for each translation unit in @('*const*'),
       at the paths that are obtained by
       prepending the keys of the translation unit ensemble map
       with the path specified by the @(':path') input."))))
