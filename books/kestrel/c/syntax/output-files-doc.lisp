@@ -66,12 +66,12 @@
       "Name of the existing ACL2 constant that contains
        the representation of the C code to write to the file system.")
      (xdoc::p
-      "This constant must contain a "
-      (xdoc::seetopic "code-ensembles" "code ensemble")
-      " that is "
+      "This constant must contain an "
       (xdoc::seetopic "unambiguity" "unambiguous")
-      " and only contains "
-      (xdoc::seetopic "ascii-identifiers" "ASCII identifiers")
+      " "
+      (xdoc::seetopic "ascii-identifiers" "ASCII-identifiers-only")
+      " "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
       ". The translation unit ensemble of the code ensemble
        is printed to a file set,
        whose files are written to the file system.
