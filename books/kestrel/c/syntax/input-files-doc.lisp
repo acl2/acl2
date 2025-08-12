@@ -303,4 +303,9 @@
        the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")))))
+       (if @(':preprocess') is not @('nil')).")
+     (xdoc::p
+      "This constant can be passed to @(tsee output-files)
+       or to some "
+      (xdoc::seetopic "c2c::transformation-tools" "transformation")
+      ".")))))
