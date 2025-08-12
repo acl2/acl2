@@ -14,6 +14,7 @@
 (include-book "../specification/states")
 
 (include-book "kestrel/apt/isodata" :dir :system)
+(include-book "kestrel/apt/simplify" :dir :system)
 (include-book "std/util/defiso" :dir :system)
 
 (acl2::controlled-configuration)
@@ -270,13 +271,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection stat1-validp
+(defsection stat1-validp{0}
   :short "Refine @(tsee stat-validp) to use the stobj states."
 
   (apt::isodata stat-validp
                 ((stat stat1-iso))
                 :undefined nil
-                :new-name stat1-validp))
+                :new-name stat1-validp{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection stat1-validp{1}
+  :short "Simplify @(tsee stat1-validp{0})
+          after the isomorphic state transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee stat1-validp{0}) includes term of the form
+     @('(stat->FIELD (stat-from-stat1 stat))').
+     By enabling @(tsee stat-from-stat1),
+     those turn into @('(stat->FIELD (stat ... (stat1->FIELD <field>) ...))'),
+     which reduces to @('(stat1->FIELD <field>)') as desired."))
+
+  (apt::simplify stat1-validp{0}
+    :new-name stat1-validp{1}
+    :simplify-guard t
+    :enable (stat-from-stat1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
