@@ -81,7 +81,7 @@
 
   "The generated theorems involve hypotheses about
    variables in scope having values of appropriate types,
-   as ACL2 values of type @(tsee ident-type-map).
+   captured as ACL2 values of type @(tsee ident-type-map).
    Our initial approach has been to take the variables from the constructs,
    joining the ones for sub-constructs via @(tsee simpadd0-join-vartys)
    to obtain the ones for super-constructs.
@@ -203,8 +203,9 @@
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
    (vartys ident-type-map
-           "Variables occurring in the transformed construct,
-            with their types."))
+           "Variables for which the generated theorem (if any)
+            has hypotheses about the variables being in the computation state
+            and having values of the appropriate types."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
