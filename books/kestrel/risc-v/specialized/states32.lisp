@@ -13,13 +13,13 @@
 
 (include-book "states32i")
 
-(include-book "../library-extensions/logops-theorems")
-
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
+
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
