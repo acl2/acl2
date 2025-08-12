@@ -1150,11 +1150,17 @@
      @('static'),
      @('_Thread_local'),
      @('auto'), and
-     @('register')."))
+     @('register').")
+   (xdoc::p
+    "We also include the @('__thread') storage class specifier
+     as a GCC extension and variant of @('_Thread_local'). See "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html"
+                 "``Thread-Local Storage")
+    " in the GCC documentation."))
   (:typedef ())
   (:extern ())
   (:static ())
-  (:threadloc ())
+  (:thread ((local bool)))
   (:auto ())
   (:register ())
   :pred stor-specp)

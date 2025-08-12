@@ -2215,6 +2215,7 @@
                                         "__signed"
                                         "__signed__"
                                         "__stdcall"
+                                        "__thread"
                                         "typeof"
                                         "__typeof"
                                         "__typeof__"
@@ -6196,6 +6197,7 @@
       (token-keywordp token? "extern")
       (token-keywordp token? "static")
       (token-keywordp token? "_Thread_local")
+      (token-keywordp token? "__thread")
       (token-keywordp token? "auto")
       (token-keywordp token? "register"))
   ///
@@ -6215,7 +6217,8 @@
   (cond ((token-keywordp token "typedef") (stor-spec-typedef))
         ((token-keywordp token "extern") (stor-spec-extern))
         ((token-keywordp token "static") (stor-spec-static))
-        ((token-keywordp token "_Thread_local") (stor-spec-threadloc))
+        ((token-keywordp token "_Thread_local") (stor-spec-thread t))
+        ((token-keywordp token "__thread") (stor-spec-thread nil))
         ((token-keywordp token "auto") (stor-spec-auto))
         ((token-keywordp token "register") (stor-spec-register))
         (t (prog2$ (impossible) (irr-stor-spec))))

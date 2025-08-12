@@ -1364,12 +1364,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('_Thread_local')."
-  (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-threadloc)))
+          has the form @('_Thread_local') or @('__thread')."
+  (or (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread nil)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1394,28 +1396,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-extern-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-extern-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('extern _Thread_local') or @('_Thread_local extern')."
+          has the form @('extern _Thread_local') or @('_Thread_local extern'),
+          including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
-                   (stor-spec-threadloc)))
+                   (stor-spec-thread nil)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-threadloc)
+             (list (stor-spec-thread nil)
+                   (stor-spec-extern)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-extern)
+                   (stor-spec-thread t)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t)
                    (stor-spec-extern))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-static-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-static-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('static _Thread_local') or @('_Thread_local static')."
+          has the form @('static _Thread_local') or @('_Thread_local static'),
+          including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)
-                   (stor-spec-threadloc)))
+                   (stor-spec-thread nil)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-threadloc)
+             (list (stor-spec-thread nil)
+                   (stor-spec-static)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-static)
+                   (stor-spec-thread t)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t)
                    (stor-spec-static))))
   :hooks (:fix))
