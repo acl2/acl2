@@ -116,9 +116,7 @@
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
                      code desc)))
-       ((unless (transunit-ensemble-aidentp
-                 (code-ensemble->transunits code)
-                 (ienv->gcc (code-ensemble->ienv code))))
+       ((unless (code-ensemble-aidentp code))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       contains non-all-ASCII identifiers."
                      code desc)))
@@ -142,16 +140,14 @@
     (implies (not erp)
              (code-ensemble-unambp code)))
 
-  (defret transunit-ensemble-aidentp-when-output-files-process-const/arg
+  (defret code-ensemble-aidentp-when-output-files-process-const/arg
     (implies (not erp)
-             (transunit-ensemble-aidentp
-              (code-ensemble->transunits code)
-              (ienv->gcc (code-ensemble->ienv code)))))
+             (code-ensemble-aidentp code)))
 
   (in-theory
    (disable code-ensemblep-when-output-files-process-const/arg
             code-ensemble-unambp-when-output-files-process-const/arg
-            transunit-ensemble-aidentp-when-output-files-process-const/arg)))
+            code-ensemble-aidentp-when-output-files-process-const/arg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,16 +318,13 @@
       :in-theory
       (enable code-ensemble-unambp-when-output-files-process-const/arg))))
 
-  (defret transunit-ensemble-aidentp-of-output-files-process-inputs
+  (defret code-aidentp-of-output-files-process-inputs
     (implies (not erp)
-             (transunit-ensemble-aidentp
-              (code-ensemble->transunits code)
-              (ienv->gcc (code-ensemble->ienv code))))
+             (code-ensemble-aidentp code))
     :hints
     (("Goal"
       :in-theory
-      (enable
-       transunit-ensemble-aidentp-when-output-files-process-const/arg)))))
+      (enable code-ensemble-aidentp-when-output-files-process-const/arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,9 +334,7 @@
                                 (paren-nested-conds booleanp)
                                 state)
   :guard (and (code-ensemble-unambp code)
-              (transunit-ensemble-aidentp
-               (code-ensemble->transunits code)
-               (ienv->gcc (code-ensemble->ienv code))))
+              (code-ensemble-aidentp code))
   :returns (mv erp state)
   :short "Generate the files."
   (b* (((reterr) state)
@@ -358,6 +349,7 @@
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) path state)))
     (retok state))
+  :guard-hints (("Goal" :in-theory (enable code-ensemble-aidentp)))
   :prepwork
   ((define output-files-gen-files-loop ((map filepath-filedata-mapp)
                                         (path stringp)
