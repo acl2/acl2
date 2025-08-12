@@ -250,11 +250,16 @@
      and it contains a value of the appropriate type."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
+       ((unless (ident-formalp var))
+        (raise "Internal error: variable ~x0 cannot be mapped to formal model."
+               var))
        ((unless (type-formalp type))
-        (raise "Internal error: variable ~x0 has type ~x1." var type))
+        (raise "Internal error: variable ~x0 has type ~x1, ~
+                which cannot be mapped to formal model."
+               var type))
+       ((mv & cvar) (ldm-ident var)) ; ERP is NIL because IDENT-FORMALP holds
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
-                  (objdes (c::objdesign-of-var var compst))
+       (hyp `(b* ((objdes (c::objdesign-of-var ',cvar compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (equal (c::type-of-value val) ',ctype))))
@@ -1149,7 +1154,7 @@
        (hints `(("Goal"
                  :in-theory '((:e expr-ident)
                               (:e expr-pure-formalp)
-                              (:e ident))
+                              (:e ldm-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)
