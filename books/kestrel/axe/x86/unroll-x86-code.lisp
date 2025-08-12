@@ -327,13 +327,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits new-style-elf-assumptionsp state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (acl2::count-hits-argp count-hits)
-                              (booleanp bvp)
                               (acl2::ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
@@ -346,7 +345,7 @@
                                    (if 64-bitp
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
-                                               (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
+                                               (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
                                                (if new-style-elf-assumptionsp
                                                    (append (unsigned-canonical-rules)
                                                            (canonical-rules-bv))
@@ -408,7 +407,6 @@
                         remove-assumption-rules
                         count-hits
                         print
-                        bvp ; whether to use new-style, BV-friendly assumptions
                         executable-type
                         position-independentp
                         state)
@@ -430,7 +428,6 @@
 
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
-                              (booleanp bvp)
                               ;todo: more
                               )
                   :mode :program ; because of translate-terms
@@ -449,7 +446,6 @@
                                      inputs
                                      type-assumptions-for-array-varsp
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                     bvp
                                      t
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil nil state))
@@ -460,7 +456,7 @@
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
               (mv nil assumptions nil state)))
            ((when erp) (mv erp nil nil nil nil state)))
         (mv nil assumptions
@@ -480,7 +476,6 @@
                                          inputs
                                          type-assumptions-for-array-varsp
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                         bvp
                                          t
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil nil state))
@@ -491,7 +486,7 @@
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
+                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
                 (mv nil assumptions nil state)))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions
@@ -511,7 +506,6 @@
                                         inputs
                                         type-assumptions-for-array-varsp
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                        bvp
                                         t
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil nil state))
@@ -522,7 +516,7 @@
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits bvp t state)
+                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
                   (mv nil assumptions nil state)))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions
@@ -783,7 +777,7 @@
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
              ((mv erp assumptions assumption-rules state)
-              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits bvp nil state))
+              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits nil state))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
 
@@ -1091,7 +1085,6 @@
                              print
                              print-base
                              untranslatep
-                             bvp ; whether to use new-style, BV-friendly assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable ; todo: add a guard (even if it's weak for now)
@@ -1126,8 +1119,7 @@
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
-                              (booleanp untranslatep)
-                              (booleanp bvp))
+                              (booleanp untranslatep))
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
                   ))
@@ -1197,7 +1189,6 @@
                          remove-assumption-rules
                          count-hits
                          print
-                         bvp
                          executable-type
                          position-independentp
                          state))
@@ -1232,7 +1223,7 @@
         (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
+       (lifter-rules (append (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
                              (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use new-canonicalp more
                              lifter-rules))
        (symbolic-execution-rules (if stop-pcs
@@ -1319,7 +1310,6 @@
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                         restrict-theory
-                        bvp
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
@@ -1361,8 +1351,7 @@
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
-                              (booleanp restrict-theory)
-                              (booleanp bvp))
+                              (booleanp restrict-theory))
                   :stobjs state
                   :mode :program ; todo
                   ))
@@ -1387,7 +1376,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
           inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
+          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -1563,7 +1552,6 @@
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
-                                  (bvp 't)
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
@@ -1601,7 +1589,6 @@
       ',produce-theorem
       ',prove-theorem
       ',restrict-theory
-      ',bvp
       ',whole-form
       state))
   :parents (acl2::axe-x86 acl2::axe-lifters)
@@ -1641,9 +1628,7 @@
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
-         (restrict-theory "To be deprecated...")
-         (bvp "Whether to use new-style, BV-friendly assumptions.")
-         )
+         (restrict-theory "To be deprecated..."))
   :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
