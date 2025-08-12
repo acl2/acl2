@@ -862,14 +862,28 @@
            ,@(and (not mutrecp) '(:hooks (:fix)))))
        (type-suffix-when-emptyp
         (acl2::packn-pos (list type-suffix '-when-emptyp) suffix))
+       (type-suffix-of-tail
+        (acl2::packn-pos (list type-suffix '-of-tail) suffix))
        (thm-events
-        `((defruled ,type-suffix-when-emptyp
-            (implies (omap::emptyp ,type)
-                     (equal (,type-suffix ,type ,@extra-args-names)
-                            ,default))
-            :enable ,type-suffix)
-          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                          '(,type-suffix-when-emptyp)))))
+        (append
+         `((defruled ,type-suffix-when-emptyp
+             (implies (omap::emptyp ,type)
+                      (equal (,type-suffix ,type ,@extra-args-names)
+                             ,default))
+             :enable ,type-suffix)
+           (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                           '(,type-suffix-when-emptyp)))
+         (and (eq combine 'and)
+              (eq default t)
+              `((defruled ,type-suffix-of-tail
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type
+                                              ,@extra-args-names))
+                           (,type-suffix (omap::tail ,type)
+                                         ,@extra-args-names))
+                  :enable ,type-suffix)
+                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                                '(,type-suffix-of-tail)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

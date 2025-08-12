@@ -129,12 +129,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled filepath-transunit-map-aidentp-of-tail
-  (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-aidentp map gcc))
-           (filepath-transunit-map-aidentp (omap::tail map) gcc))
-  :enable filepath-transunit-map-aidentp)
-
 (defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
   (implies (transunit-ensemble-aidentp tunits gcc)
            (filepath-transunit-map-aidentp

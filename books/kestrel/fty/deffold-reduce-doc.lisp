@@ -344,7 +344,7 @@
       (xdoc::li
        "@('<type>-<suffix>-of-cons')"))
      (xdoc::p
-      "These theorems are disabled,
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
@@ -359,11 +359,11 @@
       (xdoc::li
        "@('<type>-<suffix>-when-<base>-<suffix>')"))
      (xdoc::p
-      "These theorems are disabled,
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
-     "Accompanying omap type theorems."
+     "Accompanying omap theorems."
      (xdoc::p
       "For each @(tsee defomap) type specified by the @(':types') input,
        we generate the following theorems,
@@ -372,7 +372,13 @@
       (xdoc::li
        "@('<type>-<suffix>-when-emptyp')"))
      (xdoc::p
-      "These theorems are disabled,
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-tail')"))
+     (xdoc::p
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
