@@ -269,16 +269,13 @@
   (xdoc::topstring
    (xdoc::p
     "This function takes the old and new expressions as inputs,
-     which must satisfy @(tsee expr-pure-formalp).
-     If the two expressions are syntactically equal,
-     the generated theorem just says that
-     if the execution of the expression does not yield an error,
-     then the resulting value has the type of the expression.
-     If the two expressions are not syntactically equal,
-     the theorem also says that
-     if the result of executing the old expression is not an error
-     then neither is the result of executing the new expression,
-     and the values of the two results are equal.")
+     which must satisfy @(tsee expr-pure-formalp).")
+   (xdoc::p
+    "The theorem says that
+     if the execution of the old expression does not yield an error,
+     neither does the execution of the new expression,
+     and that the two executions give the same result;
+     the theorem also says that the result has the type of the expressions.")
    (xdoc::p
     "Note that the calls of @(tsee ldm-expr) in the theorem
      are known to succeed (i.e. not return any error),
@@ -297,14 +294,12 @@
        ((unless (expr-pure-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       (equalp (equal old new))
-       ((unless (or equalp (expr-pure-formalp new)))
+       ((unless (expr-pure-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (type (expr-type old))
-       ((unless (or equalp
-                    (equal (expr-type new)
-                           type)))
+       ((unless (equal (expr-type new)
+                       type))
         (raise "Internal error: ~
                 the type ~x0 of the new expression ~x1 differs from ~
                 the type ~x2 of the old expression ~x3."
@@ -316,24 +311,17 @@
         (mv '(_) nil 1))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        (formula
-        (if equalp
-            `(b* ((expr (mv-nth 1 (ldm-expr ',old)))
-                  (result (c::exec-expr-pure expr compst))
-                  (value (c::expr-value->value result)))
-               (implies (and ,@hyps
-                             (not (c::errorp result)))
-                        (equal (c::type-of-value value) ',ctype)))
-          `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
-                (new-expr (mv-nth 1 (ldm-expr ',new)))
-                (old-result (c::exec-expr-pure old-expr compst))
-                (new-result (c::exec-expr-pure new-expr compst))
-                (old-value (c::expr-value->value old-result))
-                (new-value (c::expr-value->value new-result)))
-             (implies (and ,@hyps
-                           (not (c::errorp old-result)))
-                      (and (not (c::errorp new-result))
-                           (equal old-value new-value)
-                           (equal (c::type-of-value old-value) ',ctype))))))
+        `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
+              (new-expr (mv-nth 1 (ldm-expr ',new)))
+              (old-result (c::exec-expr-pure old-expr compst))
+              (new-result (c::exec-expr-pure new-expr compst))
+              (old-value (c::expr-value->value old-result))
+              (new-value (c::expr-value->value new-result)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-value new-value)
+                         (equal (c::type-of-value old-value) ',ctype)))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
