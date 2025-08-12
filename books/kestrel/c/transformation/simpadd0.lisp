@@ -284,6 +284,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-vartys-from-valid-table ((table c$::valid-tablep))
+  :returns (vatys ident-type-mapp)
+  :short "Generate, from a validation table,
+          a map from identifiers to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validation table is from validation annotations.
+     The resulting map contains all the variables in scope
+     whose types satisfy @(tsee type-formalp);
+     variables of other types are skipped.
+     Given that later scopes may contain variables that shadow earlier scopes,
+     we process the scopes in the validation table
+     from oldest to newest, overriding map entries as applicable."))
+  (simpadd0-vartys-from-valid-scope-list (c$::valid-table->scopes table))
+
+  :prepwork
+
+  ((define simpadd0-vartys-from-valid-scope-list ((scopes
+                                                   c$::valid-scope-listp))
+     :returns (vartys ident-type-mapp :hyp :guard)
+     :parents nil
+     (cond ((endp scopes) nil)
+           (t (omap::update*
+               (simpadd0-vartys-from-valid-scope-list (cdr scopes))
+               (simpadd0-vartys-from-valid-scope (car scopes)))))
+     :verify-guards :after-returns
+
+     :prepwork
+     ((define simpadd0-vartys-from-valid-scope ((scope c$::valid-scopep))
+        :returns (vartys ident-type-mapp)
+        :parents nil
+        (simpadd0-vartys-from-valid-ord-scope (c$::valid-scope->ord scope))
+
+        :prepwork
+        ((define simpadd0-vartys-from-valid-ord-scope ((oscope
+                                                        c$::valid-ord-scopep))
+           :returns (vartys ident-type-mapp :hyp :guard)
+           :parents nil
+           (b* (((when (endp oscope)) nil)
+                ((cons ident info) (car oscope))
+                (vartys (simpadd0-vartys-from-valid-ord-scope (cdr oscope)))
+                ((unless (c$::valid-ord-info-case info :objfun)) vartys)
+                (type (c$::valid-ord-info-objfun->type info))
+                ((unless (type-formalp type)) vartys))
+             (omap::update ident type vartys))
+           :verify-guards :after-returns)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-expr-pure-thm ((old exprp)
                                     (new exprp)
                                     (vartys ident-type-mapp)
@@ -1614,7 +1664,19 @@
      We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
-     and whose right side is a pure expression of the same integer type."))
+     and whose right side is a pure expression of the same integer type.")
+   (xdoc::p
+    "For pure (strict and non-strict) operators,
+     we use and join the variable-type maps for the two argument expressions.
+     For assignment expressions,
+     instead we take the map from
+     the validation table that annotates the expression.
+     This is in general a supermap of the two maps
+     (which we double-check here, throwing a hard error if not).
+     In upcoming extensions, we will extend the generated theorem
+     to say that all the variables in the map are preserved
+     by the execution of the assignment expression,
+     which is needed to compose proofs for sequential statements."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1766,6 +1828,20 @@
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
+           (vartys
+            (simpadd0-vartys-from-valid-table (c$::binary-info->table info)))
+           ((unless (omap::submap arg1-vartys vartys))
+            (raise "Internal error: ~
+                    argument variables ~x0 are not a submap of ~
+                    validation table variables ~x1."
+                   arg1-vartys vartys)
+            (mv (irr-expr) (irr-simpadd0-gout)))
+           ((unless (omap::submap arg2-vartys vartys))
+            (raise "Internal error: ~
+                    argument variables ~x0 are not a submap of ~
+                    validation table variables ~x1."
+                   arg2-vartys vartys)
+            (mv (irr-expr) (irr-simpadd0-gout)))
            (hints `(("Goal"
                      :in-theory '((:e ldm-expr)
                                   (:e ldm-ident)
