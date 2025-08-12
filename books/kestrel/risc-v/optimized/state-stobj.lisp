@@ -14,6 +14,7 @@
 (include-book "../specification/states")
 
 (include-book "kestrel/apt/isodata" :dir :system)
+(include-book "kestrel/apt/simplify" :dir :system)
 (include-book "std/util/defiso" :dir :system)
 
 (acl2::controlled-configuration)
@@ -270,213 +271,232 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection stat1-validp
+(defsection stat1-validp{0}
   :short "Refine @(tsee stat-validp) to use the stobj states."
 
   (apt::isodata stat-validp
                 ((stat stat1-iso))
                 :undefined nil
-                :new-name stat1-validp))
+                :new-name stat1-validp{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection stat1-validp{1}
+  :short "Simplify @(tsee stat1-validp{0})
+          after the isomorphic state transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee stat1-validp{0}) includes term of the form
+     @('(stat->FIELD (stat-from-stat1 stat))').
+     By enabling @(tsee stat-from-stat1),
+     those turn into @('(stat->FIELD (stat ... (stat1->FIELD <field>) ...))'),
+     which reduces to @('(stat1->FIELD <field>)') as desired."))
+
+  (apt::simplify stat1-validp{0}
+    :new-name stat1-validp{1}
+    :simplify-guard t
+    :enable (stat-from-stat1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-xreg-unsigned
+(defsection read1-xreg-unsigned{0}
   :short "Refine @(tsee read-xreg-unsigned) to use the stobj states."
 
   (apt::isodata read-xreg-unsigned
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-xreg-unsigned))
+                :new-name read1-xreg-unsigned{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-xreg-signed
+(defsection read1-xreg-signed{0}
   :short "Refine @(tsee read-xreg-signed) to use the stobj states."
 
   (apt::isodata read-xreg-signed
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-xreg-signed))
+                :new-name read1-xreg-signed{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-xreg-unsigned32
+(defsection read1-xreg-unsigned32{0}
   :short "Refine @(tsee read-xreg-unsigned32) to use the stobj states."
 
   (apt::isodata read-xreg-unsigned32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-xreg-unsigned32))
+                :new-name read1-xreg-unsigned32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-xreg-signed32
+(defsection read1-xreg-signed32{0}
   :short "Refine @(tsee read-xreg-signed32) to use the stobj states."
 
   (apt::isodata read-xreg-signed32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-xreg-signed32))
+                :new-name read1-xreg-signed32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-xreg
+(defsection write1-xreg{0}
   :short "Refine @(tsee write-xreg) to use the stobj states."
 
   (apt::isodata write-xreg
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-xreg))
+                :new-name write1-xreg{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-xreg-32
+(defsection write1-xreg-32{0}
   :short "Refine @(tsee write-xreg-32) to use the stobj states."
 
   (apt::isodata write-xreg-32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-xreg-32))
+                :new-name write1-xreg-32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-pc
+(defsection read1-pc{0}
   :short "Refine @(tsee read-pc) to use the stobj states."
 
   (apt::isodata read-pc
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-pc))
+                :new-name read1-pc{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-pc
+(defsection write1-pc{0}
   :short "Refine @(tsee write-pc) to use the stobj states."
 
   (apt::isodata write-pc
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-pc))
+                :new-name write1-pc{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection inc41-pc
+(defsection inc41-pc{0}
   :short "Refine @(tsee inc4-pc) to use the stobj states."
 
   (apt::isodata inc4-pc
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name inc41-pc))
+                :new-name inc41-pc{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned8
+(defsection read1-memory-unsigned8{0}
   :short "Refine @(tsee read-memory-unsigned8) to use the stobj states."
 
   (apt::isodata read-memory-unsigned8
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned8))
+                :new-name read1-memory-unsigned8{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned16
+(defsection read1-memory-unsigned16{0}
   :short "Refine @(tsee read-memory-unsigned16) to use the stobj states."
 
   (apt::isodata read-memory-unsigned16
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned16))
+                :new-name read1-memory-unsigned16{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned32
+(defsection read1-memory-unsigned32{0}
   :short "Refine @(tsee read-memory-unsigned32) to use the stobj states."
 
   (apt::isodata read-memory-unsigned32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned32))
+                :new-name read1-memory-unsigned32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned64
+(defsection read1-memory-unsigned64{0}
   :short "Refine @(tsee read-memory-unsigned64) to use the stobj states."
 
   (apt::isodata read-memory-unsigned64
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned64))
+                :new-name read1-memory-unsigned64{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned8
+(defsection write1-memory-unsigned8{0}
   :short "Refine @(tsee write-memory-unsigned8) to use the stobj states."
 
   (apt::isodata write-memory-unsigned8
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned8))
+                :new-name write1-memory-unsigned8{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned16
+(defsection write1-memory-unsigned16{0}
   :short "Refine @(tsee write-memory-unsigned16) to use the stobj states."
 
   (apt::isodata write-memory-unsigned16
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned16))
+                :new-name write1-memory-unsigned16{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned32
+(defsection write1-memory-unsigned32{0}
   :short "Refine @(tsee write-memory-unsigned32) to use the stobj states."
 
   (apt::isodata write-memory-unsigned32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned32))
+                :new-name write1-memory-unsigned32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned64
+(defsection write1-memory-unsigned64{0}
   :short "Refine @(tsee write-memory-unsigned64) to use the stobj states."
 
   (apt::isodata write-memory-unsigned64
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned64))
+                :new-name write1-memory-unsigned64{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-instruction
+(defsection read1-instruction{0}
   :short "Refine @(tsee read-instruction) to use the stobj states."
 
   (apt::isodata read-instruction
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-instruction))
+                :new-name read1-instruction{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection errorp1
+(defsection errorp1{0}
   :short "Refine @(tsee errorp) to use the stobj states."
 
   (apt::isodata errorp
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name errorp1))
+                :new-name errorp1{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection error1
+(defsection error1{0}
   :short "Refine @(tsee error) to use the stobj states."
 
   (apt::isodata error
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name error1))
+                :new-name error1{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

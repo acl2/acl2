@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-operations")
+(include-book "code-ensembles")
 (include-book "defpred")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -100,7 +101,7 @@
    (amb-declor/absdeclor nil)
    (amb-decl/stmt nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection unambiguity-predicate-theorems
   :short "Theorems about the unambiguity predicates."
@@ -1758,7 +1759,7 @@
     :rule-classes :forward-chaining
     :enable block-item-unambp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection type-spec-list-unambp-of-sublists
   :short "Theorems saying that the sublist of type specifiers
@@ -1790,7 +1791,7 @@
     :induct t
     :enable check-decl-spec-list-all-typespec/stoclass))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection expr-unambp-of-operation-on-expr-unambp
   :short "Preservation of unambiguity by certain operations on expressions."
@@ -1828,3 +1829,28 @@
                (and (expr-unambp arg1)
                     (expr-unambp arg2))))
     :enable check-expr-binary))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define code-ensemble-unambp ((code code-ensemblep))
+  :returns (yes/no booleanp)
+  :short "Check if a code ensemble is unambiguous."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether the translation unit ensemble is unambiguous.
+     The implementation environment is ignored for this,
+     but it is convenient to lift the unambiguity predicate
+     from translation unit ensembles to code ensembles."))
+  (transunit-ensemble-unambp (code-ensemble->transunits code))
+  :hooks (:fix)
+
+  ///
+
+  (defruled code-ensemble-unambp-of-code-ensemble
+    (equal (code-ensemble-unambp (code-ensemble tunits ienv))
+           (transunit-ensemble-unambp tunits)))
+
+  (defruled transunit-ensemble-unambp-of-code-ensemble->transunits
+    (implies (code-ensemble-unambp code)
+             (transunit-ensemble-unambp (code-ensemble->transunits code)))))

@@ -630,6 +630,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define code-ensemble-annop ((code code-ensemblep))
+  :returns (yes/no booleanp)
+  :short "Check if a code ensemble is annotated with validation information."
+  (transunit-ensemble-annop (code-ensemble->transunits code))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-type ((expr exprp))
   :guard (expr-unambp expr)
   :returns (type typep)
