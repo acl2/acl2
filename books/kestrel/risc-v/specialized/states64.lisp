@@ -11,8 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "../library-extensions/logops-theorems")
-
+(include-book "ihs/basic-definitions" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
@@ -21,6 +20,8 @@
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
+
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))

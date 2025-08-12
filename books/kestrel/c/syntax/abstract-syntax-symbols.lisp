@@ -520,6 +520,7 @@
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
+    code-ensemble-unambp
 
     ;; purity:
     expr-purep
@@ -584,6 +585,7 @@
     block-item-list-type
 
     transunit-ensemble-annop
+    code-ensemble-annop
 
     ;; other operations:
 

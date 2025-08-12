@@ -3754,8 +3754,7 @@
                                               gcc)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
-  :guard-hints
-  (("Goal" :in-theory (enable filepath-transunit-map-aidentp-of-tail)))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-aidentp-rules)))
 
   ///
 
