@@ -5778,19 +5778,7 @@
      that are used in the proof of the main theorem.
      The local theorems are about the initial scope of the function,
      and about the parameters in the computation state
-     at the beginning of the execution of the function body.")
-   (xdoc::p
-    "If the body of the function underwent no transformation,
-     the theorem generated for the body just talks about its type
-     (or @('nil') if the body returns no value),
-     but the theorem for the function always involves
-     an equality between @(tsee c::exec-fun) calls.
-     If the body of the function did undergo some transformation,
-     we make use of a theorem from the language formalization
-     that says that execution without function calls
-     does not depend on the function environment:
-     we instantiate that theorem for the body,
-     using the old and new function environments."))
+     at the beginning of the execution of the function body."))
   (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin state))
