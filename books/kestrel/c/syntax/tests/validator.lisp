@@ -577,6 +577,13 @@ __int128 __signed__ z;
  :gcc t)
 
 (test-valid
+ "__int128_t x;
+__int128 y;
+unsigned __int128_t z;
+"
+ :gcc t)
+
+(test-valid
  "void main(void) {
   int x = ({ int a = 0; a; });
   int y = ({ int a = 1; a; });

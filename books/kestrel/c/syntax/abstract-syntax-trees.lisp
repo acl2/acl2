@@ -1858,7 +1858,9 @@
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
-      ".")
+      ". We also support the @('__int128_t') variant syntax.
+       This form does not appear to be documented,
+       but has been observed in real code and is accepted by GCC.")
      (xdoc::p
       "We also include the GCC extensions
        @('_Float32'),
@@ -1907,7 +1909,7 @@
     (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
-    (:int128 ())
+    (:int128 ((uscoret bool)))
     (:float32 ())
     (:float32x ())
     (:float64 ())

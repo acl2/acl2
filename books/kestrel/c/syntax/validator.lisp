@@ -2731,7 +2731,11 @@
                                    same-table)
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
                                         represent a typedef.")))
-       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
+       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
+                      nil
+                      ext-tyspecs
+                      nil
+                      same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)

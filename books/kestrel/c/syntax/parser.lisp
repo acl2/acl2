@@ -2209,6 +2209,7 @@
                                         "__inline"
                                         "__inline__"
                                         "__int128"
+                                        "__int128_t"
                                         "__restrict"
                                         "__restrict__"
                                         "__signed"
@@ -6242,6 +6243,7 @@
    (xdoc::p
     "We similarly include the GCC extension types
      @('__int128'),
+     @('__int128_t'),
      @('_Float32'),
      @('_Float32x'),
      @('_Float64'),
@@ -6264,6 +6266,7 @@
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
+      (token-keywordp token? "__int128_t")
       (token-keywordp token? "_Float32")
       (token-keywordp token? "_Float32x")
       (token-keywordp token? "_Float64")
@@ -6302,7 +6305,8 @@
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
-        ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "__int128") (type-spec-int128 nil))
+        ((token-keywordp token "__int128_t") (type-spec-int128 t))
         ((token-keywordp token "_Float32") (type-spec-float32))
         ((token-keywordp token "_Float32x") (type-spec-float32x))
         ((token-keywordp token "_Float64") (type-spec-float64))

@@ -1606,7 +1606,8 @@
                                         an enumeration constant ~
                                         but it is used as a typedef name."
                                        (ident->unwrap tyspec.name))))
-       :int128 (retok (type-spec-int128) (dimb-table-fix table))
+       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
+                      (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
        :float32x (retok (type-spec-float32x) (dimb-table-fix table))
        :float64 (retok (type-spec-float64) (dimb-table-fix table))

@@ -1281,9 +1281,12 @@
 
 (define type-spec-list-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('__int128')."
-  (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-int128)))
+  :short "Check if a list of type specifiers has the form @('__int128') or
+          @('__int128_t')."
+  (or (equal (type-spec-list-fix tyspecs)
+             (list (type-spec-int128 nil)))
+      (equal (type-spec-list-fix tyspecs)
+             (list (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1291,10 +1294,14 @@
 (define type-spec-list-unsigned-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('unsigned __int128') or @('__int128 unsigned')."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-unsigned)
-                              (type-spec-int128)))
+          @('unsigned __int128') or @('__int128 unsigned'),
+          including the @('__int128_t') variant of @('__int128')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-unsigned)
+                                  (type-spec-int128 nil)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-unsigned)
+                                  (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1303,16 +1310,26 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('signed __int128') or @('__int128 signed'),
-          including the GCC underscore variations of @('signed')."
+          including the GCC underscore variations of @('signed')
+          the @('__int128_t') variant of @('__int128')."
   (or (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-none))
-                                  (type-spec-int128)))
+                                  (type-spec-int128 nil)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-start))
-                                  (type-spec-int128)))
+                                  (type-spec-int128 nil)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int128))))
+                                  (type-spec-int128 nil)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-none))
+                                  (type-spec-int128 t)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-start))
+                                  (type-spec-int128 t)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-both))
+                                  (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

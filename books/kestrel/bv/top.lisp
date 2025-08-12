@@ -139,7 +139,8 @@
 ;; Trim (only for rewriting)
 (include-book "trim")
 (include-book "trim-intro-rules")
-(include-book "trim-rules")
+(include-book "trim-elim-rules-bv")
+(include-book "trim-elim-rules-non-bv")
 (include-book "convert-to-bv-rules")
 
 ; Operations specialized to particular sizes:

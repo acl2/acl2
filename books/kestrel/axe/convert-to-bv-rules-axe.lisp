@@ -12,11 +12,14 @@
 
 (in-package "ACL2")
 
+;; This is the Axe version of ../bv/convert-to-bv-rules.lisp
+
 (include-book "axe-syntax")
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
+(include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system) ; these rules complement the rules in this book
 ;(local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
@@ -54,7 +57,7 @@
 
 (defthmd getbit-convert-arg2-to-bv-axe
   (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
-                (axe-syntaxp (term-should-be-converted-to-bvp x 'nil dag-array))
+                (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
                 (integerp n))
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
