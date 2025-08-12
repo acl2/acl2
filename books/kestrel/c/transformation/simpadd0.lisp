@@ -248,6 +248,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-join-vartys ((vartys1 ident-type-mapp)
+                              (vartys2 ident-type-mapp))
+  :returns (vartys ident-type-mapp)
+  :short "Join two maps from identifiers to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used on maps that must be compatible,
+     so we throw a hard error if that is not the case."))
+  (b* ((vartys1 (ident-type-map-fix vartys1))
+       (vartys2 (ident-type-map-fix vartys2)))
+    (if (omap::compatiblep vartys1 vartys2)
+        (omap::update* vartys1 vartys2)
+      (raise "Internal error: ~
+              incompatible variable-type maps ~x0 and ~x1"
+             vartys1 vartys2)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-expr-pure-thm ((old exprp)
                                     (new exprp)
                                     (vartys ident-type-mapp)
@@ -1442,12 +1462,7 @@
        (expr-new (make-expr-cast :type type-new :arg arg-new))
        (type-vartys (ident-type-map-fix type-vartys))
        (arg-vartys (ident-type-map-fix arg-vartys))
-       ((unless (omap::compatiblep type-vartys arg-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               type-vartys arg-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* type-vartys arg-vartys))
+       (vartys (simpadd0-join-vartys type-vartys arg-vartys))
        ((when type-thm-name)
         (raise "Internal error: ~
                 unexpected type name transformation theorem ~x0."
@@ -1595,12 +1610,7 @@
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (arg1-vartys (ident-type-map-fix arg1-vartys))
        (arg2-vartys (ident-type-map-fix arg2-vartys))
-       ((unless (omap::compatiblep arg1-vartys arg2-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               arg1-vartys arg2-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* arg1-vartys arg2-vartys))
+       (vartys (simpadd0-join-vartys arg1-vartys arg2-vartys))
        (gout-no-thm
         (make-simpadd0-gout :events (append arg1-events arg2-events)
                             :thm-name nil
@@ -2161,18 +2171,8 @@
        (test-vartys (ident-type-map-fix test-vartys))
        (then-vartys (ident-type-map-fix then-vartys))
        (else-vartys (ident-type-map-fix else-vartys))
-       ((unless (omap::compatiblep then-vartys else-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               then-vartys else-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* then-vartys else-vartys))
-       ((unless (omap::compatiblep test-vartys vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               test-vartys vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* test-vartys vartys))
+       (vartys (simpadd0-join-vartys then-vartys else-vartys))
+       (vartys (simpadd0-join-vartys test-vartys vartys))
        ((unless (and test-thm-name
                      then-thm-name
                      else-thm-name))
@@ -2886,12 +2886,7 @@
        (item+items-new (cons item-new items-new))
        (item-vartys (ident-type-map-fix item-vartys))
        (items-vartys (ident-type-map-fix items-vartys))
-       ((unless (omap::compatiblep item-vartys items-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               item-vartys items-vartys)
-        (mv nil (irr-simpadd0-gout)))
-       (vartys (omap::update* item-vartys items-vartys))
+       (vartys (simpadd0-join-vartys item-vartys items-vartys))
        (gout-no-thm
         (make-simpadd0-gout :events (append item-events items-events)
                             :thm-name nil
