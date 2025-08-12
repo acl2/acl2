@@ -189,7 +189,8 @@
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
    (vartys ident-type-map
-           "Variables in scope, with their types."))
+           "Variables occurring in the transformed construct,
+            with their types."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
