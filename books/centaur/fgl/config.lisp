@@ -93,6 +93,14 @@ fgl-rewrite-rules).")
                         "The function mode table (see @(see fgl-function-mode)). Probably
 shouldn't be changed by the user; instead use the utilities described in @(see
 fgl-rewrite-rules).")
+    (counterexample-analysis-enabledp
+     booleanp :default 't
+     "If T (the default), then the FGL clause processor will try to analyze and run
+counterexamples. Specifically, if the interpreter finishes and the (SAT-based)
+validity check of its result produces a counterexample, the SAT counterexample
+will be analyzed to try and create a counterexample to the conjecture (in terms
+of its original variables). This also affects any rewrite rules that call
+@('interp-st-run-ctrex') (it will exit without running the counterexample).")
     (prof-enabledp booleanp :default 't
                    "If T (the default), then the interpreter collects rule
 profiling information (like ACL2's @(see acl2::accumulated-persistence)) and

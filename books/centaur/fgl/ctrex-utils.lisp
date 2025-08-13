@@ -3074,7 +3074,10 @@ compute a value for @('x').</p>
                              (interp-st interp-st-bfrs-ok)
                              state)
   :returns (mv errmsg new-interp-st)
-  (b* ((goal (cdr (hons-get :goal-term (interp-st->user-scratch interp-st))))
+  (b* (((unless (fgl-config->counterexample-analysis-enabledp
+                 (interp-st->config interp-st)))
+        (mv nil interp-st))
+       (goal (cdr (hons-get :goal-term (interp-st->user-scratch interp-st))))
        ((unless (pseudo-termp goal))
         (mv (msg "Goal term malformed: ~x0~%" goal) interp-st))
        (bindings (variable-g-bindings (term-vars goal)))
