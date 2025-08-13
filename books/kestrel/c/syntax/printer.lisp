@@ -3897,10 +3897,7 @@
    (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
                                  options
                                  gcc))
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (enable filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap)))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-aidentp-rules)))
   :hooks (:fix)
 
   ///
