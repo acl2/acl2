@@ -416,8 +416,10 @@
     "This is the type of the annotations that
      the validator adds to binary expressions,
      i.e. the @(':binary') case of @(tsee expr).
-     The information for a binary expression consists of its type."))
-  ((type type))
+     The information for a binary expression consists of its type
+     and the validation table at the beginning of the binary expression."))
+  ((type type)
+   (table valid-table))
   :pred binary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -425,7 +427,7 @@
 (defirrelevant irr-binary-info
   :short "An irrelevant validation information for binary expressions."
   :type binary-infop
-  :body (make-binary-info :type (irr-type)))
+  :body (make-binary-info :type (irr-type) :table (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

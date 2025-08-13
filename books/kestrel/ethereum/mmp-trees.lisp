@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,9 +34,7 @@
      is an Ethereum data structure
      that combines characteristics of
      Merkle trees and Patricia (a.k.a. radix) trees.
-     MMP trees are described in [YP:D] and in
-     <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree\"
-     >Page `Patricia Tree' of [Wiki]</a>;
+     MMP trees are described in [YP:D] and in Page `Patricia Tree' of [Wiki];
      we reference that page of [Wiki] as `[Wiki:MMP]'.")
    (xdoc::p
     "MMP trees are not merely implementation-level entities.

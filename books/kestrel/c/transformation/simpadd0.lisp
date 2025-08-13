@@ -77,7 +77,21 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."))
+   from the aforementioned @(tsee simpadd0-gout)."
+
+  "The generated theorems involve hypotheses about
+   variables in scope having values of appropriate types,
+   captured as ACL2 values of type @(tsee ident-type-map).
+   Our initial approach has been to take the variables from the constructs,
+   joining the ones for sub-constructs via @(tsee simpadd0-join-vartys)
+   to obtain the ones for super-constructs.
+   This is adequate for some of the constructs,
+   but we need to generalize this approach for other constructs.
+   Specifically, we are moving towards having
+   information about the variables in scope in the AST validation annotations,
+   and using that instead of calculating the information from the constructs.
+   As we move towards the new approach,
+   we may have a mix of the new and old appraoches."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +203,9 @@
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
    (vartys ident-type-map
-           "Variables in scope, with their types."))
+           "Variables for which the generated theorem (if any)
+            has hypotheses about the variables being in the computation state
+            and having values of the appropriate types."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -221,30 +237,148 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-var-hyps ((vartys ident-type-mapp))
-  :returns (hyps true-listp)
-  :short "Generate variable hypotheses for certain theorems."
+(define c::compustate-has-var-with-type-p ((var c::identp)
+                                           (type c::typep)
+                                           (compst c::compustatep))
+  :returns (yes/no booleanp)
+  :short "Check if a computation state includes
+          a variable with a given name
+          containing a value of the given type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The input of this function comes from
-     the @('vartys') component of @(tsee simpadd0-gout).
-     For each such variable, we add a hypothesis about it saying that
+    "This is essentially an abbreviation,
+     which we use in generated theorems.
+     In a way this predicate belongs to a more general place,
+     perhaps in the language formalization;
+     this is why we put it into the @('\"C\"') package."))
+  (b* ((objdes (c::objdesign-of-var var compst)))
+    (and objdes
+         (b* ((val (c::read-object objdes compst)))
+           (equal (c::type-of-value val) type))))
+  :guard-hints
+  (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var)))
+
+  ///
+
+  (defruled c::not-errorp-when-compustate-has-var-with-type-p
+    (implies (c::compustate-has-var-with-type-p var type compst)
+             (not (c::errorp
+                   (c::read-object (c::objdesign-of-var var compst)
+                                   compst))))
+    :enable (c::valuep-of-read-object-of-objdesign-of-var
+             c::not-errorp-when-valuep))
+
+  (defruled c::type-of-value-when-compustate-has-var-with-type-p
+    (implies (c::compustate-has-var-with-type-p var type compst)
+             (equal (c::type-of-value
+                     (c::read-object (c::objdesign-of-var var compst)
+                                     compst))
+                    type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-var-assertions ((vartys ident-type-mapp) (compst symbolp))
+  :returns (assertions true-listp)
+  :short "Generate assertions about certain variables
+          having values of certain types in a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variables and their types are in the @('vartys') map.
+     For each variable in the map,
+     we generate an assertion saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type."))
+     and it contains a value of the associated type.")
+   (xdoc::p
+    "The symbol @('compst') is the ACL2 variable name
+     to use for the computation state."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
+       ((unless (ident-formalp var))
+        (raise "Internal error: variable ~x0 cannot be mapped to formal model."
+               var))
        ((unless (type-formalp type))
-        (raise "Internal error: variable ~x0 has type ~x1." var type))
+        (raise "Internal error: variable ~x0 has type ~x1, ~
+                which cannot be mapped to formal model."
+               var type))
+       ((mv & cvar) (ldm-ident var)) ; ERP is NIL because IDENT-FORMALP holds
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
-                  (objdes (c::objdesign-of-var var compst))
-                  (val (c::read-object objdes compst)))
-               (and objdes
-                    (equal (c::type-of-value val) ',ctype))))
-       (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
-    (cons hyp hyps))
+       (asrt `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
+       (asrts (simpadd0-gen-var-assertions (omap::tail vartys) compst)))
+    (cons asrt asrts))
+  ///
+  (fty::deffixequiv simpadd0-gen-var-assertions
+    :args ((vartys ident-type-mapp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-join-vartys ((vartys1 ident-type-mapp)
+                              (vartys2 ident-type-mapp))
+  :returns (vartys ident-type-mapp)
+  :short "Join two maps from identifiers to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used on maps that must be compatible,
+     so we throw a hard error if that is not the case."))
+  (b* ((vartys1 (ident-type-map-fix vartys1))
+       (vartys2 (ident-type-map-fix vartys2)))
+    (if (omap::compatiblep vartys1 vartys2)
+        (omap::update* vartys1 vartys2)
+      (raise "Internal error: ~
+              incompatible variable-type maps ~x0 and ~x1"
+             vartys1 vartys2)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-vartys-from-valid-table ((table c$::valid-tablep))
+  :returns (vatys ident-type-mapp)
+  :short "Generate, from a validation table,
+          a map from identifiers to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validation table is from validation annotations.
+     The resulting map contains all the variables in scope
+     whose types satisfy @(tsee type-formalp);
+     variables of other types are skipped.
+     Given that later scopes may contain variables that shadow earlier scopes,
+     we process the scopes in the validation table
+     from oldest to newest, overriding map entries as applicable."))
+  (simpadd0-vartys-from-valid-scope-list (c$::valid-table->scopes table))
+
+  :prepwork
+  ((define simpadd0-vartys-from-valid-scope-list ((scopes
+                                                   c$::valid-scope-listp))
+     :returns (vartys ident-type-mapp :hyp :guard)
+     :parents nil
+     (cond ((endp scopes) nil)
+           (t (omap::update*
+               (simpadd0-vartys-from-valid-scope-list (cdr scopes))
+               (simpadd0-vartys-from-valid-scope (car scopes)))))
+     :verify-guards :after-returns
+
+     :prepwork
+     ((define simpadd0-vartys-from-valid-scope ((scope c$::valid-scopep))
+        :returns (vartys ident-type-mapp)
+        :parents nil
+        (simpadd0-vartys-from-valid-ord-scope (c$::valid-scope->ord scope))
+
+        :prepwork
+        ((define simpadd0-vartys-from-valid-ord-scope ((oscope
+                                                        c$::valid-ord-scopep))
+           :returns (vartys ident-type-mapp :hyp :guard)
+           :parents nil
+           (b* (((when (endp oscope)) nil)
+                ((cons ident info) (car oscope))
+                (vartys (simpadd0-vartys-from-valid-ord-scope (cdr oscope)))
+                ((unless (c$::valid-ord-info-case info :objfun)) vartys)
+                (type (c$::valid-ord-info-objfun->type info))
+                ((unless (type-formalp type)) vartys))
+             (omap::update ident type vartys))
+           :verify-guards :after-returns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,7 +434,7 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-hyps vartys))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -312,7 +446,7 @@
               (new-result (c::exec-expr-pure new-expr compst))
               (old-value (c::expr-value->value old-result))
               (new-value (c::expr-value->value new-result)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-value new-value)
@@ -393,7 +527,7 @@
        ((unless (expr-purep new-right))
         (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-hyps vartys))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -402,7 +536,7 @@
               (new-expr (mv-nth 1 (ldm-expr ',new)))
               (old-compst (c::exec-expr-asg old-expr compst old-fenv limit))
               (new-compst (c::exec-expr-asg new-expr compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)))))
@@ -465,7 +599,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -473,7 +607,7 @@
                (c::exec-stmt old-stmt compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -552,7 +686,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
               (new-item (mv-nth 1 (ldm-block-item ',new)))
@@ -560,7 +694,7 @@
                (c::exec-block-item old-item compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -639,7 +773,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
@@ -647,7 +781,7 @@
                (c::exec-block-item-list old-items compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -761,11 +895,8 @@
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
-        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
-              (objdes (c::objdesign-of-var var compst))
-              (val (c::read-object objdes compst)))
-           (and objdes
-                (equal (c::type-of-value val) ',type))))
+        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par)))))
+           (c::compustate-has-var-with-type-p var ',type compst)))
        ((mv okp
             more-args
             parargs
@@ -946,6 +1077,7 @@
                                (:e ident)
                                (:e ldm-ident)
                                c::push-frame
+                               c::compustate-has-var-with-type-p
                                c::objdesign-of-var
                                c::objdesign-of-var-aux
                                c::compustate-frames-number
@@ -1063,7 +1195,7 @@
        (hints `(("Goal"
                  :in-theory '((:e expr-ident)
                               (:e expr-pure-formalp)
-                              (:e ident))
+                              (:e ldm-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)
@@ -1093,16 +1225,14 @@
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
       (implies (and (expr-pure-formalp (expr-ident ident info))
-                    (b* ((var (mv-nth 1 (ldm-ident ident)))
-                         (objdes (c::objdesign-of-var var compst))
-                         (val (c::read-object objdes compst)))
-                      (and objdes
-                           (equal (c::type-of-value val) type))))
+                    (b* ((var (mv-nth 1 (ldm-ident ident))))
+                      (c::compustate-has-var-with-type-p var type compst)))
                (equal (c::type-of-value value) type)))
     :enable (c::exec-expr-pure
              c::exec-ident
              ldm-expr
-             expr-pure-formalp)))
+             expr-pure-formalp
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1442,12 +1572,7 @@
        (expr-new (make-expr-cast :type type-new :arg arg-new))
        (type-vartys (ident-type-map-fix type-vartys))
        (arg-vartys (ident-type-map-fix arg-vartys))
-       ((unless (omap::compatiblep type-vartys arg-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               type-vartys arg-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* type-vartys arg-vartys))
+       (vartys (simpadd0-join-vartys type-vartys arg-vartys))
        ((when type-thm-name)
         (raise "Internal error: ~
                 unexpected type name transformation theorem ~x0."
@@ -1583,7 +1708,19 @@
      We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
-     and whose right side is a pure expression of the same integer type."))
+     and whose right side is a pure expression of the same integer type.")
+   (xdoc::p
+    "For pure (strict and non-strict) operators,
+     we use and join the variable-type maps for the two argument expressions.
+     For assignment expressions,
+     instead we take the map from
+     the validation table that annotates the expression.
+     This is in general a supermap of the two maps
+     (which we double-check here, throwing a hard error if not).
+     In upcoming extensions, we will extend the generated theorem
+     to say that all the variables in the map are preserved
+     by the execution of the assignment expression,
+     which is needed to compose proofs for sequential statements."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1595,12 +1732,7 @@
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (arg1-vartys (ident-type-map-fix arg1-vartys))
        (arg2-vartys (ident-type-map-fix arg2-vartys))
-       ((unless (omap::compatiblep arg1-vartys arg2-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               arg1-vartys arg2-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* arg1-vartys arg2-vartys))
+       (vartys (simpadd0-join-vartys arg1-vartys arg2-vartys))
        (gout-no-thm
         (make-simpadd0-gout :events (append arg1-events arg2-events)
                             :thm-name nil
@@ -1740,32 +1872,50 @@
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
-           (hints `(("Goal"
-                     :in-theory '((:e ldm-expr)
-                                  (:e ldm-ident)
-                                  (:e ident)
-                                  (:e c::expr-kind)
-                                  (:e c::expr-ident)
-                                  (:e c::expr-binary)
-                                  (:e c::binop-asg)
-                                  (:e c::ident)
-                                  (:e c::type-nonchar-integerp)
-                                  c::valuep-of-read-object-of-objdesign-of-var
-                                  c::not-errorp-when-valuep)
-                     :use (,arg1-thm-name
-                           ,arg2-thm-name
-                           (:instance
-                            simpadd0-expr-binary-asg-support-lemma
-                            (old-arg (mv-nth 1 (ldm-expr ',arg2)))
-                            (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
-                            (var (mv-nth 1 (ldm-ident
-                                            ',(expr-ident->ident arg1)))))
-                           (:instance
-                            simpadd0-expr-binary-asg-error-support-lemma
-                            (var (mv-nth 1 (ldm-ident
-                                            ',(expr-ident->ident arg1))))
-                            (expr (mv-nth 1 (ldm-expr ',arg2)))
-                            (fenv old-fenv))))))
+           (vartys
+            (simpadd0-vartys-from-valid-table (c$::binary-info->table info)))
+           ((unless (omap::submap arg1-vartys vartys))
+            (raise "Internal error: ~
+                    argument variables ~x0 are not a submap of ~
+                    validation table variables ~x1."
+                   arg1-vartys vartys)
+            (mv (irr-expr) (irr-simpadd0-gout)))
+           ((unless (omap::submap arg2-vartys vartys))
+            (raise "Internal error: ~
+                    argument variables ~x0 are not a submap of ~
+                    validation table variables ~x1."
+                   arg2-vartys vartys)
+            (mv (irr-expr) (irr-simpadd0-gout)))
+           (hints
+            `(("Goal"
+               :in-theory
+               '((:e ldm-expr)
+                 (:e ldm-ident)
+                 (:e ident)
+                 (:e c::expr-kind)
+                 (:e c::expr-ident)
+                 (:e c::expr-binary)
+                 (:e c::binop-asg)
+                 (:e c::ident)
+                 (:e c::type-nonchar-integerp)
+                 c::not-errorp-when-compustate-has-var-with-type-p
+                 c::type-of-value-when-compustate-has-var-with-type-p
+                 c::valuep-of-read-object-of-objdesign-of-var
+                 c::not-errorp-when-valuep)
+               :use (,arg1-thm-name
+                     ,arg2-thm-name
+                     (:instance
+                      simpadd0-expr-binary-asg-support-lemma
+                      (old-arg (mv-nth 1 (ldm-expr ',arg2)))
+                      (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
+                      (var (mv-nth 1 (ldm-ident
+                                      ',(expr-ident->ident arg1)))))
+                     (:instance
+                      simpadd0-expr-binary-asg-error-support-lemma
+                      (var (mv-nth 1 (ldm-ident
+                                      ',(expr-ident->ident arg1))))
+                      (expr (mv-nth 1 (ldm-expr ',arg2)))
+                      (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-asg-thm expr
                                        expr-new
@@ -2161,18 +2311,8 @@
        (test-vartys (ident-type-map-fix test-vartys))
        (then-vartys (ident-type-map-fix then-vartys))
        (else-vartys (ident-type-map-fix else-vartys))
-       ((unless (omap::compatiblep then-vartys else-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               then-vartys else-vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* then-vartys else-vartys))
-       ((unless (omap::compatiblep test-vartys vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               test-vartys vartys)
-        (mv (irr-expr) (irr-simpadd0-gout)))
-       (vartys (omap::update* test-vartys vartys))
+       (vartys (simpadd0-join-vartys then-vartys else-vartys))
+       (vartys (simpadd0-join-vartys test-vartys vartys))
        ((unless (and test-thm-name
                      then-thm-name
                      else-thm-name))
@@ -2886,12 +3026,7 @@
        (item+items-new (cons item-new items-new))
        (item-vartys (ident-type-map-fix item-vartys))
        (items-vartys (ident-type-map-fix items-vartys))
-       ((unless (omap::compatiblep item-vartys items-vartys))
-        (raise "Internal error: ~
-                incompatible variable-type maps ~x0 and ~x1."
-               item-vartys items-vartys)
-        (mv nil (irr-simpadd0-gout)))
-       (vartys (omap::update* item-vartys items-vartys))
+       (vartys (simpadd0-join-vartys item-vartys items-vartys))
        (gout-no-thm
         (make-simpadd0-gout :events (append item-events items-events)
                             :thm-name nil

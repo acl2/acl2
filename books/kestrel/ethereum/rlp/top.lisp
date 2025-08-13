@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,8 +27,6 @@
   :long
   (xdoc::topstring-p
    "RLP is a serialization (encoding) method for Ethereum,
-    described in [YP:B] and in
-    <a href=\"https://github.com/ethereum/wiki/wiki/RLP\">Page `RLP'
-    of [Wiki]</a>;
+    described in [YP:B] and in Page `RLP' of [Wiki];
     we reference that page of [Wiki] as `[Wiki:RLP]').")
   :order-subtopics t)

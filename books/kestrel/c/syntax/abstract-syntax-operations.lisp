@@ -1281,9 +1281,12 @@
 
 (define type-spec-list-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('__int128')."
-  (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-int128)))
+  :short "Check if a list of type specifiers has the form @('__int128') or
+          @('__int128_t')."
+  (or (equal (type-spec-list-fix tyspecs)
+             (list (type-spec-int128 nil)))
+      (equal (type-spec-list-fix tyspecs)
+             (list (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1291,10 +1294,14 @@
 (define type-spec-list-unsigned-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('unsigned __int128') or @('__int128 unsigned')."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-unsigned)
-                              (type-spec-int128)))
+          @('unsigned __int128') or @('__int128 unsigned'),
+          including the @('__int128_t') variant of @('__int128')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-unsigned)
+                                  (type-spec-int128 nil)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-unsigned)
+                                  (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1303,16 +1310,26 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('signed __int128') or @('__int128 signed'),
-          including the GCC underscore variations of @('signed')."
+          including the GCC underscore variations of @('signed')
+          the @('__int128_t') variant of @('__int128')."
   (or (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-none))
-                                  (type-spec-int128)))
+                                  (type-spec-int128 nil)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-start))
-                                  (type-spec-int128)))
+                                  (type-spec-int128 nil)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int128))))
+                                  (type-spec-int128 nil)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-none))
+                                  (type-spec-int128 t)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-start))
+                                  (type-spec-int128 t)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-both))
+                                  (type-spec-int128 t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1347,12 +1364,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('_Thread_local')."
-  (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-threadloc)))
+          has the form @('_Thread_local') or @('__thread')."
+  (or (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread nil)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1377,28 +1396,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-extern-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-extern-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('extern _Thread_local') or @('_Thread_local extern')."
+          has the form @('extern _Thread_local') or @('_Thread_local extern'),
+          including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
-                   (stor-spec-threadloc)))
+                   (stor-spec-thread nil)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-threadloc)
+             (list (stor-spec-thread nil)
+                   (stor-spec-extern)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-extern)
+                   (stor-spec-thread t)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t)
                    (stor-spec-extern))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stor-spec-list-static-threadloc-p ((storspecs stor-spec-listp))
+(define stor-spec-list-static-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('static _Thread_local') or @('_Thread_local static')."
+          has the form @('static _Thread_local') or @('_Thread_local static'),
+          including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)
-                   (stor-spec-threadloc)))
+                   (stor-spec-thread nil)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-threadloc)
+             (list (stor-spec-thread nil)
+                   (stor-spec-static)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-static)
+                   (stor-spec-thread t)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread t)
                    (stor-spec-static))))
   :hooks (:fix))

@@ -69,7 +69,7 @@
   :pred scopep
   ///
 
-  (defruled cdr-of-in-when-scopep
+  (defruled cdr-of-assoc-when-scopep
     (implies (scopep scope)
              (iff (cdr (omap::assoc id scope))
                   (omap::assoc id scope)))

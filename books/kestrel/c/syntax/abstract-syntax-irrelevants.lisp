@@ -133,6 +133,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-header-name
+  :short "An irrelevant header name."
+  :type header-namep
+  :body (header-name-angles nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-unop
   :short "An irrelevant unary operator."
   :type unopp

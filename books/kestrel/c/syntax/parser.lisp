@@ -2209,11 +2209,13 @@
                                         "__inline"
                                         "__inline__"
                                         "__int128"
+                                        "__int128_t"
                                         "__restrict"
                                         "__restrict__"
                                         "__signed"
                                         "__signed__"
                                         "__stdcall"
+                                        "__thread"
                                         "typeof"
                                         "__typeof"
                                         "__typeof__"
@@ -3042,6 +3044,70 @@
                         (len qchars)))))
     :rule-classes :linear
     :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-header-name ((parstate parstatep))
+  :returns (mv erp
+               (hname header-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex a header name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect a header name.
+     We read the next character, which must be present.
+     Then we read the two kinds of header names,
+     based on whether the next character is greater-than or double quote.
+     If it is neither, lexing fails."))
+  (b* (((reterr) (irr-header-name) (irr-span) parstate)
+       ((erp char first-pos parstate) (read-char parstate)))
+    (cond
+     ((not char)
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))
+     ((= char (char-code #\<)) ; <
+      (b* (((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate))
+           (span (make-span :start first-pos :end closing-angle-pos))
+           ((unless hchars)
+            (reterr-msg :where (position-to-msg closing-angle-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (header-name-angles hchars)
+               span
+               parstate)))
+     ((= char (char-code #\")) ; "
+      (b* (((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate))
+           (span (make-span :start first-pos :end closing-dquote-pos))
+           ((unless qchars)
+            (reterr-msg :where (position-to-msg closing-dquote-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (header-name-quotes qchars)
+               span
+               parstate)))
+     (t ; other
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-header-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-header-name-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6195,6 +6261,7 @@
       (token-keywordp token? "extern")
       (token-keywordp token? "static")
       (token-keywordp token? "_Thread_local")
+      (token-keywordp token? "__thread")
       (token-keywordp token? "auto")
       (token-keywordp token? "register"))
   ///
@@ -6214,7 +6281,8 @@
   (cond ((token-keywordp token "typedef") (stor-spec-typedef))
         ((token-keywordp token "extern") (stor-spec-extern))
         ((token-keywordp token "static") (stor-spec-static))
-        ((token-keywordp token "_Thread_local") (stor-spec-threadloc))
+        ((token-keywordp token "_Thread_local") (stor-spec-thread t))
+        ((token-keywordp token "__thread") (stor-spec-thread nil))
         ((token-keywordp token "auto") (stor-spec-auto))
         ((token-keywordp token "register") (stor-spec-register))
         (t (prog2$ (impossible) (irr-stor-spec))))
@@ -6242,6 +6310,7 @@
    (xdoc::p
     "We similarly include the GCC extension types
      @('__int128'),
+     @('__int128_t'),
      @('_Float32'),
      @('_Float32x'),
      @('_Float64'),
@@ -6264,6 +6333,7 @@
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
+      (token-keywordp token? "__int128_t")
       (token-keywordp token? "_Float32")
       (token-keywordp token? "_Float32x")
       (token-keywordp token? "_Float64")
@@ -6302,7 +6372,8 @@
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
-        ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "__int128") (type-spec-int128 nil))
+        ((token-keywordp token "__int128_t") (type-spec-int128 t))
         ((token-keywordp token "_Float32") (type-spec-float32))
         ((token-keywordp token "_Float32x") (type-spec-float32x))
         ((token-keywordp token "_Float64") (type-spec-float64))
