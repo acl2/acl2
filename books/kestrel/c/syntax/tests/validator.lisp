@@ -604,3 +604,21 @@ typeof(foo) bar;
 int bar (void);
 "
  :gcc t)
+
+(test-valid
+ "_Thread_local int x;
+")
+
+(test-valid
+ "_Thread_local int x;
+"
+ :gcc t)
+
+(test-valid-fail
+ "__thread int x;
+")
+
+(test-valid
+ "__thread int x;
+"
+ :gcc t)
