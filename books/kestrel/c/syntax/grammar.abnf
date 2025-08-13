@@ -836,6 +836,7 @@ punctuator = "["
 
 lexeme = token
        / comment
+       / control-line
        / white-space
 
 ; The intent of the lexical part of our ABNF grammar is that
@@ -847,11 +848,15 @@ lexeme = token
 ; the longest match is always taken [C17:6.4/4],
 ; with the exception noted there.
 
+; We include control-line preprocessing directives
+; as they occasionally appear in code even after preprocessing.
+; (Especially pragma directives.)
+
 ; The rest of the ABNF grammar rules in this file
 ; describe how lexemes are organized into higher-level constructs,
 ; corresponding to the phase structure grammar in [C17:A.2].
 ; Currently we only use tokens,
-; discarding comments and white-space characters,
+; discarding comments, preprocessing directives, and white-space characters,
 ; but in the future we may retain some information from comments,
 ; given the purpose of this ABNF grammar.
 
