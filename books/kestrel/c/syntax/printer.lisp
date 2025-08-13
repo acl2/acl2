@@ -23,6 +23,8 @@
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
+(local (in-theory (enable* abstract-syntax-aidentp-rules)))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -3863,7 +3865,6 @@
                                               gcc)))
     (omap::update (filepath-fix filepath) (filedata data) filemap))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-aidentp-rules)))
 
   ///
 
@@ -3897,7 +3898,6 @@
    (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
                                  options
                                  gcc))
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-aidentp-rules)))
   :hooks (:fix)
 
   ///
