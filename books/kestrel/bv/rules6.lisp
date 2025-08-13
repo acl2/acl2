@@ -386,7 +386,7 @@
                     ;;bvxor-when-y-is-not-an-integer
                     ))
 
-
+;todo: use TRIM instead of bvchop?
 (defthm logext-trim-arg
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< size newsize)
@@ -396,8 +396,6 @@
                 (integerp x))
            (equal (logext size x)
                   (logext size (bvchop size x)))))
-
-
 
 ;rename
 (defthmd plus-becomes-bvplus
@@ -409,12 +407,13 @@
            (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal"
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
+           :use (:instance expt-is-weakly-increasing-for-base>1
                            (r 2)
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
-           :in-theory (e/d (bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                      <-of-expt-and-expt-same-base)))))
+           :in-theory (e/d (bvplus unsigned-byte-p unsigned-byte-p-forced)
+                           (expt-is-weakly-increasing-for-base>1
+                            <-of-expt-and-expt-same-base)))))
 
 (theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus)))
 
@@ -427,21 +426,19 @@
            (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal" :use plus-becomes-bvplus
-           :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
+           :in-theory (disable plus-becomes-bvplus))))
 
 (theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus-arg1-free)))
 
 ;rename
 (defthmd plus-becomes-bvplus-arg2-free
-  (implies (and (unsigned-byte-p xsize x)
-                (bind-free (bind-var-to-bv-term-size 'ysize y))
-                (force (unsigned-byte-p-forced ysize y))
-                (posp xsize))
-           (equal (+ y x)
+  (implies (and (unsigned-byte-p ysize y)
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (force (unsigned-byte-p-forced xsize x))
+                (posp ysize))
+           (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal" :use plus-becomes-bvplus-arg1-free
-                  :in-theory (e/d (;<-of-constant-when-unsigned-byte-p-size-param
-                                   )
-                           (plus-becomes-bvplus-arg1-free)))))
+                  :in-theory (disable plus-becomes-bvplus-arg1-free))))
 
 (theory-invariant (incompatible (:definition bvplus) (:rewrite plus-becomes-bvplus-arg2-free)))
