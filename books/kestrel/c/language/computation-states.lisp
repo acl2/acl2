@@ -151,8 +151,7 @@
   :elt-type frame
   :true-listp t
   :elementp-of-nil nil
-  :pred frame-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred frame-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
