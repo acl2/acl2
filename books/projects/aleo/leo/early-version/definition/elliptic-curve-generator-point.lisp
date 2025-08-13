@@ -38,7 +38,7 @@
     "For more information on the edwards bls12 curve, see @(see ecurve::edwards-bls12)")
    (xdoc::p
     (xdoc::ahref
-     "https://github.com/AleoHQ/snarkVM/blob/033c4397df8fa9ae4505548065670a9ab1155202/curves/src/edwards_bls12/parameters.rs#L147"
+     "https://github.com/ProvableHQ/snarkVM/blob/033c4397df8fa9ae4505548065670a9ab1155202/curves/src/edwards_bls12/parameters.rs#L147"
      "Here is a link")
     "to the source code containing these values."))
   (ecurve::point-finite
