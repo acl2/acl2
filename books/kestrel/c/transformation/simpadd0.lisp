@@ -237,6 +237,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define c::compustate-has-var-with-type-p ((var c::identp)
+                                           (type c::typep)
+                                           (compst c::compustatep))
+  :returns (yes/no booleanp)
+  :short "Check if a computation state includes
+          a variable with a given name
+          containing a value of the given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially an abbreviation,
+     which we use in generated theorems.
+     In a way this predicate belongs to a more general place,
+     perhaps in the language formalization;
+     this is why we put it into the @('\"C\"') package."))
+  (b* ((objdes (c::objdesign-of-var var compst)))
+    (and objdes
+         (b* ((val (c::read-object objdes compst)))
+           (equal (c::type-of-value val) type))))
+  :guard-hints
+  (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var)))
+
+  ///
+
+  (defruled c::not-errorp-when-compustate-has-var-with-type-p
+    (implies (c::compustate-has-var-with-type-p var type compst)
+             (not (c::errorp
+                   (c::read-object (c::objdesign-of-var var compst)
+                                   compst))))
+    :enable (c::valuep-of-read-object-of-objdesign-of-var
+             c::not-errorp-when-valuep))
+
+  (defruled c::type-of-value-when-compustate-has-var-with-type-p
+    (implies (c::compustate-has-var-with-type-p var type compst)
+             (equal (c::type-of-value
+                     (c::read-object (c::objdesign-of-var var compst)
+                                     compst))
+                    type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-var-hyps ((vartys ident-type-mapp))
   :returns (hyps true-listp)
   :short "Generate variable hypotheses for certain theorems."
@@ -259,10 +300,7 @@
                var type))
        ((mv & cvar) (ldm-ident var)) ; ERP is NIL because IDENT-FORMALP holds
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (hyp `(b* ((objdes (c::objdesign-of-var ',cvar compst))
-                  (val (c::read-object objdes compst)))
-               (and objdes
-                    (equal (c::type-of-value val) ',ctype))))
+       (hyp `(c::compustate-has-var-with-type-p ',cvar ',ctype compst))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
   :hooks (:fix))
@@ -852,11 +890,8 @@
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
-        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
-              (objdes (c::objdesign-of-var var compst))
-              (val (c::read-object objdes compst)))
-           (and objdes
-                (equal (c::type-of-value val) ',type))))
+        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par)))))
+           (c::compustate-has-var-with-type-p var ',type compst)))
        ((mv okp
             more-args
             parargs
@@ -1037,6 +1072,7 @@
                                (:e ident)
                                (:e ldm-ident)
                                c::push-frame
+                               c::compustate-has-var-with-type-p
                                c::objdesign-of-var
                                c::objdesign-of-var-aux
                                c::compustate-frames-number
@@ -1184,16 +1220,14 @@
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
       (implies (and (expr-pure-formalp (expr-ident ident info))
-                    (b* ((var (mv-nth 1 (ldm-ident ident)))
-                         (objdes (c::objdesign-of-var var compst))
-                         (val (c::read-object objdes compst)))
-                      (and objdes
-                           (equal (c::type-of-value val) type))))
+                    (b* ((var (mv-nth 1 (ldm-ident ident))))
+                      (c::compustate-has-var-with-type-p var type compst)))
                (equal (c::type-of-value value) type)))
     :enable (c::exec-expr-pure
              c::exec-ident
              ldm-expr
-             expr-pure-formalp)))
+             expr-pure-formalp
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1847,32 +1881,36 @@
                     validation table variables ~x1."
                    arg2-vartys vartys)
             (mv (irr-expr) (irr-simpadd0-gout)))
-           (hints `(("Goal"
-                     :in-theory '((:e ldm-expr)
-                                  (:e ldm-ident)
-                                  (:e ident)
-                                  (:e c::expr-kind)
-                                  (:e c::expr-ident)
-                                  (:e c::expr-binary)
-                                  (:e c::binop-asg)
-                                  (:e c::ident)
-                                  (:e c::type-nonchar-integerp)
-                                  c::valuep-of-read-object-of-objdesign-of-var
-                                  c::not-errorp-when-valuep)
-                     :use (,arg1-thm-name
-                           ,arg2-thm-name
-                           (:instance
-                            simpadd0-expr-binary-asg-support-lemma
-                            (old-arg (mv-nth 1 (ldm-expr ',arg2)))
-                            (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
-                            (var (mv-nth 1 (ldm-ident
-                                            ',(expr-ident->ident arg1)))))
-                           (:instance
-                            simpadd0-expr-binary-asg-error-support-lemma
-                            (var (mv-nth 1 (ldm-ident
-                                            ',(expr-ident->ident arg1))))
-                            (expr (mv-nth 1 (ldm-expr ',arg2)))
-                            (fenv old-fenv))))))
+           (hints
+            `(("Goal"
+               :in-theory
+               '((:e ldm-expr)
+                 (:e ldm-ident)
+                 (:e ident)
+                 (:e c::expr-kind)
+                 (:e c::expr-ident)
+                 (:e c::expr-binary)
+                 (:e c::binop-asg)
+                 (:e c::ident)
+                 (:e c::type-nonchar-integerp)
+                 c::not-errorp-when-compustate-has-var-with-type-p
+                 c::type-of-value-when-compustate-has-var-with-type-p
+                 c::valuep-of-read-object-of-objdesign-of-var
+                 c::not-errorp-when-valuep)
+               :use (,arg1-thm-name
+                     ,arg2-thm-name
+                     (:instance
+                      simpadd0-expr-binary-asg-support-lemma
+                      (old-arg (mv-nth 1 (ldm-expr ',arg2)))
+                      (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
+                      (var (mv-nth 1 (ldm-ident
+                                      ',(expr-ident->ident arg1)))))
+                     (:instance
+                      simpadd0-expr-binary-asg-error-support-lemma
+                      (var (mv-nth 1 (ldm-ident
+                                      ',(expr-ident->ident arg1))))
+                      (expr (mv-nth 1 (ldm-expr ',arg2)))
+                      (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-asg-thm expr
                                        expr-new
