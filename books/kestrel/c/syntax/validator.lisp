@@ -1891,7 +1891,7 @@
                           nil
                         (lifetime-static))))
         (retok nil linkage lifetime?)))
-     ((stor-spec-list-extern-threadloc-p storspecs)
+     ((stor-spec-list-extern-thread-p storspecs)
       (b* (((when (type-case type :function))
             (retmsg$ "The storage class specifier '_Thread_local' ~
                       cannot be used in the declaration of the function ~x0."
@@ -1922,7 +1922,7 @@
                           nil
                         (lifetime-static))))
         (retok nil linkage lifetime?)))
-     ((stor-spec-list-static-threadloc-p storspecs)
+     ((stor-spec-list-static-thread-p storspecs)
       (b* (((when (type-case type :function))
             (retmsg$ "The storage class specifier '_Thread_local' ~
                       cannot be used in the declaration of the function ~x0."
@@ -1934,7 +1934,7 @@
                       (linkage-internal)))
            (lifetime? (lifetime-thread)))
         (retok nil linkage lifetime?)))
-     ((stor-spec-list-threadloc-p storspecs)
+     ((stor-spec-list-thread-p storspecs)
       (b* (((when (type-case type :function))
             (retmsg$ "The storage class specifier '_Thread_local' ~
                       cannot be used in the declaration of the function ~x0."
