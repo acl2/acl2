@@ -434,7 +434,7 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -446,7 +446,7 @@
               (new-result (c::exec-expr-pure new-expr compst))
               (old-value (c::expr-value->value old-result))
               (new-value (c::expr-value->value new-result)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-value new-value)
@@ -527,7 +527,7 @@
        ((unless (expr-purep new-right))
         (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -536,7 +536,7 @@
               (new-expr (mv-nth 1 (ldm-expr ',new)))
               (old-compst (c::exec-expr-asg old-expr compst old-fenv limit))
               (new-compst (c::exec-expr-asg new-expr compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)))))
@@ -599,7 +599,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -607,7 +607,7 @@
                (c::exec-stmt old-stmt compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -686,7 +686,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
               (new-item (mv-nth 1 (ldm-block-item ',new)))
@@ -694,7 +694,7 @@
                (c::exec-block-item old-item compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -773,7 +773,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
@@ -781,7 +781,7 @@
                (c::exec-block-item-list old-items compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
-           (implies (and ,@hyps
+           (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
