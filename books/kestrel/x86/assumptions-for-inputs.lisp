@@ -88,7 +88,7 @@
 
 ;; Make assertions that the region at ADDRESS with length LEN is separate from all the
 ;; regions represented by ADDRESSES-AND-LENS.
-;; Not sure what order is better for the args of SEPARATE.
+;; Not sure what order is better for the args in disjoint-regions48p
 (defund make-separate-claims (address len addresses-and-lens)
   (declare (xargs :guard (alistp addresses-and-lens)
                   :guard-hints (("Goal" :in-theory (enable alistp)))))
@@ -97,11 +97,13 @@
     (let* ((pair (first addresses-and-lens))
            (this-address (car pair))
            (this-len (cdr pair)))
-      (cons `(separate :r ,len ,address
-                       :r ,this-len ,this-address)
-            (cons `(disjoint-regions48p ,len ,address
-                                      ,this-len ,this-address)
-                  (make-separate-claims address len (rest addresses-and-lens)))))))
+      ;; (cons `(separate :r ,len ,address
+      ;;                  :r ,this-len ,this-address)
+      (cons `(disjoint-regions48p ,len ,address
+                                  ,this-len ,this-address)
+            (make-separate-claims address len (rest addresses-and-lens)))
+      ;)
+      )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; todo: think about signed (i) vs unsigned (u)
@@ -247,20 +249,13 @@
                         ;; The pointer, and subsequent bytes, are canonical:
                         (canonical-regionp ,numbytes ,pointer-name)
                         (integerp ,pointer-name)
-                        ;; todo: avoid the separate assumptions if we are in the new mode (which we may always be):
                         ;; The input is disjoint from the space into which the stack will grow:
-                        (separate :r ,numbytes ,pointer-name
-                                  :r ,stack-byte-count
-                                  (+ ,(- stack-byte-count) (rsp x86)))
                         (disjoint-regions48p ,numbytes ,pointer-name
                                              ,stack-byte-count
                                              (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                         ;; The input is disjoint from the saved return address:
-                        ;; todo: reorder args?
-                        (separate :r ,existing-stack-byte-count (rsp x86)
-                                  :r ,numbytes ,pointer-name)
                         (disjoint-regions48p ,existing-stack-byte-count (rsp x86)
                                              ,numbytes ,pointer-name))
                       ;; will be reversed later:

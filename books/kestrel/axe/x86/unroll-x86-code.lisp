@@ -37,7 +37,7 @@
 (include-book "kestrel/x86/assumptions-new" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/x86/separate" :dir :system)
+(include-book "kestrel/x86/separate" :dir :system) ; todo: drop?
 (include-book "kestrel/x86/rflags" :dir :system)
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/support-bv" :dir :system)
