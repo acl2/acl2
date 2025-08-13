@@ -3046,6 +3046,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lex-header-name ((parstate parstatep))
+  :returns (mv erp
+               (hname header-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex a header name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect a header name.
+     We read the next character, which must be present.
+     Then we read the two kinds of header names,
+     based on whether the next character is greater-than or double quote.
+     If it is neither, lexing fails."))
+  (b* (((reterr) (irr-header-name) (irr-span) parstate)
+       ((erp char first-pos parstate) (read-char parstate)))
+    (cond
+     ((not char)
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))
+     ((= char (char-code #\<)) ; <
+      (b* (((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate))
+           (span (make-span :start first-pos :end closing-angle-pos))
+           ((unless hchars)
+            (reterr-msg :where (position-to-msg closing-angle-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (header-name-angles hchars)
+               span
+               parstate)))
+     ((= char (char-code #\")) ; "
+      (b* (((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate))
+           (span (make-span :start first-pos :end closing-dquote-pos))
+           ((unless qchars)
+            (reterr-msg :where (position-to-msg closing-dquote-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (header-name-quotes qchars)
+               span
+               parstate)))
+     (t ; other
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret parsize-of-lex-header-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-header-name-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-?-integer-suffix ((parstate parstatep))
   :returns (mv erp
                (isuffix? isuffix-optionp)
