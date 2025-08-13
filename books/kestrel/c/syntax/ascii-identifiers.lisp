@@ -129,6 +129,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled expr-aidentp-of-expr-ident
+  (equal (expr-aidentp (expr-ident ident info) gcc)
+         (ident-aidentp ident gcc))
+  :enable expr-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
   (implies (transunit-ensemble-aidentp tunits gcc)
            (filepath-transunit-map-aidentp
@@ -138,7 +145,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-to-ruleset abstract-syntax-aidentp-rules
-                '(filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
+                '(expr-aidentp-of-expr-ident
+                  filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
