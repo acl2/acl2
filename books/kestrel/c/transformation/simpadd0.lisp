@@ -278,17 +278,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-var-hyps ((vartys ident-type-mapp) (compst symbolp))
-  :returns (hyps true-listp)
-  :short "Generate variable hypotheses for certain theorems."
+(define simpadd0-gen-var-assertions ((vartys ident-type-mapp) (compst symbolp))
+  :returns (assertions true-listp)
+  :short "Generate assertions about certain variables
+          having values of certain types in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The input of this function comes from
-     the @('vartys') component of @(tsee simpadd0-gout).
-     For each such variable, we add a hypothesis about it saying that
+    "The variables and their types are in the @('vartys') map.
+     For each variable in the map,
+     we generate an assertion saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type.")
+     and it contains a value of the associated type.")
    (xdoc::p
     "The symbol @('compst') is the ACL2 variable name
      to use for the computation state."))
@@ -303,11 +304,11 @@
                var type))
        ((mv & cvar) (ldm-ident var)) ; ERP is NIL because IDENT-FORMALP holds
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (hyp `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
-       (hyps (simpadd0-gen-var-hyps (omap::tail vartys) compst)))
-    (cons hyp hyps))
+       (asrt `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
+       (asrts (simpadd0-gen-var-assertions (omap::tail vartys) compst)))
+    (cons asrt asrts))
   ///
-  (fty::deffixequiv simpadd0-gen-var-hyps
+  (fty::deffixequiv simpadd0-gen-var-assertions
     :args ((vartys ident-type-mapp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -434,7 +435,7 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-hyps vartys 'compst))
+       (hyps (simpadd0-gen-var-assertions vartys 'compst))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -527,7 +528,7 @@
        ((unless (expr-purep new-right))
         (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
-       (hyps (simpadd0-gen-var-hyps vartys 'compst))
+       (hyps (simpadd0-gen-var-assertions vartys 'compst))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -599,7 +600,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys 'compst))
+       (hyps (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -686,7 +687,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys 'compst))
+       (hyps (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
               (new-item (mv-nth 1 (ldm-block-item ',new)))
@@ -773,7 +774,7 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (hyps (simpadd0-gen-var-hyps vartys 'compst))
+       (hyps (simpadd0-gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
