@@ -192,6 +192,7 @@
 (include-book "rules10")
 (include-book "rules11")
 (include-book "rules12")
+(include-book "padding")
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
