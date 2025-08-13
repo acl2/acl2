@@ -577,6 +577,13 @@ __int128 __signed__ z;
  :gcc t)
 
 (test-valid
+ "__int128_t x;
+__int128 y;
+unsigned __int128_t z;
+"
+ :gcc t)
+
+(test-valid
  "void main(void) {
   int x = ({ int a = 0; a; });
   int y = ({ int a = 1; a; });
@@ -595,5 +602,23 @@ typeof(bar) foo;
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
+"
+ :gcc t)
+
+(test-valid
+ "_Thread_local int x;
+")
+
+(test-valid
+ "_Thread_local int x;
+"
+ :gcc t)
+
+(test-valid-fail
+ "__thread int x;
+")
+
+(test-valid
+ "__thread int x;
 "
  :gcc t)

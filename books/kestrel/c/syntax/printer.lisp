@@ -1295,7 +1295,9 @@
    :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
-   :threadloc (print-astring "_Thread_local" pstate)
+   :thread (if stor-spec.local
+               (print-astring "_Thread_local" pstate)
+             (print-astring "__thread" pstate))
    :auto (print-astring "auto" pstate)
    :register (print-astring "register" pstate))
   :hooks (:fix))
@@ -1990,7 +1992,9 @@
                 (pstate (print-enumspec tyspec.spec pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
-     :int128 (print-astring "__int128" pstate)
+     :int128 (if tyspec.uscoret
+                 (print-astring "__int128_t" pstate)
+               (print-astring "__int128" pstate))
      :float32 (print-astring "_Float32" pstate)
      :float32x (print-astring "_Float32x" pstate)
      :float64 (print-astring "_Float64" pstate)

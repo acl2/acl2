@@ -2209,11 +2209,13 @@
                                         "__inline"
                                         "__inline__"
                                         "__int128"
+                                        "__int128_t"
                                         "__restrict"
                                         "__restrict__"
                                         "__signed"
                                         "__signed__"
                                         "__stdcall"
+                                        "__thread"
                                         "typeof"
                                         "__typeof"
                                         "__typeof__"
@@ -6195,6 +6197,7 @@
       (token-keywordp token? "extern")
       (token-keywordp token? "static")
       (token-keywordp token? "_Thread_local")
+      (token-keywordp token? "__thread")
       (token-keywordp token? "auto")
       (token-keywordp token? "register"))
   ///
@@ -6214,7 +6217,8 @@
   (cond ((token-keywordp token "typedef") (stor-spec-typedef))
         ((token-keywordp token "extern") (stor-spec-extern))
         ((token-keywordp token "static") (stor-spec-static))
-        ((token-keywordp token "_Thread_local") (stor-spec-threadloc))
+        ((token-keywordp token "_Thread_local") (stor-spec-thread t))
+        ((token-keywordp token "__thread") (stor-spec-thread nil))
         ((token-keywordp token "auto") (stor-spec-auto))
         ((token-keywordp token "register") (stor-spec-register))
         (t (prog2$ (impossible) (irr-stor-spec))))
@@ -6242,6 +6246,7 @@
    (xdoc::p
     "We similarly include the GCC extension types
      @('__int128'),
+     @('__int128_t'),
      @('_Float32'),
      @('_Float32x'),
      @('_Float64'),
@@ -6264,6 +6269,7 @@
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
+      (token-keywordp token? "__int128_t")
       (token-keywordp token? "_Float32")
       (token-keywordp token? "_Float32x")
       (token-keywordp token? "_Float64")
@@ -6302,7 +6308,8 @@
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
-        ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "__int128") (type-spec-int128 nil))
+        ((token-keywordp token "__int128_t") (type-spec-int128 t))
         ((token-keywordp token "_Float32") (type-spec-float32))
         ((token-keywordp token "_Float32x") (type-spec-float32x))
         ((token-keywordp token "_Float64") (type-spec-float64))

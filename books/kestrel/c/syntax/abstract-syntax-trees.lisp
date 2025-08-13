@@ -1150,11 +1150,17 @@
      @('static'),
      @('_Thread_local'),
      @('auto'), and
-     @('register')."))
+     @('register').")
+   (xdoc::p
+    "We also include the @('__thread') storage class specifier
+     as a GCC extension and variant of @('_Thread_local'). See "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html"
+                 "``Thread-Local Storage")
+    " in the GCC documentation."))
   (:typedef ())
   (:extern ())
   (:static ())
-  (:threadloc ())
+  (:thread ((local bool)))
   (:auto ())
   (:register ())
   :pred stor-specp)
@@ -1858,7 +1864,9 @@
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
-      ".")
+      ". We also support the @('__int128_t') variant syntax.
+       This form does not appear to be documented,
+       but has been observed in real code and is accepted by GCC.")
      (xdoc::p
       "We also include the GCC extensions
        @('_Float32'),
@@ -1907,7 +1915,7 @@
     (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
-    (:int128 ())
+    (:int128 ((uscoret bool)))
     (:float32 ())
     (:float32x ())
     (:float64 ())
