@@ -2293,3 +2293,15 @@ error (int __status, int __errnum, const char *__format, ...)
  " #pragma once
   int x;
 ")
+
+(test-parse
+ parse-external-declaration-list
+ "#pragma once
+  int x;
+")
+
+(test-parse
+ parse-external-declaration-list
+ "#pragma onceint x;
+"
+ :cond (equal (len ast) 1))

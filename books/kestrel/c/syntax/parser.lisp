@@ -4827,10 +4827,11 @@
      (b* ((char+pos (parstate->char i parstate))
           (char (char+position->char char+pos)))
        ;; TODO: need to support other newlines?
-       (cond ((= char 10) ; new-line
+       (cond ((or (= char 10)  ; LF new-line
+                  (= char 13)) ; CR new-line
               t)
              ((or (= char 32) ; SP
-                  (and (<= 9 char) (<= char 12))) ; HT LF VT FF
+                  (and (<= 9 char) (<= char 12))) ; HT VT FF
               (if (= (mbe :logic (nfix i)
                           :exec (the unsigned-byte i))
                      0)
