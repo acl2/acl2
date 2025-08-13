@@ -1213,6 +1213,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; lex-header-name
+
+(test-lex
+ lex-header-name
+ "<stdio.h>"
+ :cond (equal ast (header-name-angles (list (h-char (char-code #\s))
+                                            (h-char (char-code #\t))
+                                            (h-char (char-code #\d))
+                                            (h-char (char-code #\i))
+                                            (h-char (char-code #\o))
+                                            (h-char (char-code #\.))
+                                            (h-char (char-code #\h))))))
+
+(test-lex
+ lex-header-name
+ "\"parser.h\""
+ :cond (equal ast (header-name-quotes (list (q-char (char-code #\p))
+                                            (q-char (char-code #\a))
+                                            (q-char (char-code #\r))
+                                            (q-char (char-code #\s))
+                                            (q-char (char-code #\e))
+                                            (q-char (char-code #\r))
+                                            (q-char (char-code #\.))
+                                            (q-char (char-code #\h))))))
+
+(test-lex-fail
+ lex-header-name
+ "")
+
+(test-lex-fail
+ lex-header-name
+ "noopen")
+
+(test-lex-fail
+ lex-header-name
+ "<noclose")
+
+(test-lex-fail
+ lex-header-name
+ "\"noclose")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; lex-?-integer-suffix
 
 (test-lex

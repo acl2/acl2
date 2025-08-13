@@ -1140,7 +1140,7 @@
 (define print-s-char-list ((schars s-char-listp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a list of zero or more characters or escape sequences
-          usable in string-literals."
+          usable in string literals."
   (b* (((when (endp schars)) (pristate-fix pstate))
        (pstate (print-s-char (car schars) pstate)))
     (print-s-char-list (cdr schars) pstate))
@@ -1198,6 +1198,111 @@
        ((when (endp (cdr strings))) pstate)
        (pstate (print-astring " " pstate)))
     (print-stringlit-list (cdr strings) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-h-char ((hchar h-char-p) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a character usable in header names in angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The abstract syntax puts no limitation on the character (code),
+     but here we check that it satisfies
+     the requirements in the concrete syntax.
+     It must be a character in the grammar,
+     and in addition it must not be
+     a greater-than or a new-line character.
+     The latter check encompasses not only line feed, but also carriage return:
+     recall that both are allowed in our grammar,
+     and that we allow three kinds of new-line characters
+     (line feed alone,
+     carriage return alone,
+     or line feed followed by carriage return)."))
+  (b* ((code (h-char->char hchar))
+       ((unless (and (grammar-character-p code)
+                     (not (= code (char-code #\<))) ; <
+                     (not (= code 10))              ; LF
+                     (not (= code 13))))            ; CR
+        (raise "Misusage error: ~
+                the character code ~x0 is disallowed ~
+                in a header in between angle brackets."
+               code)
+        (pristate-fix pstate)))
+    (print-char code pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-h-char-list ((hchars h-char-listp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more characters
+          usable in header names in angle brackets."
+  (b* (((when (endp hchars)) (pristate-fix pstate))
+       (pstate (print-h-char (car hchars) pstate)))
+    (print-h-char-list (cdr hchars) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-q-char ((qchar q-char-p) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a character usable in header names in double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The abstract syntax puts no limitation on the character (code),
+     but here we check that it satisfies
+     the requirements in the concrete syntax.
+     It must be a character in the grammar,
+     and in addition it must not be
+     a double quote or a new-line character.
+     The latter check encompasses not only line feed, but also carriage return:
+     recall that both are allowed in our grammar,
+     and that we allow three kinds of new-line characters
+     (line feed alone,
+     carriage return alone,
+     or line feed followed by carriage return)."))
+  (b* ((code (q-char->char qchar))
+       ((unless (and (grammar-character-p code)
+                     (not (= code (char-code #\"))) ; "
+                     (not (= code 10))              ; LF
+                     (not (= code 13))))            ; CR
+        (raise "Misusage error: ~
+                the character code ~x0 is disallowed ~
+                in a header in between double quotes."
+               code)
+        (pristate-fix pstate)))
+    (print-char code pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-q-char-list ((qchars q-char-listp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more characters
+          usable in header names in double quotes."
+  (b* (((when (endp qchars)) (pristate-fix pstate))
+       (pstate (print-q-char (car qchars) pstate)))
+    (print-q-char-list (cdr qchars) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-header-name ((hname header-namep) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Printe a header name."
+  (header-name-case
+   hname
+   :angles (b* ((pstate (print-astring "<" pstate))
+                (pstate (print-h-char-list hname.chars pstate))
+                (pstate (print-astring ">" pstate)))
+             pstate)
+   :quotes (b* ((pstate (print-astring "\"" pstate))
+                (pstate (print-q-char-list hname.chars pstate))
+                (pstate (print-astring "\"" pstate)))
+             pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
