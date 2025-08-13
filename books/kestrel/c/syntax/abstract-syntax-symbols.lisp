@@ -527,6 +527,7 @@
 
     ;; formalized:
 
+    ident-formalp
     expr-pure-formalp
     expr-asg-formalp
     stmt-formalp

@@ -338,7 +338,7 @@
     :induct t
     :enable (objdesign-of-var-aux
              read-auto-var-aux
-             cdr-of-in-when-scopep))
+             cdr-of-assoc-when-scopep))
 
   (defruled objdesign-of-var-when-valuep-of-read-var
     (implies (valuep (read-var id compst))
@@ -409,7 +409,7 @@
               top-frame
               compustate-frames-number
               fix
-              cdr-of-in-when-scopep)
+              cdr-of-assoc-when-scopep)
      :use
      ((:instance objdesign-of-var-aux-lemma
                  (frame (+ -1 (len (compustate->frames compst))))

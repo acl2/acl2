@@ -2255,13 +2255,14 @@
                       type
                       (set::union types-cast types-arg)
                       table))
-       :binary (b* (((erp new-arg1 type-arg1 types-arg1 table)
+       :binary (b* ((table0 table)
+                    ((erp new-arg1 type-arg1 types-arg1 table)
                      (valid-expr expr.arg1 table ienv))
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
-                    (info (make-binary-info :type type)))
+                    (info (make-binary-info :type type :table table0)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
