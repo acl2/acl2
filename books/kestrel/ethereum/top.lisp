@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,9 +44,14 @@
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
-     "The "
-     (xdoc::a :href "https://github.com/ethereum/wiki/wiki" "Ethereum Wiki")
-     ", referenced as `[Wiki]' in the documentation of this library.")
+     "The Ethereum Wiki,
+      referenced as `[Wiki]' in the documentation of this library.
+      This Ethereum Wiki can no longer be found at the URL it had at the time,
+      but presumably its contents have been migrated (and likely updated)
+      to the "
+     (xdoc::ahref "https://ethereum.org/en/developers/docs/"
+                  "Ethereum development documentation")
+     ".")
     (xdoc::li
      "The BYZANTIUM VERSION 3e36772 of the "
      (xdoc::a :href "https://github.com/ethereum/yellowpaper"
