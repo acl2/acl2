@@ -290,25 +290,11 @@
                    segment-pcs loop-headers x86)
                   x86)))
 
-;; (defthm run-until-exit-segment-or-hit-loop-header-of-myif-split
-;;   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (myif test s1 s2))
-;;          (myif test
-;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
-;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2)))
-;;   :hints (("Goal" :in-theory (enable myif))))
-
 (defthm run-until-exit-segment-or-hit-loop-header-of-if-split
   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
          (if test
                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
-
-;this puts in myif...
-;; (defthm run-until-exit-segment-or-hit-loop-header-of-if
-;;   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
-;;          (myif test
-;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
-;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
 (defthm run-until-exit-segment-or-hit-loop-header-of-if
   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
@@ -595,7 +581,7 @@
 ;; the branches that exit the loop, and exit-test-term represents the test
 ;; governing the branches that exit the loop.  The one-rep-term can be :none if no
 ;; branches return to the loop top.  Likewise, exit-term can be :none if no
-;; branches exit the loop.  loop-body-term is a myif nest with x86 states at
+;; branches exit the loop.  loop-body-term is an IF nest with x86 states at
 ;; the leaves.
 (defun analyze-loop-body-aux (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
   (declare (xargs :guard (and (pseudo-termp loop-body-term)
@@ -610,8 +596,7 @@
                   )
            (irrelevant loop-top-rsp-term) ;todo
            )
-  (if (or (call-of 'myif loop-body-term)
-          (call-of 'if loop-body-term))
+  (if (call-of 'if loop-body-term)
       (b* ((test (farg1 loop-body-term))
            ((mv erp one-rep-term1 exit-term1 exit-test-term1 state)
             (analyze-loop-body-aux (farg2 loop-body-term) loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))
@@ -619,7 +604,7 @@
            ((mv erp one-rep-term2 exit-term2 exit-test-term2 state)
             (analyze-loop-body-aux (farg3 loop-body-term) loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))
            ((when erp) (mv erp nil nil nil state))
-           (if-variant (ffn-symb loop-body-term)) ;myif or if
+           (if-variant (ffn-symb loop-body-term)) ; now always IF
            )
         (mv (erp-nil)
             (if (eq :none one-rep-term1)
@@ -652,9 +637,8 @@
                (append (extra-loop-lifter-rules)
                        lifter-rules
                        extra-rules
-                       (myif-rules)      ; todo: these hardly mention myif
-                       '(x86isa::xr-of-myif ; maybe drop
-                         x86isa::xr-of-if))
+                       (acl2::boolean-rules)
+                       '(x86isa::xr-of-if))
                remove-rules)
              (w state))
            nil ; ifns
@@ -699,7 +683,7 @@
                                          nil
                                          (acl2::make-rule-alist!
                                            (append lifter-rules
-                                                   (myif-rules) ;simplify myif of t and t, myif of t and nil, etc.
+                                                   (acl2::boolean-rules) ; needed?
                                                    )
                                            (w state))
                                          nil (w state)))
@@ -1818,7 +1802,7 @@
         (- (cw "Done lifting loop ~x0 (depth ~x1)).~%" this-loop-num loop-depth)))
      (mv nil new-state-dag generated-events next-loop-num state)))
 
- ;; STATE-TERM is a myif-nest some of whose leaves are standing at loop headers.
+ ;; STATE-TERM is an IF-nest some of whose leaves are standing at loop headers.
  ;; Decompiles loops at the leaves of STATE-TERM that are standing at loop headers. Leaves other leaves alone.
  ;; Returns (mv erp changep dag generated-events next-loop-num state).
  (defun lift-loop-leaves (state-term ;todo: process dags directly instead of terms?
@@ -1859,8 +1843,7 @@
          (if erp
              (mv erp nil nil nil nil state)
            (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
-     (if (or (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an assumption?
-             (eq 'if (ffn-symb state-term)))
+     (if (eq 'if (ffn-symb state-term)) ;todo: pass the test as an assumption?
          (b* ((- (cw "(Handling an if with test ~x0.)~%" (farg1 state-term)))
               ((mv erp changep then-branch-dag generated-events next-loop-num state)
                (lift-loop-leaves (farg2 state-term)
@@ -1902,7 +1885,7 @@
               (all-state-vars (ACL2::PACK-IN-PACKAGE-OF-base-SYMBOL-list 'x86_ all-state-nums)) ;could pass these in
               (result-dag ;(mv erp result-dag)
                ;; todo: this is a non-array function:
-                (compose-term-and-dags `(,(ffn-symb state-term) ; if or myif
+                (compose-term-and-dags `(,(ffn-symb state-term) ; now always IF
                                          ,(farg1 state-term)
                                          :then-part
                                          :else-part)
@@ -1913,7 +1896,7 @@
               ;((when erp) (mv erp nil nil nil nil state))
               )
            (mv nil changep result-dag generated-events next-loop-num state))
-       ;; Not an if/myif, so test whether we have exited the segment:
+       ;; Not an IF, so test whether we have exited the segment:
        ;; TODO: Begin by comparing the stack height?
        (b* (((mv erp exitedp state)
              (b* ( ;; Extract the PC:
