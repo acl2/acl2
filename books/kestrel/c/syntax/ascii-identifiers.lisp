@@ -135,6 +135,11 @@
             (transunit-ensemble->unwrap tunits) gcc))
   :enable transunit-ensemble-aidentp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-ruleset abstract-syntax-aidentp-rules
+                '(filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define code-ensemble-aidentp ((code code-ensemblep))
