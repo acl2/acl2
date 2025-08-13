@@ -968,6 +968,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum header-name
+  :short "Fixtype of header names [C17:6.4.7] [C17:A.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This corresponds to <i>header-name</i> in the grammar in [C17]."))
+  (:angles ((chars h-char-list)))
+  (:quotes ((chars q-char-list)))
+  :pred header-namep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum unop
   :short "Fixtype of unary operators
           [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
