@@ -446,7 +446,6 @@
                                      inputs
                                      type-assumptions-for-array-varsp
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                     t
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil nil state))
            (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -476,7 +475,6 @@
                                          inputs
                                          type-assumptions-for-array-varsp
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                         t
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil nil state))
              (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -506,7 +504,6 @@
                                         inputs
                                         type-assumptions-for-array-varsp
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
-                                        t
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil nil state))
                (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -1157,10 +1154,10 @@
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
        ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
        ;;                                  ))
-       (new-canonicalp (or (eq :elf-64 executable-type)
-                           (eq :mach-o-64 executable-type)
-                           (eq :pe-64 executable-type) ; todo, also need to change the assumptions
-                           ))
+       ;; (new-canonicalp (or (eq :elf-64 executable-type)
+       ;;                     (eq :mach-o-64 executable-type)
+       ;;                     (eq :pe-64 executable-type) ; todo, also need to change the assumptions
+       ;;                     ))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -1224,7 +1221,7 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        (lifter-rules (append (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
-                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use new-canonicalp more
+                             (append (unsigned-canonical-rules) (canonical-rules-bv))
                              lifter-rules))
        (symbolic-execution-rules (if stop-pcs
                                      (if 64-bitp
