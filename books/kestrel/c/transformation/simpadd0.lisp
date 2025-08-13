@@ -350,7 +350,6 @@
   (simpadd0-vartys-from-valid-scope-list (c$::valid-table->scopes table))
 
   :prepwork
-
   ((define simpadd0-vartys-from-valid-scope-list ((scopes
                                                    c$::valid-scope-listp))
      :returns (vartys ident-type-mapp :hyp :guard)
