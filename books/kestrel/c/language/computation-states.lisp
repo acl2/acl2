@@ -83,8 +83,7 @@
   :elt-type scope
   :true-listp t
   :elementp-of-nil t
-  :pred scope-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred scope-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
