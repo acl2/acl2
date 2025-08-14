@@ -197,7 +197,13 @@
           :enable (value-struct-write-aux
                    member-type-lookup
                    member-types-of-member-values
-                   member-type-of-member-value))))))
+                   member-type-of-member-value))))
+
+     (defruled not-errorp-of-value-struct-read-aux-when-not-write-error
+       (implies (not (errorp (value-struct-write-aux name val members)))
+                (not (errorp (value-struct-read-aux name members))))
+       :induct t
+       :enable value-struct-read-aux)))
 
   ///
 
@@ -227,4 +233,11 @@
                           (remove-flexible-array-member new)
                         (value-struct-read name1 struct)))))
     :enable (value-struct-read
-             value-struct-read-aux-of-value-struct-write-aux)))
+             value-struct-read-aux-of-value-struct-write-aux))
+
+  (defruled not-errorp-of-value-struct-read-when-not-write-error
+    (implies (not (errorp (value-struct-write name val struct)))
+             (not (errorp (value-struct-read name struct))))
+    :enable (value-struct-write
+             value-struct-read
+             not-errorp-of-value-struct-read-aux-when-not-write-error)))
