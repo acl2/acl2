@@ -525,9 +525,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-instruction{0}
-  :short "Refine @(tsee read-instruction) to use the stobj states."
+  :short "Refine @(tsee read-instr) to use the stobj states."
 
-  (apt::isodata read-instruction
+  (apt::isodata read-instr
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-instruction{0}))

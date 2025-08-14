@@ -1048,7 +1048,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read-instruction-of-write-xreg-theorems
+(defsection read-instr-of-write-xreg-theorems
   :short "Theorems about reads of instructions over writes of registers."
   :long
   (xdoc::topstring
@@ -1056,19 +1056,19 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-instruction-of-write-xreg
-    (equal (read-instruction addr (write-xreg reg val stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction)
+  (defrule read-instr-of-write-xreg
+    (equal (read-instr addr (write-xreg reg val stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr)
 
-  (defrule read-instruction-of-write-xreg-32
-    (equal (read-instruction addr (write-xreg-32 reg val stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction))
+  (defrule read-instr-of-write-xreg-32
+    (equal (read-instr addr (write-xreg-32 reg val stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read-instruction-of-write-pc-theorems
+(defsection read-instr-of-write-pc-theorems
   :short "Theorems about reads of instructions over writes of program counter."
   :long
   (xdoc::topstring
@@ -1079,19 +1079,19 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-instruction-of-write-pc
-    (equal (read-instruction addr (write-pc pc stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction)
+  (defrule read-instr-of-write-pc
+    (equal (read-instr addr (write-pc pc stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr)
 
-  (defrule read-instruction-of-inc4-pc
-    (equal (read-instruction addr (inc4-pc stat feat) feat)
-           (read-instruction addr stat feat))
+  (defrule read-instr-of-inc4-pc
+    (equal (read-instr addr (inc4-pc stat feat) feat)
+           (read-instr addr stat feat))
     :enable inc4-pc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc read-instruction-of-write-memory-theorems
+(defxdoc read-instr-of-write-memory-theorems
   :short "Theorems about reads of instructions over writes of memory."
   :long
   (xdoc::topstring

@@ -41,7 +41,7 @@
     (implies (and (not (errorp stat feat))
                   (equal (read-pc stat feat)
                          pc)
-                  (equal (read-instruction pc stat feat)
+                  (equal (read-instr pc stat feat)
                          (encode ,instr feat))
                   ,@pre)
              (b* ((stat1 (step stat feat)))

@@ -858,7 +858,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-instruction ((addr integerp) (stat statp) (feat featp))
+(define read-instr ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte32-optionp
                 :hints (("Goal" :in-theory (enable ubyte32p ifix))))
@@ -907,7 +907,7 @@
   (more-returns
    (val (or (natp val)
             (null val))
-        :name natp-or-null-read-instruction
+        :name natp-or-null-read-instr
         :rule-classes :type-prescription
         :hints (("Goal" :in-theory (enable ifix)))))
 
