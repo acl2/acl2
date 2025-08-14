@@ -308,6 +308,15 @@
                 :undefined 0
                 :new-name read1-xreg-unsigned{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-unsigned{0}
+;;   :new-name read1-xreg-unsigned{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-xreg-signed{0}
@@ -317,6 +326,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-xreg-signed{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-signed{0}
+;;   :new-name read1-xreg-signed{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,6 +346,15 @@
                 :undefined 0
                 :new-name read1-xreg-unsigned32{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-unsigned32{0}
+;;   :new-name read1-xreg-unsigned32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-xreg-signed32{0}
@@ -337,6 +364,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-xreg-signed32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-signed32{0}
+;;   :new-name read1-xreg-signed32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,6 +384,15 @@
                 :undefined 0
                 :new-name write1-xreg{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg{0}
+;;   :new-name write1-xreg{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection write1-xreg-32{0}
@@ -357,6 +402,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name write1-xreg-32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg-32{0}
+;;   :new-name write1-xreg-32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
