@@ -424,14 +424,14 @@
     "The address is any integer,
      which we turn into a 64-bit unsigned address."))
   (change-state64 stat :mem (update-nth (loghead 64 addr)
-                                        (ubyte8-fix val)
+                                        (loghead 8 val)
                                         (state64->mem stat)))
   :guard-hints (("Goal" :in-theory (enable memory64p)))
 
   ///
 
   (fty::deffixequiv write64-mem-ubyte8
-    :hints (("Goal" :in-theory (enable loghead)))))
+    :args ((addr integerp) (stat state64p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -447,14 +447,19 @@
      and we write the low one at the given address,
      and the high one at the address just after that,
      which could be 0 if the given address is the last one in the space."))
-  (b* ((val (ubyte16-fix val))
+  (b* ((val (loghead 16 val))
        (b0 (logand val #xff))
        (b1 (ash val -8))
        (stat (write64-mem-ubyte8 addr b0 stat))
        (stat (write64-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write64-mem-ubyte16-lendian
+    :args ((addr integerp) (stat state64p))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -468,7 +473,7 @@
    (xdoc::p
     "This is similar to @(tsee write64-mem-ubyte16-lendian),
      but with 4 bytes instead of 2."))
-  (b* ((val (ubyte32-fix val))
+  (b* ((val (loghead 32 val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
@@ -479,7 +484,12 @@
        (stat (write64-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write64-mem-ubyte32-lendian
+    :args ((addr integerp) (stat state64p))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -494,7 +504,7 @@
     "This is similar to @(tsee write64-mem-ubyte16-lendian)
      and @(tsee write64-mem-ubyte32-lendian),
      but with 8 bytes instead of 2 or 4."))
-  (b* ((val (ubyte64-fix val))
+  (b* ((val (loghead 64 val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
@@ -513,7 +523,12 @@
        (stat (write64-mem-ubyte8 (+ 7 (ifix addr)) b7 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte64p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write64-mem-ubyte64-lendian
+    :args ((addr integerp) (stat state64p))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

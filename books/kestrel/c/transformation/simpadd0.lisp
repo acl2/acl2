@@ -13,6 +13,7 @@
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/ascii-identifiers")
 (include-book "../syntax/purity")
 (include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
@@ -28,6 +29,8 @@
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (in-theory (enable* c$::abstract-syntax-aidentp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -1220,6 +1223,10 @@
   (defret expr-unambp-of-simpadd0-expr-ident
     (expr-unambp expr))
 
+  (defret expr-aidentp-of-simpadd0-expr-ident
+    (c$::expr-aidentp expr gcc)
+    :hyp (c$::ident-aidentp ident gcc))
+
   (defruled simpadd0-expr-ident-support-lemma
     (b* ((expr (mv-nth 1 (ldm-expr (expr-ident ident info))))
          (result (c::exec-expr-pure expr compst))
@@ -1324,7 +1331,11 @@
   ///
 
   (defret expr-unambp-of-simpadd0-expr-const
-    (expr-unambp expr)))
+    (expr-unambp expr))
+
+  (defret expr-aidentp-of-simpadd0-expr-const
+    (c$::expr-aidentp expr gcc)
+    :hyp (c$::const-aidentp const gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2264,7 +2275,36 @@
                                 compst fenv limit)))
     :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
                               compst fenv limit)
-    :enable c::exec-expr-call-or-pure))
+    :enable c::exec-expr-call-or-pure)
+
+  (defruled simpadd0-expr-binary-asg-vartys-support-lemma
+    (implies (not (equal (c::expr-kind expr) :call))
+             (b* ((asg (c::expr-binary (c::binop-asg) (c::expr-ident var) expr))
+                  (compst1 (c::exec-expr-asg asg compst fenv limit)))
+               (implies (and (not (c::errorp compst1))
+                             (equal (c::type-of-value
+                                     (c::read-object
+                                      (c::objdesign-of-var var compst)
+                                      compst))
+                                    (c::type-of-value
+                                     (c::expr-value->value
+                                      (c::exec-expr-pure expr compst))))
+                             (c::type-nonchar-integerp
+                              (c::type-of-value
+                               (c::expr-value->value
+                                (c::exec-expr-pure expr compst))))
+                             (c::compustate-has-var-with-type-p var1 type compst))
+                        (c::compustate-has-var-with-type-p var1 type compst1))))
+    :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
+                              compst fenv limit)
+    :enable (c::compustate-has-var-with-type-p
+             c::exec-expr-call-or-pure
+             c::exec-expr-pure
+             c::exec-ident
+             c::objdesign-of-var-of-write-object
+             c::read-object-of-write-object-when-auto-or-static
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

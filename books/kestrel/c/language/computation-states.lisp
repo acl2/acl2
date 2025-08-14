@@ -83,8 +83,7 @@
   :elt-type scope
   :true-listp t
   :elementp-of-nil t
-  :pred scope-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred scope-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,8 +151,7 @@
   :elt-type frame
   :true-listp t
   :elementp-of-nil nil
-  :pred frame-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred frame-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -688,17 +686,33 @@
                        (consp pair)
                        (valuep (cdr pair)))))
        :induct t
-       :enable (objdesign-of-var-aux
+       :enable (len
+                fix
+                nth-of-minus1-and-cdr))
+
+     (defruled objdesign-of-var-aux-of-update-nth
+       (implies (and (scope-listp scopes)
+                     (< i (len scopes))
+                     (identp var0)
+                     (valuep val)
+                     (omap::assoc var0 (nth i scopes)))
+                (b* ((scope (omap::update var0 val (nth i scopes))))
+                  (equal (objdesign-of-var-aux
+                          var frame (update-nth i scope scopes))
+                         (objdesign-of-var-aux var frame scopes))))
+       :induct t
+       :enable (update-nth
+                nth
                 len
                 fix
-                nth-of-minus1-and-cdr))))
+                nfix
+                max))))
 
   ///
 
   (defrule objdesign-kind-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
-      (implies (and objdes
-                    (> (compustate-frames-number compst) 0))
+      (implies objdes
                (member-equal (objdesign-kind objdes) '(:auto :static))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -941,4 +955,55 @@
     (valuep-of-read-object-of-objdesign-of-var
      (:instance objdesign-of-var-aux-lemma
                 (frame (+ -1 (len (compustate->frames compst))))
-                (scopes (frame->scopes (car (compustate->frames compst))))))))
+                (scopes (frame->scopes (car (compustate->frames compst)))))))
+
+  (defruled objdesign-of-var-aux-of-write-object
+    (b* ((compst1 (write-object objdes val compst))
+         (scopes (frame->scopes (nth i (compustate->frames compst))))
+         (scopes1 (frame->scopes (nth i (compustate->frames compst1)))))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var-aux var frame scopes1)
+                      (objdesign-of-var-aux var frame scopes))))
+    :induct t
+    :enable (update-nth-of-rev
+             nfix
+             max
+             objdesign-of-var-aux-of-update-nth))
+
+  (defruled assoc-of-compustate-static-of-write-object
+    (b* ((compst1 (write-object objdes val compst)))
+      (implies (not (errorp compst1))
+               (iff (omap::assoc var (compustate->static compst1))
+                    (omap::assoc var (compustate->static compst)))))
+    :induct t)
+
+  (defruled objdesign-of-var-of-write-object
+    (b* ((compst1 (write-object objdes val compst)))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :enable (objdesign-of-var
+             compustatep-when-compustate-resultp-and-not-errorp
+             top-frame
+             nth)
+    :use ((:instance objdesign-of-var-aux-of-write-object
+                     (i 0)
+                     (frame (1- (compustate-frames-number compst))))
+          (:instance assoc-of-compustate-static-of-write-object
+                     (var (ident-fix var)))))
+
+  (defruled read-object-of-write-object-when-auto-or-static
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+                  (member-equal (objdesign-kind objdes1) '(:auto :static))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (read-object objdes1 (write-object objdes val compst))
+                    (if (equal (objdesign-fix objdes1)
+                               (objdesign-fix objdes))
+                        (remove-flexible-array-member val)
+                      (read-object objdes1 compst))))
+    :enable (read-object
+             fix
+             nfix
+             max
+             equal-of-objdesign-auto-fix
+             equal-of-objdesign-static-fix)))

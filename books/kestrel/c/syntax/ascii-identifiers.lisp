@@ -129,11 +129,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled expr-aidentp-of-expr-ident
+  (equal (expr-aidentp (expr-ident ident info) gcc)
+         (ident-aidentp ident gcc))
+  :enable expr-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled expr-aidentp-of-expr-const
+  (equal (expr-aidentp (expr-const const) gcc)
+         (const-aidentp const gcc))
+  :enable expr-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled transunit-aidentp-of-head-when-filepath-transunit-map-aidentp
+  (implies (and (filepath-transunit-mapp tumap)
+                (filepath-transunit-map-aidentp tumap gcc)
+                (not (omap::emptyp tumap)))
+           (transunit-aidentp (mv-nth 1 (omap::head tumap)) gcc))
+  :enable filepath-transunit-map-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
   (implies (transunit-ensemble-aidentp tunits gcc)
            (filepath-transunit-map-aidentp
             (transunit-ensemble->unwrap tunits) gcc))
   :enable transunit-ensemble-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-ruleset abstract-syntax-aidentp-rules
+                '(expr-aidentp-of-expr-ident
+                  expr-aidentp-of-expr-const
+                  transunit-aidentp-of-head-when-filepath-transunit-map-aidentp
+                  filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

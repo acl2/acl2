@@ -255,14 +255,14 @@
     "The address is any integer,
      which we turn into a 32-bit unsigned address."))
   (change-stat32i stat :memory (update-nth (loghead 32 addr)
-                                           (ubyte8-fix val)
+                                           (loghead 8 val)
                                            (stat32i->memory stat)))
   :guard-hints (("Goal" :in-theory (enable memory32ip)))
 
   ///
 
   (fty::deffixequiv write32-mem-ubyte8
-    :hints (("Goal" :in-theory (enable loghead)))))
+    :args ((addr integerp) (stat stat32ip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,14 +278,19 @@
      and we write the low one at the given address,
      and the high one at the address just after that,
      which could be 0 if the given address is the last one in the space."))
-  (b* ((val (ubyte16-fix val))
+  (b* ((val (loghead 16 val))
        (b0 (logand val #xff))
        (b1 (ash val -8))
        (stat (write32-mem-ubyte8 addr b0 stat))
        (stat (write32-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write32-mem-ubyte16-lendian
+    :args ((addr integerp) (stat stat32ip))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,7 +304,7 @@
    (xdoc::p
     "This is similar to @(tsee write32-mem-ubyte16-lendian),
      but with 4 bytes instead of 2."))
-  (b* ((val (ubyte32-fix val))
+  (b* ((val (loghead 32 val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
@@ -310,7 +315,12 @@
        (stat (write32-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write32-mem-ubyte32-lendian
+    :args ((addr integerp) (stat stat32ip))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
