@@ -237,6 +237,7 @@
   :hints (("Goal" :in-theory (enable bvcat))))
 
 ;mixes theories?
+;see logtail-becomes-slice-bind-free
 (defthmd logtail-of-bvxor
   (implies (and (natp size)
                 (natp n))
@@ -350,25 +351,6 @@
 ;;           (equal (SLICE high low (REPEATBIT n bit))
 ;;                  (repeatbit (+ 1 high (- low)) bit)))
 ;;  )
-
-;bozo more like this for other ops (some may exist and need to be turned on)
-;todo: use trim, not bvchop
-(defthm bvmult-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
-                (< size xsize)
-                (natp size)
-                (integerp xsize))
-           (equal (bvmult size x y)
-                  (bvmult size (bvchop size x) y))))
-
-;todo: use trim, not bvchop
-(defthm bvmult-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size 'ysize y) (ysize))
-                (< size ysize)
-                (natp size)
-                (integerp ysize))
-           (equal (bvmult size x y)
-                  (bvmult size x (bvchop size y)))))
 
 ;add theory invars?
 ;(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))
