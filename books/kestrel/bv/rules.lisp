@@ -2456,17 +2456,16 @@
            :use (:instance bvmod-of-bvmult-of-expt (n (lg k)))
            :in-theory (disable bvmod-of-bvmult-of-expt))))
 
+; Disabled because slice is more complicated than logtail.
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                (integerp newsize)
+                ;; (<= n newsize)
                 (unsigned-byte-p-forced newsize x)
-                (natp n)
-                (<= n newsize)
-                )
+                (natp n))
            (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :in-theory (e/d (slice unsigned-byte-p-forced)
-                                  (SLICE-BECOMES-BVCHOP )))))
+                                  (slice-becomes-bvchop)))))
 
 (theory-invariant (incompatible (:rewrite logtail-becomes-slice-bind-free) (:definition slice)))
 
