@@ -689,7 +689,26 @@
        :enable (objdesign-of-var-aux
                 len
                 fix
-                nth-of-minus1-and-cdr))))
+                nth-of-minus1-and-cdr))
+
+     (defruled objdesign-of-var-aux-of-update-nth
+       (implies (and (scope-listp scopes)
+                     (< i (len scopes))
+                     (identp var0)
+                     (valuep val)
+                     (omap::assoc var0 (nth i scopes)))
+                (b* ((scope (omap::update var0 val (nth i scopes))))
+                  (equal (objdesign-of-var-aux
+                          var frame (update-nth i scope scopes))
+                         (objdesign-of-var-aux var frame scopes))))
+       :induct t
+       :enable (objdesign-of-var-aux
+                update-nth
+                nth
+                len
+                fix
+                nfix
+                max))))
 
   ///
 
@@ -938,4 +957,41 @@
     (valuep-of-read-object-of-objdesign-of-var
      (:instance objdesign-of-var-aux-lemma
                 (frame (+ -1 (len (compustate->frames compst))))
-                (scopes (frame->scopes (car (compustate->frames compst))))))))
+                (scopes (frame->scopes (car (compustate->frames compst)))))))
+
+  (defruled objdesign-of-var-aux-of-write-object
+    (b* ((compst1 (write-object objdes val compst))
+         (scopes (frame->scopes (nth i (compustate->frames compst))))
+         (scopes1 (frame->scopes (nth i (compustate->frames compst1)))))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var-aux var frame scopes1)
+                      (objdesign-of-var-aux var frame scopes))))
+    :induct t
+    :enable (write-object
+             update-nth-of-rev
+             nfix
+             max
+             objdesign-of-var-aux-of-update-nth))
+
+  (defruled assoc-of-compustate-static-of-write-object
+    (b* ((compst1 (write-object objdes val compst)))
+      (implies (not (errorp compst1))
+               (iff (omap::assoc var (compustate->static compst1))
+                    (omap::assoc var (compustate->static compst)))))
+    :induct t
+    :enable write-object)
+
+  (defruled objdesign-of-var-of-write-object
+    (b* ((compst1 (write-object objdes val compst)))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :enable (objdesign-of-var
+             compustatep-when-compustate-resultp-and-not-errorp
+             top-frame
+             nth)
+    :use ((:instance objdesign-of-var-aux-of-write-object
+                     (i 0)
+                     (frame (1- (compustate-frames-number compst))))
+          (:instance assoc-of-compustate-static-of-write-object
+                     (var (ident-fix var))))))
