@@ -268,7 +268,6 @@
                            stack-slots
                            existing-stack-slots
                            position-independentp
-                           bvp
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
@@ -299,8 +298,7 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (booleanp bvp))
+                              (booleanp position-independentp))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((- (acl2::ensure-x86 parsed-executable))
@@ -404,7 +402,7 @@
           print
           10 ; print-base (todo: consider 16)
           t ; untranslatep (todo: make this an option)
-          bvp
+          ;; t ; bvp
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
@@ -507,7 +505,6 @@
                          max-conflicts inputs-disjoint-from stack-slots existing-stack-slots
                          position-independent
                          expected-result
-                         bvp
                          whole-form
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
@@ -540,8 +537,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any))
-                              (booleanp bvp))
+                              (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -571,7 +567,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
+                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -624,8 +620,7 @@
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000)
-                         (bvp 't))
+                         (max-conflicts '1000000))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
@@ -642,7 +637,7 @@
                                              ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',bvp ',whole-form state)))
+                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,7 +656,6 @@
                               position-independentp
                               expected-failures
                               result-alist
-                              bvp
                               state)
   (declare (xargs :guard (and (string-listp function-name-strings)
                               (and (alistp assumptions-alist)
@@ -697,8 +691,7 @@
                                   (eq :auto existing-stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
-                              (alistp result-alist)
-                              (booleanp bvp))
+                              (alistp result-alist))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -710,7 +703,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
+                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -724,7 +717,7 @@
                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                              tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                              expected-failures
-                             (acons function-name (list result expected-result elapsed) result-alist) bvp
+                             (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
 
 ;; Returns (mv erp all-results-as-expectedp state).
@@ -738,7 +731,6 @@
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
-                          bvp
                           state)
   (declare (xargs :guard (and (stringp executable)
                           (or (string-listp include-fns)
@@ -775,8 +767,7 @@
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -854,7 +845,6 @@
                                tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
-                               bvp
                                state))
        (- (cw " Done testing functions in ~s0.)~%" executable)) ;matches "(Testing functions in" above
        ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
@@ -874,7 +864,6 @@
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
-                          bvp
                           whole-form
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -912,8 +901,7 @@
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -930,7 +918,6 @@
                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
-                            bvp
                             state))
        ((when erp) (mv erp nil state)))
     (if all-results-as-expectedp
@@ -974,7 +961,7 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (bvp 't))
+                          )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
@@ -994,7 +981,6 @@
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
                                               ',expected-failures
-                                              ',bvp
                                               ',whole-form
                                               state)))
 
@@ -1010,7 +996,6 @@
                      normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                      tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                      expected-failures
-                     bvp
                      whole-form
                      state)
   (declare (xargs :guard (and (stringp executable)
@@ -1048,8 +1033,7 @@
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -1066,7 +1050,6 @@
                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
-                            bvp
                             state))
        ((when erp) (mv erp nil state)))
     (if all-results-as-expectedp
@@ -1112,7 +1095,7 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (bvp 't))
+                     )
   `(acl2::make-event-quiet (test-file-fn ,executable ; gets evaluated
                                          ',include ; todo: evaluate?
                                          ',exclude ; todo: evaluate?
@@ -1131,6 +1114,5 @@
                                          ',step-limit ',step-increment ',prune-precise ',prune-approx
                                          ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
                                          ',expected-failures
-                                         ',bvp
                                          ',whole-form
                                          state)))
