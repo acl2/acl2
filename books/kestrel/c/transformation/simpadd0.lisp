@@ -531,6 +531,7 @@
         (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
        (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -542,7 +543,8 @@
            (implies (and ,@vars-pre
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
-                         (equal old-compst new-compst)))))
+                         (equal old-compst new-compst)
+                         ,@vars-post))))
        (thm-event `(defrule ,thm-name
                      ,formula
                      :rule-classes nil
@@ -1897,11 +1899,15 @@
                     validation table variables ~x1."
                    arg2-vartys vartys)
             (mv (irr-expr) (irr-simpadd0-gout)))
+           (vartys-lemma-instances
+            (simpadd0-expr-asg-lemma-instances
+             vartys (expr-ident->ident arg1) arg2))
            (hints
             `(("Goal"
                :in-theory
                '((:e ldm-expr)
                  (:e ldm-ident)
+                 (:e ldm-type)
                  (:e ident)
                  (:e c::expr-kind)
                  (:e c::expr-ident)
@@ -1926,7 +1932,8 @@
                       (var (mv-nth 1 (ldm-ident
                                       ',(expr-ident->ident arg1))))
                       (expr (mv-nth 1 (ldm-expr ',arg2)))
-                      (fenv old-fenv))))))
+                      (fenv old-fenv))
+                     ,@vartys-lemma-instances))))
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-asg-thm expr
                                        expr-new
@@ -1944,6 +1951,27 @@
                                                       gin.names-to-avoid)
                                 :vartys vartys))))
      (t (mv expr-new gout-no-thm))))
+
+  :prepwork
+  ((define simpadd0-expr-asg-lemma-instances ((vartys ident-type-mapp)
+                                              (asg-var identp)
+                                              (asg-expr exprp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-expr-binary-asg-vartys-support-lemma
+                       (var (mv-nth 1 (ldm-ident ',asg-var)))
+                       (expr (mv-nth 1 (ldm-expr ',asg-expr)))
+                       (fenv old-fenv)
+                       (var1 (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-expr-asg-lemma-instances (omap::tail vartys)
+                                              asg-var
+                                              asg-expr)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
