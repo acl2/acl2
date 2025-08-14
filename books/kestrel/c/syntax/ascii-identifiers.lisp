@@ -136,6 +136,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled expr-aidentp-of-expr-const
+  (equal (expr-aidentp (expr-const const) gcc)
+         (const-aidentp const gcc))
+  :enable expr-aidentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
   (implies (transunit-ensemble-aidentp tunits gcc)
            (filepath-transunit-map-aidentp
@@ -146,6 +153,7 @@
 
 (add-to-ruleset abstract-syntax-aidentp-rules
                 '(expr-aidentp-of-expr-ident
+                  expr-aidentp-of-expr-const
                   filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
