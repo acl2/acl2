@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
+(include-book "kestrel/lists-light/contains-anyp-eq" :dir :system)
 (include-book "std/system/untranslate-dollar" :dir :system)
 (include-book "../make-term-into-dag-basic")
 (include-book "rewriter-jvm")
@@ -47,6 +48,11 @@
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
+(defconst *incomplete-run-fns*
+  '(run-until-return-from-stack-height
+    jvm::run-n-steps
+    jvm::do-inst))
+
 ;; Returns a boolean
 (defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp state)
   (declare (xargs :guard (and (pseudo-dagp dag)
@@ -56,9 +62,7 @@
                   :stobjs state))
 ;  (declare (xargs :mode :program)) ; because this calls untranslate
   (let ((dag-fns (dag-fns dag)))
-    (if (or (member-eq 'run-until-return-from-stack-height dag-fns) ;todo: pass in a set of functions to look for?
-            (member-eq 'jvm::run-n-steps dag-fns)
-            (member-eq 'jvm::do-inst dag-fns)
+    (if (or (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns) ;todo: pass in a set of functions to look for?
             (member-eq 'jvm::error-state dag-fns))
         (progn$ (if (dag-or-quotep-size-less-thanp! dag 10000)
                     (progn$ (cw "(Result Term:~%")
@@ -219,6 +223,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
 ;; erp result-dag-or-quotep state).
+;; See also the similar function in books/kestrel/axe/x86/unroll-x86-code.
 (defund repeatedly-run (dag
                         steps-left
                         step-increment
@@ -329,13 +334,12 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         (dag-fns (dag-fns dag)))
-      (if (not (or (member-eq 'run-until-return-from-stack-height dag-fns)
-                   (member-eq 'jvm::run-n-steps dag-fns)
-                   (member-eq 'jvm::do-inst dag-fns))) ;; stop if the run is done
+         (dag-fns (dag-fns dag))
+         (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
+      (if run-completedp
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
-        (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
+        (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (todo: update this for JVM)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
           (b* (((mv erp equivalentp)
