@@ -35,6 +35,8 @@
 
 ; Original Author(s):
 ; Yahya Sohail        <yahya@yahyasohail.com>
+; Contributing Author(s):
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 
@@ -57,10 +59,9 @@
                                                        bitops::logapp-of-i-0
                                                        acl2::prefer-positive-addends-<))))
   :measure (nfix result-width)
-  (b* ((result-width (nfix result-width))
-       (el-width (pos-fix el-width))
-       (a (nfix a))
-       (b (nfix b))
+  (b* ((el-width (mbe :logic (pos-fix el-width) :exec el-width))
+       (a (lnfix a))
+       (b (lnfix b))
        ((when (zp result-width)) 0)
        (el-equal? (equal (loghead el-width a)
                          (loghead el-width b))))
