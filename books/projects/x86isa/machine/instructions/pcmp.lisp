@@ -38,12 +38,16 @@
 ; Contributing Author(s):
 ; Alessandro Coglio (www.alessandrocoglio.info)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
               :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pcmpeq ((result-width natp)
                 (el-width posp)
@@ -148,6 +152,8 @@
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pcmpgt ((result-width natp)
                 (el-width posp)
