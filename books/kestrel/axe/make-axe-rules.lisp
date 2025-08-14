@@ -1477,7 +1477,7 @@
   (declare (xargs :guard (and (symbolp rule-name)
                               (symbol-listp known-boolean-fns)
                               (axe-rule-listp acc)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((when (eq 'quote rule-name))
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
@@ -1555,7 +1555,7 @@
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (symbol-listp known-boolean-fns)
                               (axe-rule-listp acc)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-names)
       (mv (erp-nil) (reverse acc)) ;skip this reverse! or call a better version of it that doesn't handle strings?
     (b* (((mv erp res)
@@ -1585,7 +1585,7 @@
 ;; Does not remove duplicates (that should be done when making the rule-alist).
 (defund make-axe-rules (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (make-axe-rules-aux rule-names (known-booleans wrld) nil nil wrld))
 
 (defthm true-listp-of-mv-nth-1-of-make-axe-rules
@@ -1602,7 +1602,7 @@
 ;; This variant doesn't pass back an error
 (defund make-axe-rules! (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp axe-rules)
     (make-axe-rules rule-names wrld)
     (if erp
@@ -1621,7 +1621,7 @@
 (defun add-rules-to-rule-set (rule-names rule-set wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
@@ -1650,7 +1650,7 @@
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-sets)
       (mv (erp-nil) nil)
     (b* (((mv erp first-rule-set)
@@ -1669,7 +1669,7 @@
 (defun add-rules-to-rule-sets! (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-sets)
     (add-rules-to-rule-sets rule-names rule-sets wrld)
     (if erp
@@ -1737,6 +1737,6 @@
 (defund axe-rules-that-introduce (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (let ((axe-rules (make-axe-rules! rule-names wrld)))
     (filter-axe-rules-for-rhses-mentioning fn axe-rules)))
