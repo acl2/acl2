@@ -695,8 +695,7 @@
 
   (defrule objdesign-kind-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
-      (implies (and objdes
-                    (> (compustate-frames-number compst) 0))
+      (implies objdes
                (member-equal (objdesign-kind objdes) '(:auto :static))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
