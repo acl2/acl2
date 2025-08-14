@@ -13,6 +13,7 @@
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/ascii-identifiers")
 (include-book "../syntax/purity")
 (include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
@@ -28,6 +29,8 @@
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (in-theory (enable* c$::abstract-syntax-aidentp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -1220,6 +1223,10 @@
   (defret expr-unambp-of-simpadd0-expr-ident
     (expr-unambp expr))
 
+  (defret expr-aidentp-of-simpadd0-expr-ident
+    (c$::expr-aidentp expr gcc)
+    :hyp (c$::ident-aidentp ident gcc))
+
   (defruled simpadd0-expr-ident-support-lemma
     (b* ((expr (mv-nth 1 (ldm-expr (expr-ident ident info))))
          (result (c::exec-expr-pure expr compst))
@@ -1324,7 +1331,11 @@
   ///
 
   (defret expr-unambp-of-simpadd0-expr-const
-    (expr-unambp expr)))
+    (expr-unambp expr))
+
+  (defret expr-aidentp-of-simpadd0-expr-const
+    (c$::expr-aidentp expr gcc)
+    :hyp (c$::const-aidentp const gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
