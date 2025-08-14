@@ -2588,9 +2588,56 @@
              phase))
 
 
-(define interp-st-push-rule-frame ((rule fgl-generic-rule-p)
-                                   (bindings fgl-object-bindings-p)
-                                   interp-st)
+(define interp-st-check-stacklimit (interp-st)
+  :returns (new-interp-st)
+  (if (< (interp-st->stacklimit interp-st)
+         (interp-st-stack-frames interp-st))
+      (fgl-interp-store-debug-info "Stack limit exceeded" nil interp-st)
+    interp-st)
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+
+(define interp-st-tick-steplimit (interp-st)
+  :returns (new-interp-st)
+  (b* ((steplimit (interp-st->steplimit interp-st))
+       ((when (eql 0 steplimit))
+        (fgl-interp-store-debug-info "Step limit exceeded" nil interp-st)))
+    (update-interp-st->steplimit (1- steplimit) interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+
+(define interp-st-push-rule-frame-core ((rule fgl-generic-rule-p)
+                                        (bindings fgl-object-bindings-p)
+                                        interp-st)
   :enabled t
   :guard-hints (("goal" :in-theory (enable stack$a-set-phase
                                            stack$a-set-rule
@@ -2610,6 +2657,81 @@
                   (stack (stack-set-rule (fgl-generic-rule-fix rule) stack)))
                (stack-set-phase 0 stack))
              interp-st))
+
+(define interp-st-push-rule-frame ((rule fgl-generic-rule-p)
+                                   (bindings fgl-object-bindings-p)
+                                   interp-st)
+  :returns (new-interp-st)
+  (b* ((interp-st (interp-st-push-rule-frame-core rule bindings interp-st))
+       (interp-st (interp-st-check-stacklimit interp-st)))
+    (interp-st-tick-steplimit interp-st))
+  ///
+  
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :stack))
+                  (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+  
+  (defret stack-of-<fn>
+    (equal (interp-st->stack new-interp-st)
+           (interp-st->stack (interp-st-push-rule-frame-core rule bindings interp-st))))
+
+  (defret bfrs-okp-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfr-listp (fgl-object-bindings-bfrlist bindings) interp-st))
+             (interp-st-bfrs-ok new-interp-st))))
+
+(define interp-st-push-non-rule-frame ((bindings fgl-object-bindings-p)
+                                       interp-st)
+  :returns (new-interp-st)
+  (b* ((interp-st (interp-st-push-frame bindings interp-st))
+       (interp-st (interp-st-check-stacklimit interp-st)))
+    (interp-st-tick-steplimit interp-st))
+  ///
+  
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :stack))
+                  (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+  
+  (defret stack-of-<fn>
+    (equal (interp-st->stack new-interp-st)
+           (interp-st->stack (interp-st-push-frame bindings interp-st))))
+
+  (defret bfrs-okp-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfr-listp (fgl-object-bindings-bfrlist bindings) interp-st))
+             (interp-st-bfrs-ok new-interp-st))))
 
 
 (define interp-st-boolean-fncall-p ((x fgl-object-p) interp-st w)
@@ -4061,13 +4183,18 @@
                                       state)
         :guard (interp-st-bfr-listp (fgl-object-bindings-bfrlist bindings))
         :measure (list (nfix (interp-st->reclimit interp-st)) 10000 0 0)
+        ;; Note: "Successp" is a misnomer here. It indicates to our callers
+        ;; here that we should stop trying to apply rewrite rules, and just
+        ;; return the answer we produced. This is what we want when the rule
+        ;; actually succeeds, but also when we've run into an uncaught error.
         :returns (mv successp
                      (ans fgl-object-p)
                      (new-bindings fgl-object-bindings-p)
                      new-interp-st new-state)
         (b* (((when (interp-st->errmsg interp-st))
               ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
-              (fgl-interp-value nil nil nil))
+              ;; If there was an error, we want to stop applying rules.
+              (fgl-interp-value t nil nil))
              (rune (fgl-generic-rule->rune rule))
              (interp-st (interp-st-push-rule-frame rule bindings interp-st))
              (interp-st (interp-st-prof-push rune interp-st))
@@ -4091,7 +4218,11 @@
                    (interp-st (interp-st-pop-frame interp-st))
                    (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st))
                    (interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
-                (fgl-interp-value nil nil nil)))
+                ;; See comment about successp above -- we want to stop applying
+                ;; rewrites if there was an uncaught error.  Otherwise, we've
+                ;; just failed to relieve the hyps so go ahead and apply other
+                ;; rules.
+                (fgl-interp-value (interp-st->errmsg interp-st) nil nil)))
 
              (interp-st (interp-st-set-term rhs interp-st))
              (interp-st (interp-st-set-term-index nil interp-st))
@@ -4101,9 +4232,16 @@
                ;; Note: Was interp-term-equivs
                (fgl-interp-term rhs interp-st state)))
 
-             (successp (not (interp-st->errmsg interp-st)))
+             ;; See comment about successp above. We want to stop rewriting and
+             ;; return the real result if there was either no error (including
+             ;; abort-rewrite), and we want to stop rewriting and return
+             ;; whatever bogus result came from the RHS if there was a
+             ;; non-abort-rewrite error.
+             (err (interp-st->errmsg interp-st))
+             (successp (not (eq err :abort-rewrite)))
+             (val (and (not err) val))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
-             (interp-st (interp-st-prof-pop-increment successp interp-st))
+             (interp-st (interp-st-prof-pop-increment (not err) interp-st))
              (interp-st (interp-st-trace-finish tracep successp val fn interp-st state))
 
              (new-bindings (interp-st-bindings interp-st))
@@ -4169,14 +4307,18 @@
              ((when (or** (not successp) (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
                    (interp-st (fgl-rewrite-trace-finish tracep successp nil rule fn args interp-st state)))
-                (fgl-interp-value nil nil)))
+                ;; See comments about successp in fgl-rewrite-apply-rule.
+                (fgl-interp-value (interp-st->errmsg interp-st) nil)))
 
              (interp-st (interp-st-push-rule-frame rule bindings interp-st))
              (interp-st (interp-st-set-term rhs interp-st))
              ((fgl-interp-value val) (fgl-interp-term rhs interp-st state))
 
-             (successp (not (interp-st->errmsg interp-st)))
-             (interp-st (interp-st-prof-pop-increment successp interp-st))
+             ;; See comments about successp in fgl-rewrite-apply-rule.
+             (err (interp-st->errmsg interp-st))
+             (successp (not (eq err :abort-rewrite)))
+             (val (and (not err) val))
+             (interp-st (interp-st-prof-pop-increment (not err) interp-st))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
              (interp-st (fgl-rewrite-trace-finish tracep successp val rule fn args interp-st state))
              (interp-st (interp-st-pop-frame interp-st)))
@@ -4482,7 +4624,8 @@
              ((when (or** (not successp) (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
                    (interp-st (fgl-rewrite-trace-finish tracep successp nil rule fn args interp-st state)))
-                (fgl-interp-value nil nil)))
+                ;; See comments about successp in fgl-rewrite-apply-rule.
+                (fgl-interp-value (interp-st->errmsg interp-st) nil)))
 
              (interp-st (interp-st-push-rule-frame rule bindings interp-st))
              (interp-st (interp-st-set-term rhs interp-st))
@@ -4490,8 +4633,10 @@
                (equiv-contexts rhs-contexts))
               ((fgl-interp-value val) (fgl-interp-term rhs interp-st state)))
 
-             (successp (not (interp-st->errmsg interp-st)))
-             (interp-st (interp-st-prof-pop-increment successp interp-st))
+             (err  (interp-st->errmsg interp-st))
+             (successp (not (eq err :abort-rewrite)))
+             (val (and (not err) val))
+             (interp-st (interp-st-prof-pop-increment (not err) interp-st))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
              (interp-st (fgl-rewrite-trace-finish tracep successp val rule fn args interp-st state))
              (interp-st (interp-st-pop-frame interp-st)))
@@ -5098,7 +5243,7 @@
               ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
               (fgl-interp-value))
              (interp-st (interp-st-push-scratch-cinstlist (cdr substs) interp-st))
-             (interp-st (interp-st-push-frame sub1.subst interp-st))
+             (interp-st (interp-st-push-non-rule-frame sub1.subst interp-st))
              ((fgl-interp-recursive-call bfr)
               (fgl-interp-test thm-body interp-st state))
              (interp-st (interp-st-pop-frame interp-st))

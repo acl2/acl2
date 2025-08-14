@@ -102,9 +102,10 @@
   (b* ((interp-st (interp-st-init interp-st))
        ((fgl-config config))
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
+       (interp-st (update-interp-st->stacklimit config.stacklimit interp-st))
+       (interp-st (update-interp-st->steplimit config.steplimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
-       (interp-st (update-interp-st->user-scratch nil interp-st))
        (constraint-tab (table-alist 'fgl::fgl-bool-constraints (w state)))
        (constraint-tab-ok (and (constraint-table-p constraint-tab)
                                (not (constraint-table-bfrlist constraint-tab))))
@@ -620,6 +621,8 @@
        ((mv ans-interp interp-st state)
         (time$ (fgl-interp-test goal interp-st state)
                :msg "FGL interpreter completed: ~st sec, ~sa bytes~%"))
+       (- (cw "FGL interpreter step count: ~x0~%" (- (fgl-config->steplimit config)
+                                                     (interp-st->steplimit interp-st))))
        (- ;; Clear memoization tables that depend on e.g. the current world
         (clear-memoize-table 'fgl-equivp))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
@@ -635,8 +638,9 @@
         (acl2::hintcontext :interp-early
                            (mv nil interp-st state)))
        ((unless (eq (fgl-config->toplevel-sat-check config) t))
-        (mv (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check.")
-            interp-st state))
+        (b* ((msg (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check."))
+             (interp-st (update-interp-st->debug-info msg interp-st)))
+          (mv msg interp-st state)))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (fgl-config->sat-config config)))
        ((mv ans interp-st state)
@@ -652,7 +656,10 @@
         (acl2::hintcontext :interp-test
                            (mv nil interp-st state)))
        ((unless (eq ans :sat))
-        (mv (msg "Final SAT check failed!") interp-st state))
+        (b* ((msg (msg "Final SAT check failed!"))
+             (interp-st
+              (update-interp-st->debug-info msg interp-st)))
+          (mv msg interp-st state)))
        ((mv ctrex-err interp-st)
         (interp-st-run-ctrex sat-config interp-st state))
        ((when ctrex-err)

@@ -107,7 +107,11 @@
     (backchain-limit :type integer :initially -1 :fix ifix)
     ;; (bvar-mode :type t)
     (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
+
     (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    (stacklimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    (steplimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    
     (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
     (flags :type (and (unsigned-byte 60)
                       (satisfies interp-flags-p))
@@ -188,6 +192,8 @@
                              (interp-st (update-interp-st->backchain-limit -1 interp-st))
                              (interp-st (update-interp-st->equiv-contexts nil interp-st))
                              (interp-st (update-interp-st->reclimit 0 interp-st))
+                             (interp-st (update-interp-st->stacklimit 0 interp-st))
+                             (interp-st (update-interp-st->steplimit 0 interp-st))
                              (interp-st (update-interp-st->config (make-fgl-config) interp-st))
                              (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))

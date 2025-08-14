@@ -77,6 +77,12 @@
     (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000
               "Recursion limit for the FGL interpreter/rewriter. Defaults to 1
 million; set smaller to catch rewrite loops faster.")
+    (stacklimit posp :rule-classes (:rewrite :type-prescription) :default '1000000
+                "Limit on the number of major frames (rewrite rule applications) on FGL's
+stack. Set smaller to catch rewrite rules faster. Similar to reclimit, but maybe easier for
+users to predict the behavior.")
+    (steplimit posp :rule-classes (:rewrite :type-prescription) :default '1000000000
+               "Limit on the number of steps (rewrite / meta rule applications) in an FGL run.")
     (make-ites booleanp :default 'nil
                "If NIL (the default), then if the two branches of an IF term
 rewrite to objects that cannot be merged, FGL produces an error.  If T, then it
