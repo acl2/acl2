@@ -1435,6 +1435,23 @@
           parstate))
     parstate))
 
+(defmacro test-parse-fail (fn input &key pos more-inputs gcc)
+  ;; INPUT is an ACL2 term with the text to parse,
+  ;; where the term evaluates to a string.
+  ;; Optional POS is the initial position for the parser state.
+  ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
+  `(assert!-stobj
+    (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
+         (,(if (eq fn 'parse-external-declaration-list)
+               '(mv erp ?ast ?span ?eofpos parstate)
+             '(mv erp ?ast ?span parstate))
+          (,fn ,@more-inputs parstate))
+         ,@(and pos
+                `((parstate (update-parstate->position ,pos parstate)))))
+      (mv erp parstate))
+    parstate))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-cast-expression
@@ -2234,3 +2251,57 @@ error (int __status, int __errnum, const char *__format, ...)
   }"
  :gcc t
  :cond (equal (len ast) 2))
+
+(test-parse
+ parse-external-declaration-list
+ "const void *x = 0;
+  // foo
+  void *y = (void *) x;
+  // bar
+")
+
+(test-parse
+ parse-external-declaration-list
+ "void * foo(void) {
+  const void *x = 0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored \"-Wcast-qual\"
+  return (void *) x;
+#pragma GCC diagnostic pop
+}
+")
+
+(test-parse-fail
+ parse-external-declaration-list
+ "void * foo(void) {
+  const #pragma GCC diagnostic push
+    void *x = 0;
+#pragma GCC diagnostic ignored \"-Wcast-qual\"
+  return (void *) x;
+#pragma GCC diagnostic pop
+}
+")
+
+(test-parse
+ parse-external-declaration-list
+ "#pragma once
+  int x;
+")
+
+(test-parse
+ parse-external-declaration-list
+ " #pragma once
+  int x;
+")
+
+(test-parse
+ parse-external-declaration-list
+ "#pragma once
+  int x;
+")
+
+(test-parse
+ parse-external-declaration-list
+ "#pragma onceint x;
+"
+ :cond (equal (len ast) 1))
