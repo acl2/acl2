@@ -118,7 +118,37 @@
   (:member ((super objdesign)
             (name ident)))
   :pred objdesignp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defruled equal-of-objdesign-auto-fix
+    (implies (and (objdesign-case objdes1 :auto)
+                  (objdesign-case objdes2 :auto))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (and (equal (objdesign-auto->name objdes1)
+                                (objdesign-auto->name objdes2))
+                         (equal (objdesign-auto->frame objdes1)
+                                (objdesign-auto->frame objdes2))
+                         (equal (objdesign-auto->scope objdes1)
+                                (objdesign-auto->scope objdes2)))))
+    :enable (objdesign-auto->name
+             objdesign-auto->frame
+             objdesign-auto->scope)
+    :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2)))
+
+  (defruled equal-of-objdesign-static-fix
+    (implies (and (objdesign-case objdes1 :static)
+                  (objdesign-case objdes2 :static))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (equal (objdesign-static->name objdes1)
+                           (objdesign-static->name objdes2))))
+    :enable objdesign-static->name
+    :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

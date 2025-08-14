@@ -30,6 +30,7 @@
                  constant-value
                  defirrelevant
                  defxdoc+
+                 enable*
                  er-soft+
                  erp
                  impossible
