@@ -40,6 +40,8 @@
 
 ;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
 
+;; TODO: Continue adding and verifying guards
+
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
@@ -104,6 +106,7 @@
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;for logext-identity
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (enable acl2::member-equal-becomes-memberp))) ;todo
 
@@ -200,7 +203,7 @@
                               (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp monitor)
-                              (acl2::ilks-plist-worldp wrld))))
+                              (acl2::plist-worldp wrld))))
   (acl2::simplify-term-to-term-basic term
                                      assumptions
                                      rule-alist
@@ -576,6 +579,14 @@
         (unquote (farg1 term))
       (er hard 'get-added-offset "Unexpected term: ~x0." term))))
 
+(local (defthm symbol-listp-of-boolean-rules (symbol-listp (acl2::boolean-rules))))
+(local (defthm symbol-listp-of-boolean-rules-safe (symbol-listp (acl2::boolean-rules-safe))))
+
+;; (in-theory (disable (:e acl2::boolean-rules)
+;;                     acl2::boolean-rules
+;;                     (:e acl2::boolean-rules-safe)
+;;                     acl2::boolean-rules-safe))
+
 ;; Returns (mv erp one-rep-term exit-term exit-test-term state) where one-rep-term
 ;; represents the branches that return to the loop top, exit-term represents
 ;; the branches that exit the loop, and exit-test-term represents the test
@@ -583,7 +594,7 @@
 ;; branches return to the loop top.  Likewise, exit-term can be :none if no
 ;; branches exit the loop.  loop-body-term is an IF nest with x86 states at
 ;; the leaves.
-(defun analyze-loop-body-aux (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
+(defund analyze-loop-body-aux (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
   (declare (xargs :guard (and (pseudo-termp loop-body-term)
                               (pseudo-termp loop-top-pc-term)
                               ;; (pseudo-termp loop-top-rsp-term)
@@ -591,9 +602,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp lifter-rules))
-                  :stobjs state
-                  :mode :program ; todo
-                  )
+                  :stobjs state)
            (irrelevant loop-top-rsp-term) ;todo
            )
   (if (call-of 'if loop-body-term)
@@ -653,12 +662,27 @@
            nil ; fns-to-elide
            state))
          ((when erp) (mv erp nil nil nil state)))
-      (if (not (quotep exitp))
-          (prog2$ (er hard 'analyze-loop-body-aux "Failed to decide whether branch has exited the loop.  Result: ~X01." exitp nil)
+      (if (not (myquotep exitp)) ; todo: weaken to quotep?
+          (prog2$ (er hard? 'analyze-loop-body-aux "Failed to decide whether branch has exited the loop.  Result: ~X01." exitp nil)
                   (mv (erp-t) nil nil nil state))
         (if (unquote exitp)
             (mv (erp-nil) :none loop-body-term *t* state)
           (mv (erp-nil) loop-body-term :none *nil* state))))))
+
+(local
+  (defthm analyze-loop-body-aux-return-type
+    (implies (and (not (mv-nth 0 (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))) ; no error
+                  (pseudo-termp loop-body-term)
+                  (pseudo-termp loop-top-pc-term)
+                  ;; (pseudo-termp loop-top-rsp-term)
+                  (pseudo-term-listp assumptions)
+                  (symbol-listp extra-rules)
+                  (symbol-listp remove-rules)
+                  (symbol-listp lifter-rules)
+                  (plist-worldp (w state)))
+             (and (pseudo-termp (mv-nth 3 (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)))
+                  (plist-worldp (w (mv-nth 4 (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))))))
+    :hints (("Goal" :induct t :in-theory (enable analyze-loop-body-aux)))))
 
 ;; Returns (mv erp one-rep-term exit-term exit-test-term state
 ;;) where one-rep-term represents the branches that
@@ -666,17 +690,23 @@
 ;; loop, and exit-test-term represents the test governing the branches that
 ;; exit the loop.
 (defun analyze-loop-body (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
-  (declare (xargs :stobjs state
-                  :mode :program))
+  (declare (xargs :guard (and (pseudo-termp loop-body-term)
+                              (pseudo-termp loop-top-pc-term)
+                              (pseudo-termp loop-top-rsp-term)
+                              (pseudo-term-listp assumptions)
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp lifter-rules))
+                  :stobjs state))
   (mv-let (erp one-rep-term exit-term exit-test-term state)
     (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
     (if erp
         (mv erp nil nil nil state)
       (if (eq :none one-rep-term)
-          (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that return to the loop top.")
+          (prog2$ (er hard? 'analyze-loop-body "There appear to be no branches that return to the loop top.")
                   (mv (erp-t) nil nil nil state))
         (if (eq :none exit-term)
-            (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that exit the loop.")
+            (prog2$ (er hard? 'analyze-loop-body "There appear to be no branches that exit the loop.")
                     (mv (erp-t) nil nil nil state))
           (b* (((mv erp exit-test-term)
                 (acl2::simplify-term-to-term exit-test-term
