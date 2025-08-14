@@ -4755,7 +4755,6 @@
          (reterr-msg :where (position-to-msg pos)
                      :expected "a character"
                      :found (char-to-msg char)
-                     ;; TODO GJ: update
                      :extra (msg "The preprocessing directive starting at ~@1 ~
                                   never ends."
                                  (position-to-msg first-pos))))
@@ -4826,7 +4825,6 @@
      :returns (all-whitespace booleanp)
      (b* ((char+pos (parstate->char i parstate))
           (char (char+position->char char+pos)))
-       ;; TODO: need to support other newlines?
        (cond ((or (= char 10)  ; LF new-line
                   (= char 13)) ; CR new-line
               t)
