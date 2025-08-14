@@ -79,19 +79,9 @@
                   (if (< i (len data))
                       (logext esize (nth i data))
                       nil)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (e/d (nth logext-list) (;nth-of-cdr
                                               )))))
-
-
-;; (DEFTHM NTH-OF-LOGEXT-LIST
-;;   (IMPLIES (AND (NATP I) (< I (LEN DATA)))
-;;            (EQUAL (NTH I (LOGEXT-LIST ESIZE DATA))
-;;                   (LOGEXT ESIZE (NTH I DATA))))
-;;   :HINTS
-;;   (("Goal" :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
-;;     :IN-THEORY (E/D (LIST::NTH-OF-CONS NTH LOGEXT-LIST)
-;;                     (NTH-OF-CDR)))))
 
 (defthm cdr-of-logext-list
   (equal (cdr (logext-list size lst))
@@ -136,8 +126,7 @@
                       (logext esize (nth i data))
                     nil)))
   :hints
-  (("Goal" :do-not '(generalize eliminate-destructors)
-    :in-theory (e/d (nth ;NTH-WHEN-N-IS-ZP
+  (("Goal" :in-theory (e/d (nth ;NTH-WHEN-N-IS-ZP
                      )
                     (;nth-of-cdr
                      )))))
@@ -147,7 +136,7 @@
                 (<= (len data) i))
            (equal (nth i (logext-list esize data))
                   nil))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
+  :hints (("Goal")))
 
 (defthm nth-of-logext-list-better
   (equal (nth i (logext-list esize data))
@@ -159,7 +148,7 @@
                (logext esize (nth i data))
              nil)))
   :hints
-  (("Goal" :do-not '(generalize eliminate-destructors)
+  (("Goal"
     :in-theory (e/d (nth ;nth-when-n-is-zp
                      )
                     (;nth-of-cdr

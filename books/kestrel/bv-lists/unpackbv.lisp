@@ -1,7 +1,7 @@
 ; BV Lists Library: Theorems about unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,8 +93,7 @@
                   (slice (+ -1 (* size (+ count (- n))))
                          (+ (- size) (* size (+ count (- n))))
                          bv)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (induct-for-nth-of-unpackbv n count)
+  :hints (("Goal" :induct (induct-for-nth-of-unpackbv n count)
            :in-theory (enable unpackbv nth))))
 (local
  (defun double-sub1-induct (m n)
@@ -110,8 +109,7 @@
                 (natp m))
            (equal (take m (unpackbv n 8 val))
                   (unpackbv m 8 (logtail (* 8 (- n m)) val))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :expand (unpackbv n 8 val)
+  :hints (("Goal" :expand (unpackbv n 8 val)
            :induct (double-sub1-induct m n)
            :in-theory (enable unpackbv))))
 
@@ -121,7 +119,7 @@
                 (natp num))
            (equal (take n (unpackbv num 1 bv))
                   (unpackbv n 1 (logtail (- num n) bv))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (double-sub1-induct n num)
            :in-theory (enable unpackbv take))))
 
@@ -131,7 +129,6 @@
            (equal (nthcdr n (unpackbv num 1 x))
                   (unpackbv (- num n) 1 x)))
   :hints (("Goal" :induct (unpackbv num 1 x)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (enable unpackbv
                               zp
                               cdr-of-nthcdr))))
@@ -141,7 +138,6 @@
            (equal (cdr (unpackbv num 1 x))
                   (unpackbv (+ -1 num) 1 x)))
   :hints (("Goal" :induct (unpackbv num 1 x)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (enable unpackbv))))
 
 (defthm unpackbv-of-1
