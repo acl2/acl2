@@ -4804,7 +4804,11 @@
    (xdoc::p
     "We begin with the character immediately before the last read character,
      and check that every character is whitespace until we reach either
-     a new-line or the start of the file."))
+     a new-line or the start of the file.")
+   (xdoc::p
+    "Since @(tsee read-char) converts all recognized new-line sequences
+     into a single line feed character,
+     we detect new-lines by simply checking for a line feed."))
   (b* ((chars-read (parstate->chars-read parstate))
        ((when (= chars-read 1))
         t)
@@ -4825,8 +4829,7 @@
      :returns (all-whitespace booleanp)
      (b* ((char+pos (parstate->char i parstate))
           (char (char+position->char char+pos)))
-       (cond ((or (= char 10)  ; LF new-line
-                  (= char 13)) ; CR new-line
+       (cond ((= char 10) ; new-line
               t)
              ((or (= char 32) ; SP
                   (and (<= 9 char) (<= char 12))) ; HT VT FF
