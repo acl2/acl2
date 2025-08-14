@@ -430,7 +430,7 @@
      a programmatic interface to the functionality of @(tsee output-files).
      It has the form:")
    (xdoc::codeblock
-    "(output-files-prog tunits"
+    "(output-files-prog code"
     "                   :path            ...  ; default \".\""
     "                   :printer-options ...  ; default nil"
     "  )")
