@@ -310,7 +310,7 @@
 ;; Warning: If any of these rules have :rule-classes nil, ACL2 won't allow us to use them.
 (defund make-rule-alist (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp nil))
        (priorities (table-alist 'axe-rule-priorities-table wrld))
@@ -331,7 +331,7 @@
 ;; Returns a rule-alist.  Can throw an error but doesn't return erp.
 (defund make-rule-alist! (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-alist)
     (make-rule-alist rule-names wrld)
     (if erp
@@ -349,7 +349,7 @@
 (defund add-to-rule-alist (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp nil))
        (priorities (table-alist 'axe-rule-priorities-table wrld)))
@@ -362,7 +362,7 @@
 (defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
   (implies (and (symbol-listp rule-names)
                 (rule-alistp rule-alist)
-                (ilks-plist-worldp wrld))
+                (plist-worldp wrld))
            (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
   :hints (("Goal" :in-theory (enable add-to-rule-alist))))
 
@@ -372,7 +372,7 @@
 (defund add-to-rule-alist! (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-alist)
     (add-to-rule-alist rule-names rule-alist wrld)
     (if erp
@@ -501,7 +501,7 @@
 ;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
   (declare (xargs :guard (and (symbol-list-listp rule-name-lists)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-name-lists)
       (mv (erp-nil) nil)
     (b* (((mv erp rule-alist)
@@ -548,7 +548,7 @@
 (defund add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (rule-alistsp rule-alists)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-alists)
       (mv (erp-nil) nil)
     (b* (((mv erp rule-alist)
@@ -563,7 +563,7 @@
 (defthm rule-alistsp-of-mv-nth-1-of-add-to-rule-alists
   (implies (and (rule-alistsp rule-alists)
                 (symbol-listp rule-names)
-                (ilks-plist-worldp wrld))
+                (plist-worldp wrld))
            (rule-alistsp (mv-nth 1 (add-to-rule-alists rule-names rule-alists wrld))))
   :hints (("Goal" :in-theory (enable rule-alistsp
                                      add-to-rule-alists))))

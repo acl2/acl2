@@ -2772,24 +2772,24 @@
    '(acl2::bvchop-of-+-becomes-bvplus
      acl2::bvplus-trim-leading-constant)))
 
-;move?
-;todo: most of these are not myif rules
-;; only used in loop-lifter
-(defund myif-rules ()
-  (declare (xargs :guard t))
-  (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-of-t-and-nil-when-booleanp
-            acl2::myif-nil-t
-            ;; acl2::boolif-of-nil-and-t ;redundant?
-            )
-          (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y-becomes-boolor
-          ;; acl2::boolif-x-y-x-becomes-booland
-          ;; acl2::boolif-same-branches
-          ;; acl2::boolif-when-quotep-arg1
-          ;; acl2::boolif-when-quotep-arg2
-          ;; acl2::boolif-when-quotep-arg3)
-          ))
+;; ;move?
+;; ;todo: most of these are not myif rules
+;; ;; only used in loop-lifter
+;; (defund myif-rules ()
+;;   (declare (xargs :guard t))
+;;   (append '(acl2::myif-same-branches ;add to lifter-rules?
+;;             acl2::myif-of-t-and-nil-when-booleanp
+;;             acl2::myif-nil-t
+;;             ;; acl2::boolif-of-nil-and-t ;redundant?
+;;             )
+;;           (acl2::boolean-rules)
+;;           ;; '(acl2::boolif-x-x-y-becomes-boolor
+;;           ;; acl2::boolif-x-y-x-becomes-booland
+;;           ;; acl2::boolif-same-branches
+;;           ;; acl2::boolif-when-quotep-arg1
+;;           ;; acl2::boolif-when-quotep-arg2
+;;           ;; acl2::boolif-when-quotep-arg3)
+;;           ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
