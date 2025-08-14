@@ -631,8 +631,7 @@
   (defruled read-mem8-pf-write-mem8
     (implies (stat-validp stat feat)
              (equal (read-mem8 addr1
-                               (write-mem8
-                                addr2 val stat feat)
+                               (write-mem8 addr2 val stat feat)
                                feat)
                     (if (equal (loghead (feat->xlen feat) addr1)
                                (loghead (feat->xlen feat) addr2))
@@ -646,8 +645,7 @@
   (defruled read-mem8-of-write-mem16
     (implies (stat-validp stat feat)
              (equal (read-mem8 addr1
-                               (write-mem16
-                                addr2 val stat feat)
+                               (write-mem16 addr2 val stat feat)
                                feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
@@ -672,8 +670,7 @@
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
                 (equal (read-mem8 addr1
-                                  (write-mem16
-                                   addr2 val stat feat)
+                                  (write-mem16 addr2 val stat feat)
                                   feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
@@ -704,8 +701,7 @@
   (defruled read-mem8-of-write-mem32
     (implies (stat-validp stat feat)
              (equal (read-mem8 addr1
-                               (write-mem32
-                                addr2 val stat feat)
+                               (write-mem32 addr2 val stat feat)
                                feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
@@ -749,8 +745,7 @@
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
                 (equal (read-mem8 addr1
-                                  (write-mem32
-                                   addr2 val stat feat)
+                                  (write-mem32 addr2 val stat feat)
                                   feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
@@ -798,8 +793,7 @@
   (defruled read-mem8-of-write-mem64
     (implies (stat-validp stat feat)
              (equal (read-mem8 addr1
-                               (write-mem64
-                                addr2 val stat feat)
+                               (write-mem64 addr2 val stat feat)
                                feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
@@ -879,8 +873,7 @@
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
                 (equal (read-mem8 addr1
-                                  (write-mem64
-                                   addr2 val stat feat)
+                                  (write-mem64 addr2 val stat feat)
                                   feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
@@ -962,8 +955,7 @@
   (defruled read-mem16-of-write-mem8
     (implies (stat-validp stat feat)
              (equal (read-mem16 addr1
-                                (write-mem8
-                                 addr2 val stat feat)
+                                (write-mem8 addr2 val stat feat)
                                 feat)
                     (cond ((equal (loghead (feat->xlen feat) addr2)
                                   (loghead (feat->xlen feat) addr1))
@@ -1003,8 +995,7 @@
        (implies (and (stat-validp stat feat)
                      (integerp addr1))
                 (equal (read-mem16 addr1
-                                   (write-mem8
-                                    addr2 val stat feat)
+                                   (write-mem8 addr2 val stat feat)
                                    feat)
                        (cond ((equal (loghead (feat->xlen feat) addr2)
                                      (loghead (feat->xlen feat) addr1))
