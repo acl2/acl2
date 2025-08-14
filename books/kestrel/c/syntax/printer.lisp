@@ -3819,7 +3819,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-file ((tunit transunitp) (options prioptp) (gcc booleanp))
-  :guard (transunit-unambp tunit)
+  :guard (and (transunit-unambp tunit)
+              (transunit-aidentp tunit gcc))
   :returns (data byte-listp)
   :short "Print (the data bytes of) a file."
   :long
