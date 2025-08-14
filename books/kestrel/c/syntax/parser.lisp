@@ -316,6 +316,7 @@
      because it is not needed there."))
   (:token ((unwrap token)))
   (:comment ())
+  (:prepr-directive ())
   (:whitespace ())
   :pred lexemep)
 
@@ -530,7 +531,7 @@
      thus, we keep, as part of the parser state
      (the exact representation is explained later),
      a sequence of unread characters,
-     i.e. characters that have been and then put back (i.e. unread),
+     i.e. characters that have been read and then put back (i.e. unread),
      in character form;
      the form is natural numbers, i.e. Unicode code points.
      The sequence is initially empty.
@@ -4712,6 +4713,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lex-prepr-directive ((first-pos positionp) (parstate parstatep))
+  :returns (mv erp
+               (lexeme lexemep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Lex a preprocessing directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect a preprocessing directive,
+     after reading the initial @('#').")
+   (xdoc::p
+    "We read characters in a loop until
+     either we find a new-line character (success)
+     or we find end of file (failure).
+     In case of success, we return
+     a lexeme that currently contains no information
+     (but that may change in the future),
+     and a span calculated from
+     the position of the @('#'), which is passed to this function,
+     and the position of the closing new-line,
+     which is returned by the loop function."))
+  (b* (((reterr) (irr-lexeme) (irr-span) parstate)
+       ((erp last-pos parstate) (lex-prepr-directive-loop first-pos parstate)))
+    (retok (lexeme-prepr-directive)
+           (make-span :start first-pos :end last-pos)
+           parstate))
+
+  :prepwork
+
+  ((define lex-prepr-directive-loop ((first-pos positionp) (parstate parstatep))
+     :returns (mv erp
+                  (last-pos positionp)
+                  (new-parstate parstatep :hyp (parstatep parstate)))
+     :parents nil
+     (b* (((reterr) (irr-position) parstate)
+          ((erp char pos parstate) (read-char parstate)))
+       (cond
+        ((not char) ; EOF
+         (reterr-msg :where (position-to-msg pos)
+                     :expected "a character"
+                     :found (char-to-msg char)
+                     :extra (msg "The preprocessing directive starting at ~@1 ~
+                                  never ends."
+                                 (position-to-msg first-pos))))
+        ((= char 10) ; new-line
+         (retok pos parstate))
+        (t ; other
+         (lex-prepr-directive-loop first-pos parstate))))
+     :measure (parsize parstate)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+     ///
+
+     (defret parsize-of-lex-prepr-directive-loop-uncond
+       (<= (parsize new-parstate)
+           (parsize parstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))
+
+     (defret parsize-of-lex-prepr-directive-loop-cond
+       (implies (not erp)
+                (<= (parsize new-parstate)
+                    (1- (parsize parstate))))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret parsize-of-lex-prepr-directive-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-prepr-directive-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define only-whitespace-backward-through-line ((parstate parstatep))
+  :returns (only-whitespace booleanp)
+  :short "Check that the only preceding characters on the line are whitespace."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We begin with the character immediately before the last read character,
+     and check that every character is whitespace until we reach either
+     a new-line or the start of the file.")
+   (xdoc::p
+    "Since @(tsee read-char) converts all recognized new-line sequences
+     into a single line feed character,
+     we detect new-lines by simply checking for a line feed."))
+  (b* ((chars-read (parstate->chars-read parstate))
+       ((when (= chars-read 1))
+        t)
+       ((when (or (< chars-read 1)
+                  (<= (parstate->chars-length parstate) chars-read)))
+        (raise "Internal error: chars-read index ~x0 out of bound ~x1."
+               chars-read
+               (parstate->chars-length parstate))))
+    (only-whitespace-backward-through-line-loop (- chars-read 2) parstate))
+  :guard-hints (("Goal" :in-theory (enable natp)))
+
+  :prepwork
+
+  ((define only-whitespace-backward-through-line-loop ((i natp)
+                                                       (parstate parstatep))
+     :parents nil
+     :guard (< i (parstate->chars-length parstate))
+     :returns (all-whitespace booleanp)
+     (b* ((char+pos (parstate->char i parstate))
+          (char (char+position->char char+pos)))
+       (cond ((= char 10) ; new-line
+              t)
+             ((or (= char 32) ; SP
+                  (and (<= 9 char) (<= char 12))) ; HT VT FF
+              (if (= (mbe :logic (nfix i)
+                          :exec (the unsigned-byte i))
+                     0)
+                  t
+                (only-whitespace-backward-through-line-loop (- i 1) parstate)))
+             (t nil)))
+     :hints (("Goal" :in-theory (enable o< nfix)))
+     :guard-hints (("Goal" :in-theory (enable nfix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-lexeme ((parstate parstatep))
   :returns (mv erp
                (lexeme? lexeme-optionp)
@@ -4766,7 +4898,7 @@
       Strictly speaking,
       if the lexing of the character constant or string literal fails,
       we should lex @('u') as an identifier and then continue lexing,
-      but at that point the only possibilty would be
+      but at that point the only possibility would be
       an unprefixed character constant or string literal,
       which would fail again; so we can fail sooner without loss.
       If the character immediately following @('u') is @('8'),
@@ -4988,6 +5120,10 @@
             (retok (lexeme-token (token-punctuator "/"))
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
+
+     ((and (= char (char-code #\#))
+           (only-whitespace-backward-through-line parstate))
+      (lex-prepr-directive first-pos parstate))
 
      ((or (= char (char-code #\[)) ; [
           (= char (char-code #\])) ; ]
@@ -5352,7 +5488,8 @@
                                            integerp-when-natp
                                            unsigned-byte-p
                                            integer-range-p
-                                           dec-digit-char-p)))
+                                           dec-digit-char-p
+                                           natp)))
 
   ///
 
@@ -12655,8 +12792,8 @@
                              ;; we must be at least two tokens ahead.
                              ((unless (<= (parsize parstate) (- psize 2)))
                               (raise "Internal error: ~
-                                  size ~x0 after backtracking exceeds ~
-                                  size ~x1 before backtracking."
+                                      size ~x0 after backtracking exceeds ~
+                                      size ~x1 before backtracking."
                                      (parsize parstate) psize)
                               ;; Here we have (> (parsize parstate) (- psize 2)),
                               ;; but we need to return a parser state
