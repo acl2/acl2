@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -133,8 +133,7 @@
   :hints (("Goal" :in-theory (e/d (bv-array-to-list-aux
                                    nth) (;NTH-OF-CDR
                                          ))
-           :induct (ind size len i arr n)
-           :do-not '(generalize eliminate-destructors))))
+           :induct (ind size len i arr n))))
 
 (defthm integer-listp-of-bv-array-to-list-aux
   (integer-listp (bv-array-to-list-aux size len i arr))
@@ -173,7 +172,7 @@
                 (natp i))
            (equal (cdr (bv-array-to-list-aux size len i arr))
                   (bv-array-to-list-aux size (+ -1 len) i (cdr arr))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
 ;           :induct (bv-array-to-list-aux size len i arr)
            :in-theory (enable bv-array-to-list-aux))))
 
@@ -271,7 +270,7 @@
                 (natp width))
            (equal (bv-array-read width total-len n (list-to-bv-array-aux width elements-left total-len x))
                   (bv-array-read width total-len n x)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (list-to-bv-array-aux width elements-left total-len x)
            :in-theory (enable bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux))))
 

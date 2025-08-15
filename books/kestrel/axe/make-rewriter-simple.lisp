@@ -6831,7 +6831,7 @@
                                        (symbol-listp monitored-symbols)
                                        (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide)
-                                       (ilks-plist-worldp (w state)))
+                                       (plist-worldp (w state)))
                            :stobjs state
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (not (starts-and-ends-with-starsp defconst-name))) ; todo: stricter check?
@@ -6936,7 +6936,7 @@
                                        (symbol-listp fns-to-elide)
                                        (consp whole-form)
                                        (symbolp (car whole-form))
-                                       (ilks-plist-worldp (w state)))
+                                       (plist-worldp (w state)))
                            :stobjs state
                            :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))

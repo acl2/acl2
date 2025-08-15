@@ -35,7 +35,7 @@
                       (getbit esize (nth i data))
                     nil)))
   :hints
-  (("Goal" :do-not '(generalize eliminate-destructors)
+  (("Goal"
     :in-theory (e/d (nth getbit-list)
                     (;nth-of-cdr
                      )))))

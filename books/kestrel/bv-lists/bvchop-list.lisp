@@ -94,7 +94,7 @@
                   (if (< i (len data))
                       (bvchop esize (nth i data))
                     nil)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (e/d (bvchop-list
                             nth
                             len-of-cdr)
@@ -113,7 +113,7 @@
 (defthmd bvchop-list-of-take-of-bvchop-list
   (equal (bvchop-list size (take len (bvchop-list size lst)))
          (bvchop-list size (take len lst)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (enable take bvchop-list))))
 
 (defthm bvchop-list-of-bvchop-list
@@ -311,7 +311,7 @@
                 (natp size2))
            (equal (bvchop-list size1 (take len (bvchop-list size2 lst)))
                   (bvchop-list size2 (take len lst))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (enable take bvchop-list))))
 
 (defthm bvchop-list-of-bvchop-list-tighten

@@ -168,7 +168,7 @@
          (and (true-listp k)
               (equal 1 (len k))
               (equal (car k) (bvchop size val))))
-  :hints (("Goal" :do-not '(preprocess)
+  :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
                            (;update-nth-becomes-update-nth2-extend-gen
                             )))))
@@ -180,7 +180,7 @@
                   (and (true-listp k)
                        (equal 1 (len k))
                        (equal (car k) (bvchop size val)))))
-  :hints (("Goal" :do-not '(preprocess)
+  :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
                            (;update-nth-becomes-update-nth2-extend-gen
                             )))))
@@ -378,7 +378,7 @@
                   (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX2 0 (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX1 0 LST))
                   ))
   :hints (("Goal" :cases ((< len (len lst)))
-           :in-theory (e/d (bv-array-write update-nth2) ()))))
+           :in-theory (enable bv-array-write update-nth2))))
 
 ; do we need this one?
 (defthm bv-array-write-of-0-and-bvchop-list
@@ -389,8 +389,7 @@
            (equal (bv-array-write element-size1 len index2 0 (bvchop-list element-size2 lst))
                   (bv-array-write element-size2 len index2 0 lst)))
   :hints (("Goal" :cases ((< len (len lst)))
-           :in-theory (e/d (bv-array-write update-nth2 BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN)
-                           ()))))
+           :in-theory (enable bv-array-write update-nth2 BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN))))
 
 (defthm bv-array-write-of-bv-array-write-diff-same-val
   (implies (and (syntaxp (smaller-termp index2 index1))

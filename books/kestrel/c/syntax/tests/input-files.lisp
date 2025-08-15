@@ -17,6 +17,7 @@
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,3 +108,58 @@
              :const *valid-simple/stdbool*)
 
 (acl2::assert! (code-ensemblep *valid-simple/stdbool*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Error in parsing
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+  (input-files :files ("failparse.c")
+               :const *failparse*))
+
+;; Ensures the error is in parsing, not a later step
+(must-fail
+  (input-files :files ("failparse.c")
+               :process :parse
+               :const *failparse*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Error in disambiguating
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+  (input-files :files ("faildimb.c")
+               :const *faildimb*))
+
+;; Ensures no error if we only parse, not disambiguate
+(input-files :files ("faildimb.c")
+             :process :parse
+             :const *faildimb-parse-only*)
+
+;; Ensures the error is not in validation (together with the above test, this
+;; ensures the error is in disambiguation)
+(must-fail
+  (input-files :files ("faildimb.c")
+               :process :disambiguate
+               :const *faildimb*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Error in validation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+  (input-files :files ("failvalidate.c")
+               :process :validate ; the default
+               :const *failvalidate*))
+
+;; Ensures no error if we only parse+disambiguate, not validate, so the error
+;; must be in validation
+(input-files :files ("failvalidate.c")
+             :process :disambiguate
+             :const *failvalidate-parse-and-dimb-only*)
