@@ -132,13 +132,6 @@
   :hints (("Goal" :use (:instance mod-of-mod-when-mult)
            :in-theory (disable mod-of-mod-when-mult))))
 
-(defthm +-of-mod-and-*-of-floor-same
-  (implies (and (rationalp x)
-                (rationalp y)
-                (not (equal 0 y)))
-           (equal (+ (mod x y) (* y (floor x y)))
-                  x)))
-
 (defthmd mod-of-+-when-mult-arg1
   (implies (and (integerp (/ x1 y))
                 (rationalp x1)

@@ -3428,12 +3428,3 @@
 ;;                              trim-to-n-bits-meta-rule-for-logops
 ;;                              trim-to-n-bits-meta-rule-for-slice
 ;;                              ))
-
-;BOZO or should we handle this in our translation to STP?
-;we could also handle the adding of bvchops when we translate to stp?
-;; (deftheory add-padding '(bvcat-pad-low
-;;                          bvcat-pad-high
-;;                          bvmult-pad-arg1
-;;                          bvmult-pad-arg2
-;;                          bvxor-pad-arg1
-;;                          bvxor-pad-arg2))

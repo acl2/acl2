@@ -1369,7 +1369,19 @@
            (equal (slice highbit lowbit (bvmult size x y))
                   (slice highbit lowbit (bvmult (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
-           :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop )))))
+                  :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop )))))
+
+;todo: just use a trim rule?
+(defthm getbit-of-bvmult-tighten
+  (implies (and (< (+ 1 SIZE1) SIZE2)
+                (< 0 size2)
+                (natp size1)
+                (natp size2)
+                (integerp x)
+                (integerp y))
+           (equal (GETBIT size1 (BVMULT size2 x y))
+                  (GETBIT size1 (BVMULT (+ 1 size1) x y))))
+  :hints (("Goal" :in-theory (enable getbit))))
 
 ;use trim
 (defthm bvor-of-bvmult-tighten-2
@@ -1468,31 +1480,6 @@
            (equal (bvcat size1 (bvor size2 z y) lowsize x)
                   (bvcat size1 (bvor size1 z y) lowsize x)))
   :hints (("Goal" :in-theory (enable bvcat))))
-
-;i'll leave this off, since it gets rid of bvand and is sort of scary
-;bozo do i want to open from the top or the bottom?  which one is faster?
-;rename
-(defthmd bvand-open-to-logapp
-  (implies (and (natp size)
-                (< 1 size))
-           (equal (bvand size x y)
-                  (bvcat 1
-                         (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
-                         (+ -1 size)
-                         (bvand (+ -1 size)  x y))))
-  :hints (("Goal" :in-theory (enable slice-becomes-getbit)
-           :cases ((and (integerp x) (integerp y))
-                   (and (integerp x) (not (integerp y)))
-                   (and (not (integerp x)) (integerp y))))))
-
-(defthmd bvand-open-to-logapp-when-constant
-  (implies (and (syntaxp (quotep x))
-                (natp size)
-                (< 1 size))
-           (equal (bvand size x y)
-                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
-                         (+ -1 size) (bvand (+ -1 size)  x y))))
-  :hints (("Goal" :in-theory (enable bvand-open-to-logapp))))
 
 (defthm bvand-of-bvcat
   (implies (and (equal size (+ lowsize highsize))
@@ -2469,17 +2456,16 @@
            :use (:instance bvmod-of-bvmult-of-expt (n (lg k)))
            :in-theory (disable bvmod-of-bvmult-of-expt))))
 
+; Disabled because slice is more complicated than logtail.
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                (integerp newsize)
+                ;; (<= n newsize)
                 (unsigned-byte-p-forced newsize x)
-                (natp n)
-                (<= n newsize)
-                )
+                (natp n))
            (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :in-theory (e/d (slice unsigned-byte-p-forced)
-                                  (SLICE-BECOMES-BVCHOP )))))
+                                  (slice-becomes-bvchop)))))
 
 (theory-invariant (incompatible (:rewrite logtail-becomes-slice-bind-free) (:definition slice)))
 

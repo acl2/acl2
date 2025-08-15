@@ -131,11 +131,17 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+(defthm +-of-mod-and-*-of-floor-same
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
+  :hints (("Goal" :in-theory (enable mod))))
+
 ;; Trying to avoid name clash
 (defthm floor-mod-elim-rule
-  (implies (acl2-numberp i)
-           (equal (+ (mod i j) (* j (floor i j)))
-                  i))
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
   :rule-classes :elim
   :hints (("Goal" :in-theory (enable mod))))
 

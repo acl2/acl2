@@ -711,3 +711,30 @@
            (equal (bvif 1 (equal 1 x) 0 1)
                   (bvnot 1 x)))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;i'll leave this off, since it gets rid of bvand and is sort of scary
+;bozo do i want to open from the top or the bottom?  which one is faster?
+;rename
+(defthmd bvand-open-to-bvcat-high-bit
+  (implies (and (< 1 size)
+                (natp size))
+           (equal (bvand size x y)
+                  (bvcat 1
+                         (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
+                         (+ -1 size)
+                         (bvand (+ -1 size)  x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit)
+           :cases ((and (integerp x) (integerp y))
+                   (and (integerp x) (not (integerp y)))
+                   (and (not (integerp x)) (integerp y))))))
+
+(defthmd bvand-open-to-bvcat-high-bit-when-constant
+  (implies (and (syntaxp (quotep x))
+                (< 1 size)
+                (integerp size))
+           (equal (bvand size x y)
+                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
+                         (+ -1 size) (bvand (+ -1 size)  x y))))
+  :hints (("Goal" :in-theory (enable bvand-open-to-bvcat-high-bit))))
