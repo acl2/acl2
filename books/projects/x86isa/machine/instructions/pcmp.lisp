@@ -75,7 +75,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-inst x86-pcmpeq-sse
+(def-inst x86-pcmpeqb/pcmpeqw/pcmpeqd/pcmpeqq-sse
   :parents (two-byte-opcodes)
   :long
   "<code>
