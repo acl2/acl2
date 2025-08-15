@@ -306,7 +306,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-inst x86-pcmpgt-sse
+(def-inst x86-pcmpgtb/pcmpgtw/pcmpgtd-sse
   :parents (two-byte-opcodes)
   :long
   "<code>
