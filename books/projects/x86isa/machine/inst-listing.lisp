@@ -3470,13 +3470,13 @@
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          '(x86-vmovups-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups/vmovdqu-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVUPS"
           (OP :OP #xF10
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          '(x86-vmovups-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups/vmovdqu-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVSD"
           (OP :OP #xF10
               :EVEX '(:0F :LIG :F2 :W1)
@@ -3616,13 +3616,13 @@
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          '(x86-vmovups-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups/vmovdqu-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVUPS"
           (OP :OP #xF11
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          '(x86-vmovups-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups/vmovdqu-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVSD"
           (OP :OP #xF11
               :EVEX '(:0F :LIG :F2 :W1)
@@ -7352,7 +7352,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPGT-SSE)
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
@@ -7361,7 +7361,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7369,7 +7370,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -7400,7 +7402,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPGT-SSE)
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
@@ -7409,7 +7411,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7417,7 +7420,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -7448,7 +7452,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPGT-SSE)
+          '(X86-PCMPGTB/PCMPGTW/PCMPGTD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
@@ -7457,7 +7461,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7465,7 +7470,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
               :EVEX '(:0F :NDS :128 :66 :W0)
@@ -7876,13 +7882,15 @@
               :VEX '(:0F :128 :F3 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VMOVUPS/VMOVDQU-VEX-A)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVDQU"
           (OP :OP #xF6F
               :VEX '(:0F :256 :F3 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VMOVUPS/VMOVDQU-VEX-A)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVDQA32"
           (OP :OP #xF6F
               :EVEX '(:0F :128 :66 :W0)
@@ -8848,7 +8856,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPEQ-SSE)
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQB"
           (OP :OP #xF74
@@ -8857,7 +8865,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPEQB"
           (OP :OP #xF74
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -8865,7 +8874,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPEQB"
           (OP :OP #xF74
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -8896,7 +8906,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPEQ-SSE)
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQW"
           (OP :OP #xF75
@@ -8905,7 +8915,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPEQW"
           (OP :OP #xF75
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -8913,7 +8924,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPEQW"
           (OP :OP #xF75
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -8944,7 +8956,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPEQ-SSE)
+          '(X86-PCMPEQB/PCMPEQW/PCMPEQD-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQD"
           (OP :OP #xF76
@@ -8953,7 +8965,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPEQD"
           (OP :OP #xF76
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -8961,7 +8974,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPEQD"
           (OP :OP #xF76
               :EVEX '(:0F :NDS :128 :66 :W0)
@@ -9543,13 +9557,15 @@
               :VEX '(:0F :128 :F3 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VMOVUPS/VMOVDQU-VEX-B)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVDQU"
           (OP :OP #xF7F
               :VEX '(:0F :256 :F3 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VMOVUPS/VMOVDQU-VEX-B)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVDQA32"
           (OP :OP #xF7F
               :EVEX '(:0F :128 :66 :W0)
@@ -14958,7 +14974,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPEQQ"
           (OP :OP #xF3829
               :VEX '(:0F38 :NDS :256 :66 :WIG)
@@ -14966,7 +14983,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPEQB/VPCMPEQW/VPCMPEQD/VPCMPEQQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPEQQ"
           (OP :OP #xF3829
               :EVEX '(:0F38 :NDS :128 :66 :W1)

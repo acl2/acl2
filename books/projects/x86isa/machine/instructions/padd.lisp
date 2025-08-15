@@ -196,10 +196,10 @@
    VPADDD xmm1, xmm2, xmm3/m128
    VPADDQ xmm1, xmm2, xmm3/m128
 
-   VPADDB ymm1, ymm2, ymm3/m128
-   VPADDW ymm1, ymm2, ymm3/m128
-   VPADDD ymm1, ymm2, ymm3/m128
-   VPADDQ ymm1, ymm2, ymm3/m128
+   VPADDB ymm1, ymm2, ymm3/m256
+   VPADDW ymm1, ymm2, ymm3/m256
+   VPADDD ymm1, ymm2, ymm3/m256
+   VPADDQ ymm1, ymm2, ymm3/m256
    </code>"
 
   :vex t
