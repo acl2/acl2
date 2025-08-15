@@ -100,7 +100,6 @@
            (equal (getbit n (packbv count 1 bvs))
                   (getbit 0 (nth (+ count -1 (- n)) bvs))))
   :hints (("Goal" ;:induct (packbv-induct count n bvs)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (packbv nth zp GETBIT-TOO-HIGH)
                            (;BVCAT-OF-IF-ARG2
                             )))))
@@ -112,7 +111,7 @@
                 (natp count))
            (equal (bvchop (* n size) (packbv count size bvs))
                   (packbv n size (nthcdr (- count n) bvs))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (e/d (packbv posp nthcdr natp)
                            (bvcat-equal-rewrite-alt bvcat-equal-rewrite)))))
 
