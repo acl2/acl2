@@ -639,7 +639,7 @@
                            (mv nil interp-st state)))
        ((unless (eq (fgl-config->toplevel-sat-check config) t))
         (b* ((msg (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check."))
-             (interp-st (update-interp-st->debug-info msg interp-st)))
+             (interp-st (fgl-interp-store-debug-info msg nil interp-st)))
           (mv msg interp-st state)))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (fgl-config->sat-config config)))
@@ -658,10 +658,10 @@
        ((unless (eq ans :sat))
         (b* ((msg (msg "Final SAT check failed!"))
              (interp-st
-              (update-interp-st->debug-info msg interp-st)))
+              (fgl-interp-store-debug-info msg nil interp-st)))
           (mv msg interp-st state)))
        ((mv ctrex-err interp-st)
-        (interp-st-run-ctrex sat-config interp-st state))
+        (interp-st-run-ctrex-with-errmsg sat-config interp-st state))
        ((when ctrex-err)
         (mv ctrex-err interp-st state)))
     (mv "Counterexample." interp-st state))

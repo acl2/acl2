@@ -241,7 +241,22 @@
    ;; remove the one that references new-state
    (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
 
+  (defret <fn>-errmsg-not-unreachable
+    (not (equal errmsg :unreachable)))
+
+  (local (in-theory (disable interp-st-run-ctrex)))
   (fancy-ev-add-primitive interp-st-run-ctrex t))
+
+(encapsulate nil
+  (local (std::set-define-current-function interp-st-run-ctrex-with-errmsg))
+  (local (in-theory (enable interp-st-run-ctrex-with-errmsg)))
+
+  (make-event
+   ;; remove the one that references new-state
+   (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
+
+  (local (in-theory (disable interp-st-run-ctrex-with-errmsg)))
+  (fancy-ev-add-primitive interp-st-run-ctrex-with-errmsg t))
 
 
 

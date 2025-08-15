@@ -3119,3 +3119,25 @@ compute a value for @('x').</p>
        (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st)))
 
+
+(define interp-st-run-ctrex-with-errmsg (sat-config
+                                         (interp-st interp-st-bfrs-ok) state)
+  :returns (mv errmsg new-interp-st)
+  ;; Wrapper for interp-st-run-ctrex that stores an error message in the
+  ;; interp-st -- either an error message from deriving the counterexample,
+  ;; "False counterexample", or "Counterexample".
+  (b* (((mv errmsg interp-st)
+        (interp-st-run-ctrex sat-config interp-st state))
+       ((when (interp-st->errmsg interp-st))
+        (mv errmsg interp-st))
+       (errmsg (or errmsg
+                   (b* ((status (cdr (hons-get :counterexample-status (interp-st->user-scratch interp-st)))))
+                     (cond ((eq status :false-ctrex) "False counterexample")
+                           ((eq status :ok) "Counterexample")
+                           ((and (consp status) (eq (car status) :error))
+                            "Counterexample (evaluation error)")
+                           (t "Counterexample (status not found)")))))
+       (interp-st (update-interp-st->errmsg errmsg interp-st)))
+    (mv errmsg interp-st)))
+
+
