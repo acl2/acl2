@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -119,7 +119,6 @@
            (equal (nthcdr n (list-to-bv-array-aux2 element-size len i array lst))
                   (list-to-bv-array-aux2 element-size (- len n) 0 (nthcdr n array) (nthcdr (- n i) lst))))
   :hints (("Goal" :induct t
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (natp nthcdr equal-of-bv-array-write-of-1 list-to-bv-array-aux2)
                            (;;NTHCDR-OF-LIST-TO-BV-ARRAY-AUX2
                             )))))

@@ -289,7 +289,6 @@
   :hints (("Goal"
            ;;:induct (clear-ind index high data)
            :induct t
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (bv-array-clear-range)
                            (;bv-array-clear-range-same
                             ;update-nth-becomes-update-nth2-extend-gen
@@ -324,7 +323,6 @@
           ("Goal"
 ;:induct (clear-ind index high data)
            :induct t
-           :do-not '(generalize eliminate-destructors)
            :expand ((BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
                                           LOW HIGH
                                           (BV-ARRAY-WRITE SIZE (LEN DATA)
@@ -535,8 +533,7 @@
                 (natp highindex))
            (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
                   (bv-array-clear-range element-size (- len n) (- lowindex n) (- highindex n) (nthcdr n lst))))
-  :hints (("Goal" ; :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range nthcdr))))
 
 (defthm nthcdr-of-bv-array-clear-range2
   (implies (and (< highindex n)
@@ -548,17 +545,15 @@
                 (natp highindex))
            (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
                   (nthcdr n (bvchop-list element-size (take len lst)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) (
-                                                          ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                                          )))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range nthcdr))))
 
-(defthm car-of-BV-ARRAY-CLEAR-RANGE-of-0
+;; mixes abstractions
+(defthm car-of-bv-array-clear-range-of-0
   (implies (and (posp len)
                 (natp highindex))
-           (equal (CAR (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))
+           (equal (car (bv-array-clear-range elem-size len 0 highindex lst))
                   0))
-  :hints (("Goal" :expand (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))))
+  :hints (("Goal" :expand (bv-array-clear-range elem-size len 0 highindex lst))))
 
 (defthm cdr-of-bv-array-clear-range-2
   (implies (and (<= 1 lowindex)
@@ -583,7 +578,6 @@
            (equal (take n (bv-array-clear-range elem-size len 0 highindex lst))
                   (repeat n 0)))
   :hints (("Goal" :induct t
-           :do-not '(generalize eliminate-destructors)
            :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
 
 (DEFTHM ALL-UNSIGNED-BYTE-P-OF-BV-ARRAY-CLEAR-range

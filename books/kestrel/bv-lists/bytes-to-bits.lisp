@@ -121,7 +121,6 @@
                   (bytes-to-bits (take n lst))))
   :hints (("Goal"
            :induct (sub1-cdr-induct n lst)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (zp byte-to-bits bytes-to-bits take
                                consp-to-len-bound)
                            (;;list::len-pos-rewrite

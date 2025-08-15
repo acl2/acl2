@@ -1,7 +1,7 @@
 ; More rules about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,6 @@
   :hints (("Subgoal *1/2" :cases ((equal n count)))
           ("Goal" ;:induct (induct-cdr-double-sub-1 bvs n count)
            :induct (packbv count 1 bvs)
-           :do-not '(generalize eliminate-destructors fertilize)
            :expand ((all-unsigned-byte-p 1 bvs))
 ;           :expand (firstn (+ count (- n)) bvs)
            :in-theory (e/d (packbv) (;logtail-becomes-slice-bind-free
@@ -132,7 +131,6 @@
   :hints (("subgoal *1/2" :cases ((equal n count)))
           ("Goal"
            :induct (packbv count size bvs)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (PACKBV bvchop-of-logtail-becomes-slice)
                            (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
@@ -266,7 +264,7 @@
                          (packbv (len l1) itemsize l1)
                          (* (len l2) itemsize)
                          (packbv (len l2) itemsize l2))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :cases ((equal 0 (len l1)))
            :use (:instance slice-of-packbv
                            (high (+ -1 (len l1) (len l2)))
