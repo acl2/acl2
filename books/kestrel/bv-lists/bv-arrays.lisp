@@ -395,7 +395,7 @@
            (equal (bitxor (bv-array-read 1 256 index vals1)
                           (bv-array-read 1 256 index vals2))
                   (bv-array-read 1 256 index (bvxor-list 1 vals1 vals2))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
 ;          :induct (sub1-cdr-cdr-induct index vals1 vals2)
            :in-theory (e/d (BV-ARRAY-READ ;nth
                             )
@@ -428,7 +428,7 @@
                 (natp key))
            (equal (bvchop-list size (update-nth2 len key val lst))
                   (update-nth2 len key (bvchop size val) (bvchop-list size lst))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (enable update-nth2 update-nth
                                         bvchop-list))))
 

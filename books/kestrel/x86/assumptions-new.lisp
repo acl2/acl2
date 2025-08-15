@@ -370,37 +370,25 @@
                                          state-var
                                          base-var ; only needed if position-independentp
                                          target-offset
-                                         position-independentp
-                                         bvp
-                                         new-canonicalp)
+                                         position-independentp)
   (declare (xargs :guard (and (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var)
                               (symbolp base-var)
                               (natp target-offset)
-                              (booleanp position-independentp)
-                              (booleanp bvp)
-                              (booleanp new-canonicalp))))
+                              (booleanp position-independentp))))
   (let ((target-address-term (if position-independentp
                                  ;; Position-independent, so the target is the base-var plus the target-offset:
-                                 (if bvp
-                                     (if (= 0 target-offset)
-                                         `(logext 64 ,base-var) ; avoids adding 0
-                                       `(logext 64 (bvplus 64 ',target-offset ,base-var)))
-                                   (if (= 0 target-offset)
-                                       base-var ; avoids adding 0
-                                     `(binary-+ ',target-offset ,base-var)))
+                                 (if (= 0 target-offset)
+                                     `(logext 64 ,base-var) ; avoids adding 0
+                                   `(logext 64 (bvplus 64 ',target-offset ,base-var)))
                                ;; Not position-independent, so the target is a concrete address:
                                (acl2::enquote target-offset))))
     (append (make-standard-state-assumptions-fn state-var)
             ;; Assumptions about the BASE-VAR:
             (if position-independentp
-                (if new-canonicalp
-                    `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-canonical-address-p
-                      (unsigned-canonical-address-p ,base-var)) ; do we need this?
-                  `(;(integerp ,base-var)
-                    (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
-                    ))
+                `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-canonical-address-p
+                  (unsigned-canonical-address-p ,base-var))
               nil)
             `((equal (bvchop 6 ,base-var) 0)) ; the BASE-VAR is 64-byte aligned
             `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
@@ -415,50 +403,46 @@
               )
             ;; The return address must be canonical because we will transfer
             ;; control to that address when doing the return:
-            (if new-canonicalp
-                `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
-              `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
+            `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
             ;; The stack must be canonical:
-            (if new-canonicalp
-                ;; todo: think about this:
-                `((canonical-regionp ,(+ 8 ; or 7 ? but see below...
-                                         (* 8 existing-stack-slots)
-                                         (* 8 stack-slots-needed))
-                                     ,(if (= 0 stack-slots-needed)
-                                          `(rsp ,state-var)
-                                        `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
-              ;; old-style:
-              (append `(;; The stack slot contaning the return address must be canonical
-                        ;; because the stack pointer returns here when we pop the saved
-                        ;; RBP:
-                        (canonical-address-p (rsp ,state-var))
+            ;; todo: think about this:
+            `((canonical-regionp ,(+ 8 ; or 7 ? but see below...
+                                     (* 8 existing-stack-slots)
+                                     (* 8 stack-slots-needed))
+                                 ,(if (= 0 stack-slots-needed)
+                                      `(rsp ,state-var)
+                                    `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+            ;; ;; old-style:
+            ;; (append `(;; The stack slot contaning the return address must be canonical
+            ;;           ;; because the stack pointer returns here when we pop the saved
+            ;;           ;; RBP:
+            ;;           (canonical-address-p (rsp ,state-var))
 
-                        ;; The stack slot 'below' the return address must be canonical
-                        ;; because the stack pointer returns here when we do the return:
-                        (canonical-address-p (+ ',(* 8 existing-stack-slots) (rsp ,state-var))))
-                      (if (posp stack-slots-needed)
-                          `(;;add to make-standard-state-assumptions-64-fn?
-                            (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
-                            (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
-                            )
-                        nil))))))
+            ;;           ;; The stack slot 'below' the return address must be canonical
+            ;;           ;; because the stack pointer returns here when we do the return:
+            ;;           (canonical-address-p (+ ',(* 8 existing-stack-slots) (rsp ,state-var))))
+            ;;         (if (posp stack-slots-needed)
+            ;;             `(;;add to make-standard-state-assumptions-64-fn?
+            ;;               (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+            ;;               (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
+            ;;               )
+            ;;           nil))
+            )))
 
 (defthm true-listp-of-make-standard-assumptions64-new
-  (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp bvp new-canonicalp)))
+  (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
-(defund assumptions-for-memory-regions (regions base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp acc)
+(defund assumptions-for-memory-regions (regions base-var state-var stack-slots-needed existing-stack-slots position-independentp acc)
   (declare (xargs :guard (and (memory-regionsp regions)
                               (symbolp base-var) ; only used if position-independentp
                               (symbolp state-var)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
-                              (booleanp bvp)
                               (booleanp position-independentp)
-                              (booleanp new-canonicalp)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (e/d (memory-regionsp
                                                          memory-regionp)
@@ -474,51 +458,38 @@
          ((mv erp assumptions-for-region)
           (if position-independentp
               ;; Relative addresses make everything relative to the base-var:
-              (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 addr base-var) (symbolic-add-constant addr base-var)))
-                     (last-addr-term (if bvp
-                                         (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                                         (+ -1 addr length))
-                                                                   base-var)
-                                       (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                                 (+ -1 addr length))
-                                                              base-var))) ; todo: use bvplus?
+              (let* ((first-addr-term (symbolic-bvplus-constant 48 addr base-var))
+                     ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                     ;;                                                 (+ -1 addr length))
+                     ;;                                           base-var)
+                     ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                     ;;                 ;;                             (+ -1 addr length))
+                     ;;                 ;;                          base-var)
+                     ;;                 )
+ ; todo: use bvplus?
                      )
                 (mv nil ; no error
                     (append
                       ;; Assert that the addresses are canonical:
-                      (if new-canonicalp
-                          `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
-                            (canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above)
-                                               ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
-                        `((canonical-address-p ,first-addr-term)
-                          (canonical-address-p ,last-addr-term)))
+                      `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
+                        (canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above)
+                                           ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      (if bvp
-                          ;; alternate formulation for bv/smt proofs:
-                          `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
-                        `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                      ',bytes
-                                      ,state-var)))
+                      `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       (if (posp existing-stack-slots)
                           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                          (if bvp
-                              `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                     ',(* 8 existing-stack-slots) (rsp ,state-var)))
-                            `((separate ':r ',(len bytes) ,first-addr-term
-                                        ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
+                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                                 ',(* 8 existing-stack-slots) (rsp ,state-var)))
                         nil)
                       ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       (if (posp stack-slots-needed)
                           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                          (if bvp
-                              `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                     ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
-                            `((separate ':r ',(len bytes) ,first-addr-term
-                                        ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                                 ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                         nil))))
             ;; Absolute addresses are just numbers:
             (let* ((first-addr addr)
@@ -530,42 +501,31 @@
                 (mv nil ; no error
                     `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                       ;; Assert that the chunk is loaded into memory:
-                      ,(if bvp
-                           ;; alternate formulation for bv/smt proofs:
-                           `(equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
-                         `(program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                      ',bytes
-                                      ,state-var))
+                      (equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
                        ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                        ;; TODO: Do this only for writable chunks?
                        ,@(if (posp existing-stack-slots)
-                             (if bvp
-                                 `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                        ',(* 8 existing-stack-slots) (rsp ,state-var)))
-                               `((separate ':r ',(len bytes) ,first-addr-term
-                                           ':r ',(* 8 existing-stack-slots) (rsp ,state-var))))
+                             `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                                    ',(* 8 existing-stack-slots) (rsp ,state-var)))
                            nil)
                        ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                        ;; TODO: Do this only for writable chunks?
                        ,@(if (posp stack-slots-needed)
-                             (if bvp
-                                 `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                        ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
-                               `((separate ':r ',(len bytes) ,first-addr-term
-                                           ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+                             `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                                    ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                            ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                            nil)))))))
          ((when erp)
           (mv erp nil)))
       (assumptions-for-memory-regions (rest regions)
-                                      base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp
+                                      base-var state-var stack-slots-needed existing-stack-slots position-independentp
                                       ;; todo: think about the order:
                                       (append assumptions-for-region acc)))))
 
 (local
   (defthm true-list-of-mv-nth-1-of-assumptions-for-memory-regions
     (implies (true-listp acc)
-             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp acc))))
+             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-var state-var stack-slots-needed existing-stack-slots position-independentp acc))))
     :hints (("Goal" :in-theory (enable assumptions-for-memory-regions)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -582,8 +542,6 @@
                                inputs
                                type-assumptions-for-array-varsp
                                inputs-disjoint-from
-                               bvp
-                               new-canonicalp
                                parsed-elf)
   (declare (xargs :guard (and (lifter-targetp target)
                               (booleanp position-independentp)
@@ -593,8 +551,6 @@
                               (names-and-typesp inputs)
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
-                              (booleanp bvp)
-                              (booleanp new-canonicalp)
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
@@ -609,7 +565,7 @@
         (er hard? 'assumptions-elf64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp bvp new-canonicalp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::elf64-regions-to-load parsed-elf)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -618,7 +574,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp nil))
+        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -636,9 +592,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (if bvp
-                                           (symbolic-bvplus-constant 48 code-address base-var)
-                                         (symbolic-add-constant code-address base-var))
+                                       (symbolic-bvplus-constant 48 code-address base-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
@@ -656,8 +610,7 @@
                                            existing-stack-slots
                                            addresses-and-lens-of-chunks-disjoint-from-inputs
                                            type-assumptions-for-array-varsp
-                                           nil nil
-                                           new-canonicalp))))
+                                           nil nil))))
     (mv nil ; no error
         (append standard-assumptions
                 memory-region-assumptions
@@ -665,7 +618,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
-  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-elf)))
+  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -682,8 +635,6 @@
                                  inputs
                                  type-assumptions-for-array-varsp
                                  inputs-disjoint-from
-                                 bvp
-                                 new-canonicalp
                                  parsed-macho)
   (declare (xargs :guard (and (lifter-targetp target)
                               (booleanp position-independentp)
@@ -693,8 +644,6 @@
                               (names-and-typesp inputs)
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
-                              (booleanp bvp)
-                              (booleanp new-canonicalp)
                               (acl2::parsed-mach-o-p parsed-macho))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-mach-o-p acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
@@ -709,7 +658,7 @@
         (er hard? 'assumptions-macho64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp bvp new-canonicalp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::macho64-regions-to-load parsed-macho)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -718,7 +667,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from existing and future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp nil))
+        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -736,9 +685,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (if bvp
-                                           (symbolic-bvplus-constant 48 code-address base-var)
-                                         (symbolic-add-constant code-address base-var))
+                                       (symbolic-bvplus-constant 48 code-address base-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
@@ -756,8 +703,7 @@
                                            existing-stack-slots
                                            addresses-and-lens-of-chunks-disjoint-from-inputs
                                            type-assumptions-for-array-varsp
-                                           nil nil
-                                           new-canonicalp))))
+                                           nil nil))))
     (mv nil ; no error
         (append standard-assumptions
                 memory-region-assumptions
@@ -765,7 +711,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
-  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-macho)))
+  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -779,8 +725,6 @@
                               inputs
                               type-assumptions-for-array-varsp
                               inputs-disjoint-from
-                              bvp
-                              new-canonicalp
                               parsed-pe)
   (declare (xargs :guard (and (lifter-targetp target)
                               (booleanp position-independentp)
@@ -790,8 +734,6 @@
                               (names-and-typesp inputs)
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
-                              (booleanp bvp)
-                              (booleanp new-canonicalp)
                               (acl2::parsed-pe-p parsed-pe))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p acl2::true-listp-when-pseudo-term-listp-2))))
            (ignore type-assumptions-for-array-varsp) ; todo: use this
@@ -810,7 +752,7 @@
         (er hard? 'assumptions-pe64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp bvp new-canonicalp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::pe64-regions-to-load parsed-pe)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -819,7 +761,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future and existing stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots bvp position-independentp new-canonicalp nil))
+        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp & ;addresses-and-lens-of-chunks-disjoint-from-inputs ; todo: use this!
@@ -839,9 +781,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (if bvp
-                                           (symbolic-bvplus-constant 48 code-address base-var)
-                                         (symbolic-add-constant code-address base-var))
+                                       (symbolic-bvplus-constant 48 code-address base-var)
                                      code-address))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
@@ -864,7 +804,7 @@
                   ;;                          addresses-and-lens-of-chunks-disjoint-from-inputs
                   ;;                          type-assumptions-for-array-varsp
                   ;;                          nil nil
-                  ;;                          new-canonicalp)
+                  ;;                          )
                   ))))
     (mv nil ; no error
         (append standard-assumptions
@@ -873,7 +813,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
-  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-pe)))
+  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-pe)))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -925,7 +865,7 @@
 ;;         ;;                  ;; Only a single stack slot is written
 ;;         ;;                  ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
 ;;         ;;                  :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86))))))
-;;         (assumptions-for-memory-chunk section-offset section-bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp t ;new-canonicalp
+;;         (assumptions-for-memory-chunk section-offset section-bytes relp state-var base-var stack-slots-needed existing-stack-slots bvp
 ;;                                       ))
 ;;     ;; no assumptions if section not present: ; todo: print a warning
 ;;     (mv nil
