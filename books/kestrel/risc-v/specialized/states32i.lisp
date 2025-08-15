@@ -297,10 +297,11 @@
   :short "Rewriting of @(tsee read-xreg-unsigned)
           to @(tsee read32i-xreg-unsigned)."
   (implies (and (statp stat)
-                (stat-validp stat (feat-rv32i-le))
+                (equal feat (feat-rv32i-le))
+                (stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
-           (equal (read-xreg-unsigned reg stat (feat-rv32i-le))
+           (equal (read-xreg-unsigned reg stat feat)
                   (read32i-xreg-unsigned reg (stat32i-from-stat stat))))
   :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
            read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
@@ -309,3 +310,92 @@
            (:e feat-rv32i-le)
            stat-rv32i-p
            stat-from-stat32i-of-stat32i-from-stat))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-signed{0}
+  :short "Partially evaluate @(tsee read-xreg-unsigned)
+          for the RV32I base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pick @(tsee feat-rv32i-le),
+     but we could have picked any of the variants for RV32I."))
+
+  (apt::parteval read-xreg-signed
+                 ((feat (feat-rv32i-le)))
+                 :new-name read32i-xreg-signed{0}
+                 :thm-enable nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-signed{1}
+  :short "Simplify @(tsee read32i-xreg-signed{0}) after partial evaluation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We assume the guard so that we can replace @('XLEN') with 32."))
+
+  (apt::simplify read32i-xreg-signed{0}
+    :new-name read32i-xreg-signed{1}
+    :simplify-guard t
+    :assumptions :guard
+    :thm-enable nil
+    :enable ((:e feat-rv32i-le))
+    :disable (logext)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-signed{2}
+  :short "Refine @(tsee read32i-xreg-signed{1})
+          to use the isomorphic states @(tsee stat32i)."
+
+  (apt::isodata read32i-xreg-signed{1}
+                ((stat stat32i-iso))
+                :undefined 0
+                :new-name read32i-xreg-signed{2}
+                :hints (("Goal" :in-theory (enable stat-rv32i-p
+                                                   (:e feat-rv32i-le))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-signed{3}
+  :short "Simplify the body of @(tsee read32i-xreg-signed{2})
+          to call @(tsee read32i-xreg-unsigned)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use @(tsee read-xreg-unsigned-to-read32i-xreg-unsigned)
+     to accomplish that rewriting.
+     Note that this eliminates the isomorphic conversion."))
+
+  (apt::simplify read32i-xreg-signed{2}
+    :new-name read32i-xreg-signed{3}
+    :assumptions :guard
+    :thm-enable nil
+    :enable (read-xreg-unsigned-to-read32i-xreg-unsigned
+             stat32i-from-stat-of-stat-from-stat32i
+             (:e feat-rv32i-le))
+    :disable (logext)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-signed
+  :short "Simplify the guard of @(tsee read32i-xreg-signed{3})
+          to eliminate the isomorphic conversion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We had to do this simplication separately from the previous one
+     because the rules needed to do the rewritings interfere."))
+
+  (apt::simplify read32i-xreg-signed{3}
+    :new-name read32i-xreg-signed
+    :assumptions :guard
+    :simplify-guard t
+    :simplify-body nil
+    :thm-enable nil
+    :enable (stat-from-stat32i
+             stat-validp
+             acl2::unsigned-byte-listp-rewrite-ubyte32-listp
+             acl2::unsigned-byte-p-rewrite-ubyte32p)))

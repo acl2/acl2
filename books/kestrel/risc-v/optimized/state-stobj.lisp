@@ -308,6 +308,15 @@
                 :undefined 0
                 :new-name read1-xreg-unsigned{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-unsigned{0}
+;;   :new-name read1-xreg-unsigned{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-xreg-signed{0}
@@ -317,6 +326,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-xreg-signed{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-signed{0}
+;;   :new-name read1-xreg-signed{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,6 +346,15 @@
                 :undefined 0
                 :new-name read1-xreg-unsigned32{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-unsigned32{0}
+;;   :new-name read1-xreg-unsigned32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-xreg-signed32{0}
@@ -337,6 +364,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-xreg-signed32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-signed32{0}
+;;   :new-name read1-xreg-signed32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,6 +384,15 @@
                 :undefined 0
                 :new-name write1-xreg{0}))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg{0}
+;;   :new-name write1-xreg{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection write1-xreg-32{0}
@@ -357,6 +402,15 @@
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name write1-xreg-32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg-32{0}
+;;   :new-name write1-xreg-32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -390,90 +444,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned8{0}
-  :short "Refine @(tsee read-memory-unsigned8) to use the stobj states."
+(defsection read1-mem8{0}
+  :short "Refine @(tsee read-mem8) to use the stobj states."
 
-  (apt::isodata read-memory-unsigned8
+  (apt::isodata read-mem8
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned8{0}))
+                :new-name read1-mem8{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned16{0}
-  :short "Refine @(tsee read-memory-unsigned16) to use the stobj states."
+(defsection read1-mem16{0}
+  :short "Refine @(tsee read-mem16) to use the stobj states."
 
-  (apt::isodata read-memory-unsigned16
+  (apt::isodata read-mem16
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned16{0}))
+                :new-name read1-mem16{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned32{0}
-  :short "Refine @(tsee read-memory-unsigned32) to use the stobj states."
+(defsection read1-mem32{0}
+  :short "Refine @(tsee read-mem32) to use the stobj states."
 
-  (apt::isodata read-memory-unsigned32
+  (apt::isodata read-mem32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned32{0}))
+                :new-name read1-mem32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read1-memory-unsigned64{0}
-  :short "Refine @(tsee read-memory-unsigned64) to use the stobj states."
+(defsection read1-mem64{0}
+  :short "Refine @(tsee read-mem64) to use the stobj states."
 
-  (apt::isodata read-memory-unsigned64
+  (apt::isodata read-mem64
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name read1-memory-unsigned64{0}))
+                :new-name read1-mem64{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned8{0}
-  :short "Refine @(tsee write-memory-unsigned8) to use the stobj states."
+(defsection write1-mem8{0}
+  :short "Refine @(tsee write-mem8) to use the stobj states."
 
-  (apt::isodata write-memory-unsigned8
+  (apt::isodata write-mem8
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned8{0}))
+                :new-name write1-mem8{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned16{0}
-  :short "Refine @(tsee write-memory-unsigned16) to use the stobj states."
+(defsection write1-mem16{0}
+  :short "Refine @(tsee write-mem16) to use the stobj states."
 
-  (apt::isodata write-memory-unsigned16
+  (apt::isodata write-mem16
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned16{0}))
+                :new-name write1-mem16{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned32{0}
-  :short "Refine @(tsee write-memory-unsigned32) to use the stobj states."
+(defsection write1-mem32{0}
+  :short "Refine @(tsee write-mem32) to use the stobj states."
 
-  (apt::isodata write-memory-unsigned32
+  (apt::isodata write-mem32
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned32{0}))
+                :new-name write1-mem32{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write1-memory-unsigned64{0}
-  :short "Refine @(tsee write-memory-unsigned64) to use the stobj states."
+(defsection write1-mem64{0}
+  :short "Refine @(tsee write-mem64) to use the stobj states."
 
-  (apt::isodata write-memory-unsigned64
+  (apt::isodata write-mem64
                 ((stat stat1-iso))
                 :undefined 0
-                :new-name write1-memory-unsigned64{0}))
+                :new-name write1-mem64{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read1-instruction{0}
-  :short "Refine @(tsee read-instruction) to use the stobj states."
+  :short "Refine @(tsee read-instr) to use the stobj states."
 
-  (apt::isodata read-instruction
+  (apt::isodata read-instr
                 ((stat stat1-iso))
                 :undefined 0
                 :new-name read1-instruction{0}))

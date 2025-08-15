@@ -510,7 +510,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-memory-unsigned8 ((addr integerp) (stat statp) (feat featp))
+(define read-mem8 ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte8p)
   :short "Read an unsigned 8-bit integer from memory."
@@ -530,21 +530,21 @@
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
   :hooks (:fix)
-  :type-prescription (natp (read-memory-unsigned8 addr stat feat))
+  :type-prescription (natp (read-mem8 addr stat feat))
 
   ///
 
-  (defret read-memory-unsigned8-upper-bound
+  (defret read-mem8-upper-bound
     (<= val 255)
     :rule-classes :linear
     :hints (("Goal"
-             :use ubyte8p-of-read-memory-unsigned8
-             :in-theory (disable read-memory-unsigned8
-                                 ubyte8p-of-read-memory-unsigned8)))))
+             :use ubyte8p-of-read-mem8
+             :in-theory (disable read-mem8
+                                 ubyte8p-of-read-mem8)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-memory-unsigned16 ((addr integerp) (stat statp) (feat featp))
+(define read-mem16 ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte16p
                 :hints (("Goal" :in-theory (enable ubyte16p
@@ -559,13 +559,13 @@
      we read that, and the subsequent byte.
      We form the 16-bit halfword based on endianness.")
    (xdoc::p
-    "As in @(tsee read-memory-unsigned8),
+    "As in @(tsee read-mem8),
      we let the address be any integer.
-     We use @(tsee read-memory-unsigned8) twice.
+     We use @(tsee read-mem8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
-  (b* ((b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat)))
+  (b* ((b0 (read-mem8 addr stat feat))
+       (b1 (read-mem8 (+ (lifix addr) 1) stat feat)))
     (cond ((feat-little-endianp feat) (logappn 8 b0
                                                8 b1))
           ((feat-big-endianp feat) (logappn 8 b1
@@ -582,7 +582,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-memory-unsigned32 ((addr integerp) (stat statp) (feat featp))
+(define read-mem32 ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
@@ -597,15 +597,15 @@
      we read that, and the subsequent bytes.
      We form the 32-bit word based on endianness.")
    (xdoc::p
-    "As in @(tsee read-memory-unsigned8),
+    "As in @(tsee read-mem8),
      we let the address be any integer.
-     We use @(tsee read-memory-unsigned8) four times.
+     We use @(tsee read-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0."))
-  (b* ((b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
+  (b* ((b0 (read-mem8 addr stat feat))
+       (b1 (read-mem8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-mem8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-mem8 (+ (lifix addr) 3) stat feat)))
     (cond ((feat-little-endianp feat) (logappn 8 b0
                                                8 b1
                                                8 b2
@@ -626,7 +626,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-memory-unsigned64 ((addr integerp) (stat statp) (feat featp))
+(define read-mem64 ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte64p
                 :hints (("Goal" :in-theory (enable ubyte64p
@@ -641,19 +641,19 @@
      we read that, and the subsequent bytes.
      We form the 64-bit doubleword based on endianness.")
    (xdoc::p
-    "As in @(tsee read-memory-unsigned8),
+    "As in @(tsee read-mem8),
      we let the address be any integer.
-     We use @(tsee read-memory-unsigned8) four times.
+     We use @(tsee read-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat))
-       (b4 (read-memory-unsigned8 (+ (lifix addr) 4) stat feat))
-       (b5 (read-memory-unsigned8 (+ (lifix addr) 5) stat feat))
-       (b6 (read-memory-unsigned8 (+ (lifix addr) 6) stat feat))
-       (b7 (read-memory-unsigned8 (+ (lifix addr) 7) stat feat)))
+  (b* ((b0 (read-mem8 addr stat feat))
+       (b1 (read-mem8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-mem8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-mem8 (+ (lifix addr) 3) stat feat))
+       (b4 (read-mem8 (+ (lifix addr) 4) stat feat))
+       (b5 (read-mem8 (+ (lifix addr) 5) stat feat))
+       (b6 (read-mem8 (+ (lifix addr) 6) stat feat))
+       (b7 (read-mem8 (+ (lifix addr) 7) stat feat)))
     (cond ((feat-little-endianp feat) (logappn 8 b0
                                                8 b1
                                                8 b2
@@ -682,7 +682,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-memory-unsigned8 ((addr integerp)
+(define write-mem8 ((addr integerp)
                                 (val ubyte8p)
                                 (stat statp)
                                 (feat featp))
@@ -708,14 +708,14 @@
 
   ///
 
-  (defret stat-validp-of-write-memory-unsigned8
+  (defret stat-validp-of-write-mem8
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable stat-validp max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-memory-unsigned16 ((addr integerp)
+(define write-mem16 ((addr integerp)
                                  (val ubyte16p)
                                  (stat statp)
                                  (feat featp))
@@ -729,9 +729,9 @@
      we write that, and the subsequent byte.
      We write the bytes according to endianness.")
    (xdoc::p
-    "As in @(tsee write-memory-unsigned8),
+    "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-memory-unsigned8) twice.
+     We use @(tsee write-mem8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
   (b* ((val (ubyte16-fix val))
@@ -741,8 +741,8 @@
         (if (feat-little-endianp feat)
             (mv b0 b1)
           (mv b1 b0)))
-       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat)))
+       (stat (write-mem8 addr 1st-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 1) 2nd-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -751,13 +751,13 @@
 
   ///
 
-  (defret stat-validp-of-write-memory-unsigned16
+  (defret stat-validp-of-write-mem16
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-memory-unsigned32 ((addr integerp)
+(define write-mem32 ((addr integerp)
                                  (val ubyte32p)
                                  (stat statp)
                                  (feat featp))
@@ -771,9 +771,9 @@
      we write that, and the subsequent bytes.
      We write the bytes according to endianness.")
    (xdoc::p
-    "As in @(tsee write-memory-unsigned8),
+    "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-memory-unsigned8) twice.
+     We use @(tsee write-mem8) twice.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte32-fix val))
@@ -785,10 +785,10 @@
         (if (feat-little-endianp feat)
             (mv b0 b1 b2 b3)
           (mv b3 b2 b1 b0)))
-       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 2) 3rd-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 3) 4th-byte stat feat)))
+       (stat (write-mem8 addr 1st-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 1) 2nd-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 2) 3rd-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 3) 4th-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -797,13 +797,13 @@
 
   ///
 
-  (defret stat-validp-of-write-memory-unsigned32
+  (defret stat-validp-of-write-mem32
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-memory-unsigned64 ((addr integerp)
+(define write-mem64 ((addr integerp)
                                  (val ubyte64p)
                                  (stat statp)
                                  (feat featp))
@@ -817,9 +817,9 @@
      we write that, and the subsequent bytes.
      We write the bytes according to endianness.")
    (xdoc::p
-    "As in @(tsee write-memory-unsigned8),
+    "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-memory-unsigned8) four times.
+     We use @(tsee write-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte64-fix val))
@@ -836,14 +836,14 @@
         (if (feat-little-endianp feat)
             (mv b0 b1 b2 b3 b4 b5 b6 b7)
           (mv b7 b6 b5 b4 b3 b2 b1 b0)))
-       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 2) 3rd-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 3) 4th-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 4) 5th-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 5) 6th-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 6) 7th-byte stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 7) 8th-byte stat feat)))
+       (stat (write-mem8 addr 1st-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 1) 2nd-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 2) 3rd-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 3) 4th-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 4) 5th-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 5) 6th-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 6) 7th-byte stat feat))
+       (stat (write-mem8 (+ (lifix addr) 7) 8th-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -852,13 +852,13 @@
 
   ///
 
-  (defret stat-validp-of-write-memory-unsigned64
+  (defret stat-validp-of-write-mem64
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-instruction ((addr integerp) (stat statp) (feat featp))
+(define read-instr ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
   :returns (val ubyte32-optionp
                 :hints (("Goal" :in-theory (enable ubyte32p ifix))))
@@ -870,13 +870,13 @@
      so the memory address is the one of the first byte;
      we read that, and the subsequent bytes.")
    (xdoc::p
-    "As in @(tsee read-memory-unsigned8),
+    "As in @(tsee read-mem8),
      we let the address be any integer,
      but we keep the low @('XLEN') bits,
      and we perform an alignment check [ISA:1.5];
      currently instructions must be always 4-byte-aligned,
      but see broader discussion in @(tsee feat->ialign).
-     Note that @(tsee read-memory-unsigned8)
+     Note that @(tsee read-mem8)
      already coerces the integer address to keep the low @('XLEN') bits,
      but we do that here too so we can do a clear alignment check;
      when we extend the model with
@@ -885,17 +885,17 @@
      but for now what we have is fine for specification.")
    (xdoc::p
     "If the alignment check passes,
-     we use @(tsee read-memory-unsigned8) four times.
+     we use @(tsee read-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0.")
    (xdoc::p
     "We return @('nil') if the first address is not 4-byte-aligned."))
   (b* ((addr (loghead (feat->xlen feat) addr))
        ((unless (= (mod addr 4) 0)) nil)
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+       (b0 (read-mem8 addr stat feat))
+       (b1 (read-mem8 (+ addr 1) stat feat))
+       (b2 (read-mem8 (+ addr 2) stat feat))
+       (b3 (read-mem8 (+ addr 3) stat feat)))
     (logappn 8 b0
              8 b1
              8 b2
@@ -907,7 +907,7 @@
   (more-returns
    (val (or (natp val)
             (null val))
-        :name natp-or-null-read-instruction
+        :name natp-or-null-read-instr
         :rule-classes :type-prescription
         :hints (("Goal" :in-theory (enable ifix)))))
 

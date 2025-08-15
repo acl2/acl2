@@ -44,6 +44,7 @@
 (include-book "instructions/bit")
 (include-book "instructions/padd")
 (include-book "instructions/psub")
+(include-book "instructions/pcmp")
 (include-book "instructions/rotate-and-shift")
 (include-book "instructions/fp/logical")
 (include-book "instructions/fp/mov")
