@@ -382,7 +382,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SLLI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SLLI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -459,7 +459,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SRLI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SRLI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -537,7 +537,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SRAI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SRAI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
