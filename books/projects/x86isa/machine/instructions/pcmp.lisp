@@ -59,9 +59,11 @@
                    :hyp (and (natp result-width)
                              (<= (pos-fix el-width) result-width)
                              (equal (mod result-width (pos-fix el-width)) 0))
-                   :hints (("Goal" :in-theory (disable unsigned-byte-p
-                                                       bitops::logapp-of-i-0
-                                                       acl2::prefer-positive-addends-<))))
+                   :hints (("Goal"
+                            :in-theory
+                            (disable unsigned-byte-p
+                                     bitops::logapp-of-i-0
+                                     acl2::prefer-positive-addends-<))))
   :measure (nfix result-width)
   (b* ((el-width (mbe :logic (pos-fix el-width) :exec el-width))
        (a (lnfix a))
@@ -285,9 +287,11 @@
                    :hyp (and (natp result-width)
                              (<= (pos-fix el-width) result-width)
                              (equal (mod result-width (pos-fix el-width)) 0))
-                   :hints (("Goal" :in-theory (disable unsigned-byte-p
-                                                       bitops::logapp-of-i-0
-                                                       acl2::prefer-positive-addends-<))))
+                   :hints (("Goal"
+                            :in-theory
+                            (disable unsigned-byte-p
+                                     bitops::logapp-of-i-0
+                                     acl2::prefer-positive-addends-<))))
   :measure (nfix result-width)
   (b* ((result-width (nfix result-width))
        (el-width (pos-fix el-width))
@@ -295,10 +299,12 @@
        (b (nfix b))
        ((when (zp result-width)) 0)
        (el-greater? (> (logext el-width a)
-                     (logext el-width b))))
-      (logapp el-width (if el-greater? -1 0)
-              (pcmpgt (- result-width el-width) el-width
-                      (logtail el-width a) (logtail el-width b)))))
+                       (logext el-width b))))
+    (logapp el-width (if el-greater? -1 0)
+            (pcmpgt (- result-width el-width) el-width
+                    (logtail el-width a) (logtail el-width b)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-inst x86-pcmpgt-sse
   :parents (two-byte-opcodes)
@@ -379,3 +385,5 @@
        ;; Update the instruction pointer.
        (x86 (write-*ip proc-mode temp-rip x86)))
       x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
