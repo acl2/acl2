@@ -380,8 +380,10 @@
   (let ((target-address-term (if position-independentp
                                  ;; Position-independent, so the target is the base-var plus the target-offset:
                                  (if (= 0 target-offset)
-                                     `(logext 64 ,base-var) ; avoids adding 0
-                                   `(logext 64 (bvplus 64 ',target-offset ,base-var)))
+                                     base-var
+                                   ;;`(logext 64 ,base-var) ; avoids adding 0
+                                   ;; The RIP (in the X package, not the X86ISA package) is a u64 that satisfies unsigned-canonical-address-p:
+                                   `(bvsx 64 48 (bvplus 48 ',target-offset ,base-var)))
                                ;; Not position-independent, so the target is a concrete address:
                                (acl2::enquote target-offset))))
     (append (make-standard-state-assumptions-fn state-var)
