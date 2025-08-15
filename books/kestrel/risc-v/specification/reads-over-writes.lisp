@@ -300,126 +300,126 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  ;; read-xreg-...-of-write-memory-unsigned8:
+  ;; read-xreg-...-of-write-mem8:
 
-  (defrule read-xreg-unsigned-of-write-memory-unsigned8
+  (defrule read-xreg-unsigned-of-write-mem8
     (equal (read-xreg-unsigned reg
-                               (write-memory-unsigned8 addr val stat feat)
+                               (write-mem8 addr val stat feat)
                                feat)
            (read-xreg-unsigned reg stat feat))
     :enable (read-xreg-unsigned
-             write-memory-unsigned8))
+             write-mem8))
 
-  (defrule read-xreg-signed-of-write-memory-unsigned8
+  (defrule read-xreg-signed-of-write-mem8
     (equal (read-xreg-signed reg
-                             (write-memory-unsigned8 addr val stat feat)
+                             (write-mem8 addr val stat feat)
                              feat)
            (read-xreg-signed reg stat feat))
     :enable read-xreg-signed)
 
-  (defrule read-xreg-unsigned32-of-write-memory-unsigned8
+  (defrule read-xreg-unsigned32-of-write-mem8
     (equal (read-xreg-unsigned32 reg
-                                 (write-memory-unsigned8 addr val stat feat)
+                                 (write-mem8 addr val stat feat)
                                  feat)
            (read-xreg-unsigned32 reg stat feat))
     :enable read-xreg-unsigned32)
 
-  (defrule read-xreg-signed32-of-write-memory-unsigned8
+  (defrule read-xreg-signed32-of-write-mem8
     (equal (read-xreg-signed32 reg
-                               (write-memory-unsigned8 addr val stat feat)
+                               (write-mem8 addr val stat feat)
                                feat)
            (read-xreg-signed32 reg stat feat))
     :enable read-xreg-signed32)
 
-  ;; read-xreg-...-of-write-memory-unsigned16:
+  ;; read-xreg-...-of-write-mem16:
 
-  (defrule read-xreg-unsigned-of-write-memory-unsigned16
+  (defrule read-xreg-unsigned-of-write-mem16
     (equal (read-xreg-unsigned reg
-                               (write-memory-unsigned16 addr val stat feat)
+                               (write-mem16 addr val stat feat)
                                feat)
            (read-xreg-unsigned reg stat feat))
-    :enable write-memory-unsigned16)
+    :enable write-mem16)
 
-  (defrule read-xreg-signed-of-write-memory-unsigned16
+  (defrule read-xreg-signed-of-write-mem16
     (equal (read-xreg-signed reg
-                             (write-memory-unsigned16 addr val stat feat)
+                             (write-mem16 addr val stat feat)
                              feat)
            (read-xreg-signed reg stat feat))
-    :enable write-memory-unsigned16)
+    :enable write-mem16)
 
-  (defrule read-xreg-unsigned32-of-write-memory-unsigned16
+  (defrule read-xreg-unsigned32-of-write-mem16
     (equal (read-xreg-unsigned32 reg
-                                 (write-memory-unsigned16 addr val stat feat)
+                                 (write-mem16 addr val stat feat)
                                  feat)
            (read-xreg-unsigned32 reg stat feat))
-    :enable write-memory-unsigned16)
+    :enable write-mem16)
 
-  (defrule read-xreg-signed32-of-write-memory-unsigned16
+  (defrule read-xreg-signed32-of-write-mem16
     (equal (read-xreg-signed32 reg
-                               (write-memory-unsigned16 addr val stat feat)
+                               (write-mem16 addr val stat feat)
                                feat)
            (read-xreg-signed32 reg stat feat))
-    :enable write-memory-unsigned16)
+    :enable write-mem16)
 
-  ;; read-xreg-...-of-write-memory-unsigned32:
+  ;; read-xreg-...-of-write-mem32:
 
-  (defrule read-xreg-unsigned-of-write-memory-unsigned32
+  (defrule read-xreg-unsigned-of-write-mem32
     (equal (read-xreg-unsigned reg
-                               (write-memory-unsigned32 addr val stat feat)
+                               (write-mem32 addr val stat feat)
                                feat)
            (read-xreg-unsigned reg stat feat))
-    :enable write-memory-unsigned32)
+    :enable write-mem32)
 
-  (defrule read-xreg-signed-of-write-memory-unsigned32
+  (defrule read-xreg-signed-of-write-mem32
     (equal (read-xreg-signed reg
-                             (write-memory-unsigned32 addr val stat feat)
+                             (write-mem32 addr val stat feat)
                              feat)
            (read-xreg-signed reg stat feat))
-    :enable write-memory-unsigned32)
+    :enable write-mem32)
 
-  (defrule read-xreg-unsigned32-of-write-memory-unsigned32
+  (defrule read-xreg-unsigned32-of-write-mem32
     (equal (read-xreg-unsigned32 reg
-                                 (write-memory-unsigned32 addr val stat feat)
+                                 (write-mem32 addr val stat feat)
                                  feat)
            (read-xreg-unsigned32 reg stat feat))
-    :enable write-memory-unsigned32)
+    :enable write-mem32)
 
-  (defrule read-xreg-signed32-of-write-memory-unsigned32
+  (defrule read-xreg-signed32-of-write-mem32
     (equal (read-xreg-signed32 reg
-                               (write-memory-unsigned32 addr val stat feat)
+                               (write-mem32 addr val stat feat)
                                feat)
            (read-xreg-signed32 reg stat feat))
-    :enable write-memory-unsigned32)
+    :enable write-mem32)
 
-  ;; read-xreg-...-of-write-memory-unsigned64:
+  ;; read-xreg-...-of-write-mem64:
 
-  (defrule read-xreg-unsigned-of-write-memory-unsigned64
+  (defrule read-xreg-unsigned-of-write-mem64
     (equal (read-xreg-unsigned reg
-                               (write-memory-unsigned64 addr val stat feat)
+                               (write-mem64 addr val stat feat)
                                feat)
            (read-xreg-unsigned reg stat feat))
-    :enable write-memory-unsigned64)
+    :enable write-mem64)
 
-  (defrule read-xreg-signed-of-write-memory-unsigned64
+  (defrule read-xreg-signed-of-write-mem64
     (equal (read-xreg-signed reg
-                             (write-memory-unsigned64 addr val stat feat)
+                             (write-mem64 addr val stat feat)
                              feat)
            (read-xreg-signed reg stat feat))
-    :enable write-memory-unsigned64)
+    :enable write-mem64)
 
-  (defrule read-xreg-unsigned32-of-write-memory-unsigned64
+  (defrule read-xreg-unsigned32-of-write-mem64
     (equal (read-xreg-unsigned32 reg
-                                 (write-memory-unsigned64 addr val stat feat)
+                                 (write-mem64 addr val stat feat)
                                  feat)
            (read-xreg-unsigned32 reg stat feat))
-    :enable write-memory-unsigned64)
+    :enable write-mem64)
 
-  (defrule read-xreg-signed32-of-write-memory-unsigned64
+  (defrule read-xreg-signed32-of-write-mem64
     (equal (read-xreg-signed32 reg
-                               (write-memory-unsigned64 addr val stat feat)
+                               (write-mem64 addr val stat feat)
                                feat)
            (read-xreg-signed32 reg stat feat))
-    :enable write-memory-unsigned64))
+    :enable write-mem64))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -481,26 +481,26 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-pc-of-write-memory-unsigned8
-    (equal (read-pc (write-memory-unsigned8 addr val stat feat) feat)
+  (defrule read-pc-of-write-mem8
+    (equal (read-pc (write-mem8 addr val stat feat) feat)
            (read-pc stat feat))
     :enable (read-pc
-             write-memory-unsigned8))
+             write-mem8))
 
-  (defrule read-pc-of-write-memory-unsigned16
-    (equal (read-pc (write-memory-unsigned16 addr val stat feat) feat)
+  (defrule read-pc-of-write-mem16
+    (equal (read-pc (write-mem16 addr val stat feat) feat)
            (read-pc stat feat))
-    :enable write-memory-unsigned16)
+    :enable write-mem16)
 
-  (defrule read-pc-of-write-memory-unsigned32
-    (equal (read-pc (write-memory-unsigned32 addr val stat feat) feat)
+  (defrule read-pc-of-write-mem32
+    (equal (read-pc (write-mem32 addr val stat feat) feat)
            (read-pc stat feat))
-    :enable write-memory-unsigned32)
+    :enable write-mem32)
 
-  (defrule read-pc-of-write-memory-unsigned64
-    (equal (read-pc (write-memory-unsigned64 addr val stat feat) feat)
+  (defrule read-pc-of-write-mem64
+    (equal (read-pc (write-mem64 addr val stat feat) feat)
            (read-pc stat feat))
-    :enable write-memory-unsigned64))
+    :enable write-mem64))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,49 +514,49 @@
 
   ;; read-memory-...-of-write-xreg:
 
-  (defrule read-memory-unsigned8-of-write-xreg
-    (equal (read-memory-unsigned8 addr (write-xreg reg val stat feat) feat)
-           (read-memory-unsigned8 addr stat feat))
-    :enable (read-memory-unsigned8
+  (defrule read-mem8-of-write-xreg
+    (equal (read-mem8 addr (write-xreg reg val stat feat) feat)
+           (read-mem8 addr stat feat))
+    :enable (read-mem8
              write-xreg))
 
-  (defrule read-memory-unsigned16-of-write-xreg
-    (equal (read-memory-unsigned16 addr (write-xreg reg val stat feat) feat)
-           (read-memory-unsigned16 addr stat feat))
-    :enable read-memory-unsigned16)
+  (defrule read-mem16-of-write-xreg
+    (equal (read-mem16 addr (write-xreg reg val stat feat) feat)
+           (read-mem16 addr stat feat))
+    :enable read-mem16)
 
-  (defrule read-memory-unsigned32-of-write-xreg
-    (equal (read-memory-unsigned32 addr (write-xreg reg val stat feat) feat)
-           (read-memory-unsigned32 addr stat feat))
-    :enable read-memory-unsigned32)
+  (defrule read-mem32-of-write-xreg
+    (equal (read-mem32 addr (write-xreg reg val stat feat) feat)
+           (read-mem32 addr stat feat))
+    :enable read-mem32)
 
-  (defrule read-memory-unsigned64-of-write-xreg
-    (equal (read-memory-unsigned64 addr (write-xreg reg val stat feat) feat)
-           (read-memory-unsigned64 addr stat feat))
-    :enable read-memory-unsigned64)
+  (defrule read-mem64-of-write-xreg
+    (equal (read-mem64 addr (write-xreg reg val stat feat) feat)
+           (read-mem64 addr stat feat))
+    :enable read-mem64)
 
   ;; read-memory-...-of-write-xreg-32:
 
-  (defrule read-memory-unsigned8-of-write-xreg-32
-    (equal (read-memory-unsigned8 addr (write-xreg-32 reg val stat feat) feat)
-           (read-memory-unsigned8 addr stat feat))
-    :enable (read-memory-unsigned8
+  (defrule read-mem8-of-write-xreg-32
+    (equal (read-mem8 addr (write-xreg-32 reg val stat feat) feat)
+           (read-mem8 addr stat feat))
+    :enable (read-mem8
              write-xreg-32))
 
-  (defrule read-memory-unsigned16-of-write-xreg-32
-    (equal (read-memory-unsigned16 addr (write-xreg-32 reg val stat feat) feat)
-           (read-memory-unsigned16 addr stat feat))
-    :enable read-memory-unsigned16)
+  (defrule read-mem16-of-write-xreg-32
+    (equal (read-mem16 addr (write-xreg-32 reg val stat feat) feat)
+           (read-mem16 addr stat feat))
+    :enable read-mem16)
 
-  (defrule read-memory-unsigned32-of-write-xreg-32
-    (equal (read-memory-unsigned32 addr (write-xreg-32 reg val stat feat) feat)
-           (read-memory-unsigned32 addr stat feat))
-    :enable read-memory-unsigned32)
+  (defrule read-mem32-of-write-xreg-32
+    (equal (read-mem32 addr (write-xreg-32 reg val stat feat) feat)
+           (read-mem32 addr stat feat))
+    :enable read-mem32)
 
-  (defrule read-memory-unsigned64-of-write-xreg-32
-    (equal (read-memory-unsigned64 addr (write-xreg-32 reg val stat feat) feat)
-           (read-memory-unsigned64 addr stat feat))
-    :enable read-memory-unsigned64))
+  (defrule read-mem64-of-write-xreg-32
+    (equal (read-mem64 addr (write-xreg-32 reg val stat feat) feat)
+           (read-mem64 addr stat feat))
+    :enable read-mem64))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -571,45 +571,45 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-memory-unsigned8-of-write-pc
-    (equal (read-memory-unsigned8 addr (write-pc pc stat feat) feat)
-           (read-memory-unsigned8 addr stat feat))
-    :enable (read-memory-unsigned8
+  (defrule read-mem8-of-write-pc
+    (equal (read-mem8 addr (write-pc pc stat feat) feat)
+           (read-mem8 addr stat feat))
+    :enable (read-mem8
              write-pc))
 
-  (defrule read-memory-unsigned16-of-write-pc
-    (equal (read-memory-unsigned16 addr (write-pc pc stat feat) feat)
-           (read-memory-unsigned16 addr stat feat))
-    :enable read-memory-unsigned16)
+  (defrule read-mem16-of-write-pc
+    (equal (read-mem16 addr (write-pc pc stat feat) feat)
+           (read-mem16 addr stat feat))
+    :enable read-mem16)
 
-  (defrule read-memory-unsigned32-of-write-pc
-    (equal (read-memory-unsigned32 addr (write-pc pc stat feat) feat)
-           (read-memory-unsigned32 addr stat feat))
-    :enable read-memory-unsigned32)
+  (defrule read-mem32-of-write-pc
+    (equal (read-mem32 addr (write-pc pc stat feat) feat)
+           (read-mem32 addr stat feat))
+    :enable read-mem32)
 
-  (defrule read-memory-unsigned64-of-write-pc
-    (equal (read-memory-unsigned64 addr (write-pc pc stat feat) feat)
-           (read-memory-unsigned64 addr stat feat))
-    :enable read-memory-unsigned64)
+  (defrule read-mem64-of-write-pc
+    (equal (read-mem64 addr (write-pc pc stat feat) feat)
+           (read-mem64 addr stat feat))
+    :enable read-mem64)
 
-  (defrule read-memory-unsigned8-of-inc4-pc
-    (equal (read-memory-unsigned8 addr (inc4-pc stat feat) feat)
-           (read-memory-unsigned8 addr stat feat))
+  (defrule read-mem8-of-inc4-pc
+    (equal (read-mem8 addr (inc4-pc stat feat) feat)
+           (read-mem8 addr stat feat))
     :enable inc4-pc)
 
-  (defrule read-memory-unsigned16-of-inc4-pc
-    (equal (read-memory-unsigned16 addr (inc4-pc stat feat) feat)
-           (read-memory-unsigned16 addr stat feat))
+  (defrule read-mem16-of-inc4-pc
+    (equal (read-mem16 addr (inc4-pc stat feat) feat)
+           (read-mem16 addr stat feat))
     :enable inc4-pc)
 
-  (defrule read-memory-unsigned32-of-inc4-pc
-    (equal (read-memory-unsigned32 addr (inc4-pc stat feat) feat)
-           (read-memory-unsigned32 addr stat feat))
+  (defrule read-mem32-of-inc4-pc
+    (equal (read-mem32 addr (inc4-pc stat feat) feat)
+           (read-mem32 addr stat feat))
     :enable inc4-pc)
 
-  (defrule read-memory-unsigned64-of-inc4-pc
-    (equal (read-memory-unsigned64 addr (inc4-pc stat feat) feat)
-           (read-memory-unsigned64 addr stat feat))
+  (defrule read-mem64-of-inc4-pc
+    (equal (read-mem64 addr (inc4-pc stat feat) feat)
+           (read-mem64 addr stat feat))
     :enable inc4-pc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -626,29 +626,27 @@
    (xdoc::p
     "We provide a ruleset with these theorems."))
 
-  ;; read-memory-unsigned8-of-write-memory-unsigned8/16/32/64:
+  ;; read-mem8-of-write-mem8/16/32/64:
 
-  (defruled read-memory-unsigned8-pf-write-memory-unsigned8
+  (defruled read-mem8-pf-write-mem8
     (implies (stat-validp stat feat)
-             (equal (read-memory-unsigned8 addr1
-                                           (write-memory-unsigned8
-                                            addr2 val stat feat)
-                                           feat)
+             (equal (read-mem8 addr1
+                               (write-mem8 addr2 val stat feat)
+                               feat)
                     (if (equal (loghead (feat->xlen feat) addr1)
                                (loghead (feat->xlen feat) addr2))
                         (ubyte8-fix val)
-                      (read-memory-unsigned8 addr1 stat feat))))
-    :enable (read-memory-unsigned8
-             write-memory-unsigned8
+                      (read-mem8 addr1 stat feat))))
+    :enable (read-mem8
+             write-mem8
              max
              nfix))
 
-  (defruled read-memory-unsigned8-of-write-memory-unsigned16
+  (defruled read-mem8-of-write-mem16
     (implies (stat-validp stat feat)
-             (equal (read-memory-unsigned8 addr1
-                                           (write-memory-unsigned16
-                                            addr2 val stat feat)
-                                           feat)
+             (equal (read-mem8 addr1
+                               (write-mem16 addr2 val stat feat)
+                               feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
                            (cond ((feat-little-endianp feat)
@@ -665,16 +663,15 @@
                                  ((feat-big-endianp feat)
                                   (part-select (ubyte16-fix val)
                                                :low 0 :high 7))))
-                          (t (read-memory-unsigned8 addr1 stat feat)))))
+                          (t (read-mem8 addr1 stat feat)))))
     :use (:instance lemma (addr2 (ifix addr2)))
     :prep-lemmas
     ((defruled lemma
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
-                (equal (read-memory-unsigned8 addr1
-                                              (write-memory-unsigned16
-                                               addr2 val stat feat)
-                                              feat)
+                (equal (read-mem8 addr1
+                                  (write-mem16 addr2 val stat feat)
+                                  feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
                               (cond ((feat-little-endianp feat)
@@ -691,22 +688,21 @@
                                     ((feat-big-endianp feat)
                                      (part-select (ubyte16-fix val)
                                                   :low 0 :high 7))))
-                             (t (read-memory-unsigned8 addr1 stat feat)))))
+                             (t (read-mem8 addr1 stat feat)))))
        :cases ((feat-32p feat))
-       :enable (read-memory-unsigned8
-                write-memory-unsigned8
-                write-memory-unsigned16
+       :enable (read-mem8
+                write-mem8
+                write-mem16
                 loghead-upper-bound
                 loghead-plus-c-differs
                 ubyte8p-of-logtail-8-of-ubyte16
                 max))))
 
-  (defruled read-memory-unsigned8-of-write-memory-unsigned32
+  (defruled read-mem8-of-write-mem32
     (implies (stat-validp stat feat)
-             (equal (read-memory-unsigned8 addr1
-                                           (write-memory-unsigned32
-                                            addr2 val stat feat)
-                                           feat)
+             (equal (read-mem8 addr1
+                               (write-mem32 addr2 val stat feat)
+                               feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
                            (cond ((feat-little-endianp feat)
@@ -742,16 +738,15 @@
                                  ((feat-big-endianp feat)
                                   (part-select (ubyte32-fix val)
                                                :low 0 :high 7))))
-                          (t (read-memory-unsigned8 addr1 stat feat)))))
+                          (t (read-mem8 addr1 stat feat)))))
     :use (:instance lemma (addr2 (ifix addr2)))
     :prep-lemmas
     ((defruled lemma
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
-                (equal (read-memory-unsigned8 addr1
-                                              (write-memory-unsigned32
-                                               addr2 val stat feat)
-                                              feat)
+                (equal (read-mem8 addr1
+                                  (write-mem32 addr2 val stat feat)
+                                  feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
                               (cond ((feat-little-endianp feat)
@@ -784,23 +779,22 @@
                                     ((feat-big-endianp feat)
                                      (part-select (ubyte32-fix val)
                                                   :low 0 :high 7))))
-                             (t (read-memory-unsigned8 addr1 stat feat)))))
+                             (t (read-mem8 addr1 stat feat)))))
        :cases ((feat-32p feat))
-       :enable (read-memory-unsigned8
-                write-memory-unsigned8
-                write-memory-unsigned32
+       :enable (read-mem8
+                write-mem8
+                write-mem32
                 loghead-upper-bound
                 loghead-plus-c-differs
                 loghead-plus-c-differs-from-plus-d
                 ubyte8p-of-logtail-24-of-ubyte32
                 max))))
 
-  (defruled read-memory-unsigned8-of-write-memory-unsigned64
+  (defruled read-mem8-of-write-mem64
     (implies (stat-validp stat feat)
-             (equal (read-memory-unsigned8 addr1
-                                           (write-memory-unsigned64
-                                            addr2 val stat feat)
-                                           feat)
+             (equal (read-mem8 addr1
+                               (write-mem64 addr2 val stat feat)
+                               feat)
                     (cond ((equal (loghead (feat->xlen feat) addr1)
                                   (loghead (feat->xlen feat) addr2))
                            (cond ((feat-little-endianp feat)
@@ -872,16 +866,15 @@
                                  ((feat-big-endianp feat)
                                   (part-select (ubyte64-fix val)
                                                :low 0 :high 7))))
-                          (t (read-memory-unsigned8 addr1 stat feat)))))
+                          (t (read-mem8 addr1 stat feat)))))
     :use (:instance lemma (addr2 (ifix addr2)))
     :prep-lemmas
     ((defruled lemma
        (implies (and (stat-validp stat feat)
                      (integerp addr2))
-                (equal (read-memory-unsigned8 addr1
-                                              (write-memory-unsigned64
-                                               addr2 val stat feat)
-                                              feat)
+                (equal (read-mem8 addr1
+                                  (write-mem64 addr2 val stat feat)
+                                  feat)
                        (cond ((equal (loghead (feat->xlen feat) addr1)
                                      (loghead (feat->xlen feat) addr2))
                               (cond ((feat-little-endianp feat)
@@ -946,10 +939,10 @@
                                     ((feat-big-endianp feat)
                                      (part-select (ubyte64-fix val)
                                                   :low 0 :high 7))))
-                             (t (read-memory-unsigned8 addr1 stat feat)))))
-       :enable (read-memory-unsigned8
-                write-memory-unsigned8
-                write-memory-unsigned64
+                             (t (read-mem8 addr1 stat feat)))))
+       :enable (read-mem8
+                write-mem8
+                write-mem64
                 loghead-upper-bound
                 loghead-plus-c-differs
                 loghead-plus-c-differs-from-plus-d
@@ -957,25 +950,24 @@
                 max)
        :cases ((feat-32p feat)))))
 
-  ;; read-memory-unsigned8-of-write-memory-unsigned8/16/32/64:
+  ;; read-mem8-of-write-mem8/16/32/64:
 
-  (defruled read-memory-unsigned16-of-write-memory-unsigned8
+  (defruled read-mem16-of-write-mem8
     (implies (stat-validp stat feat)
-             (equal (read-memory-unsigned16 addr1
-                                            (write-memory-unsigned8
-                                             addr2 val stat feat)
-                                            feat)
+             (equal (read-mem16 addr1
+                                (write-mem8 addr2 val stat feat)
+                                feat)
                     (cond ((equal (loghead (feat->xlen feat) addr2)
                                   (loghead (feat->xlen feat) addr1))
                            (cond ((feat-little-endianp feat)
                                   (logappn 8 (ubyte8-fix val)
-                                           8 (read-memory-unsigned8
+                                           8 (read-mem8
                                               (loghead (feat->xlen feat)
                                                        (+ 1 (ifix addr1)))
                                               stat
                                               feat)))
                                  ((feat-big-endianp feat)
-                                  (logappn 8 (read-memory-unsigned8
+                                  (logappn 8 (read-mem8
                                               (loghead (feat->xlen feat)
                                                        (+ 1 (ifix addr1)))
                                               stat
@@ -985,38 +977,37 @@
                                   (loghead (feat->xlen feat)
                                            (+ 1 (ifix addr1))))
                            (cond ((feat-little-endianp feat)
-                                  (logappn 8 (read-memory-unsigned8
+                                  (logappn 8 (read-mem8
                                               (loghead (feat->xlen feat) addr1)
                                               stat
                                               feat)
                                            8 (ubyte8-fix val)))
                                  ((feat-big-endianp feat)
                                   (logappn 8 (ubyte8-fix val)
-                                           8 (read-memory-unsigned8
+                                           8 (read-mem8
                                               (loghead (feat->xlen feat) addr1)
                                               stat
                                               feat)))))
-                          (t (read-memory-unsigned16 addr1 stat feat)))))
+                          (t (read-mem16 addr1 stat feat)))))
     :use (:instance lemma (addr1 (ifix addr1)))
     :prep-lemmas
     ((defruled lemma
        (implies (and (stat-validp stat feat)
                      (integerp addr1))
-                (equal (read-memory-unsigned16 addr1
-                                               (write-memory-unsigned8
-                                                addr2 val stat feat)
-                                               feat)
+                (equal (read-mem16 addr1
+                                   (write-mem8 addr2 val stat feat)
+                                   feat)
                        (cond ((equal (loghead (feat->xlen feat) addr2)
                                      (loghead (feat->xlen feat) addr1))
                               (cond ((feat-little-endianp feat)
                                      (logappn 8 (ubyte8-fix val)
-                                              8 (read-memory-unsigned8
+                                              8 (read-mem8
                                                  (loghead (feat->xlen feat)
                                                           (+ 1 (ifix addr1)))
                                                  stat
                                                  feat)))
                                     ((feat-big-endianp feat)
-                                     (logappn 8 (read-memory-unsigned8
+                                     (logappn 8 (read-mem8
                                                  (loghead (feat->xlen feat)
                                                           (+ 1 (ifix addr1)))
                                                  stat
@@ -1026,7 +1017,7 @@
                                      (loghead (feat->xlen feat)
                                               (+ 1 (ifix addr1))))
                               (cond ((feat-little-endianp feat)
-                                     (logappn 8 (read-memory-unsigned8
+                                     (logappn 8 (read-mem8
                                                  (loghead (feat->xlen feat)
                                                           addr1)
                                                  stat
@@ -1034,30 +1025,30 @@
                                               8 (ubyte8-fix val)))
                                     ((feat-big-endianp feat)
                                      (logappn 8 (ubyte8-fix val)
-                                              8 (read-memory-unsigned8
+                                              8 (read-mem8
                                                  (loghead (feat->xlen feat)
                                                           addr1)
                                                  stat
                                                  feat)))))
-                             (t (read-memory-unsigned16 addr1 stat feat)))))
+                             (t (read-mem16 addr1 stat feat)))))
        :cases ((feat-32p feat))
-       :enable (read-memory-unsigned8
-                read-memory-unsigned16
-                write-memory-unsigned8
+       :enable (read-mem8
+                read-mem16
+                write-mem8
                 loghead-plus-c-differs))))
 
   ;; ruleset of the above rules:
 
   (def-ruleset read-memory-of-write-memory
-    '(read-memory-unsigned8-pf-write-memory-unsigned8
-      read-memory-unsigned8-of-write-memory-unsigned16
-      read-memory-unsigned8-of-write-memory-unsigned32
-      read-memory-unsigned8-of-write-memory-unsigned64
-      read-memory-unsigned16-of-write-memory-unsigned8)))
+    '(read-mem8-pf-write-mem8
+      read-mem8-of-write-mem16
+      read-mem8-of-write-mem32
+      read-mem8-of-write-mem64
+      read-mem16-of-write-mem8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read-instruction-of-write-xreg-theorems
+(defsection read-instr-of-write-xreg-theorems
   :short "Theorems about reads of instructions over writes of registers."
   :long
   (xdoc::topstring
@@ -1065,19 +1056,19 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-instruction-of-write-xreg
-    (equal (read-instruction addr (write-xreg reg val stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction)
+  (defrule read-instr-of-write-xreg
+    (equal (read-instr addr (write-xreg reg val stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr)
 
-  (defrule read-instruction-of-write-xreg-32
-    (equal (read-instruction addr (write-xreg-32 reg val stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction))
+  (defrule read-instr-of-write-xreg-32
+    (equal (read-instr addr (write-xreg-32 reg val stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read-instruction-of-write-pc-theorems
+(defsection read-instr-of-write-pc-theorems
   :short "Theorems about reads of instructions over writes of program counter."
   :long
   (xdoc::topstring
@@ -1088,19 +1079,19 @@
     "These theorems are all enabled by default
      because they always clearly simplify the term."))
 
-  (defrule read-instruction-of-write-pc
-    (equal (read-instruction addr (write-pc pc stat feat) feat)
-           (read-instruction addr stat feat))
-    :enable read-instruction)
+  (defrule read-instr-of-write-pc
+    (equal (read-instr addr (write-pc pc stat feat) feat)
+           (read-instr addr stat feat))
+    :enable read-instr)
 
-  (defrule read-instruction-of-inc4-pc
-    (equal (read-instruction addr (inc4-pc stat feat) feat)
-           (read-instruction addr stat feat))
+  (defrule read-instr-of-inc4-pc
+    (equal (read-instr addr (inc4-pc stat feat) feat)
+           (read-instr addr stat feat))
     :enable inc4-pc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc read-instruction-of-write-memory-theorems
+(defxdoc read-instr-of-write-memory-theorems
   :short "Theorems about reads of instructions over writes of memory."
   :long
   (xdoc::topstring
