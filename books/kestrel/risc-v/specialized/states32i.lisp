@@ -297,10 +297,11 @@
   :short "Rewriting of @(tsee read-xreg-unsigned)
           to @(tsee read32i-xreg-unsigned)."
   (implies (and (statp stat)
-                (stat-validp stat (feat-rv32i-le))
+                (equal feat (feat-rv32i-le))
+                (stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
-           (equal (read-xreg-unsigned reg stat (feat-rv32i-le))
+           (equal (read-xreg-unsigned reg stat feat)
                   (read32i-xreg-unsigned reg (stat32i-from-stat stat))))
   :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
            read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
