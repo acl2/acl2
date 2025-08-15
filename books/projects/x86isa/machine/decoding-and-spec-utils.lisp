@@ -1573,11 +1573,13 @@ reference made from privilege level 3.</blockquote>"
      (reg-type      :type (member #.*gpr-access*
                                   #.*xmm-access*
                                   #.*vex-xmm-access*
-                                  #.*ymm-access*)
+                                  #.*ymm-access*
+                                  #.*mmx-access*)
                     "@('reg-type') is @('*gpr-access*') for GPRs,
                      @('*xmm-access*') for XMMs (non-VEX-encoded),
-                     @('*vex-xmm-access*') for XMMs (VEX-encoded), and
-                     @('*ymm-access*') for YMMs.
+                     @('*vex-xmm-access*') for XMMs (VEX-encoded),
+                     @('*ymm-access*') for YMMs, and
+                     @('*mmx-access*) or MMXs.
                      (@('*zmm-access*'), for ZMMs, is not yet supported.")
      (operand-size  :type (member 1 2 4 6 8 10 16 32))
      (inst-ac?      booleanp
@@ -1591,7 +1593,7 @@ reference made from privilege level 3.</blockquote>"
                      (when reading the operand from memory).")
      (p4?           :type (or t nil)
                     "Address-Size Override Prefix Present?")
-     (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+     (temp-rip      :type (signed-byte #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
      (mod           :type (unsigned-byte 2))
@@ -1605,6 +1607,7 @@ reference made from privilege level 3.</blockquote>"
                  (#.*xmm-access* (member operand-size '(4 8 16)))
                  (#.*vex-xmm-access* (member operand-size '(4 8 16)))
                  (#.*ymm-access* (member operand-size '(4 8 16 32)))
+                 (#.*mmx-access* (equal operand-size 8))
                  (t t))
              (member operand-size '(member 1 2 4 6 8 10 16 32)))
 
@@ -1657,6 +1660,10 @@ reference made from privilege level 3.</blockquote>"
                                 rex-byte
                                 x86)
                      x86))
+                (#.*mmx-access*
+                 (mv nil
+                     (mmx r/m x86) ; only MM0-MM7 exist
+                     x86))
                 (#.*xmm-access*
                  (mv nil
                      (xmmi-size operand-size
@@ -1688,6 +1695,8 @@ reference made from privilege level 3.</blockquote>"
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (equal bound (ash operand-size 3))
                 (member operand-size '(1 2 4 8 16 32))
+                (or (not (equal reg-type #.*mmx-access*))
+                    (equal operand-size 8))
                 (x86p x86))
       :bound bound
       :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
@@ -1701,6 +1710,8 @@ reference made from privilege level 3.</blockquote>"
     (defthm-unsigned-byte-p bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (<= (ash operand-size 3) bound)
                 (member operand-size '(1 2 4 8 16 32))
+                (or (not (equal reg-type #.*mmx-access*))
+                    (equal operand-size 8))
                 (integerp bound)
                 (x86p x86))
       :bound bound
@@ -1776,14 +1787,15 @@ reference made from privilege level 3.</blockquote>"
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (operand-size :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
-                    "@('t') if instruction does alignment checking, @('nil') otherwise")
+                    "@('t') if instruction does alignment checking,
+                     @('nil') otherwise")
      (memory-ptr?   booleanp
                     "@('t') if the operand is a memory operand
-                   of the form m16:16, m16:32, or m16:64")
+                     of the form m16:16, m16:32, or m16:64")
      (operand      :type (integer 0 *))
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-                   (when reading the operand from memory).")
+                     (when reading the operand from memory).")
      (addr         :type (signed-byte 64))
      (rex-byte     :type (unsigned-byte 8))
      (r/m          :type (unsigned-byte 3))
@@ -1828,6 +1840,67 @@ reference made from privilege level 3.</blockquote>"
                  (x86-operand-to-reg/mem
                   proc-mode operand-size inst-ac?
                   memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
+      :hints (("Goal" :in-theory (e/d () (force (force)))))))
+
+  (define x86-operand-to-mmx/mem
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (inst-ac?   booleanp
+                 "@('t') if instruction does alignment checking,
+                  @('nil') otherwise")
+     (operand   :type (unsigned-byte 64))
+     (seg-reg   (integer-range-p 0 *segment-register-names-len* seg-reg)
+                "Register of the segment to read the operand from
+                 (when reading the operand from memory).")
+     (addr      :type (signed-byte 64))
+     (r/m       :type (unsigned-byte 3))
+     (mod       :type (unsigned-byte 2))
+     x86)
+
+    :short "Write an operand to memory or an MMX register."
+
+    :long
+    "<p>
+     Based on the ModR/M byte,
+     the operand is written to either a register or memory.
+     The address argument of this function is often
+     the effective address calculated and returned by
+     @(tsee x86-operand-from-modr/m-and-sib-bytes).
+     </p>
+     <p>
+     After writing an MMX register, we update floating-point status:
+     see @(see mmx-registers-reads-and-writes).
+     </p>"
+
+    (b* (((when (equal mod #b11))
+          (let* ((x86 (!mmx r/m operand x86))
+                 (x86 (mmx-instruction-updates x86)))
+            (mv nil x86)))
+
+         (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
+
+         ((mv flg x86)
+          (wme-size proc-mode
+                    8
+                    addr
+                    seg-reg
+                    operand
+                    check-alignment?
+                    x86
+                    :mem-ptr? nil))) ; operand is never a memory pointer here
+      (mv flg x86))
+
+    ///
+
+    (defthm x86p-x86-operand-to-mmx/mem
+      (implies (force (x86p x86))
+               (x86p (mv-nth 1 (x86-operand-to-mmx/mem proc-mode
+                                                       inst-ac?
+                                                       operand
+                                                       seg-reg
+                                                       addr
+                                                       r/m
+                                                       mod
+                                                       x86))))
       :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
   (define x86-operand-to-xmm/mem
