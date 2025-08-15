@@ -212,3 +212,27 @@
 (test-instr-or-thm :src1 #xac80 :src2 0 :dst #xac80)
 
 (test-instr-or-thm :src1 0 :src2 #x4412 :dst #x4412)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; XOR
+
+(defmacro test-instr-xor-thm (&key (rs1 '1) (rs2 '2) (rd '3)
+                                   src1 src2 dst signedp)
+  `(test-instr-op-thm :funct (op-funct-xor)
+                      :rs1 ,rs1 :rs2 ,rs2 :rd ,rd
+                      :src1 ,src1 :src2 ,src2 :dst ,dst
+                      :signedp ,signedp
+                      :enable (,(if signedp
+                                    'exec-xor-alt-def-signed-signed
+                                  'exec-xor))
+                      :disable ((:e tau-system)) ; for speed
+                      :cases ((feat-32p feat))))
+
+(test-instr-xor-thm :src1 #xb83 :src2 #x492 :dst #xf11)
+
+(test-instr-xor-thm :src1 #xaf4 :src2 #xaf4 :dst #x000)
+
+(test-instr-xor-thm :src1 #xac80 :src2 0 :dst #xac80)
+
+(test-instr-xor-thm :src1 0 :src2 #x4412 :dst #x4412)
