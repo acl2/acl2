@@ -1867,11 +1867,13 @@ reference made from privilege level 3.</blockquote>"
      @(tsee x86-operand-from-modr/m-and-sib-bytes).
      </p>
      <p>
-     The writing to an XMM register is for a non-VEX-encoded instruction.
+     After writing an MMX register, we update floating-point status:
+     see @(see mmx-registers-reads-and-writes).
      </p>"
 
     (b* (((when (equal mod #b11))
-          (let* ((x86 (!mmx r/m operand x86)))
+          (let* ((x86 (!mmx r/m operand x86))
+                 (x86 (mmx-instruction-updates x86)))
             (mv nil x86)))
 
          (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
