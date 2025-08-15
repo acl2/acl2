@@ -4646,25 +4646,29 @@
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PD) :OP2 '(W PD))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPD"
           (OP :OP #xF28
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PD) :OP2 '(W PD))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPS"
           (OP :OP #xF28
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPS"
           (OP :OP #xF28
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPD"
           (OP :OP #xF28
               :EVEX '(:0F :128 :66 :W1)
@@ -4718,25 +4722,29 @@
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PD) :OP2 '(W PD))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPD"
           (OP :OP #xF29
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PD) :OP2 '(W PD))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPS"
           (OP :OP #xF29
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPS"
           (OP :OP #xF29
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVAPD"
           (OP :OP #xF29
               :EVEX '(:0F :128 :66 :W1)
@@ -7878,13 +7886,15 @@
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVDQA"
           (OP :OP #xF6F
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-A)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVDQU"
           (OP :OP #xF6F
               :VEX '(:0F :128 :F3 :WIG)
@@ -9553,13 +9563,15 @@
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVDQA"
           (OP :OP #xF7F
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+          '(X86-VMOVAPS/VMOVAPD/VMOVDQA-VEX-B)
+          '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
     (INST "VMOVDQU"
           (OP :OP #xF7F
               :VEX '(:0F :128 :F3 :WIG)
