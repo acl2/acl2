@@ -7361,7 +7361,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7369,7 +7370,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -7409,7 +7411,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7417,7 +7420,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -7457,7 +7461,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -7465,7 +7470,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(X86-VPCMPGTB/VPCMPGTW/VPCMPGTD/VPCMPGTQ-VEX)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
               :EVEX '(:0F :NDS :128 :66 :W0)
