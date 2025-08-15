@@ -173,6 +173,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm bvmult-trim-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvmult size x y)
+                  (bvmult size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvmult-trim-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'ysize y))
+                (< size ysize)
+                (natp size)
+                (posp ysize))
+           (equal (bvmult size x y)
+                  (bvmult size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm bvminus-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)

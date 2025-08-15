@@ -1565,3 +1565,16 @@
            (equal (+ x (bvcat m y n 0))
                   (bvcat m y n x)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(defthmd bvcat-blast-high
+  (implies (and (syntaxp (not (quotep highval))) ;Fri Mar  4 20:24:01 2011
+                (< 1 highsize)
+                (integerp highsize)
+                (natp lowsize)
+                )
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvcat 1
+                         (getbit (+ -1 highsize) highval)
+                         (+ -1 highsize lowsize)
+                         (bvcat (+ -1 highsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (enable natp))))
