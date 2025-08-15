@@ -817,36 +817,38 @@
 ; INSTRUCTION: AVX Data Movement Instructions
 ; =============================================================================
 
-(def-inst x86-vmovups/vmovdqu-vex-a
+(def-inst x86-vmovups/vmovupd/vmovdqu-vex-a
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS
-          (move unaligned packed single precision floating-point values)
-          and
-          VMOVDQU
-          (move unaligned packed integer values);
-          (VEX encoding, Op/En A)"
+  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+          move unaligned packed single/double-precision floating-point values
+          and unaligned packed integer values
+          (VEX encoding, Op/En A)."
 
   :long
   "<p>
-   These instructions are listed under MOVUPS and MOVDQU
+   These instructions are listed under MOVUPS, MOVUPD, and MOVDQU
    in Intel Manual Volume 2 (Jun 2025).
    </p>
    <p>
    This semantic function covers the two VEX-encoded variants
-   (of each of VMOVUPS and VMOVDQU)
+   (of each of VMOVUPS, MOVUPD, and VMOVDQU)
    that move from register or memory to register (i.e. Op/En A).
    </p>
    <p>
-   The two instructions behave in the same way,
-   but they have different encoding and are used with different types
-   at the assembly and higher levels;
+   The three instructions behave in the same way at the ISA level,
+   but they have different encodings,
+   and are used with different types at the assembly and higher levels;
    there may also be performance differences at the level lower than the ISA.
    </p>
    <code>
    VMOVUPS xmm1, xmm2/m128
    VMOVUPS ymm1, ymm2/m256
+   </code>
+   <code>
+   VMOVUPD xmm1, xmm2/m128
+   VMOVUPD ymm1, ymm2/m256
    </code>
    <code>
    VMOVDQU xmm1, xmm2/m128
@@ -934,36 +936,38 @@
 
 ;; ======================================================================
 
-(def-inst x86-vmovups/vmovdqu-vex-b
+(def-inst x86-vmovups/vmovupd/vmovdqu-vex-b
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS
-          (move unaligned packed single precision floating-point values)
-          and
-          VMOVDQU
-          (move unaligned packed integer values);
+  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+          move unaligned packed single/double-precision floating-point values
+          and unaligned packed integer values
           (VEX encoding, Op/En B)"
 
   :long
   "<p>
-   These instructions are listed under MOVUPS and MOVDQU
+   These instructions are listed under MOVUPS, MOVUPD, and MOVDQU
    in Intel Manual Volume 2 (Jun 2025).
    </p>
    <p>
    This semantic function covers the two VEX-encoded variants
-   (of each of VMOVUPS and VMOVDQU)
+   (of each of VMOVUPS, MOVUPD, and VMOVDQU)
    that move from register to to register or memory (i.e. Op/En B).
    </p>
    <p>
-   The two instructions behave in the same way,
-   but they have different encoding and are used with different types
-   at the assembly and higher levels;
+   The three instructions behave in the same way at the ISA level,
+   but they have different encodings,
+   and are used with different types at the assembly and higher levels;
    there may also be performance differences at the level lower than the ISA.
    </p>
    <code>
    VMOVUPS xmm2/m128, xmm1
    VMOVUPS ymm2/m256, ymm1
+   </code>
+   <code>
+   VMOVUPD xmm2/m128, xmm1
+   VMOVUPD ymm2/m256, ymm1
    </code>
    <code>
    VMOVDQU xmm2/m128, xmm1
