@@ -628,7 +628,7 @@
 
   ;; read-mem8-of-write-mem8/16/32/64:
 
-  (defruled read-mem8-pf-write-mem8
+  (defruled read-mem8-of-write-mem8
     (implies (stat-validp stat feat)
              (equal (read-mem8 addr1
                                (write-mem8 addr2 val stat feat)
@@ -950,7 +950,7 @@
                 max)
        :cases ((feat-32p feat)))))
 
-  ;; read-mem8-of-write-mem8/16/32/64:
+  ;; read-mem16-of-write-mem8/16/32/64:
 
   (defruled read-mem16-of-write-mem8
     (implies (stat-validp stat feat)
@@ -1040,7 +1040,7 @@
   ;; ruleset of the above rules:
 
   (def-ruleset read-memory-of-write-memory
-    '(read-mem8-pf-write-mem8
+    '(read-mem8-of-write-mem8
       read-mem8-of-write-mem16
       read-mem8-of-write-mem32
       read-mem8-of-write-mem64
