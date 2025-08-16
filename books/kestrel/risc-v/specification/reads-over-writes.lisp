@@ -777,14 +777,10 @@
                                                   :low 0 :high 7))))
                              (t (read-mem8 addr1 stat feat)))))
        :cases ((feat-32p feat))
-       :enable (read-mem8
-                write-mem8
+       :enable (read-mem8-of-write-mem8
                 write-mem32
-                loghead-upper-bound
                 loghead-plus-c-differs
-                loghead-plus-c-differs-from-plus-d
-                ubyte8p-of-logtail-24-of-ubyte32
-                max))))
+                loghead-plus-c-differs-from-plus-d))))
 
   (defruled read-mem8-of-write-mem64
     (implies (stat-validp stat feat)
