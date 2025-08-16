@@ -446,6 +446,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod stmt-info
+  :short "Fixtype of validation information for statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of annotations that
+     the validator adds to (for now only some kinds of) statements.
+     This information currently consists of
+     the validation table at the beginning of the statement."))
+  ((table valid-table))
+  :pred stmt-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-stmt-info
+  :short "An irrelevant validation information for statement."
+  :type stmt-infop
+  :body (stmt-info (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-stmt-info (x)
+  :returns (info stmt-infop)
+  :short "Coerce a value to @(tsee stmt-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (stmt-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-INFOP." x)
+            (irr-stmt-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
