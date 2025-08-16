@@ -690,13 +690,9 @@
                                                   :low 0 :high 7))))
                              (t (read-mem8 addr1 stat feat)))))
        :cases ((feat-32p feat))
-       :enable (read-mem8
-                write-mem8
+       :enable (read-mem8-of-write-mem8
                 write-mem16
-                loghead-upper-bound
-                loghead-plus-c-differs
-                ubyte8p-of-logtail-8-of-ubyte16
-                max))))
+                loghead-plus-c-differs))))
 
   (defruled read-mem8-of-write-mem32
     (implies (stat-validp stat feat)
