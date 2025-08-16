@@ -639,6 +639,8 @@
    (asm-output t)
    (asm-input t)
    (asm-stmt t)
+   (stmt :expr (and (expr-option-annop (stmt-expr->expr? stmt))
+                    (stmt-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
