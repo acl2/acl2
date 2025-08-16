@@ -14193,7 +14193,7 @@
                  ((erp expr span parstate) (parse-expression parstate)) ; expr
                  ((erp last-span parstate)
                   (read-punctuator ";" parstate))) ; expr ;
-              (retok (stmt-expr expr)
+              (retok (make-stmt-expr :expr? expr :info nil)
                      (span-join span last-span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -14220,7 +14220,7 @@
        ;; If token is a semicolon,
        ;; we have an expression statement without expression.
        ((token-punctuatorp token ";") ; ;
-        (retok (stmt-expr nil) span parstate))
+        (retok (make-stmt-expr :expr? nil :info nil) span parstate))
        ;; If token is the 'case' keyword,
        ;; we must have a labeled statement.
        ((token-keywordp token "case") ; case
@@ -14847,7 +14847,7 @@
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) (parse-expression parstate)) ; expr
              ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
-          (retok (stmt-expr expr)
+          (retok (make-stmt-expr :expr? expr :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the 'asm' (or variant) keyword,
@@ -14947,7 +14947,8 @@
                ;; If we parse an unambiguous statement,
                ;; we return a block item that is a statement.
                :stmt
-               (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+               (retok (block-item-stmt
+                       (make-stmt-expr :expr? decl/stmt.unwrap :info nil))
                       span
                       parstate)
                ;; If we parse an ambiguous declaration or statement,

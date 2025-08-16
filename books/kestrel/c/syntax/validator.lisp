@@ -5296,7 +5296,7 @@
        :expr
        (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv)))
-         (retok (stmt-expr new-expr?) types type? table))
+         (retok (make-stmt-expr :expr? new-expr? :info nil) types type? table))
        :if
        (b* ((table (valid-push-scope table))
             ((erp new-test test-type test-types table)

@@ -374,7 +374,7 @@
     make-stmt-labeled
     stmt-compound
     stmt-compound->items
-    stmt-expr
+    make-stmt-expr
     make-stmt-if
     make-stmt-ifelse
     make-stmt-switch

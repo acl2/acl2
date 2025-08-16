@@ -2800,7 +2800,7 @@
          (retok (stmt-compound new-items) table))
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (stmt-expr new-expr?) table))
+         (retok (make-stmt-expr :expr? new-expr? :info nil) table))
        :if
        (b* ((table (dimb-push-scope table))
             ((erp new-test table) (dimb-expr stmt.test table))
@@ -2931,7 +2931,9 @@
          (decl/stmt-case
           decl/stmt
           :decl (retok (block-item-decl decl/stmt.unwrap) table)
-          :stmt (retok (block-item-stmt (stmt-expr decl/stmt.unwrap)) table)))))
+          :stmt (retok (block-item-stmt
+                        (make-stmt-expr :expr? decl/stmt.unwrap :info nil))
+                       table)))))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

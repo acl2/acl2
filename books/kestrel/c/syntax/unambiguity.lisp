@@ -712,9 +712,9 @@
     :expand (stmt-unambp (stmt-compound items)))
 
   (defrule stmt-unambp-of-stmt-expr
-    (equal (stmt-unambp (stmt-expr expr?))
+    (equal (stmt-unambp (stmt-expr expr? info))
            (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-expr expr?)))
+    :expand (stmt-unambp (stmt-expr expr? info)))
 
   (defrule stmt-unambp-of-stmt-if
     (equal (stmt-unambp (stmt-if test then))

@@ -1268,9 +1268,10 @@
                                        subst bound-vars)))
        (stmt-compound items))
      :expr
-     (stmt-expr
-       (expr-option-subst-free (c$::stmt-expr->expr? stmt)
-                               subst bound-vars))
+     (make-stmt-expr
+      :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
+                                     subst bound-vars)
+      :info stmt.info)
      :if (c$::stmt-if (expr-subst-free (c$::stmt-if->test stmt)
                                        subst bound-vars)
                       (stmt-subst-free (c$::stmt-if->then stmt)

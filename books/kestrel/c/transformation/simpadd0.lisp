@@ -2595,8 +2595,8 @@
      or if there is an assignment expression
      for which a theorem was generated."))
   (b* (((simpadd0-gin gin) gin)
-       (stmt (stmt-expr expr?))
-       (stmt-new (stmt-expr expr?-new))
+       (stmt (make-stmt-expr :expr? expr? :info nil))
+       (stmt-new (make-stmt-expr :expr? expr?-new :info nil))
        ((unless (iff expr? expr?-new))
         (raise "Internal error: ~
                 return statement with optional expression ~x0 ~
