@@ -2578,7 +2578,7 @@
                             (expr?-new expr-optionp)
                             (expr?-events pseudo-event-form-listp)
                             (expr?-thm-name symbolp)
-                            (expr?-vartys ident-type-mapp)
+                            (info stmt-infop)
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2613,7 +2613,8 @@
              :thm-name nil
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
-             :vartys expr?-vartys)))
+             :vartys nil)))
+       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-info->table info)))
        (hints
         (if expr?
             `(("Goal"
@@ -2637,14 +2638,14 @@
              :in-theory '((:e ldm-stmt)
                           (:e c::stmt-null))
              :use (simpadd0-stmt-null-support-lemma
-                   ,@(simpadd0-stmt-null-lemma-instances expr?-vartys))))))
+                   ,@(simpadd0-stmt-null-lemma-instances vartys))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
-                               expr?-vartys
+                               vartys
                                (if expr?
                                    nil ; no thms about post variables yet
-                                 expr?-vartys)
+                                 vartys)
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2654,7 +2655,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys expr?-vartys)))
+                            :vartys vartys)))
 
   :prepwork
   ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
@@ -2728,10 +2729,6 @@
               (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
     :enable c::exec-expr-call-or-asg))
-
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5540,7 +5537,7 @@
                                    new-expr?
                                    gout-expr?.events
                                    gout-expr?.thm-name
-                                   gout-expr?.vartys
+                                   (coerce-stmt-info stmt.info)
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))

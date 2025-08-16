@@ -580,6 +580,9 @@
     tyname-infop
     coerce-tyname-info
 
+    stmt-infop
+    coerce-stmt-info
+
     expr-type
     stmt-type
     block-item-type
