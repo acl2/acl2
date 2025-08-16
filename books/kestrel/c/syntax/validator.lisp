@@ -5294,9 +5294,15 @@
             (table (valid-pop-scope table)))
          (retok (stmt-compound new-items) types type? table))
        :expr
-       (b* (((erp new-expr? type? types table)
-             (valid-expr-option stmt.expr? table ienv)))
-         (retok (make-stmt-expr :expr? new-expr? :info nil) types type? table))
+       (b* ((table0 table)
+            ((erp new-expr? type? types table)
+             (valid-expr-option stmt.expr? table ienv))
+            (info (make-stmt-info :table table0)))
+         (retok (make-stmt-expr :expr? new-expr?
+                                :info info)
+                types
+                type?
+                table))
        :if
        (b* ((table (valid-push-scope table))
             ((erp new-test test-type test-types table)
