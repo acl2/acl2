@@ -2636,12 +2636,15 @@
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e c::stmt-null))
-             :use simpadd0-stmt-null-support-lemma))))
+             :use (simpadd0-stmt-null-support-lemma
+                   ,@(simpadd0-stmt-null-lemma-instances expr?-vartys))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                expr?-vartys
-                               nil ; no thms about post variables yet
+                               (if expr?
+                                   nil ; no thms about post variables yet
+                                 expr?-vartys)
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2652,6 +2655,21 @@
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vartys expr?-vartys)))
+
+  :prepwork
+  ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
+     :returns (lemma-instance true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-stmt-null-vartys-support-lemma
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2671,6 +2689,15 @@
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :none))))
     :enable c::exec-stmt)
+
+  (defruled simpadd0-stmt-null-vartys-support-lemma
+    (b* ((stmt (c::stmt-null))
+         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::exec-stmt
+             c::compustate-has-var-with-type-p))
 
   (defruled simpadd0-stmt-expr-asg-support-lemma
     (b* ((old (c::stmt-expr old-expr))
@@ -2701,6 +2728,10 @@
               (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
     :enable c::exec-expr-call-or-asg))
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
