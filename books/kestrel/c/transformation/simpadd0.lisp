@@ -612,7 +612,7 @@
                     ctype)
                 nil))
        (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
-       (vars-post (simpadd0-gen-var-assertions vartys-post 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -2636,6 +2636,8 @@
                       (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
+                          (:e ldm-ident)
+                          (:e ldm-type)
                           (:e c::stmt-null))
              :use (simpadd0-stmt-null-support-lemma
                    ,@(simpadd0-stmt-null-lemma-instances vartys))))))
