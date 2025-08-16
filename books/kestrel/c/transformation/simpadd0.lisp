@@ -497,7 +497,10 @@
     "The theorem says that
      if the execution of the old expression does not yield an error,
      neither does the execution of the new expression,
-     and that the two executions give the same results."))
+     and that the two executions give the same results;
+     it also says that
+     the variables in the computation state (passed as the @('vartys') input)
+     are preserved."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-asg-formalp old))
