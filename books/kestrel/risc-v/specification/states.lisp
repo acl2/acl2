@@ -26,6 +26,7 @@
 (local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
@@ -540,7 +541,12 @@
     :hints (("Goal"
              :use ubyte8p-of-read-mem8
              :in-theory (disable read-mem8
-                                 ubyte8p-of-read-mem8)))))
+                                 ubyte8p-of-read-mem8))))
+
+  (defrule read-mem8-of-loghead-xlen
+    (implies (equal n (feat->xlen feat))
+             (equal (read-mem8 (loghead n addr) stat feat)
+                    (read-mem8 addr stat feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,7 +556,8 @@
                 :hints (("Goal" :in-theory (enable ubyte16p
                                                    unsigned-byte-p
                                                    integer-range-p
-                                                   ifix))))
+                                                   ifix
+                                                   logapp))))
   :short "Read an unsigned 16-bit integer from memory."
   :long
   (xdoc::topstring
@@ -588,7 +595,8 @@
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
                                                    integer-range-p
-                                                   ifix))))
+                                                   ifix
+                                                   logapp))))
   :short "Read an unsigned 32-bit integer from memory."
   :long
   (xdoc::topstring
@@ -632,7 +640,8 @@
                 :hints (("Goal" :in-theory (enable ubyte64p
                                                    unsigned-byte-p
                                                    integer-range-p
-                                                   ifix))))
+                                                   ifix
+                                                   logapp))))
   :short "Read an unsigned 64-bit integer from memory."
   :long
   (xdoc::topstring
