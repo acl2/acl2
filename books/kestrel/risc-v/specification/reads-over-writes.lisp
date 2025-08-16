@@ -932,14 +932,10 @@
                                      (part-select (ubyte64-fix val)
                                                   :low 0 :high 7))))
                              (t (read-mem8 addr1 stat feat)))))
-       :enable (read-mem8
-                write-mem8
+       :enable (read-mem8-of-write-mem8
                 write-mem64
-                loghead-upper-bound
                 loghead-plus-c-differs
-                loghead-plus-c-differs-from-plus-d
-                ubyte8p-of-logtail-56-of-ubyte64
-                max)
+                loghead-plus-c-differs-from-plus-d)
        :cases ((feat-32p feat)))))
 
   ;; read-mem16-of-write-mem8/16/32/64:
