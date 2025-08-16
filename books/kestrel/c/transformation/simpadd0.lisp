@@ -561,7 +561,8 @@
 
 (define simpadd0-gen-stmt-thm ((old stmtp)
                                (new stmtp)
-                               (vartys ident-type-mapp)
+                               (vartys-pre ident-type-mapp)
+                               (vartys-post ident-type-mapp)
                                (const-new symbolp)
                                (thm-index posp)
                                (hints true-listp))
@@ -578,10 +579,13 @@
      if the execution of the old statement does not yield an error,
      neither does the execution of the new statement,
      and that the two executions give the same results.
-     Additionally, the theorem says whether
-     the statement value is a return or not;
+     The theorem says whether the statement value is a return or not;
      if it is a return with a value,
-     the theorem also says what the type of the value is."))
+     the theorem also says what the type of the value is.
+     The theorem also says
+     which variables in the comuptation state are present after the statement,
+     which are passed as the @('vartys-post') input;
+     the @('vartys-pre') input indicates the variables before the statement."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
@@ -607,7 +611,8 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -636,7 +641,8 @@
                                (equal (c::type-of-value
                                        (c::stmt-value-return->value?
                                         old-result))
-                                      ',ctype))))))))
+                                      ',ctype))))
+                         ,@vars-post))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -2635,6 +2641,7 @@
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                expr?-vartys
+                               nil ; no thms about post variables yet
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2769,6 +2776,7 @@
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                expr?-vartys
+                               nil ; no thms about post variables yet
                                gin.const-new
                                gin.thm-index
                                hints)))
