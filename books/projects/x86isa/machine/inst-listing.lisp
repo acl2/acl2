@@ -11078,7 +11078,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDQ"
           (OP :OP #xFD4 :PFX :66 :FEAT '(:SSE2))
@@ -13097,7 +13097,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDB"
           (OP :OP #xFFC :PFX :66 :FEAT '(:SSE2))
@@ -13147,7 +13147,7 @@
               :PFX :NO-PREFIX
               :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
-          'NIL
+          '(X86-PADDB/PADDW/PADDD/PADDQ-MMX)
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
     (INST "PADDW"
           (OP :OP #xFFD :PFX :66 :FEAT '(:SSE2))
@@ -13197,7 +13197,7 @@
            :PFX :NO-PREFIX
            :FEAT '(:MMX))
        (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
+       '(X86-PADDB/PADDW/PADDD/PADDQ-MMX)
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
  (INST "PADDD"
        (OP :OP #xFFE :PFX :66 :FEAT '(:SSE2))
