@@ -2620,6 +2620,8 @@
             `(("Goal"
                :in-theory '((:e ldm-stmt)
                             (:e ldm-expr)
+                            (:e ldm-ident)
+                            (:e ldm-type)
                             (:e ident)
                             (:e c::expr-kind)
                             (:e c::stmt-expr))
@@ -2633,7 +2635,8 @@
                      (:instance
                       simpadd0-stmt-expr-asg-error-support-lemma
                       (expr (mv-nth 1 (ldm-expr ',expr?)))
-                      (fenv old-fenv)))))
+                      (fenv old-fenv))
+                     ,@(simpadd0-stmt-expr-asg-lemma-instances vartys expr?))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
@@ -2645,9 +2648,7 @@
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                vartys
-                               (if expr?
-                                   nil ; no thms about post variables yet
-                                 vartys)
+                               vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2660,6 +2661,7 @@
                             :vartys vartys)))
 
   :prepwork
+
   ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
      :returns (lemma-instance true-listp)
      :parents nil
@@ -2672,6 +2674,22 @@
                        (type (mv-nth 1 (ldm-type ',type)))))
           (lemma-instances
            (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
+       (cons lemma-instance lemma-instances)))
+
+   (define simpadd0-stmt-expr-asg-lemma-instances ((vartys ident-type-mapp)
+                                                   (expr exprp))
+     :returns (lemma-instance true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-stmt-expr-asg-vartys-support-lemma
+                       (expr (mv-nth 1 (ldm-expr ',expr)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-stmt-expr-asg-lemma-instances (omap::tail vartys) expr)))
        (cons lemma-instance lemma-instances))))
 
   ///
@@ -2729,6 +2747,17 @@
                   (c::errorp (c::exec-expr-asg expr compst fenv (- limit 2))))
              (c::errorp
               (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
+    :enable c::exec-expr-call-or-asg)
+
+  (defruled simpadd0-stmt-expr-asg-vartys-support-lemma
+    (b* ((stmt (c::stmt-expr expr))
+         (expr-compst1 (c::exec-expr-asg expr compst fenv (- limit 2)))
+         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (not (equal (c::expr-kind expr) :call))
+                    (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type expr-compst1))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
     :enable c::exec-expr-call-or-asg))
 
