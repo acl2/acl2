@@ -1738,11 +1738,7 @@
      instead we take the map from
      the validation table that annotates the expression.
      This is in general a supermap of the two maps
-     (which we double-check here, throwing a hard error if not).
-     In upcoming extensions, we will extend the generated theorem
-     to say that all the variables in the map are preserved
-     by the execution of the assignment expression,
-     which is needed to compose proofs for sequential statements."))
+     (which we double-check here, throwing a hard error if not)."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
