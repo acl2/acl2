@@ -2589,7 +2589,10 @@
     "We generate a theorem
      if there is no expression (i.e. the null statement),
      or if there is an assignment expression
-     for which a theorem was generated."))
+     for which a theorem was generated.
+     An expression statement does not change the variables in scope,
+     so we use the variable-type map from the validation table in the AST
+     for both before and after the statement, in the generated theorem."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (make-stmt-expr :expr? expr? :info nil))
        (stmt-new (make-stmt-expr :expr? expr?-new :info nil))
