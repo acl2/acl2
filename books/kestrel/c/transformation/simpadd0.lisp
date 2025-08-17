@@ -2788,7 +2788,13 @@
      If the expression is present,
      the theorem is proved via two general ones proved below;
      if the expression is absent,
-     the theorem is proved via another general one proved below."))
+     the theorem is proved via another general one proved below.")
+   (xdoc::p
+    "The generated theorem says nothing about variables after the statement
+     (we pass @('nil') as the variable-type map after the statement),
+     because we do not need those assertions for subsequent statements,
+     since @('return') does not continue execution
+     to the subsequent statements (i.e. that occur after it in the AST)."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
@@ -2834,7 +2840,7 @@
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                expr?-vartys
-                               nil ; no thms about post variables yet
+                               nil
                                gin.const-new
                                gin.thm-index
                                hints)))
