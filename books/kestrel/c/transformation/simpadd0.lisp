@@ -82,19 +82,24 @@
    whose components have been updated
    from the aforementioned @(tsee simpadd0-gout)."
 
-  "The generated theorems involve hypotheses about
-   variables in scope having values of appropriate types,
-   captured as ACL2 values of type @(tsee ident-type-map).
-   Our initial approach has been to take the variables from the constructs,
-   joining the ones for sub-constructs via @(tsee simpadd0-join-vartys)
-   to obtain the ones for super-constructs.
-   This is adequate for some of the constructs,
-   but we need to generalize this approach for other constructs.
-   Specifically, we are moving towards having
-   information about the variables in scope in the AST validation annotations,
-   and using that instead of calculating the information from the constructs.
-   As we move towards the new approach,
-   we may have a mix of the new and old appraoches."))
+  "The generated theorems involve hypotheses, and sometimes conclusions,
+   about certain variables in scope having values of appropriate types
+   (the hypotheses pertain to the computation state before a construct,
+   and the conclusions pertain to the computation state after the construct);
+   information about these variables is captured as
+   ACL2 values of type @(tsee ident-type-map).
+   In some cases (e.g. pure expressions),
+   we obtain the variable-type maps directly from the construct in question;
+   when combining two sub-constucts into a super-construct,
+   we use @(tsee simpadd0-join-vartys)
+   to obtain the variable-type maps for the super-construct.
+   In other cases (e.g. statements),
+   we obtain the variable-type maps from the validation annotations,
+   because in those cases we need, in general,
+   variables that may not occur in the construct in question
+   but may occur in later constructs;
+   we use @(tsee simpadd0-vartys-from-valid-table)
+   on the validation tables that annotate the ASTs."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,8 +212,14 @@
                     the homonymous component of @(tsee simpadd0-gin).")
    (vartys ident-type-map
            "Variables for which the generated theorem (if any)
-            has hypotheses about the variables being in the computation state
-            and having values of the appropriate types."))
+            has hypotheses, and in some cases conclusions,
+            about the variables being in the computation state
+            and having values of the appropriate types
+            (see @(see simpadd0-implementation) for background).
+            These are always the variable after the construct
+            (whether the theorem has conclusions about them or not),
+            which in some cases are the same as the ones before the construct.
+            This may be @('nil') if @('thm-name') is @('nil')."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
