@@ -679,6 +679,8 @@
                     (stmt-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
+   (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
+                      (stmt-infop (stmt-return->info stmt))))
    (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
                           (block-item-infop
                            (block-item-stmt->info block-item))))
