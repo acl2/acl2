@@ -300,7 +300,7 @@ function xdataLoadKeys(keys) {
             // data is the same as the order of the requested keys.
             for (let i = 0; i < results.length; i++) {
                 if (results[i].error !== undefined) {
-                    xdataObj.addError(missing[i], `Error: ${results[i].error}`);
+                    xdataObj.addError(missing[i], "Error: " + results[i].error);
                 } else {
                     const xdata = [results[i].parents,
                                    results[i].src,
@@ -310,8 +310,11 @@ function xdataLoadKeys(keys) {
                 }
             }
         } else {
-            const val = "Error: malformed response: " + obj;
-            console.error(err);
+            if (obj.error !== undefined) {
+                console.error("Error: " + obj.error);
+            } else {
+                console.error("Error: malformed response " + obj);
+            }
         }
     }).catch(err => {
         const val = `Error: AJAX query failed. ${err}`;
@@ -919,7 +922,11 @@ function searchGo(str) {
 
     ta_data_initialize();
 
-    searchGoMain(str);
+    if (!XDATAGET) {
+        searchGoLocal(str);
+    } else {
+        searchGoServer(str);
+    }
     return false;
 }
 
@@ -939,7 +946,46 @@ function searchAddHit(matches, hits, key) {
     hits.append(dd);
 }
 
-function searchGoMain(query_str) {
+function searchGoServer(query_str) {
+    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+
+    fetch(url, {
+        method: 'GET',
+    }).then(res => res.json()).then(obj => {
+        const results = "results" in obj && obj["results"];
+        if (results && 0 < results.length) {
+            if (results.length === 100) {
+                $("#data").append("<h3><b>100+</b> Results</h3>");
+            } else {
+                $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
+            }
+            let hits = jQuery("<dl></dl>");
+            for (let i = 0; i < results.length; i++) {
+                // TODO: check for error
+                const score = (-results[i].rank).toFixed(2);
+                hits.append("<dt><a href=\"index.html?topic=" + results[i].xkey + "\""
+                            + " onclick=\"return dolink(event, '" + results[i].xkey + "');\">"
+                            + xindexObj.topicName(results[i].xkey)
+                            + "</a> "
+                            + "<span class=\"search-score\">("
+                            + score
+                            + ")</span>"
+                            + "</dt>");
+                let dd = jQuery("<dd></dd>");
+                dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(results[i].xkey)));
+                hits.append(dd);
+            }
+            $("#data").append(hits);
+        } else {
+            console.error("Error: malformed response " + obj);
+        }
+    }).catch(err => {
+        const val = `Error: AJAX query failed. ${err}`;
+        console.error(err);
+    });
+}
+
+function searchGoLocal(query_str) {
     const query_str_low = query_str.toLowerCase();
     const query_tokenized = searchTokenize(query_str_low);
 
