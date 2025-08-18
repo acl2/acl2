@@ -2899,7 +2899,7 @@
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :return
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
-         (retok (stmt-return new-expr?) table))
+         (retok (make-stmt-return :expr? new-expr? :info stmt.info) table))
        :asm
        (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))

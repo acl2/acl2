@@ -2781,6 +2781,7 @@
                               (expr?-events pseudo-event-form-listp)
                               (expr?-thm-name symbolp)
                               (expr?-vartys ident-type-mapp)
+                              (info stmt-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2810,8 +2811,8 @@
      since @('return') does not continue execution
      to the subsequent statements (i.e. that occur after it in the AST)."))
   (b* (((simpadd0-gin gin) gin)
-       (stmt (stmt-return expr?))
-       (stmt-new (stmt-return expr?-new))
+       (stmt (make-stmt-return :expr? expr? :info info))
+       (stmt-new (make-stmt-return :expr? expr?-new :info info))
        ((unless (iff expr? expr?-new))
         (raise "Internal error: ~
                 return statement with optional expression ~x0 ~
@@ -5727,6 +5728,7 @@
                                        gout-expr?.events
                                        gout-expr?.thm-name
                                        gout-expr?.vartys
+                                       (coerce-stmt-info stmt.info)
                                        gin))
        :asm (mv (stmt-fix stmt)
                 (make-simpadd0-gout

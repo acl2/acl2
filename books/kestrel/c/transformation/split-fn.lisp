@@ -369,11 +369,13 @@
                  (list
                    (make-block-item-stmt
                     :stmt
-                     (stmt-return
+                     (make-stmt-return
+                      :expr?
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (map-address-ident-list idents)))
-                     :info nil)))))
+                         :args (map-address-ident-list idents))
+                      :info nil)
+                    :info nil)))))
        ((when (endp items))
         (retmsg$ "Bad split point specifier"))
        (item (first items))

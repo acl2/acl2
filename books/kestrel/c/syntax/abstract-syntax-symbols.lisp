@@ -382,7 +382,7 @@
     make-stmt-dowhile
     make-stmt-for-expr
     make-stmt-for-decl
-    stmt-return
+    make-stmt-return
 
     block-itemp
     block-item-fix

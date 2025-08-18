@@ -777,9 +777,9 @@
     :expand (stmt-unambp (stmt-break)))
 
   (defrule stmt-unambp-of-stmt-return
-    (equal (stmt-unambp (stmt-return expr?))
+    (equal (stmt-unambp (stmt-return expr? info))
            (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-return expr?)))
+    :expand (stmt-unambp (stmt-return expr? info)))
 
   (defrule stmt-unambp-of-when-asm
     (implies (stmt-case stmt :asm)

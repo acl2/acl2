@@ -3016,7 +3016,8 @@
     (:goto ((label ident)))
     (:continue ())
     (:break ())
-    (:return ((expr? expr-option)))
+    (:return ((expr? expr-option)
+              (info any)))
     (:asm ((unwrap asm-stmt)))
     :pred stmtp
     :measure (two-nats-measure (acl2-count x) 0))

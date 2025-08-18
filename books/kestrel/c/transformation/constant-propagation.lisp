@@ -1850,7 +1850,7 @@
         :break (mv (stmt-fix stmt) nil)
         :return (b* (((mv expr? - env)
                       (const-prop-expr-option stmt.expr? env)))
-                  (mv (stmt-return expr?) env))
+                  (mv (make-stmt-return :expr? expr? :info stmt.info) env))
         :asm (mv (stmt-fix stmt) nil)))
     :measure (stmt-count stmt))
 

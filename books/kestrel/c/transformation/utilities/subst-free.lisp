@@ -1336,9 +1336,11 @@
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
      :return
-     (stmt-return
+     (make-stmt-return
+      :expr?
        (expr-option-subst-free (c$::stmt-return->expr? stmt)
-                               subst bound-vars))
+                               subst bound-vars)
+       :info stmt.info)
      :asm (c$::stmt-asm
             (asm-stmt-subst-free (c$::stmt-asm->unwrap stmt)
                                  subst bound-vars)))

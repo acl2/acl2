@@ -14307,12 +14307,12 @@
                   (parse-expression parstate)) ; return expr
                  ((erp last-span parstate) ; return expr ;
                   (read-punctuator ";" parstate)))
-              (retok (stmt-return expr)
+              (retok (make-stmt-return :expr? expr :info nil)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon, there is no expression.
            ((token-punctuatorp token2 ";") ; return ;
-            (retok (stmt-return nil)
+            (retok (make-stmt-return :expr? nil :info nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.

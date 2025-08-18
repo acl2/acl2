@@ -5456,10 +5456,12 @@
        :break
        (retok (stmt-break) nil nil (valid-table-fix table))
        :return
-       (b* (((erp new-expr? type? types table)
+       (b* ((table0 table)
+            ((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv))
-            (return-type (or type? (type-void))))
-         (retok (stmt-return new-expr?)
+            (return-type (or type? (type-void)))
+            (info (make-stmt-info :table table0)))
+         (retok (make-stmt-return :expr? new-expr? :info info)
                 (set::insert return-type types)
                 nil
                 table))
