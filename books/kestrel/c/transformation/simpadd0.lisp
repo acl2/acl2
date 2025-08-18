@@ -671,7 +671,8 @@
 
 (define simpadd0-gen-block-item-thm ((old block-itemp)
                                      (new block-itemp)
-                                     (vartys ident-type-mapp)
+                                     (vartys-pre ident-type-mapp)
+                                     (vartys-post ident-type-mapp)
                                      (const-new symbolp)
                                      (thm-index posp)
                                      (hints true-listp))
@@ -711,7 +712,8 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
        (formula
         `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
               (new-item (mv-nth 1 (ldm-block-item ',new)))
@@ -740,7 +742,8 @@
                                (equal (c::type-of-value
                                        (c::stmt-value-return->value?
                                         old-result))
-                                      ',ctype))))))))
+                                      ',ctype))))
+                         ,@vars-post))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -2990,6 +2993,7 @@
         (simpadd0-gen-block-item-thm item
                                      item-new
                                      stmt-vartys
+                                     nil ; no post-var thms for now
                                      gin.const-new
                                      gin.thm-index
                                      hints)))
