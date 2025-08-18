@@ -1566,7 +1566,7 @@
        item
        :decl (b* (((erp objdeclon) (ldm-decl-obj item.unwrap)))
                (retok (c::block-item-declon objdeclon)))
-       :stmt (b* (((erp stmt) (ldm-stmt item.unwrap)))
+       :stmt (b* (((erp stmt) (ldm-stmt item.stmt)))
                (retok (c::block-item-stmt stmt)))
        :ambig (prog2$ (impossible) (reterr t))))
     :measure (block-item-count item))

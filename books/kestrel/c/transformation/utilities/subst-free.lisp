@@ -1358,9 +1358,10 @@
        (mv (block-item-decl unwrap)
            (ident-set-fix bound-vars)))
      :stmt
-     (mv (block-item-stmt
-           (stmt-subst-free (c$::block-item-stmt->unwrap block-item)
-                            subst bound-vars))
+     (mv (make-block-item-stmt
+          :stmt (stmt-subst-free (c$::block-item-stmt->stmt block-item)
+                                 subst bound-vars)
+          :info block-item.info)
          (ident-set-fix bound-vars))
      :ambig
      (mv (c$::block-item-ambig (amb-decl/stmt-subst-free

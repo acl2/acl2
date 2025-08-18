@@ -951,7 +951,7 @@
       (block-item-case
         item
         :decl (free-vars-decl item.unwrap bound-vars)
-        :stmt (mv (free-vars-stmt item.unwrap bound-vars)
+        :stmt (mv (free-vars-stmt item.stmt bound-vars)
                   bound-vars)
         :ambig (mv nil bound-vars)))
     :measure (block-item-count item))

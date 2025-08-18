@@ -2938,6 +2938,7 @@
                                   (stmt-events pseudo-event-form-listp)
                                   (stmt-thm-name symbolp)
                                   (stmt-vartys ident-type-mapp)
+                                  (info block-item-infop)
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new))
@@ -2957,8 +2958,8 @@
      since @(tsee c::exec-block-item) decreases the limit by 1
      before calling @(tsee c::exec-stmt)."))
   (b* (((simpadd0-gin gin) gin)
-       (item (block-item-stmt stmt))
-       (item-new (block-item-stmt stmt-new))
+       (item (make-block-item-stmt :stmt stmt :info info))
+       (item-new (make-block-item-stmt :stmt stmt-new :info info))
        ((unless stmt-thm-name)
         (mv item-new
             (make-simpadd0-gout :events stmt-events
@@ -5757,13 +5758,14 @@
                     :names-to-avoid gout-item.names-to-avoid
                     :vartys nil)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
-                   (simpadd0-stmt item.unwrap gin state))
+                   (simpadd0-stmt item.stmt gin state))
                   (gin (simpadd0-gin-update gin gout-stmt)))
-               (simpadd0-block-item-stmt item.unwrap
+               (simpadd0-block-item-stmt item.stmt
                                          new-stmt
                                          gout-stmt.events
                                          gout-stmt.thm-name
                                          gout-stmt.vartys
+                                         (coerce-block-item-info item.info)
                                          gin))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
     :measure (block-item-count item))

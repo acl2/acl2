@@ -389,7 +389,7 @@
     block-item-count
     block-item-case
     block-item-decl
-    block-item-stmt
+    make-block-item-stmt
 
     block-item-listp
     block-item-list-fix
@@ -582,6 +582,9 @@
 
     stmt-infop
     coerce-stmt-info
+
+    block-item-infop
+    coerce-block-item-info
 
     expr-type
     stmt-type

@@ -59,13 +59,13 @@
    item
    ;; TODO: this should probably recurse down through statement.
    :stmt (stmt-case
-           item.unwrap
-           :expr (and item.unwrap.expr?
+           item.stmt
+           :expr (and item.stmt.expr?
                       (expr-case
-                        item.unwrap.expr?
+                        item.stmt.expr?
                         :funcall (expr-case
-                                   item.unwrap.expr?.fun
-                                   :ident (in item.unwrap.expr?.fun.ident
+                                   item.stmt.expr?.fun
+                                   :ident (in item.stmt.expr?.fun.ident
                                               triggers)
                                    :otherwise nil)
                         :otherwise nil))

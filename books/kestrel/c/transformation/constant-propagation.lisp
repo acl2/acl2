@@ -1866,9 +1866,9 @@
         :decl (b* (((mv unwrap env)
                     (const-prop-decl item.unwrap env)))
                 (mv (block-item-decl unwrap) env))
-        :stmt (b* (((mv unwrap env)
-                    (const-prop-stmt item.unwrap env)))
-                (mv (block-item-stmt unwrap) env))
+        :stmt (b* (((mv stmt env)
+                    (const-prop-stmt item.stmt env)))
+                (mv (make-block-item-stmt :stmt stmt :info item.info) env))
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (block-item-fix item))
                        (mv (block-item-fix item) env))))

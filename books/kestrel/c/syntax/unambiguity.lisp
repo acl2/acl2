@@ -792,9 +792,9 @@
     :expand (block-item-unambp (block-item-decl decl)))
 
   (defrule block-item-unambp-of-block-item-stmt
-    (equal (block-item-unambp (block-item-stmt stmt))
+    (equal (block-item-unambp (block-item-stmt stmt info))
            (stmt-unambp stmt))
-    :expand (block-item-unambp (block-item-stmt stmt)))
+    :expand (block-item-unambp (block-item-stmt stmt info)))
 
   (defrule expr/tyname-unambp-of-expr/tyname-expr
     (equal (expr/tyname-unambp (expr/tyname-expr expr))
@@ -1590,10 +1590,10 @@
              (decl-unambp (block-item-decl->unwrap item)))
     :expand (block-item-unambp item))
 
-  (defrule stmt-unamb-of-block-item-stmt->unwrap
+  (defrule stmt-unamb-of-block-item-stmt->stmt
     (implies (and (block-item-unambp item)
                   (block-item-case item :stmt))
-             (stmt-unambp (block-item-stmt->unwrap item)))
+             (stmt-unambp (block-item-stmt->stmt item)))
     :expand (block-item-unambp item))
 
   (defrule expr-unambp-of-expr/tyname-expr->unwrap

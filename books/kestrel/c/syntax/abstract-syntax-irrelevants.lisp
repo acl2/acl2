@@ -457,7 +457,7 @@
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
-  :body (block-item-stmt (irr-stmt)))
+  :body (block-item-stmt (irr-stmt) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

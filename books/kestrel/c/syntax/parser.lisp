@@ -14928,7 +14928,9 @@
             (b* ((parstate (unread-token parstate)) ; ident
                  (parstate (unread-token parstate)) ;
                  ((erp stmt span parstate) (parse-statement parstate))) ; stmt
-              (retok (block-item-stmt stmt) span parstate)))
+              (retok (make-block-item-stmt :stmt stmt :info nil)
+                     span
+                     parstate)))
            ;; Otherwise, we may have a declaration or an expression statement,
            ;; so we read a possibly ambiguous declaration or statement.
            (t ; ident other
@@ -14947,8 +14949,9 @@
                ;; If we parse an unambiguous statement,
                ;; we return a block item that is a statement.
                :stmt
-               (retok (block-item-stmt
-                       (make-stmt-expr :expr? decl/stmt.unwrap :info nil))
+               (retok (make-block-item-stmt
+                       :stmt (make-stmt-expr :expr? decl/stmt.unwrap :info nil)
+                       :info nil)
                       span
                       parstate)
                ;; If we parse an ambiguous declaration or statement,
@@ -14972,7 +14975,7 @@
         (b* ((parstate (if token (unread-token parstate) parstate)) ;
              ((erp stmt span parstate) ; stmt
               (parse-statement parstate)))
-          (retok (block-item-stmt stmt) span parstate)))))
+          (retok (make-block-item-stmt :stmt stmt :info nil) span parstate)))))
     :measure (two-nats-measure (parsize parstate) 18))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

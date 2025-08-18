@@ -2924,15 +2924,17 @@
        (b* (((erp new-decl table) (dimb-decl item.unwrap table)))
          (retok (block-item-decl new-decl) table))
        :stmt
-       (b* (((erp new-stmt table) (dimb-stmt item.unwrap table)))
-         (retok (block-item-stmt new-stmt) table))
+       (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
+         (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
        :ambig
        (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.unwrap table)))
          (decl/stmt-case
           decl/stmt
           :decl (retok (block-item-decl decl/stmt.unwrap) table)
-          :stmt (retok (block-item-stmt
-                        (make-stmt-expr :expr? decl/stmt.unwrap :info nil))
+          :stmt (retok (make-block-item-stmt
+                        :stmt (make-stmt-expr :expr? decl/stmt.unwrap
+                                              :info nil)
+                        :info nil)
                        table)))))
     :measure (block-item-count item))
 

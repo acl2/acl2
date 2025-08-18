@@ -367,11 +367,13 @@
               (abstract-fn new-fn-name spec pointers items decls)))
           (retok new-fn
                  (list
-                   (block-item-stmt
+                   (make-block-item-stmt
+                    :stmt
                      (stmt-return
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (map-address-ident-list idents))))))))
+                         :args (map-address-ident-list idents)))
+                     :info nil)))))
        ((when (endp items))
         (retmsg$ "Bad split point specifier"))
        (item (first items))

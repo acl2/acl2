@@ -5502,9 +5502,12 @@
        :decl (b* (((erp new-decl types table)
                    (valid-decl item.unwrap table ienv)))
                (retok (block-item-decl new-decl) types nil table))
-       :stmt (b* (((erp new-stmt types last-expr-type? table)
-                   (valid-stmt item.unwrap table ienv)))
-               (retok (block-item-stmt new-stmt)
+       :stmt (b* ((table0 table)
+                  ((erp new-stmt types last-expr-type? table)
+                   (valid-stmt item.stmt table ienv))
+                  (info (make-block-item-info :table table0)))
+               (retok (make-block-item-stmt :stmt new-stmt
+                                            :info info)
                       types
                       last-expr-type?
                       table))

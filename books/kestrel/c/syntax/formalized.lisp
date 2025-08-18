@@ -656,7 +656,7 @@
     (block-item-case
      item
      :decl (decl-block-formalp item.unwrap)
-     :stmt (stmt-formalp item.unwrap)
+     :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
 

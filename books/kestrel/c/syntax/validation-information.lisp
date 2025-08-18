@@ -482,6 +482,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod block-item-info
+  :short "Fixtype of validation information for block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of annotations that
+     the validator adds to (for now only some kinds of) block items.
+     This information currently consists of
+     the validation table at the beginning of the block item."))
+  ((table valid-table))
+  :pred block-item-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-block-item-info
+  :short "An irrelevant validation information for block items."
+  :type block-item-infop
+  :body (block-item-info (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-block-item-info (x)
+  :returns (info block-item-infop)
+  :short "Coerce a value to @(tsee block-item-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (block-item-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy BLOCK_ITEM-INFOP." x)
+            (irr-block-item-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
@@ -643,6 +679,9 @@
                     (stmt-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
+   (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
+                          (block-item-infop
+                           (block-item-stmt->info block-item))))
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))
    (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
@@ -815,7 +854,7 @@
   (block-item-case
    item
    :decl nil
-   :stmt (stmt-type item.unwrap)
+   :stmt (stmt-type item.stmt)
    :ambig (prog2$ (impossible) (type-unknown)))
   :hooks (:fix))
 
