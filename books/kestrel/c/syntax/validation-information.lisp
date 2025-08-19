@@ -291,6 +291,13 @@
   :type valid-tablep
   :body (valid-table nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-table-option
+  valid-table
+  :short "Fixtype of optional validation tables."
+  :pred valid-table-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst-info
