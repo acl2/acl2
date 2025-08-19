@@ -2780,7 +2780,6 @@
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
                               (expr?-thm-name symbolp)
-                              (expr?-vartys ident-type-mapp)
                               (info stmt-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
@@ -2823,8 +2822,8 @@
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
              :vartys nil)))
-       (lemma-instances
-        (simpadd0-stmt-return-lemma-instances expr?-vartys expr?))
+       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-info->table info)))
+       (lemma-instances (simpadd0-stmt-return-lemma-instances vartys expr?))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
@@ -2856,8 +2855,8 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
-                               expr?-vartys
-                               expr?-vartys
+                               vartys
+                               vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2867,7 +2866,7 @@
                             :thm-name thm-name
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
-                            :vartys expr?-vartys)))
+                            :vartys vartys)))
 
   :prepwork
   ((define simpadd0-stmt-return-lemma-instances ((vartys ident-type-mapp)
@@ -5759,7 +5758,6 @@
                                        new-expr?
                                        gout-expr?.events
                                        gout-expr?.thm-name
-                                       gout-expr?.vartys
                                        (coerce-stmt-info stmt.info)
                                        gin))
        :asm (mv (stmt-fix stmt)
