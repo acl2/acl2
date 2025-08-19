@@ -1058,15 +1058,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-param-thms ((args symbol-listp)
-                                 (arg-types-compst true-listp)
+(define simpadd0-gen-param-thms ((arg-types-compst true-listp)
                                  (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
                                  (all-args symbol-listp)
                                  (init-scope-thm symbolp)
                                  (const-new symbolp)
                                  (thm-index posp))
-  :guard (equal (len arg-types-compst) (len args))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp)
                (updated-thm-index posp
@@ -1095,7 +1093,7 @@
      if the value corresponding to the parameter has a certain type,
      then reading the parameter from the computation state
      succeeds and yields a value of that type."))
-  (b* (((when (endp args)) (mv nil nil (pos-fix thm-index)))
+  (b* (((when (endp arg-types-compst)) (mv nil nil (pos-fix thm-index)))
        (formula
         `(b* ((compst
                (c::push-frame
@@ -1157,8 +1155,7 @@
                      ,formula
                      :hints ,hints))
        ((mv more-thm-events more-thm-names thm-index)
-        (simpadd0-gen-param-thms (cdr args)
-                                 (cdr arg-types-compst)
+        (simpadd0-gen-param-thms (cdr arg-types-compst)
                                  all-arg-types
                                  all-params
                                  all-args
@@ -6164,8 +6161,7 @@
                                      gin.thm-index))
        (names-to-avoid (cons init-scope-thm-name gin.names-to-avoid))
        ((mv param-thm-events param-thm-names thm-index)
-        (simpadd0-gen-param-thms args
-                                 arg-types-compst
+        (simpadd0-gen-param-thms arg-types-compst
                                  arg-types
                                  ldm-params
                                  args
