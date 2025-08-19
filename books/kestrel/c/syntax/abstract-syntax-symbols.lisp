@@ -572,8 +572,8 @@
     var-info-fix
     coerce-var-info
 
-    unary-infop
-    coerce-unary-info
+    expr-unary-infop
+    coerce-expr-unary-info
 
     binary-infop
     coerce-binary-info

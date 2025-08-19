@@ -1428,7 +1428,7 @@
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
                              (arg-vartys ident-type-mapp)
-                             (info unary-infop)
+                             (info expr-unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new))
@@ -3797,7 +3797,7 @@
                               gout-arg.events
                               gout-arg.thm-name
                               gout-arg.vartys
-                              (coerce-unary-info expr.info)
+                              (coerce-expr-unary-info expr.info)
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))

@@ -372,7 +372,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod unary-info
+(fty::defprod expr-unary-info
   :short "Fixtype of validation information for unary expressions."
   :long
   (xdoc::topstring
@@ -382,29 +382,29 @@
      i.e. the @(':unary') case of @(tsee expr).
      The information for a unary expression consists of its type."))
   ((type type))
-  :pred unary-infop)
+  :pred expr-unary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-unary-info
+(defirrelevant irr-expr-unary-info
   :short "An irrelevant validation information for unary expressions."
-  :type unary-infop
-  :body (make-unary-info :type (irr-type)))
+  :type expr-unary-infop
+  :body (make-expr-unary-info :type (irr-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define coerce-unary-info (x)
-  :returns (info unary-infop)
-  :short "Coerce a value to @(tsee unary-info)."
+(define coerce-expr-unary-info (x)
+  :returns (info expr-unary-infop)
+  :short "Coerce a value to @(tsee expr-unary-info)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This must be used when the value is expected to have that type.
      We raise a hard error if that is not the case."))
-  (if (unary-infop x)
+  (if (expr-unary-infop x)
       x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy UNARY-INFOP." x)
-            (irr-unary-info))))
+    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-UNARY-INFOP." x)
+            (irr-expr-unary-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -644,7 +644,7 @@
   ((iconst (iconst-infop (iconst->info iconst)))
    (expr :ident (var-infop expr.info))
    (expr :unary (and (expr-annop expr.arg)
-                     (unary-infop expr.info)))
+                     (expr-unary-infop expr.info)))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :binary (and (expr-annop expr.arg1)
@@ -759,7 +759,7 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (unary-info->type (coerce-unary-info expr.info))
+   :unary (expr-unary-info->type (coerce-expr-unary-info expr.info))
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
