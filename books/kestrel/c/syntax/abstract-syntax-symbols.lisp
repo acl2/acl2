@@ -541,6 +541,7 @@
     ldm-tyname
     ldm-binop
     ldm-expr
+    ldm-expr-option
     ldm-stmt
     ldm-block-item
     ldm-block-item-list

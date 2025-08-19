@@ -2803,13 +2803,7 @@
      If the expression is present,
      the theorem is proved via two general ones proved below;
      if the expression is absent,
-     the theorem is proved via another general one proved below.")
-   (xdoc::p
-    "The generated theorem says nothing about variables after the statement
-     (we pass @('nil') as the variable-type map after the statement),
-     because we do not need those assertions for subsequent statements,
-     since @('return') does not continue execution
-     to the subsequent statements (i.e. that occur after it in the AST)."))
+     the theorem is proved via another general one proved below."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (make-stmt-return :expr? expr? :info info))
        (stmt-new (make-stmt-return :expr? expr?-new :info info))
@@ -2829,11 +2823,15 @@
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
              :vartys nil)))
+       (lemma-instances
+        (simpadd0-stmt-return-lemma-instances expr?-vartys expr?))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
+                                  (:e ldm-expr-option)
                                   (:e ldm-expr)
                                   (:e ldm-ident)
+                                  (:e ldm-type)
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
@@ -2846,16 +2844,20 @@
                            (:instance
                             simpadd0-stmt-return-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr?)))
-                            (fenv old-fenv)))))
-                '(("Goal"
+                            (fenv old-fenv))
+                           ,@lemma-instances)))
+                `(("Goal"
                    :in-theory '((:e ldm-stmt)
+                                (:e ldm-expr-option)
+                                (:e ldm-type)
                                 (:e c::stmt-return))
-                   :use simpadd0-stmt-return-novalue-support-lemma))))
+                   :use (simpadd0-stmt-return-novalue-support-lemma
+                         ,@lemma-instances)))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                expr?-vartys
-                               nil
+                               expr?-vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2866,6 +2868,23 @@
                             :thm-index thm-index
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vartys expr?-vartys)))
+
+  :prepwork
+  ((define simpadd0-stmt-return-lemma-instances ((vartys ident-type-mapp)
+                                                 (expr? expr-optionp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-stmt-return-vartys-support-lemma
+                       (expr? (mv-nth 1 (ldm-expr-option ',expr?)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-stmt-return-lemma-instances (omap::tail vartys) expr?)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2930,7 +2949,20 @@
                                       fenv
                                       limit))))
     :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable c::exec-expr-call-or-pure))
+    :enable c::exec-expr-call-or-pure)
+
+  (defruled simpadd0-stmt-return-vartys-support-lemma
+    (implies (or (not expr?)
+                 (not (equal (c::expr-kind expr?) :call)))
+             (b* ((stmt (c::stmt-return expr?))
+                  ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+               (implies (and (not (c::errorp result))
+                             (c::compustate-has-var-with-type-p var type compst))
+                        (c::compustate-has-var-with-type-p var type compst1))))
+    :expand ((c::exec-stmt (c::stmt-return expr?) compst fenv limit)
+             (c::exec-stmt '(:return nil) compst fenv limit))
+    :enable (c::compustate-has-var-with-type-p
+             c::exec-expr-call-or-pure)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
