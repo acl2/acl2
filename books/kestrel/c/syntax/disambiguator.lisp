@@ -3490,19 +3490,14 @@
                           (ident "__PRETTY_FUNCTION__"))
                     table)
                 table))
-       ((unless (stmt-case fundef.body :compound))
-        (retmsg$ "The body of the function definition ~x0 ~
-                  is not a compound statement; the code is invalid."
-                 (fundef-fix fundef)))
-       ((erp new-items table)
-        (dimb-block-item-list (stmt-compound->items fundef.body) table))
+       ((erp new-items table) (dimb-block-item-list fundef.body table))
        (table (dimb-pop-scope table))
        (table (dimb-add-ident ident (dimb-kind-objfun) table)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
                         :decls new-decls
-                        :body (stmt-compound new-items))
+                        :body new-items)
            table))
   :hooks (:fix)
 

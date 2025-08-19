@@ -648,7 +648,7 @@
                               (c$::dirdeclor->ident fundef.declor.direct.declor))
                             (qualified-fn-name
                               (qualify-ident filepath valid-table fn-name)))
-                         (call-graph-stmt
+                         (call-graph-block-item-list
                            fundef.body
                            qualified-fn-name
                            filepath
@@ -658,7 +658,7 @@
                              (c$::dirdeclor->ident fundef.declor.direct.declor))
                            (qualified-fn-name
                              (qualify-ident filepath valid-table fn-name)))
-                        (call-graph-stmt
+                        (call-graph-block-item-list
                           fundef.body
                           qualified-fn-name
                           filepath

@@ -111,46 +111,40 @@
                (new-fundef fundefp))
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (dirdeclor-case
-        fundef.declor.direct
-        :function-params
-        (b* (((unless (equal target-fn
-                             (c$::dirdeclor->ident fundef.declor.direct.declor)))
-              (mv nil (fundef-fix fundef)))
-             ((mv success new-params removed-param)
-              (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
-             ((unless success)
-              ;; TODO: use error-value-tuples
-              (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
-                             target-fn
-                             target-param)
-                      (mv nil (fundef-fix fundef))))
-             (dirdeclor-params
-               (make-dirdeclor-function-params
-                 :declor fundef.declor.direct.declor
-                 :params new-params
-                 :ellipsis fundef.declor.direct.ellipsis))
-             ((mv - decl)
-              (param-declon-to-decl removed-param (initer-single const))))
-          (mv t
-              (make-fundef
-                :extension fundef.extension
-                :spec fundef.spec
-                :declor (make-declor
-                          :pointers fundef.declor.pointers
-                          :direct dirdeclor-params)
-                :decls fundef.decls
-                :body (stmt-compound (cons (block-item-decl decl)
-                                           fundef.body.items)))))
-        :otherwise
-        ;; TODO: check when non-function-params dirdeclor still has name target-fn
-        (mv nil (fundef-fix fundef)))
-      :otherwise
-      (prog2$ (raise "Function definition body is not a compound statement.")
-              (mv nil (fundef-fix fundef)))))
+    (dirdeclor-case
+     fundef.declor.direct
+     :function-params
+     (b* (((unless (equal target-fn
+                          (c$::dirdeclor->ident fundef.declor.direct.declor)))
+           (mv nil (fundef-fix fundef)))
+          ((mv success new-params removed-param)
+           (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
+          ((unless success)
+           ;; TODO: use error-value-tuples
+           (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
+                          target-fn
+                          target-param)
+                   (mv nil (fundef-fix fundef))))
+          (dirdeclor-params
+           (make-dirdeclor-function-params
+            :declor fundef.declor.direct.declor
+            :params new-params
+            :ellipsis fundef.declor.direct.ellipsis))
+          ((mv - decl)
+           (param-declon-to-decl removed-param (initer-single const))))
+       (mv t
+           (make-fundef
+            :extension fundef.extension
+            :spec fundef.spec
+            :declor (make-declor
+                     :pointers fundef.declor.pointers
+                     :direct dirdeclor-params)
+            :decls fundef.decls
+            :body (cons (block-item-decl decl)
+                        fundef.body))))
+     :otherwise
+     ;; TODO: check when non-function-params dirdeclor still has name target-fn
+     (mv nil (fundef-fix fundef))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

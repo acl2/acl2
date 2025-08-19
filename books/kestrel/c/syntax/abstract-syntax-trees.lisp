@@ -3306,8 +3306,9 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>function-definition</i> in the grammar in [C17].
-     Unlike that grammar, we do not constrain the function body
-     to be a compound statement in this fixtype.")
+     The grammar constrains the function body to be a compound statement;
+     in this fixtype we capture that restriction by using a list of block items,
+     which the compound statement consists of.")
    (xdoc::p
     "As a GCC extension,
      we include the possibility that
@@ -3325,7 +3326,7 @@
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
-   (body stmt))
+   (body block-item-list))
   :pred fundefp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

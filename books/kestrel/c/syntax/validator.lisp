@@ -5994,12 +5994,7 @@
                                                 ainfo
                                                 table))
                 table))
-       ((unless (stmt-case fundef.body :compound))
-        (retmsg$ "The function definition ~x0 ~
-                  does not have a compound statement as body."
-                 (fundef-fix fundef)))
-       (items (stmt-compound->items fundef.body))
-       ((erp new-items & & table) (valid-block-item-list items table ienv))
+       ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
        (table (valid-pop-scope table)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
@@ -6007,7 +6002,7 @@
                         :asm? fundef.asm?
                         :attribs fundef.attribs
                         :decls new-decls
-                        :body (stmt-compound new-items))
+                        :body new-body)
            table))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :hooks (:fix)

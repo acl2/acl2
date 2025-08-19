@@ -119,29 +119,25 @@
   (b* (((reterr) (c$::irr-fundef) nil)
        (fundef (fundef-fix fundef))
        ((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (b* ((position?
-             (block-item-list-try-split-fn-when fundef.body.items triggers))
-           ((unless position?)
-            (retok fundef nil))
-           ((erp fun-name)
-            (b* (((reterr) nil))
-              (dirdeclor-case
-                fundef.declor.direct
-                :function-params
-                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
-                :function-names
-                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
-                :otherwise (retmsg$ "Malformed syntax.")))))
-        (split-fn-fundef
-          fun-name
-          (transunit-ensemble-fresh-ident fun-name transunits)
-          fundef
-          position?))
-      :otherwise (retmsg$ "Malformed syntax."))))
+       ((declor fundef.declor) fundef.declor)
+       (position?
+        (block-item-list-try-split-fn-when fundef.body triggers))
+       ((unless position?)
+        (retok fundef nil))
+       ((erp fun-name)
+        (b* (((reterr) nil))
+          (dirdeclor-case
+           fundef.declor.direct
+           :function-params
+           (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+           :function-names
+           (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+           :otherwise (retmsg$ "Malformed syntax.")))))
+    (split-fn-fundef
+     fun-name
+     (transunit-ensemble-fresh-ident fun-name transunits)
+     fundef
+     position?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

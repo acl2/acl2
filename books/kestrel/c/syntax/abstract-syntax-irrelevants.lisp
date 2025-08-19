@@ -512,7 +512,7 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body (irr-stmt)))
+                     :body nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

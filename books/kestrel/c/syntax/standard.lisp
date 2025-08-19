@@ -194,6 +194,6 @@
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))
                 (decl-list-standardp (fundef->decls fundef))
-                (stmt-standardp (fundef->body fundef))))
+                (block-item-list-standardp (fundef->body fundef))))
    (extdecl :empty nil)
    (extdecl :asm nil)))

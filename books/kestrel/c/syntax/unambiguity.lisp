@@ -832,7 +832,7 @@
            (and (decl-spec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)
-                (stmt-unambp body)))
+                (block-item-list-unambp body)))
     :enable fundef-unambp)
 
   (defrule extdecl-unambp-of-extdecl-fundef
@@ -1651,7 +1651,7 @@
 
   (defrule stmt-unambp-of-fundef->body
     (implies (fundef-unambp fundef)
-             (stmt-unambp (fundef->body fundef)))
+             (block-item-list-unambp (fundef->body fundef)))
     :enable fundef-unambp)
 
   (defrule fundef-unambp-of-extdecl-fundef->unwrap

@@ -1452,7 +1452,7 @@
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv decls body-bound-vars)
         (decl-list-subst-free fundef.decls subst body-bound-vars))
-       (body (stmt-subst-free fundef.body subst body-bound-vars)))
+       ((mv body &) (block-item-list-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
           :spec spec

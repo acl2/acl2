@@ -6090,15 +6090,9 @@
        ((mv new-decls (simpadd0-gout gout-decls))
         (simpadd0-decl-list fundef.decls gin state))
        (gin (simpadd0-gin-update gin gout-decls))
-       ((unless (stmt-case fundef.body :compound))
-        (raise "Internal error: the body of ~x0 is not a compound statement."
-               (fundef-fix fundef))
-        (mv (irr-fundef) (irr-simpadd0-gout)))
-       (items (stmt-compound->items fundef.body))
-       ((mv new-items (simpadd0-gout gout-body))
-        (simpadd0-block-item-list items gin state))
+       ((mv new-body (simpadd0-gout gout-body))
+        (simpadd0-block-item-list fundef.body gin state))
        ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
-       (new-body (stmt-compound new-items))
        (new-fundef (make-fundef :extension fundef.extension
                                 :spec new-spec
                                 :declor new-declor
@@ -6143,7 +6137,7 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (type? (block-item-list-type items))
+       (type? (block-item-list-type fundef.body))
        (type (or type? (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: function ~x0 returns ~x1."

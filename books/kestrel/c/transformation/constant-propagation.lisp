@@ -1908,7 +1908,7 @@
        ((mv decls -)
         (const-prop-decl-list fundef.decls env))
        ((mv body -)
-        (const-prop-stmt fundef.body (push-scope-env env))))
+        (const-prop-block-item-list fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
                  :spec spec
                  :declor declor

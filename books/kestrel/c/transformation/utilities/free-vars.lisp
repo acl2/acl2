@@ -990,7 +990,7 @@
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
         (free-vars-decl-list fundef.decls bound-vars))
-       (free-vars5 (free-vars-stmt fundef.body bound-vars)))
+       ((mv free-vars5 &) (free-vars-block-item-list fundef.body bound-vars)))
     (union free-vars1
            (union free-vars2
                   (union free-vars3 (union free-vars4 free-vars5))))))

@@ -1648,14 +1648,10 @@
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((erp body) (ldm-stmt fundef.body))
-       ((unless (c::stmt-case body :compound))
-        (reterr (msg "Unsupported non-compound statement body ~
-                      in function definition ~x0."
-                     (fundef-fix fundef)))))
+       ((erp body) (ldm-block-item-list fundef.body)))
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
-                           :body (c::stmt-compound->items body))))
+                           :body body)))
   :hooks (:fix)
 
   ///
@@ -1663,8 +1659,7 @@
   (defret ldm-fundef-ok-when-fundef-formalp
     (not erp)
     :hyp (fundef-formalp fundef)
-    :hints (("Goal" :in-theory (enable fundef-formalp
-                                       ldm-stmt)))))
+    :hints (("Goal" :in-theory (enable fundef-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

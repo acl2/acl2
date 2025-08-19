@@ -141,7 +141,7 @@
                                :params fundef.declor.direct.params
                                :ellipsis fundef.declor.direct.ellipsis))
             :decls fundef.decls
-            :body (stmt-rename-fn fundef.body target-fn new-fn))
+            :body (block-item-list-rename-fn fundef.body target-fn new-fn))
         nil)
       :otherwise nil)))
 
