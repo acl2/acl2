@@ -1063,10 +1063,14 @@
                                  (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
                                  (all-args symbol-listp)
-                                 (init-scope-thm symbolp))
+                                 (init-scope-thm symbolp)
+                                 (const-new symbolp)
+                                 (thm-index posp))
   :guard (equal (len arg-types-compst) (len args))
   :returns (mv (thm-events pseudo-event-form-listp)
-               (thm-names symbol-listp))
+               (thm-names symbol-listp)
+               (updated-thm-index posp
+                                  :rule-classes (:rewrite :type-prescription)))
   :short "Generate theorems about the parameters of a function."
   :long
   (xdoc::topstring
@@ -1091,8 +1095,7 @@
      if the value corresponding to the parameter has a certain type,
      then reading the parameter from the computation state
      succeeds and yields a value of that type."))
-  (b* (((when (endp args)) (mv nil nil))
-       (arg (car args))
+  (b* (((when (endp args)) (mv nil nil (pos-fix thm-index)))
        (formula
         `(b* ((compst
                (c::push-frame
@@ -1148,19 +1151,23 @@
                                unicity-of-0
                                (:e rev)
                                (:t len)))))
-       (thm-name (packn-pos (list arg '-param-thm) arg))
+       (thm-name (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
        (thm-event `(defruled ,thm-name
                      ,formula
                      :hints ,hints))
-       ((mv more-thm-events more-thm-names)
+       ((mv more-thm-events more-thm-names thm-index)
         (simpadd0-gen-param-thms (cdr args)
                                  (cdr arg-types-compst)
                                  all-arg-types
                                  all-params
                                  all-args
-                                 init-scope-thm)))
+                                 init-scope-thm
+                                 const-new
+                                 thm-index)))
     (mv (cons thm-event more-thm-events)
-        (cons thm-name more-thm-names)))
+        (cons thm-name more-thm-names)
+        thm-index))
   :guard-hints (("Goal" :in-theory (enable len)))
 
   ///
@@ -6156,12 +6163,19 @@
                                      gin.const-new
                                      gin.thm-index))
        (names-to-avoid (cons init-scope-thm-name gin.names-to-avoid))
-       ((mv param-thm-events param-thm-names)
-        (simpadd0-gen-param-thms
-         args arg-types-compst arg-types ldm-params args init-scope-thm-name))
+       ((mv param-thm-events param-thm-names thm-index)
+        (simpadd0-gen-param-thms args
+                                 arg-types-compst
+                                 arg-types
+                                 ldm-params
+                                 args
+                                 init-scope-thm-name
+                                 gin.const-new
+                                 thm-index))
        (thm-name
         (packn-pos (list gin.const-new '-thm- thm-index) gin.const-new))
        (thm-index (1+ thm-index))
+       (names-to-avoid (append param-thm-names names-to-avoid))
        (formula
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
@@ -6221,8 +6235,7 @@
        (thm-event `(defrule ,thm-name
                      ,formula
                      :rule-classes nil
-                     :hints ,hints
-                     :prep-lemmas (,@param-thm-events))))
+                     :hints ,hints)))
     (mv new-fundef
         (make-simpadd0-gout
          :events (append gout-spec.events
@@ -6230,6 +6243,7 @@
                          gout-decls.events
                          gout-body.events
                          (list init-scope-thm-event)
+                         param-thm-events
                          (list thm-event))
          :thm-name thm-name
          :thm-index thm-index
