@@ -956,9 +956,13 @@
 (define simpadd0-gen-init-scope-thm ((params c::param-declon-listp)
                                      (args symbol-listp)
                                      (parargs "A term.")
-                                     (arg-types true-listp))
+                                     (arg-types true-listp)
+                                     (const-new symbolp)
+                                     (thm-index posp))
   :returns (mv (thm-event pseudo-event-formp)
-               (thm-name symbolp))
+               (thm-name symbolp)
+               (updated-thm-index posp
+                                  :rule-classes (:rewrite :type-prescription)))
   :short "Generate a theorem about the initial scope of a function."
   :long
   (xdoc::topstring
@@ -970,11 +974,7 @@
      @(tsee c::init-scope) applied to the list of parameter declarations
      and to the list of parameter values
      yields an omap (which we express as an @(tsee omap::update) nest)
-     that associates parameter name and argument value.")
-   (xdoc::p
-    "The name of the theorem is used locally to another theorem,
-     so it does not have to be particularly distinguished.
-     But we should check and disambiguate this more thoroughly."))
+     that associates parameter name and argument value."))
   (b* ((formula `(implies (and ,@arg-types)
                           (equal (c::init-scope ',params (list ,@args))
                                  ,parargs)))
@@ -1043,7 +1043,8 @@
                                (:e <<)
                                lemma1
                                lemma2))))
-       (thm-name 'init-scope-thm)
+       (thm-name (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
        (thm-event `(defruled ,thm-name
                      ,formula
                      :hints ,hints
@@ -1053,7 +1054,7 @@
                       (defruled lemma2
                         (not (c::errorp (omap::update key val map)))
                         :enable (c::errorp omap::update))))))
-    (mv thm-event thm-name)))
+    (mv thm-event thm-name thm-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,7 +1062,8 @@
                                  (arg-types-compst true-listp)
                                  (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
-                                 (all-args symbol-listp))
+                                 (all-args symbol-listp)
+                                 (init-scope-thm symbolp))
   :guard (equal (len arg-types-compst) (len args))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
@@ -1101,7 +1103,7 @@
            (implies (and ,@all-arg-types)
                     ,(car arg-types-compst))))
        (hints
-        '(("Goal" :in-theory '(init-scope-thm
+        `(("Goal" :in-theory '(,init-scope-thm
                                (:e ident)
                                (:e ldm-ident)
                                c::push-frame
@@ -1155,7 +1157,8 @@
                                  (cdr arg-types-compst)
                                  all-arg-types
                                  all-params
-                                 all-args)))
+                                 all-args
+                                 init-scope-thm)))
     (mv (cons thm-event more-thm-events)
         (cons thm-name more-thm-names)))
   :guard-hints (("Goal" :in-theory (enable len)))
@@ -6112,13 +6115,10 @@
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :vartys nil))
-       ((unless gout-body.thm-name)
-        (mv new-fundef gout-no-thm))
-       ((unless (fundef-formalp fundef))
-        (mv new-fundef gout-no-thm))
+       ((unless gout-body.thm-name) (mv new-fundef gout-no-thm))
+       ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
        ((declor declor) fundef.declor)
-       ((when (consp declor.pointers))
-        (mv new-fundef gout-no-thm))
+       ((when (consp declor.pointers)) (mv new-fundef gout-no-thm))
        ((mv okp params dirdeclor)
         (dirdeclor-case
          declor.direct
@@ -6127,8 +6127,7 @@
                              nil
                              declor.direct.declor)
          :otherwise (mv nil nil (irr-dirdeclor))))
-       ((unless okp)
-        (mv new-fundef gout-no-thm))
+       ((unless okp) (mv new-fundef gout-no-thm))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
@@ -6149,14 +6148,20 @@
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
-       ((mv init-scope-thm-event init-scope-thm-name)
-        (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
+       ((mv init-scope-thm-event init-scope-thm-name thm-index)
+        (simpadd0-gen-init-scope-thm ldm-params
+                                     args
+                                     parargs
+                                     arg-types
+                                     gin.const-new
+                                     gin.thm-index))
+       (names-to-avoid (cons init-scope-thm-name gin.names-to-avoid))
        ((mv param-thm-events param-thm-names)
         (simpadd0-gen-param-thms
-         args arg-types-compst arg-types ldm-params args))
-       (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
-                            gin.const-new))
-       (thm-index (1+ gin.thm-index))
+         args arg-types-compst arg-types ldm-params args init-scope-thm-name))
+       (thm-name
+        (packn-pos (list gin.const-new '-thm- thm-index) gin.const-new))
+       (thm-index (1+ thm-index))
        (formula
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
@@ -6213,26 +6218,28 @@
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
-       (thm-event `(defruled ,thm-name
+       (thm-event `(defrule ,thm-name
                      ,formula
+                     :rule-classes nil
                      :hints ,hints
-                     :prep-lemmas (,init-scope-thm-event
-                                   ,@param-thm-events))))
+                     :prep-lemmas (,@param-thm-events))))
     (mv new-fundef
         (make-simpadd0-gout
          :events (append gout-spec.events
                          gout-declor.events
                          gout-decls.events
                          gout-body.events
+                         (list init-scope-thm-event)
                          (list thm-event))
          :thm-name thm-name
          :thm-index thm-index
-         :names-to-avoid (cons thm-name gout-body.names-to-avoid)
+         :names-to-avoid (cons thm-name names-to-avoid)
          :vartys (omap::update*
                   gout-spec.vartys
                   (omap::update* gout-declor.vartys
                                  (omap::update* gout-decls.vartys
                                                 gout-body.vartys))))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix)
 
   :prepwork
