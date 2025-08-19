@@ -6100,7 +6100,8 @@
                                 :asm? fundef.asm?
                                 :attribs fundef.attribs
                                 :decls new-decls
-                                :body new-body))
+                                :body new-body
+                                :info fundef.info))
        (gout-no-thm
         (make-simpadd0-gout
          :events (append gout-spec.events

@@ -3326,7 +3326,8 @@
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
-   (body block-item-list))
+   (body block-item-list)
+   (info any))
   :pred fundefp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

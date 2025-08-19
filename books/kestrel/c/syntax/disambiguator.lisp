@@ -3497,7 +3497,8 @@
                         :spec new-spec
                         :declor new-declor
                         :decls new-decls
-                        :body new-items)
+                        :body new-items
+                        :info fundef.info)
            table))
   :hooks (:fix)
 

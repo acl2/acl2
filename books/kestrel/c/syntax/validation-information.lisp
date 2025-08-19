@@ -597,6 +597,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod fundef-info
+  :short "Fixtype of validation information for function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to function definitions.
+     The information consists of
+     the validation table at the start of the function definition
+     and the validation table at the start of the body
+     (i.e. just after the opening curly brace)."))
+  ((table-start valid-table)
+   (table-body-start valid-table))
+  :pred fundef-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fundef-info
+  :short "An irrelevant validation information for function definitions."
+  :type fundef-infop
+  :body (make-fundef-info :table-start (irr-valid-table)
+                          :table-body-start (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-fundef-info (x)
+  :returns (info fundef-infop)
+  :short "Coerce a value to @(tsee fundef-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (fundef-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy FUNDEF-INFOP." x)
+            (irr-fundef-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
@@ -605,8 +645,7 @@
     "This is the type of the annotations that
      the validator adds to translation units.
      The information consists of
-     the final validation table for the translation unit.
-     We wrap it into a product fixtype for easier future extensibility."))
+     the final validation table for the translation unit."))
   ((table valid-table))
   :pred transunit-infop)
 
@@ -736,6 +775,11 @@
                                  amb-declor/absdeclor)))
    (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
                          (amb-decl/stmt-fix amb-decl/stmt)))
+   (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+                (declor-annop (fundef->declor fundef))
+                (decl-list-annop (fundef->decls fundef))
+                (block-item-list-annop (fundef->body fundef))
+                (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
 

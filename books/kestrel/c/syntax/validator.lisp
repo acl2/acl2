@@ -5912,6 +5912,7 @@
      because we have added it to the file scope."))
   (b* (((reterr) (irr-fundef) (irr-valid-table))
        ((fundef fundef) fundef)
+       (table-start table)
        ((erp new-spec type storspecs types table)
         (valid-decl-spec-list fundef.spec nil nil nil table ienv))
        ((erp new-declor & type ident more-types table)
@@ -5994,15 +5995,19 @@
                                                 ainfo
                                                 table))
                 table))
+       (table-body-start table)
        ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
-       (table (valid-pop-scope table)))
+       (table (valid-pop-scope table))
+       (info (make-fundef-info :table-start table-start
+                               :table-body-start table-body-start)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
                         :asm? fundef.asm?
                         :attribs fundef.attribs
                         :decls new-decls
-                        :body new-body)
+                        :body new-body
+                        :info info)
            table))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :hooks (:fix)

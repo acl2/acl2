@@ -141,7 +141,8 @@
                      :direct dirdeclor-params)
             :decls fundef.decls
             :body (cons (block-item-decl decl)
-                        fundef.body))))
+                        fundef.body)
+            :info fundef.info)))
      :otherwise
      ;; TODO: check when non-function-params dirdeclor still has name target-fn
      (mv nil (fundef-fix fundef))))
