@@ -446,8 +446,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stmt-info
-  :short "Fixtype of validation information for statements."
+(fty::defprod stmt-expr-info
+  :short "Fixtype of validation information for expression statements."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -456,29 +456,65 @@
      This information currently consists of
      the validation table at the beginning of the statement."))
   ((table valid-table))
-  :pred stmt-infop)
+  :pred stmt-expr-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-stmt-info
-  :short "An irrelevant validation information for statement."
-  :type stmt-infop
-  :body (stmt-info (irr-valid-table)))
+(defirrelevant irr-stmt-expr-info
+  :short "An irrelevant validation information for expression statement."
+  :type stmt-expr-infop
+  :body (stmt-expr-info (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define coerce-stmt-info (x)
-  :returns (info stmt-infop)
-  :short "Coerce a value to @(tsee stmt-info)."
+(define coerce-stmt-expr-info (x)
+  :returns (info stmt-expr-infop)
+  :short "Coerce a value to @(tsee stmt-expr-info)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This must be used when the value is expected to have that type.
      We raise a hard error if that is not the case."))
-  (if (stmt-infop x)
+  (if (stmt-expr-infop x)
       x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-INFOP." x)
-            (irr-stmt-info))))
+    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-EXPR-INFOP." x)
+            (irr-stmt-expr-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod stmt-return-info
+  :short "Fixtype of validation information for return statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of annotations that
+     the validator adds to (for now only some kinds of) statements.
+     This information currently consists of
+     the validation table at the beginning of the statement."))
+  ((table valid-table))
+  :pred stmt-return-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-stmt-return-info
+  :short "An irrelevant validation information for return statement."
+  :type stmt-return-infop
+  :body (stmt-return-info (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-stmt-return-info (x)
+  :returns (info stmt-return-infop)
+  :short "Coerce a value to @(tsee stmt-return-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (stmt-return-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-RETURN-INFOP." x)
+            (irr-stmt-return-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -676,11 +712,11 @@
    (asm-input t)
    (asm-stmt t)
    (stmt :expr (and (expr-option-annop (stmt-expr->expr? stmt))
-                    (stmt-infop (stmt-expr->info stmt))))
+                    (stmt-expr-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
    (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
-                      (stmt-infop (stmt-return->info stmt))))
+                      (stmt-return-infop (stmt-return->info stmt))))
    (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
                           (block-item-infop
                            (block-item-stmt->info block-item))))

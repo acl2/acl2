@@ -5297,7 +5297,7 @@
        (b* ((table0 table)
             ((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv))
-            (info (make-stmt-info :table table0)))
+            (info (make-stmt-expr-info :table table0)))
          (retok (make-stmt-expr :expr? new-expr?
                                 :info info)
                 types
@@ -5460,7 +5460,7 @@
             ((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv))
             (return-type (or type? (type-void)))
-            (info (make-stmt-info :table table0)))
+            (info (make-stmt-return-info :table table0)))
          (retok (make-stmt-return :expr? new-expr? :info info)
                 (set::insert return-type types)
                 nil

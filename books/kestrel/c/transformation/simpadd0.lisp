@@ -2588,7 +2588,7 @@
                             (expr?-new expr-optionp)
                             (expr?-events pseudo-event-form-listp)
                             (expr?-thm-name symbolp)
-                            (info stmt-infop)
+                            (info stmt-expr-infop)
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2627,7 +2627,7 @@
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
              :vartys nil)))
-       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-info->table info)))
+       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-expr-info->table info)))
        (hints
         (if expr?
             `(("Goal"
@@ -2780,7 +2780,7 @@
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
                               (expr?-thm-name symbolp)
-                              (info stmt-infop)
+                              (info stmt-return-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2822,7 +2822,8 @@
              :thm-index gin.thm-index
              :names-to-avoid gin.names-to-avoid
              :vartys nil)))
-       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-info->table info)))
+       (vartys
+        (simpadd0-vartys-from-valid-table (c$::stmt-return-info->table info)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances vartys expr?))
        (hints (if expr?
                   `(("Goal"
@@ -5608,7 +5609,7 @@
                                    new-expr?
                                    gout-expr?.events
                                    gout-expr?.thm-name
-                                   (coerce-stmt-info stmt.info)
+                                   (coerce-stmt-expr-info stmt.info)
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
@@ -5758,7 +5759,7 @@
                                        new-expr?
                                        gout-expr?.events
                                        gout-expr?.thm-name
-                                       (coerce-stmt-info stmt.info)
+                                       (coerce-stmt-return-info stmt.info)
                                        gin))
        :asm (mv (stmt-fix stmt)
                 (make-simpadd0-gout

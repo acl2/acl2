@@ -581,8 +581,11 @@
     tyname-infop
     coerce-tyname-info
 
-    stmt-infop
-    coerce-stmt-info
+    stmt-expr-infop
+    coerce-stmt-expr-info
+
+    stmt-return-infop
+    coerce-stmt-return-info
 
     block-item-infop
     coerce-block-item-info
