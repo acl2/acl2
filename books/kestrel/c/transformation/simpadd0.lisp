@@ -1718,7 +1718,7 @@
                               (arg2-events pseudo-event-form-listp)
                               (arg2-thm-name symbolp)
                               (arg2-vartys ident-type-mapp)
-                              (info binary-infop)
+                              (info expr-binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -1905,7 +1905,7 @@
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
            (vartys
-            (simpadd0-vartys-from-valid-table (c$::binary-info->table info)))
+            (simpadd0-vartys-from-valid-table (c$::expr-binary-info->table info)))
            ((unless (omap::submap arg1-vartys vartys))
             (raise "Internal error: ~
                     argument variables ~x0 are not a submap of ~
@@ -3857,7 +3857,7 @@
                                gout-arg2.events
                                gout-arg2.thm-name
                                gout-arg2.vartys
-                               (coerce-binary-info expr.info)
+                               (coerce-expr-binary-info expr.info)
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))

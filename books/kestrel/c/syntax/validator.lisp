@@ -2262,7 +2262,7 @@
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
-                    (info (make-binary-info :type type :table table0)))
+                    (info (make-expr-binary-info :type type :table table0)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2

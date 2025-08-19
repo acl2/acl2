@@ -408,7 +408,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod binary-info
+(fty::defprod expr-binary-info
   :short "Fixtype of validation information for binary expressions."
   :long
   (xdoc::topstring
@@ -420,29 +420,29 @@
      and the validation table at the beginning of the binary expression."))
   ((type type)
    (table valid-table))
-  :pred binary-infop)
+  :pred expr-binary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-binary-info
+(defirrelevant irr-expr-binary-info
   :short "An irrelevant validation information for binary expressions."
-  :type binary-infop
-  :body (make-binary-info :type (irr-type) :table (irr-valid-table)))
+  :type expr-binary-infop
+  :body (make-expr-binary-info :type (irr-type) :table (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define coerce-binary-info (x)
-  :returns (info binary-infop)
-  :short "Coerce a value to @(tsee binary-info)."
+(define coerce-expr-binary-info (x)
+  :returns (info expr-binary-infop)
+  :short "Coerce a value to @(tsee expr-binary-info)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This must be used when the value is expected to have that type.
      We raise a hard error if that is not the case."))
-  (if (binary-infop x)
+  (if (expr-binary-infop x)
       x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy BINARY-INFOP." x)
-            (irr-binary-info))))
+    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-BINARY-INFOP." x)
+            (irr-expr-binary-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,7 +649,7 @@
                               (expr-fix expr)))
    (expr :binary (and (expr-annop expr.arg1)
                       (expr-annop expr.arg2)
-                      (binary-infop expr.info)))
+                      (expr-binary-infop expr.info)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -763,7 +763,7 @@
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
-   :binary (binary-info->type (coerce-binary-info expr.info))
+   :binary (expr-binary-info->type (coerce-expr-binary-info expr.info))
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
               (then-type (expr-type expr.then))

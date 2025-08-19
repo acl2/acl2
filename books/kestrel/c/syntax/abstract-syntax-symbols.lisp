@@ -575,8 +575,8 @@
     expr-unary-infop
     coerce-expr-unary-info
 
-    binary-infop
-    coerce-binary-info
+    expr-binary-infop
+    coerce-expr-binary-info
 
     tyname-infop
     coerce-tyname-info
