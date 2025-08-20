@@ -452,6 +452,47 @@
 (defconst *used-try-print-threshold* 100)
 (defconst *wasted-try-print-threshold* 50)
 
+;; we hide an IF under this function to try to speed up the proofs below
+(defund-inline maybe-extend-trees-equal-to-tree (memoization tree trees-equal-to-tree)
+  (declare (xargs :guard t))
+  (if memoization
+      (cons tree trees-equal-to-tree)
+    ;; not memoizing:
+    nil))
+
+(defthm trees-to-memoizep-of-maybe-extend-trees-equal-to-tree
+  (implies (and (tree-to-memoizep tree)
+                (trees-to-memoizep trees-equal-to-tree))
+           (trees-to-memoizep (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree)))
+  :hints (("Goal" :in-theory (enable maybe-extend-trees-equal-to-tree))))
+
+(defund-inline my-symbol-list-fix (syms)
+  (declare (xargs :guard (symbol-listp syms)))
+  (mbe :logic (if (symbol-listp syms) syms nil)
+       :exec syms))
+
+(defthm symbol-listp-of-my-symbol-list-fix
+  (symbol-listp (my-symbol-list-fix syms))
+  :hints (("Goal" :in-theory (enable my-symbol-list-fix))))
+
+(defund print-level-fix (p)
+  (declare (xargs :guard (print-levelp p)))
+  (mbe :logic (if (print-levelp p) p nil)
+       :exec p))
+
+(defthm print-levelp-of-print-level-fix
+  (print-levelp (print-level-fix p))
+  :hints (("Goal" :in-theory (enable print-level-fix))))
+
+(defun normalize-xors-option-fix (n)
+  (declare (xargs :guard (normalize-xors-optionp n)))
+  (mbe :logic (if (normalize-xors-optionp n) n nil)
+       :exec n))
+
+(defthm normalize-xors-optionp-of-normalize-xors-option-fix
+  (normalize-xors-optionp (normalize-xors-option-fix n))
+  :hints (("Goal" :in-theory (enable normalize-xors-option-fix))))
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -1297,7 +1338,7 @@
                ;; Now simplify the call of IF/MYIF/BOOLIF (this function takes simplified args and does not handle ifs specially, or else things might loop):
                ;; (We know we don't have a ground term, because simplified-test is not a constant.)
                (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-then-branch simplified-else-branch)
-                                                       (and memoization (cons tree trees-equal-to-tree)) ;the call of FN we are rewriting here is equal to tree
+                                                       (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the call of FN we are rewriting here is equal to tree
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count
                                                        refined-assumption-alist ; the original one, not extended for the else-branch
@@ -1438,7 +1479,7 @@
                (if (consp simplified-test) ; tests for quotep (that is, checks whether we resolved the test)
                    ;; Rewrite either the "then" branch or the "else" branch, according to whether the test simplified to nil:
                    (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
-                                                       (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                       (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count))
@@ -1502,7 +1543,7 @@
                    ;; Rewrite either the "then" branch or the "else" branch, according to whether the test simplified to nil, wrapping the result in bool-fix:
                    ;; TODO: Consider dropping the bool-fix if we have a known boolean:
                    (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(if (unquote simplified-test) (second args) (third args))) ;the "then" branch or the "else" branch
-                                                       (and memoization (cons tree trees-equal-to-tree)) ;the bool-fix$inline tree we are rewriting here is equal to TREE
+                                                       (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the bool-fix$inline tree we are rewriting here is equal to TREE
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count))
@@ -1590,7 +1631,7 @@
                                              (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))))
                ;; Try to apply rules to the call of BVIF on the simplified args:
                (,simplify-fun-call-and-add-to-dag-name 'bvif (list simplified-size simplified-test simplified-then-branch simplified-else-branch)
-                                                       (and memoization (cons tree trees-equal-to-tree)) ; the BVIF call we are rewriting here is equal to TREE
+                                                       (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ; the BVIF call we are rewriting here is equal to TREE
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count
                                                        refined-assumption-alist ; the original one, not extended for the else-branch
@@ -1790,7 +1831,7 @@
                                                              ;; test rewrote to nil:
                                                              (fourth args) ; "else" branch
                                                              ))
-                                                       (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                       (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count))
@@ -1853,7 +1894,7 @@
                        node-replacement-array)
                  ;; Arg did not rewrite to a constant, so try to apply rules to the call of NOT on the simplified arg:
                  (,simplify-fun-call-and-add-to-dag-name 'not (list simplified-arg)
-                                                         (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                         (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
                                                          rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                          node-replacement-array node-replacement-count refined-assumption-alist
                                                          rewrite-stobj (+ -1 count)))))
@@ -2014,7 +2055,7 @@
                                           (new-expr (,subcor-var-and-eval-name formals simplified-args body (get-interpreted-function-alist rewrite-stobj))))
                                      ;;simplify the result of beta-reducing:
                                      (,simplify-tree-and-add-to-dag-name new-expr
-                                                                         (and memoization (cons tree trees-equal-to-tree)) ;we memoize the lambda
+                                                                         (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;we memoize the lambda
                                                                          rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                                          node-replacement-array node-replacement-count refined-assumption-alist
                                                                          rewrite-stobj (+ -1 count)))
@@ -2056,7 +2097,7 @@
                                      ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
                                      ;; TODO: Perhaps pass in the original tree for use by cons-with-hint:
                                      (,simplify-fun-call-and-add-to-dag-name fn simplified-args
-                                                                             (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting is equal to tree
+                                                                             (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ;the thing we are rewriting is equal to tree
                                                                              rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                                              node-replacement-array node-replacement-count refined-assumption-alist
                                                                              rewrite-stobj (+ -1 count)))))))))))))))
@@ -3132,6 +3173,7 @@
                    ;;       myquotep))
                    ;; We use a constant theory here for speed (without it, x86/rewriter-x86.lisp is quite slow)
                    '(car-cons ;; missing from summary!
+                     trees-to-memoizep-of-maybe-extend-trees-equal-to-tree
                      (:compound-recognizer axe-treep-compound-recognizer)
                      (:compound-recognizer natp-compound-recognizer)
                      (:congruence iff-implies-equal-not)
@@ -5815,12 +5857,12 @@
                  (er hard? ',simplify-dag-core-name "It is unsound to memoize when using internal contexts.")
                  (mv :unsound nil limits ,@maybe-state))
                 ;; Fix some values, so we don't need assumptions about them in later theorems (should have no runtime cost):
-                (monitored-symbols (if (mbt (symbol-listp monitored-symbols)) monitored-symbols nil))
-                (no-warn-ground-functions (if (mbt (symbol-listp no-warn-ground-functions)) no-warn-ground-functions nil))
-                (fns-to-elide (if (mbt (symbol-listp fns-to-elide)) fns-to-elide nil))
-                (known-booleans (if (mbt (symbol-listp known-booleans)) known-booleans nil))
-                (normalize-xors (if (mbt (normalize-xors-optionp normalize-xors)) normalize-xors nil))
-                (print (if (mbt (print-levelp print)) print nil))
+                (monitored-symbols (my-symbol-list-fix monitored-symbols))
+                (no-warn-ground-functions (my-symbol-list-fix no-warn-ground-functions))
+                (fns-to-elide (my-symbol-list-fix fns-to-elide))
+                (known-booleans (my-symbol-list-fix known-booleans))
+                (normalize-xors (normalize-xors-option-fix normalize-xors))
+                (print (print-level-fix print))
                 ;;
                 (old-top-nodenum (top-nodenum dag))
                 (old-len (+ 1 old-top-nodenum))
@@ -6443,12 +6485,12 @@
                                                                   NATP-WHEN-DARGP ;caused problems when natp is known
                                                                   wf-rewrite-stobj2p-conjuncts))))))
            (b* (;; Fix some values, so we don't need assumptions about them in later theorems (should have no runtime cost):
-                (monitored-symbols (if (mbt (symbol-listp monitored-symbols)) monitored-symbols nil))
-                (no-warn-ground-functions (if (mbt (symbol-listp no-warn-ground-functions)) no-warn-ground-functions nil))
-                (fns-to-elide (if (mbt (symbol-listp fns-to-elide)) fns-to-elide nil))
-                (known-booleans (if (mbt (symbol-listp known-booleans)) known-booleans nil))
-                (normalize-xors (if (mbt (normalize-xors-optionp normalize-xors)) normalize-xors nil))
-                (print (if (mbt (print-levelp print)) print nil))
+                (monitored-symbols (my-symbol-list-fix monitored-symbols))
+                (no-warn-ground-functions (my-symbol-list-fix no-warn-ground-functions))
+                (fns-to-elide (my-symbol-list-fix fns-to-elide))
+                (known-booleans (my-symbol-list-fix known-booleans))
+                (normalize-xors (normalize-xors-option-fix normalize-xors))
+                (print (print-level-fix print))
                 ;; Create an empty dag-array:
                 (slack-amount 1000000) ;todo: make this adjustable, or just reduce this?
                 ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
