@@ -47,9 +47,7 @@
 
  ((xdoc::evmac-topic-implementation-item-input "const-old")
 
-  (xdoc::evmac-topic-implementation-item-input "const-new")
-
-  (xdoc::evmac-topic-implementation-item-input "proofs"))
+  (xdoc::evmac-topic-implementation-item-input "const-new"))
 
  :additional
 
