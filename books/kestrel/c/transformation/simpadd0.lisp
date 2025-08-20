@@ -5935,13 +5935,7 @@
    (xdoc::p
     "We generate a theorem for the function
      only under certain conditions,
-     including the fact that a theorem for the body was generated.")
-   (xdoc::p
-    "The generated theorem contains local theorems
-     that are used in the proof of the main theorem.
-     The local theorems are about the initial scope of the function,
-     and about the parameters in the computation state
-     at the beginning of the execution of the function body."))
+     including the fact that a theorem for the body was generated."))
   (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin state))
