@@ -1914,7 +1914,8 @@
                  :declor declor
                  :asm? fundef.asm?
                  :decls decls
-                 :body body)))
+                 :body body
+                 :info fundef.info)))
 
 (define const-prop-extdecl
   ((extdecl extdeclp)

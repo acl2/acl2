@@ -1460,5 +1460,6 @@
           :asm? fundef.asm?
           :attribs attribs
           :decls decls
-          :body body)
+          :body body
+          :info fundef.info)
         bound-vars)))
