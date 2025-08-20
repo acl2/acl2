@@ -950,7 +950,7 @@
     (b* ((bound-vars (ident-set-fix bound-vars)))
       (block-item-case
         item
-        :decl (free-vars-decl item.unwrap bound-vars)
+        :decl (free-vars-decl item.decl bound-vars)
         :stmt (mv (free-vars-stmt item.stmt bound-vars)
                   bound-vars)
         :ambig (mv nil bound-vars)))

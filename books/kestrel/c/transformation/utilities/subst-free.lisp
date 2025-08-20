@@ -1355,7 +1355,7 @@
      block-item
      :decl
      (b* (((mv unwrap bound-vars)
-           (decl-subst-free (c$::block-item-decl->unwrap block-item)
+           (decl-subst-free (c$::block-item-decl->decl block-item)
                             subst bound-vars)))
        (mv (block-item-decl unwrap)
            (ident-set-fix bound-vars)))

@@ -2921,7 +2921,7 @@
       (block-item-case
        item
        :decl
-       (b* (((erp new-decl table) (dimb-decl item.unwrap table)))
+       (b* (((erp new-decl table) (dimb-decl item.decl table)))
          (retok (block-item-decl new-decl) table))
        :stmt
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))

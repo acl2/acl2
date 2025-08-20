@@ -1584,10 +1584,10 @@
              (expr-option-unambp (stmt-return->expr? stmt)))
     :expand (stmt-unambp stmt))
 
-  (defrule decl-unamb-of-block-item-decl->unwrap
+  (defrule decl-unamb-of-block-item-decl->decl
     (implies (and (block-item-unambp item)
                   (block-item-case item :decl))
-             (decl-unambp (block-item-decl->unwrap item)))
+             (decl-unambp (block-item-decl->decl item)))
     :expand (block-item-unambp item))
 
   (defrule stmt-unamb-of-block-item-stmt->stmt

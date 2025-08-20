@@ -3034,7 +3034,7 @@
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
        see @(tsee amb-decl/stmt)."))
-    (:decl ((unwrap decl)))
+    (:decl ((decl decl)))
     (:stmt ((stmt stmt)
             (info any)))
     (:ambig ((unwrap amb-decl/stmt)))

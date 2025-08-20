@@ -5502,7 +5502,7 @@
       (block-item-case
        item
        :decl (b* (((erp new-decl types table)
-                   (valid-decl item.unwrap table ienv)))
+                   (valid-decl item.decl table ienv)))
                (retok (block-item-decl new-decl) types nil table))
        :stmt (b* ((table0 table)
                   ((erp new-stmt types last-expr-type? table)
