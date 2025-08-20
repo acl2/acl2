@@ -1325,6 +1325,8 @@
     acl2::bvlt-trim-arg1-axe-all
     acl2::bvlt-trim-arg2-axe-all
 
+    acl2::bvuminus-trim-axe-all ; needed to resolve a read
+
     acl2::bvlt-of-bvmult-of-expt-arg2-constant-version2
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
@@ -2883,7 +2885,9 @@
 
      acl2::bvplus-of-logext-arg2
      acl2::bvplus-of-logext-arg3
-     acl2::signed-byte-p-logext)
+     acl2::signed-byte-p-logext
+     read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
+     )
    (region-rules)
    (acl2::lookup-rules)
    (constant-opener-rules)
