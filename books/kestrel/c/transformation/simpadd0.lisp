@@ -2659,7 +2659,7 @@
   :prepwork
 
   ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
-     :returns (lemma-instance true-listp)
+     :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
@@ -2674,7 +2674,7 @@
 
    (define simpadd0-stmt-expr-asg-lemma-instances ((vartys ident-type-mapp)
                                                    (expr exprp))
-     :returns (lemma-instance true-listp)
+     :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
