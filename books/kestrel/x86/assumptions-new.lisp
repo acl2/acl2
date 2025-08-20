@@ -363,12 +363,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: eventually remove make- from the names
-;; TODO: Deprecate the bvp=nil case
-;; Not ELF-specific
 (defund make-standard-assumptions64-new (stack-slots-needed
                                          existing-stack-slots
                                          state-var
-                                         base-var ; only needed if position-independentp
+                                         base-var ; only needed if position-independentp ;todo: rename to base-address-var?
                                          target-offset
                                          position-independentp)
   (declare (xargs :guard (and (natp stack-slots-needed)
@@ -377,59 +375,66 @@
                               (symbolp base-var)
                               (natp target-offset)
                               (booleanp position-independentp))))
-  (let ((target-address-term (if position-independentp
-                                 ;; Position-independent, so the target is the base-var plus the target-offset:
-                                 (if (= 0 target-offset)
-                                     base-var
-                                   ;;`(logext 64 ,base-var) ; avoids adding 0
-                                   ;; The RIP (in the X package, not the X86ISA package) is a u64 that satisfies unsigned-canonical-address-p:
-                                   `(bvsx 64 48 (bvplus 48 ',target-offset ,base-var)))
-                               ;; Not position-independent, so the target is a concrete address:
-                               (acl2::enquote target-offset))))
-    (append (make-standard-state-assumptions-fn state-var)
-            ;; Assumptions about the BASE-VAR:
-            (if position-independentp
-                `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-canonical-address-p
-                  (unsigned-canonical-address-p ,base-var))
-              nil)
-            `((equal (bvchop 6 ,base-var) 0)) ; the BASE-VAR is 64-byte aligned
-            `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
-              ;; Alignment checking is turned off:
-              (not (alignment-checking-enabled-p ,state-var))
-              ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
-              ;; This may not be respected by malware.
-              ;; TODO: Try without this
-              (equal 0 (bvchop 3 (rsp ,state-var)))
-              ;; The program counter is at the start of the code to lift:
-              (equal (rip ,state-var) ,target-address-term)
-              )
-            ;; The return address must be canonical because we will transfer
-            ;; control to that address when doing the return:
-            `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
-            ;; The stack must be canonical:
-            ;; todo: think about this:
-            `((canonical-regionp ,(+ 8 ; or 7 ? but see below...
-                                     (* 8 existing-stack-slots)
-                                     (* 8 stack-slots-needed))
-                                 ,(if (= 0 stack-slots-needed)
-                                      `(rsp ,state-var)
-                                    `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
-            ;; ;; old-style:
-            ;; (append `(;; The stack slot contaning the return address must be canonical
-            ;;           ;; because the stack pointer returns here when we pop the saved
-            ;;           ;; RBP:
-            ;;           (canonical-address-p (rsp ,state-var))
+  (if (<= (expt 2 47) target-offset)
+      (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
+    (let ((target-address-term (if position-independentp
+                                   ;; Position-independent, so the target is the base-var plus the target-offset:
+                                   ;; We posulate that there exists some canonical base var wrt which  the executable is loaded.
+                                   ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
+                                   (if (= 0 target-offset)
+                                       base-var ; avoids adding 0
+                                     ;;`(logext 64 ,base-var) ; avoids adding 0
+                                     ;; The RIP (in the X package, not the X86ISA package) is a u64 that satisfies unsigned-canonical-address-p:
+                                     ;;`(bvsx 64 48 (bvplus 48 ',target-offset ,base-var))
+                                     `(bvplus 64 ',target-offset ,base-var))
+                                 ;; Not position-independent, so the target is a concrete address:
+                                 (acl2::enquote target-offset))))
+      (append (make-standard-state-assumptions-fn state-var)
+              ;; Assumptions about the BASE-VAR:
+              (if position-independentp
+                  `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
+                    ;; (unsigned-byte-p 64 ,base-var) ; uncomment?
+                    (unsigned-canonical-address-p ,base-var)
+                    (equal (bvchop 6 ,base-var) 0) ; the BASE-VAR is 64-byte aligned
+                    )
+                nil)
+              `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
+                ;; Alignment checking is turned off:
+                (not (alignment-checking-enabled-p ,state-var))
+                ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+                ;; This may not be respected by malware.
+                ;; TODO: Try without this
+                (equal 0 (bvchop 3 (rsp ,state-var)))
+                ;; The program counter is at the start of the code to lift:
+                (equal (rip ,state-var) ,target-address-term)
+                )
+              ;; The return address must be canonical because we will transfer
+              ;; control to that address when doing the return:
+              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+              ;; The stack must be canonical:
+              ;; todo: think about this:
+              `((canonical-regionp ,(+ 8 ; or 7 ? but see below...
+                                       (* 8 existing-stack-slots)
+                                       (* 8 stack-slots-needed))
+                                   ,(if (= 0 stack-slots-needed)
+                                        `(rsp ,state-var)
+                                      `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+              ;; ;; old-style:
+              ;; (append `(;; The stack slot contaning the return address must be canonical
+              ;;           ;; because the stack pointer returns here when we pop the saved
+              ;;           ;; RBP:
+              ;;           (canonical-address-p (rsp ,state-var))
 
-            ;;           ;; The stack slot 'below' the return address must be canonical
-            ;;           ;; because the stack pointer returns here when we do the return:
-            ;;           (canonical-address-p (+ ',(* 8 existing-stack-slots) (rsp ,state-var))))
-            ;;         (if (posp stack-slots-needed)
-            ;;             `(;;add to make-standard-state-assumptions-64-fn?
-            ;;               (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
-            ;;               (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
-            ;;               )
-            ;;           nil))
-            )))
+              ;;           ;; The stack slot 'below' the return address must be canonical
+              ;;           ;; because the stack pointer returns here when we do the return:
+              ;;           (canonical-address-p (+ ',(* 8 existing-stack-slots) (rsp ,state-var))))
+              ;;         (if (posp stack-slots-needed)
+              ;;             `(;;add to make-standard-state-assumptions-64-fn?
+              ;;               (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+              ;;               (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
+              ;;               )
+              ;;           nil))
+              ))))
 
 (defthm true-listp-of-make-standard-assumptions64-new
   (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp)))
@@ -460,22 +465,26 @@
          ((mv erp assumptions-for-region)
           (if position-independentp
               ;; Relative addresses make everything relative to the base-var:
-              (let* ((first-addr-term (symbolic-bvplus-constant 48 addr base-var))
-                     ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                     ;;                                                 (+ -1 addr length))
-                     ;;                                           base-var)
-                     ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                     ;;                 ;;                             (+ -1 addr length))
-                     ;;                 ;;                          base-var)
-                     ;;                 )
- ; todo: use bvplus?
-                     )
+              (b* ((last-addr (+ 1 (+ -1 addr length))) ; adding 1 for the one-past-RET issue
+                   ;; Ensures that the canonical assumptions are satisfiable:
+                   ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
+                    (mv :bad-address nil))
+                   (first-addr-term (symbolic-bvplus-constant 64 addr base-var))
+                   ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   ;;                                                 (+ -1 addr length))
+                   ;;                                           base-var)
+                   ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   ;;                 ;;                             (+ -1 addr length))
+                   ;;                 ;;                          base-var)
+                   ;;                 )
+; todo: use bvplus?
+                   )
                 (mv nil ; no error
                     (append
                       ;; Assert that the addresses are canonical:
-                      `(;; (integerp ,base-var) ; needed for things like turning + into bvplus
-                        (canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above)
-                                           ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
+                      `((canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above about RET)
+                                           ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var)) ; todo: call symbolic-bvplus-constant
+                                           ))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
                       `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
@@ -495,25 +504,25 @@
                         nil))))
             ;; Absolute addresses are just numbers:
             (let* ((first-addr addr)
-                   (last-addr (+ -1 addr length)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
-                   (first-addr-term `',first-addr))
-              (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions
+                   (last-addr (+ -1 addr length)) ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
+                   )
+              (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions (could rephrase since we know the addrs aren't negative)
                             (canonical-address-p last-addr)))
                   (mv :bad-address nil)
                 (mv nil ; no error
                     `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                       ;; Assert that the chunk is loaded into memory:
-                      (equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
+                      (equal (read-bytes ',first-addr ',(len bytes) ,state-var) ',bytes)
                        ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                        ;; TODO: Do this only for writable chunks?
                        ,@(if (posp existing-stack-slots)
-                             `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                             `((disjoint-regions48p ',(len bytes) ',first-addr
                                                     ',(* 8 existing-stack-slots) (rsp ,state-var)))
                            nil)
                        ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                        ;; TODO: Do this only for writable chunks?
                        ,@(if (posp stack-slots-needed)
-                             `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                             `((disjoint-regions48p ',(len bytes) ',first-addr
                                                     ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
                            ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                            nil)))))))
