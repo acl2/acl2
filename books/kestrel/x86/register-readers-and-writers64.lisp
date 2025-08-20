@@ -733,6 +733,11 @@
                   (xw fld index val (set-r10 r10 x86))))
   :hints (("Goal" :in-theory (enable set-r10
                                      ))))
+(defthm set-r11-of-xw (implies (not (equal fld :rgf)) (equal (set-r11 r11 (xw fld index val x86)) (xw fld index val (set-r11 r11 x86)))):hints (("Goal" :in-theory (enable set-r11))))
+(defthm set-r12-of-xw (implies (not (equal fld :rgf)) (equal (set-r12 r12 (xw fld index val x86)) (xw fld index val (set-r12 r12 x86)))):hints (("Goal" :in-theory (enable set-r12))))
+(defthm set-r13-of-xw (implies (not (equal fld :rgf)) (equal (set-r13 r13 (xw fld index val x86)) (xw fld index val (set-r13 r13 x86)))):hints (("Goal" :in-theory (enable set-r13))))
+(defthm set-r14-of-xw (implies (not (equal fld :rgf)) (equal (set-r14 r14 (xw fld index val x86)) (xw fld index val (set-r14 r14 x86)))):hints (("Goal" :in-theory (enable set-r14))))
+(defthm set-r15-of-xw (implies (not (equal fld :rgf)) (equal (set-r15 r15 (xw fld index val x86)) (xw fld index val (set-r15 r15 x86)))):hints (("Goal" :in-theory (enable set-r15))))
 
 (defthm set-rsp-of-xw
   (implies (or (not (equal fld :rgf))

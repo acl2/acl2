@@ -719,3 +719,6 @@
 
 (defthm integerp-of-qnanize
   (integerp (rtl::qnanize x f)))
+
+(defthm integerp-of-indef
+  (integerp (rtl::indef x)))
