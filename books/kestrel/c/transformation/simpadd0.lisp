@@ -930,7 +930,8 @@
                (args symbol-listp)
                (parargs "A term.")
                (arg-types true-listp)
-               (arg-types-compst true-listp))
+               (arg-types-compst true-listp)
+               (vartys ident-type-mapp))
   :short "Generate certain pieces of information
           from the formal parameters of a function."
   :long
@@ -956,7 +957,9 @@
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type."))
+      and its reading yields a value of the appropriate type.")
+    (xdoc::li
+     "A variable-type map corresponding to the parameters in the obvious way."))
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
@@ -964,12 +967,12 @@
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
-  (b* (((when (endp params)) (mv t nil nil nil nil))
+  (b* (((when (endp params)) (mv t nil nil nil nil nil))
        ((c::param-declon param) (car params))
        ((mv okp type) (simpadd0-tyspecseq-to-type param.tyspec))
-       ((unless okp) (mv nil nil nil nil nil))
+       ((unless okp) (mv nil nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
-        (mv nil nil nil nil nil))
+        (mv nil nil nil nil nil nil))
        (ident (c::obj-declor-ident->get param.declor))
        (par (c::ident->name ident))
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
@@ -982,15 +985,19 @@
             more-args
             parargs
             more-arg-types
-            more-arg-types-compst)
+            more-arg-types-compst
+            more-vartys)
         (simpadd0-gen-from-params (cdr params) gin))
-       ((unless okp) (mv nil nil nil nil nil))
-       (parargs `(omap::update (c::ident ,par) ,arg ,parargs)))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
+       (vartys (omap::update (ident par) (c$::ildm-type type) more-vartys)))
     (mv t
         (cons arg more-args)
         parargs
         (cons arg-type more-arg-types)
-        (cons arg-type-compst more-arg-types-compst)))
+        (cons arg-type-compst more-arg-types-compst)
+        vartys))
+  :verify-guards :after-returns
 
   ///
 
@@ -5453,7 +5460,7 @@
                (fundef-fix fundef) type)
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       ((mv okp args parargs arg-types arg-types-compst)
+       ((mv okp args parargs arg-types arg-types-compst &)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
