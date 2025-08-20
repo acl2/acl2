@@ -472,15 +472,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv foundp symbol-table-offset symbol-table-size).
 (defund symtab-offset-and-size (section-header-table)
   (declare (xargs :guard (section-header-tablep section-header-table)))
   (if (endp section-header-table)
-      (prog2$ (er hard? 'symtab-offset-and-size "No symbol table found.") ; todo: what about a stripped binary?
-              (mv 0 0))
+      (progn$ (cw "WARNING: No symbol table found.") ; todo: what about a stripped binary?
+              (mv nil 0 0))
     (let* ((section-header (first section-header-table))
            (type (lookup-eq-safe :type section-header)))
       (if (eq type :sht-symtab)
-          (mv (lookup-eq-safe :offset section-header)
+          (mv t
+              (lookup-eq-safe :offset section-header)
               (lookup-eq-safe :size section-header))
         (symtab-offset-and-size (rest section-header-table))))))
 
@@ -852,35 +854,43 @@
        (result (acons :program-header-table program-header-table result))
 
        ;; Parse the section header table:
-       ((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
-       ((when erp) (mv erp nil))
-
-       ;; Resolve the names of the section headers:
-       ((when (= e_shstrndx *shn_undef*))
-        (mv :no-section-contains-a-section-name-string-table nil))
-       (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))
-       (section-name-string-table-offset (lookup-eq-safe :offset section-name-string-table-header))
-       ((when (not (natp section-name-string-table-offset))) ; impossible?
-        (mv :bad-section-name-string-table-offset nil))
-       ((mv erp section-header-table) (assign-section-header-names section-header-table-without-names
-                                                                   (nthcdr section-name-string-table-offset all-bytes)
-                                                                   nil))
+       ((mv erp section-header-table)
+        (b* (((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
+             ((when erp) (mv erp nil))
+             ((when (not (consp section-header-table-without-names)))
+              (cw "WARNING: No section headers.~%")
+              (mv nil nil) ; no error, empty section-header-table
+              )
+             ;; Resolve the names of the section headers:
+             ((when (= e_shstrndx *shn_undef*))
+              (mv :no-section-contains-a-section-name-string-table nil))
+             (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))
+             (section-name-string-table-offset (lookup-eq-safe :offset section-name-string-table-header))
+             ((when (not (natp section-name-string-table-offset))) ; impossible?
+              (mv :bad-section-name-string-table-offset nil)))
+          (assign-section-header-names section-header-table-without-names
+                                       (nthcdr section-name-string-table-offset all-bytes)
+                                       nil)))
        ((when erp) (mv erp nil))
        (result (acons :section-header-table section-header-table result))
-
-       ((mv symbol-table-offset symbol-table-size) (symtab-offset-and-size section-header-table))
-       ((when (not (natp symbol-table-offset))) ; impossible?
-        (mv :bad-symbol-table-offset nil))
-       ((when (not (natp symbol-table-size))) ; impossible?
-        (mv :bad-symbol-table-size nil))
-       (string-table-offset (strtab-offset section-header-table))
-       ((when (not (natp string-table-offset))) ; impossible? but it may be :none
-        (mv :bad-string-table-offset nil))
-       ((mv erp symbol-table) (parse-elf-symbol-table symbol-table-size
-                                                      64-bitp
-                                                      (nthcdr string-table-offset all-bytes)
-                                                      nil
-                                                      (nthcdr symbol-table-offset all-bytes)))
+       ;; Parse the symbol-table (if any):
+       ((mv erp symbol-table)
+        (b* (((mv symbol-table-foundp symbol-table-offset symbol-table-size) (symtab-offset-and-size section-header-table))
+             ((when (not symbol-table-foundp))
+              (mv nil nil) ; no error, empty symbol-table
+              )
+             ((when (not (natp symbol-table-offset))) ; impossible?
+              (mv :bad-symbol-table-offset nil))
+             ((when (not (natp symbol-table-size))) ; impossible?
+              (mv :bad-symbol-table-size nil))
+             (string-table-offset (strtab-offset section-header-table))
+             ((when (not (natp string-table-offset))) ; impossible? but it may be :none
+              (mv :bad-string-table-offset nil)))
+          (parse-elf-symbol-table symbol-table-size
+                                  64-bitp
+                                  (nthcdr string-table-offset all-bytes)
+                                  nil
+                                  (nthcdr symbol-table-offset all-bytes))))
        ((when erp) (mv erp nil))
        (result (acons :symbol-table symbol-table result))
 
