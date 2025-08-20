@@ -261,6 +261,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gout-no-thm ((gin simpadd0-ginp))
+  :returns (gout simpadd0-goutp)
+  :short "Build a @(tsee simpadd0-gout) without a theorem name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for constructs for which we do not generate proofs yet.
+     Since the theorem name is @('nil'),
+     the variable-type map is empty (see @(tsee simpadd0-gout)).
+     The events and theorem index are taken from a @(tsee simpadd0-gin),
+     which is the result of previous transformations."))
+  (b* (((simpadd0-gin gin) gin))
+    (make-simpadd0-gout :events gin.events
+                        :thm-name nil
+                        :thm-index gin.thm-index
+                        :vartys nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define c::compustate-has-var-with-type-p ((var c::identp)
                                            (type c::typep)
                                            (compst c::compustatep))
@@ -1244,11 +1264,7 @@
        ((unless (and (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
-        (mv expr
-            (make-simpadd0-gout :events gin.events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :vartys nil)))
+        (mv expr (simpadd0-gout-no-thm gin)))
        (vartys (omap::update ident info.type nil))
        ((unless (type-formalp info.type))
         (raise "Internal error: variable ~x0 has type ~x1." ident info.type)
@@ -1340,10 +1356,7 @@
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
        (expr (expr-const const))
-       (no-thm-gout (make-simpadd0-gout :events gin.events
-                                        :thm-name nil
-                                        :thm-index gin.thm-index
-                                        :vartys nil))
+       (no-thm-gout (simpadd0-gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
        ((iconst-info info) (coerce-iconst-info iconst.info))
@@ -1421,11 +1434,7 @@
        (expr-new (expr-paren inner-new))
        ((simpadd0-gin gin) gin)
        ((unless inner-thm-name)
-        (mv expr-new
-            (make-simpadd0-gout :events gin.events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :vartys nil)))
+        (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr))
                  :use ,inner-thm-name)))
@@ -1478,11 +1487,7 @@
        ((unless (and arg-thm-name
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
-        (mv expr-new
-            (make-simpadd0-gout :events gin.events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :vartys nil)))
+        (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e c::unop-nonpointerp)
@@ -1641,12 +1646,7 @@
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
-        (mv expr-new
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv expr-new (simpadd0-gout-no-thm gin)))
        ((unless (equal type type-new))
         (raise "Internal error: ~
                 type names ~x0 and ~x1 differ."
@@ -1781,11 +1781,7 @@
        (arg1-vartys (ident-type-map-fix arg1-vartys))
        (arg2-vartys (ident-type-map-fix arg2-vartys))
        (vartys (simpadd0-join-vartys arg1-vartys arg2-vartys))
-       (gout-no-thm
-        (make-simpadd0-gout :events gin.events
-                            :thm-name nil
-                            :thm-index gin.thm-index
-                            :vartys nil))
+       (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and arg1-thm-name
                      arg2-thm-name))
         (mv expr-new gout-no-thm)))
@@ -2403,12 +2399,7 @@
        ((unless (and test-thm-name
                      then-thm-name
                      else-thm-name))
-        (mv expr-new
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-ident)
@@ -2612,12 +2603,7 @@
        ((unless (or (not expr?)
                     (and expr?-thm-name
                          (not (expr-purep expr?)))))
-        (mv stmt-new
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
        (vartys (simpadd0-vartys-from-valid-table (c$::stmt-expr-info->table info)))
        (hints
         (if expr?
@@ -2803,12 +2789,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     expr?-thm-name))
-        (mv stmt-new
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
        (vartys
         (simpadd0-vartys-from-valid-table (c$::stmt-return-info->table info)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances vartys expr?))
@@ -2978,11 +2959,7 @@
        (item (make-block-item-stmt :stmt stmt :info info))
        (item-new (make-block-item-stmt :stmt stmt-new :info info))
        ((unless stmt-thm-name)
-        (mv item-new
-            (make-simpadd0-gout :events gin.events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :vartys nil)))
+        (mv item-new (simpadd0-gout-no-thm gin)))
        (type (stmt-type stmt))
        (support-lemma
         (cond ((not type)
@@ -3197,11 +3174,7 @@
        (item-vartys (ident-type-map-fix item-vartys))
        (items-vartys (ident-type-map-fix items-vartys))
        (vartys (simpadd0-join-vartys item-vartys items-vartys))
-       (gout-no-thm
-        (make-simpadd0-gout :events gin.events
-                            :thm-name nil
-                            :thm-index gin.thm-index
-                            :vartys nil))
+       (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and item-thm-name
                      items-thm-name
                      nil)) ; temporary
@@ -3499,11 +3472,7 @@
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
        ((unless item-thm-name)
-        (mv items-new
-            (make-simpadd0-gout :events gin.events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :vartys nil)))
+        (mv items-new (simpadd0-gout-no-thm gin)))
        (type (block-item-type item))
        (support-lemma
         (cond ((not type)
@@ -3662,11 +3631,7 @@
                                    (coerce-var-info expr.info)
                                    gin)
        :const (simpadd0-expr-const expr.const gin)
-       :string (mv (expr-fix expr)
-                   (make-simpadd0-gout :events gin.events
-                                       :thm-name nil
-                                       :thm-index gin.thm-index
-                                       :vartys nil))
+       :string (mv (expr-fix expr) (simpadd0-gout-no-thm gin))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
              (simpadd0-expr expr.inner gin))
@@ -3920,11 +3885,7 @@
     :short "Transform a list of expressions."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp exprs))
-          (mv nil
-              (make-simpadd0-gout :events gin.events
-                                  :thm-name nil
-                                  :thm-index gin.thm-index
-                                  :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-expr (simpadd0-gout gout-expr))
           (simpadd0-expr (car exprs) gin))
          (gin (simpadd0-gin-update gin gout-expr))
@@ -3950,11 +3911,7 @@
       (expr-option-case
        expr?
        :some (simpadd0-expr expr?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout :events gin.events
-                                     :thm-name nil
-                                     :thm-index gin.thm-index
-                                     :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (expr-option-count expr?)
 
     ///
@@ -3994,11 +3951,7 @@
       (const-expr-option-case
        cexpr?
        :some (simpadd0-const-expr cexpr?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout :events gin.events
-                                     :thm-name nil
-                                     :thm-index gin.thm-index
-                                     :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4047,11 +4000,7 @@
     :short "Transform a list of generic associations."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp genassocs))
-          (mv nil
-              (make-simpadd0-gout :events gin.events
-                                  :thm-name nil
-                                  :thm-index gin.thm-index
-                                  :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-assoc (simpadd0-gout gout-assoc))
           (simpadd0-genassoc (car genassocs) gin))
          (gin (simpadd0-gin-update gin gout-assoc))
@@ -4077,11 +4026,7 @@
     (b* (((simpadd0-gin gin) gin))
       (member-designor-case
        memdes
-       :ident (mv (member-designor-fix memdes)
-                  (make-simpadd0-gout :events gin.events
-                                      :thm-name nil
-                                      :thm-index gin.thm-index
-                                      :vartys nil))
+       :ident (mv (member-designor-fix memdes) (simpadd0-gout-no-thm gin))
        :dot
        (b* (((mv new-member (simpadd0-gout gout-member))
              (simpadd0-member-designor memdes.member gin)))
@@ -4116,10 +4061,7 @@
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a type specifier."
     (b* (((simpadd0-gin gin) gin)
-         (gout0 (make-simpadd0-gout :events gin.events
-                                    :thm-name nil
-                                    :thm-index gin.thm-index
-                                    :vartys nil)))
+         (gout0 (simpadd0-gout-no-thm gin)))
       (type-spec-case
        tyspec
        :void (mv (type-spec-fix tyspec) gout0)
@@ -4218,12 +4160,7 @@
                         :thm-name nil
                         :thm-index gout-spec.thm-index
                         :vartys nil)))
-       :typequal (mv (spec/qual-fix specqual)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))
+       :typequal (mv (spec/qual-fix specqual) (simpadd0-gout-no-thm gin))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec specqual.spec gin)))
                 (mv (spec/qual-align new-spec)
@@ -4232,12 +4169,7 @@
                      :thm-name nil
                      :thm-index gout-spec.thm-index
                      :vartys nil)))
-       :attrib (mv (spec/qual-fix specqual)
-                   (make-simpadd0-gout
-                    :events gin.events
-                    :thm-name nil
-                    :thm-index gin.thm-index
-                    :vartys nil))))
+       :attrib (mv (spec/qual-fix specqual) (simpadd0-gout-no-thm gin))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4251,12 +4183,7 @@
     :short "Transform a list of type specifiers and qualifiers."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp specquals))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-specqual (simpadd0-gout gout-specqual))
           (simpadd0-spec/qual (car specquals) gin))
          (gin (simpadd0-gin-update gin gout-specqual))
@@ -4313,12 +4240,7 @@
     (b* (((simpadd0-gin gin) gin))
       (decl-spec-case
        declspec
-       :stoclass (mv (decl-spec-fix declspec)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))
+       :stoclass (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))
        :typespec (b* (((mv new-spec (simpadd0-gout gout-spec))
                        (simpadd0-type-spec declspec.spec gin)))
                    (mv (decl-spec-typespec new-spec)
@@ -4327,18 +4249,8 @@
                         :thm-name nil
                         :thm-index gout-spec.thm-index
                         :vartys nil)))
-       :typequal (mv (decl-spec-fix declspec)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))
-       :function (mv (decl-spec-fix declspec)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))
+       :typequal (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))
+       :function (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec declspec.spec gin)))
                 (mv (decl-spec-align new-spec)
@@ -4347,24 +4259,9 @@
                      :thm-name nil
                      :thm-index gout-spec.thm-index
                      :vartys nil)))
-       :attrib (mv (decl-spec-fix declspec)
-                   (make-simpadd0-gout
-                    :events gin.events
-                    :thm-name nil
-                    :thm-index gin.thm-index
-                    :vartys nil))
-       :stdcall (mv (decl-spec-fix declspec)
-                    (make-simpadd0-gout
-                     :events gin.events
-                     :thm-name nil
-                     :thm-index gin.thm-index
-                     :vartys nil))
-       :declspec (mv (decl-spec-fix declspec)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))))
+       :attrib (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))
+       :stdcall (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))
+       :declspec (mv (decl-spec-fix declspec) (simpadd0-gout-no-thm gin))))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4378,12 +4275,7 @@
     :short "Transform a list of declaration specifiers."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp declspecs))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-declspec (simpadd0-gout gout-declspec))
           (simpadd0-decl-spec (car declspecs) gin))
          (gin (simpadd0-gin-update gin gout-declspec))
@@ -4440,12 +4332,7 @@
       (initer-option-case
        initer?
        :some (simpadd0-initer initer?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4482,12 +4369,7 @@
     :short "Transform a list of initializers with optional designations."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp desiniters))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-desiniter (simpadd0-gout gout-desiniter))
           (simpadd0-desiniter (car desiniters) gin))
          (gin (simpadd0-gin-update gin gout-desiniter))
@@ -4520,12 +4402,7 @@
                    :thm-name nil
                    :thm-index gout-index.thm-index
                    :vartys nil)))
-       :dot (mv (designor-fix designor)
-                (make-simpadd0-gout
-                 :events gin.events
-                 :thm-name nil
-                 :thm-index gin.thm-index
-                 :vartys nil))))
+       :dot (mv (designor-fix designor) (simpadd0-gout-no-thm gin))))
     :measure (designor-count designor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4539,12 +4416,7 @@
     :short "Transform a list of designators."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp designors))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-designor (simpadd0-gout gout-designor))
           (simpadd0-designor (car designors) gin))
          (gin (simpadd0-gin-update gin gout-designor))
@@ -4592,12 +4464,7 @@
       (declor-option-case
        declor?
        :some (simpadd0-declor declor?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4611,12 +4478,7 @@
     (b* (((simpadd0-gin gin) gin))
       (dirdeclor-case
        dirdeclor
-       :ident (mv (dirdeclor-fix dirdeclor)
-                  (make-simpadd0-gout
-                   :events gin.events
-                   :thm-name nil
-                   :thm-index gin.thm-index
-                   :vartys nil))
+       :ident (mv (dirdeclor-fix dirdeclor) (simpadd0-gout-no-thm gin))
        :paren (b* (((mv new-declor (simpadd0-gout gout-declor))
                     (simpadd0-declor dirdeclor.inner gin)))
                 (mv (dirdeclor-paren new-declor)
@@ -4737,12 +4599,7 @@
       (absdeclor-option-case
        absdeclor?
        :some (simpadd0-absdeclor absdeclor?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4853,12 +4710,7 @@
       (dirabsdeclor-option-case
        dirabsdeclor?
        :some (simpadd0-dirabsdeclor dirabsdeclor?.val gin)
-       :none (mv nil
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))))
+       :none (mv nil (simpadd0-gout-no-thm gin))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4896,12 +4748,7 @@
     :short "Transform a list of parameter declarations."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp paramdecls))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-paramdecl (simpadd0-gout gout-paramdecl))
           (simpadd0-param-declon (car paramdecls) gin))
          (gin (simpadd0-gin-update gin gout-paramdecl))
@@ -4943,12 +4790,7 @@
                         :thm-name nil
                         :thm-index gout-absdeclor.thm-index
                         :vartys nil)))
-       :none (mv (param-declor-none)
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))
+       :none (mv (param-declor-none) (simpadd0-gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-simpadd0-gout)))))
     :measure (param-declor-count paramdeclor))
 
@@ -5034,12 +4876,7 @@
                           :thm-name nil
                           :thm-index gout-structdecl.thm-index
                           :vartys nil)))
-       :empty (mv (structdecl-empty)
-                  (make-simpadd0-gout
-                   :events gin.events
-                   :thm-name nil
-                   :thm-index gin.thm-index
-                   :vartys nil))))
+       :empty (mv (structdecl-empty) (simpadd0-gout-no-thm gin))))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5053,12 +4890,7 @@
     :short "Transform a list of structure declarations."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp structdecls))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-structdecl (simpadd0-gout gout-structdecl))
           (simpadd0-structdecl (car structdecls) gin))
          (gin (simpadd0-gin-update gin gout-structdecl))
@@ -5108,12 +4940,7 @@
     :short "Transform a list of structure declarators."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp structdeclors))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
           (simpadd0-structdeclor (car structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclor))
@@ -5181,12 +5008,7 @@
     :short "Transform a list of enumerators."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp enumers))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-enumer (simpadd0-gout gout-enumer))
           (simpadd0-enumer (car enumers) gin))
          (gin (simpadd0-gin-update gin gout-enumer))
@@ -5260,12 +5082,7 @@
     :short "Transform a list of initializer declarators."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp initdeclors))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
           (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
@@ -5323,12 +5140,7 @@
     :short "Transform a list of declarations."
     (b* (((simpadd0-gin gin) gin)
          ((when (endp decls))
-          (mv nil
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil)))
+          (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-decl (simpadd0-gout gout-decl))
           (simpadd0-decl (car decls) gin))
          (gin (simpadd0-gin-update gin gout-decl))
@@ -5353,12 +5165,7 @@
     (b* (((simpadd0-gin gin) gin))
       (label-case
        label
-       :name (mv (label-fix label)
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))
+       :name (mv (label-fix label) (simpadd0-gout-no-thm gin))
        :casexpr (b* (((mv new-expr (simpadd0-gout gout-expr))
                       (simpadd0-const-expr label.expr gin))
                      (gin (simpadd0-gin-update gin gout-expr))
@@ -5371,12 +5178,7 @@
                        :thm-name nil
                        :thm-index gout-range?.thm-index
                        :vartys nil)))
-       :default (mv (label-fix label)
-                    (make-simpadd0-gout
-                     :events gin.events
-                     :thm-name nil
-                     :thm-index gin.thm-index
-                     :vartys nil))))
+       :default (mv (label-fix label) (simpadd0-gout-no-thm gin))))
     :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5523,24 +5325,9 @@
                         :thm-index gout-body.thm-index
                         :vartys nil)))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-simpadd0-gout)))
-       :goto (mv (stmt-fix stmt)
-                 (make-simpadd0-gout
-                  :events gin.events
-                  :thm-name nil
-                  :thm-index gin.thm-index
-                  :vartys nil))
-       :continue (mv (stmt-fix stmt)
-                     (make-simpadd0-gout
-                      :events gin.events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :vartys nil))
-       :break (mv (stmt-fix stmt)
-                  (make-simpadd0-gout
-                   :events gin.events
-                   :thm-name nil
-                   :thm-index gin.thm-index
-                   :vartys nil))
+       :goto (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))
+       :continue (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))
+       :break (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))
        :return (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                      (simpadd0-expr-option stmt.expr? gin))
                     (gin (simpadd0-gin-update gin gout-expr?)))
@@ -5549,12 +5336,7 @@
                                        gout-expr?.thm-name
                                        (coerce-stmt-return-info stmt.info)
                                        gin))
-       :asm (mv (stmt-fix stmt)
-                (make-simpadd0-gout
-                 :events gin.events
-                 :thm-name nil
-                 :thm-index gin.thm-index
-                 :vartys nil))))
+       :asm (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6049,18 +5831,8 @@
                   :thm-name nil
                   :thm-index gout-decl.thm-index
                   :vartys nil)))
-     :empty (mv (extdecl-empty)
-                (make-simpadd0-gout
-                 :events gin.events
-                 :thm-name nil
-                 :thm-index gin.thm-index
-                 :vartys nil))
-     :asm (mv (extdecl-fix extdecl)
-              (make-simpadd0-gout
-               :events gin.events
-               :thm-name nil
-               :thm-index gin.thm-index
-               :vartys nil))))
+     :empty (mv (extdecl-empty) (simpadd0-gout-no-thm gin))
+     :asm (mv (extdecl-fix extdecl) (simpadd0-gout-no-thm gin))))
   :hooks (:fix)
 
   ///
@@ -6078,12 +5850,7 @@
   :short "Transform a list of external declarations."
   (b* (((simpadd0-gin gin) gin)
        ((when (endp extdecls))
-        (mv nil
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv nil (simpadd0-gout-no-thm gin)))
        ((mv new-edecl (simpadd0-gout gout-edecl))
         (simpadd0-extdecl (car extdecls) gin))
        (gin (simpadd0-gin-update gin gout-edecl))
@@ -6144,12 +5911,7 @@
     "We transform both the file paths and the translation units."))
   (b* (((simpadd0-gin gin) gin)
        ((when (omap::emptyp map))
-        (mv nil
-            (make-simpadd0-gout
-             :events gin.events
-             :thm-name nil
-             :thm-index gin.thm-index
-             :vartys nil)))
+        (mv nil (simpadd0-gout-no-thm gin)))
        ((mv path tunit) (omap::head map))
        ((mv new-tunit (simpadd0-gout gout-tunit))
         (simpadd0-transunit tunit gin))
