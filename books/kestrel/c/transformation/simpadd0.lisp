@@ -629,8 +629,7 @@
 
 (define simpadd0-gen-stmt-thm ((old stmtp)
                                (new stmtp)
-                               (vartys-pre ident-type-mapp)
-                               (vartys-post ident-type-mapp)
+                               (vartys ident-type-mapp)
                                (const-new symbolp)
                                (thm-index posp)
                                (hints true-listp))
@@ -652,8 +651,8 @@
      the theorem also says what the type of the value is.
      The theorem also says
      which variables in the comuptation state are present after the statement,
-     which are passed as the @('vartys-post') input;
-     the @('vartys-pre') input indicates the variables before the statement."))
+     which are the same present before the statement,
+     indicated by the @('vartys') input."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
@@ -679,8 +678,8 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
-       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
        (formula
         `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
               (new-stmt (mv-nth 1 (ldm-stmt ',new)))
@@ -2638,7 +2637,6 @@
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
                                vartys
-                               vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2824,7 +2822,6 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
-                               vartys
                                vartys
                                gin.const-new
                                gin.thm-index
