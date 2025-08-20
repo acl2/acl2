@@ -828,7 +828,7 @@
 
   (defrule fundef-unambp-of-fundef
     (equal (fundef-unambp
-            (fundef extension spec declor asm? attribs decls body))
+            (fundef extension spec declor asm? attribs decls body info))
            (and (decl-spec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)

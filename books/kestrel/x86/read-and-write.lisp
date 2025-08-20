@@ -234,6 +234,13 @@
                         (:instance read-byte-of-bvchop-arg1 (addr ad2)))
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
+(defthm read-byte-of-bvchop-gen
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (read-byte (bvchop size addr) x86)
+                  (read-byte addr x86)))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 ;or do we want to introduce bvchop?
 (defthm read-byte-of-+-of-bvchop-arg1
   (implies (and (integerp x)

@@ -16749,7 +16749,8 @@
                                        :asm? asmspec?
                                        :attribs attrspecs
                                        :decls nil
-                                       :body nil))
+                                       :body nil
+                                       :info nil))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is anything else,
@@ -16778,7 +16779,8 @@
                                          :asm? asmspec?
                                          :attribs attrspecs
                                          :decls nil
-                                         :body items))
+                                         :body items
+                                         :info nil))
                            (span-join span last-span)
                            parstate))))))
              ;; If token3 is anything else,
@@ -16811,7 +16813,8 @@
                                      :asm? asmspec?
                                      :attribs attrspecs
                                      :decls decls
-                                     :body items))
+                                     :body items
+                                     :info nil))
                        (span-join span last-span)
                        parstate)))))))))))
 
