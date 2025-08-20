@@ -5403,7 +5403,38 @@
      the latter will be used to fix
      the issue descrubed in the previous paragraph).
      This gets put into the @(tsee simpadd0-gin)
-     passed to @(tsee simpadd0-block-item-list)."))
+     passed to @(tsee simpadd0-block-item-list).")
+   (xdoc::p
+    "We generate the folllowing theorems:")
+   (xdoc::ul
+    (xdoc::li
+     "A theorem about the initial scope of the function body.
+      See @(tsee simpadd0-gen-init-scope-thm).")
+    (xdoc::li
+     "For each function parameter, a theorem saying that,
+      after pushing a frame with the initial scope above,
+      the computation state has a variable for the parameter
+      with the associated type.")
+    (xdoc::li
+     "The main theorem for the function definition,
+      saying that, if the execution of the old function does not yield an error,
+      neither does the execition of the new function,
+      and they return the same results and computation states."))
+   (xdoc::p
+    "We use @(tsee simpadd0-gen-from-params) to obtain
+     certain information from the parameters,
+     which is used to generate the theorems.
+     This information includes the variable-type map
+     corresponding to the function parameters:
+     we ensure that it is the same as
+     the variable-type map from the validation table
+     that annotates the start of the function body.
+     In general the former is a sub-map of the latter,
+     because the validation table could include global variables;
+     but for now proof generation does not handle global variables,
+     so we generate proofs for the body only if
+     the theorems about the initial scope and the parameters
+     suffice to establish the variable-type hypotheses of the body."))
   (b* (((fundef fundef) fundef)
        (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
@@ -5460,9 +5491,10 @@
                (fundef-fix fundef) type)
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       ((mv okp args parargs arg-types arg-types-compst &)
+       ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
+       ((unless (equal param-vartys vartys)) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
         (simpadd0-gen-init-scope-thm ldm-params
                                      args
