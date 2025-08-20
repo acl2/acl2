@@ -181,6 +181,10 @@
      for modularity and to facilitate extension."))
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
+   (vartys ident-type-mapp
+           "Variables for which the generated theorem (if any)
+            includes hypotheses about their presence in the computation state
+            before the execution of the C construct.")
    (events pseudo-event-form-list
            "Theorems generated so far, in reverse order;
             see @(see simpadd0-implementation).")
@@ -214,13 +218,8 @@
               This is @('nil') if no theorem is generated.")
    (vartys ident-type-map
            "Variables for which the generated theorem (if any)
-            has hypotheses, and in some cases conclusions,
-            about the variables being in the computation state
-            and having values of the appropriate types
-            (see @(see simpadd0-implementation) for background).
-            These are always the variable after the construct
-            (whether the theorem has conclusions about them or not),
-            which in some cases are the same as the ones before the construct.
+            includes conclusions about their presence in the computation state
+            after the execution of the construct.
             This is @('nil') if @('thm-name') is @('nil')."))
   :pred simpadd0-goutp)
 
@@ -251,7 +250,12 @@
      (to the next call of a transformation function)
      with an output
      (from the previous call of a transformation function),
-     by updating those common components."))
+     by updating those common components.")
+   (xdoc::p
+    "Although both @(tsee simpadd0-gin) and @(tsee simpadd0-gout)
+     have a @('vartys') component, that one is not threaded through;
+     it is handled differently (see the transformation functions).
+     Thus, this function does not involve that component."))
   (b* (((simpadd0-gout gout) gout))
     (change-simpadd0-gin gin
                          :events gout.events
@@ -5701,8 +5705,15 @@
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('vartys') component of @(tsee simpadd0-gin)
+     is just initialized to @('nil') here;
+     its actual initialization for theorem generation is done elsewhere."))
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :const-new const-new
+                               :vartys nil
                                :events nil
                                :thm-index 1))
        ((mv code-new (simpadd0-gout gout))
