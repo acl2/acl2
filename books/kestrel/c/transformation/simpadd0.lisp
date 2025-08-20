@@ -5377,8 +5377,28 @@
    (xdoc::p
     "We generate a theorem for the function
      only under certain conditions,
-     including the fact that a theorem for the body was generated."))
+     including the fact that a theorem for the body was generated.")
+   (xdoc::p
+    "Currently the incoming @(tsee simpadd0-gin) has @('vatys') set to @('nil'),
+     so in general the theorems generated for
+     the portion of the function definition before the body
+     (declaration specifiers, declarator, etc.)
+     may not have enough context,
+     but for now we are using this transformation on limited examples
+     where that is not an issue;
+     we plan to make this part more robust soon, though.")
+   (xdoc::p
+    "For the body of the function,
+     we obtain the variable-type map from
+     the validation table that annotates the function definition
+     (the validation table at the start of the body,
+     not at the start of the function definition;
+     the latter will be used to fix
+     the issue descrubed in the previous paragraph).
+     This gets put into the @(tsee simpadd0-gin)
+     passed to @(tsee simpadd0-block-item-list)."))
   (b* (((fundef fundef) fundef)
+       (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
        (gin (simpadd0-gin-update gin gout-spec))
@@ -5388,8 +5408,11 @@
        ((mv new-decls (simpadd0-gout gout-decls))
         (simpadd0-decl-list fundef.decls gin))
        (gin (simpadd0-gin-update gin gout-decls))
+       (vartys (simpadd0-vartys-from-valid-table
+                (c$::fundef-info->table-body-start info)))
        ((mv new-body (simpadd0-gout gout-body))
-        (simpadd0-block-item-list fundef.body gin))
+        (simpadd0-block-item-list fundef.body
+                                  (change-simpadd0-gin gin :vartys vartys)))
        ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
        (new-fundef (make-fundef :extension fundef.extension
                                 :spec new-spec

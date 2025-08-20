@@ -590,6 +590,9 @@
     block-item-infop
     coerce-block-item-info
 
+    fundef-info
+    coerce-fundef-info
+
     expr-type
     stmt-type
     block-item-type
