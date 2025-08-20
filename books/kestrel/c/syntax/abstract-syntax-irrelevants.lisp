@@ -512,7 +512,8 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body nil))
+                     :body nil
+                     :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
