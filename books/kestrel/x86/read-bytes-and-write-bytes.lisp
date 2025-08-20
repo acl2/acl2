@@ -84,6 +84,29 @@
        (posp n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
+(defthm read-bytes-equal-when-bvchops-equal
+  (implies (equal (bvchop 48 ad1) (bvchop 48 ad2))
+           (equal (equal (read-bytes ad1 n x86) (read-bytes ad2 n x86))
+                  t))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm read-bytes-of-bvchop
+  (implies (and (syntaxp (quotep size))
+                (<= 48 size)
+                (integerp size)
+                (integerp addr))
+           (equal (read-bytes (bvchop size addr) n x86)
+                  (read-bytes addr n x86)))
+  :hints (("Goal" :cases ((equal 48 size))))
+)
+(defthm read-bytes-of-bvplus-tighten
+  (implies (and (syntaxp (quotep size))
+                (< 48 size)
+                (integerp size))
+           (equal (read-bytes (bvplus size x y) n x86)
+                  (read-bytes (bvplus 48 x y) n x86)))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund write-bytes (addr bytes x86)
