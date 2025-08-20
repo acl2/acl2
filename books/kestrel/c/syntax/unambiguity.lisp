@@ -787,9 +787,9 @@
     :expand (stmt-unambp stmt))
 
   (defrule block-item-unambp-of-block-item-decl
-    (equal (block-item-unambp (block-item-decl decl))
+    (equal (block-item-unambp (block-item-decl decl info))
            (decl-unambp decl))
-    :expand (block-item-unambp (block-item-decl decl)))
+    :expand (block-item-unambp (block-item-decl decl info)))
 
   (defrule block-item-unambp-of-block-item-stmt
     (equal (block-item-unambp (block-item-stmt stmt info))

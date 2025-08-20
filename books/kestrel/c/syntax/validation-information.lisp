@@ -763,6 +763,9 @@
                            (stmt-fix stmt)))
    (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
                       (stmt-return-infop (stmt-return->info stmt))))
+   (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
+                          (block-item-infop
+                           (block-item-decl->info block-item))))
    (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
                           (block-item-infop
                            (block-item-stmt->info block-item))))

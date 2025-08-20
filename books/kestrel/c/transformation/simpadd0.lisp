@@ -5103,7 +5103,7 @@
        :decl (b* (((mv new-item (simpadd0-gout gout-item))
                    (simpadd0-decl item.decl gin))
                   (gin (simpadd0-gin-update gin gout-item)))
-               (mv (block-item-decl new-item)
+               (mv (make-block-item-decl :decl new-item :info item.info)
                    (simpadd0-gout-no-thm gin)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))

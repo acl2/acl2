@@ -1865,7 +1865,7 @@
         item
         :decl (b* (((mv decl env)
                     (const-prop-decl item.decl env)))
-                (mv (block-item-decl decl) env))
+                (mv (make-block-item-decl :decl decl :info item.info) env))
         :stmt (b* (((mv stmt env)
                     (const-prop-stmt item.stmt env)))
                 (mv (make-block-item-stmt :stmt stmt :info item.info) env))
