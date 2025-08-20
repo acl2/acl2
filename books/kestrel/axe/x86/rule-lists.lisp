@@ -1684,6 +1684,8 @@
     not-mv-nth-0-of-sse-cmp
 
     integerp-of-mxcsr
+    integerp-of-indef ; has shown up in a branch of boolif
+    integerp-of-qnanize ; has shown up in a branch of boolif
     ;; maybe drop these:
     ;;integerp-of-xr-mxcsr
     ;;x86isa::n32p-xr-mxcsr ; targets unsigned-byte-p-of-mxcsr
@@ -1814,7 +1816,10 @@
     x86isa::fp-decode-constant-opener
     x86isa::fp-to-rat-constant-opener
     rtl::bias-constant-opener
-    rtl::expw-constant-opener))
+    rtl::expw-constant-opener
+
+    acl2::boolif-when-integerp-arg2
+    acl2::boolif-when-integerp-arg3))
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
@@ -2070,6 +2075,124 @@
 
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
+
+(defund zmm-rules-common ()
+  (declare (xargs :guard t))
+  '(zmmi-becomes-zmm
+    xr-becomes-zmm
+
+    zmm-of-set-flag
+    zmm-of-!rflags
+    zmm-of-set-mxcsr
+    zmm-of-set-undef
+    ;; zmm-of-write-byte
+    zmm-of-write
+    ;; zmm-of-write-bytes
+
+    xw-becomes-set-zmm
+    !zmmi-becomes-set-zmm
+
+    zmm-of-set-zmm-same
+    zmm-of-set-zmm-diff
+
+    64-bit-modep-of-set-zmm
+    alignment-checking-enabled-p-of-set-zmm
+    app-view-of-set-zmm
+    ctri-of-set-zmm
+    fault-of-set-zmm
+    get-flag-of-set-zmm
+    ms-of-set-zmm
+    mxcsr-of-set-zmm
+    undef-of-set-zmm
+    x86p-of-set-zmm
+
+    set-zmm-of-set-zmm-same
+    set-zmm-of-set-zmm-diff-constant-version
+
+    set-flag-of-set-zmm
+    !rflags-of-set-zmm
+    set-undef-of-set-zmm
+    set-mxcsr-of-set-zmm))
+
+(defund zmm-rules64 ()
+  (declare (xargs :guard t))
+  (append '(zmm-of-set-rip
+            zmm-of-set-rax
+            zmm-of-set-rbx
+            zmm-of-set-rcx
+            zmm-of-set-rdx
+            zmm-of-set-rsi
+            zmm-of-set-rdi
+            zmm-of-set-r8
+            zmm-of-set-r9
+            zmm-of-set-r10
+            zmm-of-set-r11
+            zmm-of-set-r12
+            zmm-of-set-r13
+            zmm-of-set-r14
+            zmm-of-set-r15
+            zmm-of-set-rsp
+            zmm-of-set-rbp
+
+            rip-of-set-zmm
+            rax-of-set-zmm
+            rbx-of-set-zmm
+            rcx-of-set-zmm
+            rdx-of-set-zmm
+            rsi-of-set-zmm
+            rdi-of-set-zmm
+            r8-of-set-zmm
+            r9-of-set-zmm
+            r10-of-set-zmm
+            r11-of-set-zmm
+            r12-of-set-zmm
+            r13-of-set-zmm
+            r14-of-set-zmm
+            r15-of-set-zmm
+            rsp-of-set-zmm
+            rbp-of-set-zmm
+
+            ;; read-byte-of-set-zmm ; needed?
+            read-of-set-zmm
+            ;; read-bytes-of-set-zmm ; needed?
+
+            set-zmm-of-set-rip
+            set-zmm-of-set-rax
+            set-zmm-of-set-rbx
+            set-zmm-of-set-rcx
+            set-zmm-of-set-rdx
+            set-zmm-of-set-rsi
+            set-zmm-of-set-rdi
+            set-zmm-of-set-r8
+            set-zmm-of-set-r9
+            set-zmm-of-set-r10
+            set-zmm-of-set-r11
+            set-zmm-of-set-r12
+            set-zmm-of-set-r13
+            set-zmm-of-set-r14
+            set-zmm-of-set-r15
+            set-zmm-of-set-rbp
+            set-zmm-of-set-rsp
+
+            write-of-set-zmm)
+          (zmm-rules-common)))
+
+(defund zmm-rules32 ()
+  (declare (xargs :guard t))
+  ;; for now (eventually keep zmm and make rules like the rules have for eax in 32-bit mode):
+  '(zmmi   ; exposes zmmi$a
+    zmmi$a ; exposes xr
+
+    !zmmi   ; exposes !zmmi$a
+    !zmmi$a ; exposes xw
+    )
+  ;; (append '(zmm-of-set-rax
+  ;;           zmm-of-set-rbx
+  ;;           zmm-of-set-rcx
+  ;;           zmm-of-set-rdx
+  ;;           zmm-of-set-rip)
+  ;;         (zmm-rules-common))
+  )
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
@@ -2559,9 +2682,11 @@
 
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
+            ;; these are only for SSE?
             xmmi-size$inline ; dispatches to rx32, etc
-            !xmmi-size$inline ; dispatched to wx32, etc
+            !xmmi-size$inline ; dispatches to wx32, etc
 
+            ;; these are for AVX, etc?
             zmmi-size$inline ; dispatches to rz32, etc
             !zmmi-size$inline ; dispatches to wz32, etc
 
@@ -2584,12 +2709,6 @@
             wz128$inline
             wz256$inline
             wz512$inline
-
-            zmmi ; exposes zmmi$a
-            zmmi$a ; exposes xr
-
-            !zmmi ; exposes !zmmi$a
-            !zmmi$a ; exposes xw
 
             x86isa::x86-operand-to-zmm/mem
 
@@ -2822,6 +2941,7 @@
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
            (step-opener-rules32)
+           (zmm-rules32)
           '(;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple-32
@@ -4131,6 +4251,7 @@
           (write-rules)
           (read-and-write-rules)
           (segment-base-and-bounds-rules-64)
+          (zmm-rules64)
           '(read-byte-becomes-read ; (read-byte-rules) ; read-byte can come from read-bytes
             len-of-read-bytes nth-of-read-bytes ; read-bytes can come from an output-extractor
             acl2::integerp-of-+ ; helps with nth-of-read-bytes
@@ -4347,12 +4468,9 @@
     rbp-of-set-rbp
 
     ;; undef-of-write-byte ; todo: does write-byte actually get introduced?
-
     ;; mxcsr-of-write-byte
-
     ;; ms-of-write-byte
-
-;    fault-of-write-byte ; todo: move?
+    ;; fault-of-write-byte
 
     app-view-of-set-rip
     app-view-of-set-rax

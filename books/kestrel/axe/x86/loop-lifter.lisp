@@ -85,6 +85,7 @@
 (include-book "kestrel/x86/conditions" :dir :system)
 (include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/x86/read-and-write2" :dir :system)
+(include-book "kestrel/x86/zmm" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
