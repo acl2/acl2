@@ -652,7 +652,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "TODO"))
+      "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
      :decl (decl-block-formalp item.decl)
