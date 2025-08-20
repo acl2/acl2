@@ -170,9 +170,7 @@
      which has a different type for each transformation function.
      But each function also takes certain common inputs,
      which we put into this data structure
-     for modularity and to facilitate extension.
-     Additionally, the transformation functions take the ACL2 state as input,
-     but this is not part of this structure for obvious reasons."))
+     for modularity and to facilitate extension."))
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
    (thm-index pos
@@ -3667,7 +3665,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-expr ((expr exprp) (gin simpadd0-ginp) state)
+  (define simpadd0-expr ((expr exprp) (gin simpadd0-ginp))
     :guard (expr-unambp expr)
     :returns (mv (new-expr exprp) (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3686,7 +3684,7 @@
                                        :vartys nil))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
-             (simpadd0-expr expr.inner gin state))
+             (simpadd0-expr expr.inner gin))
             (gin (simpadd0-gin-update gin gout-inner)))
          (simpadd0-expr-paren expr.inner
                               new-inner
@@ -3696,10 +3694,10 @@
                               gin))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
-             (simpadd0-expr expr.control gin state))
+             (simpadd0-expr expr.control gin))
             (gin (simpadd0-gin-update gin gout-control))
             ((mv new-assocs (simpadd0-gout gout-assocs))
-             (simpadd0-genassoc-list expr.assocs gin state)))
+             (simpadd0-genassoc-list expr.assocs gin)))
          (mv (make-expr-gensel :control new-control
                                :assocs new-assocs)
              (make-simpadd0-gout
@@ -3709,10 +3707,10 @@
               :vartys nil)))
        :arrsub
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
-             (simpadd0-expr expr.arg1 gin state))
+             (simpadd0-expr expr.arg1 gin))
             (gin (simpadd0-gin-update gin gout-arg1))
             ((mv new-arg2 (simpadd0-gout gout-arg2))
-             (simpadd0-expr expr.arg2 gin state))
+             (simpadd0-expr expr.arg2 gin))
             (new-expr (make-expr-arrsub :arg1 new-arg1
                                         :arg2 new-arg2)))
          (mv new-expr
@@ -3723,10 +3721,10 @@
               :vartys nil)))
        :funcall
        (b* (((mv new-fun (simpadd0-gout gout-fun))
-             (simpadd0-expr expr.fun gin state))
+             (simpadd0-expr expr.fun gin))
             (gin (simpadd0-gin-update gin gout-fun))
             ((mv new-args (simpadd0-gout gout-args))
-             (simpadd0-expr-list expr.args gin state)))
+             (simpadd0-expr-list expr.args gin)))
          (mv (make-expr-funcall :fun new-fun
                                 :args new-args)
              (make-simpadd0-gout
@@ -3736,7 +3734,7 @@
               :vartys nil)))
        :member
        (b* (((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state)))
+             (simpadd0-expr expr.arg gin)))
          (mv (make-expr-member :arg new-arg
                                :name expr.name)
              (make-simpadd0-gout
@@ -3746,7 +3744,7 @@
               :vartys nil)))
        :memberp
        (b* (((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state)))
+             (simpadd0-expr expr.arg gin)))
          (mv (make-expr-memberp :arg new-arg
                                 :name expr.name)
              (make-simpadd0-gout
@@ -3756,10 +3754,10 @@
               :vartys nil)))
        :complit
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state))
+             (simpadd0-tyname expr.type gin))
             (gin (simpadd0-gin-update gin gout-type))
             ((mv new-elems (simpadd0-gout gout-elems))
-             (simpadd0-desiniter-list expr.elems gin state)))
+             (simpadd0-desiniter-list expr.elems gin)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
                                 :final-comma expr.final-comma)
@@ -3770,7 +3768,7 @@
               :vartys nil)))
        :unary
        (b* (((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state))
+             (simpadd0-expr expr.arg gin))
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-unary expr.op
                               expr.arg
@@ -3782,7 +3780,7 @@
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state)))
+             (simpadd0-tyname expr.type gin)))
          (mv (expr-sizeof new-type)
              (make-simpadd0-gout
               :events gout-type.events
@@ -3791,7 +3789,7 @@
               :vartys nil)))
        :alignof
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state)))
+             (simpadd0-tyname expr.type gin)))
          (mv (make-expr-alignof :type new-type
                                 :uscores expr.uscores)
              (make-simpadd0-gout
@@ -3801,10 +3799,10 @@
               :vartys nil)))
        :cast
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state))
+             (simpadd0-tyname expr.type gin))
             (gin (simpadd0-gin-update gin gout-type))
             ((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state))
+             (simpadd0-expr expr.arg gin))
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-cast expr.type
                              new-type
@@ -3820,10 +3818,10 @@
                              gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
-             (simpadd0-expr expr.arg1 gin state))
+             (simpadd0-expr expr.arg1 gin))
             (gin (simpadd0-gin-update gin gout-arg1))
             ((mv new-arg2 (simpadd0-gout gout-arg2))
-             (simpadd0-expr expr.arg2 gin state))
+             (simpadd0-expr expr.arg2 gin))
             (gin (simpadd0-gin-update gin gout-arg2)))
          (simpadd0-expr-binary expr.op
                                expr.arg1
@@ -3840,13 +3838,13 @@
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
-             (simpadd0-expr expr.test gin state))
+             (simpadd0-expr expr.test gin))
             (gin (simpadd0-gin-update gin gout-test))
             ((mv new-then (simpadd0-gout gout-then))
-             (simpadd0-expr-option expr.then gin state))
+             (simpadd0-expr-option expr.then gin))
             (gin (simpadd0-gin-update gin gout-then))
             ((mv new-else (simpadd0-gout gout-else))
-             (simpadd0-expr expr.else gin state))
+             (simpadd0-expr expr.else gin))
             (gin (simpadd0-gin-update gin gout-else)))
          (simpadd0-expr-cond expr.test
                              new-test
@@ -3866,10 +3864,10 @@
                              gin))
        :comma
        (b* (((mv new-first (simpadd0-gout gout-first))
-             (simpadd0-expr expr.first gin state))
+             (simpadd0-expr expr.first gin))
             (gin (simpadd0-gin-update gin gout-first))
             ((mv new-next (simpadd0-gout gout-next))
-             (simpadd0-expr expr.next gin state)))
+             (simpadd0-expr expr.next gin)))
          (mv (make-expr-comma :first new-first
                               :next new-next)
              (make-simpadd0-gout
@@ -3879,7 +3877,7 @@
               :vartys nil)))
        :stmt
        (b* (((mv new-items (simpadd0-gout gout-items))
-             (simpadd0-block-item-list expr.items gin state)))
+             (simpadd0-block-item-list expr.items gin)))
          (mv (expr-stmt new-items)
              (make-simpadd0-gout
               :events gout-items.events
@@ -3888,10 +3886,10 @@
               :vartys nil)))
        :tycompat
        (b* (((mv new-type1 (simpadd0-gout gout-type1))
-             (simpadd0-tyname expr.type1 gin state))
+             (simpadd0-tyname expr.type1 gin))
             (gin (simpadd0-gin-update gin gout-type1))
             ((mv new-type2 (simpadd0-gout gout-type2))
-             (simpadd0-tyname expr.type2 gin state)))
+             (simpadd0-tyname expr.type2 gin)))
          (mv (make-expr-tycompat :type1 new-type1
                                  :type2 new-type2)
              (make-simpadd0-gout
@@ -3901,10 +3899,10 @@
               :vartys nil)))
        :offsetof
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state))
+             (simpadd0-tyname expr.type gin))
             (gin (simpadd0-gin-update gin gout-type))
             ((mv new-member (simpadd0-gout gout-member))
-             (simpadd0-member-designor expr.member gin state)))
+             (simpadd0-member-designor expr.member gin)))
          (mv (make-expr-offsetof :type new-type
                                  :member new-member)
              (make-simpadd0-gout
@@ -3914,10 +3912,10 @@
               :vartys nil)))
        :va-arg
        (b* (((mv new-list (simpadd0-gout gout-list))
-             (simpadd0-expr expr.list gin state))
+             (simpadd0-expr expr.list gin))
             (gin (simpadd0-gin-update gin gout-list))
             ((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname expr.type gin state)))
+             (simpadd0-tyname expr.type gin)))
          (mv (make-expr-va-arg :list new-list
                                :type new-type)
              (make-simpadd0-gout
@@ -3927,7 +3925,7 @@
               :vartys nil)))
        :extension
        (b* (((mv new-expr (simpadd0-gout gout-expr))
-             (simpadd0-expr expr.expr gin state)))
+             (simpadd0-expr expr.expr gin)))
          (mv (expr-extension new-expr)
              (make-simpadd0-gout
               :events gout-expr.events
@@ -3939,7 +3937,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-expr-list ((exprs expr-listp) (gin simpadd0-ginp) state)
+  (define simpadd0-expr-list ((exprs expr-listp) (gin simpadd0-ginp))
     :guard (expr-list-unambp exprs)
     :returns (mv (new-exprs expr-listp)
                  (gout simpadd0-goutp))
@@ -3953,10 +3951,10 @@
                                   :thm-index gin.thm-index
                                   :vartys nil)))
          ((mv new-expr (simpadd0-gout gout-expr))
-          (simpadd0-expr (car exprs) gin state))
+          (simpadd0-expr (car exprs) gin))
          (gin (simpadd0-gin-update gin gout-expr))
          ((mv new-exprs (simpadd0-gout gout-exprs))
-          (simpadd0-expr-list (cdr exprs) gin state)))
+          (simpadd0-expr-list (cdr exprs) gin)))
       (mv (cons new-expr new-exprs)
           (make-simpadd0-gout
            :events (append gout-expr.events gout-exprs.events)
@@ -3967,7 +3965,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-expr-option ((expr? expr-optionp) (gin simpadd0-ginp) state)
+  (define simpadd0-expr-option ((expr? expr-optionp) (gin simpadd0-ginp))
     :guard (expr-option-unambp expr?)
     :returns (mv (new-expr? expr-optionp)
                  (gout simpadd0-goutp))
@@ -3976,7 +3974,7 @@
     (b* (((simpadd0-gin gin) gin))
       (expr-option-case
        expr?
-       :some (simpadd0-expr expr?.val gin state)
+       :some (simpadd0-expr expr?.val gin)
        :none (mv nil
                  (make-simpadd0-gout :events nil
                                      :thm-name nil
@@ -3988,11 +3986,11 @@
 
     (defret simpadd0-expr-option-iff-expr-option
       (iff new-expr? expr?)
-      :hints (("Goal" :expand (simpadd0-expr-option expr? gin state)))))
+      :hints (("Goal" :expand (simpadd0-expr-option expr? gin)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-const-expr ((cexpr const-exprp) (gin simpadd0-ginp) state)
+  (define simpadd0-const-expr ((cexpr const-exprp) (gin simpadd0-ginp))
     :guard (const-expr-unambp cexpr)
     :returns (mv (new-cexpr const-exprp)
                  (gout simpadd0-goutp))
@@ -4000,7 +3998,7 @@
     :short "Transform a constant expression."
     (b* (((simpadd0-gin gin) gin)
          ((mv new-expr (simpadd0-gout gout-expr))
-          (simpadd0-expr (const-expr->expr cexpr) gin state)))
+          (simpadd0-expr (const-expr->expr cexpr) gin)))
       (mv (const-expr new-expr)
           (make-simpadd0-gout :events gout-expr.events
                               :thm-name nil
@@ -4011,8 +4009,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-const-expr-option ((cexpr? const-expr-optionp)
-                                      (gin simpadd0-ginp)
-                                      state)
+                                      (gin simpadd0-ginp))
     :guard (const-expr-option-unambp cexpr?)
     :returns (mv (new-cexpr? const-expr-optionp)
                  (gout simpadd0-goutp))
@@ -4021,7 +4018,7 @@
     (b* (((simpadd0-gin gin) gin))
       (const-expr-option-case
        cexpr?
-       :some (simpadd0-const-expr cexpr?.val gin state)
+       :some (simpadd0-const-expr cexpr?.val gin)
        :none (mv nil
                  (make-simpadd0-gout :events nil
                                      :thm-name nil
@@ -4031,7 +4028,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-genassoc ((genassoc genassocp) (gin simpadd0-ginp) state)
+  (define simpadd0-genassoc ((genassoc genassocp) (gin simpadd0-ginp))
     :guard (genassoc-unambp genassoc)
     :returns (mv (new-genassoc genassocp)
                  (gout simpadd0-goutp))
@@ -4042,10 +4039,10 @@
        genassoc
        :type
        (b* (((mv new-type (simpadd0-gout gout-type))
-             (simpadd0-tyname genassoc.type gin state))
+             (simpadd0-tyname genassoc.type gin))
             (gin (simpadd0-gin-update gin gout-type))
             ((mv new-expr (simpadd0-gout gout-expr))
-             (simpadd0-expr genassoc.expr gin state)))
+             (simpadd0-expr genassoc.expr gin)))
          (mv (make-genassoc-type :type new-type
                                  :expr new-expr)
              (make-simpadd0-gout
@@ -4055,7 +4052,7 @@
               :vartys nil)))
        :default
        (b* (((mv new-expr (simpadd0-gout gout-expr))
-             (simpadd0-expr genassoc.expr gin state)))
+             (simpadd0-expr genassoc.expr gin)))
          (mv (genassoc-default new-expr)
              (make-simpadd0-gout
               :events gout-expr.events
@@ -4067,8 +4064,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-genassoc-list ((genassocs genassoc-listp)
-                                  (gin simpadd0-ginp)
-                                  state)
+                                  (gin simpadd0-ginp))
     :guard (genassoc-list-unambp genassocs)
     :returns (mv (new-genassocs genassoc-listp)
                  (gout simpadd0-goutp))
@@ -4082,10 +4078,10 @@
                                   :thm-index gin.thm-index
                                   :vartys nil)))
          ((mv new-assoc (simpadd0-gout gout-assoc))
-          (simpadd0-genassoc (car genassocs) gin state))
+          (simpadd0-genassoc (car genassocs) gin))
          (gin (simpadd0-gin-update gin gout-assoc))
          ((mv new-assocs (simpadd0-gout gout-assocs))
-          (simpadd0-genassoc-list (cdr genassocs) gin state)))
+          (simpadd0-genassoc-list (cdr genassocs) gin)))
       (mv (cons new-assoc new-assocs)
           (make-simpadd0-gout
            :events (append gout-assoc.events gout-assocs.events)
@@ -4097,8 +4093,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-member-designor ((memdes member-designorp)
-                                    (gin simpadd0-ginp)
-                                    state)
+                                    (gin simpadd0-ginp))
     :guard (member-designor-unambp memdes)
     :returns (mv (new-memdes member-designorp)
                  (gout simpadd0-goutp))
@@ -4114,7 +4109,7 @@
                                       :vartys nil))
        :dot
        (b* (((mv new-member (simpadd0-gout gout-member))
-             (simpadd0-member-designor memdes.member gin state)))
+             (simpadd0-member-designor memdes.member gin)))
          (mv (make-member-designor-dot :member new-member
                                        :name memdes.name)
              (make-simpadd0-gout
@@ -4124,10 +4119,10 @@
               :vartys nil)))
        :sub
        (b* (((mv new-member (simpadd0-gout gout-member))
-             (simpadd0-member-designor memdes.member gin state))
+             (simpadd0-member-designor memdes.member gin))
             (gin (simpadd0-gin-update gin gout-member))
             ((mv new-index (simpadd0-gout gout-index))
-             (simpadd0-expr memdes.index gin state)))
+             (simpadd0-expr memdes.index gin)))
          (mv (make-member-designor-sub :member new-member
                                        :index new-index)
              (make-simpadd0-gout
@@ -4139,7 +4134,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-type-spec ((tyspec type-specp) (gin simpadd0-ginp) state)
+  (define simpadd0-type-spec ((tyspec type-specp) (gin simpadd0-ginp))
     :guard (type-spec-unambp tyspec)
     :returns (mv (new-tyspec type-specp)
                  (gout simpadd0-goutp))
@@ -4164,7 +4159,7 @@
        :bool (mv (type-spec-fix tyspec) gout0)
        :complex (mv (type-spec-fix tyspec) gout0)
        :atomic (b* (((mv new-type (simpadd0-gout gout-type))
-                     (simpadd0-tyname tyspec.type gin state)))
+                     (simpadd0-tyname tyspec.type gin)))
                  (mv (type-spec-atomic new-type)
                      (make-simpadd0-gout
                       :events gout-type.events
@@ -4172,7 +4167,7 @@
                       :thm-index gout-type.thm-index
                       :vartys nil)))
        :struct (b* (((mv new-spec (simpadd0-gout gout-spec))
-                     (simpadd0-struni-spec tyspec.spec gin state)))
+                     (simpadd0-struni-spec tyspec.spec gin)))
                  (mv (type-spec-struct new-spec)
                      (make-simpadd0-gout
                       :events gout-spec.events
@@ -4180,7 +4175,7 @@
                       :thm-index gout-spec.thm-index
                       :vartys nil)))
        :union (b* (((mv new-spec (simpadd0-gout gout-spec))
-                    (simpadd0-struni-spec tyspec.spec gin state)))
+                    (simpadd0-struni-spec tyspec.spec gin)))
                 (mv (type-spec-union new-spec)
                     (make-simpadd0-gout
                      :events gout-spec.events
@@ -4188,7 +4183,7 @@
                      :thm-index gout-spec.thm-index
                      :vartys nil)))
        :enum (b* (((mv new-spec (simpadd0-gout gout-spec))
-                   (simpadd0-enumspec tyspec.spec gin state)))
+                   (simpadd0-enumspec tyspec.spec gin)))
                (mv (type-spec-enum new-spec)
                    (make-simpadd0-gout
                     :events gout-spec.events
@@ -4206,7 +4201,7 @@
        :builtin-va-list (mv (type-spec-fix tyspec) gout0)
        :struct-empty (mv (type-spec-fix tyspec) gout0)
        :typeof-expr (b* (((mv new-expr (simpadd0-gout gout-expr))
-                          (simpadd0-expr tyspec.expr gin state)))
+                          (simpadd0-expr tyspec.expr gin)))
                       (mv (make-type-spec-typeof-expr :expr new-expr
                                                       :uscores tyspec.uscores)
                           (make-simpadd0-gout
@@ -4215,7 +4210,7 @@
                            :thm-index gout-expr.thm-index
                            :vartys nil)))
        :typeof-type (b* (((mv new-type (simpadd0-gout gout-type))
-                          (simpadd0-tyname tyspec.type gin state)))
+                          (simpadd0-tyname tyspec.type gin)))
                       (mv (make-type-spec-typeof-type :type new-type
                                                       :uscores tyspec.uscores)
                           (make-simpadd0-gout
@@ -4231,8 +4226,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-spec/qual ((specqual spec/qual-p)
-                              (gin simpadd0-ginp)
-                              state)
+                              (gin simpadd0-ginp))
     :guard (spec/qual-unambp specqual)
     :returns (mv (new-specqual spec/qual-p)
                  (gout simpadd0-goutp))
@@ -4242,7 +4236,7 @@
       (spec/qual-case
        specqual
        :typespec (b* (((mv new-spec (simpadd0-gout gout-spec))
-                       (simpadd0-type-spec specqual.spec gin state)))
+                       (simpadd0-type-spec specqual.spec gin)))
                    (mv (spec/qual-typespec new-spec)
                        (make-simpadd0-gout
                         :events gout-spec.events
@@ -4256,7 +4250,7 @@
                       :thm-index gin.thm-index
                       :vartys nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
-                    (simpadd0-align-spec specqual.spec gin state)))
+                    (simpadd0-align-spec specqual.spec gin)))
                 (mv (spec/qual-align new-spec)
                     (make-simpadd0-gout
                      :events gout-spec.events
@@ -4274,8 +4268,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-spec/qual-list ((specquals spec/qual-listp)
-                                   (gin simpadd0-ginp)
-                                   state)
+                                   (gin simpadd0-ginp))
     :guard (spec/qual-list-unambp specquals)
     :returns (mv (new-specquals spec/qual-listp)
                  (gout simpadd0-goutp))
@@ -4290,10 +4283,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-specqual (simpadd0-gout gout-specqual))
-          (simpadd0-spec/qual (car specquals) gin state))
+          (simpadd0-spec/qual (car specquals) gin))
          (gin (simpadd0-gin-update gin gout-specqual))
          ((mv new-specquals (simpadd0-gout gout-specquals))
-          (simpadd0-spec/qual-list (cdr specquals) gin state)))
+          (simpadd0-spec/qual-list (cdr specquals) gin)))
       (mv (cons new-specqual new-specquals)
           (make-simpadd0-gout
            :events (append gout-specqual.events gout-specquals.events)
@@ -4305,8 +4298,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-align-spec ((alignspec align-specp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
     :guard (align-spec-unambp alignspec)
     :returns (mv (new-alignspec align-specp)
                  (gout simpadd0-goutp))
@@ -4316,7 +4308,7 @@
       (align-spec-case
        alignspec
        :alignas-type (b* (((mv new-type (simpadd0-gout gout-type))
-                           (simpadd0-tyname alignspec.type gin state)))
+                           (simpadd0-tyname alignspec.type gin)))
                        (mv (align-spec-alignas-type new-type)
                            (make-simpadd0-gout
                             :events gout-type.events
@@ -4324,7 +4316,7 @@
                             :thm-index gout-type.thm-index
                             :vartys nil)))
        :alignas-expr (b* (((mv new-expr (simpadd0-gout gout-expr))
-                           (simpadd0-const-expr alignspec.expr gin state)))
+                           (simpadd0-const-expr alignspec.expr gin)))
                        (mv (align-spec-alignas-expr new-expr)
                            (make-simpadd0-gout
                             :events gout-expr.events
@@ -4337,7 +4329,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-decl-spec ((declspec decl-specp) (gin simpadd0-ginp) state)
+  (define simpadd0-decl-spec ((declspec decl-specp) (gin simpadd0-ginp))
     :guard (decl-spec-unambp declspec)
     :returns (mv (new-declspec decl-specp)
                  (gout simpadd0-goutp))
@@ -4353,7 +4345,7 @@
                       :thm-index gin.thm-index
                       :vartys nil))
        :typespec (b* (((mv new-spec (simpadd0-gout gout-spec))
-                       (simpadd0-type-spec declspec.spec gin state)))
+                       (simpadd0-type-spec declspec.spec gin)))
                    (mv (decl-spec-typespec new-spec)
                        (make-simpadd0-gout
                         :events gout-spec.events
@@ -4373,7 +4365,7 @@
                       :thm-index gin.thm-index
                       :vartys nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
-                    (simpadd0-align-spec declspec.spec gin state)))
+                    (simpadd0-align-spec declspec.spec gin)))
                 (mv (decl-spec-align new-spec)
                     (make-simpadd0-gout
                      :events gout-spec.events
@@ -4403,8 +4395,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-decl-spec-list ((declspecs decl-spec-listp)
-                                   (gin simpadd0-ginp)
-                                   state)
+                                   (gin simpadd0-ginp))
     :guard (decl-spec-list-unambp declspecs)
     :returns (mv (new-declspecs decl-spec-listp)
                  (gout simpadd0-goutp))
@@ -4419,10 +4410,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-declspec (simpadd0-gout gout-declspec))
-          (simpadd0-decl-spec (car declspecs) gin state))
+          (simpadd0-decl-spec (car declspecs) gin))
          (gin (simpadd0-gin-update gin gout-declspec))
          ((mv new-declspecs (simpadd0-gout gout-declspecs))
-          (simpadd0-decl-spec-list (cdr declspecs) gin state)))
+          (simpadd0-decl-spec-list (cdr declspecs) gin)))
       (mv (cons new-declspec new-declspecs)
           (make-simpadd0-gout
            :events (append gout-declspec.events gout-declspecs.events)
@@ -4433,7 +4424,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initer ((initer initerp) (gin simpadd0-ginp) state)
+  (define simpadd0-initer ((initer initerp) (gin simpadd0-ginp))
     :guard (initer-unambp initer)
     :returns (mv (new-initer initerp)
                  (gout simpadd0-goutp))
@@ -4443,7 +4434,7 @@
       (initer-case
        initer
        :single (b* (((mv new-expr (simpadd0-gout gout-expr))
-                     (simpadd0-expr initer.expr gin state)))
+                     (simpadd0-expr initer.expr gin)))
                  (mv (initer-single new-expr)
                      (make-simpadd0-gout
                       :events gout-expr.events
@@ -4451,7 +4442,7 @@
                       :thm-index gout-expr.thm-index
                       :vartys nil)))
        :list (b* (((mv new-elems (simpadd0-gout gout-elems))
-                   (simpadd0-desiniter-list initer.elems gin state)))
+                   (simpadd0-desiniter-list initer.elems gin)))
                (mv (make-initer-list :elems new-elems
                                      :final-comma initer.final-comma)
                    (make-simpadd0-gout
@@ -4464,8 +4455,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initer-option ((initer? initer-optionp)
-                                  (gin simpadd0-ginp)
-                                  state)
+                                  (gin simpadd0-ginp))
     :guard (initer-option-unambp initer?)
     :returns (mv (new-initer? initer-optionp)
                  (gout simpadd0-goutp))
@@ -4474,7 +4464,7 @@
     (b* (((simpadd0-gin gin) gin))
       (initer-option-case
        initer?
-       :some (simpadd0-initer initer?.val gin state)
+       :some (simpadd0-initer initer?.val gin)
        :none (mv nil
                  (make-simpadd0-gout
                   :events nil
@@ -4486,8 +4476,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-desiniter ((desiniter desiniterp)
-                              (gin simpadd0-ginp)
-                              state)
+                              (gin simpadd0-ginp))
     :guard (desiniter-unambp desiniter)
     :returns (mv (new-desiniter desiniterp)
                  (gout simpadd0-goutp))
@@ -4495,9 +4484,9 @@
     :short "Transform an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter)
          ((mv new-designors (simpadd0-gout gout-designors))
-          (simpadd0-designor-list desiniter.designors gin state))
+          (simpadd0-designor-list desiniter.designors gin))
          ((mv new-initer (simpadd0-gout gout-initer))
-          (simpadd0-initer desiniter.initer gin state)))
+          (simpadd0-initer desiniter.initer gin)))
       (mv (make-desiniter :designors new-designors
                           :initer new-initer)
           (make-simpadd0-gout
@@ -4510,8 +4499,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-desiniter-list ((desiniters desiniter-listp)
-                                   (gin simpadd0-ginp)
-                                   state)
+                                   (gin simpadd0-ginp))
     :guard (desiniter-list-unambp desiniters)
     :returns (mv (new-desiniters desiniter-listp)
                  (gout simpadd0-goutp))
@@ -4526,10 +4514,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-desiniter (simpadd0-gout gout-desiniter))
-          (simpadd0-desiniter (car desiniters) gin state))
+          (simpadd0-desiniter (car desiniters) gin))
          (gin (simpadd0-gin-update gin gout-desiniter))
          ((mv new-desiniters (simpadd0-gout gout-desiniters))
-          (simpadd0-desiniter-list (cdr desiniters) gin state)))
+          (simpadd0-desiniter-list (cdr desiniters) gin)))
       (mv (cons new-desiniter new-desiniters)
           (make-simpadd0-gout
            :events (append gout-desiniter.events gout-desiniters.events)
@@ -4540,7 +4528,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-designor ((designor designorp) (gin simpadd0-ginp) state)
+  (define simpadd0-designor ((designor designorp) (gin simpadd0-ginp))
     :guard (designor-unambp designor)
     :returns (mv (new-designor designorp)
                  (gout simpadd0-goutp))
@@ -4550,7 +4538,7 @@
       (designor-case
        designor
        :sub (b* (((mv new-index (simpadd0-gout gout-index))
-                  (simpadd0-const-expr designor.index gin state)))
+                  (simpadd0-const-expr designor.index gin)))
               (mv (designor-sub new-index)
                   (make-simpadd0-gout
                    :events gout-index.events
@@ -4568,8 +4556,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-designor-list ((designors designor-listp)
-                                  (gin simpadd0-ginp)
-                                  state)
+                                  (gin simpadd0-ginp))
     :guard (designor-list-unambp designors)
     :returns (mv (new-designors designor-listp)
                  (gout simpadd0-goutp))
@@ -4584,10 +4571,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-designor (simpadd0-gout gout-designor))
-          (simpadd0-designor (car designors) gin state))
+          (simpadd0-designor (car designors) gin))
          (gin (simpadd0-gin-update gin gout-designor))
          ((mv new-designors (simpadd0-gout gout-designors))
-          (simpadd0-designor-list (cdr designors) gin state)))
+          (simpadd0-designor-list (cdr designors) gin)))
       (mv (cons new-designor new-designors)
           (make-simpadd0-gout
            :events (append gout-designor.events gout-designors.events)
@@ -4598,7 +4585,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-declor ((declor declorp) (gin simpadd0-ginp) state)
+  (define simpadd0-declor ((declor declorp) (gin simpadd0-ginp))
     :guard (declor-unambp declor)
     :returns (mv (new-declor declorp)
                  (gout simpadd0-goutp))
@@ -4607,7 +4594,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((declor declor) declor)
          ((mv new-direct (simpadd0-gout gout-direct))
-          (simpadd0-dirdeclor declor.direct gin state)))
+          (simpadd0-dirdeclor declor.direct gin)))
       (mv (make-declor :pointers declor.pointers
                        :direct new-direct)
           (make-simpadd0-gout
@@ -4620,8 +4607,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declor-option ((declor? declor-optionp)
-                                  (gin simpadd0-ginp)
-                                  state)
+                                  (gin simpadd0-ginp))
     :guard (declor-option-unambp declor?)
     :returns (mv (new-declor? declor-optionp)
                  (gout simpadd0-goutp))
@@ -4630,7 +4616,7 @@
     (b* (((simpadd0-gin gin) gin))
       (declor-option-case
        declor?
-       :some (simpadd0-declor declor?.val gin state)
+       :some (simpadd0-declor declor?.val gin)
        :none (mv nil
                  (make-simpadd0-gout
                   :events nil
@@ -4641,7 +4627,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-dirdeclor ((dirdeclor dirdeclorp) (gin simpadd0-ginp) state)
+  (define simpadd0-dirdeclor ((dirdeclor dirdeclorp) (gin simpadd0-ginp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (mv (new-dirdeclor dirdeclorp)
                  (gout simpadd0-goutp))
@@ -4657,7 +4643,7 @@
                    :thm-index gin.thm-index
                    :vartys nil))
        :paren (b* (((mv new-declor (simpadd0-gout gout-declor))
-                    (simpadd0-declor dirdeclor.inner gin state)))
+                    (simpadd0-declor dirdeclor.inner gin)))
                 (mv (dirdeclor-paren new-declor)
                     (make-simpadd0-gout
                      :events gout-declor.events
@@ -4665,10 +4651,10 @@
                      :thm-index gout-declor.thm-index
                      :vartys nil)))
        :array (b* (((mv new-decl (simpadd0-gout gout-decl))
-                    (simpadd0-dirdeclor dirdeclor.declor gin state))
+                    (simpadd0-dirdeclor dirdeclor.declor gin))
                    (gin (simpadd0-gin-update gin gout-decl))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
-                    (simpadd0-expr-option dirdeclor.size? gin state)))
+                    (simpadd0-expr-option dirdeclor.size? gin)))
                 (mv (make-dirdeclor-array :declor new-decl
                                           :qualspecs dirdeclor.qualspecs
                                           :size? new-expr?)
@@ -4678,10 +4664,10 @@
                      :thm-index gout-expr?.thm-index
                      :vartys nil)))
        :array-static1 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.declor gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirdeclor.size gin state)))
+                            (simpadd0-expr dirdeclor.size gin)))
                         (mv (make-dirdeclor-array-static1
                              :declor new-decl
                              :qualspecs dirdeclor.qualspecs
@@ -4692,10 +4678,10 @@
                              :thm-index gout-expr.thm-index
                              :vartys nil)))
        :array-static2 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.declor gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirdeclor.size gin state)))
+                            (simpadd0-expr dirdeclor.size gin)))
                         (mv (make-dirdeclor-array-static2
                              :declor new-decl
                              :qualspecs dirdeclor.qualspecs
@@ -4706,7 +4692,7 @@
                              :thm-index gout-expr.thm-index
                              :vartys nil)))
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-dirdeclor dirdeclor.declor gin state)))
+                         (simpadd0-dirdeclor dirdeclor.declor gin)))
                      (mv (make-dirdeclor-array-star
                           :declor new-decl
                           :qualspecs dirdeclor.qualspecs)
@@ -4716,12 +4702,11 @@
                           :thm-index gout-decl.thm-index
                           :vartys nil)))
        :function-params (b* (((mv new-decl (simpadd0-gout gout-decl))
-                              (simpadd0-dirdeclor dirdeclor.declor gin state))
+                              (simpadd0-dirdeclor dirdeclor.declor gin))
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
                               (simpadd0-param-declon-list dirdeclor.params
-                                                          gin
-                                                          state)))
+                                                          gin)))
                           (mv (make-dirdeclor-function-params
                                :declor new-decl
                                :params new-params
@@ -4733,7 +4718,7 @@
                                :thm-index gout-params.thm-index
                                :vartys nil)))
        :function-names (b* (((mv new-decl (simpadd0-gout gout-decl))
-                             (simpadd0-dirdeclor dirdeclor.declor gin state)))
+                             (simpadd0-dirdeclor dirdeclor.declor gin)))
                          (mv (make-dirdeclor-function-names
                               :declor new-decl
                               :names dirdeclor.names)
@@ -4746,7 +4731,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-absdeclor ((absdeclor absdeclorp) (gin simpadd0-ginp) state)
+  (define simpadd0-absdeclor ((absdeclor absdeclorp) (gin simpadd0-ginp))
     :guard (absdeclor-unambp absdeclor)
     :returns (mv (new-absdeclor absdeclorp)
                  (gout simpadd0-goutp))
@@ -4755,7 +4740,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((absdeclor absdeclor) absdeclor)
          ((mv new-direct? (simpadd0-gout gout-direct?))
-          (simpadd0-dirabsdeclor-option absdeclor.direct? gin state)))
+          (simpadd0-dirabsdeclor-option absdeclor.direct? gin)))
       (mv (make-absdeclor :pointers absdeclor.pointers
                           :direct? new-direct?)
           (make-simpadd0-gout
@@ -4768,8 +4753,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-absdeclor-option ((absdeclor? absdeclor-optionp)
-                                     (gin simpadd0-ginp)
-                                     state)
+                                     (gin simpadd0-ginp))
     :guard (absdeclor-option-unambp absdeclor?)
     :returns (mv (new-absdeclor? absdeclor-optionp)
                  (gout simpadd0-goutp))
@@ -4778,7 +4762,7 @@
     (b* (((simpadd0-gin gin) gin))
       (absdeclor-option-case
        absdeclor?
-       :some (simpadd0-absdeclor absdeclor?.val gin state)
+       :some (simpadd0-absdeclor absdeclor?.val gin)
        :none (mv nil
                  (make-simpadd0-gout
                   :events nil
@@ -4790,8 +4774,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirabsdeclor ((dirabsdeclor dirabsdeclorp)
-                                 (gin simpadd0-ginp)
-                                 state)
+                                 (gin simpadd0-ginp))
     :guard (dirabsdeclor-unambp dirabsdeclor)
     :returns (mv (new-dirabsdeclor dirabsdeclorp)
                  (gout simpadd0-goutp))
@@ -4805,7 +4788,7 @@
                            (dirabsdeclor-fix dirabsdeclor))
                     (mv (irr-dirabsdeclor) (irr-simpadd0-gout)))
        :paren (b* (((mv new-inner (simpadd0-gout gout-inner))
-                    (simpadd0-absdeclor dirabsdeclor.inner gin state)))
+                    (simpadd0-absdeclor dirabsdeclor.inner gin)))
                 (mv (dirabsdeclor-paren new-inner)
                     (make-simpadd0-gout
                      :events gout-inner.events
@@ -4814,10 +4797,10 @@
                      :vartys nil)))
        :array (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                     (simpadd0-dirabsdeclor-option
-                     dirabsdeclor.declor? gin state))
+                     dirabsdeclor.declor? gin))
                    (gin (simpadd0-gin-update gin gout-declor?))
                    ((mv new-size? (simpadd0-gout gout-expr?))
-                    (simpadd0-expr-option dirabsdeclor.size? gin state)))
+                    (simpadd0-expr-option dirabsdeclor.size? gin)))
                 (mv (make-dirabsdeclor-array
                      :declor? new-declor?
                      :qualspecs dirabsdeclor.qualspecs
@@ -4829,11 +4812,10 @@
                      :vartys nil)))
        :array-static1 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
-                                                          gin
-                                                          state))
+                                                          gin))
                            (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-size (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirabsdeclor.size gin state)))
+                            (simpadd0-expr dirabsdeclor.size gin)))
                         (mv (make-dirabsdeclor-array-static1
                              :declor? new-declor?
                              :qualspecs dirabsdeclor.qualspecs
@@ -4846,10 +4828,10 @@
                              :vartys nil)))
        :array-static2 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
-                                                          gin state))
+                                                          gin))
                            (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-size (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirabsdeclor.size gin state)))
+                            (simpadd0-expr dirabsdeclor.size gin)))
                         (mv (make-dirabsdeclor-array-static2
                              :declor? new-declor?
                              :qualspecs dirabsdeclor.qualspecs
@@ -4862,8 +4844,7 @@
                              :vartys nil)))
        :array-star (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                          (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
-                                                       gin
-                                                       state)))
+                                                       gin)))
                      (mv (dirabsdeclor-array-star new-declor?)
                          (make-simpadd0-gout
                           :events gout-declor?.events
@@ -4872,11 +4853,10 @@
                           :vartys nil)))
        :function (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                        (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
-                                                     gin
-                                                     state))
+                                                     gin))
                       (gin (simpadd0-gin-update gin gout-declor?))
                       ((mv new-params (simpadd0-gout gout-params))
-                       (simpadd0-param-declon-list dirabsdeclor.params gin state)))
+                       (simpadd0-param-declon-list dirabsdeclor.params gin)))
                    (mv (make-dirabsdeclor-function
                         :declor? new-declor?
                         :params new-params
@@ -4891,8 +4871,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
-                                        (gin simpadd0-ginp)
-                                        state)
+                                        (gin simpadd0-ginp))
     :guard (dirabsdeclor-option-unambp dirabsdeclor?)
     :returns (mv (new-dirabsdeclor? dirabsdeclor-optionp)
                  (gout simpadd0-goutp))
@@ -4901,7 +4880,7 @@
     (b* (((simpadd0-gin gin) gin))
       (dirabsdeclor-option-case
        dirabsdeclor?
-       :some (simpadd0-dirabsdeclor dirabsdeclor?.val gin state)
+       :some (simpadd0-dirabsdeclor dirabsdeclor?.val gin)
        :none (mv nil
                  (make-simpadd0-gout
                   :events nil
@@ -4912,7 +4891,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-param-declon ((paramdecl param-declonp) (gin simpadd0-ginp) state)
+  (define simpadd0-param-declon ((paramdecl param-declonp) (gin simpadd0-ginp))
     :guard (param-declon-unambp paramdecl)
     :returns (mv (new-paramdecl param-declonp)
                  (gout simpadd0-goutp))
@@ -4921,10 +4900,10 @@
     (b* (((simpadd0-gin gin) gin)
          ((param-declon paramdecl) paramdecl)
          ((mv new-specs (simpadd0-gout gout-specs))
-          (simpadd0-decl-spec-list paramdecl.specs gin state))
+          (simpadd0-decl-spec-list paramdecl.specs gin))
          (gin (simpadd0-gin-update gin gout-specs))
          ((mv new-declor (simpadd0-gout gout-declor))
-          (simpadd0-param-declor paramdecl.declor gin state)))
+          (simpadd0-param-declor paramdecl.declor gin)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor)
           (make-simpadd0-gout
@@ -4937,8 +4916,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-param-declon-list ((paramdecls param-declon-listp)
-                                      (gin simpadd0-ginp)
-                                      state)
+                                      (gin simpadd0-ginp))
     :guard (param-declon-list-unambp paramdecls)
     :returns (mv (new-paramdecls param-declon-listp)
                  (gout simpadd0-goutp))
@@ -4953,10 +4931,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-paramdecl (simpadd0-gout gout-paramdecl))
-          (simpadd0-param-declon (car paramdecls) gin state))
+          (simpadd0-param-declon (car paramdecls) gin))
          (gin (simpadd0-gin-update gin gout-paramdecl))
          ((mv new-paramdecls (simpadd0-gout gout-paramdecls))
-          (simpadd0-param-declon-list (cdr paramdecls) gin state)))
+          (simpadd0-param-declon-list (cdr paramdecls) gin)))
       (mv (cons new-paramdecl new-paramdecls)
           (make-simpadd0-gout
            :events (append gout-paramdecl.events gout-paramdecls.events)
@@ -4968,8 +4946,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-param-declor ((paramdeclor param-declorp)
-                                 (gin simpadd0-ginp)
-                                 state)
+                                 (gin simpadd0-ginp))
     :guard (param-declor-unambp paramdeclor)
     :returns (mv (new-paramdeclor param-declorp)
                  (gout simpadd0-goutp))
@@ -4979,7 +4956,7 @@
       (param-declor-case
        paramdeclor
        :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
-                          (simpadd0-declor paramdeclor.declor gin state)))
+                          (simpadd0-declor paramdeclor.declor gin)))
                       (mv (param-declor-nonabstract new-declor)
                           (make-simpadd0-gout
                            :events gout-declor.events
@@ -4987,7 +4964,7 @@
                            :thm-index gout-declor.thm-index
                            :vartys nil)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
-                       (simpadd0-absdeclor paramdeclor.declor gin state)))
+                       (simpadd0-absdeclor paramdeclor.declor gin)))
                    (mv (param-declor-abstract new-absdeclor)
                        (make-simpadd0-gout
                         :events gout-absdeclor.events
@@ -5005,7 +4982,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-tyname ((tyname tynamep) (gin simpadd0-ginp) state)
+  (define simpadd0-tyname ((tyname tynamep) (gin simpadd0-ginp))
     :guard (tyname-unambp tyname)
     :returns (mv (new-tyname tynamep)
                  (gout simpadd0-goutp))
@@ -5014,10 +4991,10 @@
     (b* (((simpadd0-gin gin) gin)
          ((tyname tyname) tyname)
          ((mv new-specquals (simpadd0-gout gout-specqual))
-          (simpadd0-spec/qual-list tyname.specquals gin state))
+          (simpadd0-spec/qual-list tyname.specquals gin))
          (gin (simpadd0-gin-update gin gout-specqual))
          ((mv new-declor? (simpadd0-gout gout-declor?))
-          (simpadd0-absdeclor-option tyname.declor? gin state)))
+          (simpadd0-absdeclor-option tyname.declor? gin)))
       (mv (make-tyname :specquals new-specquals
                        :declor? new-declor?
                        :info tyname.info)
@@ -5031,8 +5008,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-struni-spec ((struni-spec struni-specp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
     :guard (struni-spec-unambp struni-spec)
     :returns (mv (new-struni-spec struni-specp)
                  (gout simpadd0-goutp))
@@ -5041,7 +5017,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
-          (simpadd0-structdecl-list struni-spec.members gin state)))
+          (simpadd0-structdecl-list struni-spec.members gin)))
       (mv (make-struni-spec :name? struni-spec.name?
                             :members new-members)
           (make-simpadd0-gout
@@ -5054,8 +5030,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdecl ((structdecl structdeclp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
     :guard (structdecl-unambp structdecl)
     :returns (mv (new-structdecl structdeclp)
                  (gout simpadd0-goutp))
@@ -5065,10 +5040,10 @@
       (structdecl-case
        structdecl
        :member (b* (((mv new-specqual (simpadd0-gout gout-specqual))
-                     (simpadd0-spec/qual-list structdecl.specqual gin state))
+                     (simpadd0-spec/qual-list structdecl.specqual gin))
                     (gin (simpadd0-gin-update gin gout-specqual))
                     ((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-structdeclor-list structdecl.declor gin state)))
+                     (simpadd0-structdeclor-list structdecl.declor gin)))
                  (mv (make-structdecl-member
                       :extension structdecl.extension
                       :specqual new-specqual
@@ -5081,7 +5056,7 @@
                       :thm-index gout-declor.thm-index
                       :vartys nil)))
        :statassert (b* (((mv new-structdecl (simpadd0-gout gout-structdecl))
-                         (simpadd0-statassert structdecl.unwrap gin state)))
+                         (simpadd0-statassert structdecl.unwrap gin)))
                      (mv (structdecl-statassert new-structdecl)
                          (make-simpadd0-gout
                           :events gout-structdecl.events
@@ -5099,8 +5074,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdecl-list ((structdecls structdecl-listp)
-                                    (gin simpadd0-ginp)
-                                    state)
+                                    (gin simpadd0-ginp))
     :guard (structdecl-list-unambp structdecls)
     :returns (mv (new-structdecls structdecl-listp)
                  (gout simpadd0-goutp))
@@ -5115,10 +5089,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-structdecl (simpadd0-gout gout-structdecl))
-          (simpadd0-structdecl (car structdecls) gin state))
+          (simpadd0-structdecl (car structdecls) gin))
          (gin (simpadd0-gin-update gin gout-structdecl))
          ((mv new-structdecls (simpadd0-gout gout-structdecls))
-          (simpadd0-structdecl-list (cdr structdecls) gin state)))
+          (simpadd0-structdecl-list (cdr structdecls) gin)))
       (mv (cons new-structdecl new-structdecls)
           (make-simpadd0-gout
            :events (append gout-structdecl.events gout-structdecls.events)
@@ -5130,8 +5104,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdeclor ((structdeclor structdeclorp)
-                                 (gin simpadd0-ginp)
-                                 state)
+                                 (gin simpadd0-ginp))
     :guard (structdeclor-unambp structdeclor)
     :returns (mv (new-structdeclor structdeclorp)
                  (gout simpadd0-goutp))
@@ -5140,10 +5113,10 @@
     (b* (((simpadd0-gin gin) gin)
          ((structdeclor structdeclor) structdeclor)
          ((mv new-declor? (simpadd0-gout gout-declor?))
-          (simpadd0-declor-option structdeclor.declor? gin state))
+          (simpadd0-declor-option structdeclor.declor? gin))
          (gin (simpadd0-gin-update gin gout-declor?))
          ((mv new-expr? (simpadd0-gout gout-expr?))
-          (simpadd0-const-expr-option structdeclor.expr? gin state)))
+          (simpadd0-const-expr-option structdeclor.expr? gin)))
       (mv (make-structdeclor :declor? new-declor?
                              :expr? new-expr?)
           (make-simpadd0-gout
@@ -5156,8 +5129,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-structdeclor-list ((structdeclors structdeclor-listp)
-                                      (gin simpadd0-ginp)
-                                      state)
+                                      (gin simpadd0-ginp))
     :guard (structdeclor-list-unambp structdeclors)
     :returns (mv (new-structdeclors structdeclor-listp)
                  (gout simpadd0-goutp))
@@ -5172,10 +5144,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
-          (simpadd0-structdeclor (car structdeclors) gin state))
+          (simpadd0-structdeclor (car structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclor))
          ((mv new-structdeclors (simpadd0-gout gout-structdeclors))
-          (simpadd0-structdeclor-list (cdr structdeclors) gin state)))
+          (simpadd0-structdeclor-list (cdr structdeclors) gin)))
       (mv (cons new-structdeclor new-structdeclors)
           (make-simpadd0-gout
            :events (append gout-structdeclor.events
@@ -5187,7 +5159,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumspec ((enumspec enumspecp) (gin simpadd0-ginp) state)
+  (define simpadd0-enumspec ((enumspec enumspecp) (gin simpadd0-ginp))
     :guard (enumspec-unambp enumspec)
     :returns (mv (new-enumspec enumspecp)
                  (gout simpadd0-goutp))
@@ -5196,7 +5168,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((enumspec enumspec) enumspec)
          ((mv new-list (simpadd0-gout gout-list))
-          (simpadd0-enumer-list enumspec.list gin state)))
+          (simpadd0-enumer-list enumspec.list gin)))
       (mv (make-enumspec :name enumspec.name
                          :list new-list
                          :final-comma enumspec.final-comma)
@@ -5209,7 +5181,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumer ((enumer enumerp) (gin simpadd0-ginp) state)
+  (define simpadd0-enumer ((enumer enumerp) (gin simpadd0-ginp))
     :guard (enumer-unambp enumer)
     :returns (mv (new-enumer enumerp)
                  (gout simpadd0-goutp))
@@ -5218,7 +5190,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((enumer enumer) enumer)
          ((mv new-value (simpadd0-gout gout-value))
-          (simpadd0-const-expr-option enumer.value gin state)))
+          (simpadd0-const-expr-option enumer.value gin)))
       (mv (make-enumer :name enumer.name
                        :value new-value)
           (make-simpadd0-gout
@@ -5231,8 +5203,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumer-list ((enumers enumer-listp)
-                                (gin simpadd0-ginp)
-                                state)
+                                (gin simpadd0-ginp))
     :guard (enumer-list-unambp enumers)
     :returns (mv (new-enumers enumer-listp)
                  (gout simpadd0-goutp))
@@ -5247,10 +5218,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-enumer (simpadd0-gout gout-enumer))
-          (simpadd0-enumer (car enumers) gin state))
+          (simpadd0-enumer (car enumers) gin))
          (gin (simpadd0-gin-update gin gout-enumer))
          ((mv new-enumers (simpadd0-gout gout-enumers))
-          (simpadd0-enumer-list (cdr enumers) gin state)))
+          (simpadd0-enumer-list (cdr enumers) gin)))
       (mv (cons new-enumer new-enumers)
           (make-simpadd0-gout
            :events (append gout-enumer.events gout-enumers.events)
@@ -5262,8 +5233,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-statassert ((statassert statassertp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
     :guard (statassert-unambp statassert)
     :returns (mv (new-statassert statassertp)
                  (gout simpadd0-goutp))
@@ -5272,7 +5242,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((statassert statassert) statassert)
          ((mv new-test (simpadd0-gout gout-test))
-          (simpadd0-const-expr statassert.test gin state)))
+          (simpadd0-const-expr statassert.test gin)))
       (mv (make-statassert :test new-test
                            :message statassert.message)
           (make-simpadd0-gout
@@ -5285,8 +5255,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initdeclor ((initdeclor initdeclorp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
     :guard (initdeclor-unambp initdeclor)
     :returns (mv (new-initdeclor initdeclorp)
                  (gout simpadd0-goutp))
@@ -5295,10 +5264,10 @@
     (b* (((simpadd0-gin gin) gin)
          ((initdeclor initdeclor) initdeclor)
          ((mv new-declor (simpadd0-gout gout-declor))
-          (simpadd0-declor initdeclor.declor gin state))
+          (simpadd0-declor initdeclor.declor gin))
          (gin (simpadd0-gin-update gin gout-declor))
          ((mv new-init? (simpadd0-gout gout-init?))
-          (simpadd0-initer-option initdeclor.init? gin state)))
+          (simpadd0-initer-option initdeclor.init? gin)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
@@ -5313,8 +5282,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp)
-                                    (gin simpadd0-ginp)
-                                    state)
+                                    (gin simpadd0-ginp))
     :guard (initdeclor-list-unambp initdeclors)
     :returns (mv (new-initdeclors initdeclor-listp)
                  (gout simpadd0-goutp))
@@ -5329,10 +5297,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
-          (simpadd0-initdeclor (car initdeclors) gin state))
+          (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
          ((mv new-initdeclors (simpadd0-gout gout-initdeclors))
-          (simpadd0-initdeclor-list (cdr initdeclors) gin state)))
+          (simpadd0-initdeclor-list (cdr initdeclors) gin)))
       (mv (cons new-initdeclor new-initdeclors)
           (make-simpadd0-gout
            :events (append gout-initdeclor.events
@@ -5344,7 +5312,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-decl ((decl declp) (gin simpadd0-ginp) state)
+  (define simpadd0-decl ((decl declp) (gin simpadd0-ginp))
     :guard (decl-unambp decl)
     :returns (mv (new-decl declp)
                  (gout simpadd0-goutp))
@@ -5354,10 +5322,10 @@
       (decl-case
        decl
        :decl (b* (((mv new-specs (simpadd0-gout gout-specs))
-                   (simpadd0-decl-spec-list decl.specs gin state))
+                   (simpadd0-decl-spec-list decl.specs gin))
                   (gin (simpadd0-gin-update gin gout-specs))
                   ((mv new-init (simpadd0-gout gout-init))
-                   (simpadd0-initdeclor-list decl.init gin state)))
+                   (simpadd0-initdeclor-list decl.init gin)))
                (mv (make-decl-decl :extension decl.extension
                                    :specs new-specs
                                    :init new-init)
@@ -5368,7 +5336,7 @@
                     :thm-index gout-init.thm-index
                     :vartys nil)))
        :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-statassert decl.unwrap gin state)))
+                         (simpadd0-statassert decl.unwrap gin)))
                      (mv (decl-statassert new-decl)
                          (make-simpadd0-gout
                           :events gout-decl.events
@@ -5379,7 +5347,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-decl-list ((decls decl-listp) (gin simpadd0-ginp) state)
+  (define simpadd0-decl-list ((decls decl-listp) (gin simpadd0-ginp))
     :guard (decl-list-unambp decls)
     :returns (mv (new-decls decl-listp)
                  (gout simpadd0-goutp))
@@ -5394,10 +5362,10 @@
                :thm-index gin.thm-index
                :vartys nil)))
          ((mv new-decl (simpadd0-gout gout-decl))
-          (simpadd0-decl (car decls) gin state))
+          (simpadd0-decl (car decls) gin))
          (gin (simpadd0-gin-update gin gout-decl))
          ((mv new-decls (simpadd0-gout gout-decls))
-          (simpadd0-decl-list (cdr decls) gin state)))
+          (simpadd0-decl-list (cdr decls) gin)))
       (mv (cons new-decl new-decls)
           (make-simpadd0-gout
            :events (append gout-decl.events gout-decls.events)
@@ -5408,7 +5376,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-label ((label labelp) (gin simpadd0-ginp) state)
+  (define simpadd0-label ((label labelp) (gin simpadd0-ginp))
     :guard (label-unambp label)
     :returns (mv (new-label labelp)
                  (gout simpadd0-goutp))
@@ -5424,10 +5392,10 @@
                   :thm-index gin.thm-index
                   :vartys nil))
        :casexpr (b* (((mv new-expr (simpadd0-gout gout-expr))
-                      (simpadd0-const-expr label.expr gin state))
+                      (simpadd0-const-expr label.expr gin))
                      (gin (simpadd0-gin-update gin gout-expr))
                      ((mv new-range? (simpadd0-gout gout-range?))
-                      (simpadd0-const-expr-option label.range? gin state)))
+                      (simpadd0-const-expr-option label.range? gin)))
                   (mv (make-label-casexpr :expr new-expr
                                           :range? new-range?)
                       (make-simpadd0-gout
@@ -5445,7 +5413,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-stmt ((stmt stmtp) (gin simpadd0-ginp) state)
+  (define simpadd0-stmt ((stmt stmtp) (gin simpadd0-ginp))
     :guard (stmt-unambp stmt)
     :returns (mv (new-stmt stmtp)
                  (gout simpadd0-goutp))
@@ -5455,10 +5423,10 @@
       (stmt-case
        stmt
        :labeled (b* (((mv new-label (simpadd0-gout gout-label))
-                      (simpadd0-label stmt.label gin state))
+                      (simpadd0-label stmt.label gin))
                      (gin (simpadd0-gin-update gin gout-label))
                      ((mv new-stmt (simpadd0-gout gout-stmt))
-                      (simpadd0-stmt stmt.stmt gin state)))
+                      (simpadd0-stmt stmt.stmt gin)))
                   (mv (make-stmt-labeled :label new-label
                                          :stmt new-stmt)
                       (make-simpadd0-gout
@@ -5468,7 +5436,7 @@
                        :thm-index gout-stmt.thm-index
                        :vartys nil)))
        :compound (b* (((mv new-items (simpadd0-gout gout-items))
-                       (simpadd0-block-item-list stmt.items gin state)))
+                       (simpadd0-block-item-list stmt.items gin)))
                    (mv (stmt-compound new-items)
                        (make-simpadd0-gout
                         :events gout-items.events
@@ -5476,7 +5444,7 @@
                         :thm-index gout-items.thm-index
                         :vartys nil)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                   (simpadd0-expr-option stmt.expr? gin state))
+                   (simpadd0-expr-option stmt.expr? gin))
                   (gin (simpadd0-gin-update gin gout-expr?)))
                (simpadd0-stmt-expr stmt.expr?
                                    new-expr?
@@ -5485,10 +5453,10 @@
                                    (coerce-stmt-expr-info stmt.info)
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
-                 (simpadd0-expr stmt.test gin state))
+                 (simpadd0-expr stmt.test gin))
                 (gin (simpadd0-gin-update gin gout-test))
                 ((mv new-then (simpadd0-gout gout-then))
-                 (simpadd0-stmt stmt.then gin state)))
+                 (simpadd0-stmt stmt.then gin)))
              (mv (make-stmt-if :test new-test
                                :then new-then)
                  (make-simpadd0-gout
@@ -5497,13 +5465,13 @@
                   :thm-index gout-then.thm-index
                   :vartys nil)))
        :ifelse (b* (((mv new-test (simpadd0-gout gout-test))
-                     (simpadd0-expr stmt.test gin state))
+                     (simpadd0-expr stmt.test gin))
                     (gin (simpadd0-gin-update gin gout-test))
                     ((mv new-then (simpadd0-gout gout-then))
-                     (simpadd0-stmt stmt.then gin state))
+                     (simpadd0-stmt stmt.then gin))
                     (gin (simpadd0-gin-update gin gout-then))
                     ((mv new-else (simpadd0-gout gout-else))
-                     (simpadd0-stmt stmt.else gin state)))
+                     (simpadd0-stmt stmt.else gin)))
                  (mv (make-stmt-ifelse :test new-test
                                        :then new-then
                                        :else new-else)
@@ -5515,10 +5483,10 @@
                       :thm-index gout-else.thm-index
                       :vartys nil)))
        :switch (b* (((mv new-target (simpadd0-gout gout-target))
-                     (simpadd0-expr stmt.target gin state))
+                     (simpadd0-expr stmt.target gin))
                     (gin (simpadd0-gin-update gin gout-target))
                     ((mv new-body (simpadd0-gout gout-body))
-                     (simpadd0-stmt stmt.body gin state)))
+                     (simpadd0-stmt stmt.body gin)))
                  (mv (make-stmt-switch :target new-target
                                        :body new-body)
                      (make-simpadd0-gout
@@ -5527,10 +5495,10 @@
                       :thm-index gout-body.thm-index
                       :vartys nil)))
        :while (b* (((mv new-test (simpadd0-gout gout-test))
-                    (simpadd0-expr stmt.test gin state))
+                    (simpadd0-expr stmt.test gin))
                    (gin (simpadd0-gin-update gin gout-test))
                    ((mv new-body (simpadd0-gout gout-body))
-                    (simpadd0-stmt stmt.body gin state)))
+                    (simpadd0-stmt stmt.body gin)))
                 (mv (make-stmt-while :test new-test
                                      :body new-body)
                     (make-simpadd0-gout
@@ -5539,10 +5507,10 @@
                      :thm-index gout-body.thm-index
                      :vartys nil)))
        :dowhile (b* (((mv new-body (simpadd0-gout gout-body))
-                      (simpadd0-stmt stmt.body gin state))
+                      (simpadd0-stmt stmt.body gin))
                      (gin (simpadd0-gin-update gin gout-body))
                      ((mv new-test (simpadd0-gout gout-test))
-                      (simpadd0-expr stmt.test gin state)))
+                      (simpadd0-expr stmt.test gin)))
                   (mv (make-stmt-dowhile :body new-body
                                          :test new-test)
                       (make-simpadd0-gout
@@ -5551,16 +5519,16 @@
                        :thm-index gout-test.thm-index
                        :vartys nil)))
        :for-expr (b* (((mv new-init (simpadd0-gout gout-init))
-                       (simpadd0-expr-option stmt.init gin state))
+                       (simpadd0-expr-option stmt.init gin))
                       (gin (simpadd0-gin-update gin gout-init))
                       ((mv new-test (simpadd0-gout gout-test))
-                       (simpadd0-expr-option stmt.test gin state))
+                       (simpadd0-expr-option stmt.test gin))
                       (gin (simpadd0-gin-update gin gout-test))
                       ((mv new-next (simpadd0-gout gout-next))
-                       (simpadd0-expr-option stmt.next gin state))
+                       (simpadd0-expr-option stmt.next gin))
                       (gin (simpadd0-gin-update gin gout-next))
                       ((mv new-body (simpadd0-gout gout-body))
-                       (simpadd0-stmt stmt.body gin state)))
+                       (simpadd0-stmt stmt.body gin)))
                    (mv (make-stmt-for-expr :init new-init
                                            :test new-test
                                            :next new-next
@@ -5574,16 +5542,16 @@
                         :thm-index gout-body.thm-index
                         :vartys nil)))
        :for-decl (b* (((mv new-init (simpadd0-gout gout-init))
-                       (simpadd0-decl stmt.init gin state))
+                       (simpadd0-decl stmt.init gin))
                       (gin (simpadd0-gin-update gin gout-init))
                       ((mv new-test (simpadd0-gout gout-test))
-                       (simpadd0-expr-option stmt.test gin state))
+                       (simpadd0-expr-option stmt.test gin))
                       (gin (simpadd0-gin-update gin gout-test))
                       ((mv new-next (simpadd0-gout gout-next))
-                       (simpadd0-expr-option stmt.next gin state))
+                       (simpadd0-expr-option stmt.next gin))
                       (gin (simpadd0-gin-update gin gout-next))
                       ((mv new-body (simpadd0-gout gout-body))
-                       (simpadd0-stmt stmt.body gin state)))
+                       (simpadd0-stmt stmt.body gin)))
                    (mv (make-stmt-for-decl :init new-init
                                            :test new-test
                                            :next new-next
@@ -5616,7 +5584,7 @@
                    :thm-index gin.thm-index
                    :vartys nil))
        :return (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                     (simpadd0-expr-option stmt.expr? gin state))
+                     (simpadd0-expr-option stmt.expr? gin))
                     (gin (simpadd0-gin-update gin gout-expr?)))
                  (simpadd0-stmt-return stmt.expr?
                                        new-expr?
@@ -5634,7 +5602,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-block-item ((item block-itemp) (gin simpadd0-ginp) state)
+  (define simpadd0-block-item ((item block-itemp) (gin simpadd0-ginp))
     :guard (block-item-unambp item)
     :returns (mv (new-item block-itemp)
                  (gout simpadd0-goutp))
@@ -5644,7 +5612,7 @@
       (block-item-case
        item
        :decl (b* (((mv new-item (simpadd0-gout gout-item))
-                   (simpadd0-decl item.unwrap gin state)))
+                   (simpadd0-decl item.unwrap gin)))
                (mv (block-item-decl new-item)
                    (make-simpadd0-gout
                     :events gout-item.events
@@ -5652,7 +5620,7 @@
                     :thm-index gout-item.thm-index
                     :vartys nil)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
-                   (simpadd0-stmt item.stmt gin state))
+                   (simpadd0-stmt item.stmt gin))
                   (gin (simpadd0-gin-update gin gout-stmt)))
                (simpadd0-block-item-stmt item.stmt
                                          new-stmt
@@ -5667,8 +5635,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-block-item-list ((items block-item-listp)
-                                    (gin simpadd0-ginp)
-                                    state)
+                                    (gin simpadd0-ginp))
     :guard (block-item-list-unambp items)
     :returns (mv (new-items block-item-listp)
                  (gout simpadd0-goutp))
@@ -5678,7 +5645,7 @@
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
          ((mv new-item (simpadd0-gout gout-item))
-          (simpadd0-block-item (car items) gin state))
+          (simpadd0-block-item (car items) gin))
          (gin (simpadd0-gin-update gin gout-item))
          ((when (endp (cdr items)))
           (simpadd0-block-item-list-one (block-item-fix (car items))
@@ -5688,7 +5655,7 @@
                                         gout-item.vartys
                                         gin))
          ((mv new-items (simpadd0-gout gout-items))
-          (simpadd0-block-item-list (cdr items) gin state))
+          (simpadd0-block-item-list (cdr items) gin))
          (gin (simpadd0-gin-update gin gout-items)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
@@ -5925,7 +5892,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-fundef ((fundef fundefp) (gin simpadd0-ginp) state)
+(define simpadd0-fundef ((fundef fundefp) (gin simpadd0-ginp))
   :guard (fundef-unambp fundef)
   :returns (mv (new-fundef fundefp)
                (gout simpadd0-goutp))
@@ -5938,16 +5905,16 @@
      including the fact that a theorem for the body was generated."))
   (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
-        (simpadd0-decl-spec-list fundef.spec gin state))
+        (simpadd0-decl-spec-list fundef.spec gin))
        (gin (simpadd0-gin-update gin gout-spec))
        ((mv new-declor (simpadd0-gout gout-declor))
-        (simpadd0-declor fundef.declor gin state))
+        (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
        ((mv new-decls (simpadd0-gout gout-decls))
-        (simpadd0-decl-list fundef.decls gin state))
+        (simpadd0-decl-list fundef.decls gin))
        (gin (simpadd0-gin-update gin gout-decls))
        ((mv new-body (simpadd0-gout gout-body))
-        (simpadd0-block-item-list fundef.body gin state))
+        (simpadd0-block-item-list fundef.body gin))
        ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
        (new-fundef (make-fundef :extension fundef.extension
                                 :spec new-spec
@@ -6116,7 +6083,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-extdecl ((extdecl extdeclp) (gin simpadd0-ginp) state)
+(define simpadd0-extdecl ((extdecl extdeclp) (gin simpadd0-ginp))
   :guard (extdecl-unambp extdecl)
   :returns (mv (new-extdecl extdeclp)
                (gout simpadd0-goutp))
@@ -6125,7 +6092,7 @@
     (extdecl-case
      extdecl
      :fundef (b* (((mv new-fundef (simpadd0-gout gout-fundef))
-                   (simpadd0-fundef extdecl.unwrap gin state)))
+                   (simpadd0-fundef extdecl.unwrap gin)))
                (mv (extdecl-fundef new-fundef)
                    (make-simpadd0-gout
                     :events gout-fundef.events
@@ -6133,7 +6100,7 @@
                     :thm-index gout-fundef.thm-index
                     :vartys nil)))
      :decl (b* (((mv new-decl (simpadd0-gout gout-decl))
-                 (simpadd0-decl extdecl.unwrap gin state)))
+                 (simpadd0-decl extdecl.unwrap gin)))
              (mv (extdecl-decl new-decl)
                  (make-simpadd0-gout
                   :events gout-decl.events
@@ -6162,8 +6129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl-list ((extdecls extdecl-listp)
-                               (gin simpadd0-ginp)
-                               state)
+                               (gin simpadd0-ginp))
   :guard (extdecl-list-unambp extdecls)
   :returns (mv (new-extdecls extdecl-listp)
                (gout simpadd0-goutp))
@@ -6177,10 +6143,10 @@
              :thm-index gin.thm-index
              :vartys nil)))
        ((mv new-edecl (simpadd0-gout gout-edecl))
-        (simpadd0-extdecl (car extdecls) gin state))
+        (simpadd0-extdecl (car extdecls) gin))
        (gin (simpadd0-gin-update gin gout-edecl))
        ((mv new-edecls (simpadd0-gout gout-edecls))
-        (simpadd0-extdecl-list (cdr extdecls) gin state)))
+        (simpadd0-extdecl-list (cdr extdecls) gin)))
     (mv (cons new-edecl new-edecls)
         (make-simpadd0-gout
          :events (append gout-edecl.events gout-edecls.events)
@@ -6198,7 +6164,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-transunit ((tunit transunitp) (gin simpadd0-ginp) state)
+(define simpadd0-transunit ((tunit transunitp) (gin simpadd0-ginp))
   :guard (transunit-unambp tunit)
   :returns (mv (new-tunit transunitp)
                (gout simpadd0-goutp))
@@ -6206,7 +6172,7 @@
   (b* (((simpadd0-gin gin) gin)
        ((transunit tunit) tunit)
        ((mv new-decls (simpadd0-gout gout-decls))
-        (simpadd0-extdecl-list tunit.decls gin state)))
+        (simpadd0-extdecl-list tunit.decls gin)))
     (mv  (make-transunit :decls new-decls
                          :info tunit.info)
          (make-simpadd0-gout
@@ -6224,8 +6190,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp)
-                                         (gin simpadd0-ginp)
-                                         state)
+                                         (gin simpadd0-ginp))
   :guard (filepath-transunit-map-unambp map)
   :returns (mv (new-map filepath-transunit-mapp
                         :hyp (filepath-transunit-mapp map))
@@ -6245,10 +6210,10 @@
              :vartys nil)))
        ((mv path tunit) (omap::head map))
        ((mv new-tunit (simpadd0-gout gout-tunit))
-        (simpadd0-transunit tunit gin state))
+        (simpadd0-transunit tunit gin))
        (gin (simpadd0-gin-update gin gout-tunit))
        ((mv new-map (simpadd0-gout gout-map))
-        (simpadd0-filepath-transunit-map (omap::tail map) gin state)))
+        (simpadd0-filepath-transunit-map (omap::tail map) gin)))
     (mv (omap::update path new-tunit new-map)
         (make-simpadd0-gout
          :events (append gout-tunit.events gout-map.events)
@@ -6270,15 +6235,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit-ensemble ((tunits transunit-ensemblep)
-                                     (gin simpadd0-ginp)
-                                     state)
+                                     (gin simpadd0-ginp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (mv (new-tunits transunit-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits)
        ((mv new-map (simpadd0-gout gout-map))
-        (simpadd0-filepath-transunit-map tunits.unwrap gin state)))
+        (simpadd0-filepath-transunit-map tunits.unwrap gin)))
     (mv (transunit-ensemble new-map)
         (make-simpadd0-gout
          :events gout-map.events
@@ -6295,15 +6259,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-code-ensemble ((code code-ensemblep)
-                                (gin simpadd0-ginp)
-                                state)
+                                (gin simpadd0-ginp))
   :guard (code-ensemble-unambp code)
   :returns (mv (new-code code-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((mv tunits-new (simpadd0-gout gout))
-        (simpadd0-transunit-ensemble code.transunits gin state)))
+        (simpadd0-transunit-ensemble code.transunits gin)))
     (mv (change-code-ensemble code :transunits tunits-new) gout))
   :hooks (:fix)
 
@@ -6317,8 +6280,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-gen-everything ((code-old code-ensemblep)
-                                 (const-new symbolp)
-                                 state)
+                                 (const-new symbolp))
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
@@ -6327,7 +6289,7 @@
        (gin (make-simpadd0-gin :const-new const-new
                                :thm-index 1))
        ((mv code-new (simpadd0-gout gout))
-        (simpadd0-code-ensemble code-old gin state))
+        (simpadd0-code-ensemble code-old gin))
        (const-event `(defconst ,const-new ',code-new)))
     (retok `(encapsulate () ,const-event ,@gout.events))))
 
@@ -6342,7 +6304,7 @@
   (b* (((reterr) '(_))
        ((erp code-old const-new)
         (simpadd0-process-inputs const-old const-new (w state))))
-    (simpadd0-gen-everything code-old const-new state)))
+    (simpadd0-gen-everything code-old const-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
