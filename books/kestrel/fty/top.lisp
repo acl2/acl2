@@ -39,6 +39,8 @@
 (include-book "deffold-reduce")
 (include-book "deffold-reduce-doc")
 (include-book "deflist-of-len")
+(include-book "defmake-self")
+(include-book "defmake-self-doc")
 (include-book "fty-omap")
 ;(include-book "defomap")
 (include-book "fty-set")
