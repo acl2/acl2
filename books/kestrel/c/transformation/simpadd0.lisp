@@ -777,7 +777,8 @@
 
 (define simpadd0-gen-block-item-list-thm ((old block-item-listp)
                                           (new block-item-listp)
-                                          (vartys ident-type-mapp)
+                                          (vartys-pre ident-type-mapp)
+                                          (vartys-post ident-type-mapp)
                                           (const-new symbolp)
                                           (thm-index posp)
                                           (hints true-listp))
@@ -817,7 +818,8 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
@@ -846,7 +848,8 @@
                                (equal (c::type-of-value
                                        (c::stmt-value-return->value?
                                         old-result))
-                                      ',ctype))))))))
+                                      ',ctype))))
+                         ,@vars-post))))
        ((mv thm-name thm-index) (simpadd0-gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -3064,6 +3067,7 @@
         (simpadd0-gen-block-item-list-thm items
                                           items
                                           gin.vartys
+                                          nil ; no post-vars for now
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
@@ -3176,6 +3180,7 @@
         (simpadd0-gen-block-item-list-thm item+items
                                           item+items-new
                                           gin.vartys
+                                          nil ; no post-vars for now
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
