@@ -3049,6 +3049,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-block-item-decl ((decl declp)
+                                  (decl-new declp)
+                                  (decl-thm-name symbolp)
+                                  (info block-item-infop)
+                                  (gin simpadd0-ginp))
+  :guard (and (decl-unambp decl)
+              (decl-unambp decl-new))
+  :returns (mv (item block-itemp) (gout simpadd0-goutp))
+  :short "Transform a block item that consists of a declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the new declaration into a block item.")
+   (xdoc::p
+    "We do not generate a theorem yet."))
+  (declare (ignore decl decl-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (item-new (make-block-item-decl :decl decl-new :info info)))
+    (mv item-new (simpadd0-gout-no-thm gin)))
+
+  ///
+
+  (defret block-item-unambp-of-simpadd0-block-item-decl
+    (block-item-unambp item)
+    :hyp (decl-unambp decl-new)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-block-item-list-empty ((gin simpadd0-ginp))
   :returns (gout simpadd0-goutp)
   :short "Transform an empty list of block items."
@@ -4973,11 +5001,14 @@
     (b* (((simpadd0-gin gin) gin))
       (block-item-case
        item
-       :decl (b* (((mv new-decl (simpadd0-gout gout-item))
+       :decl (b* (((mv new-decl (simpadd0-gout gout-decl))
                    (simpadd0-decl item.decl gin))
-                  (gin (simpadd0-gin-update gin gout-item)))
-               (mv (make-block-item-decl :decl new-decl :info item.info)
-                   (simpadd0-gout-no-thm gin)))
+                  (gin (simpadd0-gin-update gin gout-decl)))
+               (simpadd0-block-item-decl item.decl
+                                         new-decl
+                                         gout-decl.thm-name
+                                         (coerce-block-item-info item.info)
+                                         gin))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
                   (gin (simpadd0-gin-update gin gout-stmt)))
