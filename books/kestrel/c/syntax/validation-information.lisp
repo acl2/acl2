@@ -460,7 +460,7 @@
      the validator adds to (for now only some kinds of) block items.
      This information currently consists of
      the validation table at the beginning of the block item."))
-  ((table valid-table))
+  ((table-start valid-table))
   :pred block-item-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -572,7 +572,7 @@
      the validator adds to translation units.
      The information consists of
      the final validation table for the translation unit."))
-  ((table valid-table))
+  ((table-end valid-table))
   :pred transunit-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -580,7 +580,7 @@
 (defirrelevant irr-transunit-info
   :short "An irrelevant validation information for translation units."
   :type transunit-infop
-  :body (make-transunit-info :table (irr-valid-table)))
+  :body (make-transunit-info :table-end (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -913,5 +913,5 @@
               :stmt item.info
               :ambig (impossible)))
        (info (coerce-block-item-info info)))
-    (block-item-info->table info))
+    (block-item-info->table-start info))
   :hooks (:fix))

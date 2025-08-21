@@ -88,26 +88,7 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."
-
-  "The generated theorems involve hypotheses, and sometimes conclusions,
-   about certain variables in scope having values of appropriate types
-   (the hypotheses pertain to the computation state before a construct,
-   and the conclusions pertain to the computation state after the construct);
-   information about these variables is captured as
-   ACL2 values of type @(tsee ident-type-map).
-   In some cases (e.g. pure expressions),
-   we obtain the variable-type maps directly from the construct in question;
-   when combining two sub-constucts into a super-construct,
-   we use @(tsee simpadd0-join-vartys)
-   to obtain the variable-type maps for the super-construct.
-   In other cases (e.g. statements),
-   we obtain the variable-type maps from the validation annotations,
-   because in those cases we need, in general,
-   variables that may not occur in the construct in question
-   but may occur in later constructs;
-   we use @(tsee simpadd0-vartys-from-valid-table)
-   on the validation tables that annotate the ASTs."))
+   from the aforementioned @(tsee simpadd0-gout)."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -357,26 +338,6 @@
   ///
   (fty::deffixequiv simpadd0-gen-var-assertions
     :args ((vartys ident-type-mapp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define simpadd0-join-vartys ((vartys1 ident-type-mapp)
-                              (vartys2 ident-type-mapp))
-  :returns (vartys ident-type-mapp)
-  :short "Join two maps from identifiers to types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used on maps that must be compatible,
-     so we throw a hard error if that is not the case."))
-  (b* ((vartys1 (ident-type-map-fix vartys1))
-       (vartys2 (ident-type-map-fix vartys2)))
-    (if (omap::compatiblep vartys1 vartys2)
-        (omap::update* vartys1 vartys2)
-      (raise "Internal error: ~
-              incompatible variable-type maps ~x0 and ~x1"
-             vartys1 vartys2)))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -816,7 +777,8 @@
 
 (define simpadd0-gen-block-item-list-thm ((old block-item-listp)
                                           (new block-item-listp)
-                                          (vartys ident-type-mapp)
+                                          (vartys-pre ident-type-mapp)
+                                          (vartys-post ident-type-mapp)
                                           (const-new symbolp)
                                           (thm-index posp)
                                           (hints true-listp))
@@ -856,7 +818,8 @@
                         (ldm-type type)))
                     ctype)
                 nil))
-       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
@@ -885,7 +848,8 @@
                                (equal (c::type-of-value
                                        (c::stmt-value-return->value?
                                         old-result))
-                                      ',ctype))))))))
+                                      ',ctype))))
+                         ,@vars-post))))
        ((mv thm-name thm-index) (simpadd0-gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -3096,12 +3060,18 @@
      because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (hints '(("Goal"
-                 :in-theory '((:e ldm-block-item-list))
-                 :use simpadd0-block-item-list-empty-support-lemma)))
+       (vartys-lemma-instances
+        (simpadd0-block-item-list-empty-lemma-instances gin.vartys))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-block-item-list)
+                              (:e ldm-type)
+                              (:e ldm-ident))
+                 :use (simpadd0-block-item-list-empty-support-lemma
+                       ,@vartys-lemma-instances))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items
+                                          gin.vartys
                                           gin.vartys
                                           gin.const-new
                                           gin.thm-index
@@ -3111,6 +3081,22 @@
                         :thm-name thm-name
                         :vartys gin.vartys))
   :hooks (:fix)
+
+  :prepwork
+  ((define simpadd0-block-item-list-empty-lemma-instances
+     ((vartys ident-type-mapp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-list-empty-vartys-support-lemma
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3126,7 +3112,17 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :none))))
-    :enable c::exec-block-item-list))
+    :enable c::exec-block-item-list)
+
+  (defruled simpadd0-block-item-list-empty-vartys-support-lemma
+    (b* ((items nil)
+         ((mv result compst1)
+          (c::exec-block-item-list items compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::exec-block-item-list
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3161,8 +3157,7 @@
        (item+items-new (cons item-new items-new))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and item-thm-name
-                     items-thm-name
-                     nil)) ; temporary
+                     items-thm-name))
         (mv item+items-new gout-no-thm))
        (first-type (block-item-type item))
        (rest-type (block-item-list-type items))
@@ -3215,6 +3210,7 @@
         (simpadd0-gen-block-item-list-thm item+items
                                           item+items-new
                                           gin.vartys
+                                          nil ; no post-vars for now
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
@@ -4948,6 +4944,32 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The handling of the variable-type maps is as follows.
+       If the list is empty,
+       we generate a theorem for the empty list of block items,
+       which includes hypotheses and conclusions about
+       the variables in the @('vartys') component of @('gin').
+       If instead the list is not empty,
+       first we generate a theorem for the first block item,
+       via @(tsee simpadd0-block-item),
+       which takes its @('vartys') from the validation table
+       that annotates the block item;
+       the @('vartys') resulting in @('gout-item')
+       is then put into the @('gin') passed to this function
+       to recursively transform the rest of the list.
+       So in the end @('gin.vartys') is only used
+       when reaching the empty list of block items,
+       as all the other block items take their own @('vartys').
+       But note that, when putting together
+       the transformed first block item and rest of the block items,
+       and possibly generating a theorem for the whole list
+       (see @(tsee simpadd0-block-item-list-cons)),
+       we pass, in @('gin'), the original @('vartys')
+       before the first block item,
+       because those are the variables in scope there."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
@@ -4955,8 +4977,13 @@
           (simpadd0-block-item (car items) gin))
          (gin (simpadd0-gin-update gin gout-item))
          ((mv new-items (simpadd0-gout gout-items))
-          (simpadd0-block-item-list (cdr items) gin))
-         (gin (simpadd0-gin-update gin gout-items)))
+          (simpadd0-block-item-list (cdr items)
+                                    (change-simpadd0-gin
+                                     gin :vartys gout-item.vartys)))
+         (gin (simpadd0-gin-update gin gout-items))
+         (table (c$::block-item-valid-table (car items)))
+         (vartys (simpadd0-vartys-from-valid-table table))
+         (gin (change-simpadd0-gin gin :vartys vartys)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name

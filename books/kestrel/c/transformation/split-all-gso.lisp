@@ -236,7 +236,7 @@
           ((mv erp linkage tag?)
            (get-gso-linkage-from-valid-table
              gso
-             (c$::transunit-info->table (c$::transunit->info tunit))))
+             (c$::transunit-info->table-end (c$::transunit->info tunit))))
           ((when erp)
            (transunit-find-gso-candidate0 tunit
                                           (insert gso blacklist)
