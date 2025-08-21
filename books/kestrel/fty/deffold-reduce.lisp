@@ -792,20 +792,36 @@
         (acl2::packn-pos (list type-suffix '-when-atom) suffix))
        (type-suffix-of-cons
         (acl2::packn-pos (list type-suffix '-of-cons) suffix))
+       (type-suffix-of-append
+        (acl2::packn-pos (list type-suffix '-of-append) suffix))
+       (type1 (add-suffix-to-fn type "1"))
        (thm-events
-        `((defruled ,type-suffix-when-atom
-            (implies (atom ,type)
-                     (equal (,type-suffix ,type ,@extra-args-names)
-                            ,default))
-            :enable ,type-suffix)
-          (defruled ,type-suffix-of-cons
-            (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
-                   (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
-                             (,type-suffix ,type ,@extra-args-names)))
-            :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))
-          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                          '(,type-suffix-when-atom
-                            ,type-suffix-of-cons)))))
+        (append
+         `((defruled ,type-suffix-when-atom
+             (implies (atom ,type)
+                      (equal (,type-suffix ,type ,@extra-args-names)
+                             ,default))
+             :enable ,type-suffix)
+           (defruled ,type-suffix-of-cons
+             (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
+                    (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
+                              (,type-suffix ,type ,@extra-args-names)))
+             :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))
+           (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                           '(,type-suffix-when-atom
+                             ,type-suffix-of-cons)))
+         (and (eq combine 'and)
+              (eq default t)
+              `((defruled ,type-suffix-of-append
+                  (equal (,type-suffix (append ,type ,type1) ,@extra-args-names)
+                         (and (,type-suffix ,type ,@extra-args-names)
+                              (,type-suffix ,type1 ,@extra-args-names)))
+                  :induct t
+                  :enable (append
+                           ,type-suffix
+                           ,type-suffix-of-cons))
+                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                                '(,type-suffix-of-append)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
