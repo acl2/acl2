@@ -5022,7 +5022,13 @@
       "The reason for taking the @('vartys') from each block item
        is so that we can generate more theorems.
        In particular, we can generate theorems for a block item
-       without having generate (complete) theorems for preceding block items."))
+       without having generate (complete) theorems for preceding block items.")
+     (xdoc::p
+      "The @('vartys-post') passed to @(tsee simpadd0-block-item-list-cons)
+       is either the one after the first block item
+       or the one after the list of block items,
+       depending on whether the rest of block items are actually executed,
+       based on whether the first block item returns or not."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
@@ -5037,14 +5043,17 @@
           (simpadd0-block-item-list (cdr items)
                                     (change-simpadd0-gin
                                      gin :vartys gout-item.vartys)))
-         (gin (simpadd0-gin-update gin gout-items)))
+         (gin (simpadd0-gin-update gin gout-items))
+         (vartys-post (if (block-item-type item)
+                          gout-item.vartys
+                        gout-items.vartys)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
                                      (cdr items)
                                      new-items
                                      gout-items.thm-name
-                                     gout-items.vartys
+                                     vartys-post
                                      gin))
     :measure (block-item-list-count items))
 
