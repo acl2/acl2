@@ -572,7 +572,7 @@
      the validator adds to translation units.
      The information consists of
      the final validation table for the translation unit."))
-  ((table valid-table))
+  ((table-end valid-table))
   :pred transunit-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -580,7 +580,7 @@
 (defirrelevant irr-transunit-info
   :short "An irrelevant validation information for translation units."
   :type transunit-infop
-  :body (make-transunit-info :table (irr-valid-table)))
+  :body (make-transunit-info :table-end (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

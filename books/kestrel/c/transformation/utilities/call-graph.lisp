@@ -706,7 +706,7 @@
   :short "Build a call graph corresponding to a translation unit."
   (b* (((transunit transunit) transunit)
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
-       (valid-table (c$::transunit-info->table info)))
+       (valid-table (c$::transunit-info->table-end info)))
     (call-graph-extdecl-list transunit.decls filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
