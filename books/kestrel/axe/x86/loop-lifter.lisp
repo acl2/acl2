@@ -833,7 +833,6 @@
                                        write-pair2
                                        assumptions
                                        rule-alist
-                                       bvp
                                        state)
   (declare (xargs :stobjs state
                   :mode :program))
@@ -843,9 +842,7 @@
        (num-bytes2 (first write-pair2))
        (base-addr2 (second write-pair2))
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
-       (separation-term (if bvp
-                            `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2)
-                          `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2)))
+       (separation-term `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2))
        ((mv erp result state)
         (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil nil state))
        ((when erp) (mv erp nil state)))
@@ -865,7 +862,6 @@
                                                       write-pairs
                                                       assumptions
                                                       rule-alist
-                                                      bvp
                                                       state)
   (declare (xargs :stobjs state
                   :mode :program))
@@ -877,14 +873,13 @@
                                           write-pair2
                                           assumptions
                                           rule-alist
-                                          bvp
                                           state))
          ((when erp) (mv erp res state)))
       (if res
           (no-overlap-between-write-pair-and-write-pairs write-pair
                                                          (rest write-pairs)
                                                          assumptions
-                                                         rule-alist bvp
+                                                         rule-alist
                                                          state)
         (mv nil nil state)  ;failed
         ))))
@@ -894,17 +889,16 @@
 (defun no-overlap-in-write-pairs (write-pairs
                                   assumptions
                                   rule-alist
-                                  bvp
                                   state)
   (declare (xargs :stobjs state
                   :mode :program))
   (if (endp write-pairs)
       (mv nil t state)
     (b* (((mv erp res state)
-          (no-overlap-between-write-pair-and-write-pairs (first write-pairs) (rest write-pairs) assumptions rule-alist bvp state))
+          (no-overlap-between-write-pair-and-write-pairs (first write-pairs) (rest write-pairs) assumptions rule-alist state))
          ((when erp) (mv erp nil state)))
       (if res
-          (no-overlap-in-write-pairs (rest write-pairs) assumptions rule-alist bvp state)
+          (no-overlap-in-write-pairs (rest write-pairs) assumptions rule-alist state)
         (mv nil nil state) ;; we failed
         ))))
 
@@ -937,10 +931,9 @@
 ;; expr should be the application of something like xr to a state variable.
 ;; If state-var is non-nil, all state-vars in the expr must match it.
 ;; FIXME: take a bv param and only handle one of the 2 read forms
-(defun name-of-state-component-aux (expr state-var bvp)
+(defun name-of-state-component-aux (expr state-var)
   (declare (xargs :guard (and (pseudo-termp expr)
-                              (symbolp state-var)
-                              (booleanp bvp))))
+                              (symbolp state-var))))
   ;; Match a register access:
   (mv-let (matchp alist)
     (acl2::unify-term expr '(xr ':rgf :index :state-var))
@@ -984,47 +977,46 @@
                           (:zf 'flag-zf) ;todo: add more flags
                           (otherwise "Unsupported flag name.")
                           )))))
-              (if bvp
-                  ;; A read with the BV normal form:
-                  (mv-let (matchp alist)
-                    ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
-                    ;; todo: generalize the 4 here?:
-                    (acl2::unify-term expr '(read '4 (bvplus '48 :offset (XR ':RGF '4 :state-var)) :state-var2))
-                    (if matchp
-                        (if (and state-var
-                                 (or (not (equal state-var (lookup-eq :state-var alist)))
-                                     (not (equal state-var (lookup-eq :state-var2 alist)))))
-                            "State-var mismatch"
-                          (let ((offset (lookup-eq :offset alist)))
-                            (if (not (and (myquotep offset)
-                                          (integerp (unquote offset))
-                                          (< (logext 48 (unquote offset)) 0)
-                                          ))
-                                "Unsupported memory read."
-                              (pack-in-package-of-symbol 'var 'var (- (logext 48 (unquote offset)))))))
-                      "Unexpected state component."))
-                ;; Handle a non-bv read:
-                (mv-let (matchp alist)
-                  ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
-                  ;; todo: generalize the 4 here?:
-                  (acl2::unify-term expr '(read '4 (binary-+ :offset (XR ':RGF '4 :state-var)) :state-var2))
-                  (if matchp
-                      (if (and state-var
-                               (or (not (equal state-var (lookup-eq :state-var alist)))
-                                   (not (equal state-var (lookup-eq :state-var2 alist)))))
-                          "State-var mismatch"
-                        (let ((offset (lookup-eq :offset alist)))
-                          (if (not (and (myquotep offset)
-                                        (integerp (unquote offset))
-                                        (< (unquote offset) 0)))
-                              "Unsupported memory read."
-                            (pack-in-package-of-symbol 'var 'var (- (unquote offset))))))
-                    "Unexpected state component."))))))))))
+              ;; A read with the BV normal form:
+              (mv-let (matchp alist)
+                ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
+                ;; todo: generalize the 4 here?:
+                (acl2::unify-term expr '(read '4 (bvplus '48 :offset (XR ':RGF '4 :state-var)) :state-var2))
+                (if matchp
+                    (if (and state-var
+                             (or (not (equal state-var (lookup-eq :state-var alist)))
+                                 (not (equal state-var (lookup-eq :state-var2 alist)))))
+                        "State-var mismatch"
+                      (let ((offset (lookup-eq :offset alist)))
+                        (if (not (and (myquotep offset)
+                                      (integerp (unquote offset))
+                                      (< (logext 48 (unquote offset)) 0)
+                                      ))
+                            "Unsupported memory read."
+                          (pack-in-package-of-symbol 'var 'var (- (logext 48 (unquote offset)))))))
+                  "Unexpected state component."))
+                ;; ;; Handle a non-bv read:
+                ;; (mv-let (matchp alist)
+                ;;   ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
+                ;;   ;; todo: generalize the 4 here?:
+                ;;   (acl2::unify-term expr '(read '4 (binary-+ :offset (XR ':RGF '4 :state-var)) :state-var2))
+                ;;   (if matchp
+                ;;       (if (and state-var
+                ;;                (or (not (equal state-var (lookup-eq :state-var alist)))
+                ;;                    (not (equal state-var (lookup-eq :state-var2 alist)))))
+                ;;           "State-var mismatch"
+                ;;         (let ((offset (lookup-eq :offset alist)))
+                ;;           (if (not (and (myquotep offset)
+                ;;                         (integerp (unquote offset))
+                ;;                         (< (unquote offset) 0)))
+                ;;               "Unsupported memory read."
+                ;;             (pack-in-package-of-symbol 'var 'var (- (unquote offset))))))
+                ;;     "Unexpected state component."))
+              )))))))
 
-(defun name-of-state-component (expr bvp)
-  (declare (xargs :guard (and (pseudo-termp expr)
-                              (booleanp bvp))))
-  (let ((res (name-of-state-component-aux expr nil bvp)))
+(defun name-of-state-component (expr)
+  (declare (xargs :guard (pseudo-termp expr)))
+  (let ((res (name-of-state-component-aux expr nil)))
     (if (stringp res) ;an error
         (er hard? 'name-of-state-component "Unexpected state component expr: ~X01.  Result: ~s2"
             expr ;(untranslate expr nil (w state)) ;;todo: thread in w here?
@@ -1033,44 +1025,40 @@
 
 ;; Return a name for EXPR, if it represents a component of X86_0, or nil to
 ;; indicate failure.
-(defun maybe-name-of-initial-state-component (expr bvp)
-  (declare (xargs :guard (and (pseudo-termp expr)
-                              (booleanp bvp))))
-  (let ((res (name-of-state-component-aux expr 'x86_0 bvp)))
+(defun maybe-name-of-initial-state-component (expr)
+  (declare (xargs :guard (pseudo-termp expr)))
+  (let ((res (name-of-state-component-aux expr 'x86_0)))
     (if (stringp res) ;error
         nil
       res)))
 
 ;; Replace components of X86_0 with suitable names
 (mutual-recursion
- (defun replace-components-of-initial-state-in-term (term bvp)
-   (declare (xargs :guard (and (pseudo-termp term)
-                               (booleanp bvp))
+ (defun replace-components-of-initial-state-in-term (term)
+   (declare (xargs :guard (pseudo-termp term)
                    :guard-hints (("Goal" :in-theory (enable pseudo-termp)))))
-   (or (maybe-name-of-initial-state-component term bvp)
+   (or (maybe-name-of-initial-state-component term)
        (if (variablep term)
            term
          (if (quotep term)
              term
            (cons (ffn-symb term)
-                 (replace-components-of-initial-state-in-terms (fargs term) bvp))))))
+                 (replace-components-of-initial-state-in-terms (fargs term)))))))
 
- (defun replace-components-of-initial-state-in-terms (terms bvp)
-   (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (booleanp bvp))
+ (defun replace-components-of-initial-state-in-terms (terms)
+   (declare (xargs :guard (pseudo-term-listp terms)
                    :guard-hints (("Goal" :in-theory (enable pseudo-termp)))))
    (if (endp terms)
        nil
-     (cons (replace-components-of-initial-state-in-term (first terms) bvp)
-           (replace-components-of-initial-state-in-terms (rest terms) bvp)))))
+     (cons (replace-components-of-initial-state-in-term (first terms))
+           (replace-components-of-initial-state-in-terms (rest terms))))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-xw-triples (xw-triples next-param-number
                                                        updated-state-term
                                                        paramnum-update-alist
                                                        paramnum-extractor-alist
-                                                       paramnum-name-alist
-                                                       bvp)
+                                                       paramnum-name-alist)
   (if (endp xw-triples)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((xw-triple (first xw-triples))
@@ -1085,14 +1073,13 @@
                                                updated-state-term
                                                paramnum-update-alist
                                                paramnum-extractor-alist
-                                               paramnum-name-alist
-                                               bvp)
+                                               paramnum-name-alist)
         (b* ((value-term (third xw-triple))
              (updated-state-term `(xw ',field ',index (nth ',next-param-number :loop-function-result) ,updated-state-term))
              (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
              (paramnum-extractor `(xr ',field ',index :initial-loop-top-state))
              (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-             (param-name (name-of-state-component paramnum-extractor bvp))
+             (param-name (name-of-state-component paramnum-extractor))
              (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
              (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist)) ;just some name
              )
@@ -1101,12 +1088,11 @@
                                                updated-state-term
                                                paramnum-update-alist
                                                paramnum-extractor-alist
-                                               paramnum-name-alist
-                                               bvp))))))
+                                               paramnum-name-alist))))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-write-triples (write-triples next-param-number updated-state-term
-                                                             paramnum-update-alist paramnum-extractor-alist paramnum-name-alist bvp)
+                                                             paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
   (if (endp write-triples)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((write-triple (first write-triples))
@@ -1117,7 +1103,7 @@
          (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
          (paramnum-extractor `(read ,n ,base-addr :initial-loop-top-state))
          (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-         (param-name (name-of-state-component paramnum-extractor bvp))
+         (param-name (name-of-state-component paramnum-extractor))
          (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
          (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist)) ;just some name
          )
@@ -1126,11 +1112,11 @@
                                               updated-state-term
                                               paramnum-update-alist
                                               paramnum-extractor-alist
-                                              paramnum-name-alist bvp))))
+                                              paramnum-name-alist))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-flag-pairs (flag-pairs next-param-number updated-state-term
-                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist bvp)
+                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
   (if (endp flag-pairs)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((flag-pair (first flag-pairs))
@@ -1140,7 +1126,7 @@
          (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
          (paramnum-extractor `(get-flag ',flag-name :initial-loop-top-state))
          (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-         (param-name (name-of-state-component paramnum-extractor bvp) ;(list :flag flag-name)
+         (param-name (name-of-state-component paramnum-extractor) ;(list :flag flag-name)
                      )
          (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
          (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist)) ;just some name
@@ -1150,8 +1136,7 @@
                                            updated-state-term
                                            paramnum-update-alist
                                            paramnum-extractor-alist
-                                           paramnum-name-alist
-                                           bvp))))
+                                           paramnum-name-alist))))
 
 ;; maps param-extractors over :initial-loop-top-state to the corresponding names
 (defun make-replacement-alist (paramnum-extractor-alist paramnum-name-alist state-var)
@@ -1248,7 +1233,7 @@
                                              paramnum-extractor-alist
                                              paramnum-name-alist
                                              state-var
-                                             extra-vars bvp)
+                                             extra-vars)
    (if (endp exprs)
        (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
      (b* ((expr (first exprs))
@@ -1260,7 +1245,7 @@
                                                paramnum-extractor-alist
                                                paramnum-name-alist
                                                state-var
-                                               extra-vars bvp)))
+                                               extra-vars)))
        (make-read-only-parameters-for-exprs (rest exprs)
                                             next-param-number
                                             updated-state-term
@@ -1268,7 +1253,7 @@
                                             paramnum-extractor-alist
                                             paramnum-name-alist
                                             state-var
-                                            extra-vars bvp))))
+                                            extra-vars))))
 
  ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
  ;; TODO Handle more things here!
@@ -1279,8 +1264,7 @@
                                             paramnum-extractor-alist
                                             paramnum-name-alist
                                             state-var
-                                            extra-vars
-                                            bvp)
+                                            extra-vars)
    (if (member-equal (acl2::sublis-var-simple (acons state-var :initial-loop-top-state nil) expr)
                      (strip-cdrs paramnum-extractor-alist)) ;this expr already corresponds to a param
        (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
@@ -1308,7 +1292,7 @@
                                                   paramnum-update-alist))
                     (paramnum-extractor `(read ,n ,base-addr :initial-loop-top-state))
                     (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-                    (param-name (name-of-state-component paramnum-extractor bvp)) ;for now, just some name
+                    (param-name (name-of-state-component paramnum-extractor)) ;for now, just some name
                     (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
                     (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                     )
@@ -1330,7 +1314,7 @@
                                                     paramnum-update-alist))
                       (paramnum-extractor `(xr ':rgf ,index :initial-loop-top-state))
                       (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-                      (param-name (name-of-state-component paramnum-extractor bvp)) ;for now, just some name
+                      (param-name (name-of-state-component paramnum-extractor)) ;for now, just some name
                       (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
                       (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                       )
@@ -1343,8 +1327,7 @@
                                                     paramnum-extractor-alist
                                                     paramnum-name-alist
                                                     state-var
-                                                    extra-vars
-                                                    bvp)))))))))
+                                                    extra-vars)))))))))
 
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
@@ -1355,7 +1338,7 @@
                                   paramnum-extractor-alist
                                   paramnum-name-alist
                                   state-var
-                                  extra-vars bvp)
+                                  extra-vars)
   (if (endp paramnum-update-alist-to-check)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((entry (first paramnum-update-alist-to-check))
@@ -1368,7 +1351,7 @@
                                               paramnum-extractor-alist
                                               paramnum-name-alist
                                               state-var
-                                              extra-vars bvp)))
+                                              extra-vars)))
       (make-read-only-parameters (rest paramnum-update-alist-to-check)
                                  next-param-number
                                  updated-state-term
@@ -1376,7 +1359,7 @@
                                  paramnum-extractor-alist
                                  paramnum-name-alist
                                  state-var
-                                 extra-vars bvp))))
+                                 extra-vars))))
 
 (defun make-initial-params-terms (paramnum-extractor-alist paramnum-name-alist param-update-terms)
   (if (endp paramnum-extractor-alist)
@@ -1428,7 +1411,6 @@
                    base-name
                    lifter-rules
                    print
-                   bvp
                    state)
    (declare (xargs :stobjs state
                    :mode :program
@@ -1443,8 +1425,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
-                               (acl2::print-levelp print)
-                               (booleanp bvp))))
+                               (acl2::print-levelp print))))
    (b* ((- (cw "(Lifting loop ~x0 (depth ~x1).~%" next-loop-num loop-depth))
         (this-loop-num next-loop-num)
         (next-loop-num (+ 1 next-loop-num))
@@ -1560,7 +1541,7 @@
         ;; Symbolically execute the loop body:
         ((mv erp loop-body-dag generated-events next-loop-num state)
          (lift-code-segment loop-depth generated-events next-loop-num this-loop-offsets-no-header loop-body-assumptions extra-rules
-                            remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print bvp state))
+                            remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
         (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
@@ -1665,19 +1646,19 @@
         (- (cw "(Making loop params for XW triples:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-xw-triples xw-triples next-param-number updated-state-term
-                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist bvp))
+                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for write triples:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-write-triples write-triples next-param-number updated-state-term
-                                                 paramnum-update-alist paramnum-extractor-alist paramnum-name-alist bvp))
+                                                 paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for flag pairs:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-flag-pairs flag-pairs next-param-number updated-state-term
-                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist bvp))
+                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
         ;; We are done with the state components that get written by the loop,
         ;; but other state components may get read in the loop, and we have to
@@ -1687,7 +1668,7 @@
          (make-read-only-parameters paramnum-update-alist next-param-number updated-state-term
                                     paramnum-update-alist paramnum-extractor-alist paramnum-name-alist
                                     state-var
-                                    nil bvp))
+                                    nil))
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
@@ -1701,7 +1682,7 @@
                                              paramnum-extractor-alist
                                              paramnum-name-alist
                                              state-var
-                                             nil bvp))
+                                             nil))
         (- (cw "Done.)~%"))
 
         (paramnum-update-alist (reverse paramnum-update-alist))
@@ -1724,7 +1705,7 @@
                                     (acl2::make-rule-alist! (append (extra-loop-lifter-rules)
                                                                     lifter-rules)
                                                             (w state))
-                                    bvp state))
+                                    state))
         ((when erp) (mv erp nil nil nil state))
         ((when (not res))
          (er hard 'lift-loop "Overlap detected in writes: ~x0." write-triples)
@@ -1845,7 +1826,6 @@
                           base-name
                           lifter-rules
                           print
-                          bvp
                           state)
    (declare (xargs :stobjs state
                    :mode :program
@@ -1860,8 +1840,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
-                               (acl2::print-levelp print)
-                               (booleanp bvp))))
+                               (acl2::print-levelp print))))
    (if (not (consp state-term)) ;is this case possible?
        (mv-let (erp state-dag)
          (dagify-term state-term)
@@ -1885,7 +1864,7 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
-                                 print bvp
+                                 print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
               ((mv erp changep else-branch-dag generated-events next-loop-num state)
@@ -1903,7 +1882,7 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
-                                 print bvp
+                                 print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
               (all-state-nums (acl2::ints-in-range 0 loop-depth))
@@ -1972,7 +1951,7 @@
                               measure-alist
                               base-name
                               lifter-rules
-                              print bvp
+                              print
                               state))
                   ((when erp) (mv erp nil nil nil nil state)))
                (mv (erp-nil)
@@ -1998,7 +1977,6 @@
                                base-name
                                lifter-rules
                                print
-                               bvp
                                state)
    (declare (xargs :mode :program
                    :guard (and (natp loop-depth)
@@ -2009,8 +1987,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
-                               (acl2::print-levelp print)
-                               (booleanp bvp))
+                               (acl2::print-levelp print))
                    :stobjs state))
    (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'text-offset))
         (all-loop-header-offsets (strip-cars loop-alist))
@@ -2074,7 +2051,7 @@
                            measure-alist
                            base-name
                            lifter-rules
-                           print bvp
+                           print
                            state))
         ((when erp) (mv erp nil nil nil state)))
      (if changep
@@ -2094,7 +2071,7 @@
                                 measure-alist
                                 base-name
                                 lifter-rules
-                                print bvp
+                                print
                                 state)
        ;; No loops were lifted, so we are done
        (mv nil state-dag generated-events next-loop-num state))))
@@ -2120,7 +2097,6 @@
                            base-name
                            lifter-rules
                            print
-                           bvp
                            state)
    (declare (xargs :mode :program
                    :guard (and (natp loop-depth)
@@ -2131,8 +2107,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
-                               (acl2::print-levelp print)
-                               (booleanp bvp))
+                               (acl2::print-levelp print))
                    :stobjs state))
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
@@ -2195,7 +2170,7 @@
                                 measure-alist
                                 base-name
                                 lifter-rules
-                                print bvp
+                                print
                                 state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(DAG after code segment: ~x0)~%" new-state-dag)))
@@ -2224,7 +2199,6 @@
                            measures
                            whole-form
                            print
-                           bvp
                            state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp lifted-name)
@@ -2233,8 +2207,7 @@
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
-                              (acl2::print-levelp print)
-                              (booleanp bvp))
+                              (acl2::print-levelp print))
                   :mode :program)
            (ignore produce-theorem non-executable))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -2274,7 +2247,7 @@
                                                                ',parsed-executable
                                                                ',stack-slots-needed
                                                                text-offset
-                                                               ',bvp
+                                                               't
                                                                x86_0)
                               user-assumptions)
                       (if (eq :pe-64 executable-type) ;; TODO: Support :pe-32
@@ -2282,7 +2255,7 @@
                                                              ',parsed-executable
                                                              ',stack-slots-needed
                                                              text-offset
-                                                             ',bvp
+                                                             't
                                                              x86_0)
                                 user-assumptions)
                         user-assumptions)))
@@ -2295,9 +2268,7 @@
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32)) ; todo: what about elf32?
                          (loop-lifter-rules32)
-                       (append (if bvp
-                                   (read-and-write-rules-bv)
-                                 (read-and-write-rules-non-bv))
+                       (append (read-and-write-rules-bv) ;; (read-and-write-rules-non-bv)
                                (if nil ; for now
                                    (append (unsigned-canonical-rules)
                                            (canonical-rules-bv))
@@ -2324,7 +2295,7 @@
          measure-alist
          lifted-name
          lifter-rules
-         print bvp
+         print
          state))
        ((when erp) (mv erp nil state))
        ;; Extract the output (TODO: generalize!)
@@ -2347,7 +2318,7 @@
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:
-       (output-term (replace-components-of-initial-state-in-term output-term bvp))
+       (output-term (replace-components-of-initial-state-in-term output-term))
        ;; (output-term (acl2::replace-in-term output-term
        ;;                                     '(((xr ':rgf '0 x86_0) . rax)
        ;;                                       ((xr ':rgf '1 x86_0) . rcx)
@@ -2409,8 +2380,7 @@
                            ;;restrict-theory
                            (monitor 'nil)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
-                           (print ':brief)
-                           (bvp 'nil))
+                           (print ':brief))
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
                                    ,executable
@@ -2428,7 +2398,6 @@
                                    ',measures
                                    ',whole-form
                                    ',print
-                                   ',bvp
                                    state)))
 
 ;(defttag t)
