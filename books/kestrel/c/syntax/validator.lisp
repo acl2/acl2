@@ -5493,7 +5493,7 @@
        because the block item is not a statement of the kind
        described in @(tsee valid-stmt)."))
     (b* (((reterr) (irr-block-item) nil nil (irr-valid-table))
-         (info (make-block-item-info :table table)))
+         (info (make-block-item-info :table-start table)))
       (block-item-case
        item
        :decl (b* (((erp new-decl types table)
