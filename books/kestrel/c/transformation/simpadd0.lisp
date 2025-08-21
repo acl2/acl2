@@ -2933,6 +2933,7 @@
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-stmt)
                               (:e ldm-ident)
+                              (:e ldm-type)
                               (:e ident)
                               (:e c::block-item-stmt)
                               (:e c::type-nonchar-integerp))
@@ -2944,12 +2945,14 @@
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (fenv old-fenv))))))
+                        (fenv old-fenv))
+                       ,@(simpadd0-block-item-stmt-lemma-instances gin.vartys
+                                                                   stmt)))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
                                      gin.vartys
-                                     nil ; no post-var thms for now
+                                     gin.vartys
                                      gin.const-new
                                      gin.thm-index
                                      hints)))
@@ -2958,6 +2961,23 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
+                                                     (stmt stmtp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-stmt-vartys-support-lemma
+                       (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3052,6 +3072,15 @@
              (c::errorp
               (mv-nth 0 (c::exec-block-item
                          (c::block-item-stmt stmt) compst fenv limit))))
+    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
+
+  (defruled simpadd0-block-item-stmt-vartys-support-lemma
+    (b* ((item (c::block-item-stmt stmt))
+         ((mv & stmt-compst1) (c::exec-stmt stmt compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type stmt-compst1))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
