@@ -366,6 +366,7 @@
      "Accompanying omap theorems."
      (xdoc::p
       "For each @(tsee defomap) type specified by the @(':types') input,
+       with key type @('<keytype>') and value type @('<valtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
@@ -378,7 +379,9 @@
       (xdoc::li
        "@('<type>-<suffix>-of-tail')")
       (xdoc::li
-       "@('<type>-<suffix>-of-update')"))
+       "@('<type>-<suffix>-of-update')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))

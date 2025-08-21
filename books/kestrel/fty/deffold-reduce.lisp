@@ -876,6 +876,8 @@
         (acl2::packn-pos (list type-suffix '-of-tail) suffix))
        (type-suffix-of-update
         (acl2::packn-pos (list type-suffix '-of-update) suffix))
+       (val-type-suffix-of-head-when-type-suffix
+        (acl2::packn-pos (list val-type '-of-head-when- type-suffix) suffix))
        (thm-events
         (append
          `((defruled ,type-suffix-when-emptyp
@@ -911,9 +913,18 @@
                            omap::mapp
                            omap::head
                            omap::tail))
-                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                                '(,type-suffix-of-tail
-                                  ,type-suffix-of-update)))))))
+                (defruled ,val-type-suffix-of-head-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (not (omap::emptyp ,type)))
+                           (,val-type-suffix (mv-nth 1 (omap::head ,type))
+                                             ,@extra-args-names))
+                  :enable ,type-suffix)
+                (add-to-ruleset
+                 ,(deffoldred-gen-ruleset-name suffix)
+                 '(,type-suffix-of-tail
+                   ,type-suffix-of-update
+                   ,val-type-suffix-of-head-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
