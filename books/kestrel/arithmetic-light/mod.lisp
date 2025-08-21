@@ -903,3 +903,15 @@
                     (if (< y 0)
                         (not (integerp (/ x y)))
                       nil)))))
+
+;todo: gen to reduce the constant even if not down to 0
+(defthm mod-of-+-of-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep j)))
+                (equal 0 (mod k j))
+                (rationalp j)
+                (rationalp k)
+                (not (equal 0 j))
+                (integerp x))
+           (equal (mod (+ k x) j)
+                  (mod x j))))

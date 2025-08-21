@@ -100,7 +100,14 @@
                            logapp-0
                            logand-with-mask
                            unsigned-byte-p-plus
-                           bvchop-identity ; for speed
+                           ;; for speed:
+                           bvchop-identity
+                           expt-type-even-exponent-1
+                           expt-type-even-exponent-2
+                           expt-type-odd-exponent-negative-base
+                           expt-type-small-base-non-positive-exponent
+                           expt-type-small-base-negative-exponent
+                           bvchop-upper-bound-linear-strong
                            )))
 
 ;rename
@@ -4223,6 +4230,7 @@
   :hints (("Goal" :use equal-of-bvplus-constant-and-constant
            :in-theory (disable equal-of-bvplus-constant-and-constant))))
 
+;disable?
 (defthm logext-when-non-negative-becomes-bvchop
   (implies (<= 0 (logext size x))
            (equal (logext size x)
@@ -4569,13 +4577,14 @@
                       (sbvlt size
                              (bvuminus size k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
                                      bvuminus
                                      bvminus
                                      bvlt bvplus bvchop-of-sum-cases
                                      logext-of-plus
                                      logext-when-equal-of-bvchop
-                                     logext-when-equal-of-bvchop-safe))))
+                                     logext-when-equal-of-bvchop-safe)
+                                  (getbit-of-bvchop-both)))))
 
 (defthm sbvlt-of-bvplus-of-0-and-constant
   (implies (and (syntaxp (quotep k))

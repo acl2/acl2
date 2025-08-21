@@ -742,3 +742,12 @@
                   (slice (+ high (lg k)) (+ low (lg k)) x)))
   :hints (("Goal" :use (:instance slice-of-floor-of-expt (n (lg k)))
            :in-theory (disable slice-of-floor-of-expt))))
+
+(defthm slice-of-all-ones-too-high
+  (implies (and (natp low)
+                (natp high)
+                ;(<= low high)
+                )
+           (equal (slice high low (+ -1 (expt 2 low)))
+                  0))
+  :hints (("Goal" :in-theory (enable slice))))

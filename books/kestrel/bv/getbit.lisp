@@ -105,15 +105,6 @@
 
 (in-theory (disable logtail)) ;move up?
 
-(defthm getbit-of-bvchop
-  (implies (and (< m n)
-                (natp m) ;drop?
-                (integerp n))
-           (equal (getbit m (bvchop n x))
-                  (getbit m x)))
-  :hints (("Goal" :cases ((natp m))
-           :in-theory (e/d (getbit slice) (logtail-of-bvchop)))))
-
 (defthmd getbit-too-high
   (implies (unsigned-byte-p n x)
            (equal (getbit n x)
@@ -127,6 +118,15 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
 
+(defthm getbit-of-bvchop
+  (implies (and (< n size)
+                (natp n) ;drop?
+                (integerp size))
+           (equal (getbit n (bvchop size x))
+                  (getbit n x)))
+  :hints (("Goal" ;; :cases ((natp n))
+           :in-theory (e/d (getbit slice) (logtail-of-bvchop)))))
+
 (defthm getbit-of-bvchop-too-high
   (implies (and (<= size n)
                 (integerp n)
@@ -134,6 +134,14 @@
            (equal (getbit n (bvchop size x))
                   0))
   :hints (("Goal" :in-theory (enable getbit-too-high))))
+
+(defthm getbit-of-bvchop-both
+  (implies (and (natp n) ;drop?
+                (natp size))
+           (equal (getbit n (bvchop size x))
+                  (if (< n size)
+                      (getbit n x)
+                    0))))
 
 (defthm getbit-identity
   (implies (unsigned-byte-p 1 x)
@@ -454,8 +462,8 @@
                 )
            (equal (equal (getbit n x) (getbit n y))
                   t))
-  :hints (("Goal" :use ((:instance GETBIT-OF-BVCHOP (m n) (n free) (x x))
-                        (:instance GETBIT-OF-BVCHOP (m n) (n free) (x y)))
+  :hints (("Goal" :use ((:instance GETBIT-OF-BVCHOP (n n) (size free) (x x))
+                        (:instance GETBIT-OF-BVCHOP (n n) (size free) (x y)))
            :in-theory (disable GETBIT-OF-BVCHOP))))
 
 (defthm getbit-of-+-of--1-and-expt
@@ -794,3 +802,9 @@
                 (natp n))
            (< x (- (expt 2 n))))
   :rule-classes :linear)
+
+(defthmd integerp-of-*-of-1/2
+  (implies (integerp x)
+           (equal (integerp (* 1/2 x))
+                  (equal 0 (getbit 0 x))))
+  :hints (("Goal" :in-theory (enable getbit bvchop ifix))))
