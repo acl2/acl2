@@ -460,7 +460,7 @@
      the validator adds to (for now only some kinds of) block items.
      This information currently consists of
      the validation table at the beginning of the block item."))
-  ((table valid-table))
+  ((table-start valid-table))
   :pred block-item-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -913,5 +913,5 @@
               :stmt item.info
               :ambig (impossible)))
        (info (coerce-block-item-info info)))
-    (block-item-info->table info))
+    (block-item-info->table-start info))
   :hooks (:fix))

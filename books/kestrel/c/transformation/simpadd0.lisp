@@ -88,26 +88,7 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."
-
-  "The generated theorems involve hypotheses, and sometimes conclusions,
-   about certain variables in scope having values of appropriate types
-   (the hypotheses pertain to the computation state before a construct,
-   and the conclusions pertain to the computation state after the construct);
-   information about these variables is captured as
-   ACL2 values of type @(tsee ident-type-map).
-   In some cases (e.g. pure expressions),
-   we obtain the variable-type maps directly from the construct in question;
-   when combining two sub-constucts into a super-construct,
-   we use @(tsee simpadd0-join-vartys)
-   to obtain the variable-type maps for the super-construct.
-   In other cases (e.g. statements),
-   we obtain the variable-type maps from the validation annotations,
-   because in those cases we need, in general,
-   variables that may not occur in the construct in question
-   but may occur in later constructs;
-   we use @(tsee simpadd0-vartys-from-valid-table)
-   on the validation tables that annotate the ASTs."))
+   from the aforementioned @(tsee simpadd0-gout)."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
