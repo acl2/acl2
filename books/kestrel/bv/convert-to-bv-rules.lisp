@@ -30,7 +30,7 @@
 
 ;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
 ;; its own version of such rules, since they use complex syntaxp hyps.  See
-;; books/kestrel/axe/bv-rules-axe.lisp.)
+;; ../axe/bv-rules-axe.lisp.)
 
 ;; Step 2 is done by the rules in trim-elim-rules-non-bv.lisp
 

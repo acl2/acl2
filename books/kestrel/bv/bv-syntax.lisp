@@ -194,6 +194,7 @@
     binary-logxor
     lognot
     ;; logext ; todo: uncomment?
+    ;; logtail ; todo: uncomment?
     binary-+
     unary--
     binary-*))
