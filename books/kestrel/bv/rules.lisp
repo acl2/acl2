@@ -100,7 +100,14 @@
                            logapp-0
                            logand-with-mask
                            unsigned-byte-p-plus
-                           bvchop-identity ; for speed
+                           ;; for speed:
+                           bvchop-identity
+                           expt-type-even-exponent-1
+                           expt-type-even-exponent-2
+                           expt-type-odd-exponent-negative-base
+                           expt-type-small-base-non-positive-exponent
+                           expt-type-small-base-negative-exponent
+                           bvchop-upper-bound-linear-strong
                            )))
 
 ;rename
@@ -1046,23 +1053,19 @@
                             (LOGBITP ; for speed
                              LOGBITP-TO-GETBIT-EQUAL-1 INTEGERP-OF-EXPT-when-natp)))))
 
-;drop? since we have bvcat-of-logext-arg4
-(defthm bvcat-of-logext-same
-   (implies (and (natp size)
-                 (< 0 size)
-;               (equal 8 size)
-                 (integerp x))
-            (equal (bvcat highsize y size (logext size x))
-                   (bvcat highsize y size x)))
-   :hints (("Goal" :in-theory (enable bvcat ;bvchop-logapp
-                                      ))))
+(defthm bvcat-of-logext-arg2
+  (implies (and (<= highsize size)
+                (integerp size))
+           (equal (bvcat highsize (logext size highval) lowsize lowval)
+                  (bvcat highsize highval lowsize lowval)))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvcat-of-logext-arg4
-  (implies (and (<= size size2)
-                (natp size)
-                (integerp size2))
-            (equal (bvcat highsize y size (logext size2 x))
-                   (bvcat highsize y size x)))
+  (implies (and (<= lowsize size)
+                (natp lowsize)
+                (integerp size))
+            (equal (bvcat highsize highval lowsize (logext size x))
+                   (bvcat highsize highval lowsize x)))
    :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm logapp-of-logext
@@ -3473,14 +3476,7 @@
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
 
-;fixme rename
-(defthm bvcat-of-logext-high-eric
-  (implies (and (<= highsize size2)
-                (integerp size2))
-           (equal (bvcat highsize (logext size2 highval) lowsize lowval)
-                  (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (enable bvcat) ;yuck?
-           )))
+
 
 (defthm getbit-of-logext-high
   (implies (and (<= size n)
@@ -4234,6 +4230,7 @@
   :hints (("Goal" :use equal-of-bvplus-constant-and-constant
            :in-theory (disable equal-of-bvplus-constant-and-constant))))
 
+;disable?
 (defthm logext-when-non-negative-becomes-bvchop
   (implies (<= 0 (logext size x))
            (equal (logext size x)
@@ -4580,13 +4577,14 @@
                       (sbvlt size
                              (bvuminus size k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
                                      bvuminus
                                      bvminus
                                      bvlt bvplus bvchop-of-sum-cases
                                      logext-of-plus
                                      logext-when-equal-of-bvchop
-                                     logext-when-equal-of-bvchop-safe))))
+                                     logext-when-equal-of-bvchop-safe)
+                                  (getbit-of-bvchop-both)))))
 
 (defthm sbvlt-of-bvplus-of-0-and-constant
   (implies (and (syntaxp (quotep k))

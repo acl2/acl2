@@ -230,4 +230,4 @@
                   (if (equal n 0)
                       (bitand x y)
                     0)))
-  :hints (("Goal" :in-theory (enable bitand bvand))))
+  :hints (("Goal" :in-theory (e/d (bitand bvand) (getbit-of-bvchop-both)))))

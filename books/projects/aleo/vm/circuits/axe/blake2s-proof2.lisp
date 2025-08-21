@@ -826,7 +826,7 @@
                 ;; acl2::bvcat-of-getbit-and-slice-adjacent
                 ;; acl2::bvcat-of-slice-and-getbit-adjacent
                 acl2::getbit-of-bvchop
-                acl2::getbit-of-slice-gen ;todo: generalize the (integerp x)
+                acl2::getbit-of-slice-gen
                 acl2::getbit-of-slice
                 ACL2::SLICE-OF-SLICE
                 acl2::getbit-of-0-when-bitp
@@ -1012,7 +1012,7 @@
                ;;  (acl2::trim-helper-rules)
                ;;  ACL2::BVCAT-EQUAL-REWRITE-ALT
                ;;  ACL2::BVCAT-EQUAL-REWRITE
-               ;;  acl2::getbit-of-slice-gen ;todo: generalize the (integerp x)
+               ;;  acl2::getbit-of-slice-gen
                ;;  acl2::getbit-of-slice
                ;;  ACL2::BVCHOP-OF-SLICE-BOTH
                ;;  acl2::slice-becomes-getbit

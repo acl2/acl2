@@ -32,10 +32,6 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-(defthm equal-of-ifix-self
-  (equal (equal (ifix x) x)
-         (integerp x)))
-
 ;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization/
 
 ;todo: think about this
@@ -50,42 +46,9 @@
            (equal (+ (- y) x)
                   k)))
 
-
 ;(in-theory (enable logext-of-sum-trim-constant))
 
-(defthm getbit-of-slice-both
-  (implies (and (natp n)
-                (natp low)
-;                (integerp x)
-                (integerp high))
-           (equal (getbit n (slice high low x))
-                  (if (<= n (+ high (- low)))
-                      (getbit (+ low n) x)
-                    0)))
-  :hints (("Goal" :use ((:instance GETBIT-OF-SLICE-TOO-HIGH
-                                   (X X)
-                                   (LOW LOW)
-                                   (HIGH HIGH)
-                                   (N N))
-                        (:instance getbit-of-slice
-                                   (x x)
-                                   (low low)
-                                   (high high)
-                                   (n n)))
-           :in-theory (disable getbit-of-slice))))
-
-
-
-(defthm integerp-of-*-of-1/2
-  (implies (integerp x)
-           (equal (integerp (* 1/2 x))
-                  (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (getbit
-                                   bvchop
-                                   ifix)
-                                  ()))))
-
-
+;just use a convert-to-bv rule?
 (defthmd bvand-of-+-arg2
   (implies (and (natp width)
                 (integerp x)
@@ -96,6 +59,7 @@
 
 (theory-invariant (incompatible (:rewrite bvand-of-+-arg2) (:definition bvplus)))
 
+;just use a convert-to-bv rule?
 (defthmd bvand-of-+-arg3
   (implies (and (natp width)
                 (integerp x)
@@ -105,30 +69,6 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
-
-;move
-;todo: gen to reduce the constant even if not down to 0
-(defthm mod-of-+-of-constant
-  (implies (and (syntaxp (quotep k))
-                (syntaxp (quotep j))
-                (equal 0 (mod k j))
-                (rationalp j)
-                (rationalp k)
-                (not (equal 0 j))
-                (integerp x))
-           (equal (mod (+ k x) j)
-                  (mod x j))))
-
-(defthm slice-of-all-ones-too-high
-  (implies (and (natp low)
-                (natp high)
-                ;(<= low high)
-                )
-           (equal (slice high low (+ -1 (expt 2 low)))
-                  0))
-  :hints (("Goal" :in-theory (e/d (slice)
-                                  (repeatbit
-                                   logtail-of-plus)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -147,16 +87,6 @@
                   (if test
                       (unsigned-byte-p n x1)
                       (unsigned-byte-p n x2)))))
-
-;used by axe
-(defthmd natp-of-+
-  (implies (and (natp x)
-                (natp y))
-           (natp (+ x y))))
-
-;used by axe
-(defthmd natp-of-nfix
-  (natp (nfix x)))
 
 ;the bvcat of 0 is essentially multiplication by a power of 2
 (defthm bvmult-of-bvcat-of-0
@@ -217,15 +147,6 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 ;(in-theory (disable getbit-of-logior)) ; consider what to do here
-
-;move
-(defthm getbit-of-bvchop-both
-  (implies (and (natp m) ;drop?
-                (natp n))
-           (equal (getbit m (bvchop n x))
-                  (if (< m n)
-                      (getbit m x)
-                    0))))
 
 ;todo: think about this
 (defthm signed-byte-p-of-bvchop

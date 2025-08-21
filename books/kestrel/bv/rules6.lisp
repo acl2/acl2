@@ -224,18 +224,6 @@
 ;;                  (BVXOR size (bvand size x y) (bvand size x z))))
 ;;  )
 
-(defthm bvcat-of-logext-high
-  (implies (and (<= highsize size2)
-                (natp highsize)
-                (natp size2)
-                (natp lowsize)
-                ;(integerp lowval)
-                ;(integerp highval)
-                )
-           (equal (bvcat highsize (logext size2 highval) lowsize lowval)
-                  (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (enable bvcat))))
-
 ;mixes theories?
 ;see logtail-becomes-slice-bind-free
 (defthmd logtail-of-bvxor
