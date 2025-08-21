@@ -47,6 +47,7 @@
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "dependencies")
 (include-book "fold")
 (include-book "hex-digit-char-list")
 (include-book "integer-result")
