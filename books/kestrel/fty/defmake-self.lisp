@@ -521,12 +521,10 @@
              nil
            (list 'omap::update
                  ,(if key-type?
-                      `(list ',key-type-make-self?
-                             (omap::head-key ,type))
+                      `(,key-type-make-self? (omap::head-key ,type))
                     `(omap::head-key ,type))
                  ,(if val-type?
-                      `(list ',val-type-make-self?
-                             (omap::head-val ,type))
+                      `(,val-type-make-self? (omap::head-val ,type))
                     `(omap::head-val ,type))
                  (,type-make-self (omap::tail ,type))))))
     `(define ,type-make-self ((,type ,recog))
