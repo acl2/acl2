@@ -5339,7 +5339,7 @@
                                  init-scope-thm-name
                                  gin.const-new
                                  thm-index))
-       (events (append param-thm-events events))
+       (events (append (rev param-thm-events) events))
        ((mv thm-name thm-index) (simpadd0-gen-thm-name gin.const-new thm-index))
        (formula
         `(b* ((old ',(fundef-fix fundef))
