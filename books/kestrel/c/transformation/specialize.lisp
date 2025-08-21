@@ -140,7 +140,7 @@
                      :pointers fundef.declor.pointers
                      :direct dirdeclor-params)
             :decls fundef.decls
-            :body (cons (block-item-decl decl)
+            :body (cons (make-block-item-decl :decl decl :info nil)
                         fundef.body)
             :info fundef.info)))
      :otherwise

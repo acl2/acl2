@@ -1354,10 +1354,10 @@
     (block-item-case
      block-item
      :decl
-     (b* (((mv unwrap bound-vars)
-           (decl-subst-free (c$::block-item-decl->unwrap block-item)
+     (b* (((mv decl bound-vars)
+           (decl-subst-free (c$::block-item-decl->decl block-item)
                             subst bound-vars)))
-       (mv (block-item-decl unwrap)
+       (mv (make-block-item-decl :decl decl :info block-item.info)
            (ident-set-fix bound-vars)))
      :stmt
      (mv (make-block-item-stmt
