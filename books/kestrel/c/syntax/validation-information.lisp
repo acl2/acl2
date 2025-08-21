@@ -423,10 +423,8 @@
     "This is the type of the annotations that
      the validator adds to binary expressions,
      i.e. the @(':binary') case of @(tsee expr).
-     The information for a binary expression consists of its type
-     and the validation table at the beginning of the binary expression."))
-  ((type type)
-   (table valid-table))
+     The information for a binary expression consists of its type."))
+  ((type type))
   :pred expr-binary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -434,7 +432,7 @@
 (defirrelevant irr-expr-binary-info
   :short "An irrelevant validation information for binary expressions."
   :type expr-binary-infop
-  :body (make-expr-binary-info :type (irr-type) :table (irr-valid-table)))
+  :body (make-expr-binary-info :type (irr-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,78 +448,6 @@
       x
     (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-BINARY-INFOP." x)
             (irr-expr-binary-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stmt-expr-info
-  :short "Fixtype of validation information for expression statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) statements.
-     This information currently consists of
-     the validation table at the beginning of the statement."))
-  ((table valid-table))
-  :pred stmt-expr-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-stmt-expr-info
-  :short "An irrelevant validation information for expression statement."
-  :type stmt-expr-infop
-  :body (stmt-expr-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-stmt-expr-info (x)
-  :returns (info stmt-expr-infop)
-  :short "Coerce a value to @(tsee stmt-expr-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (stmt-expr-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-EXPR-INFOP." x)
-            (irr-stmt-expr-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stmt-return-info
-  :short "Fixtype of validation information for return statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) statements.
-     This information currently consists of
-     the validation table at the beginning of the statement."))
-  ((table valid-table))
-  :pred stmt-return-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-stmt-return-info
-  :short "An irrelevant validation information for return statement."
-  :type stmt-return-infop
-  :body (stmt-return-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-stmt-return-info (x)
-  :returns (info stmt-return-infop)
-  :short "Coerce a value to @(tsee stmt-return-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (stmt-return-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-RETURN-INFOP." x)
-            (irr-stmt-return-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -757,12 +683,8 @@
    (asm-output t)
    (asm-input t)
    (asm-stmt t)
-   (stmt :expr (and (expr-option-annop (stmt-expr->expr? stmt))
-                    (stmt-expr-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
-   (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
-                      (stmt-return-infop (stmt-return->info stmt))))
    (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
                           (block-item-infop
                            (block-item-decl->info block-item))))

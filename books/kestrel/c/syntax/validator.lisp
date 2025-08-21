@@ -2255,14 +2255,13 @@
                       type
                       (set::union types-cast types-arg)
                       table))
-       :binary (b* ((table0 table)
-                    ((erp new-arg1 type-arg1 types-arg1 table)
+       :binary (b* (((erp new-arg1 type-arg1 types-arg1 table)
                      (valid-expr expr.arg1 table ienv))
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
-                    (info (make-expr-binary-info :type type :table table0)))
+                    (info (make-expr-binary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
@@ -5294,12 +5293,9 @@
             (table (valid-pop-scope table)))
          (retok (stmt-compound new-items) types type? table))
        :expr
-       (b* ((table0 table)
-            ((erp new-expr? type? types table)
-             (valid-expr-option stmt.expr? table ienv))
-            (info (make-stmt-expr-info :table table0)))
-         (retok (make-stmt-expr :expr? new-expr?
-                                :info info)
+       (b* (((erp new-expr? type? types table)
+             (valid-expr-option stmt.expr? table ienv)))
+         (retok (make-stmt-expr :expr? new-expr? :info nil)
                 types
                 type?
                 table))
@@ -5456,12 +5452,10 @@
        :break
        (retok (stmt-break) nil nil (valid-table-fix table))
        :return
-       (b* ((table0 table)
-            ((erp new-expr? type? types table)
+       (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv))
-            (return-type (or type? (type-void)))
-            (info (make-stmt-return-info :table table0)))
-         (retok (make-stmt-return :expr? new-expr? :info info)
+            (return-type (or type? (type-void))))
+         (retok (make-stmt-return :expr? new-expr? :info nil)
                 (set::insert return-type types)
                 nil
                 table))

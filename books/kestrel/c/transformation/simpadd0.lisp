@@ -2537,7 +2537,7 @@
 (define simpadd0-stmt-expr ((expr? expr-optionp)
                             (expr?-new expr-optionp)
                             (expr?-thm-name symbolp)
-                            (info stmt-expr-infop)
+                            info
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2719,7 +2719,7 @@
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-thm-name symbolp)
-                              (info stmt-return-infop)
+                              info
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -4799,7 +4799,7 @@
                (simpadd0-stmt-expr stmt.expr?
                                    new-expr?
                                    gout-expr?.thm-name
-                                   (coerce-stmt-expr-info stmt.info)
+                                   stmt.info
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin))
@@ -4894,7 +4894,7 @@
                  (simpadd0-stmt-return stmt.expr?
                                        new-expr?
                                        gout-expr?.thm-name
-                                       (coerce-stmt-return-info stmt.info)
+                                       stmt.info
                                        gin))
        :asm (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))))
     :measure (stmt-count stmt))
