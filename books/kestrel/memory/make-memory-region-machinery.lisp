@@ -556,6 +556,34 @@
                            (,disjoint-regionsp-name len1 ad1 len2 ad2)))
            :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
 
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-logext-arg2)
+           (implies (and (<= ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 (logext size ad1) len2 ad2)
+                           (,disjoint-regionsp-name len1 ad1 len2 ad2)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-logext-arg4)
+           (implies (and (<= ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 ad1 len2 (logext size ad2))
+                           (,disjoint-regionsp-name len1 ad1 len2 ad2)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-bvplus-tighten-arg2)
+           (implies (and (< ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 (bvplus size ad1 ad2) len2 ad3)
+                           (,disjoint-regionsp-name len1 (bvplus ,num-address-bits ad1 ad2) len2 ad3)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-bvplus-tighten-arg4)
+           (implies (and (< ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 ad1 len2 (bvplus size ad2 ad3))
+                           (,disjoint-regionsp-name len1 ad1 len2 (bvplus ,num-address-bits ad2 ad3))))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
          ;; Higher level spec of disjoint-regionsp: Two regions are disjoint if there is
          ;; no address that is in both of them.
          (defun-sk ,disjoint-regionsp-spec-name (len1 ad1 len2 ad2)
