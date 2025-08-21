@@ -3060,14 +3060,19 @@
      because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (hints '(("Goal"
-                 :in-theory '((:e ldm-block-item-list))
-                 :use simpadd0-block-item-list-empty-support-lemma)))
+       (vartys-lemma-instances
+        (simpadd0-block-item-list-empty-lemma-instances gin.vartys))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-block-item-list)
+                              (:e ldm-type)
+                              (:e ldm-ident))
+                 :use (simpadd0-block-item-list-empty-support-lemma
+                       ,@vartys-lemma-instances))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items
                                           gin.vartys
-                                          nil ; no post-vars for now
+                                          gin.vartys
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
@@ -3076,6 +3081,22 @@
                         :thm-name thm-name
                         :vartys gin.vartys))
   :hooks (:fix)
+
+  :prepwork
+  ((define simpadd0-block-item-list-empty-lemma-instances
+     ((vartys ident-type-mapp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-list-empty-vartys-support-lemma
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3091,7 +3112,17 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :none))))
-    :enable c::exec-block-item-list))
+    :enable c::exec-block-item-list)
+
+  (defruled simpadd0-block-item-list-empty-vartys-support-lemma
+    (b* ((items nil)
+         ((mv result compst1)
+          (c::exec-block-item-list items compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::exec-block-item-list
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
