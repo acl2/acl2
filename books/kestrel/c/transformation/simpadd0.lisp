@@ -1274,7 +1274,6 @@
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
         (mv expr (simpadd0-gout-no-thm gin)))
-       (vartys (omap::update ident info.type nil))
        ((unless (type-formalp info.type))
         (raise "Internal error: variable ~x0 has type ~x1." ident info.type)
         (mv (irr-expr) (irr-simpadd0-gout)))
@@ -1291,7 +1290,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
-                                    vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -1299,7 +1298,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
   :hooks (:fix)
 
   ///
@@ -1392,11 +1391,10 @@
                                      (:e c::exec-const)
                                      (:e c::expr-value->value)
                                      (:e c::type-of-value)))))
-       (vartys nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
-                                    vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -1404,7 +1402,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
   :hooks (:fix)
 
   ///
@@ -1421,7 +1419,6 @@
 (define simpadd0-expr-paren ((inner exprp)
                              (inner-new exprp)
                              (inner-thm-name symbolp)
-                             (inner-vartys ident-type-mapp)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp inner)
               (expr-unambp inner-new))
@@ -1450,7 +1447,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
-                                    inner-vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -1458,7 +1455,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys inner-vartys)))
+                            :vartys gin.vartys)))
 
   ///
 
@@ -1472,7 +1469,6 @@
                              (arg exprp)
                              (arg-new exprp)
                              (arg-thm-name symbolp)
-                             (arg-vartys ident-type-mapp)
                              (info expr-unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
@@ -1532,7 +1528,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
-                                    arg-vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -1540,7 +1536,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys arg-vartys)))
+                            :vartys gin.vartys)))
 
   ///
 
@@ -1615,11 +1611,9 @@
 (define simpadd0-expr-cast ((type tynamep)
                             (type-new tynamep)
                             (type-thm-name symbolp)
-                            (type-vartys ident-type-mapp)
                             (arg exprp)
                             (arg-new exprp)
                             (arg-thm-name symbolp)
-                            (arg-vartys ident-type-mapp)
                             (info tyname-infop)
                             (gin simpadd0-ginp))
   :guard (and (tyname-unambp type)
@@ -1642,9 +1636,6 @@
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-cast :type type :arg arg))
        (expr-new (make-expr-cast :type type-new :arg arg-new))
-       (type-vartys (ident-type-map-fix type-vartys))
-       (arg-vartys (ident-type-map-fix arg-vartys))
-       (vartys (simpadd0-join-vartys type-vartys arg-vartys))
        ((when type-thm-name)
         (raise "Internal error: ~
                 unexpected type name transformation theorem ~x0."
@@ -1680,7 +1671,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
-                                    arg-vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -1688,7 +1679,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
 
   ///
 
@@ -1738,11 +1729,9 @@
                               (arg1 exprp)
                               (arg1-new exprp)
                               (arg1-thm-name symbolp)
-                              (arg1-vartys ident-type-mapp)
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-thm-name symbolp)
-                              (arg2-vartys ident-type-mapp)
                               (info expr-binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
@@ -1769,15 +1758,7 @@
      We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
-     and whose right side is a pure expression of the same integer type.")
-   (xdoc::p
-    "For pure (strict and non-strict) operators,
-     we use and join the variable-type maps for the two argument expressions.
-     For assignment expressions,
-     instead we take the map from
-     the validation table that annotates the expression.
-     This is in general a supermap of the two maps
-     (which we double-check here, throwing a hard error if not)."))
+     and whose right side is a pure expression of the same integer type."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1787,9 +1768,6 @@
                      (expr-fix arg1-new)
                    (make-expr-binary
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
-       (arg1-vartys (ident-type-map-fix arg1-vartys))
-       (arg2-vartys (ident-type-map-fix arg2-vartys))
-       (vartys (simpadd0-join-vartys arg1-vartys arg2-vartys))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and arg1-thm-name
                      arg2-thm-name))
@@ -1838,7 +1816,7 @@
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-pure-thm expr
                                         expr-new
-                                        vartys
+                                        gin.vartys
                                         gin.const-new
                                         gin.thm-index
                                         hints)))
@@ -1846,7 +1824,7 @@
             (make-simpadd0-gout :events (cons thm-event gin.events)
                                 :thm-index thm-index
                                 :thm-name thm-name
-                                :vartys vartys))))
+                                :vartys gin.vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
       (b* ((hints
             `(("Goal"
@@ -1900,7 +1878,7 @@
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-pure-thm expr
                                         expr-new
-                                        vartys
+                                        gin.vartys
                                         gin.const-new
                                         gin.thm-index
                                         hints)))
@@ -1908,7 +1886,7 @@
             (make-simpadd0-gout :events (cons thm-event gin.events)
                                 :thm-index thm-index
                                 :thm-name thm-name
-                                :vartys vartys))))
+                                :vartys gin.vartys))))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
                          (expr-purep arg2)
@@ -1916,23 +1894,10 @@
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
-           (vartys
-            (simpadd0-vartys-from-valid-table (c$::expr-binary-info->table info)))
-           ((unless (omap::submap arg1-vartys vartys))
-            (raise "Internal error: ~
-                    argument variables ~x0 are not a submap of ~
-                    validation table variables ~x1."
-                   arg1-vartys vartys)
-            (mv (irr-expr) (irr-simpadd0-gout)))
-           ((unless (omap::submap arg2-vartys vartys))
-            (raise "Internal error: ~
-                    argument variables ~x0 are not a submap of ~
-                    validation table variables ~x1."
-                   arg2-vartys vartys)
-            (mv (irr-expr) (irr-simpadd0-gout)))
            (vartys-lemma-instances
-            (simpadd0-expr-asg-lemma-instances
-             vartys (expr-ident->ident arg1) arg2))
+            (simpadd0-expr-asg-lemma-instances gin.vartys
+                                               (expr-ident->ident arg1)
+                                               arg2))
            (hints
             `(("Goal"
                :in-theory
@@ -1968,7 +1933,7 @@
            ((mv thm-event thm-name thm-index)
             (simpadd0-gen-expr-asg-thm expr
                                        expr-new
-                                       vartys
+                                       gin.vartys
                                        gin.const-new
                                        gin.thm-index
                                        hints)))
@@ -1976,7 +1941,7 @@
             (make-simpadd0-gout :events (cons thm-event gin.events)
                                 :thm-index thm-index
                                 :thm-name thm-name
-                                :vartys vartys))))
+                                :vartys gin.vartys))))
      (t (mv expr-new gout-no-thm))))
 
   :prepwork
@@ -2366,15 +2331,12 @@
 (define simpadd0-expr-cond ((test exprp)
                             (test-new exprp)
                             (test-thm-name symbolp)
-                            (test-vartys ident-type-mapp)
                             (then expr-optionp)
                             (then-new expr-optionp)
                             (then-thm-name symbolp)
-                            (then-vartys ident-type-mapp)
                             (else exprp)
                             (else-new exprp)
                             (else-thm-name symbolp)
-                            (else-vartys ident-type-mapp)
                             (gin simpadd0-ginp))
   :guard (and (expr-unambp test)
               (expr-unambp test-new)
@@ -2400,11 +2362,6 @@
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-cond :test test :then then :else else))
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
-       (test-vartys (ident-type-map-fix test-vartys))
-       (then-vartys (ident-type-map-fix then-vartys))
-       (else-vartys (ident-type-map-fix else-vartys))
-       (vartys (simpadd0-join-vartys then-vartys else-vartys))
-       (vartys (simpadd0-join-vartys test-vartys vartys))
        ((unless (and test-thm-name
                      then-thm-name
                      else-thm-name))
@@ -2452,7 +2409,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
-                                    vartys
+                                    gin.vartys
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
@@ -2460,7 +2417,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
 
   ///
 
@@ -2580,7 +2537,7 @@
 (define simpadd0-stmt-expr ((expr? expr-optionp)
                             (expr?-new expr-optionp)
                             (expr?-thm-name symbolp)
-                            (info stmt-expr-infop)
+                            info
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2600,8 +2557,8 @@
      so we use the variable-type map from the validation table in the AST
      for both before and after the statement, in the generated theorem."))
   (b* (((simpadd0-gin gin) gin)
-       (stmt (make-stmt-expr :expr? expr? :info nil))
-       (stmt-new (make-stmt-expr :expr? expr?-new :info nil))
+       (stmt (make-stmt-expr :expr? expr? :info info))
+       (stmt-new (make-stmt-expr :expr? expr?-new :info info))
        ((unless (iff expr? expr?-new))
         (raise "Internal error: ~
                 return statement with optional expression ~x0 ~
@@ -2613,7 +2570,6 @@
                     (and expr?-thm-name
                          (not (expr-purep expr?)))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
-       (vartys (simpadd0-vartys-from-valid-table (c$::stmt-expr-info->table info)))
        (hints
         (if expr?
             `(("Goal"
@@ -2635,18 +2591,19 @@
                       simpadd0-stmt-expr-asg-error-support-lemma
                       (expr (mv-nth 1 (ldm-expr ',expr?)))
                       (fenv old-fenv))
-                     ,@(simpadd0-stmt-expr-asg-lemma-instances vartys expr?))))
+                     ,@(simpadd0-stmt-expr-asg-lemma-instances gin.vartys
+                                                               expr?))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
                           (:e ldm-type)
                           (:e c::stmt-null))
              :use (simpadd0-stmt-null-support-lemma
-                   ,@(simpadd0-stmt-null-lemma-instances vartys))))))
+                   ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
-                               vartys
+                               gin.vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2654,7 +2611,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
 
   :prepwork
 
@@ -2762,7 +2719,7 @@
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-thm-name symbolp)
-                              (info stmt-return-infop)
+                              info
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
               (expr-option-unambp expr?-new)
@@ -2798,9 +2755,8 @@
        ((unless (or (not expr?)
                     expr?-thm-name))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
-       (vartys
-        (simpadd0-vartys-from-valid-table (c$::stmt-return-info->table info)))
-       (lemma-instances (simpadd0-stmt-return-lemma-instances vartys expr?))
+       (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
+                                                              expr?))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
@@ -2832,7 +2788,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
-                               vartys
+                               gin.vartys
                                gin.const-new
                                gin.thm-index
                                hints)))
@@ -2840,7 +2796,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
 
   :prepwork
   ((define simpadd0-stmt-return-lemma-instances ((vartys ident-type-mapp)
@@ -2942,7 +2898,6 @@
 (define simpadd0-block-item-stmt ((stmt stmtp)
                                   (stmt-new stmtp)
                                   (stmt-thm-name symbolp)
-                                  (stmt-vartys ident-type-mapp)
                                   (info block-item-infop)
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
@@ -2978,6 +2933,7 @@
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-stmt)
                               (:e ldm-ident)
+                              (:e ldm-type)
                               (:e ident)
                               (:e c::block-item-stmt)
                               (:e c::type-nonchar-integerp))
@@ -2989,12 +2945,14 @@
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (fenv old-fenv))))))
+                        (fenv old-fenv))
+                       ,@(simpadd0-block-item-stmt-lemma-instances gin.vartys
+                                                                   stmt)))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
-                                     stmt-vartys
-                                     nil ; no post-var thms for now
+                                     gin.vartys
+                                     gin.vartys
                                      gin.const-new
                                      gin.thm-index
                                      hints)))
@@ -3002,7 +2960,24 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys stmt-vartys)))
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
+                                                     (stmt stmtp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-stmt-vartys-support-lemma
+                       (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3097,6 +3072,15 @@
              (c::errorp
               (mv-nth 0 (c::exec-block-item
                          (c::block-item-stmt stmt) compst fenv limit))))
+    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
+
+  (defruled simpadd0-block-item-stmt-vartys-support-lemma
+    (b* ((item (c::block-item-stmt stmt))
+         ((mv & stmt-compst1) (c::exec-stmt stmt compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type stmt-compst1))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3115,18 +3099,17 @@
        (hints '(("Goal"
                  :in-theory '((:e ldm-block-item-list))
                  :use simpadd0-block-item-list-empty-support-lemma)))
-       (vartys nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items
-                                          vartys
+                                          gin.vartys
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
     (make-simpadd0-gout :events (cons thm-event gin.events)
                         :thm-index thm-index
                         :thm-name thm-name
-                        :vartys vartys))
+                        :vartys gin.vartys))
   :hooks (:fix)
 
   ///
@@ -3150,11 +3133,9 @@
 (define simpadd0-block-item-list-cons ((item block-itemp)
                                        (item-new block-itemp)
                                        (item-thm-name symbolp)
-                                       (item-vartys ident-type-mapp)
                                        (items block-item-listp)
                                        (items-new block-item-listp)
                                        (items-thm-name symbolp)
-                                       (items-vartys ident-type-mapp)
                                        (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new)
@@ -3178,9 +3159,6 @@
        (items-new (block-item-list-fix items-new))
        (item+items (cons item items))
        (item+items-new (cons item-new items-new))
-       (item-vartys (ident-type-map-fix item-vartys))
-       (items-vartys (ident-type-map-fix items-vartys))
-       (vartys (simpadd0-join-vartys item-vartys items-vartys))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and item-thm-name
                      items-thm-name
@@ -3236,7 +3214,7 @@
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm item+items
                                           item+items-new
-                                          vartys
+                                          gin.vartys
                                           gin.const-new
                                           gin.thm-index
                                           hints)))
@@ -3244,7 +3222,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys)))
+                            :vartys gin.vartys)))
 
   ///
 
@@ -3455,165 +3433,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-block-item-list-one ((item block-itemp)
-                                      (item-new block-itemp)
-                                      (item-thm-name symbolp)
-                                      (item-vartys ident-type-mapp)
-                                      (gin simpadd0-ginp))
-  :guard (and (block-item-unambp item)
-              (block-item-unambp item-new))
-  :returns (mv (items block-item-listp) (gout simpadd0-goutp))
-  :short "Transform a singleton list of block items."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We generate a theorem iff
-     a theorem was generated for the block item.
-     That theorem is used to prove the theorem for the block item,
-     along with using two general theorems proved below.
-     Note that the limit in the theorem for the block item
-     must be shifted by one,
-     since @(tsee c::exec-block-item-list) decreases the limit by 1
-     before calling @(tsee c::exec-block-item)."))
-  (b* (((simpadd0-gin gin) gin)
-       (items (list (block-item-fix item)))
-       (items-new (list (block-item-fix item-new)))
-       ((unless item-thm-name)
-        (mv items-new (simpadd0-gout-no-thm gin)))
-       (type (block-item-type item))
-       (support-lemma
-        (cond ((not type)
-               'simpadd0-block-item-list-none-support-lemma)
-              ((type-case type :void)
-               'simpadd0-block-item-list-novalue-support-lemma)
-              (t 'simpadd0-block-item-list-value-support-lemma)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-block-item)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::type-nonchar-integerp))
-                 :use ((:instance ,item-thm-name (limit (1- limit)))
-                       (:instance
-                        ,support-lemma
-                        (old-item (mv-nth 1 (ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (ldm-block-item ',item-new))))
-                       (:instance
-                        simpadd0-block-item-list-error-support-lemma
-                        (item (mv-nth 1 (ldm-block-item ',item)))
-                        (fenv old-fenv))))))
-       ((mv thm-event thm-name thm-index)
-        (simpadd0-gen-block-item-list-thm items
-                                          items-new
-                                          item-vartys
-                                          gin.const-new
-                                          gin.thm-index
-                                          hints)))
-    (mv items-new
-        (make-simpadd0-gout :events (cons thm-event gin.events)
-                            :thm-index thm-index
-                            :thm-name thm-name
-                            :vartys item-vartys)))
-
-  ///
-
-  (defret block-item-list-unambp-of-simpadd0-block-item-list-one
-    (block-item-list-unambp items)
-    :hyp (block-item-unambp item-new))
-
-  (defruled simpadd0-block-item-list-value-support-lemma
-    (b* ((old (list old-item))
-         (new (list new-item))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit))
-         (type (c::type-of-value
-                (c::stmt-value-return->value? old-item-result))))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal (c::stmt-value-kind old-item-result) :return)
-                    (c::stmt-value-return->value? old-item-result)
-                    (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (c::stmt-value-return->value? old-result)
-                    (equal (c::type-of-value
-                            (c::stmt-value-return->value? old-result))
-                           type))))
-    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
-             (c::exec-block-item-list (list new-item) compst new-fenv limit))
-    :enable (c::exec-block-item-list
-             c::value-optionp-when-value-option-resultp-and-not-errorp))
-
-  (defruled simpadd0-block-item-list-novalue-support-lemma
-    (b* ((old (list old-item))
-         (new (list new-item))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal (c::stmt-value-kind old-item-result) :return)
-                    (not (c::stmt-value-return->value? old-item-result)))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (not (c::stmt-value-return->value? old-result)))))
-    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
-             (c::exec-block-item-list (list new-item) compst new-fenv limit))
-    :enable c::exec-block-item-list)
-
-  (defruled simpadd0-block-item-list-none-support-lemma
-    (b* ((old (list old-item))
-         (new (list new-item))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal (c::stmt-value-kind old-item-result) :none))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
-    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
-             (c::exec-block-item-list (list new-item) compst new-fenv limit))
-    :enable c::exec-block-item-list)
-
-  (defruled simpadd0-block-item-list-error-support-lemma
-    (implies (c::errorp
-              (mv-nth 0 (c::exec-block-item item compst fenv (1- limit))))
-             (c::errorp
-              (mv-nth 0 (c::exec-block-item-list
-                         (list item) compst fenv limit))))
-    :expand (c::exec-block-item-list (list item) compst fenv limit)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -3646,7 +3465,6 @@
          (simpadd0-expr-paren expr.inner
                               new-inner
                               gout-inner.thm-name
-                              gout-inner.vartys
                               gin))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
@@ -3711,7 +3529,6 @@
                               expr.arg
                               new-arg
                               gout-arg.thm-name
-                              gout-arg.vartys
                               (coerce-expr-unary-info expr.info)
                               gin))
        :sizeof
@@ -3737,11 +3554,9 @@
          (simpadd0-expr-cast expr.type
                              new-type
                              gout-type.thm-name
-                             gout-type.vartys
                              expr.arg
                              new-arg
                              gout-arg.thm-name
-                             gout-arg.vartys
                              (coerce-tyname-info (c$::tyname->info expr.type))
                              gin))
        :binary
@@ -3755,11 +3570,9 @@
                                expr.arg1
                                new-arg1
                                gout-arg1.thm-name
-                               gout-arg1.vartys
                                expr.arg2
                                new-arg2
                                gout-arg2.thm-name
-                               gout-arg2.vartys
                                (coerce-expr-binary-info expr.info)
                                gin))
        :cond
@@ -3775,15 +3588,12 @@
          (simpadd0-expr-cond expr.test
                              new-test
                              gout-test.thm-name
-                             gout-test.vartys
                              expr.then
                              new-then
                              gout-then.thm-name
-                             gout-then.vartys
                              expr.else
                              new-else
                              gout-else.thm-name
-                             gout-else.vartys
                              gin))
        :comma
        (b* (((mv new-first (simpadd0-gout gout-first))
@@ -4989,7 +4799,7 @@
                (simpadd0-stmt-expr stmt.expr?
                                    new-expr?
                                    gout-expr?.thm-name
-                                   (coerce-stmt-expr-info stmt.info)
+                                   stmt.info
                                    gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin))
@@ -5084,7 +4894,7 @@
                  (simpadd0-stmt-return stmt.expr?
                                        new-expr?
                                        gout-expr?.thm-name
-                                       (coerce-stmt-return-info stmt.info)
+                                       stmt.info
                                        gin))
        :asm (mv (stmt-fix stmt) (simpadd0-gout-no-thm gin))))
     :measure (stmt-count stmt))
@@ -5097,13 +4907,26 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a block item."
-    (b* (((simpadd0-gin gin) gin))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We update the variable-type map
+       from the validation table at the beginning of the block item.
+       This is because block items before this one
+       may introduce new variables in scope,
+       but for now we may not generate
+       full proofs for those preceding block items
+       that would track the added variables."))
+    (b* (((simpadd0-gin gin) gin)
+         (table (c$::block-item-valid-table item))
+         (vartys (simpadd0-vartys-from-valid-table table))
+         (gin (change-simpadd0-gin gin :vartys vartys)))
       (block-item-case
        item
-       :decl (b* (((mv new-item (simpadd0-gout gout-item))
+       :decl (b* (((mv new-decl (simpadd0-gout gout-item))
                    (simpadd0-decl item.decl gin))
                   (gin (simpadd0-gin-update gin gout-item)))
-               (mv (make-block-item-decl :decl new-item :info item.info)
+               (mv (make-block-item-decl :decl new-decl :info item.info)
                    (simpadd0-gout-no-thm gin)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
@@ -5111,7 +4934,6 @@
                (simpadd0-block-item-stmt item.stmt
                                          new-stmt
                                          gout-stmt.thm-name
-                                         gout-stmt.vartys
                                          (coerce-block-item-info item.info)
                                          gin))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
@@ -5132,23 +4954,15 @@
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin))
          (gin (simpadd0-gin-update gin gout-item))
-         ((when (endp (cdr items)))
-          (simpadd0-block-item-list-one (block-item-fix (car items))
-                                        new-item
-                                        gout-item.thm-name
-                                        gout-item.vartys
-                                        gin))
          ((mv new-items (simpadd0-gout gout-items))
           (simpadd0-block-item-list (cdr items) gin))
          (gin (simpadd0-gin-update gin gout-items)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
-                                     gout-item.vartys
                                      (cdr items)
                                      new-items
                                      gout-items.thm-name
-                                     gout-items.vartys
                                      gin))
     :measure (block-item-list-count items))
 
