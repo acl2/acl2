@@ -181,6 +181,10 @@
      for modularity and to facilitate extension."))
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
+   (vartys ident-type-mapp
+           "Variables for which the generated theorem (if any)
+            includes hypotheses about their presence in the computation state
+            before the execution of the C construct.")
    (events pseudo-event-form-list
            "Theorems generated so far, in reverse order;
             see @(see simpadd0-implementation).")
@@ -214,13 +218,8 @@
               This is @('nil') if no theorem is generated.")
    (vartys ident-type-map
            "Variables for which the generated theorem (if any)
-            has hypotheses, and in some cases conclusions,
-            about the variables being in the computation state
-            and having values of the appropriate types
-            (see @(see simpadd0-implementation) for background).
-            These are always the variable after the construct
-            (whether the theorem has conclusions about them or not),
-            which in some cases are the same as the ones before the construct.
+            includes conclusions about their presence in the computation state
+            after the execution of the construct.
             This is @('nil') if @('thm-name') is @('nil')."))
   :pred simpadd0-goutp)
 
@@ -251,7 +250,12 @@
      (to the next call of a transformation function)
      with an output
      (from the previous call of a transformation function),
-     by updating those common components."))
+     by updating those common components.")
+   (xdoc::p
+    "Although both @(tsee simpadd0-gin) and @(tsee simpadd0-gout)
+     have a @('vartys') component, that one is not threaded through;
+     it is handled differently (see the transformation functions).
+     Thus, this function does not involve that component."))
   (b* (((simpadd0-gout gout) gout))
     (change-simpadd0-gin gin
                          :events gout.events
@@ -926,7 +930,8 @@
                (args symbol-listp)
                (parargs "A term.")
                (arg-types true-listp)
-               (arg-types-compst true-listp))
+               (arg-types-compst true-listp)
+               (vartys ident-type-mapp))
   :short "Generate certain pieces of information
           from the formal parameters of a function."
   :long
@@ -952,7 +957,9 @@
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type."))
+      and its reading yields a value of the appropriate type.")
+    (xdoc::li
+     "A variable-type map corresponding to the parameters in the obvious way."))
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
@@ -960,12 +967,12 @@
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
-  (b* (((when (endp params)) (mv t nil nil nil nil))
+  (b* (((when (endp params)) (mv t nil nil nil nil nil))
        ((c::param-declon param) (car params))
        ((mv okp type) (simpadd0-tyspecseq-to-type param.tyspec))
-       ((unless okp) (mv nil nil nil nil nil))
+       ((unless okp) (mv nil nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
-        (mv nil nil nil nil nil))
+        (mv nil nil nil nil nil nil))
        (ident (c::obj-declor-ident->get param.declor))
        (par (c::ident->name ident))
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
@@ -978,15 +985,19 @@
             more-args
             parargs
             more-arg-types
-            more-arg-types-compst)
+            more-arg-types-compst
+            more-vartys)
         (simpadd0-gen-from-params (cdr params) gin))
-       ((unless okp) (mv nil nil nil nil nil))
-       (parargs `(omap::update (c::ident ,par) ,arg ,parargs)))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
+       (vartys (omap::update (ident par) (c$::ildm-type type) more-vartys)))
     (mv t
         (cons arg more-args)
         parargs
         (cons arg-type more-arg-types)
-        (cons arg-type-compst more-arg-types-compst)))
+        (cons arg-type-compst more-arg-types-compst)
+        vartys))
+  :verify-guards :after-returns
 
   ///
 
@@ -2648,7 +2659,7 @@
   :prepwork
 
   ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
-     :returns (lemma-instance true-listp)
+     :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
@@ -2663,7 +2674,7 @@
 
    (define simpadd0-stmt-expr-asg-lemma-instances ((vartys ident-type-mapp)
                                                    (expr exprp))
-     :returns (lemma-instance true-listp)
+     :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
@@ -5090,9 +5101,9 @@
       (block-item-case
        item
        :decl (b* (((mv new-item (simpadd0-gout gout-item))
-                   (simpadd0-decl item.unwrap gin))
+                   (simpadd0-decl item.decl gin))
                   (gin (simpadd0-gin-update gin gout-item)))
-               (mv (block-item-decl new-item)
+               (mv (make-block-item-decl :decl new-item :info item.info)
                    (simpadd0-gout-no-thm gin)))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
@@ -5373,8 +5384,59 @@
    (xdoc::p
     "We generate a theorem for the function
      only under certain conditions,
-     including the fact that a theorem for the body was generated."))
+     including the fact that a theorem for the body was generated.")
+   (xdoc::p
+    "Currently the incoming @(tsee simpadd0-gin) has @('vatys') set to @('nil'),
+     so in general the theorems generated for
+     the portion of the function definition before the body
+     (declaration specifiers, declarator, etc.)
+     may not have enough context,
+     but for now we are using this transformation on limited examples
+     where that is not an issue;
+     we plan to make this part more robust soon, though.")
+   (xdoc::p
+    "For the body of the function,
+     we obtain the variable-type map from
+     the validation table that annotates the function definition
+     (the validation table at the start of the body,
+     not at the start of the function definition;
+     the latter will be used to fix
+     the issue descrubed in the previous paragraph).
+     This gets put into the @(tsee simpadd0-gin)
+     passed to @(tsee simpadd0-block-item-list).")
+   (xdoc::p
+    "We generate the folllowing theorems:")
+   (xdoc::ul
+    (xdoc::li
+     "A theorem about the initial scope of the function body.
+      See @(tsee simpadd0-gen-init-scope-thm).")
+    (xdoc::li
+     "For each function parameter, a theorem saying that,
+      after pushing a frame with the initial scope above,
+      the computation state has a variable for the parameter
+      with the associated type.")
+    (xdoc::li
+     "The main theorem for the function definition,
+      saying that, if the execution of the old function does not yield an error,
+      neither does the execition of the new function,
+      and they return the same results and computation states."))
+   (xdoc::p
+    "We use @(tsee simpadd0-gen-from-params) to obtain
+     certain information from the parameters,
+     which is used to generate the theorems.
+     This information includes the variable-type map
+     corresponding to the function parameters:
+     we ensure that it is the same as
+     the variable-type map from the validation table
+     that annotates the start of the function body.
+     In general the former is a sub-map of the latter,
+     because the validation table could include global variables;
+     but for now proof generation does not handle global variables,
+     so we generate proofs for the body only if
+     the theorems about the initial scope and the parameters
+     suffice to establish the variable-type hypotheses of the body."))
   (b* (((fundef fundef) fundef)
+       (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
        (gin (simpadd0-gin-update gin gout-spec))
@@ -5384,8 +5446,11 @@
        ((mv new-decls (simpadd0-gout gout-decls))
         (simpadd0-decl-list fundef.decls gin))
        (gin (simpadd0-gin-update gin gout-decls))
+       (vartys (simpadd0-vartys-from-valid-table
+                (c$::fundef-info->table-body-start info)))
        ((mv new-body (simpadd0-gout gout-body))
-        (simpadd0-block-item-list fundef.body gin))
+        (simpadd0-block-item-list fundef.body
+                                  (change-simpadd0-gin gin :vartys vartys)))
        ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
        (new-fundef (make-fundef :extension fundef.extension
                                 :spec new-spec
@@ -5426,9 +5491,10 @@
                (fundef-fix fundef) type)
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       ((mv okp args parargs arg-types arg-types-compst)
+       ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
+       ((unless (equal param-vartys vartys)) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
         (simpadd0-gen-init-scope-thm ldm-params
                                      args
@@ -5701,8 +5767,15 @@
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('vartys') component of @(tsee simpadd0-gin)
+     is just initialized to @('nil') here;
+     its actual initialization for theorem generation is done elsewhere."))
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :const-new const-new
+                               :vartys nil
                                :events nil
                                :thm-index 1))
        ((mv code-new (simpadd0-gout gout))

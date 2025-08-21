@@ -763,6 +763,9 @@
                            (stmt-fix stmt)))
    (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
                       (stmt-return-infop (stmt-return->info stmt))))
+   (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
+                          (block-item-infop
+                           (block-item-decl->info block-item))))
    (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
                           (block-item-infop
                            (block-item-stmt->info block-item))))
@@ -967,4 +970,26 @@
     (if item-type?
         item-type?
       items-type?))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-valid-table ((item block-itemp))
+  :guard (block-item-unambp item)
+  :returns (table valid-tablep)
+  :short "Validation table at the start of a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Validated block items are unambiguous and always contain annotations
+     that include the validation table at the beginning of the block item.
+     For now we perform a runtime check that should never fail,
+     but eventually we should use an annotation guard."))
+  (b* ((info (block-item-case
+              item
+              :decl item.info
+              :stmt item.info
+              :ambig (impossible)))
+       (info (coerce-block-item-info info)))
+    (block-item-info->table info))
   :hooks (:fix))

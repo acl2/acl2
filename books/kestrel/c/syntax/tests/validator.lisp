@@ -191,7 +191,7 @@ void f() {
             (fundef (extdecl-fundef->unwrap edecl))
             (items (fundef->body fundef))
             (item (car items))
-            (decl (block-item-decl->unwrap item))
+            (decl (block-item-decl->decl item))
             (ideclors (decl-decl->init decl))
             (ideclor (car ideclors))
             (initer (initdeclor->init? ideclor))

@@ -383,7 +383,7 @@
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
                                (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
