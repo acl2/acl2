@@ -359,7 +359,9 @@
 
     ;; we will just unroll read-chunks (at least for now):
     read-chunks-base
-    read-chunks-unroll))
+    read-chunks-unroll
+
+    read-of-bvplus-tighten))
 
 ;; Mostly for 64-bit mode
 ;todo: some are only needed with the new normal forms
@@ -389,6 +391,7 @@
     ;; write-of-write-of-write-of-write-of-write-same
 
     write-of-bvchop-arg3-gen
+    write-of-bvplus-tighten
     ))
 
 (defund region-rules ()
@@ -446,6 +449,10 @@
     subregion48p-of-bvchop-arg4
     disjoint-regions48p-of-bvchop-arg2
     disjoint-regions48p-of-bvchop-arg4
+    disjoint-regions48p-of-logext-arg2
+    disjoint-regions48p-of-logext-arg4
+    disjoint-regions48p-of-bvplus-tighten-arg2
+    disjoint-regions48p-of-bvplus-tighten-arg4
     acl2::bvmult-tighten-when-power-of-2p-axe ; helps rules like in-region48p-when-non-negative-and-negative-range fire
     ))
 
@@ -485,6 +492,8 @@
     ;;acl2::bvplus-of-*-arg2
     acl2::bvminus-of-bvplus-tighten-arg2
     acl2::bvminus-of-bvplus-tighten-arg3
+    acl2::bvplus-of-+-arg2 ; can we remove special cases for converting args of bvplus?
+    acl2::bvplus-of-+-arg3
     ))
 
 ;; Rules about the actual functions READ and WRITE.
@@ -1308,7 +1317,7 @@
   (declare (xargs :guard t))
   '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
-    acl2::logext-of-bvplus-64 ;somewhat unusual
+    ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
