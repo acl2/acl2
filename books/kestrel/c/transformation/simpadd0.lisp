@@ -3157,8 +3157,7 @@
        (item+items-new (cons item-new items-new))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and item-thm-name
-                     items-thm-name
-                     nil)) ; temporary
+                     items-thm-name))
         (mv item+items-new gout-no-thm))
        (first-type (block-item-type item))
        (rest-type (block-item-list-type items))
@@ -4945,6 +4944,32 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The handling of the variable-type maps is as follows.
+       If the list is empty,
+       we generate a theorem for the empty list of block items,
+       which includes hypotheses and conclusions about
+       the variables in the @('vartys') component of @('gin').
+       If instead the list is not empty,
+       first we generate a theorem for the first block item,
+       via @(tsee simpadd0-block-item),
+       which takes its @('vartys') from the validation table
+       that annotates the block item;
+       the @('vartys') resulting in @('gout-item')
+       is then put into the @('gin') passed to this function
+       to recursively transform the rest of the list.
+       So in the end @('gin.vartys') is only used
+       when reaching the empty list of block items,
+       as all the other block items take their own @('vartys').
+       But note that, when putting together
+       the transformed first block item and rest of the block items,
+       and possibly generating a theorem for the whole list
+       (see @(tsee simpadd0-block-item-list-cons)),
+       we pass, in @('gin'), the original @('vartys')
+       before the first block item,
+       because those are the variables in scope there."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
@@ -4952,8 +4977,13 @@
           (simpadd0-block-item (car items) gin))
          (gin (simpadd0-gin-update gin gout-item))
          ((mv new-items (simpadd0-gout gout-items))
-          (simpadd0-block-item-list (cdr items) gin))
-         (gin (simpadd0-gin-update gin gout-items)))
+          (simpadd0-block-item-list (cdr items)
+                                    (change-simpadd0-gin
+                                     gin :vartys gout-item.vartys)))
+         (gin (simpadd0-gin-update gin gout-items))
+         (table (c$::block-item-valid-table (car items)))
+         (vartys (simpadd0-vartys-from-valid-table table))
+         (gin (change-simpadd0-gin gin :vartys vartys)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
