@@ -341,26 +341,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-join-vartys ((vartys1 ident-type-mapp)
-                              (vartys2 ident-type-mapp))
-  :returns (vartys ident-type-mapp)
-  :short "Join two maps from identifiers to types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used on maps that must be compatible,
-     so we throw a hard error if that is not the case."))
-  (b* ((vartys1 (ident-type-map-fix vartys1))
-       (vartys2 (ident-type-map-fix vartys2)))
-    (if (omap::compatiblep vartys1 vartys2)
-        (omap::update* vartys1 vartys2)
-      (raise "Internal error: ~
-              incompatible variable-type maps ~x0 and ~x1"
-             vartys1 vartys2)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define simpadd0-vartys-from-valid-table ((table c$::valid-tablep))
   :returns (vatys ident-type-mapp)
   :short "Generate, from a validation table,
