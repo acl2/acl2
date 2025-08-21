@@ -837,6 +837,16 @@
        (type-count (flexomap->count omap))
        (recog (flexomap->pred omap))
        (recp (flexomap->recp omap))
+       (key-recog (fty::flexomap->key-type omap))
+       ((unless (symbolp key-recog))
+        (raise "Internal error: malformed recognizer ~x0." key-recog)
+        (mv '(_) nil))
+       (key-info (fty::flextype-with-recognizer key-recog fty-table))
+       (key-type (or (and key-info
+                          (fty::flextype->name key-info))
+                     (case key-recog
+                       (integerp 'acl2::int)
+                       (t (raise "Not supported yet: key-recog.")))))
        (val-recog (flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
@@ -864,6 +874,8 @@
         (acl2::packn-pos (list type-suffix '-when-emptyp) suffix))
        (type-suffix-of-tail
         (acl2::packn-pos (list type-suffix '-of-tail) suffix))
+       (type-suffix-of-update
+        (acl2::packn-pos (list type-suffix '-of-update) suffix))
        (thm-events
         (append
          `((defruled ,type-suffix-when-emptyp
@@ -882,8 +894,26 @@
                            (,type-suffix (omap::tail ,type)
                                          ,@extra-args-names))
                   :enable ,type-suffix)
+                (defruled ,type-suffix-of-update
+                  (implies (and (,recog ,type)
+                                (,val-type-suffix ,val-type ,@extra-args-names)
+                                (,type-suffix ,type ,@extra-args-names))
+                           (,type-suffix (omap::update ,key-type
+                                                       ,val-type
+                                                       ,type)
+                                         ,@extra-args-names))
+                  :induct t
+                  :enable (,type-suffix
+                           ,recog
+                           omap::update
+                           omap::emptyp
+                           omap::mfix
+                           omap::mapp
+                           omap::head
+                           omap::tail))
                 (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                                '(,type-suffix-of-tail)))))))
+                                '(,type-suffix-of-tail
+                                  ,type-suffix-of-update)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

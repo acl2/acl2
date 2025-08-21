@@ -376,7 +376,9 @@
        the following additional theorems are generated:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-of-tail')"))
+       "@('<type>-<suffix>-of-tail')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-update')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
