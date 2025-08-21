@@ -32,10 +32,10 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization/
+;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization
 
 ;todo: think about this
-(defthm signed-byte-p-of-bvchop
+(defthmd signed-byte-p-of-bvchop
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
@@ -48,27 +48,27 @@
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
-;just use a convert-to-bv rule?
-(defthmd bvand-of-+-arg2
-  (implies (and (natp width)
-                (integerp x)
-                (integerp y))
-           (equal (bvand width (+ x y) z)
-                  (bvand width (bvplus width x y) z)))
-  :hints (("Goal" :in-theory (enable bvplus))))
+;; ;just use a convert-to-bv rule?
+;; (defthmd bvand-of-+-arg2
+;;   (implies (and (natp width)
+;;                 (integerp x)
+;;                 (integerp y))
+;;            (equal (bvand width (+ x y) z)
+;;                   (bvand width (bvplus width x y) z)))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:rewrite bvand-of-+-arg2) (:definition bvplus)))
+;; (theory-invariant (incompatible (:rewrite bvand-of-+-arg2) (:definition bvplus)))
 
-;just use a convert-to-bv rule?
-(defthmd bvand-of-+-arg3
-  (implies (and (natp width)
-                (integerp x)
-                (integerp y))
-           (equal (bvand width z (+ x y))
-                  (bvand width z (bvplus width x y))))
-  :hints (("Goal" :in-theory (enable bvplus))))
+;; ;just use a convert-to-bv rule?
+;; (defthmd bvand-of-+-arg3
+;;   (implies (and (natp width)
+;;                 (integerp x)
+;;                 (integerp y))
+;;            (equal (bvand width z (+ x y))
+;;                   (bvand width z (bvplus width x y))))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
+;; (theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -77,16 +77,6 @@
            (equal (logext 64 (bvplus 64 x y))
                   (logext 64 (+ x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
-
-;really want this for every unary function
-(defthm unsigned-byte-p-of-if-two-constants
-  (implies (and (syntaxp (and (quotep n)
-                              (quotep x1)
-                              (quotep x2))))
-           (equal (unsigned-byte-p n (if test x1 x2))
-                  (if test
-                      (unsigned-byte-p n x1)
-                      (unsigned-byte-p n x2)))))
 
 ;the bvcat of 0 is essentially multiplication by a power of 2
 (defthm bvmult-of-bvcat-of-0
@@ -102,8 +92,8 @@
                 (natp size))
            (equal (bvmult size k (bvcat highsize x lowsize 0))
                   (bvmult size
-                                (* k (expt 2 lowsize)) ;gets computed
-                                x)))
+                          (* k (expt 2 lowsize)) ;gets computed
+                          x)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat)
                                   (bvchop-of-*-of-bvchop-arg2))
            :use (:instance bvchop-of-*-of-bvchop-arg2
@@ -172,14 +162,6 @@
                   (not (sbvlt 32 0 x))))
   :hints (("Goal" :in-theory (enable sbvlt logext))))
 
-(defthmd equal-of-bitxor-and-1
-  (equal (equal (bitxor x y) 1)
-         (or (and (equal (getbit 0 x) 1)
-                  (equal (getbit 0 y) 0))
-             (and (equal (getbit 0 x) 0)
-                  (equal (getbit 0 y) 1)))))
-
-
 (defthm +-of-bvplus-of-x-and-minus-x
   (implies (and (unsigned-byte-p 32 x)
                 (bvlt 32 x (- k)))
@@ -216,6 +198,7 @@
                   0))
   :hints (("Goal" :in-theory (enable logext))))
 
+;generalize!
 (defthm mod-of-bvchop-and-2
   (equal (mod (bvchop 63 x) 2)
          (getbit 0 x))
@@ -244,11 +227,12 @@
                 (integerp x))
            (not (< x k))))
 
+;; restrict?
 (defthm slice-of-if-arg3
   (equal (slice high low (if test v1 v2))
          (if test
              (slice high low v1)
-             (slice high low v2))))
+           (slice high low v2))))
 
 (defthm bvchop-of-if-when-constants
   (implies (syntaxp (and (quotep n)
