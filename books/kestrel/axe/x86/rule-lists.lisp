@@ -6077,9 +6077,7 @@
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
-   '(;stack-height-increased-wrt
-     stack-height-decreased-wrt
-     get-pc
+   '( get-pc
      acl2::memberp-of-cons-irrel-strong
      acl2::memberp-of-cons-same
      acl2::memberp-of-nil
@@ -6129,24 +6127,25 @@
 
      x86isa::canonical-address-p-of-xr-of-rip
      x86isa::rip ; at least for now
+     rsp ; at least for now
+
+     acl2::bvminus-of-bvplus-same-arg2 ; todo: more like this (factor out of symbolic-execution-rules64)
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))
 
-;; For the loop lifter
 ;; todo: consider making a 32-bit variant (see above)
 (defund symbolic-execution-rules-loop-lifter ()
   (declare (xargs :guard t))
-  '(;;run-until-exit-segment-or-hit-loop-header-opener-1
-    run-until-exit-segment-or-hit-loop-header-opener-2
+  '(;stack-height-increased-wrt
+    rsp-is-abovep
+    run-until-exit-segment-or-hit-loop-header-opener
     run-until-exit-segment-or-hit-loop-header-base-case-1
     run-until-exit-segment-or-hit-loop-header-base-case-2
     run-until-exit-segment-or-hit-loop-header-base-case-3
-    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
-    run-until-exit-segment-or-hit-loop-header-of-if-split
-    run-until-exit-segment-or-hit-loop-header-of-if))
+    run-until-exit-segment-or-hit-loop-header-of-if-split))
 
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
 (defund loop-lifter-invariant-preservation-rules ()

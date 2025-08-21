@@ -219,12 +219,12 @@
                                      nil ; no-warn-ground-functions
                                      nil))
 
-;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
-;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
-(defun stack-height-decreased-wrt (x86 old-rsp)
-  (declare (xargs :stobjs x86
-                  :guard (natp old-rsp))) ;tighten?
-  (> (rgfi *rsp* x86) old-rsp))
+;; ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
+;; ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
+;; (defun stack-height-decreased-wrt (x86 old-rsp)
+;;   (declare (xargs :stobjs x86
+;;                   :guard (natp old-rsp))) ;tighten?
+;;   (> (rgfi *rsp* x86) old-rsp))
 
 ;; (defun stack-height-increased-wrt (x86 old-rsp)
 ;;   (declare (xargs :stobjs x86
@@ -245,7 +245,7 @@
                                                  loop-headers ;a list of addresses
                                                  x86)
   ;; If we've exited the subroutine call, then we've exited the segment, so stop:
-  (if (stack-height-decreased-wrt x86 starting-rsp)
+  (if (rsp-is-abovep starting-rsp x86)
       x86
     ;; If we are at the loop header of a nested loop (or perhaps of the current
     ;; loop, but that usually won't happen since we exclude it from the segment
@@ -267,16 +267,16 @@
 ;;            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
 ;;                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
 
-(defthm run-until-exit-segment-or-hit-loop-header-opener-2
+(defthm run-until-exit-segment-or-hit-loop-header-opener
   (implies (and ;(not (stack-height-increased-wrt x86 starting-rsp))
-                (not (stack-height-decreased-wrt x86 starting-rsp))
+                (not (rsp-is-abovep starting-rsp x86))
                 (memberp (get-pc x86) segment-pcs)
                 (not (memberp (get-pc x86) loop-headers)))
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
 
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-1
-  (implies (stack-height-decreased-wrt x86 starting-rsp)
+  (implies (rsp-is-abovep starting-rsp x86)
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   x86)))
 
@@ -287,7 +287,7 @@
 
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-3
   (implies (and ;;(not (stack-height-increased-wrt x86 starting-rsp))
-                (not (stack-height-decreased-wrt x86 starting-rsp))
+                (not (rsp-is-abovep starting-rsp x86))
                 (not (memberp (get-pc x86) segment-pcs)))
            (equal (run-until-exit-segment-or-hit-loop-header
                    starting-rsp
@@ -299,12 +299,6 @@
          (if test
                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
-
-(defthm run-until-exit-segment-or-hit-loop-header-of-if
-  (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
-         (if test
-             (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
-           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
 ;; Can't move this above the rules (just above)
 (acl2::ensure-rules-known (symbolic-execution-rules-loop-lifter))
@@ -2334,7 +2328,7 @@
          state))
        ((when erp) (mv erp nil state))
        ;; Extract the output (TODO: generalize!)
-       ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag))
+       ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag)) ; todo: use rax or eax?
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
        ((mv erp output-dag & state)
@@ -2343,7 +2337,7 @@
                                 (acl2::make-rule-alist! (set-difference-eq
                                                           (append (extra-loop-lifter-rules)
                                                                   lifter-rules
-                                                                  (symbolic-execution-rules-loop-lifter)
+                                                                  ;; (symbolic-execution-rules-loop-lifter)
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
