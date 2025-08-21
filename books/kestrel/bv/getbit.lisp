@@ -177,8 +177,7 @@
   (implies (and (<= n (+ high (- low)))
                 (natp n)
                 (natp low)
-                (integerp high)
-                )
+                (integerp high))
            (equal (getbit n (slice high low x))
 ;                  (if (<= n (+ high (- low)))
                   (getbit (+ low n) x)
@@ -187,6 +186,29 @@
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice)
                            (logtail-of-bvchop)))))
+
+;can be useful when getbit-too-high is disabled..
+(defthm getbit-of-slice-too-high
+  (implies (and (> n (- high low))
+                (integerp n)
+                (natp low)
+                (integerp high))
+           (equal (getbit n (slice high low x))
+                  0))
+  :hints (("Goal" :cases ((<= low high))
+:in-theory (enable getbit-too-high))))
+
+;todo: rename?
+;todo: gen?
+(defthm getbit-of-slice-gen
+  (implies (and (natp n)
+                (natp low)
+                (integerp high))
+           (equal (getbit n (slice high low x))
+                  (if (<= n (+ high (- low)))
+                      (getbit (+ low n) x)
+                    0)))
+    :hints (("Goal" :in-theory (enable getbit-of-slice-too-high))))
 
 (defthm getbit-when-not-integerp-arg1
   (implies (not (integerp n))
@@ -238,17 +260,7 @@
                   0))
   :hints (("Goal" :in-theory (enable getbit slice))))
 
-;can be useful when getbit-too-high is disabled..
-(defthm getbit-of-slice-too-high
-  (implies (and (> n (- high low))
-                (<= low high) ;todo
-                (integerp n)
-                (integerp x)
-                (natp low)
-                (integerp high))
-           (equal (getbit n (slice high low x))
-                  0))
-  :hints (("Goal" :in-theory (enable getbit-too-high))))
+
 
 (defthm getbit-when-n-is-negative
   (implies (< n 0)
@@ -280,20 +292,7 @@
                                   (slice-becomes-bvchop)))))
 
 
-;todo: rename?
-;todo: gen
-(defthm getbit-of-slice-gen
-  (implies (and (natp n)
-                (natp low)
-                (integerp high)
-                (integerp x) ;todo
-                (<= low high) ;todo
-                )
-           (equal (getbit n (slice high low x))
-                  (if (<= n (+ high (- low)))
-                      (getbit (+ low n) x)
-                    0)))
-    :hints (("Goal" :in-theory (enable getbit-of-slice-too-high))))
+
 
 (defthm getbit-of-1
   (equal (getbit n 1)

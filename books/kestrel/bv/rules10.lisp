@@ -53,26 +53,7 @@
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
-(defthm getbit-of-slice-both
-  (implies (and (natp n)
-                (natp low)
-;                (integerp x)
-                (integerp high))
-           (equal (getbit n (slice high low x))
-                  (if (<= n (+ high (- low)))
-                      (getbit (+ low n) x)
-                    0)))
-  :hints (("Goal" :use ((:instance GETBIT-OF-SLICE-TOO-HIGH
-                                   (X X)
-                                   (LOW LOW)
-                                   (HIGH HIGH)
-                                   (N N))
-                        (:instance getbit-of-slice
-                                   (x x)
-                                   (low low)
-                                   (high high)
-                                   (n n)))
-           :in-theory (disable getbit-of-slice))))
+
 
 
 

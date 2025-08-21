@@ -2436,7 +2436,7 @@
             ;; x86isa::program-at-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
-            acl2::getbit-of-slice-both
+            acl2::getbit-of-slice-gen
 
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
