@@ -86,7 +86,9 @@
         (select-operand-size
           proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
-       ((when (and (>= reg *segment-register-names-len*) (equal opcode #x8C))) (!!ms-fresh :invalid-segment-register))
+       ((when (and (>= reg *segment-register-names-len*)
+                   (equal opcode #x8C)))
+        (!!ms-fresh :invalid-segment-register))
        (register (if (equal opcode #x8C)
                      (seg-visiblei reg x86)
                      (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
@@ -136,73 +138,75 @@
 
 (def-inst x86-mov-Op/En-RM
 
-          ;; Op/En: RM
-          ;; [OP REG, R/M]
-          ;; 8A: MOV r8,  r/m8
-          ;; 8B: MOV r16, r/m16
-          ;; 8B: MOV r32, r/m32
-          ;; 8B: MOV r64, r/m64
-          ;; 8E: MOV Sreg, r/m16
-          ;; 8E: MOV Sreg, r/m64
+  ;; Op/En: RM
+  ;; [OP REG, R/M]
+  ;; 8A: MOV r8,  r/m8
+  ;; 8B: MOV r16, r/m16
+  ;; 8B: MOV r32, r/m32
+  ;; 8B: MOV r64, r/m64
+  ;; 8E: MOV Sreg, r/m16
+  ;; 8E: MOV Sreg, r/m64
 
-          :parents (one-byte-opcodes)
+  :parents (one-byte-opcodes)
 
-          :guard-hints (("Goal" :in-theory (e/d () ())))
+  :guard-hints (("Goal" :in-theory (e/d () ())))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          (b* ((p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
 
-               (byte-operand? (equal opcode #x8A))
-               ((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
+       (byte-operand? (equal opcode #x8A))
+       ((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
-               ;; Refers to segment register for memory access, not the one being
-               ;; written to in the case of 0x8E
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       ;; Refers to segment register for memory access, not the one being
+       ;; written to in the case of 0x8E
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (inst-ac? t)
-               ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  0 ;; No immediate operand
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       (inst-ac? t)
+       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-               ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error flg))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ;; Update the x86 state:
-               (x86 (if (equal opcode #x8E)
-                      (b* (((when (>= reg #.*segment-register-names-len*))
-                            (!!ms-fresh :invalid-dest-sreg))
-                           (selector (loghead 16 reg/mem))
-                           ((mv flg descriptor x86) (get-segment-descriptor reg selector x86))
-                           ((when flg)
-                            (b* (((when (equal flg t)) (!!ms-fresh :get-segment-descriptor)))
-                                (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
-                           (x86 (load-segment-reg reg selector descriptor x86)))
-                          x86)
-                      (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
-                                  reg/mem rex-byte x86)))
-               ((when (or (fault x86)
-                          (ms x86))) x86)
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+       ;; Update the x86 state:
+       (x86 (if (equal opcode #x8E)
+                (b* (((when (>= reg #.*segment-register-names-len*))
+                      (!!ms-fresh :invalid-dest-sreg))
+                     (selector (loghead 16 reg/mem))
+                     ((mv flg descriptor x86)
+                      (get-segment-descriptor reg selector x86))
+                     ((when flg)
+                      (b* (((when (equal flg t))
+                            (!!ms-fresh :get-segment-descriptor)))
+                        (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+                     (x86 (load-segment-reg reg selector descriptor x86)))
+                  x86)
+              (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
+                          reg/mem rex-byte x86)))
+       ((when (or (fault x86)
+                  (ms x86))) x86)
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
 (def-inst x86-mov-Op/En-FD
 
@@ -937,95 +941,95 @@
 
 (def-inst x86-mov-control-regs-Op/En-RM
 
-          ;; Move GPR to control register
+  ;; Move GPR to control register
 
-          ;; Op/En: RM
-          ;; [OP R/M, REG]
-          ;; 0F 22/r:         MOV CR0-CR7, r32
-          ;; 0F 22/r:         MOV CR0-CR7, r64
-          ;; REX.R + 0F 22/0: MOV CR8, r64
+  ;; Op/En: RM
+  ;; [OP R/M, REG]
+  ;; 0F 22/r:         MOV CR0-CR7, r32
+  ;; 0F 22/r:         MOV CR0-CR7, r64
+  ;; REX.R + 0F 22/0: MOV CR8, r64
 
-          ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
-          ;; Register":
+  ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
+  ;; Register":
 
-          ;; At the opcode level, the reg field within the ModR/M byte
-          ;; specifies which of the control registers is loaded or read. The 2
-          ;; bits in the mod field are ignored. The r/m field specifies the
-          ;; general-purpose register loaded or read. Attempts to reference
-          ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
-          ;; exceptions.
+  ;; At the opcode level, the reg field within the ModR/M byte
+  ;; specifies which of the control registers is loaded or read. The 2
+  ;; bits in the mod field are ignored. The r/m field specifies the
+  ;; general-purpose register loaded or read. Attempts to reference
+  ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
+  ;; exceptions.
 
-          ;; In 64-bit mode, the instruction's default operation size
-          ;; is 64 bits. The REX.R prefix must be used to access
-          ;; CR8. Use of REX.B permits access to additional registers
-          ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
-          ;; ignored. Use of the REX.R prefix to specify a register
-          ;; other than CR8 causes an invalid-opcode exception. See the
-          ;; summary chart at the beginning of this section for encoding
-          ;; data and limits.
+  ;; In 64-bit mode, the instruction's default operation size
+  ;; is 64 bits. The REX.R prefix must be used to access
+  ;; CR8. Use of REX.B permits access to additional registers
+  ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
+  ;; ignored. Use of the REX.R prefix to specify a register
+  ;; other than CR8 causes an invalid-opcode exception. See the
+  ;; summary chart at the beginning of this section for encoding
+  ;; data and limits.
 
-          :parents (two-byte-opcodes)
+  :parents (two-byte-opcodes)
 
-          :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          (b* (;; The r/m field specifies the GPR (source).
-               ;; MOD field is ignored.
-               ;; The reg field specifies the control register (destination).
+  (b* (;; The r/m field specifies the GPR (source).
+       ;; MOD field is ignored.
+       ;; The reg field specifies the control register (destination).
 
-               ;; *operand-size-override* and REX.W are ignored.
+       ;; *operand-size-override* and REX.W are ignored.
 
 
-               (operand-size (if (equal proc-mode #.*64-bit-mode*) 8 4))
+       (operand-size (if (equal proc-mode #.*64-bit-mode*) 8 4))
 
-               ;; Get value from GPR
-               (reg-val (rgfi-size operand-size (reg-index r/m rex-byte #.*b*) rex-byte x86))
+       ;; Get value from GPR
+       (reg-val (rgfi-size operand-size (reg-index r/m rex-byte #.*b*) rex-byte x86))
 
-               ;; Update the x86 state:
-               (ctr-index
-                 ;; Note that there is a #UD Exception if an attempt is made to access
-                 ;; CR1, CR5, CR6, or CR7 or if the REX.R prefix is used to specify a
-                 ;; register other than CR8.  This is checked during dispatch --- see
-                 ;; opcode-maps for details.
-                 (if (and (logbitp #.*r* rex-byte)
-                          (equal reg 0))
-                   #.*cr8*
-                   reg))
+       ;; Update the x86 state:
+       (ctr-index
+        ;; Note that there is a #UD Exception if an attempt is made to access
+        ;; CR1, CR5, CR6, or CR7 or if the REX.R prefix is used to specify a
+        ;; register other than CR8.  This is checked during dispatch --- see
+        ;; opcode-maps for details.
+        (if (and (logbitp #.*r* rex-byte)
+                 (equal reg 0))
+            #.*cr8*
+          reg))
 
-               ;; Clear the tlb on loads to cr3
-               (x86 (if (or (equal ctr-index #.*cr3*)
-                            (equal ctr-index #.*cr0*)
-                            ;; Loading cr4 doesn't always require invalidation
-                            ;; (see Vol 3, Chapter 4.10.4.1 of the Intel SDM),
-                            ;; but this is valid too, since we're always
-                            ;; allowed to invalidate
-                            (equal ctr-index #.*cr4*))
-                      (b* ((tlb (tlb x86))
-                           (- (fast-alist-free tlb))
-                           (x86 (!tlb :tlb x86)))
-                          x86)
-                      x86))
-
-               ;; TODO: What should be done when the register is too large for
-               ;; the control register? ATM, !ctri-write takes the lowest n bits
-               (x86
-                 (!ctri-write ctr-index
-                              reg-val
-                              x86))
-               ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
-               (x86 (!flgi-undefined :cf x86))
-               (x86 (!flgi-undefined :pf x86))
-               (x86 (!flgi-undefined :af x86))
-               (x86 (!flgi-undefined :zf x86))
-               (x86 (!flgi-undefined :sf x86))
-               (x86 (!flgi-undefined :of x86))
-               (x86 (write-*ip proc-mode temp-rip x86)))
+       ;; Clear the tlb on loads to cr3
+       (x86 (if (or (equal ctr-index #.*cr3*)
+                    (equal ctr-index #.*cr0*)
+                    ;; Loading cr4 doesn't always require invalidation
+                    ;; (see Vol 3, Chapter 4.10.4.1 of the Intel SDM),
+                    ;; but this is valid too, since we're always
+                    ;; allowed to invalidate
+                    (equal ctr-index #.*cr4*))
+                (b* ((tlb (tlb x86))
+                     (- (fast-alist-free tlb))
+                     (x86 (!tlb :tlb x86)))
+                  x86)
               x86))
+
+       ;; TODO: What should be done when the register is too large for
+       ;; the control register? ATM, !ctri-write takes the lowest n bits
+       (x86
+        (!ctri-write ctr-index
+                     reg-val
+                     x86))
+       ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
 
 ;; ======================================================================
