@@ -335,7 +335,8 @@
     (xdoc::desc
      "Accompanying list theorems."
      (xdoc::p
-      "For each @(tsee deflist) type specified by the @(':types') input,
+      "For each @(tsee deflist) type @('<type>')
+       specified by the @(':types') input,
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
@@ -344,6 +345,12 @@
       (xdoc::li
        "@('<type>-<suffix>-of-cons')"))
      (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-append')"))
+     (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
@@ -351,7 +358,8 @@
      "Accompanying option theorems."
      (xdoc::p
       "If @(':combine') is @(tsee and) and @(':default') is @('t'),
-       for each @(tsee defoption) type specified by the @(':types') input,
+       for each @(tsee defoption) type @('<type>')
+       specified by the @(':types') input,
        whose base type is @('<base>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
@@ -365,7 +373,9 @@
     (xdoc::desc
      "Accompanying omap theorems."
      (xdoc::p
-      "For each @(tsee defomap) type specified by the @(':types') input,
+      "For each @(tsee defomap) type @('<type>')
+       specified by the @(':types') input,
+       with key type @('<keytype>') and value type @('<valtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
@@ -376,7 +386,11 @@
        the following additional theorems are generated:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-of-tail')"))
+       "@('<type>-<suffix>-of-tail')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-update')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
