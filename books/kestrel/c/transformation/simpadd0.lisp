@@ -4903,20 +4903,7 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a block item."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We update the variable-type map
-       from the validation table at the beginning of the block item.
-       This is because block items before this one
-       may introduce new variables in scope,
-       but for now we may not generate
-       full proofs for those preceding block items
-       that would track the added variables."))
-    (b* (((simpadd0-gin gin) gin)
-         (table (c$::block-item-valid-table item))
-         (vartys (simpadd0-vartys-from-valid-table table))
-         (gin (change-simpadd0-gin gin :vartys vartys)))
+    (b* (((simpadd0-gin gin) gin))
       (block-item-case
        item
        :decl (b* (((mv new-decl (simpadd0-gout gout-item))
@@ -4953,37 +4940,37 @@
        which includes hypotheses and conclusions about
        the variables in the @('vartys') component of @('gin').
        If instead the list is not empty,
-       first we generate a theorem for the first block item,
-       via @(tsee simpadd0-block-item),
-       which takes its @('vartys') from the validation table
-       that annotates the block item;
-       the @('vartys') resulting in @('gout-item')
-       is then put into the @('gin') passed to this function
-       to recursively transform the rest of the list.
-       So in the end @('gin.vartys') is only used
-       when reaching the empty list of block items,
-       as all the other block items take their own @('vartys').
-       But note that, when putting together
-       the transformed first block item and rest of the block items,
-       and possibly generating a theorem for the whole list
-       (see @(tsee simpadd0-block-item-list-cons)),
-       we pass, in @('gin'), the original @('vartys')
-       before the first block item,
-       because those are the variables in scope there."))
+       we take the @('vartys') from the annotations of the first block item,
+       and we use it to transform the first block item,
+       possibly generating a theorem.
+       Then we take the @('vartys') out of the first block item
+       and we use it to transform the rest of the list of block items,
+       by recursively calling this function.
+       But note that that @('vartys') is used
+       only if the rest of the list is empty;
+       if it is not, the recursive call will use instead
+       the one from the first block item of the rest of the list,
+       i.e. the second block item of the list passed to this call.")
+     (xdoc::p
+      "The reason for taking the @('vartys') from each block item
+       is so that we can generate more theorems.
+       In particular, we can generate theorems for a block item
+       without having generate (complete) theorems for preceding block items."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
+         (item (car items))
+         (table (c$::block-item-valid-table item))
+         (vartys (simpadd0-vartys-from-valid-table table))
+         (gin (change-simpadd0-gin gin :vartys vartys))
          ((mv new-item (simpadd0-gout gout-item))
-          (simpadd0-block-item (car items) gin))
+          (simpadd0-block-item item gin))
          (gin (simpadd0-gin-update gin gout-item))
          ((mv new-items (simpadd0-gout gout-items))
           (simpadd0-block-item-list (cdr items)
                                     (change-simpadd0-gin
                                      gin :vartys gout-item.vartys)))
-         (gin (simpadd0-gin-update gin gout-items))
-         (table (c$::block-item-valid-table (car items)))
-         (vartys (simpadd0-vartys-from-valid-table table))
-         (gin (change-simpadd0-gin gin :vartys vartys)))
+         (gin (simpadd0-gin-update gin gout-items)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
