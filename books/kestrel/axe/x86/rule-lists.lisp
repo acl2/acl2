@@ -6077,7 +6077,7 @@
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
-   '(stack-height-increased-wrt
+   '(;stack-height-increased-wrt
      stack-height-decreased-wrt
      get-pc
      acl2::memberp-of-cons-irrel-strong

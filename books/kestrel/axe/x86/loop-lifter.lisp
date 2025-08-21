@@ -226,10 +226,10 @@
                   :guard (natp old-rsp))) ;tighten?
   (> (rgfi *rsp* x86) old-rsp))
 
-(defun stack-height-increased-wrt (x86 old-rsp)
-  (declare (xargs :stobjs x86
-                  :guard (natp old-rsp))) ;tighten?
-  (< (rgfi *rsp* x86) old-rsp))
+;; (defun stack-height-increased-wrt (x86 old-rsp)
+;;   (declare (xargs :stobjs x86
+;;                   :guard (natp old-rsp))) ;tighten?
+;;   (< (rgfi *rsp* x86) old-rsp))
 
 ;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
 (defun get-pc (x86)
