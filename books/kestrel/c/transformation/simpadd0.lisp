@@ -548,24 +548,16 @@
         (raise "Internal error: ~x0 is not an assignment expression." old)
         (mv '(_) nil 1))
        (old-left (expr-binary->arg1 old))
-       (old-right (expr-binary->arg2 old))
        ((unless (expr-case old-left :ident))
         (raise "Internal error: ~x0 is not a variable." old-left)
-        (mv '(_) nil 1))
-       ((unless (expr-purep old-right))
-        (raise "Internal error: ~x0 is not a pure expression." old-right)
         (mv '(_) nil 1))
        ((unless (and (expr-case new :binary)
                      (binop-case (expr-binary->op new) :asg)))
         (raise "Internal error: ~x0 is not an assignment expression." new)
         (mv '(_) nil 1))
        (new-left (expr-binary->arg1 new))
-       (new-right (expr-binary->arg2 new))
        ((unless (equal new-left old-left))
         (raise "Internal error: ~x0 and ~x1 differ." old-left new-left)
-        (mv '(_) nil 1))
-       ((unless (expr-purep new-right))
-        (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
        (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
@@ -1395,7 +1387,7 @@
      parenthesizing the possibly transformed inner expression.
      We generate a theorem iff
      a theorem was generated for the inner expression,
-     which we see from whether the theorem name is @('nil') or not.
+     and the inner expression is pure.
      The function @(tsee ldm-expr) maps
      a parenthesized expression to the same as the inner expression.
      Thus, the theorem for the parenthesized expression
@@ -1403,7 +1395,8 @@
   (b* ((expr (expr-paren inner))
        (expr-new (expr-paren inner-new))
        ((simpadd0-gin gin) gin)
-       ((unless inner-thm-name)
+       ((unless (and inner-thm-name
+                     (expr-purep inner)))
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr))
@@ -1448,12 +1441,14 @@
    (xdoc::p
     "We generate a theorem iff
      a theorem was generated for the argument expression,
+     the argument expression is pure,
      and the unary operator is among @('+'), @('-'), @('~') and @('!').
      The theorem is proved via two general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
+                     (expr-purep arg)
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new (simpadd0-gout-no-thm gin)))
@@ -1595,7 +1590,8 @@
    (xdoc::p
     "For now, we generate no theorem for the transformation of the type name,
      but we double-check that here.
-     We generate a theorem only if we generated one for the argument expression
+     We generate a theorem only if we generated one for the argument expression,
+     the argument expression is pure,
      and the old and new type names are the same (i.e. no transformation)."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-cast :type type :arg arg))
@@ -1607,6 +1603,7 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        ((c$::tyname-info info) info)
        ((unless (and arg-thm-name
+                     (expr-purep arg)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
@@ -1718,7 +1715,12 @@
      This is the core of this simple transformation.")
    (xdoc::p
     "We generate a theorem only if
-     theorems were generated for both argument expressions.
+     theorems were generated for both argument expressions,
+     and the argument expressions are pure
+     (the latter check excludes cases in which an assignment expression,
+     for which we may have generated a theorem,
+     is combined into a larger expression,
+     which our dynamic semantics does not handle currently).
      We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
@@ -1734,7 +1736,9 @@
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and arg1-thm-name
-                     arg2-thm-name))
+                     arg2-thm-name
+                     (expr-purep arg1)
+                     (expr-purep arg2)))
         (mv expr-new gout-no-thm)))
     (cond
      ((member-eq (binop-kind op)
@@ -1853,7 +1857,6 @@
                                 :vartys gin.vartys))))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
-                         (expr-purep arg2)
                          (equal (expr-type arg1)
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
@@ -2317,7 +2320,8 @@
      combining the possibly transformed argument expression.")
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the argument expressions.
+     a theorem was generated for the argument expressions,
+     and the argument expressions are pure.
      The theorem is proved via a few general ones that we prove below.
      These are a bit more complicated than for strict expressions,
      because conditional expressions are non-strict:
@@ -2328,7 +2332,10 @@
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name))
+                     else-thm-name
+                     (expr-purep test)
+                     (expr-option-purep then)
+                     (expr-purep else)))
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
@@ -2737,7 +2744,8 @@
                expr? expr?-new)
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
-                    expr?-thm-name))
+                    (and expr?-thm-name
+                         (not (expr-purep expr?)))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
                                                               expr?))
