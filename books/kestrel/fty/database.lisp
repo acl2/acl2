@@ -1,4 +1,4 @@
-; C Library
+; FTY Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -249,6 +249,54 @@
         (flextype-names-in-flextypes-with-names (cdr flextypes-names)
                                                 fty-table)))
     (append flextype-names more-flextype-names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define flextypes-containing-flextype ((name symbolp) (fty-table alistp))
+  :returns flextype?
+  :short "Find, in the FTY table,
+          the information for a type clique
+          containing a type of the given name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each type has a unique name, so we stop as soon as we find a match.
+     We return @('nil') if there is no match.")
+   (xdoc::p
+    "Based on the format as described in @(see database),
+     we do an outer loop on the entries of the table,
+     and for each element an inner loop on
+     the elements of the mutually recursive clique
+     (which may be a singleton)."))
+  (b* (((when (endp fty-table)) nil)
+       ((cons & flextypes) (car fty-table))
+       ((unless (flextypes-p flextypes))
+        (raise "Internal error: malformed type clique ~x0." flextypes))
+       (flextype-list (flextypes->types flextypes))
+       (foundp (flextypes-containing-flextype-loop name flextype-list)))
+    (if foundp
+        flextypes
+      (flextypes-containing-flextype name (cdr fty-table))))
+  :prepwork
+  ((define flextypes-containing-flextype-loop ((name symbolp) flextype-list)
+     :parents nil
+     (b* (((when (atom flextype-list)) nil)
+          (flextype (car flextype-list))
+          (foundp (cond ((flexsum-p flextype)
+                         (eq name (flexsum->name flextype)))
+                        ((flexlist-p flextype)
+                         (eq name (flexlist->name flextype)))
+                        ((flexalist-p flextype)
+                         (eq name (flexalist->name flextype)))
+                        ((flextranssum-p flextype)
+                         (eq name (flextranssum->name flextype)))
+                        ((flexset-p flextype)
+                         (eq name (flexset->name flextype)))
+                        ((flexomap-p flextype)
+                         (eq name (flexomap->name flextype)))
+                        (t nil))))
+       (or foundp
+           (flextypes-containing-flextype-loop name (cdr flextype-list)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
