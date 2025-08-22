@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+# This script is no longer being used at UT CS, now that the "bleeding
+# edge" manual is being put up at acl2.org.  As far as I (Matt
+# Kaufmann) know, it's not being used anywhere.  So we immediately
+# cause an error.
+
+echo "ERROR: The script $0 is no longer being maintained."
+exit 1
+
 # Consider also taking a look at :DOC xdoc::deploying-manuals.
 
 # This program installs a web-based acl2+books combined manual as well

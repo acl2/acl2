@@ -161,11 +161,10 @@
                             LOGAND-BECOMES-BVAND
                             BVCHOP-OF-LOGNOT-BECOMES-BVNOT
                             ash)
-                           (                  ;SLICE-OF-BVAND
-                                                        ;;BVCAT-OF-+-HIGH
-                            ;;EXPONENTS-ADD
-                            ;;BVCAT-OF-+-LOW         ;looped
-                            ;;BVAND-OF-+-ARG3        ;looped
+                           (;; SLICE-OF-BVAND
+                            ;; BVCAT-OF-+-HIGH
+                            ;; EXPONENTS-ADD
+                            ;; BVCAT-OF-+-LOW         ;looped
                             )))))
 
 ;replace part-install-width-low with bvcat when inside a slice

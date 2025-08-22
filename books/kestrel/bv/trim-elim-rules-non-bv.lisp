@@ -28,6 +28,7 @@
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
 (local (include-book "logext"))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; WARNING: Keep these in sync with *functions-convertible-to-bv*.
 
@@ -93,4 +94,9 @@
   :hints (("Goal" :cases ((natp size))
                   :in-theory (e/d (trim) (logext)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defthm trim-of-logtail-becomes-slice
+  (implies (and (integerp pos)
+                (integerp size))
+           (equal (trim size (logtail pos x))
+                  (slice (+ -1 size pos) pos x)))
+  :hints (("Goal" :in-theory (enable trim slice))))

@@ -1746,10 +1746,11 @@
     bvif-of-logext-arg3
     bvif-of-logext-arg4
 
-;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
 
-    bvcat-of-logext-high
+    bvcat-of-logext-arg2
+    bvcat-of-logext-arg4
+
     bvchop-of-logext
 
     getbit-of-logext

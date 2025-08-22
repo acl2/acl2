@@ -192,3 +192,35 @@
                  (boolif z1 z3 nil)
                  (boolif z2 z4 nil)))
   :hints (("Goal" :in-theory (enable boolif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These can help when we have a genealized boolean as an arg:
+
+(defthmd boolif-when-not-booleanp-arg1
+  (implies (not (booleanp test))
+           (equal (boolif test x y)
+                  (bool-fix x))))
+
+(defthmd boolif-when-not-booleanp-arg2
+  (implies (not (booleanp x))
+           (equal (boolif test x y)
+                  (boolif test t y))))
+
+(defthmd boolif-when-not-booleanp-arg3
+  (implies (not (booleanp y))
+           (equal (boolif test x y)
+                  (boolif test x t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; integers are a common kind of generalized boolean
+(defthmd boolif-when-integerp-arg2
+  (implies (integerp x)
+           (equal (boolif test x y)
+                  (boolif test t y))))
+
+(defthmd boolif-when-integerp-arg3
+  (implies (integerp y)
+           (equal (boolif test x y)
+                  (boolif test x t))))

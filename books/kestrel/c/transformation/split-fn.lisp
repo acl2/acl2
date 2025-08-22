@@ -314,7 +314,8 @@
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
                             :params (map-add-pointer-param-declon params)))
-        :body items)))
+        :body items
+        :info nil)))
   :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
   ((define ident-param-declon-map-filter
@@ -382,7 +383,7 @@
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
                                (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
@@ -442,7 +443,8 @@
             :spec fundef.spec
             :declor fundef.declor
             :decls fundef.decls
-            :body truncated-items))))
+            :body truncated-items
+            :info fundef.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

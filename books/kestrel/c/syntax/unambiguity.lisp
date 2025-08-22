@@ -787,9 +787,9 @@
     :expand (stmt-unambp stmt))
 
   (defrule block-item-unambp-of-block-item-decl
-    (equal (block-item-unambp (block-item-decl decl))
+    (equal (block-item-unambp (block-item-decl decl info))
            (decl-unambp decl))
-    :expand (block-item-unambp (block-item-decl decl)))
+    :expand (block-item-unambp (block-item-decl decl info)))
 
   (defrule block-item-unambp-of-block-item-stmt
     (equal (block-item-unambp (block-item-stmt stmt info))
@@ -828,7 +828,7 @@
 
   (defrule fundef-unambp-of-fundef
     (equal (fundef-unambp
-            (fundef extension spec declor asm? attribs decls body))
+            (fundef extension spec declor asm? attribs decls body info))
            (and (decl-spec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)
@@ -1584,10 +1584,10 @@
              (expr-option-unambp (stmt-return->expr? stmt)))
     :expand (stmt-unambp stmt))
 
-  (defrule decl-unamb-of-block-item-decl->unwrap
+  (defrule decl-unamb-of-block-item-decl->decl
     (implies (and (block-item-unambp item)
                   (block-item-case item :decl))
-             (decl-unambp (block-item-decl->unwrap item)))
+             (decl-unambp (block-item-decl->decl item)))
     :expand (block-item-unambp item))
 
   (defrule stmt-unamb-of-block-item-stmt->stmt

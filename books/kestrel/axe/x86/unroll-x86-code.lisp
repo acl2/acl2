@@ -43,9 +43,10 @@
 (include-book "kestrel/x86/support-bv" :dir :system)
 (include-book "kestrel/x86/alt-defs" :dir :system)
 (include-book "kestrel/x86/read-and-write2" :dir :system)
+(include-book "kestrel/x86/zmm" :dir :system)
 (include-book "rule-lists")
-(include-book "kestrel/x86/run-until-return" :dir :system)
-(include-book "kestrel/x86/run-until-return4" :dir :system)
+;(include-book "kestrel/x86/run-until-return" :dir :system)
+;(include-book "kestrel/x86/run-until-return4" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
@@ -783,7 +784,9 @@
 ;; the presence of any of these indicates that the run did not finish
 (defconst *incomplete-run-fns*
   '(run-until-stack-shorter-than ; todo: compare to other list below
+    run-until-return ; drop?
     run-until-stack-shorter-than-or-reach-pc
+    run-until-return-or-reach-pc ; drop?
     ;; new scheme:
     run-until-rsp-is
     run-until-rsp-is-or-reach-pc
@@ -1408,10 +1411,7 @@
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
-       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return
-                                                run-until-stack-shorter-than-or-reach-pc run-until-return-or-reach-pc
-                                                run-until-rsp-is-above run-until-rsp-is-above-or-reach-pc
-                                                run-until-esp-is-above run-until-esp-is-above-or-reach-pc)))
+       ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (let ((term (dag-to-term result-dag)))

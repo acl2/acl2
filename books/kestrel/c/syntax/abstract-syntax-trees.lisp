@@ -3034,7 +3034,8 @@
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
        see @(tsee amb-decl/stmt)."))
-    (:decl ((unwrap decl)))
+    (:decl ((decl decl)
+            (info any)))
     (:stmt ((stmt stmt)
             (info any)))
     (:ambig ((unwrap amb-decl/stmt)))
@@ -3326,7 +3327,8 @@
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
-   (body block-item-list))
+   (body block-item-list)
+   (info any))
   :pred fundefp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

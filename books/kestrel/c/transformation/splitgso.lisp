@@ -116,7 +116,7 @@
        ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table (c$::transunit->info tunit))))
+          (c$::transunit-info->table-end (c$::transunit->info tunit))))
        ((unless erp)
         (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
@@ -155,7 +155,7 @@
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
-          (c$::transunit-info->table (c$::transunit->info tunit)))))
+          (c$::transunit-info->table-end (c$::transunit->info tunit)))))
     (retok filepath? linkage tag?))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop)))
   :prepwork

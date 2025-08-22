@@ -652,10 +652,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "TODO"))
+      "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
-     :decl (decl-block-formalp item.unwrap)
+     :decl (decl-block-formalp item.decl)
      :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))

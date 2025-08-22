@@ -466,10 +466,8 @@
     "This is the type of the annotations that
      the validator adds to binary expressions,
      i.e. the @(':binary') case of @(tsee expr).
-     The information for a binary expression consists of its type
-     and the validation table at the beginning of the binary expression."))
-  ((type type)
-   (table valid-table))
+     The information for a binary expression consists of its type."))
+  ((type type))
   :pred expr-binary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -477,7 +475,7 @@
 (defirrelevant irr-expr-binary-info
   :short "An irrelevant validation information for binary expressions."
   :type expr-binary-infop
-  :body (make-expr-binary-info :type (irr-type) :table (irr-valid-table)))
+  :body (make-expr-binary-info :type (irr-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,78 +494,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stmt-expr-info
-  :short "Fixtype of validation information for expression statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) statements.
-     This information currently consists of
-     the validation table at the beginning of the statement."))
-  ((table valid-table))
-  :pred stmt-expr-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-stmt-expr-info
-  :short "An irrelevant validation information for expression statement."
-  :type stmt-expr-infop
-  :body (stmt-expr-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-stmt-expr-info (x)
-  :returns (info stmt-expr-infop)
-  :short "Coerce a value to @(tsee stmt-expr-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (stmt-expr-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-EXPR-INFOP." x)
-            (irr-stmt-expr-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod stmt-return-info
-  :short "Fixtype of validation information for return statements."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) statements.
-     This information currently consists of
-     the validation table at the beginning of the statement."))
-  ((table valid-table))
-  :pred stmt-return-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-stmt-return-info
-  :short "An irrelevant validation information for return statement."
-  :type stmt-return-infop
-  :body (stmt-return-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-stmt-return-info (x)
-  :returns (info stmt-return-infop)
-  :short "Coerce a value to @(tsee stmt-return-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (stmt-return-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy STMT-RETURN-INFOP." x)
-            (irr-stmt-return-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod block-item-info
   :short "Fixtype of validation information for block items."
   :long
@@ -577,7 +503,7 @@
      the validator adds to (for now only some kinds of) block items.
      This information currently consists of
      the validation table at the beginning of the block item."))
-  ((table valid-table))
+  ((table-start valid-table))
   :pred block-item-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -640,6 +566,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod fundef-info
+  :short "Fixtype of validation information for function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to function definitions.
+     The information consists of
+     the validation table at the start of the function definition
+     and the validation table at the start of the body
+     (i.e. just after the opening curly brace)."))
+  ((table-start valid-table)
+   (table-body-start valid-table))
+  :pred fundef-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fundef-info
+  :short "An irrelevant validation information for function definitions."
+  :type fundef-infop
+  :body (make-fundef-info :table-start (irr-valid-table)
+                          :table-body-start (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-fundef-info (x)
+  :returns (info fundef-infop)
+  :short "Coerce a value to @(tsee fundef-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (fundef-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy FUNDEF-INFOP." x)
+            (irr-fundef-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
@@ -648,9 +614,8 @@
     "This is the type of the annotations that
      the validator adds to translation units.
      The information consists of
-     the final validation table for the translation unit.
-     We wrap it into a product fixtype for easier future extensibility."))
-  ((table valid-table))
+     the final validation table for the translation unit."))
+  ((table-end valid-table))
   :pred transunit-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -658,7 +623,7 @@
 (defirrelevant irr-transunit-info
   :short "An irrelevant validation information for translation units."
   :type transunit-infop
-  :body (make-transunit-info :table (irr-valid-table)))
+  :body (make-transunit-info :table-end (irr-valid-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -761,12 +726,11 @@
    (asm-output t)
    (asm-input t)
    (asm-stmt t)
-   (stmt :expr (and (expr-option-annop (stmt-expr->expr? stmt))
-                    (stmt-expr-infop (stmt-expr->info stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
-   (stmt :return (and (expr-option-annop (stmt-return->expr? stmt))
-                      (stmt-return-infop (stmt-return->info stmt))))
+   (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
+                          (block-item-infop
+                           (block-item-decl->info block-item))))
    (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
                           (block-item-infop
                            (block-item-stmt->info block-item))))
@@ -779,6 +743,11 @@
                                  amb-declor/absdeclor)))
    (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
                          (amb-decl/stmt-fix amb-decl/stmt)))
+   (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+                (declor-annop (fundef->declor fundef))
+                (decl-list-annop (fundef->decls fundef))
+                (block-item-list-annop (fundef->body fundef))
+                (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
 
@@ -966,4 +935,26 @@
     (if item-type?
         item-type?
       items-type?))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-valid-table ((item block-itemp))
+  :guard (block-item-unambp item)
+  :returns (table valid-tablep)
+  :short "Validation table at the start of a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Validated block items are unambiguous and always contain annotations
+     that include the validation table at the beginning of the block item.
+     For now we perform a runtime check that should never fail,
+     but eventually we should use an annotation guard."))
+  (b* ((info (block-item-case
+              item
+              :decl item.info
+              :stmt item.info
+              :ambig (impossible)))
+       (info (coerce-block-item-info info)))
+    (block-item-info->table-start info))
   :hooks (:fix))

@@ -2298,14 +2298,13 @@
                       (set::union types-cast types-arg)
                       table
                       next-uident))
-       :binary (b* ((table0 table)
-                    ((erp new-arg1 type-arg1 types-arg1 table next-uident)
+       :binary (b* (((erp new-arg1 type-arg1 types-arg1 table next-uident)
                      (valid-expr expr.arg1 table next-uident ienv))
                     ((erp new-arg2 type-arg2 types-arg2 table next-uident)
                      (valid-expr expr.arg2 table next-uident ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
-                    (info (make-expr-binary-info :type type :table table0)))
+                    (info (make-expr-binary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
@@ -5737,12 +5736,9 @@
             (table (valid-pop-scope table)))
          (retok (stmt-compound new-items) types type? table next-uident))
        :expr
-       (b* ((table0 table)
-            ((erp new-expr? type? types table next-uident)
-             (valid-expr-option stmt.expr? table next-uident ienv))
-            (info (make-stmt-expr-info :table table0)))
-         (retok (make-stmt-expr :expr? new-expr?
-                                :info info)
+       (b* (((erp new-expr? type? types table next-uident)
+             (valid-expr-option stmt.expr? table next-uident ienv)))
+         (retok (make-stmt-expr :expr? new-expr? :info nil)
                 types
                 type?
                 table
@@ -5909,12 +5905,10 @@
        :break
        (retok (stmt-break) nil nil (valid-table-fix table) next-uident)
        :return
-       (b* ((table0 table)
-            ((erp new-expr? type? types table next-uident)
+       (b* (((erp new-expr? type? types table next-uident)
              (valid-expr-option stmt.expr? table next-uident ienv))
-            (return-type (or type? (type-void)))
-            (info (make-stmt-return-info :table table0)))
-         (retok (make-stmt-return :expr? new-expr? :info info)
+            (return-type (or type? (type-void))))
+         (retok (make-stmt-return :expr? new-expr? :info nil)
                 (set::insert return-type types)
                 nil
                 table
@@ -5954,18 +5948,20 @@
        the @('last-expr-type?') result is @('nil'),
        because the block item is not a statement of the kind
        described in @(tsee valid-stmt)."))
-    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table) (irr-uident)))
+    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table) (irr-uident))
+         (info (make-block-item-info :table-start table)))
       (block-item-case
        item
        :decl (b* (((erp new-decl types table next-uident)
-                   (valid-decl item.unwrap table next-uident ienv)))
-               (retok (block-item-decl new-decl) types nil table next-uident))
-       :stmt (b* ((table0 table)
-                  ((erp new-stmt types last-expr-type? table next-uident)
-                   (valid-stmt item.stmt table next-uident ienv))
-                  (info (make-block-item-info :table table0)))
-               (retok (make-block-item-stmt :stmt new-stmt
-                                            :info info)
+                   (valid-decl item.decl table next-uident ienv)))
+               (retok (make-block-item-decl :decl new-decl :info info)
+                      types
+                      nil
+                      table
+                      next-uident))
+       :stmt (b* (((erp new-stmt types last-expr-type? table next-uident)
+                   (valid-stmt item.stmt table next-uident ienv)))
+               (retok (make-block-item-stmt :stmt new-stmt :info info)
                       types
                       last-expr-type?
                       table
@@ -6395,6 +6391,7 @@
      because we have added it to the file scope."))
   (b* (((reterr) (irr-fundef) (irr-valid-table) (irr-uident))
        ((fundef fundef) fundef)
+       (table-start table)
        ((erp new-spec type storspecs types table next-uident)
         (valid-decl-spec-list fundef.spec nil nil nil table next-uident ienv))
        ((erp new-declor & type ident more-types table next-uident)
@@ -6500,16 +6497,20 @@
                                table)
                 (uident-increment next-uident))
           (mv table next-uident)))
+       (table-body-start table)
        ((erp new-body & & table next-uident)
         (valid-block-item-list fundef.body table next-uident ienv))
-       (table (valid-pop-scope table)))
+       (table (valid-pop-scope table))
+       (info (make-fundef-info :table-start table-start
+                               :table-body-start table-body-start)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
                         :asm? fundef.asm?
                         :attribs fundef.attribs
                         :decls new-decls
-                        :body new-body)
+                        :body new-body
+                        :info info)
            table
            next-uident))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
@@ -6661,7 +6662,7 @@
            (mv table next-uident)))
        ((erp new-edecls table next-uident)
         (valid-extdecl-list (transunit->decls tunit) table next-uident ienv))
-       (info (make-transunit-info :table table)))
+       (info (make-transunit-info :table-end table)))
     (retok (make-transunit :decls new-edecls :info info) next-uident))
   :hooks (:fix)
 

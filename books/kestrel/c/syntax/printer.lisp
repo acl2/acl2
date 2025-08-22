@@ -3642,7 +3642,7 @@
     :short "Print a block item."
     (block-item-case
      item
-     :decl (print-decl item.unwrap pstate)
+     :decl (print-decl item.decl pstate)
      :stmt (print-stmt item.stmt pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (two-nats-measure (block-item-count item) 0))

@@ -1,6 +1,6 @@
 ; Axe-specific rules about arithmetic
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,3 +17,13 @@
                   (and (acl2-numberp k1)
                        (equal (- k1 k2)
                               (fix x))))))
+
+;used by axe
+(defthmd natp-of-+
+  (implies (and (natp x)
+                (natp y))
+           (natp (+ x y))))
+
+;used by axe
+(defthmd natp-of-nfix
+  (natp (nfix x)))

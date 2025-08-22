@@ -359,7 +359,9 @@
 
     ;; we will just unroll read-chunks (at least for now):
     read-chunks-base
-    read-chunks-unroll))
+    read-chunks-unroll
+
+    read-of-bvplus-tighten))
 
 ;; Mostly for 64-bit mode
 ;todo: some are only needed with the new normal forms
@@ -389,6 +391,7 @@
     ;; write-of-write-of-write-of-write-of-write-same
 
     write-of-bvchop-arg3-gen
+    write-of-bvplus-tighten
     ))
 
 (defund region-rules ()
@@ -446,6 +449,10 @@
     subregion48p-of-bvchop-arg4
     disjoint-regions48p-of-bvchop-arg2
     disjoint-regions48p-of-bvchop-arg4
+    disjoint-regions48p-of-logext-arg2
+    disjoint-regions48p-of-logext-arg4
+    disjoint-regions48p-of-bvplus-tighten-arg2
+    disjoint-regions48p-of-bvplus-tighten-arg4
     acl2::bvmult-tighten-when-power-of-2p-axe ; helps rules like in-region48p-when-non-negative-and-negative-range fire
     ))
 
@@ -485,6 +492,8 @@
     ;;acl2::bvplus-of-*-arg2
     acl2::bvminus-of-bvplus-tighten-arg2
     acl2::bvminus-of-bvplus-tighten-arg3
+    acl2::bvplus-of-+-arg2 ; can we remove special cases for converting args of bvplus?
+    acl2::bvplus-of-+-arg3
     ))
 
 ;; Rules about the actual functions READ and WRITE.
@@ -1308,7 +1317,7 @@
   (declare (xargs :guard t))
   '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
-    acl2::logext-of-bvplus-64 ;somewhat unusual
+    ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
@@ -1324,6 +1333,8 @@
 
     acl2::bvlt-trim-arg1-axe-all
     acl2::bvlt-trim-arg2-axe-all
+
+    acl2::bvuminus-trim-axe-all ; needed to resolve a read
 
     acl2::bvlt-of-bvmult-of-expt-arg2-constant-version2
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
@@ -1684,6 +1695,8 @@
     not-mv-nth-0-of-sse-cmp
 
     integerp-of-mxcsr
+    integerp-of-indef ; has shown up in a branch of boolif
+    integerp-of-qnanize ; has shown up in a branch of boolif
     ;; maybe drop these:
     ;;integerp-of-xr-mxcsr
     ;;x86isa::n32p-xr-mxcsr ; targets unsigned-byte-p-of-mxcsr
@@ -1814,7 +1827,10 @@
     x86isa::fp-decode-constant-opener
     x86isa::fp-to-rat-constant-opener
     rtl::bias-constant-opener
-    rtl::expw-constant-opener))
+    rtl::expw-constant-opener
+
+    acl2::boolif-when-integerp-arg2
+    acl2::boolif-when-integerp-arg3))
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
@@ -2071,6 +2087,124 @@
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
 
+(defund zmm-rules-common ()
+  (declare (xargs :guard t))
+  '(zmmi-becomes-zmm
+    xr-becomes-zmm
+
+    zmm-of-set-flag
+    zmm-of-!rflags
+    zmm-of-set-mxcsr
+    zmm-of-set-undef
+    ;; zmm-of-write-byte
+    zmm-of-write
+    ;; zmm-of-write-bytes
+
+    xw-becomes-set-zmm
+    !zmmi-becomes-set-zmm
+
+    zmm-of-set-zmm-same
+    zmm-of-set-zmm-diff
+
+    64-bit-modep-of-set-zmm
+    alignment-checking-enabled-p-of-set-zmm
+    app-view-of-set-zmm
+    ctri-of-set-zmm
+    fault-of-set-zmm
+    get-flag-of-set-zmm
+    ms-of-set-zmm
+    mxcsr-of-set-zmm
+    undef-of-set-zmm
+    x86p-of-set-zmm
+
+    set-zmm-of-set-zmm-same
+    set-zmm-of-set-zmm-diff-constant-version
+
+    set-flag-of-set-zmm
+    !rflags-of-set-zmm
+    set-undef-of-set-zmm
+    set-mxcsr-of-set-zmm))
+
+(defund zmm-rules64 ()
+  (declare (xargs :guard t))
+  (append '(zmm-of-set-rip
+            zmm-of-set-rax
+            zmm-of-set-rbx
+            zmm-of-set-rcx
+            zmm-of-set-rdx
+            zmm-of-set-rsi
+            zmm-of-set-rdi
+            zmm-of-set-r8
+            zmm-of-set-r9
+            zmm-of-set-r10
+            zmm-of-set-r11
+            zmm-of-set-r12
+            zmm-of-set-r13
+            zmm-of-set-r14
+            zmm-of-set-r15
+            zmm-of-set-rsp
+            zmm-of-set-rbp
+
+            rip-of-set-zmm
+            rax-of-set-zmm
+            rbx-of-set-zmm
+            rcx-of-set-zmm
+            rdx-of-set-zmm
+            rsi-of-set-zmm
+            rdi-of-set-zmm
+            r8-of-set-zmm
+            r9-of-set-zmm
+            r10-of-set-zmm
+            r11-of-set-zmm
+            r12-of-set-zmm
+            r13-of-set-zmm
+            r14-of-set-zmm
+            r15-of-set-zmm
+            rsp-of-set-zmm
+            rbp-of-set-zmm
+
+            ;; read-byte-of-set-zmm ; needed?
+            read-of-set-zmm
+            ;; read-bytes-of-set-zmm ; needed?
+
+            set-zmm-of-set-rip
+            set-zmm-of-set-rax
+            set-zmm-of-set-rbx
+            set-zmm-of-set-rcx
+            set-zmm-of-set-rdx
+            set-zmm-of-set-rsi
+            set-zmm-of-set-rdi
+            set-zmm-of-set-r8
+            set-zmm-of-set-r9
+            set-zmm-of-set-r10
+            set-zmm-of-set-r11
+            set-zmm-of-set-r12
+            set-zmm-of-set-r13
+            set-zmm-of-set-r14
+            set-zmm-of-set-r15
+            set-zmm-of-set-rbp
+            set-zmm-of-set-rsp
+
+            write-of-set-zmm)
+          (zmm-rules-common)))
+
+(defund zmm-rules32 ()
+  (declare (xargs :guard t))
+  ;; for now (eventually keep zmm and make rules like the rules have for eax in 32-bit mode):
+  '(zmmi   ; exposes zmmi$a
+    zmmi$a ; exposes xr
+
+    !zmmi   ; exposes !zmmi$a
+    !zmmi$a ; exposes xw
+    )
+  ;; (append '(zmm-of-set-rax
+  ;;           zmm-of-set-rbx
+  ;;           zmm-of-set-rcx
+  ;;           zmm-of-set-rdx
+  ;;           zmm-of-set-rip)
+  ;;         (zmm-rules-common))
+  )
+
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
@@ -2311,7 +2445,7 @@
             ;; x86isa::program-at-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
-            acl2::getbit-of-slice-both
+            acl2::getbit-of-slice-gen
 
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
@@ -2559,9 +2693,11 @@
 
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
+            ;; these are only for SSE?
             xmmi-size$inline ; dispatches to rx32, etc
-            !xmmi-size$inline ; dispatched to wx32, etc
+            !xmmi-size$inline ; dispatches to wx32, etc
 
+            ;; these are for AVX, etc?
             zmmi-size$inline ; dispatches to rz32, etc
             !zmmi-size$inline ; dispatches to wz32, etc
 
@@ -2584,12 +2720,6 @@
             wz128$inline
             wz256$inline
             wz512$inline
-
-            zmmi ; exposes zmmi$a
-            zmmi$a ; exposes xr
-
-            !zmmi ; exposes !zmmi$a
-            !zmmi$a ; exposes xw
 
             x86isa::x86-operand-to-zmm/mem
 
@@ -2764,7 +2894,9 @@
 
      acl2::bvplus-of-logext-arg2
      acl2::bvplus-of-logext-arg3
-     acl2::signed-byte-p-logext)
+     acl2::signed-byte-p-logext
+     read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
+     )
    (region-rules)
    (acl2::lookup-rules)
    (constant-opener-rules)
@@ -2822,6 +2954,7 @@
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
            (step-opener-rules32)
+           (zmm-rules32)
           '(;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple-32
@@ -4131,6 +4264,7 @@
           (write-rules)
           (read-and-write-rules)
           (segment-base-and-bounds-rules-64)
+          (zmm-rules64)
           '(read-byte-becomes-read ; (read-byte-rules) ; read-byte can come from read-bytes
             len-of-read-bytes nth-of-read-bytes ; read-bytes can come from an output-extractor
             acl2::integerp-of-+ ; helps with nth-of-read-bytes
@@ -4347,12 +4481,9 @@
     rbp-of-set-rbp
 
     ;; undef-of-write-byte ; todo: does write-byte actually get introduced?
-
     ;; mxcsr-of-write-byte
-
     ;; ms-of-write-byte
-
-;    fault-of-write-byte ; todo: move?
+    ;; fault-of-write-byte
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -5946,9 +6077,7 @@
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
-   '(stack-height-increased-wrt
-     stack-height-decreased-wrt
-     get-pc
+   '(get-pc
      acl2::memberp-of-cons-irrel-strong
      acl2::memberp-of-cons-same
      acl2::memberp-of-nil
@@ -5971,6 +6100,22 @@
      read-bytes-of-set-flag ; todo: more like this, for other state changers
      read-bytes-of-!rflags
      read-bytes-of-set-rip
+     read-bytes-of-set-rax
+     read-bytes-of-set-rbx
+     read-bytes-of-set-rcx
+     read-bytes-of-set-rdx
+     read-bytes-of-set-r8
+     read-bytes-of-set-r9
+     read-bytes-of-set-r10
+     read-bytes-of-set-r11
+     read-bytes-of-set-r12
+     read-bytes-of-set-r13
+     read-bytes-of-set-r14
+     read-bytes-of-set-r15
+     read-bytes-of-set-rsi
+     read-bytes-of-set-rdi
+     read-bytes-of-set-rsp
+     read-bytes-of-set-rbp
      read-bytes-of-set-undef
      read-bytes-of-set-mxcsr
      read-bytes-of-write-when-disjoint-regions48p
@@ -5994,28 +6139,29 @@
 
      xw-of-xr-same-gen
 
-     set-undef ; can be introduced by write-user-rflags-rewrite-better
+     ;; set-undef ; can be introduced by write-user-rflags-rewrite-better
 
      x86isa::canonical-address-p-of-xr-of-rip
-     x86isa::rip ; at least for now
+     ;x86isa::rip ; at least for now
+     ;rsp ; at least for now
+
+     acl2::bvminus-of-bvplus-same-arg2 ; todo: more like this (factor out of symbolic-execution-rules64)
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))
 
-;; For the loop lifter
 ;; todo: consider making a 32-bit variant (see above)
 (defund symbolic-execution-rules-loop-lifter ()
   (declare (xargs :guard t))
-  '(;;run-until-exit-segment-or-hit-loop-header-opener-1
-    run-until-exit-segment-or-hit-loop-header-opener-2
+  '(;stack-height-increased-wrt
+    rsp-is-abovep
+    run-until-exit-segment-or-hit-loop-header-opener
     run-until-exit-segment-or-hit-loop-header-base-case-1
     run-until-exit-segment-or-hit-loop-header-base-case-2
     run-until-exit-segment-or-hit-loop-header-base-case-3
-    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
-    run-until-exit-segment-or-hit-loop-header-of-if-split
-    run-until-exit-segment-or-hit-loop-header-of-if))
+    run-until-exit-segment-or-hit-loop-header-of-if-split))
 
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
 (defund loop-lifter-invariant-preservation-rules ()
@@ -6095,7 +6241,9 @@
 (defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
-          (old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
+          (new-normal-form-rules-common)
+          (new-normal-form-rules64)
+          ;(old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
           ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

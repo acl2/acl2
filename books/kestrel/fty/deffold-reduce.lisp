@@ -792,20 +792,36 @@
         (acl2::packn-pos (list type-suffix '-when-atom) suffix))
        (type-suffix-of-cons
         (acl2::packn-pos (list type-suffix '-of-cons) suffix))
+       (type-suffix-of-append
+        (acl2::packn-pos (list type-suffix '-of-append) suffix))
+       (type1 (add-suffix-to-fn type "1"))
        (thm-events
-        `((defruled ,type-suffix-when-atom
-            (implies (atom ,type)
-                     (equal (,type-suffix ,type ,@extra-args-names)
-                            ,default))
-            :enable ,type-suffix)
-          (defruled ,type-suffix-of-cons
-            (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
-                   (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
-                             (,type-suffix ,type ,@extra-args-names)))
-            :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))
-          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                          '(,type-suffix-when-atom
-                            ,type-suffix-of-cons)))))
+        (append
+         `((defruled ,type-suffix-when-atom
+             (implies (atom ,type)
+                      (equal (,type-suffix ,type ,@extra-args-names)
+                             ,default))
+             :enable ,type-suffix)
+           (defruled ,type-suffix-of-cons
+             (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
+                    (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
+                              (,type-suffix ,type ,@extra-args-names)))
+             :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))
+           (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                           '(,type-suffix-when-atom
+                             ,type-suffix-of-cons)))
+         (and (eq combine 'and)
+              (eq default t)
+              `((defruled ,type-suffix-of-append
+                  (equal (,type-suffix (append ,type ,type1) ,@extra-args-names)
+                         (and (,type-suffix ,type ,@extra-args-names)
+                              (,type-suffix ,type1 ,@extra-args-names)))
+                  :induct t
+                  :enable (append
+                           ,type-suffix
+                           ,type-suffix-of-cons))
+                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                                '(,type-suffix-of-append)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -837,6 +853,16 @@
        (type-count (flexomap->count omap))
        (recog (flexomap->pred omap))
        (recp (flexomap->recp omap))
+       (key-recog (fty::flexomap->key-type omap))
+       ((unless (symbolp key-recog))
+        (raise "Internal error: malformed recognizer ~x0." key-recog)
+        (mv '(_) nil))
+       (key-info (fty::flextype-with-recognizer key-recog fty-table))
+       (key-type (or (and key-info
+                          (fty::flextype->name key-info))
+                     (case key-recog
+                       (integerp 'acl2::int)
+                       (t (raise "Not supported yet: key-recog.")))))
        (val-recog (flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
@@ -864,6 +890,10 @@
         (acl2::packn-pos (list type-suffix '-when-emptyp) suffix))
        (type-suffix-of-tail
         (acl2::packn-pos (list type-suffix '-of-tail) suffix))
+       (type-suffix-of-update
+        (acl2::packn-pos (list type-suffix '-of-update) suffix))
+       (val-type-suffix-of-head-when-type-suffix
+        (acl2::packn-pos (list val-type '-of-head-when- type-suffix) suffix))
        (thm-events
         (append
          `((defruled ,type-suffix-when-emptyp
@@ -882,8 +912,35 @@
                            (,type-suffix (omap::tail ,type)
                                          ,@extra-args-names))
                   :enable ,type-suffix)
-                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                                '(,type-suffix-of-tail)))))))
+                (defruled ,type-suffix-of-update
+                  (implies (and (,recog ,type)
+                                (,val-type-suffix ,val-type ,@extra-args-names)
+                                (,type-suffix ,type ,@extra-args-names))
+                           (,type-suffix (omap::update ,key-type
+                                                       ,val-type
+                                                       ,type)
+                                         ,@extra-args-names))
+                  :induct t
+                  :enable (,type-suffix
+                           ,recog
+                           omap::update
+                           omap::emptyp
+                           omap::mfix
+                           omap::mapp
+                           omap::head
+                           omap::tail))
+                (defruled ,val-type-suffix-of-head-when-type-suffix
+                  (implies (and (,recog ,type)
+                                (,type-suffix ,type ,@extra-args-names)
+                                (not (omap::emptyp ,type)))
+                           (,val-type-suffix (mv-nth 1 (omap::head ,type))
+                                             ,@extra-args-names))
+                  :enable ,type-suffix)
+                (add-to-ruleset
+                 ,(deffoldred-gen-ruleset-name suffix)
+                 '(,type-suffix-of-tail
+                   ,type-suffix-of-update
+                   ,val-type-suffix-of-head-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

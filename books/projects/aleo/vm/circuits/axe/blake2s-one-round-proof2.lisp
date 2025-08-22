@@ -600,7 +600,7 @@
                 ;; acl2::bvcat-of-getbit-and-slice-adjacent
                 ;; acl2::bvcat-of-slice-and-getbit-adjacent
                 acl2::getbit-of-bvchop
-                acl2::getbit-of-slice-gen ;todo: generalize the (integerp x)
+                acl2::getbit-of-slice-gen
                 acl2::getbit-of-slice
                 acl2::slice-of-slice
                 acl2::getbit-of-0-when-bitp

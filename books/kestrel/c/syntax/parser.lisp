@@ -14943,7 +14943,7 @@
                ;; If we parse an unambiguous declaration,
                ;; we return a block item that is a declaration.
                :decl
-               (retok (block-item-decl decl/stmt.unwrap)
+               (retok (make-block-item-decl :decl decl/stmt.unwrap :info nil)
                       span
                       parstate)
                ;; If we parse an unambiguous statement,
@@ -14969,7 +14969,7 @@
         (b* ((parstate (unread-token parstate)) ;
              ((erp decl span parstate) ; decl
               (parse-declaration parstate)))
-          (retok (block-item-decl decl) span parstate)))
+          (retok (make-block-item-decl :decl decl :info nil) span parstate)))
        ;; Otherwise, we must have a statement.
        (t ; other
         (b* ((parstate (if token (unread-token parstate) parstate)) ;
@@ -16749,7 +16749,8 @@
                                        :asm? asmspec?
                                        :attribs attrspecs
                                        :decls nil
-                                       :body nil))
+                                       :body nil
+                                       :info nil))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is anything else,
@@ -16778,7 +16779,8 @@
                                          :asm? asmspec?
                                          :attribs attrspecs
                                          :decls nil
-                                         :body items))
+                                         :body items
+                                         :info nil))
                            (span-join span last-span)
                            parstate))))))
              ;; If token3 is anything else,
@@ -16811,7 +16813,8 @@
                                      :asm? asmspec?
                                      :attribs attrspecs
                                      :decls decls
-                                     :body items))
+                                     :body items
+                                     :info nil))
                        (span-join span last-span)
                        parstate)))))))))))
 
