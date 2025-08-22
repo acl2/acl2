@@ -16,4 +16,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defmake-self code-ensemble)
+(fty::defmake-self code-ensemble
+  :parents (abstract-syntax))

@@ -260,7 +260,7 @@
   (xdoc::topstring
    (xdoc::p
      "This is the topological ordering of @(tsee depgraph), obtained via
-      @(depgraph::toposort)."))
+      @(tsee depgraph::toposort)."))
   (b* ((depgraph (depgraph name fty-table))
        ((mv successp result)
         (depgraph::toposort depgraph))
