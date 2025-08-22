@@ -547,3 +547,15 @@
            (equal (bvplus size k1 (+ k2 x))
                   (bvplus size (+ k1 k2) x)))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-equal-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (integerp k1)
+                (integerp k2)
+                (natp size))
+           (equal (equal (bvplus size k2 x) k1)
+                  (and (unsigned-byte-p size k1)
+                       (equal (bvchop size x) (bvchop size (- k1 k2))))))
+  :hints (("Goal" :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))

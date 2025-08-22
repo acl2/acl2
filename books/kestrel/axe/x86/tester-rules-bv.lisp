@@ -34,7 +34,7 @@
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 ;(local (include-book "../axe-rules-mixed")) ; drop?
-(local (include-book "../rules3")) ;drop
+(local (include-book "../rules3")) ;drop ; maybe for <-of-constant-and-bvchop-when-equal-of-getbit
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -53,6 +53,8 @@
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system))
+(local (include-book "kestrel/bv/sbvlt-rules" :dir :system))
 ;(local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 
 ;gen

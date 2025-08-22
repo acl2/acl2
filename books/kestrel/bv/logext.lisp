@@ -731,12 +731,12 @@
 
 ;todo gen
 (defthm signed-byte-p-of-one-less-of-logext
-  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
-         (not (equal (expt 2 31) (bvchop 32 x))))
+  (implies (posp size)
+           (equal (signed-byte-p size (+ -1 (logext size x)))
+                  (not (equal (expt 2 (+ -1 size)) (bvchop size x)))))
   :hints (("Goal"
-           :use (:instance split-bv-top-add (size 32) (x (bvchop 32 x)))
-           :in-theory (enable logext-cases signed-byte-p
-                                     ))))
+           :use (:instance split-bv-top-add (size size) (x (bvchop size x)))
+           :in-theory (enable logext-cases signed-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -760,8 +760,7 @@
                 (natp size)
                 (natp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (bvchop size (+ x (logext size2 y)))
                   (bvchop size (+ x y)))))
 
@@ -770,8 +769,7 @@
                 (natp size)
                 (natp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (bvchop size (+ (logext size2 y) x))
                   (bvchop size (+ x y)))))
 
@@ -826,5 +824,5 @@
 ;gen?
 ;use polarities?
 (defthm logext-min-value
-  (equal (< -2147483648 (LOGEXT 32 X))
-         (not (equal -2147483648 (LOGEXT 32 X)))))
+  (equal (< -2147483648 (logext 32 x))
+         (not (equal -2147483648 (logext 32 x)))))
