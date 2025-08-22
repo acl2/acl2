@@ -766,6 +766,13 @@
 
     unsigned-byte-p-of-rflagsbits
 
+    unsigned-byte-p-of-rflagsbits->af
+    unsigned-byte-p-of-rflagsbits->cf
+    unsigned-byte-p-of-rflagsbits->of
+    unsigned-byte-p-of-rflagsbits->pf
+    unsigned-byte-p-of-rflagsbits->sf
+    unsigned-byte-p-of-rflagsbits->zf
+
     ;; These introduce get-flag:
     rflagsbits->cf$inline-of-xr
     rflagsbits->pf$inline-of-xr
@@ -6044,7 +6051,29 @@
             !rflagsbits->zf-opener
             !rflagsbits->res1-opener
             !rflagsbits->res2-opener
-            !rflagsbits->res3-opener)
+            !rflagsbits->res3-opener
+
+            rflagsbits->af$inline ; todo: open before proof stage?
+            rflagsbits->cf$inline
+            rflagsbits->of$inline
+            rflagsbits->pf$inline
+            rflagsbits->sf$inline
+            rflagsbits->zf$inline
+            rflagsbits->res1$inline
+            rflagsbits->res2$inline
+            rflagsbits->res3$inline
+
+            ;; these are sometimes needed for the openers just above:
+            unsigned-byte-p-of-rflagsbits->af
+            unsigned-byte-p-of-rflagsbits->cf
+            unsigned-byte-p-of-rflagsbits->of
+            unsigned-byte-p-of-rflagsbits->pf
+            unsigned-byte-p-of-rflagsbits->sf
+            unsigned-byte-p-of-rflagsbits->zf
+
+            rflagsbits-fix$inline
+            )
+          (bitops-to-bv-rules)
           ;; todo: this stuff is duplicated in the lifter-rules:
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
