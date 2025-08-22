@@ -1,0 +1,14 @@
+; Cert-flags and portcullis commands for factorial-elf64.lisp.
+;
+; Copyright (C) 2017-2021 Kestrel Technology, LLC
+; Copyright (C) 2023-2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(INCLUDE-BOOK "kestrel/x86/portcullis" :DIR :SYSTEM)
+
+; cert-flags: ? T :TTAGS :ALL
