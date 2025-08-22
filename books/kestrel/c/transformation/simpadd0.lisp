@@ -503,6 +503,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-initer-single-thm ((old initerp)
+                                        (new initerp)
+                                        (vartys ident-type-mapp)
+                                        (const-new symbolp)
+                                        (thm-index posp)
+                                        (hints true-listp))
+  :guard (and (initer-unambp old)
+              (initer-unambp new)
+              (initer-case old :single)
+              (initer-case new :single))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of a single initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem says that
+     if the execution of the old initializer does not yield an error,
+     neither does the execution of the new initializer,
+     and that the two executions give the same result;
+     the theorem also says that the result has the type of the initializer."))
+  (b* ((old (initer-fix old))
+       (new (initer-fix new))
+       ((unless (initer-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (initer-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (initer-type old))
+       ((unless (equal (initer-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new initializer ~x1 differs from ~
+                the type ~x2 of the old initializer ~x3."
+               (initer-type new) new type old)
+        (mv '(_) nil 1))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
+       ((unless (type-formalp type))
+        (raise "Internal error: initializer ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
+       (formula
+        `(b* ((old-initer (mv-nth 1 (ldm-initer ',old)))
+              (new-initer (mv-nth 1 (ldm-initer ',new)))
+              ((mv old-result old-compst)
+               (c::exec-initer old-initer compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-initer new-initer compst new-fenv limit)))
+           (implies (and ,@vars-pre
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         (equal (c::init-type-of-init-value old-result)
+                                (c::init-type-single ',ctype))
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (simpadd0-gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-initer-single-thm
+    :args ((old initerp) (new initerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-expr-asg-thm ((old exprp)
                                    (new exprp)
                                    (vartys ident-type-mapp)
@@ -2509,19 +2581,126 @@
                                 (expr-new exprp)
                                 (expr-thm-name symbolp)
                                 (gin simpadd0-ginp))
-  :guard (expr-unambp expr)
+  :guard (and (expr-unambp expr)
+              (expr-unambp expr-new))
   :returns (mv (initer initerp) (gout simpadd0-goutp))
   :short "Transform an initializer consisting of a single expression."
-  (declare (ignore expr expr-thm-name))
   (b* (((simpadd0-gin gin) gin)
-       (initer-new (initer-single expr-new)))
-    (mv initer-new (simpadd0-gout-no-thm gin)))
+       (initer (initer-single expr))
+       (initer-new (initer-single expr-new))
+       ((unless (and expr-thm-name
+                     (expr-purep expr)))
+        (mv initer-new (simpadd0-gout-no-thm gin)))
+       (lemma-instances
+        (simpadd0-initer-single-lemma-instances gin.vartys expr))
+       (hints
+        `(("Goal"
+           :in-theory '((:e ldm-initer)
+                        (:e ldm-expr)
+                        (:e ldm-ident)
+                        (:e ldm-type)
+                        (:e c::expr-kind)
+                        (:e c::initer-single)
+                        (:e c::type-nonchar-integerp))
+           :use ((:instance ,expr-thm-name)
+                 (:instance simpadd0-initer-single-support-lemma
+                            (old-expr (mv-nth 1 (ldm-expr ',expr)))
+                            (new-expr (mv-nth 1 (ldm-expr ',expr-new))))
+                 (:instance simpadd0-initer-single-error-support-lemma
+                            (expr (mv-nth 1 (ldm-expr ',expr)))
+                            (fenv old-fenv))
+                 ,@lemma-instances))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-initer-single-thm initer
+                                        initer-new
+                                        gin.vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+    (mv initer-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-initer-single-lemma-instances ((vartys ident-type-mapp)
+                                                        (expr exprp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-initer-single-vartys-support-lemma
+                       (expr (mv-nth 1 (ldm-expr ',expr)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-initer-single-lemma-instances (omap::tail vartys)
+                                                        expr)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
   (defret initer-unambp-of-simpadd0-initer-single
     (initer-unambp initer)
-    :hyp (expr-unambp expr-new)))
+    :hyp (expr-unambp expr-new))
+
+  (defruled simpadd0-initer-single-support-lemma
+    (b* ((old (c::initer-single old-expr))
+         (new (c::initer-single new-expr))
+         (old-expr-result (c::exec-expr-pure old-expr compst))
+         (new-expr-result (c::exec-expr-pure new-expr compst))
+         (old-expr-value (c::expr-value->value old-expr-result))
+         (new-expr-value (c::expr-value->value new-expr-result))
+         ((mv old-result old-compst)
+          (c::exec-initer old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-initer new compst new-fenv limit))
+         (type (c::type-of-value old-expr-value)))
+      (implies (and (not (equal (c::expr-kind old-expr) :call))
+                    (not (equal (c::expr-kind new-expr) :call))
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-expr-result))
+                    (equal old-expr-value new-expr-value)
+                    (c::type-nonchar-integerp type))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::init-type-of-init-value old-result)
+                           (c::init-type-single type)))))
+    :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
+             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
+    :enable (c::exec-expr-call-or-pure
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp
+             c::init-type-of-init-value))
+
+  (defruled simpadd0-initer-single-error-support-lemma
+    (implies (and (not (equal (c::expr-kind expr) :call))
+                  (c::errorp (c::exec-expr-pure expr compst)))
+             (c::errorp
+              (mv-nth 0 (c::exec-initer
+                         (c::initer-single expr) compst fenv limit))))
+    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
+    :enable c::exec-expr-call-or-pure)
+
+  (defruled simpadd0-initer-single-vartys-support-lemma
+    (implies (not (equal (c::expr-kind expr) :call))
+             (b* ((initer (c::initer-single expr))
+                  ((mv result compst1)
+                   (c::exec-initer initer compst fenv limit)))
+               (implies (and (not (c::errorp result))
+                             (c::type-nonchar-integerp
+                              (c::type-of-value
+                               (c::expr-value->value
+                                (c::exec-expr-pure expr compst))))
+                             (c::compustate-has-var-with-type-p var type compst))
+                        (c::compustate-has-var-with-type-p var type compst1))))
+    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
+    :enable (c::exec-expr-call-or-pure
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
