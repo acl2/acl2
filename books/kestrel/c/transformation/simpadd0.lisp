@@ -2592,7 +2592,7 @@
                      (expr-purep expr)))
         (mv initer-new (simpadd0-gout-no-thm gin)))
        (lemma-instances
-        (simpadd0-initer-single-lemma-instances gin.vartys expr))
+        (simpadd0-initer-single-pure-lemma-instances gin.vartys expr))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-initer)
@@ -2603,10 +2603,10 @@
                         (:e c::initer-single)
                         (:e c::type-nonchar-integerp))
            :use ((:instance ,expr-thm-name)
-                 (:instance simpadd0-initer-single-support-lemma
+                 (:instance simpadd0-initer-single-pure-support-lemma
                             (old-expr (mv-nth 1 (ldm-expr ',expr)))
                             (new-expr (mv-nth 1 (ldm-expr ',expr-new))))
-                 (:instance simpadd0-initer-single-error-support-lemma
+                 (:instance simpadd0-initer-single-pure-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr)))
                             (fenv old-fenv))
                  ,@lemma-instances))))
@@ -2624,20 +2624,20 @@
                             :vartys gin.vartys)))
 
   :prepwork
-  ((define simpadd0-initer-single-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-initer-single-pure-lemma-instances ((vartys ident-type-mapp)
                                                         (expr exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance simpadd0-initer-single-vartys-support-lemma
+           `(:instance simpadd0-initer-single-pure-vartys-support-lemma
                        (expr (mv-nth 1 (ldm-expr ',expr)))
                        (fenv old-fenv)
                        (var (mv-nth 1 (ldm-ident ',var)))
                        (type (mv-nth 1 (ldm-type ',type)))))
           (lemma-instances
-           (simpadd0-initer-single-lemma-instances (omap::tail vartys)
+           (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
                                                         expr)))
        (cons lemma-instance lemma-instances))))
 
@@ -2647,7 +2647,7 @@
     (initer-unambp initer)
     :hyp (expr-unambp expr-new))
 
-  (defruled simpadd0-initer-single-support-lemma
+  (defruled simpadd0-initer-single-pure-support-lemma
     (b* ((old (c::initer-single old-expr))
          (new (c::initer-single new-expr))
          (old-expr-result (c::exec-expr-pure old-expr compst))
@@ -2677,7 +2677,7 @@
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
 
-  (defruled simpadd0-initer-single-error-support-lemma
+  (defruled simpadd0-initer-single-pure-error-support-lemma
     (implies (and (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp
@@ -2686,7 +2686,7 @@
     :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
     :enable c::exec-expr-call-or-pure)
 
-  (defruled simpadd0-initer-single-vartys-support-lemma
+  (defruled simpadd0-initer-single-pure-vartys-support-lemma
     (implies (not (equal (c::expr-kind expr) :call))
              (b* ((initer (c::initer-single expr))
                   ((mv result compst1)
