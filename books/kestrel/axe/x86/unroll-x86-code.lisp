@@ -323,8 +323,6 @@
 (thm (equal (len (step-opener-rules32)) 1))
 (thm (equal (len (step-opener-rules64)) 1))
 
-(defconst *no-warn-ground-functions* '(feature-flag))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules state)

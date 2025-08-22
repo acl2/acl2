@@ -2797,12 +2797,12 @@
   (append
    '(standard-state-assumption
      standard-state-assumption-32
-     standard-assumptions-core-64 ; only needed by loop lifter?
+     ;standard-assumptions-core-64 ; only needed by loop lifter?
      standard-state-assumption-64
-     standard-assumptions-mach-o-64 ; only needed by loop lifter?
-     standard-assumptions-elf-64 ; only needed by loop lifter?
-     standard-assumptions-pe-64 ; only needed by loop lifter?
-     bytes-loaded-at-address-64
+     ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     ;standard-assumptions-elf-64 ; only needed by loop lifter?
+     ;standard-assumptions-pe-64 ; only needed by loop lifter?
+     ;bytes-loaded-at-address-64  ; only needed by loop lifter?
      ;; Mach-O stuff:
      acl2::get-mach-o-code
      acl2::subroutine-address-mach-o
@@ -4290,7 +4290,7 @@
             set-rip-of-logext
             )))
 
-(defund new-normal-form-rules64 ()
+(defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))
   '(;; these target xr-of-rgf and introduce RAX, etc:
     xr-becomes-rax
@@ -4310,86 +4310,82 @@
     xr-becomes-rsp
     xr-becomes-rbp
 
-    unsigned-byte-p-64-of-rax
-    unsigned-byte-p-64-of-rbx
-    unsigned-byte-p-64-of-rcx
-    unsigned-byte-p-64-of-rdx
-    unsigned-byte-p-64-of-rsi
-    unsigned-byte-p-64-of-rdi
-    unsigned-byte-p-64-of-r8
-    unsigned-byte-p-64-of-r9
-    unsigned-byte-p-64-of-r10
-    unsigned-byte-p-64-of-r11
-    unsigned-byte-p-64-of-r12
-    unsigned-byte-p-64-of-r13
-    unsigned-byte-p-64-of-r14
-    unsigned-byte-p-64-of-r15
-    unsigned-byte-p-64-of-rsp
-    unsigned-byte-p-64-of-rbp
-
-    integerp-of-rax
-    integerp-of-rbx
-    integerp-of-rcx
-    integerp-of-rdx
-    integerp-of-rsi
-    integerp-of-rdi
-    integerp-of-r8
-    integerp-of-r9
-    integerp-of-r10
-    integerp-of-r11
-    integerp-of-r12
-    integerp-of-r13
-    integerp-of-r14
-    integerp-of-r15
-    integerp-of-rsp-gen ; integerp-of-rsp
-    integerp-of-rbp
-
-    fix-of-rax
-    fix-of-rbx
-    fix-of-rcx
-    fix-of-rdx
-    fix-of-rsi
-    fix-of-rdi
-    fix-of-r8
-    fix-of-r9
-    fix-of-r10
-    fix-of-r11
-    fix-of-r12
-    fix-of-r13
-    fix-of-r14
-    fix-of-r15
-    fix-of-rsp
-    fix-of-rbp
-
     ;; Rules about rip/set-rip:
     xr-becomes-rip ; introduces rip
     !rip-becomes-set-rip
     xw-becomes-set-rip
     x86isarip-becomes-rip
 
-    xw-of-set-rip-irrel
-    xr-of-set-rip-irrel
-    set-rip-of-set-rip
+    xw-becomes-set-rax
+    xw-becomes-set-rbx
+    xw-becomes-set-rcx
+    xw-becomes-set-rdx
+    xw-becomes-set-rsi
+    xw-becomes-set-rdi
+    xw-becomes-set-r8
+    xw-becomes-set-r9
+    xw-becomes-set-r10
+    xw-becomes-set-r11
+    xw-becomes-set-r12
+    xw-becomes-set-r13
+    xw-becomes-set-r14
+    xw-becomes-set-r15
+    xw-becomes-set-rsp
+    xw-becomes-set-rbp
+    ;; xw-becomes-set-error
 
-    ;; bring rip to the front:
-    set-rax-of-set-rip
-    set-rbx-of-set-rip
-    set-rcx-of-set-rip
-    set-rdx-of-set-rip
-    set-rsi-of-set-rip
-    set-rdi-of-set-rip
-    set-r8-of-set-rip
-    set-r9-of-set-rip
-    set-r10-of-set-rip
-    set-r11-of-set-rip
-    set-r12-of-set-rip
-    set-r13-of-set-rip
-    set-r14-of-set-rip
-    set-r15-of-set-rip
-    set-rsp-of-set-rip
-    set-rbp-of-set-rip
 
-    rax-of-set-rip
+    ;; Reading/writing registers (or parts of registers).
+    rgfi-size$inline ; dispatches to rr08, etc.
+    ;; These 4 go directly to the appropriate accessor, e.g., rax:
+    rr08-to-normal-form64
+    rr16-to-normal-form64
+    rr32-to-normal-form64
+    rr64-to-normal-form64
+    rgfi-becomes-rax
+    rgfi-becomes-rbx
+    rgfi-becomes-rcx
+    rgfi-becomes-rdx
+    rgfi-becomes-rsi
+    rgfi-becomes-rdi
+    rgfi-becomes-r8
+    rgfi-becomes-r9
+    rgfi-becomes-r10
+    rgfi-becomes-r11
+    rgfi-becomes-r12
+    rgfi-becomes-r13
+    rgfi-becomes-r14
+    rgfi-becomes-r15
+    rgfi-becomes-rsp
+    rgfi-becomes-rbp
+
+    !rgfi-size$inline ; dispatches to wr08, etc.
+    ;; These 4 go directly to the appropriate functions, e.g., set-rax:
+    wr08-to-normal-form64
+    wr16-to-normal-form64
+    wr32-to-normal-form64
+    wr64-to-normal-form64
+    !rgfi-becomes-set-rax
+    !rgfi-becomes-set-rbx
+    !rgfi-becomes-set-rcx
+    !rgfi-becomes-set-rdx
+    !rgfi-becomes-set-rsi
+    !rgfi-becomes-set-rdi
+    !rgfi-becomes-set-r8
+    !rgfi-becomes-set-r9
+    !rgfi-becomes-set-r10
+    !rgfi-becomes-set-r11
+    !rgfi-becomes-set-r12
+    !rgfi-becomes-set-r13
+    !rgfi-becomes-set-r14
+    !rgfi-becomes-set-r15
+    !rgfi-becomes-set-rsp
+    !rgfi-becomes-set-rbp
+    ))
+
+(defund new-normal-form-rules64-read-of-write ()
+  (declare (xargs :guard t))
+  '(rax-of-set-rip
     rbx-of-set-rip
     rcx-of-set-rip
     rdx-of-set-rip
@@ -4423,24 +4419,6 @@
     rsp-of-xw
     rbp-of-xw
 
-    set-flag-of-set-rip
-    set-flag-of-set-rax
-    set-flag-of-set-rbx
-    set-flag-of-set-rcx
-    set-flag-of-set-rdx
-    set-flag-of-set-rsi
-    set-flag-of-set-rdi
-    set-flag-of-set-r8
-    set-flag-of-set-r9
-    set-flag-of-set-r10
-    set-flag-of-set-r11
-    set-flag-of-set-r12
-    set-flag-of-set-r13
-    set-flag-of-set-r14
-    set-flag-of-set-r15
-    set-flag-of-set-rsp
-    set-flag-of-set-rbp
-
     rip-of-set-rip
     rip-of-set-rax
     rip-of-set-rbx
@@ -4462,6 +4440,7 @@
     rip-of-write ; todo: more
     rip-of-set-flag
 
+
     ;; read of write, same register
     rax-of-set-rax
     rbx-of-set-rbx
@@ -4479,6 +4458,7 @@
     r15-of-set-r15
     rsp-of-set-rsp
     rbp-of-set-rbp
+
 
     ;; undef-of-write-byte ; todo: does write-byte actually get introduced?
     ;; mxcsr-of-write-byte
@@ -4521,8 +4501,8 @@
     x86p-of-set-rsp
     x86p-of-set-rbp
 
-    ;; needed to resolve (xr ':ms 'nil ...)
-    xr-of-set-rip-irrel
+    ;; was needed to resolve (xr ':ms 'nil ...)
+    xr-of-set-rip-irrel ; do we still need these?
     xr-of-set-rax-irrel
     xr-of-set-rbx-irrel
     xr-of-set-rcx-irrel
@@ -5023,24 +5003,6 @@
     fault-of-set-rsp
     fault-of-set-rbp
 
-    xw-becomes-set-rax
-    xw-becomes-set-rbx
-    xw-becomes-set-rcx
-    xw-becomes-set-rdx
-    xw-becomes-set-rsi
-    xw-becomes-set-rdi
-    xw-becomes-set-r8
-    xw-becomes-set-r9
-    xw-becomes-set-r10
-    xw-becomes-set-r11
-    xw-becomes-set-r12
-    xw-becomes-set-r13
-    xw-becomes-set-r14
-    xw-becomes-set-r15
-    xw-becomes-set-rsp
-    xw-becomes-set-rbp
-    ;; xw-becomes-set-error
-
     ;; Rules about 64-bit-modep
     64-bit-modep-of-set-rip
     64-bit-modep-of-set-rax
@@ -5131,247 +5093,6 @@
     r14-of-if
     r15-of-if
 
-    ;; set-rip-of-myif
-    ;; set-rax-of-myif
-    ;; set-rbx-of-myif
-    ;; set-rcx-of-myif
-    ;; set-rdx-of-myif
-    ;; set-rsi-of-myif
-    ;; set-rdi-of-myif
-    ;; set-r8-of-myif
-    ;; set-r9-of-myif
-    ;; set-r10-of-myif ; todo: more?
-    ;; set-rsp-of-myif
-    ;; set-rbp-of-myif
-
-    write-of-set-rip
-    write-of-set-rax
-    write-of-set-rbx
-    write-of-set-rcx
-    write-of-set-rdx
-    write-of-set-rsi
-    write-of-set-rdi
-    write-of-set-r8
-    write-of-set-r9
-    write-of-set-r10
-    write-of-set-r11
-    write-of-set-r12
-    write-of-set-r13
-    write-of-set-r14
-    write-of-set-r15
-    write-of-set-rsp
-    write-of-set-rbp
-
-;    write-byte-of-set-rip
-
-    ;; bury set-undef deep in the term:
-    set-undef-of-set-rax
-    set-undef-of-set-rbx
-    set-undef-of-set-rcx
-    set-undef-of-set-rdx
-    set-undef-of-set-rdi
-    set-undef-of-set-rsi
-    set-undef-of-set-r8
-    set-undef-of-set-r9
-    set-undef-of-set-r10
-    set-undef-of-set-r11
-    set-undef-of-set-r12
-    set-undef-of-set-r13
-    set-undef-of-set-r14
-    set-undef-of-set-r15
-    set-undef-of-set-rsp
-    set-undef-of-set-rbp
-
-;    set-undef-of-write-byte
-
-    set-rbx-of-set-rax
-    set-rcx-of-set-rax
-    set-rdx-of-set-rax
-    set-rsi-of-set-rax
-    set-rdi-of-set-rax
-    set-r8-of-set-rax
-    set-r9-of-set-rax
-    set-r10-of-set-rax
-    set-r11-of-set-rax
-    set-r12-of-set-rax
-    set-r13-of-set-rax
-    set-r14-of-set-rax
-    set-r15-of-set-rax
-    set-rsp-of-set-rax
-    set-rbp-of-set-rax
-
-    set-rcx-of-set-rbx
-    set-rdx-of-set-rbx
-    set-rsi-of-set-rbx
-    set-rdi-of-set-rbx
-    set-r8-of-set-rbx
-    set-r9-of-set-rbx
-    set-r10-of-set-rbx
-    set-r11-of-set-rbx
-    set-r12-of-set-rbx
-    set-r13-of-set-rbx
-    set-r14-of-set-rbx
-    set-r15-of-set-rbx
-    set-rsp-of-set-rbx
-    set-rbp-of-set-rbx
-
-    set-rdx-of-set-rcx
-    set-rsi-of-set-rcx
-    set-rdi-of-set-rcx
-    set-r8-of-set-rcx
-    set-r9-of-set-rcx
-    set-r10-of-set-rcx
-    set-r11-of-set-rcx
-    set-r12-of-set-rcx
-    set-r13-of-set-rcx
-    set-r14-of-set-rcx
-    set-r15-of-set-rcx
-    set-rsp-of-set-rcx
-    set-rbp-of-set-rcx
-
-    set-rsi-of-set-rdx
-    set-rdi-of-set-rdx
-    set-r8-of-set-rdx
-    set-r9-of-set-rdx
-    set-r10-of-set-rdx
-    set-r11-of-set-rdx
-    set-r12-of-set-rdx
-    set-r13-of-set-rdx
-    set-r14-of-set-rdx
-    set-r15-of-set-rdx
-    set-rsp-of-set-rdx
-    set-rbp-of-set-rdx
-
-    set-rdi-of-set-rsi
-    set-r8-of-set-rsi
-    set-r9-of-set-rsi
-    set-r10-of-set-rsi
-    set-r11-of-set-rsi
-    set-r12-of-set-rsi
-    set-r13-of-set-rsi
-    set-r14-of-set-rsi
-    set-r15-of-set-rsi
-    set-rsp-of-set-rsi
-    set-rbp-of-set-rsi
-
-    set-r8-of-set-rdi
-    set-r9-of-set-rdi
-    set-r10-of-set-rdi
-    set-r11-of-set-rdi
-    set-r12-of-set-rdi
-    set-r13-of-set-rdi
-    set-r14-of-set-rdi
-    set-r15-of-set-rdi
-    set-rsp-of-set-rdi
-    set-rbp-of-set-rdi
-
-    set-r9-of-set-r8
-    set-r10-of-set-r8
-    set-r11-of-set-r8
-    set-r12-of-set-r8
-    set-r13-of-set-r8
-    set-r14-of-set-r8
-    set-r15-of-set-r8
-    set-rsp-of-set-r8
-    set-rbp-of-set-r8
-
-    set-r10-of-set-r9
-    set-r11-of-set-r9
-    set-r12-of-set-r9
-    set-r13-of-set-r9
-    set-r14-of-set-r9
-    set-r15-of-set-r9
-    set-rsp-of-set-r9
-    set-rbp-of-set-r9
-
-    set-r11-of-set-r10
-    set-r12-of-set-r10
-    set-r13-of-set-r10
-    set-r14-of-set-r10
-    set-r15-of-set-r10
-    set-rsp-of-set-r10
-    set-rbp-of-set-r10
-
-    set-r12-of-set-r11
-    set-r13-of-set-r11
-    set-r14-of-set-r11
-    set-r15-of-set-r11
-    set-rsp-of-set-r11
-    set-rbp-of-set-r11
-
-    set-r13-of-set-r12
-    set-r14-of-set-r12
-    set-r15-of-set-r12
-    set-rsp-of-set-r12
-    set-rbp-of-set-r12
-
-    set-r14-of-set-r13
-    set-r15-of-set-r13
-    set-rsp-of-set-r13
-    set-rbp-of-set-r13
-
-    set-r15-of-set-r14
-    set-rsp-of-set-r14
-    set-rbp-of-set-r14
-
-    set-rsp-of-set-r15
-    set-rbp-of-set-r15
-
-    set-rbp-of-set-rsp
-
-    ;; set of set of the same register:
-    set-rax-of-set-rax
-    set-rbx-of-set-rbx
-    set-rcx-of-set-rcx
-    set-rdx-of-set-rdx
-    set-rdi-of-set-rdi
-    set-rsi-of-set-rsi
-    set-r8-of-set-r8
-    set-r9-of-set-r9
-    set-r10-of-set-r10
-    set-r11-of-set-r11
-    set-r12-of-set-r12
-    set-r13-of-set-r13
-    set-r14-of-set-r14
-    set-r15-of-set-r15
-    set-rsp-of-set-rsp
-    set-rbp-of-set-rbp
-
-    ;; Write of read of the same register (state terms can differ):
-    set-rax-of-rax-same-gen
-    set-rbx-of-rbx-same-gen
-    set-rcx-of-rcx-same-gen
-    set-rdx-of-rdx-same-gen
-    set-rdi-of-rdi-same-gen
-    set-rsi-of-rsi-same-gen
-    set-r8-of-r8-same-gen
-    set-r9-of-r9-same-gen
-    set-r10-of-r10-same-gen
-    set-r11-of-r11-same-gen
-    set-r12-of-r12-same-gen
-    set-r13-of-r13-same-gen
-    set-r14-of-r14-same-gen
-    set-r15-of-r15-same-gen
-    set-rsp-of-rsp-same-gen
-    set-rbp-of-rbp-same-gen
-
-    !rflags-of-set-rip
-    !rflags-of-set-rax
-    !rflags-of-set-rbx
-    !rflags-of-set-rcx
-    !rflags-of-set-rdx
-    !rflags-of-set-rdi
-    !rflags-of-set-rsi
-    !rflags-of-set-r8
-    !rflags-of-set-r9
-    !rflags-of-set-r10
-    !rflags-of-set-r11
-    !rflags-of-set-r12
-    !rflags-of-set-r13
-    !rflags-of-set-r14
-    !rflags-of-set-r15
-    !rflags-of-set-rsp
-    !rflags-of-set-rbp
 
     rax-of-!rflags
     rbx-of-!rflags
@@ -5429,55 +5150,349 @@
     ;; mv-nth-1-of-rme-size-of-set-r15
     ;; mv-nth-1-of-rme-size-of-set-rsp
     ;; mv-nth-1-of-rme-size-of-set-rbp
+    ))
 
-    if-of-set-rip-and-set-rip-same
+(defund new-normal-form-rules64 ()
+  (declare (xargs :guard t))
+  (append
+   (new-normal-form-rules64-intro)
+   (new-normal-form-rules64-read-of-write)
+   '(unsigned-byte-p-64-of-rax
+     unsigned-byte-p-64-of-rbx
+     unsigned-byte-p-64-of-rcx
+     unsigned-byte-p-64-of-rdx
+     unsigned-byte-p-64-of-rsi
+     unsigned-byte-p-64-of-rdi
+     unsigned-byte-p-64-of-r8
+     unsigned-byte-p-64-of-r9
+     unsigned-byte-p-64-of-r10
+     unsigned-byte-p-64-of-r11
+     unsigned-byte-p-64-of-r12
+     unsigned-byte-p-64-of-r13
+     unsigned-byte-p-64-of-r14
+     unsigned-byte-p-64-of-r15
+     unsigned-byte-p-64-of-rsp
+     unsigned-byte-p-64-of-rbp
 
-    ;; Reading/writing registers (or parts of registers).
-    rgfi-size$inline ; dispatches to rr08, etc.
-    ;; These 4 go directly to the appropriate accessor, e.g., rax:
-    rr08-to-normal-form64
-    rr16-to-normal-form64
-    rr32-to-normal-form64
-    rr64-to-normal-form64
-    rgfi-becomes-rax
-    rgfi-becomes-rbx
-    rgfi-becomes-rcx
-    rgfi-becomes-rdx
-    rgfi-becomes-rsi
-    rgfi-becomes-rdi
-    rgfi-becomes-r8
-    rgfi-becomes-r9
-    rgfi-becomes-r10
-    rgfi-becomes-r11
-    rgfi-becomes-r12
-    rgfi-becomes-r13
-    rgfi-becomes-r14
-    rgfi-becomes-r15
-    rgfi-becomes-rsp
-    rgfi-becomes-rbp
+     integerp-of-rax
+     integerp-of-rbx
+     integerp-of-rcx
+     integerp-of-rdx
+     integerp-of-rsi
+     integerp-of-rdi
+     integerp-of-r8
+     integerp-of-r9
+     integerp-of-r10
+     integerp-of-r11
+     integerp-of-r12
+     integerp-of-r13
+     integerp-of-r14
+     integerp-of-r15
+     integerp-of-rsp-gen ; integerp-of-rsp
+     integerp-of-rbp
 
-    !rgfi-size$inline ; dispatches to wr08, etc.
-    ;; These 4 go directly to the appropriate functions, e.g., set-rax:
-    wr08-to-normal-form64
-    wr16-to-normal-form64
-    wr32-to-normal-form64
-    wr64-to-normal-form64
-    !rgfi-becomes-set-rax
-    !rgfi-becomes-set-rbx
-    !rgfi-becomes-set-rcx
-    !rgfi-becomes-set-rdx
-    !rgfi-becomes-set-rsi
-    !rgfi-becomes-set-rdi
-    !rgfi-becomes-set-r8
-    !rgfi-becomes-set-r9
-    !rgfi-becomes-set-r10
-    !rgfi-becomes-set-r11
-    !rgfi-becomes-set-r12
-    !rgfi-becomes-set-r13
-    !rgfi-becomes-set-r14
-    !rgfi-becomes-set-r15
-    !rgfi-becomes-set-rsp
-    !rgfi-becomes-set-rbp))
+     fix-of-rax
+     fix-of-rbx
+     fix-of-rcx
+     fix-of-rdx
+     fix-of-rsi
+     fix-of-rdi
+     fix-of-r8
+     fix-of-r9
+     fix-of-r10
+     fix-of-r11
+     fix-of-r12
+     fix-of-r13
+     fix-of-r14
+     fix-of-r15
+     fix-of-rsp
+     fix-of-rbp
+
+     xw-of-set-rip-irrel ; do we still need these?
+
+     ;; bring rip to the front:
+     set-rax-of-set-rip
+     set-rbx-of-set-rip
+     set-rcx-of-set-rip
+     set-rdx-of-set-rip
+     set-rsi-of-set-rip
+     set-rdi-of-set-rip
+     set-r8-of-set-rip
+     set-r9-of-set-rip
+     set-r10-of-set-rip
+     set-r11-of-set-rip
+     set-r12-of-set-rip
+     set-r13-of-set-rip
+     set-r14-of-set-rip
+     set-r15-of-set-rip
+     set-rsp-of-set-rip
+     set-rbp-of-set-rip
+
+     set-flag-of-set-rip
+     set-flag-of-set-rax
+     set-flag-of-set-rbx
+     set-flag-of-set-rcx
+     set-flag-of-set-rdx
+     set-flag-of-set-rsi
+     set-flag-of-set-rdi
+     set-flag-of-set-r8
+     set-flag-of-set-r9
+     set-flag-of-set-r10
+     set-flag-of-set-r11
+     set-flag-of-set-r12
+     set-flag-of-set-r13
+     set-flag-of-set-r14
+     set-flag-of-set-r15
+     set-flag-of-set-rsp
+     set-flag-of-set-rbp
+
+
+
+     ;; set-rip-of-myif
+     ;; set-rax-of-myif
+     ;; set-rbx-of-myif
+     ;; set-rcx-of-myif
+     ;; set-rdx-of-myif
+     ;; set-rsi-of-myif
+     ;; set-rdi-of-myif
+     ;; set-r8-of-myif
+     ;; set-r9-of-myif
+     ;; set-r10-of-myif ; todo: more?
+     ;; set-rsp-of-myif
+     ;; set-rbp-of-myif
+
+     write-of-set-rip
+     write-of-set-rax
+     write-of-set-rbx
+     write-of-set-rcx
+     write-of-set-rdx
+     write-of-set-rsi
+     write-of-set-rdi
+     write-of-set-r8
+     write-of-set-r9
+     write-of-set-r10
+     write-of-set-r11
+     write-of-set-r12
+     write-of-set-r13
+     write-of-set-r14
+     write-of-set-r15
+     write-of-set-rsp
+     write-of-set-rbp
+
+;    write-byte-of-set-rip
+
+     ;; bury set-undef deep in the term:
+     set-undef-of-set-rax
+     set-undef-of-set-rbx
+     set-undef-of-set-rcx
+     set-undef-of-set-rdx
+     set-undef-of-set-rdi
+     set-undef-of-set-rsi
+     set-undef-of-set-r8
+     set-undef-of-set-r9
+     set-undef-of-set-r10
+     set-undef-of-set-r11
+     set-undef-of-set-r12
+     set-undef-of-set-r13
+     set-undef-of-set-r14
+     set-undef-of-set-r15
+     set-undef-of-set-rsp
+     set-undef-of-set-rbp
+
+;    set-undef-of-write-byte
+
+     set-rbx-of-set-rax
+     set-rcx-of-set-rax
+     set-rdx-of-set-rax
+     set-rsi-of-set-rax
+     set-rdi-of-set-rax
+     set-r8-of-set-rax
+     set-r9-of-set-rax
+     set-r10-of-set-rax
+     set-r11-of-set-rax
+     set-r12-of-set-rax
+     set-r13-of-set-rax
+     set-r14-of-set-rax
+     set-r15-of-set-rax
+     set-rsp-of-set-rax
+     set-rbp-of-set-rax
+
+     set-rcx-of-set-rbx
+     set-rdx-of-set-rbx
+     set-rsi-of-set-rbx
+     set-rdi-of-set-rbx
+     set-r8-of-set-rbx
+     set-r9-of-set-rbx
+     set-r10-of-set-rbx
+     set-r11-of-set-rbx
+     set-r12-of-set-rbx
+     set-r13-of-set-rbx
+     set-r14-of-set-rbx
+     set-r15-of-set-rbx
+     set-rsp-of-set-rbx
+     set-rbp-of-set-rbx
+
+     set-rdx-of-set-rcx
+     set-rsi-of-set-rcx
+     set-rdi-of-set-rcx
+     set-r8-of-set-rcx
+     set-r9-of-set-rcx
+     set-r10-of-set-rcx
+     set-r11-of-set-rcx
+     set-r12-of-set-rcx
+     set-r13-of-set-rcx
+     set-r14-of-set-rcx
+     set-r15-of-set-rcx
+     set-rsp-of-set-rcx
+     set-rbp-of-set-rcx
+
+     set-rsi-of-set-rdx
+     set-rdi-of-set-rdx
+     set-r8-of-set-rdx
+     set-r9-of-set-rdx
+     set-r10-of-set-rdx
+     set-r11-of-set-rdx
+     set-r12-of-set-rdx
+     set-r13-of-set-rdx
+     set-r14-of-set-rdx
+     set-r15-of-set-rdx
+     set-rsp-of-set-rdx
+     set-rbp-of-set-rdx
+
+     set-rdi-of-set-rsi
+     set-r8-of-set-rsi
+     set-r9-of-set-rsi
+     set-r10-of-set-rsi
+     set-r11-of-set-rsi
+     set-r12-of-set-rsi
+     set-r13-of-set-rsi
+     set-r14-of-set-rsi
+     set-r15-of-set-rsi
+     set-rsp-of-set-rsi
+     set-rbp-of-set-rsi
+
+     set-r8-of-set-rdi
+     set-r9-of-set-rdi
+     set-r10-of-set-rdi
+     set-r11-of-set-rdi
+     set-r12-of-set-rdi
+     set-r13-of-set-rdi
+     set-r14-of-set-rdi
+     set-r15-of-set-rdi
+     set-rsp-of-set-rdi
+     set-rbp-of-set-rdi
+
+     set-r9-of-set-r8
+     set-r10-of-set-r8
+     set-r11-of-set-r8
+     set-r12-of-set-r8
+     set-r13-of-set-r8
+     set-r14-of-set-r8
+     set-r15-of-set-r8
+     set-rsp-of-set-r8
+     set-rbp-of-set-r8
+
+     set-r10-of-set-r9
+     set-r11-of-set-r9
+     set-r12-of-set-r9
+     set-r13-of-set-r9
+     set-r14-of-set-r9
+     set-r15-of-set-r9
+     set-rsp-of-set-r9
+     set-rbp-of-set-r9
+
+     set-r11-of-set-r10
+     set-r12-of-set-r10
+     set-r13-of-set-r10
+     set-r14-of-set-r10
+     set-r15-of-set-r10
+     set-rsp-of-set-r10
+     set-rbp-of-set-r10
+
+     set-r12-of-set-r11
+     set-r13-of-set-r11
+     set-r14-of-set-r11
+     set-r15-of-set-r11
+     set-rsp-of-set-r11
+     set-rbp-of-set-r11
+
+     set-r13-of-set-r12
+     set-r14-of-set-r12
+     set-r15-of-set-r12
+     set-rsp-of-set-r12
+     set-rbp-of-set-r12
+
+     set-r14-of-set-r13
+     set-r15-of-set-r13
+     set-rsp-of-set-r13
+     set-rbp-of-set-r13
+
+     set-r15-of-set-r14
+     set-rsp-of-set-r14
+     set-rbp-of-set-r14
+
+     set-rsp-of-set-r15
+     set-rbp-of-set-r15
+
+     set-rbp-of-set-rsp
+
+     ;; set of set of the same register:
+     set-rip-of-set-rip
+     set-rax-of-set-rax
+     set-rbx-of-set-rbx
+     set-rcx-of-set-rcx
+     set-rdx-of-set-rdx
+     set-rdi-of-set-rdi
+     set-rsi-of-set-rsi
+     set-r8-of-set-r8
+     set-r9-of-set-r9
+     set-r10-of-set-r10
+     set-r11-of-set-r11
+     set-r12-of-set-r12
+     set-r13-of-set-r13
+     set-r14-of-set-r14
+     set-r15-of-set-r15
+     set-rsp-of-set-rsp
+     set-rbp-of-set-rbp
+
+     ;; Write of read of the same register (state terms can differ):
+     set-rax-of-rax-same-gen
+     set-rbx-of-rbx-same-gen
+     set-rcx-of-rcx-same-gen
+     set-rdx-of-rdx-same-gen
+     set-rdi-of-rdi-same-gen
+     set-rsi-of-rsi-same-gen
+     set-r8-of-r8-same-gen
+     set-r9-of-r9-same-gen
+     set-r10-of-r10-same-gen
+     set-r11-of-r11-same-gen
+     set-r12-of-r12-same-gen
+     set-r13-of-r13-same-gen
+     set-r14-of-r14-same-gen
+     set-r15-of-r15-same-gen
+     set-rsp-of-rsp-same-gen
+     set-rbp-of-rbp-same-gen
+
+     !rflags-of-set-rip
+     !rflags-of-set-rax
+     !rflags-of-set-rbx
+     !rflags-of-set-rcx
+     !rflags-of-set-rdx
+     !rflags-of-set-rdi
+     !rflags-of-set-rsi
+     !rflags-of-set-r8
+     !rflags-of-set-r9
+     !rflags-of-set-r10
+     !rflags-of-set-r11
+     !rflags-of-set-r12
+     !rflags-of-set-r13
+     !rflags-of-set-r14
+     !rflags-of-set-r15
+     !rflags-of-set-rsp
+     !rflags-of-set-rbp
+
+     if-of-set-rip-and-set-rip-same
+     )))
 
 (defund unroller-rules64 ()
   (declare (xargs :guard t))
@@ -6083,13 +6098,13 @@
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
-     x86isa::logext-64-does-nothing-when-canonical-address-p
+     ;x86isa::logext-64-does-nothing-when-canonical-address-p
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
      acl2::if-of-t-and-nil-becomes-bool-fix
      acl2::mv-nth-of-if
-     x86isa::canonical-address-p-of-if
+     ;x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1
      x86isa::+-of-if-arg2
      acl2::bvchop-numeric-bound
@@ -6141,7 +6156,7 @@
 
      ;; set-undef ; can be introduced by write-user-rflags-rewrite-better
 
-     x86isa::canonical-address-p-of-xr-of-rip
+     ;x86isa::canonical-address-p-of-xr-of-rip
      ;x86isa::rip ; at least for now
      ;rsp ; at least for now
 
@@ -6236,14 +6251,13 @@
   (append (lifter-rules32)
           (old-normal-form-rules)))
 
-;; Can't really use the new, nicer normal forms for readers and writers, since
-;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
+;; now same as unroller-rules64
 (defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
           (new-normal-form-rules64)
-          ;(old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
+          ;(old-normal-form-rules)
           ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
