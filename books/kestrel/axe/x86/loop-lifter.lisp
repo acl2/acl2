@@ -2420,24 +2420,34 @@
             (assumptions-macho64-new subroutine-name
                                      t ; position-independentp
                                      stack-slots-needed
-                                     1 ; existing-stack-slots ; todo
+                                     1 ; existing-stack-slots
                                      'x86_0
                                      nil ; inputs ; todo
                                      nil ; type-assumptions-for-array-varsp ; todo
                                      :all ; inputs-disjoint-from
                                      parsed-executable)
-          (if (eq :pe-64 executable-type) ;; TODO: Support :pe-32
+          (if (eq :pe-64 executable-type)
               (assumptions-pe64-new subroutine-name
                                     t ; position-independentp
                                     stack-slots-needed
-                                    5 ; existing-stack-slots ; todo
+                                    5 ; existing-stack-slots ; different for PE64 due to calling conventions
                                     'x86_0
                                     nil ; inputs ; todo
                                     nil ; type-assumptions-for-array-varsp ; todo
                                     :all ; inputs-disjoint-from
                                     parsed-executable)
-            ;; todo: support other executable types!
-            (mv :unsupported-executable-type nil nil))))
+            (if (eq :elf-64 executable-type)
+                (assumptions-elf64-new subroutine-name
+                                       t ; position-independentp
+                                       stack-slots-needed
+                                       1 ; existing-stack-slots
+                                       'x86_0
+                                       nil ; inputs ; todo
+                                       nil ; type-assumptions-for-array-varsp ; todo
+                                       :all ; inputs-disjoint-from
+                                       parsed-executable)
+              ;; todo: support other executable types!
+              (mv :unsupported-executable-type nil nil)))))
        ((when erp) (mv erp nil state))
        (tool-assumptions (acl2::translate-terms tool-assumptions 'lift-subroutine-fn (w state))) ; needed?
        (assumptions (append tool-assumptions user-assumptions))
@@ -2445,9 +2455,12 @@
        ((mv erp target-offset)
         (if (eq :mach-o-64 executable-type)
             (mv nil (acl2::subroutine-address-mach-o subroutine-name parsed-executable))
-          (if (eq :pe-64 executable-type) ;; TODO: Support more executable types
+          (if (eq :pe-64 executable-type)
               (acl2::subroutine-address-pe-64 subroutine-name parsed-executable)
-            (mv :unsupported-executable-type nil))))
+            (if (eq :elf-64 executable-type)
+                (mv nil (acl2::subroutine-address-elf subroutine-name parsed-executable))
+              ;; TODO: Support more executable types
+              (mv :unsupported-executable-type nil)))))
        ((when erp) (mv erp nil state))
 
        ;; TODO: Not all of these are necessarily locations of instructions (should we give a range?):
@@ -2457,7 +2470,7 @@
                           :skip
                         (doublets-to-alist measures)))
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
-       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32)) ; todo: what about elf32?
+       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32 :elf-32))
                          (loop-lifter-rules32)
                        (append (read-and-write-rules-bv) ;; (read-and-write-rules-non-bv)
                                (if t ; todo
