@@ -757,7 +757,7 @@
 ;todo: this is slowing stuff down: ACL2::USE-ALL-HEAPREF-TABLE-ENTRYP-FOR-CAR
 
 ;todo: speed this up
-;; Returns (mv okp xw-triples core-term).  Each xw-triple is of the form (list field index value).
+;; Returns (mv okp xw-triples core-term).  Each xw-triple is of the form (<field> <index> <value>).
 (defun check-and-extract-xws (term xw-triples-acc)
   (declare (xargs :guard (and (pseudo-termp term)
                               (true-listp xw-triples-acc))))
@@ -1285,42 +1285,12 @@
                                             print
                                             state))))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
 
  ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
- (defun make-read-only-parameters-for-exprs (exprs
-                                             next-param-number
-                                             updated-state-term
-                                             paramnum-update-alist
-                                             paramnum-extractor-alist
-                                             paramnum-name-alist
-                                             state-var
-                                             extra-vars)
-   (if (endp exprs)
-       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-     (b* ((expr (first exprs))
-          ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-           (make-read-only-parameters-for-expr expr
-                                               next-param-number
-                                               updated-state-term
-                                               paramnum-update-alist
-                                               paramnum-extractor-alist
-                                               paramnum-name-alist
-                                               state-var
-                                               extra-vars)))
-       (make-read-only-parameters-for-exprs (rest exprs)
-                                            next-param-number
-                                            updated-state-term
-                                            paramnum-update-alist
-                                            paramnum-extractor-alist
-                                            paramnum-name-alist
-                                            state-var
-                                            extra-vars))))
-
- ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
- ;; TODO Handle more things here!
+ ;; TODO Handle more things here (maybe get-flag)!
  (defun make-read-only-parameters-for-expr (expr
                                             next-param-number
                                             updated-state-term
@@ -1328,12 +1298,13 @@
                                             paramnum-extractor-alist
                                             paramnum-name-alist
                                             state-var
-                                            extra-vars)
+                                            ;; extra-vars ; todo: always nil?
+                                            )
    (if (member-equal (acl2::sublis-var-simple (acons state-var :initial-loop-top-state nil) expr)
                      (strip-cdrs paramnum-extractor-alist)) ;this expr already corresponds to a param
        (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
      (if (variablep expr)
-         (if (member-eq expr extra-vars)
+         (if nil ; (member-eq expr extra-vars)
              (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
            (prog2$ (er hard? 'make-read-only-parameters-for-expr "Unexpected var: ~x0." expr)
                    (mv nil nil nil nil nil)))
@@ -1391,18 +1362,53 @@
                                                     paramnum-extractor-alist
                                                     paramnum-name-alist
                                                     state-var
-                                                    extra-vars)))))))))
+                                                    ;; extra-vars
+                                                    ))))))))
+
+ ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+ (defun make-read-only-parameters-for-exprs (exprs
+                                             next-param-number
+                                             updated-state-term
+                                             paramnum-update-alist
+                                             paramnum-extractor-alist
+                                             paramnum-name-alist
+                                             state-var
+                                             ;;extra-vars
+                                             )
+   (if (endp exprs)
+       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+     (b* ((expr (first exprs))
+          ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+           (make-read-only-parameters-for-expr expr
+                                               next-param-number
+                                               updated-state-term
+                                               paramnum-update-alist
+                                               paramnum-extractor-alist
+                                               paramnum-name-alist
+                                               state-var
+                                               ;; extra-vars
+                                               )))
+       (make-read-only-parameters-for-exprs (rest exprs)
+                                            next-param-number
+                                            updated-state-term
+                                            paramnum-update-alist
+                                            paramnum-extractor-alist
+                                            paramnum-name-alist
+                                            state-var
+                                            ;; extra-vars
+                                            )))))
 
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-(defun make-read-only-parameters (paramnum-update-alist-to-check
+(defun make-read-only-parameters (paramnum-update-alist-to-check ; we harvest terms from the cdrs of this
                                   next-param-number
                                   updated-state-term
                                   paramnum-update-alist
                                   paramnum-extractor-alist
                                   paramnum-name-alist
                                   state-var
-                                  extra-vars)
+                                  ;; extra-vars
+                                  )
   (if (endp paramnum-update-alist-to-check)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((entry (first paramnum-update-alist-to-check))
@@ -1415,7 +1421,8 @@
                                               paramnum-extractor-alist
                                               paramnum-name-alist
                                               state-var
-                                              extra-vars)))
+                                              ;; extra-vars
+                                              )))
       (make-read-only-parameters (rest paramnum-update-alist-to-check)
                                  next-param-number
                                  updated-state-term
@@ -1423,7 +1430,8 @@
                                  paramnum-extractor-alist
                                  paramnum-name-alist
                                  state-var
-                                 extra-vars))))
+                                 ;; extra-vars
+                                 ))))
 
 (defun make-initial-params-terms (paramnum-extractor-alist paramnum-name-alist param-update-terms)
   (if (endp paramnum-extractor-alist)
@@ -1740,7 +1748,8 @@
          (make-read-only-parameters paramnum-update-alist next-param-number updated-state-term
                                     paramnum-update-alist paramnum-extractor-alist paramnum-name-alist
                                     state-var
-                                    nil))
+                                    ;; nil
+                                    ))
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
@@ -1754,7 +1763,8 @@
                                              paramnum-extractor-alist
                                              paramnum-name-alist
                                              state-var
-                                             nil))
+                                             ;; nil
+                                             ))
         (- (cw "Done.)~%"))
 
         (paramnum-update-alist (reverse paramnum-update-alist))
