@@ -73,7 +73,7 @@
 (def factorial-loop-1.2
   (simplify factorial-loop-1.2-pre))
 
-;; Drop all the extra params that do no support the output we care about:
+;; Drop all the extra params that do not support the output we care about:
 (def factorial-loop-1.3
   (drop-irrelevant-params factorial-loop-1.2 (rax flag-af flag-cf flag-of flag-pf flag-sf flag-zf undef)))
 
