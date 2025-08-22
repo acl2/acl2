@@ -12,6 +12,7 @@
 
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "abstract-syntax-make-self")
 (include-book "code-ensembles")
 (include-book "unambiguity")
 (include-book "validation-information")
