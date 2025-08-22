@@ -47,7 +47,7 @@
 (include-book "instructions/pcmp")
 (include-book "instructions/rotate-and-shift")
 (include-book "instructions/fp/logical")
-(include-book "instructions/fp/mov")
+(include-book "instructions/move-vex")
 (include-book "instructions/fp/non-arith")
 (include-book "prefix-modrm-sib-decoding")
 ;; (include-book "dispatch-macros")
