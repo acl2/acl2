@@ -193,11 +193,13 @@
 
   (defmake-self my-nat-list)
 
-  ;; TODO: this should probably produce a flat call to list instead of a cons
-  ;; nest.
   (test-make-self
     my-nat-list-make-self
-    (cons 1 (cons 2 (cons 3 nil))))
+    (list 1 2 3))
+
+  (test-make-self
+    my-nat-list-make-self
+    nil)
 
   :with-output-off nil)
 

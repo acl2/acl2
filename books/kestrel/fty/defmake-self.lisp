@@ -19,6 +19,7 @@
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
 (include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -195,7 +196,6 @@
 
 (define defmake-self-get-make-self-fn
   ((type symbolp)
-   (member-names symbol-listp)
    (make-self-table alistp))
   :returns (mv (er? acl2::maybe-msgp)
                (fn symbolp))
@@ -206,8 +206,6 @@
      "If the type has an entry in the @('make-self') table, use that.
       Otherwise, generate the name."))
   (b* (((reterr) nil)
-       ((when (member-eq type member-names))
-        (retok (defmake-self-gen-name type)))
        (lookup (assoc-eq type make-self-table))
        ((unless lookup)
         (retok (defmake-self-gen-name type)))
@@ -260,8 +258,7 @@
                    type (cdr fields) member-names fty-table make-self-table)))
              (cons `(,accessor ,type) make-selfs)))
           ((mv erp field-type-make-self)
-           (defmake-self-get-make-self-fn
-             field-type member-names make-self-table))
+           (defmake-self-get-make-self-fn field-type make-self-table))
           ((when erp)
            (raise "~@0~%" erp))
           (make-self `(,field-type-make-self (,accessor ,type)))
@@ -323,7 +320,12 @@
     `(define ,type-make-self ((,type ,recog))
        :parents (,(defmake-self-gen-topic-name type))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(cond (mutrecp
+                 `(:measure (acl2::nat-list-measure
+                              (list (,type-count ,type) 1))))
+               (recp
+                 `(:measure (,type-count ,type)))
+               (t nil))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -358,7 +360,12 @@
     `(define ,type-make-self ((,type ,recog))
        :parents (,(defmake-self-gen-topic-name type))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(cond (mutrecp
+                 `(:measure (acl2::nat-list-measure
+                              (list (,type-count ,type) 1))))
+               (recp
+                 `(:measure (,type-count ,type)))
+               (t nil))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -392,7 +399,12 @@
     `(define ,type-make-self ((,type ,recog))
        :parents (,(defmake-self-gen-topic-name type))
        ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(cond (mutrecp
+                 `(:measure (acl2::nat-list-measure
+                              (list (,type-count ,type) 1))))
+               (recp
+                 `(:measure (,type-count ,type)))
+               (t nil))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -426,63 +438,69 @@
 (define defmake-self-gen-list
   ((list flexlist-p)
    (mutrecp booleanp)
-   (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (events acl2::pseudo-event-form-listp)
   :short "Generate the ``make-self'' function for a list type."
   (b* ((type (flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
-       (recp (flexlist->recp list))
+        (list '(_)))
        (type-make-self (defmake-self-gen-name type))
+       (type-make-self-loop
+         (acl2::packn-pos (list type-make-self '-loop) type-make-self))
        (type-count (flexlist->count list))
        (type-fix (flextype->fix list))
        (recog (flexlist->pred list))
        (elt-recog (flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
-        '(_))
+        (list '(_)))
        (elt-info (flextype-with-recognizer elt-recog fty-table))
-       ((unless elt-info)
-        `(define ,type-make-self ((,type ,recog))
-           :parents (,(defmake-self-gen-topic-name type))
-           (if (,(if (flexlist->true-listp list) 'endp 'atom) ,type)
-               nil
-             (list 'cons
-                   (car (,type-fix ,type))
-                   (,type-make-self (cdr ,type))))
-           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-           ,@(and (not mutrecp) '(:hooks (:fix)))))
-       (elt-type (flextype->name elt-info))
-       ((unless (symbolp elt-type))
-        (raise "Internal error: malformed type name ~x0." elt-type)
-        '(_))
-       ((mv erp elt-type-make-self)
-        (defmake-self-get-make-self-fn
-          elt-type member-names make-self-table))
-       ((when erp)
-        (raise "~@0~%" erp)
-        '(_))
-       (body
+       (elt-type? (if elt-info
+                      (flextype->name elt-info)
+                    nil))
+       (elt-type-make-self?
+         (b* (((unless elt-type?)
+               nil)
+              ((mv erp elt-type-make-self)
+               (defmake-self-get-make-self-fn elt-type? make-self-table)))
+           (if erp
+               (raise "~@0~%" erp)
+             elt-type-make-self)))
+       (loop-body
         `(if (,(if (flexlist->true-listp list) 'endp 'atom) ,type)
              nil
-           (list 'cons
-                 (,elt-type-make-self (car ,type))
-                 (,type-make-self (cdr ,type))))))
-    `(define ,type-make-self ((,type ,recog))
-       :parents (,(defmake-self-gen-topic-name type))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+           (cons ,(if elt-type?
+                      `(,elt-type-make-self? (car ,type))
+                    `(car (,type-fix ,type)))
+                 (,type-make-self-loop (cdr ,type)))))
+       (body
+         `(let ((list (,type-make-self-loop ,type)))
+            (if list
+                (cons 'list (,type-make-self-loop ,type))
+              'nil))))
+    `((define ,type-make-self-loop ((,type ,recog))
+        :parents (,(defmake-self-gen-topic-name type))
+        ,loop-body
+        ,@(if mutrecp
+              `(:measure (acl2::nat-list-measure
+                           (list (,type-count ,type) 0)))
+            `(:measure (,(or type-count 'acl2-count) ,type))))
+      (define ,type-make-self ((,type ,recog))
+        :parents (,(defmake-self-gen-topic-name type))
+        ,body
+        ,@(and mutrecp
+               `(:measure (acl2::nat-list-measure
+                            (list (,type-count ,type) 1))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defmake-self-gen-omap
   ((omap flexomap-p)
    (mutrecp booleanp)
-   (fty-table alistp))
+   (fty-table alistp)
+   (make-self-table alistp))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate the ``make-self function for an omap type."
   (b* ((type (flexomap->name omap))
@@ -501,9 +519,14 @@
        (key-type? (if key-info
                       (flextype->name key-info)
                     nil))
-       (key-type-make-self? (if key-type?
-                                (defmake-self-gen-name key-type?)
-                              nil))
+       (key-type-make-self?
+         (b* (((unless key-type?)
+               nil)
+              ((mv erp key-type-make-self)
+               (defmake-self-get-make-self-fn key-type? make-self-table)))
+           (if erp
+               (raise "~@0~%" erp)
+             key-type-make-self)))
        (val-recog (flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
@@ -512,9 +535,14 @@
        (val-type? (if val-info
                       (flextype->name val-info)
                     nil))
-       (val-type-make-self? (if val-type?
-                               (defmake-self-gen-name val-type?)
-                             nil))
+       (val-type-make-self?
+         (b* (((unless val-type?)
+               nil)
+              ((mv erp val-type-make-self)
+               (defmake-self-get-make-self-fn val-type? make-self-table)))
+           (if erp
+               (raise "~@0~%" erp)
+             val-type-make-self)))
        (body
         `(if (or (not (mbt (,recog ,type)))
                  (omap::emptyp ,type))
@@ -541,18 +569,18 @@
    (member-names symbol-listp)
    (fty-table alistp)
    (make-self-table alistp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (events acl2::pseudo-event-form-listp)
   :short "Generate the ``make-self'' function for a type."
   (cond ((flexsum-p flex)
-         (defmake-self-gen-prod/sum/option
-           flex mutrecp member-names fty-table make-self-table))
+         (list (defmake-self-gen-prod/sum/option
+                 flex mutrecp member-names fty-table make-self-table)))
         ((flexlist-p flex)
-         (defmake-self-gen-list
-           flex mutrecp member-names fty-table make-self-table))
+         (defmake-self-gen-list flex mutrecp fty-table make-self-table))
         ((flexomap-p flex)
-         (defmake-self-gen-omap flex mutrecp fty-table))
+         (list
+           (defmake-self-gen-omap flex mutrecp fty-table make-self-table)))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
-                   '(_)))))
+                   (list '(_))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,13 +593,13 @@
   :returns (events acl2::pseudo-event-form-listp)
   :short "Generate the ``make-self'' functions for a list of types."
   (b* (((when (endp flexs)) nil)
-       (event
+       (events1
         (defmake-self-gen-type
           (car flexs) mutrecp member-names fty-table make-self-table))
-       (more-events
+       (events2
         (defmake-self-gen-types
           (cdr flexs) mutrecp member-names fty-table make-self-table)))
-    (cons event more-events)))
+    (append events1 events2)))
 
 (defrulel defmake-self-gen-types-under-iff
   (iff (defmake-self-gen-types
@@ -646,13 +674,7 @@
        (table-events
          (defmake-self-gen-table-events clique-name member-names))
        ((unless mutrecp)
-        (retok
-          (cons (mbe :logic
-                     (if (acl2::pseudo-event-formp (car definition-events))
-                         (car definition-events)
-                       '(_))
-                     :exec (car definition-events))
-                table-events)))
+        (retok (append definition-events table-events)))
        (defines-event
          `(defines ,clique-name-make-self
             :parents (,(defmake-self-gen-topic-name clique-name))
