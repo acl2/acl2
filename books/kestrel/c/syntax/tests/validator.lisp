@@ -49,7 +49,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 ?ast) (valid-transunit ast ienv)))
+         ((mv erp3 ?ast -) (valid-transunit ast (uident 0) ienv)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -77,7 +77,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ienv)))
+         ((mv erp3 & -) (valid-transunit ast (uident 0) ienv)))
       (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
             (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -199,9 +199,10 @@ void f() {
             (expr-xp (expr-unary->arg expr-sizeof))
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
-              (equal (expr-ident->info expr-x)
-                     (make-var-info :type (type-sint)
-                                    :linkage (linkage-external))))))
+              (equal (var-info->type (expr-ident->info expr-x))
+                     (type-sint))
+              (equal (var-info->linkage (expr-ident->info expr-x))
+                     (linkage-external)))))
 
 (test-valid
  "typedef char x;
