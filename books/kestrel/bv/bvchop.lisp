@@ -946,3 +946,12 @@
                   (+ x (- y))))
 ;  :hints (("Goal" :use (:instance bvchop-identity (i (+ x (- y))))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm bvchop-of-if-when-constants
+  (implies (syntaxp (and (quotep n)
+                         (quotep k1)
+                         (quotep k2)))
+           (equal (bvchop n (if test k1 k2))
+                  (if test
+                      (bvchop n k1)
+                    (bvchop n k2)))))

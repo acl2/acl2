@@ -534,3 +534,16 @@
   (equal (bvplus size x (ifix y))
          (bvplus size x y))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: or go to bvplus of bvplus
+(defthm bvplus-of-+-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (integerp x)
+                (integerp k1)
+                (integerp k2))
+           (equal (bvplus size k1 (+ k2 x))
+                  (bvplus size (+ k1 k2) x)))
+  :hints (("Goal" :in-theory (enable bvplus))))

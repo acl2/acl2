@@ -915,3 +915,14 @@
                 (integerp x))
            (equal (mod (+ k x) j)
                   (mod x j))))
+
+;drop or move hyps?
+;expensive?
+(defthmd mod-equal-impossible-value
+  (implies (and (<= j k) ; unusual
+                (natp i)
+                (natp j))
+           (equal (equal k (mod i j))
+                  (if (equal 0 j)
+                      (equal k i)
+                    nil))))

@@ -199,11 +199,12 @@
   :hints (("Goal" :in-theory (enable logext))))
 
 ;generalize!
-(defthm mod-of-bvchop-and-2
-  (equal (mod (bvchop 63 x) 2)
-         (getbit 0 x))
-  :hints (("Goal" :in-theory (e/d (bvchop getbit)
-                                  ()))))
+;just use mod-of-2-becomes-getbit-0
+;; (defthm mod-of-bvchop-and-2
+;;   (equal (mod (bvchop 63 x) 2)
+;;          (getbit 0 x))
+;;   :hints (("Goal" :in-theory (e/d (bvchop getbit)
+;;                                   ()))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer
@@ -226,33 +227,6 @@
                 (<= k free) ;gets computed
                 (integerp x))
            (not (< x k))))
-
-;; restrict?
-(defthm slice-of-if-arg3
-  (equal (slice high low (if test v1 v2))
-         (if test
-             (slice high low v1)
-           (slice high low v2))))
-
-(defthm bvchop-of-if-when-constants
-  (implies (syntaxp (and (quotep n)
-                         (quotep k1)
-                         (quotep k2)))
-           (equal (bvchop n (if test k1 k2))
-                  (if test
-                      (bvchop n k1)
-                    (bvchop n k2)))))
-
-;todo: or go to bvplus of bvplus
-(defthm bvplus-of-+-combine-constants
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (integerp x)
-                (integerp k1)
-                (integerp k2))
-           (equal (bvplus size k1 (+ k2 x))
-                  (bvplus size (+ k1 k2) x)))
-  :hints (("Goal" :in-theory (enable bvplus))))
 
 ; Helps resolve updates to ESP
 ; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.

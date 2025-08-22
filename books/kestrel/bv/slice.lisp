@@ -751,3 +751,10 @@
            (equal (slice high low (+ -1 (expt 2 low)))
                   0))
   :hints (("Goal" :in-theory (enable slice))))
+
+;; restrict?
+(defthmd slice-of-if-arg3
+  (equal (slice high low (if test v1 v2))
+         (if test
+             (slice high low v1)
+           (slice high low v2))))
