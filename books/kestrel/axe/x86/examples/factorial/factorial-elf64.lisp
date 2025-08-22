@@ -28,7 +28,7 @@
 (include-book "kestrel/apt/tailrec" :dir :system)
 (include-book "kestrel/apt/def" :dir :system)
 
-; (depends-on "factorial.macho64")
+; (depends-on "factorial.elf64")
 
 (apt::set-default-input-old-to-new-enable t) ; for tailrec
 
@@ -45,14 +45,15 @@
 
 ;; Below, we simplify this (e.g., by projecting out just the state component we care about).
 (lift-subroutine factorial
-                 "_fact"
-                 "factorial.macho64"
-                 3
-                 60 ;number of bytes in factorial
-                 ((20 . ;offset to loop header
-                      (20 24 30 33 37 40 43 46 49) ;loop pc offsets
+                 "fact"
+                 "factorial.elf64"
+                 10
+                 50 ;number of bytes in factorial
+                 ((40 . ;offset to loop header
+                      (40 44 26 29 33 36) ;loop pc offsets
                       ))
-                 :measures ((20 (bvchop 32 var20))))
+                 :measures ((40 (bvchop 32 var12)))
+                 )
 
 ;; Test the lifted code:
 (acl2::assert-equal (factorial 6 0) 720)
@@ -79,7 +80,7 @@
 
 ;; Rename the params to match the spec:
 (def factorial-loop-1.4
-  (rename-params factorial-loop-1.3 ((var20 n) (var16 acc))))
+  (rename-params factorial-loop-1.3 ((var12 n) (var16 acc))))
 
 ;; needed for final theorem below
 (defthm unsigned-byte-p-32-of-factorial-loop-1.4

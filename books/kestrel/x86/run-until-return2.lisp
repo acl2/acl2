@@ -15,6 +15,8 @@
 ;; malware, which increments the stack pointer by 8 instead of 4 as expected
 ;; for 32-bit):
 
+;; TODO: Deprecate (use newer versions in run-until-return3.lisp and run-until-return4.lisp).
+
 ;TODO: Use x86isa package?
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute

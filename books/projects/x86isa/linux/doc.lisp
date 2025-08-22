@@ -230,7 +230,7 @@
          initial file system which resides in RAM. The kernel then starts
          @('/init'), which mounts the \"real\" root file system, usually from a
          disk. Then it uses the @('pivot_root') syscall to make it the new
-         @('/'). This allows Linux to dynamicly link in the appropriate kernel
+         @('/'). This allows Linux to dynamically link in the appropriate kernel
          modules from the initramfs, including disk and file system drivers
          necessary to mount the \"real\" disk.</p>
 

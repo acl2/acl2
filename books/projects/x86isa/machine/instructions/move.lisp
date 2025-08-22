@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, May - August 2023, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2025, Kestrel Technology, LLC
 ; Copyright (C) August 2023 - May 2024, Yahya Sohail
 ; Copyright (C) May 2024 - August 2024, Intel Corporation
 ; All rights reserved.
@@ -36,10 +36,9 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-; Original Author(s):
+; Authors:
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
-; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio   <www.alessandrocoglio.info>
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
@@ -86,7 +85,9 @@
         (select-operand-size
           proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
-       ((when (and (>= reg *segment-register-names-len*) (equal opcode #x8C))) (!!ms-fresh :invalid-segment-register))
+       ((when (and (>= reg *segment-register-names-len*)
+                   (equal opcode #x8C)))
+        (!!ms-fresh :invalid-segment-register))
        (register (if (equal opcode #x8C)
                      (seg-visiblei reg x86)
                      (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
@@ -136,73 +137,75 @@
 
 (def-inst x86-mov-Op/En-RM
 
-          ;; Op/En: RM
-          ;; [OP REG, R/M]
-          ;; 8A: MOV r8,  r/m8
-          ;; 8B: MOV r16, r/m16
-          ;; 8B: MOV r32, r/m32
-          ;; 8B: MOV r64, r/m64
-          ;; 8E: MOV Sreg, r/m16
-          ;; 8E: MOV Sreg, r/m64
+  ;; Op/En: RM
+  ;; [OP REG, R/M]
+  ;; 8A: MOV r8,  r/m8
+  ;; 8B: MOV r16, r/m16
+  ;; 8B: MOV r32, r/m32
+  ;; 8B: MOV r64, r/m64
+  ;; 8E: MOV Sreg, r/m16
+  ;; 8E: MOV Sreg, r/m64
 
-          :parents (one-byte-opcodes)
+  :parents (one-byte-opcodes)
 
-          :guard-hints (("Goal" :in-theory (e/d () ())))
+  :guard-hints (("Goal" :in-theory (e/d () ())))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          (b* ((p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
 
-               (byte-operand? (equal opcode #x8A))
-               ((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
+       (byte-operand? (equal opcode #x8A))
+       ((the (integer 1 8) operand-size)
+        (select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
-               ;; Refers to segment register for memory access, not the one being
-               ;; written to in the case of 0x8E
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       ;; Refers to segment register for memory access, not the one being
+       ;; written to in the case of 0x8E
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (inst-ac? t)
-               ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  0 ;; No immediate operand
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+       (inst-ac? t)
+       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-               ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error flg))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-               ;; Update the x86 state:
-               (x86 (if (equal opcode #x8E)
-                      (b* (((when (>= reg #.*segment-register-names-len*))
-                            (!!ms-fresh :invalid-dest-sreg))
-                           (selector (loghead 16 reg/mem))
-                           ((mv flg descriptor x86) (get-segment-descriptor reg selector x86))
-                           ((when flg)
-                            (b* (((when (equal flg t)) (!!ms-fresh :get-segment-descriptor)))
-                                (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
-                           (x86 (load-segment-reg reg selector descriptor x86)))
-                          x86)
-                      (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
-                                  reg/mem rex-byte x86)))
-               ((when (or (fault x86)
-                          (ms x86))) x86)
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86))
+       ;; Update the x86 state:
+       (x86 (if (equal opcode #x8E)
+                (b* (((when (>= reg #.*segment-register-names-len*))
+                      (!!ms-fresh :invalid-dest-sreg))
+                     (selector (loghead 16 reg/mem))
+                     ((mv flg descriptor x86)
+                      (get-segment-descriptor reg selector x86))
+                     ((when flg)
+                      (b* (((when (equal flg t))
+                            (!!ms-fresh :get-segment-descriptor)))
+                        (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
+                     (x86 (load-segment-reg reg selector descriptor x86)))
+                  x86)
+              (!rgfi-size operand-size (reg-index reg rex-byte #.*r*)
+                          reg/mem rex-byte x86)))
+       ((when (or (fault x86)
+                  (ms x86))) x86)
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
 
 (def-inst x86-mov-Op/En-FD
 
@@ -937,481 +940,92 @@
 
 (def-inst x86-mov-control-regs-Op/En-RM
 
-          ;; Move GPR to control register
+  ;; Move GPR to control register
 
-          ;; Op/En: RM
-          ;; [OP R/M, REG]
-          ;; 0F 22/r:         MOV CR0-CR7, r32
-          ;; 0F 22/r:         MOV CR0-CR7, r64
-          ;; REX.R + 0F 22/0: MOV CR8, r64
+  ;; Op/En: RM
+  ;; [OP R/M, REG]
+  ;; 0F 22/r:         MOV CR0-CR7, r32
+  ;; 0F 22/r:         MOV CR0-CR7, r64
+  ;; REX.R + 0F 22/0: MOV CR8, r64
 
-          ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
-          ;; Register":
+  ;; From Intel Manuals, Vol 2A, "MOV Move to/from Control
+  ;; Register":
 
-          ;; At the opcode level, the reg field within the ModR/M byte
-          ;; specifies which of the control registers is loaded or read. The 2
-          ;; bits in the mod field are ignored. The r/m field specifies the
-          ;; general-purpose register loaded or read. Attempts to reference
-          ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
-          ;; exceptions.
+  ;; At the opcode level, the reg field within the ModR/M byte
+  ;; specifies which of the control registers is loaded or read. The 2
+  ;; bits in the mod field are ignored. The r/m field specifies the
+  ;; general-purpose register loaded or read. Attempts to reference
+  ;; CR1, CR5, CR6, CR7, and CR9-CR15 result in undefined opcode (#UD)
+  ;; exceptions.
 
-          ;; In 64-bit mode, the instruction's default operation size
-          ;; is 64 bits. The REX.R prefix must be used to access
-          ;; CR8. Use of REX.B permits access to additional registers
-          ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
-          ;; ignored. Use of the REX.R prefix to specify a register
-          ;; other than CR8 causes an invalid-opcode exception. See the
-          ;; summary chart at the beginning of this section for encoding
-          ;; data and limits.
+  ;; In 64-bit mode, the instruction's default operation size
+  ;; is 64 bits. The REX.R prefix must be used to access
+  ;; CR8. Use of REX.B permits access to additional registers
+  ;; (R8-R15). Use of the REX.W prefix or 66H prefix is
+  ;; ignored. Use of the REX.R prefix to specify a register
+  ;; other than CR8 causes an invalid-opcode exception. See the
+  ;; summary chart at the beginning of this section for encoding
+  ;; data and limits.
 
-          :parents (two-byte-opcodes)
+  :parents (two-byte-opcodes)
 
-          :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-          :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (x86p x86))
 
-          :modr/m t
+  :modr/m t
 
-          :body
+  :body
 
-          (b* (;; The r/m field specifies the GPR (source).
-               ;; MOD field is ignored.
-               ;; The reg field specifies the control register (destination).
+  (b* (;; The r/m field specifies the GPR (source).
+       ;; MOD field is ignored.
+       ;; The reg field specifies the control register (destination).
 
-               ;; *operand-size-override* and REX.W are ignored.
+       ;; *operand-size-override* and REX.W are ignored.
 
 
-               (operand-size (if (equal proc-mode #.*64-bit-mode*) 8 4))
+       (operand-size (if (equal proc-mode #.*64-bit-mode*) 8 4))
 
-               ;; Get value from GPR
-               (reg-val (rgfi-size operand-size (reg-index r/m rex-byte #.*b*) rex-byte x86))
+       ;; Get value from GPR
+       (reg-val (rgfi-size operand-size (reg-index r/m rex-byte #.*b*) rex-byte x86))
 
-               ;; Update the x86 state:
-               (ctr-index
-                 ;; Note that there is a #UD Exception if an attempt is made to access
-                 ;; CR1, CR5, CR6, or CR7 or if the REX.R prefix is used to specify a
-                 ;; register other than CR8.  This is checked during dispatch --- see
-                 ;; opcode-maps for details.
-                 (if (and (logbitp #.*r* rex-byte)
-                          (equal reg 0))
-                   #.*cr8*
-                   reg))
+       ;; Update the x86 state:
+       (ctr-index
+        ;; Note that there is a #UD Exception if an attempt is made to access
+        ;; CR1, CR5, CR6, or CR7 or if the REX.R prefix is used to specify a
+        ;; register other than CR8.  This is checked during dispatch --- see
+        ;; opcode-maps for details.
+        (if (and (logbitp #.*r* rex-byte)
+                 (equal reg 0))
+            #.*cr8*
+          reg))
 
-               ;; Clear the tlb on loads to cr3
-               (x86 (if (or (equal ctr-index #.*cr3*)
-                            (equal ctr-index #.*cr0*)
-                            ;; Loading cr4 doesn't always require invalidation
-                            ;; (see Vol 3, Chapter 4.10.4.1 of the Intel SDM),
-                            ;; but this is valid too, since we're always
-                            ;; allowed to invalidate
-                            (equal ctr-index #.*cr4*))
-                      (b* ((tlb (tlb x86))
-                           (- (fast-alist-free tlb))
-                           (x86 (!tlb :tlb x86)))
-                          x86)
-                      x86))
-
-               ;; TODO: What should be done when the register is too large for
-               ;; the control register? ATM, !ctri-write takes the lowest n bits
-               (x86
-                 (!ctri-write ctr-index
-                              reg-val
-                              x86))
-               ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
-               (x86 (!flgi-undefined :cf x86))
-               (x86 (!flgi-undefined :pf x86))
-               (x86 (!flgi-undefined :af x86))
-               (x86 (!flgi-undefined :zf x86))
-               (x86 (!flgi-undefined :sf x86))
-               (x86 (!flgi-undefined :of x86))
-               (x86 (write-*ip proc-mode temp-rip x86)))
+       ;; Clear the tlb on loads to cr3
+       (x86 (if (or (equal ctr-index #.*cr3*)
+                    (equal ctr-index #.*cr0*)
+                    ;; Loading cr4 doesn't always require invalidation
+                    ;; (see Vol 3, Chapter 4.10.4.1 of the Intel SDM),
+                    ;; but this is valid too, since we're always
+                    ;; allowed to invalidate
+                    (equal ctr-index #.*cr4*))
+                (b* ((tlb (tlb x86))
+                     (- (fast-alist-free tlb))
+                     (x86 (!tlb :tlb x86)))
+                  x86)
               x86))
 
-
-;; ======================================================================
-;; INSTRUCTION: MOVD/MOVQ to/from XMM Registers
-;; ======================================================================
-
-(def-inst x86-movq-to-xmm/mem
-
-  ;; 66       0F D6 /r: MOVQ xmm2/m64, xmm1
-
-  :parents (two-byte-opcodes)
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-       ((the (unsigned-byte 64) xmm)
-        (xmmi-size 8 xmm-index x86))
-
-       (p2 (prefixes->seg prefixes))
-       (p4? (eql #.*addr-size-override*
-                 (prefixes->adr prefixes)))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       ((mv flg0
-            (the (signed-byte 64) addr)
-            (the (unsigned-byte 3) increment-RIP-by)
-            x86)
-        (if (int= mod #b11)
-            (mv nil 0 0 x86)
-          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
-                              0 ;; No immediate operand
-                              x86)))
-       ((when flg0)
-        (!!ms-fresh :x86-effective-addr-error flg0))
-
-       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (inst-ac? t)
-       ((mv flg1 x86)
-        (x86-operand-to-xmm/mem proc-mode
-                                ;; If writing to xmm register, use size 16 to
-                                ;; clear upper bits
-                                ;; If writing to memory, use size 8
-                                (if (int= mod #b11)
-                                  16 8)
-                                inst-ac?
-                                xmm
-                                seg-reg
-                                addr
-                                rex-byte
-                                r/m
-                                mod
-                                x86))
-       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
-       ((when flg1)
-        (!!ms-fresh :x86-operand-to-xmm/mem flg1))
-
+       ;; TODO: What should be done when the register is too large for
+       ;; the control register? ATM, !ctri-write takes the lowest n bits
+       (x86
+        (!ctri-write ctr-index
+                     reg-val
+                     x86))
+       ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
-
-(def-inst x86-movq-from-xmm/mem
-
-  ;; F3       0F 7E /r: MOVQ xmm1, xmm2/m64
-
-  :parents (two-byte-opcodes)
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-
-       (p2 (prefixes->seg prefixes))
-       (p4? (eql #.*addr-size-override*
-                 (prefixes->adr prefixes)))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       (inst-ac? t)
-       ((mv flg0
-            xmm/mem
-            (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode
-                                               #.*xmm-access*
-                                               8
-                                               inst-ac?
-                                               nil ;; Not a memory pointer operand
-                                               seg-reg
-                                               p4?
-                                               temp-rip
-                                               rex-byte
-                                               r/m
-                                               mod
-                                               sib
-                                               0 ;; No immediate operand
-                                               x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
-
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
-
-(def-inst x86-movd/movq-to-xmm
-
-  ;; 66       0F 6E /r: MOVD xmm, r/m32
-  ;; 66 REX.W 0F 6E /r: MOVQ xmm, r/m64
-
-  :parents (two-byte-opcodes)
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* ((p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
-
-       ((the (integer 4 8) operand-size)
-        (if (logbitp #.*w* rex-byte)
-            8
-          4))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       (inst-ac? t)
-       ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes
-         proc-mode #.*gpr-access* operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         seg-reg p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (x86 (!xmmi-size operand-size
-                        (reg-index reg rex-byte #.*r*)
-                        reg/mem
-                        x86))
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
-
-(def-inst x86-movd/movq-from-xmm
-
-  ;; 66       0F 7E /r: MOVD r/m32, xmm
-  ;; 66 REX.W 0F 7E /r: MOVQ r/m64, xmm
-
-  :parents (two-byte-opcodes)
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* ((p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
-       (p4? (equal #.*addr-size-override*
-                   (prefixes->adr prefixes)))
-
-       ((the (integer 4 8) operand-size)
-        (if (logbitp #.*w* rex-byte)
-            8
-          4))
-
-       (register (xmmi-size operand-size
-                            (reg-index reg rex-byte #.*r*)
-                            x86))
-
-       ((mv flg0
-            (the (signed-byte 64) addr)
-            (the (unsigned-byte 3) increment-RIP-by)
-            x86)
-        (if (equal mod #b11)
-            (mv nil 0 0 x86)
-          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
-                              0 ;; No immediate operand
-                              x86)))
-       ((when flg0)
-        (!!ms-fresh :x86-effective-addr-error flg0))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (inst-ac? t)
-       ((mv flg2 x86)
-        (x86-operand-to-reg/mem proc-mode
-                                operand-size
-                                inst-ac?
-                                nil ;; Not a memory pointer operand
-                                register
-                                seg-reg
-                                addr
-                                rex-byte
-                                r/m
-                                mod
-                                x86))
-       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
-       ((when flg2)
-        (!!ms-fresh :x86-operand-to-reg/mem flg2))
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
-
-;; ======================================================================
-;; INSTRUCTION: MOVDQA to/from XMM Registers
-;; ======================================================================
-
-(def-inst x86-movdqa-to-xmm
-
-  :parents (two-byte-opcodes)
-
-  :short "Move aligned packed integer values."
-
-  :long
-  "<code>
-   66 0F 6F /r   MOVDQA xmm1, xmm2/m128
-   </code>"
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-
-       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
-       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       (operand-size 16)
-
-       (inst-ac? t)
-       ((mv flg0
-            (the (unsigned-byte 128) xmm/mem)
-            (the (unsigned-byte 3) increment-rip-by)
-            ?addr
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode
-                                               #.*xmm-access*
-                                               operand-size
-                                               inst-ac?
-                                               nil ; not memory pointer operand
-                                               seg-reg
-                                               p4?
-                                               temp-rip
-                                               rex-byte
-                                               r/m
-                                               mod
-                                               sib
-                                               0 ; no immediate operand
-                                               x86))
-       ((when flg0) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (x86 (!xmmi-size operand-size xmm-index xmm/mem x86))
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
-
-(def-inst x86-movdqa-from-xmm
-
-  :parents (two-byte-opcodes)
-
-  :short "Move aligned packed integer values."
-
-  :long
-  "<code>
-   66 0F 7F /r   MOVDQA xmm2/m128, xmm1
-   </code>"
-
-  :returns (x86 x86p :hyp (x86p x86))
-
-  :modr/m t
-
-  :body
-
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-
-       ((the (unsigned-byte 128) xmm)
-        (xmmi-size 16 xmm-index x86))
-
-       (p2 (prefixes->seg prefixes))
-       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
-
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-       (operand-size 16)
-
-       ((mv flg0
-            (the (signed-byte 64) addr)
-            (the (unsigned-byte 3) increment-rip-by)
-            x86)
-        (if (int= mod #b11)
-            (mv nil 0 0 x86)
-          (x86-effective-addr proc-mode
-                              p4?
-                              temp-rip
-                              rex-byte
-                              r/m
-                              mod
-                              sib
-                              0 ; no immediate operand
-                              x86)))
-       ((when flg0) (!!ms-fresh :x86-effective-addr-error flg0))
-
-       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error flg))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-       (inst-ac? ;; Exceptions Type 1
-        t)
-       ((mv flg1 x86)
-        (x86-operand-to-xmm/mem proc-mode
-                                operand-size
-                                inst-ac?
-                                xmm
-                                seg-reg
-                                addr
-                                rex-byte
-                                r/m
-                                mod
-                                x86))
-       ((when flg1)
-        (!!ms-fresh :x86-operand-to-xmm/mem flg1))
-
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
-
-;; ======================================================================
