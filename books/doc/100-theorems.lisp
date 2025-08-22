@@ -467,10 +467,10 @@
 
      "<h3 id=\"72\">72. Sylow's Theorem</h3>"
 
-     "(def sylow-1)"
-     "(def sylow-2)"
-     "(def sylow-3)"
-     "(def sylow-4)"
+     "@(def dm::sylow-1)"
+     "@(def dm::sylow-2)"
+     "@(def dm::sylow-3)"
+     "@(def dm::sylow-4)"
 
      "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/groups/sylow.lisp\">books/projects/groups/sylow.lisp</a>.</p>"
 
