@@ -44,6 +44,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uident
+  :short "Unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are numerical identifiers which are intended
+     to be unique to a given variable, function, type name, etc.
+     E.g., there may be many variables throughout a program
+     with the name @('x'), but all such distinct variables
+     will have distinct unique identifiers.")
+   (xdoc::p
+    "Unique identifiers are assigned during validation
+     to aid subsequent analysis. By annotating identifiers
+     with their unique alias, disambiguation of variables becomes simple."))
+  ((ident nat))
+  :pred uidentp)
+
+(defirrelevant irr-uident
+  :short "An irrelevant unique identifier."
+  :type uidentp
+  :body (uident 0))
+
+(define uident-increment ((uident uidentp))
+  :returns (new-uident uidentp)
+  :short "Create a fresh unique identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This simply increments the numerical value of the unique identifier."))
+  (b* (((uident uident) uident))
+    (uident (1+ uident.ident)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-null-pointer-constp ((expr exprp) (type typep))
   (declare (ignore expr))
   :returns (yes/no booleanp)
@@ -182,7 +217,9 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants names,
+     We also assign a "
+    (xdoc::seetopic "uident" "unique identifier")
+    ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
      definition.")
@@ -190,7 +227,8 @@
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
-            (defstatus valid-defstatus)))
+            (defstatus valid-defstatus)
+            (uident uident)))
   (:enumconst ())
   (:typedef ((def type)))
   :pred valid-ord-infop)
@@ -349,9 +387,13 @@
      i.e. identifiers used as expressions,
      i.e. the @(':ident') case of @(tsee expr).
      The information for a variable consists of
-     the type and linkage of the object denoted by the variable."))
+     the type and linkage of the object denoted by the variable,
+     as well as a "
+    (xdoc::seetopic "uident" "unique identifier")
+    "."))
   ((type type)
-   (linkage linkage))
+   (linkage linkage)
+   (uident uident))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -360,7 +402,8 @@
   :short "An irrelevant validation information for variables."
   :type var-infop
   :body (make-var-info :type (irr-type)
-                       :linkage (irr-linkage)))
+                       :linkage (irr-linkage)
+                       :uident (irr-uident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

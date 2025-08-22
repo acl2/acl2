@@ -287,22 +287,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define valid-add-ords-file-scope ((idents ident-listp)
-                                   (info valid-ord-infop)
-                                   (table valid-tablep))
-  :returns (new-table valid-tablep)
-  :short "Add a list of ordinary identifier
+(define valid-add-ord-objfuns-file-scope ((idents ident-listp)
+                                          (type typep)
+                                          (linkage linkagep)
+                                          (defstatus valid-defstatusp)
+                                          (next-uident uidentp)
+                                          (table valid-tablep))
+  :returns (mv (new-next-uidentp uidentp)
+               (new-table valid-tablep))
+  :short "Add a list of ordinary identifiers
+          corresponding to objects or functions
           to the file scope of a validation table."
   :long
   (xdoc::topstring
    (xdoc::p
     "See @(tsee valid-add-ord-file-scope)."))
-  (cond ((endp idents) (valid-table-fix table))
-        (t (valid-add-ords-file-scope (cdr idents)
-                                      info
-                                      (valid-add-ord-file-scope (car idents)
-                                                                info
-                                                                table))))
+  (if (endp idents)
+      (mv (uident-fix next-uident)
+          (valid-table-fix table))
+    (valid-add-ord-objfuns-file-scope
+      (cdr idents)
+      type
+      linkage
+      defstatus
+      (uident-increment next-uident)
+      (valid-add-ord-file-scope (car idents)
+                                (make-valid-ord-info-objfun
+                                  :type type
+                                  :linkage linkage
+                                  :defstatus defstatus
+                                  :uident next-uident)
+                                table)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -909,7 +924,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (table valid-tablep))
-  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep))
+  :returns (mv (erp maybe-msgp)
+               (type typep)
+               (linkage linkagep)
+               (uident uidentp))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -926,7 +944,7 @@
      recorded as denoting an object or function
      [C17:6.5.1/2].
      The type and the linkage are obtained from the table."))
-  (b* (((reterr) (irr-type) (irr-linkage))
+  (b* (((reterr) (irr-type) (irr-linkage) (irr-uident))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
@@ -935,7 +953,8 @@
                   but does not denote an object or function."
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
-           (valid-ord-info-objfun->linkage info)))
+           (valid-ord-info-objfun->linkage info)
+           (valid-ord-info-objfun->uident info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2050,13 +2069,17 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
+  (define valid-expr ((expr exprp)
+                      (table valid-tablep)
+                      (next-uident uidentp)
+                      (ienv ienvp))
     :guard (expr-unambp expr)
     :returns (mv (erp maybe-msgp)
                  (new-expr exprp)
                  (type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an expression."
     :long
@@ -2142,68 +2165,84 @@
        The result has type @('size_t') [C17:7.19],
        whose definition is implementation-dependent,
        and thus for now we return the unknown type."))
-    (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
+    (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (expr-case
        expr
-       :ident (b* (((erp type linkage) (valid-var expr.ident table))
+       :ident (b* (((erp type linkage uident) (valid-var expr.ident table))
                    (info (make-var-info :type type
-                                        :linkage linkage)))
+                                        :linkage linkage
+                                        :uident uident)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
                        type
                        nil
-                       (valid-table-fix table)))
+                       (valid-table-fix table)
+                       next-uident))
        :const (b* (((erp const type) (valid-const expr.const table ienv)))
-                (retok (expr-const const) type nil (valid-table-fix table)))
+                (retok (expr-const const)
+                       type
+                       nil
+                       (valid-table-fix table)
+                       next-uident))
        :string (b* (((erp type) (valid-stringlit-list expr.strings ienv)))
-                 (retok (expr-fix expr) type nil (valid-table-fix table)))
-       :paren (b* (((erp new-inner type types table)
-                    (valid-expr expr.inner table ienv)))
-                (retok (expr-paren new-inner) type types table))
-       :gensel (b* (((erp new-control type-control types-control table)
-                     (valid-expr expr.control table ienv))
-                    ((erp new-assocs type-alist types-assoc table)
-                     (valid-genassoc-list expr.assocs table ienv))
+                 (retok (expr-fix expr)
+                        type
+                        nil
+                        (valid-table-fix table)
+                        next-uident))
+       :paren (b* (((erp new-inner type types table next-uident)
+                    (valid-expr expr.inner table next-uident ienv)))
+                (retok (expr-paren new-inner) type types table next-uident))
+       :gensel (b* (((erp new-control type-control types-control table next-uident)
+                     (valid-expr expr.control table next-uident ienv))
+                    ((erp new-assocs type-alist types-assoc table next-uident)
+                     (valid-genassoc-list expr.assocs table next-uident ienv))
                     ((erp type) (valid-gensel expr type-control type-alist)))
                  (retok (make-expr-gensel :control new-control
                                           :assocs new-assocs)
                         type
                         (set::union types-control types-assoc)
-                        table))
-       :arrsub (b* (((erp new-arg1 type-arg1 types-arg1 table)
-                     (valid-expr expr.arg1 table ienv))
-                    ((erp new-arg2 type-arg2 types-arg2 table)
-                     (valid-expr expr.arg2 table ienv))
+                        table
+                        next-uident))
+       :arrsub (b* (((erp new-arg1 type-arg1 types-arg1 table next-uident)
+                     (valid-expr expr.arg1 table next-uident ienv))
+                    ((erp new-arg2 type-arg2 types-arg2 table next-uident)
+                     (valid-expr expr.arg2 table next-uident ienv))
                     ((erp type) (valid-arrsub expr type-arg1 type-arg2)))
                  (retok (make-expr-arrsub :arg1 new-arg1 :arg2 new-arg2)
                         type
                         (set::union types-arg1 types-arg2)
-                        table))
-       :funcall (b* (((erp new-fun type-fun types-fun table)
-                      (valid-expr expr.fun table ienv))
-                     ((erp new-args types-arg rtypes-arg table)
-                      (valid-expr-list expr.args table ienv))
+                        table
+                        next-uident))
+       :funcall (b* (((erp new-fun type-fun types-fun table next-uident)
+                      (valid-expr expr.fun table next-uident ienv))
+                     ((erp new-args types-arg rtypes-arg table next-uident)
+                      (valid-expr-list expr.args table next-uident ienv))
                      ((erp type) (valid-funcall expr type-fun types-arg)))
                   (retok (make-expr-funcall :fun new-fun :args new-args)
                          type
                          (set::union types-fun rtypes-arg)
-                         table))
-       :member (b* (((erp new-arg type-arg types-arg table)
-                     (valid-expr expr.arg table ienv))
+                         table
+                         next-uident))
+       :member (b* (((erp new-arg type-arg types-arg table next-uident)
+                     (valid-expr expr.arg table next-uident ienv))
                     ((erp type) (valid-member expr type-arg)))
                  (retok (make-expr-member :arg new-arg :name expr.name)
                         type
                         types-arg
-                        table))
-       :memberp (b* (((erp new-arg type-arg types-arg table)
-                      (valid-expr expr.arg table ienv))
+                        table
+                        next-uident))
+       :memberp (b* (((erp new-arg type-arg types-arg table next-uident)
+                      (valid-expr expr.arg table next-uident ienv))
                      ((erp type) (valid-memberp expr type-arg)))
                   (retok (make-expr-memberp :arg new-arg :name expr.name)
                          type
                          types-arg
-                         table))
-       :complit (b* (((erp new-type type types-type table)
-                      (valid-tyname expr.type table ienv))
+                         table
+                         next-uident))
+       :complit (b* (((erp new-type type types-type table next-uident)
+                      (valid-tyname expr.type table next-uident ienv))
                      ((when (type-case type :function))
                       (retmsg$ "The type of the compound literal ~x0 ~
                                 is a function type."
@@ -2215,17 +2254,18 @@
                      (lifetime (if (> (valid-table-num-scopes table) 1)
                                    (lifetime-auto)
                                  (lifetime-static)))
-                     ((erp new-elems types-elems table)
+                     ((erp new-elems types-elems table next-uident)
                       (valid-desiniter-list
-                       expr.elems type lifetime table ienv)))
+                       expr.elems type lifetime table next-uident ienv)))
                   (retok (make-expr-complit :type new-type
                                             :elems new-elems
                                             :final-comma expr.final-comma)
                          type
                          (set::union types-type types-elems)
-                         table))
-       :unary (b* (((erp new-arg type-arg types-arg table)
-                    (valid-expr expr.arg table ienv))
+                         table
+                         next-uident))
+       :unary (b* (((erp new-arg type-arg types-arg table next-uident)
+                    (valid-expr expr.arg table next-uident ienv))
                    ((erp type) (valid-unary expr expr.op type-arg ienv))
                    (info (make-expr-unary-info :type type)))
                 (retok (make-expr-unary :op expr.op
@@ -2233,33 +2273,36 @@
                                         :info info)
                        type
                        types-arg
-                       table))
-       :sizeof (b* (((erp new-type type types table)
-                     (valid-tyname expr.type table ienv))
+                       table
+                       next-uident))
+       :sizeof (b* (((erp new-type type types table next-uident)
+                     (valid-tyname expr.type table next-uident ienv))
                     ((erp type1) (valid-sizeof/alignof expr type)))
-                 (retok (expr-sizeof new-type) type1 types table))
-       :alignof (b* (((erp new-type type types table)
-                      (valid-tyname expr.type table ienv))
+                 (retok (expr-sizeof new-type) type1 types table next-uident))
+       :alignof (b* (((erp new-type type types table next-uident)
+                      (valid-tyname expr.type table next-uident ienv))
                      ((erp type1) (valid-sizeof/alignof expr type)))
                   (retok (make-expr-alignof :type new-type
                                             :uscores expr.uscores)
                          type1
                          types
-                         table))
-       :cast (b* (((erp new-type type-cast types-cast table)
-                   (valid-tyname expr.type table ienv))
-                  ((erp new-arg type-arg types-arg table)
-                   (valid-expr expr.arg table ienv))
+                         table
+                         next-uident))
+       :cast (b* (((erp new-type type-cast types-cast table next-uident)
+                   (valid-tyname expr.type table next-uident ienv))
+                  ((erp new-arg type-arg types-arg table next-uident)
+                   (valid-expr expr.arg table next-uident ienv))
                   ((erp type) (valid-cast expr type-cast type-arg)))
                (retok (make-expr-cast :type new-type :arg new-arg)
                       type
                       (set::union types-cast types-arg)
-                      table))
+                      table
+                      next-uident))
        :binary (b* ((table0 table)
-                    ((erp new-arg1 type-arg1 types-arg1 table)
-                     (valid-expr expr.arg1 table ienv))
-                    ((erp new-arg2 type-arg2 types-arg2 table)
-                     (valid-expr expr.arg2 table ienv))
+                    ((erp new-arg1 type-arg1 types-arg1 table next-uident)
+                     (valid-expr expr.arg1 table next-uident ienv))
+                    ((erp new-arg2 type-arg2 types-arg2 table next-uident)
+                     (valid-expr expr.arg2 table next-uident ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
                     (info (make-expr-binary-info :type type :table table0)))
@@ -2269,77 +2312,92 @@
                                           :info info)
                         type
                         (set::union types-arg1 types-arg2)
-                        table))
-       :cond (b* (((erp new-test type-test types-test table)
-                   (valid-expr expr.test table ienv))
-                  ((erp new-then type-then? types-then table)
-                   (valid-expr-option expr.then table ienv))
+                        table
+                        next-uident))
+       :cond (b* (((erp new-test type-test types-test table next-uident)
+                   (valid-expr expr.test table next-uident ienv))
+                  ((erp new-then type-then? types-then table next-uident)
+                   (valid-expr-option expr.then table next-uident ienv))
                   (type-then (or type-then? type-test))
-                  ((erp new-else type-else types-else table)
-                   (valid-expr expr.else table ienv))
+                  ((erp new-else type-else types-else table next-uident)
+                   (valid-expr expr.else table next-uident ienv))
                   ((erp type)
                    (valid-cond expr type-test type-then type-else ienv)))
-               (retok (make-expr-cond  :test new-test
-                                       :then new-then
-                                       :else new-else)
+               (retok (make-expr-cond :test new-test
+                                      :then new-then
+                                      :else new-else)
                       type
                       (set::union types-test (set::union types-then types-else))
-                      table))
-       :comma (b* (((erp new-first & types1 table)
-                    (valid-expr expr.first table ienv))
-                   ((erp new-next type types2 table)
-                    (valid-expr expr.next table ienv)))
+                      table
+                      next-uident))
+       :comma (b* (((erp new-first & types1 table next-uident)
+                    (valid-expr expr.first table next-uident ienv))
+                   ((erp new-next type types2 table next-uident)
+                    (valid-expr expr.next table next-uident ienv)))
                 (retok (make-expr-comma :first new-first :next new-next)
                        type
                        (set::union types1 types2)
-                       table))
+                       table
+                       next-uident))
        :stmt (b* ((table (valid-push-scope table))
-                  ((erp new-items types type? table)
-                   (valid-block-item-list expr.items table ienv))
+                  ((erp new-items types type? table next-uident)
+                   (valid-block-item-list expr.items table next-uident ienv))
                   (table (valid-pop-scope table))
                   (type (or type? (type-void))))
-               (retok (expr-stmt new-items) type types table))
-       :tycompat (b* (((erp new-type1 & types1 table)
-                       (valid-tyname expr.type1 table ienv))
-                      ((erp new-type2 & types2 table)
-                       (valid-tyname expr.type2 table ienv)))
+               (retok (expr-stmt new-items) type types table next-uident))
+       :tycompat (b* (((erp new-type1 & types1 table next-uident)
+                       (valid-tyname expr.type1 table next-uident ienv))
+                      ((erp new-type2 & types2 table next-uident)
+                       (valid-tyname expr.type2 table next-uident ienv)))
                    (retok (make-expr-tycompat :type1 new-type1
                                               :type2 new-type2)
                           (type-sint)
                           (set::union types1 types2)
-                          table))
-       :offsetof (b* (((erp new-type & types table)
-                       (valid-tyname expr.type table ienv))
-                      ((erp new-member more-types table)
-                       (valid-member-designor expr.member table ienv)))
+                          table
+                          next-uident))
+       :offsetof (b* (((erp new-type & types table next-uident)
+                       (valid-tyname expr.type table next-uident ienv))
+                      ((erp new-member more-types table next-uident)
+                       (valid-member-designor
+                         expr.member table next-uident ienv)))
                    (retok (make-expr-offsetof :type new-type
                                               :member new-member)
                           (type-unknown)
                           (set::union types more-types)
-                          table))
-       :va-arg (b* (((erp new-list & list-types table)
-                     (valid-expr expr.list table ienv))
-                    ((erp new-type & type-types table)
-                     (valid-tyname expr.type table ienv)))
+                          table
+                          next-uident))
+       :va-arg (b* (((erp new-list & list-types table next-uident)
+                     (valid-expr expr.list table next-uident ienv))
+                    ((erp new-type & type-types table next-uident)
+                     (valid-tyname expr.type table next-uident ienv)))
                  (retok (make-expr-va-arg :list new-list :type new-type)
                         (type-unknown)
                         (set::union list-types type-types)
-                        table))
-       :extension (b* (((erp new-expr type types table)
-                        (valid-expr expr.expr table ienv)))
-                    (retok (expr-extension new-expr) type types table))
+                        table
+                        next-uident))
+       :extension (b* (((erp new-expr type types table next-uident)
+                        (valid-expr expr.expr table next-uident ienv)))
+                    (retok (expr-extension new-expr)
+                           type
+                           types
+                           table
+                           next-uident))
        :otherwise (prog2$ (impossible) (retmsg$ ""))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
+  (define valid-expr-list ((exprs expr-listp)
+                           (table valid-tablep)
+                           (next-uident uidentp)
+                           (ienv ienvp))
     :guard (expr-list-unambp exprs)
     :returns (mv (erp maybe-msgp)
                  (new-exprs expr-listp)
                  (types type-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of expressions."
     :long
@@ -2349,29 +2407,33 @@
        and we return the resulting types, in the same order.
        We also return the union of all the @('return') types.
        We also return a possibly updated validation table."))
-    (b* (((reterr) nil nil nil (irr-valid-table))
-         ((when (endp exprs)) (retok nil nil nil (valid-table-fix table)))
-         ((erp new-expr type return-types table)
-          (valid-expr (car exprs) table ienv))
-         ((erp new-exprs types more-return-types table)
-          (valid-expr-list (cdr exprs) table ienv)))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident))
+         ((when (endp exprs))
+          (retok nil nil nil (valid-table-fix table) (uident-fix next-uident)))
+         ((erp new-expr type return-types table next-uident)
+          (valid-expr (car exprs) table next-uident ienv))
+         ((erp new-exprs types more-return-types table next-uident)
+          (valid-expr-list (cdr exprs) table next-uident ienv)))
       (retok (cons new-expr new-exprs)
              (cons type types)
              (set::union return-types more-return-types)
-             table))
+             table
+             next-uident))
     :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-expr-option ((expr? expr-optionp)
                              (table valid-tablep)
+                             (next-uident uidentp)
                              (ienv ienvp))
     :guard (expr-option-unambp expr?)
     :returns (mv (erp maybe-msgp)
                  (new-expr? expr-optionp)
                  (type? type-optionp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional expression."
     :long
@@ -2381,24 +2443,30 @@
        we return @('nil') as the optional type,
        we return the empty set of @('return') types,
        and the validation table unchanged."))
-    (b* (((reterr) nil nil nil (irr-valid-table)))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident)))
       (expr-option-case
        expr?
-       :some (valid-expr expr?.val table ienv)
-       :none (retok nil nil nil (valid-table-fix table))))
+       :some (valid-expr expr?.val table next-uident ienv)
+       :none (retok nil
+                    nil
+                    nil
+                    (valid-table-fix table)
+                    (uident-fix next-uident))))
     :measure (expr-option-count expr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-const-expr ((cexpr const-exprp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (const-expr-unambp cexpr)
     :returns (mv (erp maybe-msgp)
                  (new-cexpr const-exprp)
                  (type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a constant expression."
     :long
@@ -2410,23 +2478,26 @@
        but when we do we may need to extend this validation function
        to return not only a type but also a value,
        namely the value of the constant expression."))
-    (b* (((reterr) (irr-const-expr) (irr-type) nil (irr-valid-table))
-         ((erp new-expr type types table)
-          (valid-expr (const-expr->expr cexpr) table ienv)))
-      (retok (const-expr new-expr) type types table))
+    (b* (((reterr)
+          (irr-const-expr) (irr-type) nil (irr-valid-table) (irr-uident))
+         ((erp new-expr type types table next-uident)
+          (valid-expr (const-expr->expr cexpr) table next-uident ienv)))
+      (retok (const-expr new-expr) type types table next-uident))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-const-expr-option ((cexpr? const-expr-optionp)
                                    (table valid-tablep)
+                                   (next-uident uidentp)
                                    (ienv ienvp))
     :guard (const-expr-option-unambp cexpr?)
     :returns (mv (erp maybe-msgp)
                  (new-cexpr? const-expr-optionp)
                  (type? type-optionp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional constant expression."
     :long
@@ -2436,17 +2507,22 @@
        we return @('nil') as the optional type,
        we return the empty set of @('return') types,
        and the validation table unchanged."))
-    (b* (((reterr) nil nil nil (irr-valid-table)))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident)))
       (const-expr-option-case
        cexpr?
-       :some (valid-const-expr cexpr?.val table ienv)
-       :none (retok nil nil nil (valid-table-fix table))))
+       :some (valid-const-expr cexpr?.val table next-uident ienv)
+       :none (retok nil
+                    nil
+                    nil
+                    (valid-table-fix table)
+                    (uident-fix next-uident))))
     :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
+                          (next-uident uidentp)
                           (ienv ienvp))
     :guard (genassoc-unambp genassoc)
     :returns (mv (erp maybe-msgp)
@@ -2454,7 +2530,8 @@
                  (tyname-type type-optionp)
                  (expr-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a generic association."
     :long
@@ -2465,38 +2542,43 @@
        If the generic association has @('default'),
        we return @('nil') as the @('tyname-type') result.
        Either way, we validate the expression, and return its type."))
-    (b* (((reterr) (irr-genassoc) nil (irr-type) nil (irr-valid-table)))
+    (b* (((reterr)
+          (irr-genassoc) nil (irr-type) nil (irr-valid-table) (irr-uident)))
       (genassoc-case
        genassoc
-       :type (b* (((erp new-type tyname-type tyname-types table)
-                   (valid-tyname genassoc.type table ienv))
-                  ((erp new-expr expr-type expr-types table)
-                   (valid-expr genassoc.expr table ienv)))
+       :type (b* (((erp new-type tyname-type tyname-types table next-uident)
+                   (valid-tyname genassoc.type table next-uident ienv))
+                  ((erp new-expr expr-type expr-types table next-uident)
+                   (valid-expr genassoc.expr table next-uident ienv)))
                (retok (make-genassoc-type :type new-type :expr new-expr)
                       tyname-type
                       expr-type
                       (set::union tyname-types expr-types)
-                      table))
-       :default (b* (((erp new-expr expr-type expr-types table)
-                      (valid-expr genassoc.expr table ienv)))
+                      table
+                      next-uident))
+       :default (b* (((erp new-expr expr-type expr-types table next-uident)
+                      (valid-expr genassoc.expr table next-uident ienv)))
                   (retok (genassoc-default new-expr)
                          nil
                          expr-type
                          expr-types
-                         table))))
+                         table
+                         next-uident))))
     :measure (genassoc-count genassoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-genassoc-list ((genassocs genassoc-listp)
                                (table valid-tablep)
+                               (next-uident uidentp)
                                (ienv ienvp))
     :guard (genassoc-list-unambp genassocs)
     :returns (mv (erp maybe-msgp)
                  (new-genassocs genassoc-listp)
                  (type-alist type-option-type-alistp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of generic associations."
     :long
@@ -2507,50 +2589,59 @@
        which we return.
        There may be repeated keys in the alist: it is a feature,
        so we can separately check their uniqueness."))
-    (b* (((reterr) nil nil nil (irr-valid-table))
-         ((when (endp genassocs)) (retok nil nil nil (valid-table-fix table)))
-         ((erp new-genassoc tyname-type? expr-type types table)
-          (valid-genassoc (car genassocs) table ienv))
-         ((erp new-genassocs type-alist more-types table)
-          (valid-genassoc-list (cdr genassocs) table ienv)))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident))
+         ((when (endp genassocs))
+          (retok nil nil nil (valid-table-fix table) (uident-fix next-uident)))
+         ((erp new-genassoc tyname-type? expr-type types table next-uident)
+          (valid-genassoc (car genassocs) table next-uident ienv))
+         ((erp new-genassocs type-alist more-types table next-uident)
+          (valid-genassoc-list (cdr genassocs) table next-uident ienv)))
       (retok (cons new-genassoc new-genassocs)
              (acons tyname-type? expr-type type-alist)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (genassoc-list-count genassocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-member-designor ((memdesign member-designorp)
                                  (table valid-tablep)
+                                 (next-uident uidentp)
                                  (ienv ienvp))
     :guard (member-designor-unambp memdesign)
     :returns (mv (erp maybe-msgp)
                  (new-memdesign member-designorp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a member designator."
-    (b* (((reterr) (irr-member-designor) nil (irr-valid-table)))
+    (b* (((reterr) (irr-member-designor) nil (irr-valid-table) (irr-uident)))
       (member-designor-case
        memdesign
        :ident (retok (member-designor-fix memdesign)
                      nil
-                     (valid-table-fix table))
-       :dot (b* (((erp new-member types table)
-                  (valid-member-designor memdesign.member table ienv)))
+                     (valid-table-fix table)
+                     (uident-fix next-uident))
+       :dot (b* (((erp new-member types table next-uident)
+                  (valid-member-designor
+                    memdesign.member table next-uident ienv)))
               (retok (make-member-designor-dot :member new-member
                                                :name memdesign.name)
                      types
-                     table))
-       :sub (b* (((erp new-member types table)
-                  (valid-member-designor memdesign.member table ienv))
-                 ((erp new-expr & more-types table)
-                  (valid-expr memdesign.index table ienv)))
+                     table
+                     next-uident))
+       :sub (b* (((erp new-member types table next-uident)
+                  (valid-member-designor
+                    memdesign.member table next-uident ienv))
+                 ((erp new-expr & more-types table next-uident)
+                  (valid-expr memdesign.index table next-uident ienv)))
               (retok (make-member-designor-sub :member new-member
                                                :index new-expr)
                      (set::union types more-types)
-                     table))))
+                     table
+                     next-uident))))
     :measure (member-designor-count memdesign))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2559,6 +2650,7 @@
                            (type? type-optionp)
                            (tyspecs type-spec-listp)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (and (type-spec-unambp tyspec)
                 (type-spec-list-unambp tyspecs)
@@ -2568,7 +2660,8 @@
                  (new-type? type-optionp)
                  (new-tyspecs type-spec-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a type specifier."
     :long
@@ -2651,7 +2744,8 @@
        so @('__int128') alone does not determine a type,
        and we use @(tsee valid-type-spec-list-residual)
        to determine the type, if any, as done in other cases."))
-    (b* (((reterr) (irr-type-spec) nil nil nil (irr-valid-table))
+    (b* (((reterr) (irr-type-spec) nil nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((when type?)
           (retmsg$ "Since the type ~x0 has been determined, ~
                     there must be no more type specifiers, ~
@@ -2671,49 +2765,109 @@
                         (type-void)
                         nil
                         nil
-                        same-table)
+                        same-table
+                        next-uident)
                (reterr msg-bad-preceding))
-       :char (retok (type-spec-char) nil ext-tyspecs nil same-table)
-       :short (retok (type-spec-short) nil ext-tyspecs nil same-table)
-       :int (retok (type-spec-int) nil ext-tyspecs nil same-table)
-       :long (retok (type-spec-long) nil ext-tyspecs nil same-table)
-       :float (retok (type-spec-float) nil ext-tyspecs nil same-table)
-       :double (retok (type-spec-double) nil ext-tyspecs nil same-table)
+       :char (retok (type-spec-char)
+                    nil
+                    ext-tyspecs
+                    nil
+                    same-table
+                    next-uident)
+       :short (retok (type-spec-short)
+                     nil
+                     ext-tyspecs
+                     nil
+                     same-table
+                     next-uident)
+       :int (retok (type-spec-int)
+                   nil
+                   ext-tyspecs
+                   nil
+                   same-table
+                   next-uident)
+       :long (retok (type-spec-long)
+                    nil
+                    ext-tyspecs
+                    nil
+                    same-table
+                    next-uident)
+       :float (retok (type-spec-float)
+                     nil
+                     ext-tyspecs
+                     nil
+                     same-table
+                     next-uident)
+       :double (retok (type-spec-double)
+                      nil
+                      ext-tyspecs
+                      nil
+                      same-table
+                      next-uident)
        :signed (retok (type-spec-signed tyspec.uscores)
                       nil
                       ext-tyspecs
                       nil
-                      same-table)
-       :unsigned (retok (type-spec-unsigned) nil ext-tyspecs nil same-table)
+                      same-table
+                      next-uident)
+       :unsigned (retok (type-spec-unsigned)
+                        nil
+                        ext-tyspecs
+                        nil
+                        same-table
+                        next-uident)
        :bool (if (endp tyspecs)
-                 (retok (type-spec-bool) (type-bool) nil nil same-table)
+                 (retok (type-spec-bool)
+                        (type-bool)
+                        nil
+                        nil
+                        same-table
+                        next-uident)
                (reterr msg-bad-preceding))
-       :complex (retok (type-spec-complex) nil ext-tyspecs nil same-table)
+       :complex (retok (type-spec-complex)
+                       nil
+                       ext-tyspecs
+                       nil
+                       same-table
+                       next-uident)
        :atomic (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                    ((erp new-type type types table)
-                     (valid-tyname tyspec.type table ienv)))
-                 (retok (type-spec-atomic new-type) type nil types table))
+                    ((erp new-type type types table next-uident)
+                     (valid-tyname tyspec.type table next-uident ienv)))
+                 (retok (type-spec-atomic new-type)
+                        type
+                        nil
+                        types
+                        table
+                        next-uident))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                    ((erp new-spec types table)
-                     (valid-struni-spec tyspec.spec table ienv))
+                    ((erp new-spec types table next-uident)
+                     (valid-struni-spec
+                       tyspec.spec table next-uident ienv))
                     ((struni-spec tyspec.spec) tyspec.spec))
                  (retok (type-spec-struct new-spec)
                         (type-struct tyspec.spec.name?)
                         nil
                         types
-                        table))
+                        table
+                        next-uident))
        :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                   ((erp new-spec types table)
-                    (valid-struni-spec tyspec.spec table ienv)))
+                   ((erp new-spec types table next-uident)
+                    (valid-struni-spec tyspec.spec table next-uident ienv)))
                 (retok (type-spec-union new-spec)
                        (type-union)
                        nil
                        types
-                       table))
+                       table
+                       next-uident))
        :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                  ((erp new-spec types table)
-                   (valid-enumspec tyspec.spec table ienv)))
-               (retok (type-spec-enum new-spec) (type-enum) nil types table))
+                  ((erp new-spec types table next-uident)
+                   (valid-enumspec tyspec.spec table next-uident ienv)))
+               (retok (type-spec-enum new-spec)
+                      (type-enum)
+                      nil
+                      types
+                      table
+                      next-uident))
        :typedef (b* (((unless (endp tyspecs))
                       (reterr msg-bad-preceding))
                      ((mv info? -)
@@ -2728,90 +2882,103 @@
                                    info?.def
                                    nil
                                    nil
-                                   same-table)
+                                   same-table
+                                   next-uident)
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
                                         represent a typedef.")))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       nil
                       ext-tyspecs
                       nil
-                      same-table)
+                      same-table
+                      next-uident)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
                            nil
                            nil
-                           same-table)
+                           same-table
+                           next-uident)
                   (reterr msg-bad-preceding))
        :float32x (if (endp tyspecs)
                      (retok (type-spec-float32x)
                             (type-unknown)
                             nil
                             nil
-                            same-table)
+                            same-table
+                            next-uident)
                    (reterr msg-bad-preceding))
        :float64 (if (endp tyspecs)
                     (retok (type-spec-float64)
                            (type-unknown)
                            nil
                            nil
-                           same-table)
+                           same-table
+                           next-uident)
                   (reterr msg-bad-preceding))
        :float64x (if (endp tyspecs)
                      (retok (type-spec-float64x)
                             (type-unknown)
                             nil
                             nil
-                            same-table)
+                            same-table
+                            next-uident)
                    (reterr msg-bad-preceding))
        :float128 (if (endp tyspecs)
                      (retok (type-spec-float128)
                             (type-unknown)
                             nil
                             nil
-                            same-table)
+                            same-table
+                            next-uident)
                    (reterr msg-bad-preceding))
        :float128x (if (endp tyspecs)
                       (retok (type-spec-float128x)
                              (type-unknown)
                              nil
                              nil
-                             same-table)
+                             same-table
+                             next-uident)
                     (reterr msg-bad-preceding))
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
                                    (type-unknown)
                                    nil
                                    nil
-                                   same-table)
+                                   same-table
+                                   next-uident)
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
                          (retok (type-spec-struct-empty tyspec.name?)
                                 (type-struct tyspec.name?)
                                 nil
                                 nil
-                                same-table)
+                                same-table
+                                next-uident)
                        (reterr msg-bad-preceding))
        :typeof-expr (if (endp tyspecs)
                         (retok (type-spec-fix tyspec)
                                (type-unknown)
                                nil
                                nil
-                               same-table)
+                               same-table
+                               next-uident)
                       (reterr msg-bad-preceding))
        :typeof-type (if (endp tyspecs)
                         (retok (type-spec-fix tyspec)
                                (type-unknown)
                                nil
                                nil
-                               same-table)
+                               same-table
+                               next-uident)
                       (reterr msg-bad-preceding))
        :auto-type (if (endp tyspecs)
                       (retok (type-spec-fix tyspec)
                              (type-unknown)
                              nil
                              nil
-                             same-table)
+                             same-table
+                             next-uident)
                     (reterr msg-bad-preceding))
        :otherwise (prog2$ (impossible) (retmsg$ ""))))
     :measure (type-spec-count tyspec)
@@ -2822,13 +2989,13 @@
       (type-spec-list-unambp new-tyspecs)
       :hyp (type-spec-list-unambp tyspecs)
       :hints
-      (("Goal" :expand (valid-type-spec tyspec type? tyspecs table ienv))))
+      (("Goal" :expand (valid-type-spec tyspec type? tyspecs table next-uident ienv))))
 
     (defret not-type-and-type-specs-of-valid-type-spec
       (not (and new-type? new-tyspecs))
       :hints
       (("Goal"
-        :expand (valid-type-spec tyspec type? tyspecs table ienv)))))
+        :expand (valid-type-spec tyspec type? tyspecs table next-uident ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2836,6 +3003,7 @@
                            (type? type-optionp)
                            (tyspecs type-spec-listp)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (and (spec/qual-unambp specqual)
                 (type-spec-list-unambp tyspecs)
@@ -2845,7 +3013,8 @@
                  (new-type? type-optionp)
                  (new-tyspecs type-spec-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a specifier or qualifier."
     :long
@@ -2860,34 +3029,39 @@
        the validation of a type specifier (see @(tsee valid-type-spec)).
        For now we also skip over attributes completely;
        see the ABNF grammar for @('specifier-qualifier-list')."))
-    (b* (((reterr) (irr-spec/qual) nil nil nil (irr-valid-table)))
+    (b* (((reterr) (irr-spec/qual) nil nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (spec/qual-case
        specqual
-       :typespec (b* (((erp new-spec type? tyspecs types table)
+       :typespec (b* (((erp new-spec type? tyspecs types table next-uident)
                        (valid-type-spec
-                        specqual.spec type? tyspecs table ienv)))
+                        specqual.spec type? tyspecs table next-uident ienv)))
                    (retok (spec/qual-typespec new-spec)
                           type?
                           tyspecs
                           types
-                          table))
+                          table
+                          next-uident))
        :typequal (retok (spec/qual-typequal specqual.qual)
                         (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         nil
-                        (valid-table-fix table))
-       :align (b* (((erp new-spec types table)
-                    (valid-align-spec specqual.spec table ienv)))
+                        (valid-table-fix table)
+                        next-uident)
+       :align (b* (((erp new-spec types table next-uident)
+                    (valid-align-spec specqual.spec table next-uident ienv)))
                 (retok (spec/qual-align new-spec)
                        (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        types
-                       table))
+                       table
+                       next-uident))
        :attrib (retok (spec/qual-attrib specqual.spec)
                       (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
                       nil
-                      (valid-table-fix table))))
+                      (valid-table-fix table)
+                      next-uident)))
     :measure (spec/qual-count specqual)
 
     ///
@@ -2896,15 +3070,15 @@
       (type-spec-list-unambp new-tyspecs)
       :hyp (type-spec-list-unambp tyspecs)
       :hints
-      (("Goal" :expand (valid-spec/qual specqual type? tyspecs table ienv))))
+      (("Goal" :expand (valid-spec/qual specqual type? tyspecs table next-uident ienv))))
 
     (defret not-type-and-type-specs-of-valid-spec/qual
       (not (and new-type? new-tyspecs))
       :hyp (not (and type? tyspecs))
       :hints
       (("Goal"
-        :expand ((valid-spec/qual specqual nil tyspecs table ienv)
-                 (valid-spec/qual specqual type? nil table ienv)))))
+        :expand ((valid-spec/qual specqual nil tyspecs table next-uident ienv)
+                 (valid-spec/qual specqual type? nil table next-uident ienv)))))
 
     (defret not-type-specs-of-valid-spec/qual-when-type
       (implies new-type?
@@ -2918,6 +3092,7 @@
                                 (type? type-optionp)
                                 (tyspecs type-spec-listp)
                                 (table valid-tablep)
+                                (next-uident uidentp)
                                 (ienv ienvp))
     :guard (and (spec/qual-list-unambp specquals)
                 (type-spec-list-unambp tyspecs)
@@ -2926,7 +3101,8 @@
                  (new-specquals spec/qual-listp)
                  (type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of specifiers and qualifiers."
     :long
@@ -2943,37 +3119,47 @@
        via a separate validation function.
        If there are no type specifiers, but no type has been determined,
        it means that there were no type specifiers at all [C17:6.7.2/2]."))
-    (b* (((reterr) nil (irr-type) nil (irr-valid-table))
+    (b* (((reterr) nil (irr-type) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((when (endp specquals))
           (cond
            (type?
-            (retok nil (type-option-fix type?) nil (valid-table-fix table)))
+             (retok nil
+                    (type-option-fix type?)
+                    nil
+                    (valid-table-fix table)
+                    next-uident))
            ((consp tyspecs)
             (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
-              (retok nil type nil (valid-table-fix table))))
+              (retok nil type nil (valid-table-fix table) next-uident)))
            (t (retmsg$ "The specifier and qualifier list ~x0 ~
                         contains no type specifiers."
                        (spec/qual-list-fix specquals)))))
-         ((erp new-specqual type? tyspecs types table)
-          (valid-spec/qual (car specquals) type? tyspecs table ienv))
-         ((erp new-specquals type more-types table)
-          (valid-spec/qual-list (cdr specquals) type? tyspecs table ienv)))
+         ((erp new-specqual type? tyspecs types table next-uident)
+          (valid-spec/qual
+            (car specquals) type? tyspecs table next-uident ienv))
+         ((erp new-specquals type more-types table next-uident)
+          (valid-spec/qual-list
+            (cdr specquals) type? tyspecs table next-uident ienv)))
       (retok (cons new-specqual new-specquals)
              type
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-align-spec ((align align-specp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (align-spec-unambp align)
     :returns (mv (erp maybe-msgp)
                  (new-align align-specp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an alignment specifier."
     :long
@@ -2991,26 +3177,26 @@
        and thus we perform the same checks as in
        the @(':alignof') case of @(tsee valid-expr),
        including @(tsee valid-sizeof/alignof)."))
-    (b* (((reterr) (irr-align-spec) nil (irr-valid-table)))
+    (b* (((reterr) (irr-align-spec) nil (irr-valid-table) (irr-uident)))
       (align-spec-case
        align
        :alignas-type
-       (b* (((erp new-type type types table)
-             (valid-tyname align.type table ienv))
+       (b* (((erp new-type type types table next-uident)
+             (valid-tyname align.type table next-uident ienv))
             ((when (type-case type :function))
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument ~x2 is a function type."
                       (align-spec-fix align) type)))
-         (retok (align-spec-alignas-type new-type) types table))
+         (retok (align-spec-alignas-type new-type) types table next-uident))
        :alignas-expr
-       (b* (((erp new-expr type types table)
-             (valid-const-expr align.expr table ienv))
+       (b* (((erp new-expr type types table next-uident)
+             (valid-const-expr align.expr table next-uident ienv))
             ((unless (or (type-integerp type)
                          (type-case type :unknown)))
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument has type ~x1."
                       (align-spec-fix align) type)))
-         (retok (align-spec-alignas-expr new-expr) types table))
+         (retok (align-spec-alignas-expr new-expr) types table next-uident))
        :alignas-ambig (prog2$ (impossible) (retmsg$ ""))))
     :measure (align-spec-count align))
 
@@ -3021,6 +3207,7 @@
                            (tyspecs type-spec-listp)
                            (storspecs stor-spec-listp)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (and (decl-spec-unambp declspec)
                 (type-spec-list-unambp tyspecs)
@@ -3031,7 +3218,8 @@
                  (new-tyspecs type-spec-listp)
                  (new-storspecs stor-spec-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a declaration specifier."
     :long
@@ -3046,7 +3234,9 @@
        We handle type specifiers similarly to @(tsee valid-spec/qual).
        In addition, we collect all the storage class specifiers
        encountered as we go through the declaration specifiers."))
-    (b* (((reterr) (irr-decl-spec) nil nil nil nil (irr-valid-table)))
+    (b* (((reterr)
+          (irr-decl-spec) nil nil nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (decl-spec-case
        declspec
        :stoclass (retok (decl-spec-stoclass declspec.spec)
@@ -3054,54 +3244,62 @@
                         (type-spec-list-fix tyspecs)
                         (rcons declspec.spec (stor-spec-list-fix storspecs))
                         nil
-                        (valid-table-fix table))
-       :typespec (b* (((erp new-spec type? tyspecs types table)
+                        (valid-table-fix table)
+                        next-uident)
+       :typespec (b* (((erp new-spec type? tyspecs types table next-uident)
                        (valid-type-spec
-                        declspec.spec type? tyspecs table ienv)))
+                        declspec.spec type? tyspecs table next-uident ienv)))
                    (retok (decl-spec-typespec new-spec)
                           type?
                           tyspecs
                           (stor-spec-list-fix storspecs)
                           types
-                          table))
+                          table
+                          next-uident))
        :typequal (retok (decl-spec-typequal declspec.qual)
                         (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
                         nil
-                        (valid-table-fix table))
+                        (valid-table-fix table)
+                        next-uident)
        :function (retok (decl-spec-function declspec.spec)
                         (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
                         nil
-                        (valid-table-fix table))
-       :align (b* (((erp new-spec types table)
-                    (valid-align-spec declspec.spec table ienv)))
+                        (valid-table-fix table)
+                        next-uident)
+       :align (b* (((erp new-spec types table next-uident)
+                    (valid-align-spec declspec.spec table next-uident ienv)))
                 (retok (decl-spec-align new-spec)
                        (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        (stor-spec-list-fix storspecs)
                        types
-                       table))
+                       table
+                       next-uident))
        :attrib (retok (decl-spec-attrib declspec.spec)
                       (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
                       (stor-spec-list-fix storspecs)
                       nil
-                      (valid-table-fix table))
+                      (valid-table-fix table)
+                      next-uident)
        :stdcall (retok (decl-spec-stdcall)
                        (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        (stor-spec-list-fix storspecs)
                        nil
-                       (valid-table-fix table))
+                       (valid-table-fix table)
+                       next-uident)
        :declspec (retok (decl-spec-declspec declspec.arg)
                         (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
                         nil
-                        (valid-table-fix table))))
+                        (valid-table-fix table)
+                        next-uident)))
     :measure (decl-spec-count declspec)
 
     ///
@@ -3111,15 +3309,15 @@
       :hyp (type-spec-list-unambp tyspecs)
       :hints
       (("Goal"
-        :expand (valid-decl-spec declspec type? tyspecs storspecs table ienv))))
+        :expand (valid-decl-spec declspec type? tyspecs storspecs table next-uident ienv))))
 
     (defret not-type-and-type-specs-of-valid-decl-spec
       (not (and new-type? new-tyspecs))
       :hyp (not (and type? tyspecs))
       :hints
       (("Goal"
-        :expand ((valid-decl-spec declspec nil tyspecs storspecs table ienv)
-                 (valid-decl-spec declspec type? nil storspecs table ienv)))))
+        :expand ((valid-decl-spec declspec nil tyspecs storspecs table next-uident ienv)
+                 (valid-decl-spec declspec type? nil storspecs table next-uident ienv)))))
 
     (defret not-type-specs-of-valid-decl-spec-when-type
       (implies new-type?
@@ -3134,6 +3332,7 @@
                                 (tyspecs type-spec-listp)
                                 (storspecs stor-spec-listp)
                                 (table valid-tablep)
+                                (next-uident uidentp)
                                 (ienv ienvp))
     :guard (and (decl-spec-list-unambp declspecs)
                 (type-spec-list-unambp tyspecs)
@@ -3143,7 +3342,8 @@
                  (type typep)
                  (all-storspecs stor-spec-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of declaration specifiers."
     :long
@@ -3160,34 +3360,39 @@
        if a type has been determined, we return it.
        Otherwise, we use a separate function to attempt to determine it
        from the collected type specifiers."))
-    (b* (((reterr) nil (irr-type) nil nil (irr-valid-table))
+    (b* (((reterr) nil (irr-type) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((when (endp declspecs))
           (cond
            (type? (retok nil
                          (type-option-fix type?)
                          (stor-spec-list-fix storspecs)
                          nil
-                         (valid-table-fix table)))
+                         (valid-table-fix table)
+                         next-uident))
            ((consp tyspecs)
             (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
               (retok nil
                      type
                      (stor-spec-list-fix storspecs)
                      nil
-                     (valid-table-fix table))))
+                     (valid-table-fix table)
+                     next-uident)))
            (t (retmsg$ "The declaration specifiers ~x0 ~
                         contain no type specifiers."
                        (decl-spec-list-fix declspecs)))))
-         ((erp new-declspec type? tyspecs storspecs types table)
-          (valid-decl-spec (car declspecs) type? tyspecs storspecs table ienv))
-         ((erp new-declspecs type storspecs more-types table)
+         ((erp new-declspec type? tyspecs storspecs types table next-uident)
+          (valid-decl-spec
+            (car declspecs) type? tyspecs storspecs table next-uident ienv))
+         ((erp new-declspecs type storspecs more-types table next-uident)
           (valid-decl-spec-list
-           (cdr declspecs) type? tyspecs storspecs table ienv)))
+           (cdr declspecs) type? tyspecs storspecs table next-uident ienv)))
       (retok (cons new-declspec new-declspecs)
              type
              storspecs
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (decl-spec-list-count declspecs)
 
     ///
@@ -3201,6 +3406,7 @@
                         (target-type typep)
                         (lifetime lifetimep)
                         (table valid-tablep)
+                        (next-uident uidentp)
                         (ienv ienvp))
     :guard (and (initer-unambp initer)
                 (not (type-case target-type :function))
@@ -3208,7 +3414,8 @@
     :returns (mv (erp maybe-msgp)
                  (new-initer initerp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an initializer."
     :long
@@ -3253,21 +3460,23 @@
        [C17:6.7.9/16] [C17:6.7.9/17] [C17:6.7.9/18].")
      (xdoc::p
       "If none of the case above holds, validation fails."))
-    (b* (((reterr) (irr-initer) nil (irr-valid-table)))
+    (b* (((reterr) (irr-initer) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (cond
        ((type-case target-type :unknown)
         (initer-case
          initer
-         :single (b* (((erp new-expr & types table)
-                       (valid-expr initer.expr table ienv)))
-                   (retok (initer-single new-expr) types table))
-         :list (b* (((erp new-elems types table)
+         :single (b* (((erp new-expr & types table next-uident)
+                       (valid-expr initer.expr table next-uident ienv)))
+                   (retok (initer-single new-expr) types table next-uident))
+         :list (b* (((erp new-elems types table next-uident)
                      (valid-desiniter-list
-                      initer.elems (type-unknown) lifetime table ienv)))
+                      initer.elems (type-unknown) lifetime table next-uident ienv)))
                  (retok (make-initer-list :elems new-elems
                                           :final-comma initer.final-comma)
                         types
-                        table))))
+                        table
+                        next-uident))))
        ((type-scalarp target-type)
         (b* (((erp expr)
               (b* (((reterr) (irr-expr)))
@@ -3298,7 +3507,8 @@
                                       (initer-fix initer)
                                       (type-fix target-type))))
                          (retok (initer-single->expr desiniter.initer))))))
-             ((erp new-expr init-type types table) (valid-expr expr table ienv))
+             ((erp new-expr init-type types table next-uident)
+              (valid-expr expr table next-uident ienv))
              (type (type-fpconvert (type-apconvert init-type)))
              ((unless (or (and (type-arithmeticp target-type)
                                (or (type-arithmeticp type)
@@ -3324,21 +3534,22 @@
                                     :designors nil
                                     :initer (initer-single new-expr)))
                       :final-comma initer.final-comma))))
-          (retok new-initer types table)))
+          (retok new-initer types table next-uident)))
        ((and (or (type-case target-type :struct)
                  (type-case target-type :union))
              (initer-case initer :single)
              (lifetime-case lifetime :auto))
-        (b* (((erp new-expr type types table)
-              (valid-expr (initer-single->expr initer) table ienv))
+        (b* (((erp new-expr type types table next-uident)
+              (valid-expr (initer-single->expr initer) table next-uident ienv))
              ((unless (or (type-equiv type target-type)
                           (type-case type :unknown)))
               (retmsg$ "The initializer ~x0 for the target type ~x1 ~
                         of an object in automatic storage has type ~x2.~%"
                        (initer-fix initer)
                        (type-fix target-type)
-                       table)))
-          (retok (initer-single new-expr) types table)))
+                       table
+                       next-uident)))
+          (retok (initer-single new-expr) types table next-uident)))
        ((and (type-case target-type :array)
              (initer-case initer :single)
              (expr-case (initer-single->expr initer) :string))
@@ -3349,18 +3560,21 @@
                   (expr-string
                    (expr-string->strings (initer-single->expr initer))))
                  nil
-                 (valid-table-fix table))))
+                 (valid-table-fix table)
+                 next-uident)))
        ((and (or (type-aggregatep target-type)
                  (type-case target-type :union))
              (initer-case initer :list))
-        (b* (((erp new-elems types table)
+        (b* (((erp new-elems types table next-uident)
               (valid-desiniter-list
-               (initer-list->elems initer) (type-unknown) lifetime table ienv)))
+                (initer-list->elems initer) (type-unknown)
+                lifetime table next-uident ienv)))
           (retok (make-initer-list
                   :elems new-elems
                   :final-comma (initer-list->final-comma initer))
                  types
-                 table)))
+                 table
+                 next-uident)))
        (t (retmsg$ "The initializer ~x0 for the target type ~x1 is disallowed."
                    (initer-fix initer) (type-fix target-type)))))
     :measure (initer-count initer))
@@ -3371,6 +3585,7 @@
                                (target-type typep)
                                (lifetime? lifetime-optionp)
                                (table valid-tablep)
+                               (next-uident uidentp)
                                (ienv ienvp))
     :guard (and (initer-option-unambp initer?)
                 (or (not initer?)
@@ -3382,7 +3597,8 @@
     :returns (mv (erp maybe-msgp)
                  (new-initer? initer-optionp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional initializer."
     :long
@@ -3395,15 +3611,17 @@
        compared to @(tsee valid-initer):
        if there is no initializer, the type can be anything,
        because the restriction applies only to initializers [C17:6.7.9/3]."))
-    (b* (((reterr) nil nil (irr-valid-table)))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (initer-option-case
        initer?
        :some (valid-initer initer?.val
                            target-type
                            (lifetime-option-fix lifetime?)
                            table
+                           next-uident
                            ienv)
-       :none (retok nil nil (valid-table-fix table))))
+       :none (retok nil nil (valid-table-fix table) next-uident)))
     :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3412,6 +3630,7 @@
                            (target-type typep)
                            (lifetime lifetimep)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (and (desiniter-unambp desiniter)
                 (not (type-case target-type :function))
@@ -3419,7 +3638,8 @@
     :returns (mv (erp maybe-msgp)
                  (new-desiniter desiniterp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an initializer with optional designation."
     :long
@@ -3427,15 +3647,18 @@
      (xdoc::p
       "The target type passed as argument is the type
        that the list of designators must be applicable to."))
-    (b* (((reterr) (irr-desiniter) nil (irr-valid-table))
+    (b* (((reterr) (irr-desiniter) nil (irr-valid-table) (irr-uident))
          ((desiniter desiniter) desiniter)
-         ((erp new-design & types table)
-          (valid-designor-list desiniter.designors target-type table ienv))
-         ((erp new-init more-types table)
-          (valid-initer desiniter.initer target-type lifetime table ienv)))
+         ((erp new-design & types table next-uident)
+          (valid-designor-list
+            desiniter.designors target-type table next-uident ienv))
+         ((erp new-init more-types table next-uident)
+          (valid-initer
+            desiniter.initer target-type lifetime table next-uident ienv)))
       (retok (make-desiniter :designors new-design :initer new-init)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3444,6 +3667,7 @@
                                 (target-type typep)
                                 (lifetime lifetimep)
                                 (table valid-tablep)
+                                (next-uident uidentp)
                                 (ienv ienvp))
     :guard (and (desiniter-list-unambp desiniters)
                 (not (type-case target-type :function))
@@ -3451,7 +3675,8 @@
     :returns (mv (erp maybe-msgp)
                  (new-desiniters desiniter-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more
             initializers with optional designations."
@@ -3460,16 +3685,20 @@
      (xdoc::p
       "The target type passed as argument is the type
        that each list of designators must be applicable to."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp desiniters)) (retok nil nil (valid-table-fix table)))
-         ((erp new-desiniter types table)
-          (valid-desiniter (car desiniters) target-type lifetime table ienv))
-         ((erp new-desiniters more-types table)
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
+         ((when (endp desiniters))
+          (retok nil nil (valid-table-fix table) next-uident))
+         ((erp new-desiniter types table next-uident)
+          (valid-desiniter
+            (car desiniters) target-type lifetime table next-uident ienv))
+         ((erp new-desiniters more-types table next-uident)
           (valid-desiniter-list
-           (cdr desiniters) target-type lifetime table ienv)))
+           (cdr desiniters) target-type lifetime table next-uident ienv)))
       (retok (cons new-desiniter new-desiniters)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3477,6 +3706,7 @@
   (define valid-designor ((designor designorp)
                           (target-type typep)
                           (table valid-tablep)
+                          (next-uident uidentp)
                           (ienv ienvp))
     :guard (and (designor-unambp designor)
                 (not (type-case target-type :function))
@@ -3485,7 +3715,8 @@
                  (new-designor designorp)
                  (new-target-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a designator."
     :long
@@ -3504,11 +3735,13 @@
        A dotted designator requires a struct or union type [C17:6.7.9/7];
        the result is the unknown type,
        because currently we do not have information about the members."))
-    (b* (((reterr) (irr-designor) (irr-type) nil (irr-valid-table)))
+    (b* (((reterr)
+          (irr-designor) (irr-type) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (designor-case
        designor
-       :sub (b* (((erp new-index index-type index-types table)
-                  (valid-const-expr designor.index table ienv))
+       :sub (b* (((erp new-index index-type index-types table next-uident)
+                  (valid-const-expr designor.index table next-uident ienv))
                  ((unless (or (type-integerp index-type)
                               (type-case index-type :unknown)))
                   (retmsg$ "The index of the designator ~x0 has type ~x1."
@@ -3522,7 +3755,8 @@
               (retok (designor-sub new-index)
                      (type-unknown)
                      index-types
-                     table))
+                     table
+                     next-uident))
        :dot (b* (((unless (or (type-case target-type :struct)
                               (type-case target-type :union)
                               (type-case target-type :unknown)))
@@ -3532,7 +3766,8 @@
               (retok (designor-dot designor.name)
                      (type-unknown)
                      nil
-                     (valid-table-fix table)))))
+                     (valid-table-fix table)
+                     next-uident))))
     :measure (designor-count designor)
 
     ///
@@ -3542,20 +3777,21 @@
                (not (equal (type-kind new-target-type)
                            :function)))
       :hints
-      (("Goal" :expand (valid-designor designor target-type table ienv))))
+      (("Goal" :expand (valid-designor designor target-type table next-uident ienv))))
 
     (defret valid-designor.new-target-type-not-void
       (implies (not erp)
                (not (equal (type-kind new-target-type)
                            :void)))
       :hints
-      (("Goal" :expand (valid-designor designor target-type table ienv)))))
+      (("Goal" :expand (valid-designor designor target-type table next-uident ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-designor-list ((designors designor-listp)
                                (target-type typep)
                                (table valid-tablep)
+                               (next-uident uidentp)
                                (ienv ienvp))
     :guard (and (designor-list-unambp designors)
                 (not (type-case target-type :function))
@@ -3564,7 +3800,8 @@
                  (new-designors designor-listp)
                  (new-target-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more designators."
     :long
@@ -3574,17 +3811,24 @@
        that the designators must be applicable to.
        The target type returned as result is the type
        resulting from the application of the designators."))
-    (b* (((reterr) nil (irr-type) nil (irr-valid-table))
+    (b* (((reterr) nil (irr-type) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((when (endp designors))
-          (retok nil (type-fix target-type) nil (valid-table-fix table)))
-         ((erp new-designor target-type types table)
-          (valid-designor (car designors) target-type table ienv))
-         ((erp new-designors target-type more-types table)
-          (valid-designor-list (cdr designors) target-type table ienv)))
+          (retok nil
+                 (type-fix target-type)
+                 nil
+                 (valid-table-fix table)
+                 next-uident))
+         ((erp new-designor target-type types table next-uident)
+          (valid-designor (car designors) target-type table next-uident ienv))
+         ((erp new-designors target-type more-types table next-uident)
+          (valid-designor-list
+            (cdr designors) target-type table next-uident ienv)))
       (retok (cons new-designor new-designors)
              target-type
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3593,6 +3837,7 @@
                         (fundef-params-p booleanp)
                         (type typep)
                         (table valid-tablep)
+                        (next-uident uidentp)
                         (ienv ienvp))
     :guard (declor-unambp declor)
     :returns (mv (erp maybe-msgp)
@@ -3601,7 +3846,8 @@
                  (new-type typep)
                  (ident identp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a declarator."
     :long
@@ -3647,19 +3893,23 @@
        which refine the return result of the function,
        the direct declarator is still expected to be for a function,
        and we have not validated the parameters yet."))
-    (b* (((reterr) (irr-declor) nil (irr-type) (irr-ident) nil (irr-valid-table))
+    (b* (((reterr)
+          (irr-declor) nil (irr-type) (irr-ident)
+          nil (irr-valid-table) (irr-uident))
          ((declor declor) declor)
          (type (if (consp declor.pointers)
                    (type-pointer)
                  type))
-         ((erp new-dirdeclor fundef-params-p type ident types table)
-          (valid-dirdeclor declor.direct fundef-params-p type table ienv)))
+         ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+          (valid-dirdeclor
+            declor.direct fundef-params-p type table next-uident ienv)))
       (retok (make-declor :pointers declor.pointers :direct new-dirdeclor)
              fundef-params-p
              type
              ident
              types
-             table))
+             table
+             next-uident))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3667,6 +3917,7 @@
   (define valid-declor-option ((declor? declor-optionp)
                                (type typep)
                                (table valid-tablep)
+                               (next-uident uidentp)
                                (ienv ienvp))
     :guard (declor-option-unambp declor?)
     :returns (mv (erp maybe-msgp)
@@ -3674,7 +3925,8 @@
                  (new-type typep)
                  (ident? ident-optionp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional declarator."
     :long
@@ -3688,13 +3940,18 @@
      (xdoc::p
       "This function does not take or return a @('fundef-params-p') flag
        because optional declarators are not used in function parameters."))
-    (b* (((reterr) nil (irr-type) nil nil (irr-valid-table)))
+    (b* (((reterr) nil (irr-type) nil nil (irr-valid-table) (irr-uident)))
       (declor-option-case
        declor?
-       :none (retok nil (type-fix type) nil nil (valid-table-fix table))
-       :some (b* (((erp new-declor & type ident types table)
-                   (valid-declor declor?.val nil type table ienv)))
-               (retok new-declor type ident types table))))
+       :none (retok nil
+                    (type-fix type)
+                    nil
+                    nil
+                    (valid-table-fix table)
+                    (uident-fix next-uident))
+       :some (b* (((erp new-declor & type ident types table next-uident)
+                   (valid-declor declor?.val nil type table next-uident ienv)))
+               (retok new-declor type ident types table next-uident))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3703,6 +3960,7 @@
                            (fundef-params-p booleanp)
                            (type typep)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (mv (erp maybe-msgp)
@@ -3711,7 +3969,8 @@
                  (new-type typep)
                  (ident identp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a direct declarator."
     :long
@@ -3819,7 +4078,9 @@
        that must occur between the end of the whole function declarator
        and the beginning of the defined function's body."))
     (b* (((reterr)
-          (irr-dirdeclor) nil (irr-type) (irr-ident) nil (irr-valid-table)))
+          (irr-dirdeclor) nil (irr-type) (irr-ident)
+          nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (dirdeclor-case
        dirdeclor
        :ident
@@ -3828,22 +4089,26 @@
               (type-fix type)
               dirdeclor.ident
               nil
-              (valid-table-fix table))
+              (valid-table-fix table)
+              next-uident)
        :paren
-       (b* (((erp new-declor fundef-params-p type ident types table)
-             (valid-declor dirdeclor.inner fundef-params-p type table ienv)))
+       (b* (((erp new-declor fundef-params-p type ident types table next-uident)
+             (valid-declor
+               dirdeclor.inner fundef-params-p type table next-uident ienv)))
          (retok (dirdeclor-paren new-declor)
                 fundef-params-p
                 type
                 ident
                 types
-                table))
+                table
+                next-uident))
        :array
        (b* ((type (type-array))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
-            ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirdeclor.size? table ienv))
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+             (valid-dirdeclor
+               dirdeclor.declor fundef-params-p type table next-uident ienv))
+            ((erp new-expr? index-type? more-types table next-uident)
+             (valid-expr-option dirdeclor.size? table next-uident ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -3859,13 +4124,15 @@
                 type
                 ident
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-static1
        (b* ((type (type-array))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.size table ienv))
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+             (valid-dirdeclor
+               dirdeclor.declor fundef-params-p type table next-uident ienv))
+            ((erp new-expr index-type more-types table next-uident)
+             (valid-expr dirdeclor.size table next-uident ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (retmsg$ "The index expression ~
@@ -3880,13 +4147,15 @@
                 type
                 ident
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-static2
        (b* ((type (type-array))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.size table ienv))
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+             (valid-dirdeclor
+               dirdeclor.declor fundef-params-p type table next-uident ienv))
+            ((erp new-expr index-type more-types table next-uident)
+             (valid-expr dirdeclor.size table next-uident ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (retmsg$ "The index expression ~
@@ -3901,19 +4170,21 @@
                 type
                 ident
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-star
        (b* ((type (type-array))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
              (valid-dirdeclor
-              dirdeclor.declor fundef-params-p type table ienv)))
+              dirdeclor.declor fundef-params-p type table next-uident ienv)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
                 fundef-params-p
                 type
                 ident
                 types
-                table))
+                table
+                next-uident))
        :function-params
        (b* (((when (or (type-case type :function)
                        (type-case type :array)))
@@ -3921,17 +4192,18 @@
                        (dirdeclor-fix dirdeclor)
                        (type-fix type)))
             (type (type-function))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+             (valid-dirdeclor
+               dirdeclor.declor fundef-params-p type table next-uident ienv))
             (table (valid-push-scope table))
-            ((erp new-params more-types table)
+            ((erp new-params more-types table next-uident)
              (if (equal dirdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
                                :declor (param-declor-none))))
-                 (retok dirdeclor.params nil table)
+                 (retok dirdeclor.params nil table next-uident)
                (valid-param-declon-list
-                dirdeclor.params fundef-params-p table ienv)))
+                dirdeclor.params fundef-params-p table next-uident ienv)))
             (table (if fundef-params-p
                        table
                      (valid-pop-scope table))))
@@ -3942,7 +4214,8 @@
                 type
                 ident
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :function-names
        (b* (((when (or (type-case type :function)
                        (type-case type :array)))
@@ -3950,8 +4223,9 @@
                       (dirdeclor-fix dirdeclor)
                       (type-fix type)))
             (type (type-function))
-            ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
+            ((erp new-dirdeclor fundef-params-p type ident types table next-uident)
+             (valid-dirdeclor
+               dirdeclor.declor fundef-params-p type table next-uident ienv))
             ((when (and (consp dirdeclor.names)
                         (not fundef-params-p)))
              (retmsg$ "A non-empty list of parameter names ~
@@ -3965,7 +4239,8 @@
                     type
                     ident
                     types
-                    table))
+                    table
+                    next-uident))
             ((unless (no-duplicatesp-equal dirdeclor.names))
              (retmsg$ "The list of parameter names ~
                        in the function declarator ~x0 ~
@@ -3978,7 +4253,8 @@
                 type
                 ident
                 types
-                table))))
+                table
+                next-uident))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3986,13 +4262,15 @@
   (define valid-absdeclor ((absdeclor absdeclorp)
                            (type typep)
                            (table valid-tablep)
+                           (next-uident uidentp)
                            (ienv ienvp))
     :guard (absdeclor-unambp absdeclor)
     :returns (mv (erp maybe-msgp)
                  (new-absdeclor absdeclorp)
                  (new-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an abstract declarator."
     :long
@@ -4005,17 +4283,20 @@
        Furthermore, there is no flag for function definitions,
        since a function definition uses a declarator,
        not an abstract declarator."))
-    (b* (((reterr) (irr-absdeclor) (irr-type) nil (irr-valid-table))
+    (b* (((reterr)
+          (irr-absdeclor) (irr-type) nil (irr-valid-table) (irr-uident))
          ((absdeclor absdeclor) absdeclor)
          (type (if (consp absdeclor.pointers)
                    (type-pointer)
                  type))
-         ((erp new-direct? type types table)
-          (valid-dirabsdeclor-option absdeclor.direct? type table ienv)))
+         ((erp new-direct? type types table next-uident)
+          (valid-dirabsdeclor-option
+            absdeclor.direct? type table next-uident ienv)))
       (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-direct?)
              type
              types
-             table))
+             table
+             next-uident))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4023,13 +4304,15 @@
   (define valid-absdeclor-option ((absdeclor? absdeclor-optionp)
                                   (type typep)
                                   (table valid-tablep)
+                                  (next-uident uidentp)
                                   (ienv ienvp))
     :guard (absdeclor-option-unambp absdeclor?)
     :returns (mv (erp maybe-msgp)
                  (new-absdeclor? absdeclor-optionp)
                  (new-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional abstract declarator."
     :long
@@ -4042,8 +4325,12 @@
     (b* (((reterr) nil (irr-type) nil (irr-valid-table)))
       (absdeclor-option-case
        absdeclor?
-       :none (retok nil (type-fix type) nil (valid-table-fix table))
-       :some (valid-absdeclor absdeclor?.val type table ienv)))
+       :none (retok nil
+                    (type-fix type)
+                    nil
+                    (valid-table-fix table)
+                    (uident-fix next-uident))
+       :some (valid-absdeclor absdeclor?.val type table next-uident ienv)))
     :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4051,13 +4338,15 @@
   (define valid-dirabsdeclor ((dirabsdeclor dirabsdeclorp)
                               (type typep)
                               (table valid-tablep)
+                              (next-uident uidentp)
                               (ienv ienvp))
     :guard (dirabsdeclor-unambp dirabsdeclor)
     :returns (mv (erp maybe-msgp)
                  (new-dirabsdeclor dirabsdeclorp)
                  (new-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a direct abstract declarator."
     :long
@@ -4070,22 +4359,26 @@
        Furthermore, there is no flag for function definitions,
        since a function definition uses a (direct) declarator,
        not an (direct) abstract declarator."))
-    (b* (((reterr) (irr-dirabsdeclor) (irr-type) nil (irr-valid-table)))
+    (b* (((reterr)
+          (irr-dirabsdeclor) (irr-type) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (dirabsdeclor-case
        dirabsdeclor
        :paren
-       (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor dirabsdeclor.inner type table ienv)))
+       (b* (((erp new-absdeclor type types table next-uident)
+             (valid-absdeclor dirabsdeclor.inner type table next-uident ienv)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 type
                 types
-                table))
+                table
+                next-uident))
        :array
        (b* ((type (type-array))
-            ((erp new-declor? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-size? index-type? more-types table)
-             (valid-expr-option dirabsdeclor.size? table ienv))
+            ((erp new-declor? type types table next-uident)
+             (valid-dirabsdeclor-option
+               dirabsdeclor.declor? type table next-uident ienv))
+            ((erp new-size? index-type? more-types table next-uident)
+             (valid-expr-option dirabsdeclor.size? table next-uident ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -4100,13 +4393,15 @@
                  :size? new-size?)
                 type
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-static1
        (b* ((type (type-array))
-            ((erp new-declor? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-size index-type more-types table)
-             (valid-expr dirabsdeclor.size table ienv))
+            ((erp new-declor? type types table next-uident)
+             (valid-dirabsdeclor-option
+               dirabsdeclor.declor? type table next-uident ienv))
+            ((erp new-size index-type more-types table next-uident)
+             (valid-expr dirabsdeclor.size table next-uident ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (retmsg$ "The index expression ~
@@ -4120,13 +4415,15 @@
                  :size new-size)
                 type
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-static2
        (b* ((type (type-array))
-            ((erp new-declor? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-size index-type more-types table)
-             (valid-expr dirabsdeclor.size table ienv))
+            ((erp new-declor? type types table next-uident)
+             (valid-dirabsdeclor-option
+               dirabsdeclor.declor? type table next-uident ienv))
+            ((erp new-size index-type more-types table next-uident)
+             (valid-expr dirabsdeclor.size table next-uident ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (retmsg$ "The index expression ~
@@ -4140,15 +4437,18 @@
                  :size new-size)
                 type
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :array-star
        (b* ((type (type-array))
-            ((erp new-declor? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv)))
+            ((erp new-declor? type types table next-uident)
+             (valid-dirabsdeclor-option
+               dirabsdeclor.declor? type table next-uident ienv)))
          (retok (dirabsdeclor-array-star new-declor?)
                 type
                 types
-                table))
+                table
+                next-uident))
        :function
        (b* (((when (or (type-case type :function)
                        (type-case type :array)))
@@ -4157,23 +4457,26 @@
                       (dirabsdeclor-fix dirabsdeclor)
                       (type-fix type)))
             (type (type-function))
-            ((erp new-declor? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
+            ((erp new-declor? type types table next-uident)
+             (valid-dirabsdeclor-option
+               dirabsdeclor.declor? type table next-uident ienv))
             (table (valid-push-scope table))
-            ((erp new-params more-types table)
+            ((erp new-params more-types table next-uident)
              (if (equal dirabsdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
                                :declor (param-declor-none))))
-                 (retok dirabsdeclor.params nil table)
-               (valid-param-declon-list dirabsdeclor.params nil table ienv)))
+                 (retok dirabsdeclor.params nil table next-uident)
+               (valid-param-declon-list
+                 dirabsdeclor.params nil table next-uident ienv)))
             (table (valid-pop-scope table)))
          (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 type
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :dummy-base
        (prog2$ (impossible) (retmsg$ ""))))
     :measure (dirabsdeclor-count dirabsdeclor))
@@ -4183,13 +4486,15 @@
   (define valid-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
                                      (type typep)
                                      (table valid-tablep)
+                                     (next-uident uidentp)
                                      (ienv ienvp))
     :guard (dirabsdeclor-option-unambp dirabsdeclor?)
     :returns (mv (erp maybe-msgp)
                  (new-dirabsdeclor? dirabsdeclor-optionp)
                  (new-type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional direct abstract declarator."
     :long
@@ -4199,11 +4504,16 @@
        we return the type and validation table unchanged.
        Otherwise, we validate the direct abstract declarator,
        using a separate validation function."))
-    (b* (((reterr) nil (irr-type) nil (irr-valid-table)))
+    (b* (((reterr) nil (irr-type) nil (irr-valid-table) (irr-uident)))
       (dirabsdeclor-option-case
        dirabsdeclor?
-       :none (retok nil (type-fix type) nil (valid-table-fix table))
-       :some (valid-dirabsdeclor dirabsdeclor?.val type table ienv)))
+       :none (retok nil
+                    (type-fix type)
+                    nil
+                    (valid-table-fix table)
+                    (uident-fix next-uident))
+       :some (valid-dirabsdeclor
+               dirabsdeclor?.val type table next-uident ienv)))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4211,12 +4521,14 @@
   (define valid-param-declon ((paramdecl param-declonp)
                               (fundef-params-p booleanp)
                               (table valid-tablep)
+                              (next-uident uidentp)
                               (ienv ienvp))
     :guard (param-declon-unambp paramdecl)
     :returns (mv (erp maybe-msgp)
                  (new-paramdecl param-declonp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a parameter declaration."
     :long
@@ -4245,18 +4557,19 @@
        Parameters of function declarations have no linkage [C17:6.2.2/6].
        Since storage is allocated for them when the function is called,
        they are considered defined [C17:6.7/5]."))
-    (b* (((reterr) (irr-param-declon) nil (irr-valid-table))
+    (b* (((reterr) (irr-param-declon) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((param-declon paramdecl) paramdecl)
-         ((erp new-specs type storspecs types table)
-          (valid-decl-spec-list paramdecl.specs nil nil nil table ienv))
+         ((erp new-specs type storspecs types table next-uident)
+          (valid-decl-spec-list paramdecl.specs nil nil nil table next-uident ienv))
          ((unless (or (endp storspecs)
                       (stor-spec-list-register-p storspecs)))
           (retmsg$ "The parameter declaration ~x0 ~
                     has storage class specifiers ~x1."
                    (param-declon-fix paramdecl)
                    (stor-spec-list-fix storspecs)))
-         ((erp new-decl type ident? more-types table)
-          (valid-param-declor paramdecl.declor type table ienv))
+         ((erp new-decl type ident? more-types table next-uident)
+          (valid-param-declor paramdecl.declor type table next-uident ienv))
          ((when (and fundef-params-p
                      (not ident?)))
           (retmsg$ "The parameter declaration ~x0 ~
@@ -4271,11 +4584,14 @@
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs :declor new-decl)
                  (set::union types more-types)
-                 table))
+                 table
+                 next-uident))
          (ord-info (make-valid-ord-info-objfun
                     :type type
                     :linkage (linkage-none)
-                    :defstatus (valid-defstatus-defined)))
+                    :defstatus (valid-defstatus-defined)
+                    :uident next-uident))
+         (next-uident (uident-increment next-uident))
          ((mv info? currentp) (valid-lookup-ord ident? table))
          ((when (and info? currentp))
           (retmsg$ "The parameter declared in ~x0 ~
@@ -4285,7 +4601,8 @@
          (table (valid-add-ord ident? ord-info table)))
       (retok (make-param-declon :specs new-specs :declor new-decl)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4293,12 +4610,14 @@
   (define valid-param-declon-list ((paramdecls param-declon-listp)
                                    (fundef-params-p booleanp)
                                    (table valid-tablep)
+                                   (next-uident uidentp)
                                    (ienv ienvp))
     :guard (param-declon-list-unambp paramdecls)
     :returns (mv (erp maybe-msgp)
                  (new-paramdecls param-declon-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of parameter declarations."
     :long
@@ -4307,15 +4626,19 @@
       "IWe validate each parameter in turn,
        threading the validation table through,
        using a separate validation function."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp paramdecls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-paramdecl types table)
-          (valid-param-declon (car paramdecls) fundef-params-p table ienv))
-         ((erp new-paramdecls more-types table)
-          (valid-param-declon-list (cdr paramdecls) fundef-params-p table ienv)))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         ((when (endp paramdecls))
+          (retok nil nil (valid-table-fix table) (uident-fix next-uident)))
+         ((erp new-paramdecl types table next-uident)
+          (valid-param-declon
+            (car paramdecls) fundef-params-p table next-uident ienv))
+         ((erp new-paramdecls more-types table next-uident)
+          (valid-param-declon-list
+            (cdr paramdecls) fundef-params-p table next-uident ienv)))
       (retok (cons new-paramdecl new-paramdecls)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4323,6 +4646,7 @@
   (define valid-param-declor ((paramdeclor param-declorp)
                               (type typep)
                               (table valid-tablep)
+                              (next-uident uidentp)
                               (ienv ienvp))
     :guard (param-declor-unambp paramdeclor)
     :returns (mv (erp maybe-msgp)
@@ -4330,7 +4654,8 @@
                  (new-type typep)
                  (ident? ident-optionp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a parameter declarator."
     :long
@@ -4350,44 +4675,54 @@
        If the parameter declarator is absent,
        we return the type unchanged and no identifier."))
     (b* (((reterr)
-          (irr-param-declor) (irr-type) (irr-ident) nil (irr-valid-table)))
+          (irr-param-declor) (irr-type) (irr-ident)
+          nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (param-declor-case
        paramdeclor
        :nonabstract
-       (b* (((erp new-declor & type ident types table)
-             (valid-declor paramdeclor.declor nil type table ienv)))
+       (b* (((erp new-declor & type ident types table next-uident)
+             (valid-declor
+               paramdeclor.declor nil type table next-uident ienv)))
          (retok (param-declor-nonabstract new-declor)
                 type
                 ident
                 types
-                table))
+                table
+                next-uident))
        :abstract
-       (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor paramdeclor.declor type table ienv)))
+       (b* (((erp new-absdeclor type types table next-uident)
+             (valid-absdeclor paramdeclor.declor type table next-uident ienv)))
          (retok (param-declor-abstract new-absdeclor)
                 type
                 nil
                 types
-                table))
+                table
+                next-uident))
        :none
        (retok (param-declor-none)
               (type-fix type)
               nil
               nil
-              (valid-table-fix table))
+              (valid-table-fix table)
+              next-uident)
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
     :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-tyname ((tyname tynamep) (table valid-tablep) (ienv ienvp))
+  (define valid-tyname ((tyname tynamep)
+                        (table valid-tablep)
+                        (next-uident uidentp)
+                        (ienv ienvp))
     :guard (tyname-unambp tyname)
     :returns (mv (erp maybe-msgp)
                  (new-tyname tynamep)
                  (type typep)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a type name."
     :long
@@ -4401,31 +4736,34 @@
        Then we validate the optional abstract declarator,
        which returns a possibly refined type.
        We return the latter type."))
-    (b* (((reterr) (irr-tyname) (irr-type) nil (irr-valid-table))
+    (b* (((reterr) (irr-tyname) (irr-type) nil (irr-valid-table) (irr-uident))
          ((tyname tyname) tyname)
-         ((erp new-specquals type types table)
-          (valid-spec/qual-list tyname.specquals nil nil table ienv))
-         ((erp new-decl? type more-types table)
-          (valid-absdeclor-option tyname.declor? type table ienv))
+         ((erp new-specquals type types table next-uident)
+          (valid-spec/qual-list tyname.specquals nil nil table next-uident ienv))
+         ((erp new-decl? type more-types table next-uident)
+          (valid-absdeclor-option tyname.declor? type table next-uident ienv))
          (info (make-tyname-info :type type)))
       (retok (make-tyname :specquals new-specquals
                           :declor? new-decl?
                           :info info)
              type
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-struni-spec ((struni-spec struni-specp)
-                            (table valid-tablep)
-                            (ienv ienvp))
+                             (table valid-tablep)
+                             (next-uident uidentp)
+                             (ienv ienvp))
     :guard (struni-spec-unambp struni-spec)
     :returns (mv (erp maybe-msgp)
                  (new-struni-spec struni-specp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a structure or union specifier."
     :long
@@ -4439,19 +4777,21 @@
        so we do not extend the validation table,
        if the structure or union specifier has a name.
        However, we validate the members, if present."))
-    (b* (((reterr) (irr-struni-spec) nil (irr-valid-table))
+    (b* (((reterr) (irr-struni-spec) nil (irr-valid-table) (irr-uident))
          ((struni-spec struni-spec) struni-spec)
          ((when (and (not struni-spec.name?)
                      (endp struni-spec.members)))
           (retmsg$ "The structure or union specifier ~x0 ~
                     has no name and no members."
                    (struni-spec-fix struni-spec)))
-         ((erp new-members types table)
-          (valid-structdecl-list struni-spec.members nil table ienv)))
+         ((erp new-members types table next-uident)
+          (valid-structdecl-list
+            struni-spec.members nil table next-uident ienv)))
       (retok (make-struni-spec :name? struni-spec.name?
                                :members new-members)
              types
-             table))
+             table
+             next-uident))
     :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4459,13 +4799,15 @@
   (define valid-structdecl ((structdecl structdeclp)
                             (previous ident-listp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (structdecl-unambp structdecl)
     :returns (mv (erp maybe-msgp)
                  (new-structdecl structdeclp)
                  (new-previous ident-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a structure declaration."
     :long
@@ -4491,34 +4833,39 @@
       "If the structure declaration is empty (i.e. a semicolon),
        which is a GCC extension,
        the list of member names and the validation table are unchanged."))
-    (b* (((reterr) (irr-structdecl) nil nil (irr-valid-table)))
+    (b* (((reterr) (irr-structdecl) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (structdecl-case
        structdecl
        :member
-       (b* (((erp new-specqual type types table)
-             (valid-spec/qual-list structdecl.specqual nil nil table ienv))
-            ((erp new-declor previous more-types table)
+       (b* (((erp new-specqual type types table next-uident)
+             (valid-spec/qual-list
+               structdecl.specqual nil nil table next-uident ienv))
+            ((erp new-declor previous more-types table next-uident)
              (valid-structdeclor-list
-              structdecl.declor previous type table ienv)))
+              structdecl.declor previous type table next-uident ienv)))
          (retok (make-structdecl-member :extension structdecl.extension
                                         :specqual new-specqual
                                         :declor new-declor
                                         :attrib structdecl.attrib)
                 previous
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :statassert
-       (b* (((erp new-statassert types table)
-             (valid-statassert structdecl.unwrap table ienv)))
+       (b* (((erp new-statassert types table next-uident)
+             (valid-statassert structdecl.unwrap table next-uident ienv)))
          (retok (structdecl-statassert new-statassert)
                 (ident-list-fix previous)
                 types
-                table))
+                table
+                next-uident))
        :empty
        (retok (structdecl-empty)
               (ident-list-fix previous)
               nil
-              (valid-table-fix table))))
+              (valid-table-fix table)
+              next-uident)))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4526,12 +4873,14 @@
   (define valid-structdecl-list ((structdecls structdecl-listp)
                                  (previous ident-listp)
                                  (table valid-tablep)
+                                 (next-uident uidentp)
                                  (ienv ienvp))
     :guard (structdecl-list-unambp structdecls)
     :returns (mv (erp maybe-msgp)
                  (new-structdecls structdecl-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of structure declarators."
     :long
@@ -4542,15 +4891,20 @@
        (which declare more members)
        in the structure or union specifier being validated.
        This list is used to ensure uniqueness of member names."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp structdecls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-structdecl previous types table)
-          (valid-structdecl (car structdecls) previous table ienv))
-         ((erp new-structdecls more-types table)
-          (valid-structdecl-list (cdr structdecls) previous table ienv)))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
+         ((when (endp structdecls))
+          (retok nil nil (valid-table-fix table) next-uident))
+         ((erp new-structdecl previous types table next-uident)
+          (valid-structdecl
+            (car structdecls) previous table next-uident ienv))
+         ((erp new-structdecls more-types table next-uident)
+          (valid-structdecl-list
+            (cdr structdecls) previous table next-uident ienv)))
       (retok (cons new-structdecl new-structdecls)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (structdecl-list-count structdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4559,13 +4913,15 @@
                               (previous ident-listp)
                               (type typep)
                               (table valid-tablep)
+                              (next-uident uidentp)
                               (ienv ienvp))
     :guard (structdeclor-unambp structdeclor)
     :returns (mv (erp maybe-msgp)
                  (new-structdeclor structdeclorp)
                  (new-previous ident-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a structure declarator."
     :long
@@ -4589,14 +4945,15 @@
        [C17:6.7.2.1/4];
        we also do not constrain the types of bit fields [C17:6.7.2.1/5],
        but we ensure that the constant expression, if present, is integer."))
-    (b* (((reterr) (irr-structdeclor) nil nil (irr-valid-table))
+    (b* (((reterr) (irr-structdeclor) nil nil (irr-valid-table) (irr-uident))
          ((structdeclor structdeclor) structdeclor)
          ((when (and (not structdeclor.declor?)
                      (not structdeclor.expr?)))
           (retmsg$ "The structure declarator ~x0 is empty."
                    (structdeclor-fix structdeclor)))
-         ((erp new-declor? & ident? types table)
-          (valid-declor-option structdeclor.declor? type table ienv))
+         ((erp new-declor? & ident? types table next-uident)
+          (valid-declor-option
+            structdeclor.declor? type table next-uident ienv))
          (previous (ident-list-fix previous))
          ((when (and ident?
                      (member-equal ident? previous)))
@@ -4606,8 +4963,8 @@
          (previous (if ident?
                        (rcons ident? previous)
                      previous))
-         ((erp new-expr? width-type? more-types table)
-          (valid-const-expr-option structdeclor.expr? table ienv))
+         ((erp new-expr? width-type? more-types table next-uident)
+          (valid-const-expr-option structdeclor.expr? table next-uident ienv))
          ((when (and width-type?
                      (not (type-integerp width-type?))
                      (not (type-case width-type? :unknown))))
@@ -4618,7 +4975,8 @@
       (retok (make-structdeclor :declor? new-declor? :expr? new-expr?)
              previous
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (structdeclor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4627,13 +4985,15 @@
                                    (previous ident-listp)
                                    (type typep)
                                    (table valid-tablep)
+                                   (next-uident uidentp)
                                    (ienv ienvp))
     :guard (structdeclor-list-unambp structdeclors)
     :returns (mv (erp maybe-msgp)
                  (new-structdeclors structdeclor-listp)
                  (new-previous ident-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list structure declarators."
     :long
@@ -4646,30 +5006,39 @@
        is passed to the validation function for each structure declarator,
        since that type applied to all them
        (possibly refined, possibly differently, by the structure declarators."))
-    (b* (((reterr) nil nil nil (irr-valid-table))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((when (endp structdeclors))
-          (retok nil (ident-list-fix previous) nil (valid-table-fix table)))
-         ((erp new-structdeclor previous types table)
-          (valid-structdeclor (car structdeclors) previous type table ienv))
-         ((erp new-structdeclors previous more-types table)
+          (retok nil
+                 (ident-list-fix previous)
+                 nil
+                 (valid-table-fix table)
+                 next-uident))
+         ((erp new-structdeclor previous types table next-uident)
+          (valid-structdeclor
+            (car structdeclors) previous type table next-uident ienv))
+         ((erp new-structdeclors previous more-types table next-uident)
           (valid-structdeclor-list
-           (cdr structdeclors) previous type table ienv)))
+           (cdr structdeclors) previous type table next-uident ienv)))
       (retok (cons new-structdeclor new-structdeclors)
              previous
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (structdeclor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-enumspec ((enumspec enumspecp)
                           (table valid-tablep)
+                          (next-uident uidentp)
                           (ienv ienvp))
     :guard (enumspec-unambp enumspec)
     :returns (mv (erp maybe-msgp)
                  (new-enumspec enumspecp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an enumeration specifier."
     :long
@@ -4685,30 +5054,35 @@
        so we do not extend the validation table,
        if the enumeration specifier has a name.
        However, we validate the enumerators, if present."))
-    (b* (((reterr) (irr-enumspec) nil (irr-valid-table))
+    (b* (((reterr) (irr-enumspec) nil (irr-valid-table) (irr-uident))
          ((enumspec enumspec) enumspec)
          ((when (and (not enumspec.name)
                      (endp enumspec.list)))
           (retmsg$ "The enumeration specifier ~x0 ~
                     has no name and no enumerators."
                    (enumspec-fix enumspec)))
-         ((erp new-list types table)
-          (valid-enumer-list enumspec.list table ienv)))
+         ((erp new-list types table next-uident)
+          (valid-enumer-list enumspec.list table next-uident ienv)))
       (retok (make-enumspec :name enumspec.name
                             :list new-list
                             :final-comma enumspec.final-comma)
              types
-             table))
+             table
+             next-uident))
     :measure (enumspec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-enumer ((enumer enumerp) (table valid-tablep) (ienv ienvp))
+  (define valid-enumer ((enumer enumerp)
+                        (table valid-tablep)
+                        (next-uident uidentp)
+                        (ienv ienvp))
     :guard (enumer-unambp enumer)
     :returns (mv (erp maybe-msgp)
                  (new-enumer enumerp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an enumerator."
     :long
@@ -4723,7 +5097,7 @@
        we validate it and check that it has integer type,
        but for now we do not check that the value
        is representable as @('int') [C17:6.7.2.2/2]."))
-    (b* (((reterr) (irr-enumer) nil (irr-valid-table))
+    (b* (((reterr) (irr-enumer) nil (irr-valid-table) (irr-uident))
          ((enumer enumer) enumer)
          ((mv info? currentp) (valid-lookup-ord enumer.name table))
          ((when (and info? currentp))
@@ -4732,26 +5106,31 @@
                     with associated information ~x1."
                    (enumer-fix enumer) info?))
          (table (valid-add-ord enumer.name (valid-ord-info-enumconst) table))
-         ((erp new-value type? types table)
-          (valid-const-expr-option enumer.value table ienv))
+         ((erp new-value type? types table next-uident)
+          (valid-const-expr-option enumer.value table next-uident ienv))
          ((when (and type?
                      (not (type-integerp type?))
                      (not (type-case type? :unknown))))
           (retmsg$ "The value of the numerator ~x0 has type ~x1."
                    (enumer-fix enumer) type?)))
-      (retok (make-enumer :name enumer.name :value new-value) types table))
+      (retok (make-enumer :name enumer.name :value new-value)
+             types
+             table
+             next-uident))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-enumer-list ((enumers enumer-listp)
                              (table valid-tablep)
+                             (next-uident uidentp)
                              (ienv ienvp))
     :guard (enumer-list-unambp enumers)
     :returns (mv (erp maybe-msgp)
                  (new-enumers enumer-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of enumerators."
     :long
@@ -4759,24 +5138,32 @@
      (xdoc::p
       "We go through each enumerator in order,
        extending the validation table with each."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp enumers)) (retok nil nil (valid-table-fix table)))
-         ((erp new-enumer types table) (valid-enumer (car enumers) table ienv))
-         ((erp new-enumers more-types table)
-          (valid-enumer-list (cdr enumers) table ienv)))
-      (retok (cons new-enumer new-enumers) (set::union types more-types) table))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
+         ((when (endp enumers))
+          (retok nil nil (valid-table-fix table) next-uident))
+         ((erp new-enumer types table next-uident)
+          (valid-enumer (car enumers) table next-uident ienv))
+         ((erp new-enumers more-types table next-uident)
+          (valid-enumer-list (cdr enumers) table next-uident ienv)))
+      (retok (cons new-enumer new-enumers)
+             (set::union types more-types)
+             table
+             next-uident))
     :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-statassert ((statassert statassertp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (statassert-unambp statassert)
     :returns (mv (erp maybe-msgp)
                  (new-statassert statassertp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a static assertion declaration."
     :long
@@ -4784,10 +5171,10 @@
      (xdoc::p
       "We validate the constant expression, which must be integer [C17:6.7.10/3],
        and we validate the string literal(s)."))
-    (b* (((reterr) (irr-statassert) nil (irr-valid-table))
+    (b* (((reterr) (irr-statassert) nil (irr-valid-table) (irr-uident))
          ((statassert statassert) statassert)
-         ((erp new-test type types table)
-          (valid-const-expr statassert.test table ienv))
+         ((erp new-test type types table next-uident)
+          (valid-const-expr statassert.test table next-uident ienv))
          ((unless (or (type-integerp type)
                       (type-case type :unknown)))
           (retmsg$ "The expression in the static assertion declaration ~x0 ~
@@ -4797,7 +5184,8 @@
          ((erp &) (valid-stringlit-list statassert.message ienv)))
       (retok (make-statassert :test new-test :message statassert.message)
              types
-             table))
+             table
+             next-uident))
     :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4806,12 +5194,14 @@
                             (type typep)
                             (storspecs stor-spec-listp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (initdeclor-unambp initdeclor)
     :returns (mv (erp maybe-msgp)
                  (new-initdeclor initdeclorp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an initializer declarator."
     :long
@@ -4903,10 +5293,11 @@
      (xdoc::p
       "For now we ignore the optional assembler name specifier,
        as well as any attribute specifiers."))
-    (b* (((reterr) (irr-initdeclor) nil (irr-valid-table))
+    (b* (((reterr) (irr-initdeclor) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
          ((initdeclor initdeclor) initdeclor)
-         ((erp new-declor & type ident types table)
-          (valid-declor initdeclor.declor nil type table ienv))
+         ((erp new-declor & type ident types table next-uident)
+          (valid-declor initdeclor.declor nil type table next-uident ienv))
          ((erp typedefp linkage lifetime?)
           (valid-stor-spec-list storspecs ident type nil table))
          ((when typedefp)
@@ -4931,7 +5322,8 @@
                                     :attribs initdeclor.attribs
                                     :init? nil)
                    types
-                   table)))
+                   table
+                   next-uident)))
          ((when (and initdeclor.init?
                      (or (type-case type :function)
                          (type-case type :void))))
@@ -4939,8 +5331,9 @@
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
                    ident type initdeclor.init?))
-         ((erp new-init? more-types table)
-          (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         ((erp new-init? more-types table next-uident)
+          (valid-initer-option
+            initdeclor.init? type lifetime? table next-uident ienv))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
                       (if (> (valid-table-num-scopes table) 1)
@@ -4958,14 +5351,17 @@
           (b* ((new-info (make-valid-ord-info-objfun
                           :type type
                           :linkage linkage
-                          :defstatus defstatus))
+                          :defstatus defstatus
+                          :uident next-uident))
+               (next-uident (uident-increment next-uident))
                (table (valid-add-ord ident new-info table)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
                                     :init? new-init?)
                    (set::union types more-types)
-                   table)))
+                   table
+                   next-uident)))
          ((when (or (valid-ord-info-case info? :typedef)
                     (valid-ord-info-case info? :enumconst)))
           (if currentp
@@ -4976,14 +5372,17 @@
             (b* ((new-info (make-valid-ord-info-objfun
                             :type type
                             :linkage linkage
-                            :defstatus defstatus))
+                            :defstatus defstatus
+                            :uident next-uident))
+                 (next-uident (uident-increment next-uident))
                  (table (valid-add-ord ident new-info table)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
                                       :init? new-init?)
                      (set::union types more-types)
-                     table))))
+                     table
+                     next-uident))))
          ((valid-ord-info-objfun info) info?)
          ((when (or (linkage-case linkage :none)
                     (linkage-case info.linkage :none)))
@@ -4995,14 +5394,17 @@
             (b* ((new-info (make-valid-ord-info-objfun
                             :type type
                             :linkage linkage
-                            :defstatus defstatus))
+                            :defstatus defstatus
+                            :uident next-uident))
+                 (next-uident (uident-increment next-uident))
                  (table (valid-add-ord ident new-info table)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
                                       :init? new-init?)
                      (set::union types more-types)
-                     table))))
+                     table
+                     next-uident))))
          ((unless (or (equal type info.type)
                       (equal type (type-unknown))
                       (equal info.type (type-unknown))))
@@ -5026,14 +5428,17 @@
          (new-info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage
-                    :defstatus defstatus))
+                    :defstatus defstatus
+                    :uident next-uident))
+         (next-uident (uident-increment next-uident))
          (table (valid-add-ord ident new-info table)))
       (retok (make-initdeclor :declor new-declor
                               :asm? initdeclor.asm?
                               :attribs initdeclor.attribs
                               :init? new-init?)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5042,12 +5447,14 @@
                                  (type typep)
                                  (storspecs stor-spec-listp)
                                  (table valid-tablep)
+                                 (next-uident uidentp)
                                  (ienv ienvp))
     :guard (initdeclor-list-unambp initdeclors)
     :returns (mv (erp maybe-msgp)
                  (new-initdeclors initdeclor-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of initializer declarators."
     :long
@@ -5056,25 +5463,33 @@
       "The type and storage class specifiers come from
        the declaration specifiers that precede the initializer declarators.
        We validate each in turn."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp initdeclors)) (retok nil nil (valid-table-fix table)))
-         ((erp new-initdeclor types table)
-          (valid-initdeclor (car initdeclors) type storspecs table ienv))
-         ((erp new-initdeclors more-types table)
-          (valid-initdeclor-list (cdr initdeclors) type storspecs table ienv)))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         ((when (endp initdeclors))
+          (retok nil nil (valid-table-fix table) (uident-fix next-uident)))
+         ((erp new-initdeclor types table next-uident)
+          (valid-initdeclor
+            (car initdeclors) type storspecs table next-uident ienv))
+         ((erp new-initdeclors more-types table next-uident)
+          (valid-initdeclor-list
+            (cdr initdeclors) type storspecs table next-uident ienv)))
       (retok (cons new-initdeclor new-initdeclors)
              (set::union types more-types)
-             table))
+             table
+             next-uident))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-decl ((decl declp) (table valid-tablep) (ienv ienvp))
+  (define valid-decl ((decl declp)
+                      (table valid-tablep)
+                      (next-uident uidentp)
+                      (ienv ienvp))
     :guard (decl-unambp decl)
     :returns (mv (erp maybe-msgp)
                  (new-decl declp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a declaration."
     :long
@@ -5090,12 +5505,13 @@
        or the declaration specifiers declare a tag,
        as required in [C17:6.7/2].
        We ignore the GCC extension for now."))
-    (b* (((reterr) (irr-decl) nil (irr-valid-table)))
+    (b* (((reterr) (irr-decl) nil (irr-valid-table) (irr-uident)))
       (decl-case
        decl
        :decl
-       (b* (((erp new-specs type storspecs types table)
-             (valid-decl-spec-list decl.specs nil nil nil table ienv))
+       (b* (((erp new-specs type storspecs types table next-uident)
+             (valid-decl-spec-list
+               decl.specs nil nil nil table next-uident ienv))
             ((when (and (endp decl.init)
                         (not (type-case type :struct))
                         (not (type-case type :union))
@@ -5103,49 +5519,67 @@
              (retmsg$ "The declaration ~x0 declares ~
                        neither a declarator nor a tag."
                       (decl-fix decl)))
-            ((erp new-init more-types table)
-             (valid-initdeclor-list decl.init type storspecs table ienv)))
+            ((erp new-init more-types table next-uident)
+             (valid-initdeclor-list
+               decl.init type storspecs table next-uident ienv)))
          (retok (make-decl-decl :extension decl.extension
                                 :specs new-specs
                                 :init new-init)
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :statassert
-       (b* (((erp new-statassert types table)
-             (valid-statassert decl.unwrap table ienv)))
-         (retok (decl-statassert new-statassert) types table))))
+       (b* (((erp new-statassert types table next-uident)
+             (valid-statassert decl.unwrap table next-uident ienv)))
+         (retok (decl-statassert new-statassert)
+                types
+                table
+                next-uident))))
     :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-decl-list ((decls decl-listp) (table valid-tablep) (ienv ienvp))
+  (define valid-decl-list ((decls decl-listp)
+                           (table valid-tablep)
+                           (next-uident uidentp)
+                           (ienv ienvp))
     :guard (decl-list-unambp decls)
     :returns (mv (erp maybe-msgp)
                  (new-decls decl-listp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of declarations."
     :long
     (xdoc::topstring
      (xdoc::p
       "We validate each one in turn."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp decls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-decl types table) (valid-decl (car decls) table ienv))
-         ((erp new-decls more-types table)
-          (valid-decl-list (cdr decls) table ienv)))
-      (retok (cons new-decl new-decls) (set::union types more-types) table))
+    (b* (((reterr) nil nil (irr-valid-table) (irr-uident))
+         ((when (endp decls))
+          (retok nil nil (valid-table-fix table) (uident-fix next-uident)))
+         ((erp new-decl types table next-uident)
+          (valid-decl (car decls) table next-uident ienv))
+         ((erp new-decls more-types table next-uident)
+          (valid-decl-list (cdr decls) table next-uident ienv)))
+      (retok (cons new-decl new-decls)
+             (set::union types more-types)
+             table
+             next-uident))
     :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-label ((label labelp) (table valid-tablep) (ienv ienvp))
+  (define valid-label ((label labelp)
+                       (table valid-tablep)
+                       (next-uident uidentp)
+                       (ienv ienvp))
     :guard (label-unambp label)
     :returns (mv (erp maybe-msgp)
                  (new-label labelp)
                  (return-types type-setp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a label."
     :long
@@ -5158,21 +5592,22 @@
        so that we can check that referenced labels are in scope.
        Also, for now we do not check that @('case') and @('default') labels
        only appear in @('switch') statements [C17:6.8.1/2]."))
-    (b* (((reterr) (irr-label) nil (irr-valid-table)))
+    (b* (((reterr) (irr-label) nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (label-case
        label
        :name
-       (retok (label-name label.unwrap) nil (valid-table-fix table))
+       (retok (label-name label.unwrap) nil (valid-table-fix table) next-uident)
        :casexpr
-       (b* (((erp new-expr type types table)
-             (valid-const-expr label.expr table ienv))
+       (b* (((erp new-expr type types table next-uident)
+             (valid-const-expr label.expr table next-uident ienv))
             ((unless (or (type-integerp type)
                          (type-case type :unknown)))
              (retmsg$ "The first or only 'case' expression ~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type))
-            ((erp new-range? type? more-types table)
-             (valid-const-expr-option label.range? table ienv))
+            ((erp new-range? type? more-types table next-uident)
+             (valid-const-expr-option label.range? table next-uident ienv))
             ((when (and type?
                         (not (type-integerp type?))
                         (not (type-case type? :unknown))))
@@ -5181,20 +5616,25 @@
                       (label-fix label) type?)))
          (retok (make-label-casexpr :expr new-expr :range? new-range?)
                 (set::union types more-types)
-                table))
+                table
+                next-uident))
        :default
-       (retok (label-default) nil (valid-table-fix table))))
+       (retok (label-default) nil (valid-table-fix table) next-uident)))
     :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-stmt ((stmt stmtp) (table valid-tablep) (ienv ienvp))
+  (define valid-stmt ((stmt stmtp)
+                      (table valid-tablep)
+                      (next-uident uidentp)
+                      (ienv ienvp))
     :guard (stmt-unambp stmt)
     :returns (mv (erp maybe-msgp)
                  (new-stmt stmtp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a statement."
     :long
@@ -5276,114 +5716,122 @@
        in the validation function for function definitions.")
      (xdoc::p
       "For now we do not check any constraints on assembler statements."))
-    (b* (((reterr) (irr-stmt) nil nil (irr-valid-table)))
+    (b* (((reterr) (irr-stmt) nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident)))
       (stmt-case
        stmt
        :labeled
-       (b* (((erp new-label types table) (valid-label stmt.label table ienv))
-            ((erp new-stmt more-types type? table)
-             (valid-stmt stmt.stmt table ienv)))
+       (b* (((erp new-label types table next-uident)
+             (valid-label stmt.label table next-uident ienv))
+            ((erp new-stmt more-types type? table next-uident)
+             (valid-stmt stmt.stmt table next-uident ienv)))
          (retok (make-stmt-labeled :label new-label :stmt new-stmt)
                 (set::union types more-types)
                 type?
-                table))
+                table
+                next-uident))
        :compound
        (b* ((table (valid-push-scope table))
-            ((erp new-items types type? table)
-             (valid-block-item-list stmt.items table ienv))
+            ((erp new-items types type? table next-uident)
+             (valid-block-item-list stmt.items table next-uident ienv))
             (table (valid-pop-scope table)))
-         (retok (stmt-compound new-items) types type? table))
+         (retok (stmt-compound new-items) types type? table next-uident))
        :expr
        (b* ((table0 table)
-            ((erp new-expr? type? types table)
-             (valid-expr-option stmt.expr? table ienv))
+            ((erp new-expr? type? types table next-uident)
+             (valid-expr-option stmt.expr? table next-uident ienv))
             (info (make-stmt-expr-info :table table0)))
          (retok (make-stmt-expr :expr? new-expr?
                                 :info info)
                 types
                 type?
-                table))
+                table
+                next-uident))
        :if
        (b* ((table (valid-push-scope table))
-            ((erp new-test test-type test-types table)
-             (valid-expr stmt.test table ienv))
+            ((erp new-test test-type test-types table next-uident)
+             (valid-expr stmt.test table next-uident ienv))
             ((unless (or (type-scalarp test-type)
                          (type-case test-type :unknown)))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                        (stmt-fix stmt) test-type))
             (table (valid-push-scope table))
-            ((erp new-then then-types & table)
-             (valid-stmt stmt.then table ienv))
+            ((erp new-then then-types & table next-uident)
+             (valid-stmt stmt.then table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
          (retok (make-stmt-if :test new-test :then new-then)
                 (set::union test-types then-types)
                 nil
-                table))
+                table
+                next-uident))
        :ifelse
        (b* ((table (valid-push-scope table))
-            ((erp new-test test-type test-types table)
-             (valid-expr stmt.test table ienv))
+            ((erp new-test test-type test-types table next-uident)
+             (valid-expr stmt.test table next-uident ienv))
             ((unless (or (type-scalarp test-type)
                          (type-case test-type :unknown)))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (table (valid-push-scope table))
-            ((erp new-then then-types & table)
-             (valid-stmt stmt.then table ienv))
+            ((erp new-then then-types & table next-uident)
+             (valid-stmt stmt.then table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-push-scope table))
-            ((erp new-else else-types & table)
-             (valid-stmt stmt.else table ienv))
+            ((erp new-else else-types & table next-uident)
+             (valid-stmt stmt.else table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
          (retok (make-stmt-ifelse :test new-test :then new-then :else new-else)
                 (set::union test-types (set::union then-types else-types))
                 nil
-                table))
+                table
+                next-uident))
        :switch
        (b* ((table (valid-push-scope table))
-            ((erp new-target target-type target-types table)
-             (valid-expr stmt.target table ienv))
+            ((erp new-target target-type target-types table next-uident)
+             (valid-expr stmt.target table next-uident ienv))
             ((unless (or (type-integerp target-type)
                          (type-case target-type :unknown)))
              (retmsg$ "The target of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) target-type))
             (table (valid-push-scope table))
-            ((erp new-body body-types & table)
-             (valid-stmt stmt.body table ienv))
+            ((erp new-body body-types & table next-uident)
+             (valid-stmt stmt.body table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
          (retok (make-stmt-switch :target new-target :body new-body)
                 (set::union target-types body-types)
                 nil
-                table))
+                table
+                next-uident))
        :while
        (b* ((table (valid-push-scope table))
-            ((erp new-test test-type test-types table)
-             (valid-expr stmt.test table ienv))
+            ((erp new-test test-type test-types table next-uident)
+             (valid-expr stmt.test table next-uident ienv))
             ((unless (or (type-scalarp test-type)
                          (type-case test-type :unknown)))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (table (valid-push-scope table))
-            ((erp new-body  body-types & table)
-             (valid-stmt stmt.body table ienv))
+            ((erp new-body  body-types & table next-uident)
+             (valid-stmt stmt.body table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table))
             (types (set::union test-types body-types)))
          (retok (make-stmt-while :test new-test :body new-body)
                 types
                 nil
-                table))
+                table
+                next-uident))
        :dowhile
        (b* ((table (valid-push-scope table))
             (table (valid-push-scope table))
-            ((erp new-body body-types & table)
-             (valid-stmt stmt.body table ienv))
+            ((erp new-body body-types & table next-uident)
+             (valid-stmt stmt.body table next-uident ienv))
             (table (valid-pop-scope table))
-            ((erp new-test test-type test-types table)
-             (valid-expr stmt.test table ienv))
+            ((erp new-test test-type test-types table next-uident)
+             (valid-expr stmt.test table next-uident ienv))
             ((unless (or (type-scalarp test-type)
                          (type-case test-type :unknown)))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
@@ -5392,22 +5840,24 @@
          (retok (make-stmt-dowhile :body new-body :test new-test)
                 (set::union test-types body-types)
                 nil
-                table))
+                table
+                next-uident))
        :for-expr
        (b* ((table (valid-push-scope table))
-            ((erp new-init & init-types table)
-             (valid-expr-option stmt.init table ienv))
-            ((erp new-test test-type? test-types table)
-             (valid-expr-option stmt.test table ienv))
+            ((erp new-init & init-types table next-uident)
+             (valid-expr-option stmt.init table next-uident ienv))
+            ((erp new-test test-type? test-types table next-uident)
+             (valid-expr-option stmt.test table next-uident ienv))
             ((when (and test-type?
                         (not (type-scalarp test-type?))
                         (not (type-case test-type? :unknown))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
-            ((erp new-next & next-types table)
-             (valid-expr-option stmt.next table ienv))
+            ((erp new-next & next-types table next-uident)
+             (valid-expr-option stmt.next table next-uident ienv))
             (table (valid-push-scope table))
-            ((erp new-body body-types & table) (valid-stmt stmt.body table ienv))
+            ((erp new-body body-types & table next-uident)
+             (valid-stmt stmt.body table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
          (retok (make-stmt-for-expr :init new-init
@@ -5419,22 +5869,24 @@
                                         (set::union next-types
                                                     body-types)))
                 nil
-                table))
+                table
+                next-uident))
        :for-decl
        (b* ((table (valid-push-scope table))
-            ((erp new-init init-types table) (valid-decl stmt.init table ienv))
-            ((erp new-test test-type? test-types table)
-             (valid-expr-option stmt.test table ienv))
+            ((erp new-init init-types table next-uident)
+             (valid-decl stmt.init table next-uident ienv))
+            ((erp new-test test-type? test-types table next-uident)
+             (valid-expr-option stmt.test table next-uident ienv))
             ((when (and test-type?
                         (not (type-scalarp test-type?))
                         (not (type-case test-type? :unknown))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
-            ((erp new-next & next-types table)
-             (valid-expr-option stmt.next table ienv))
+            ((erp new-next & next-types table next-uident)
+             (valid-expr-option stmt.next table next-uident ienv))
             (table (valid-push-scope table))
-            ((erp new-body body-types & table)
-             (valid-stmt stmt.body table ienv))
+            ((erp new-body body-types & table next-uident)
+             (valid-stmt stmt.body table next-uident ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
          (retok (make-stmt-for-decl :init new-init
@@ -5446,40 +5898,44 @@
                                         (set::union next-types
                                                     body-types)))
                 nil
-                table))
+                table
+                next-uident))
        :for-ambig
        (prog2$ (impossible) (retmsg$ ""))
        :goto
-       (retok (stmt-goto stmt.label) nil nil (valid-table-fix table))
+       (retok (stmt-goto stmt.label) nil nil (valid-table-fix table) next-uident)
        :continue
-       (retok (stmt-continue) nil nil (valid-table-fix table))
+       (retok (stmt-continue) nil nil (valid-table-fix table) next-uident)
        :break
-       (retok (stmt-break) nil nil (valid-table-fix table))
+       (retok (stmt-break) nil nil (valid-table-fix table) next-uident)
        :return
        (b* ((table0 table)
-            ((erp new-expr? type? types table)
-             (valid-expr-option stmt.expr? table ienv))
+            ((erp new-expr? type? types table next-uident)
+             (valid-expr-option stmt.expr? table next-uident ienv))
             (return-type (or type? (type-void)))
             (info (make-stmt-return-info :table table0)))
          (retok (make-stmt-return :expr? new-expr? :info info)
                 (set::insert return-type types)
                 nil
-                table))
+                table
+                next-uident))
        :asm
-       (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table))))
+       (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table) next-uident)))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-block-item ((item block-itemp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
     :guard (block-item-unambp item)
     :returns (mv (erp maybe-msgp)
                  (new-item block-itemp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a block item."
     :long
@@ -5498,21 +5954,22 @@
        the @('last-expr-type?') result is @('nil'),
        because the block item is not a statement of the kind
        described in @(tsee valid-stmt)."))
-    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table)))
+    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table) (irr-uident)))
       (block-item-case
        item
-       :decl (b* (((erp new-decl types table)
-                   (valid-decl item.unwrap table ienv)))
-               (retok (block-item-decl new-decl) types nil table))
+       :decl (b* (((erp new-decl types table next-uident)
+                   (valid-decl item.unwrap table next-uident ienv)))
+               (retok (block-item-decl new-decl) types nil table next-uident))
        :stmt (b* ((table0 table)
-                  ((erp new-stmt types last-expr-type? table)
-                   (valid-stmt item.stmt table ienv))
+                  ((erp new-stmt types last-expr-type? table next-uident)
+                   (valid-stmt item.stmt table next-uident ienv))
                   (info (make-block-item-info :table table0)))
                (retok (make-block-item-stmt :stmt new-stmt
                                             :info info)
                       types
                       last-expr-type?
-                      table))
+                      table
+                      next-uident))
        :ambig (prog2$ (impossible) (retmsg$ ""))))
     :measure (block-item-count item))
 
@@ -5520,13 +5977,15 @@
 
   (define valid-block-item-list ((items block-item-listp)
                                  (table valid-tablep)
+                                 (next-uident uidentp)
                                  (ienv ienvp))
     :guard (block-item-list-unambp items)
     :returns (mv (erp maybe-msgp)
                  (new-items block-item-listp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
-                 (new-table valid-tablep))
+                 (new-table valid-tablep)
+                 (new-next-uident uidentp))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of block items."
     :long
@@ -5539,18 +5998,21 @@
        the list of block items is not empty
        and the validation of the last block item
        returns a type as that result."))
-    (b* (((reterr) nil nil nil (irr-valid-table))
-         ((when (endp items)) (retok nil nil nil (valid-table-fix table)))
-         ((erp new-item types last-expr-type? table)
-          (valid-block-item (car items) table ienv))
+    (b* (((reterr) nil nil nil (irr-valid-table) (irr-uident))
+         (next-uident (uident-fix next-uident))
+         ((when (endp items))
+          (retok nil nil nil (valid-table-fix table) next-uident))
+         ((erp new-item types last-expr-type? table next-uident)
+          (valid-block-item (car items) table next-uident ienv))
          ((when (endp (cdr items)))
-          (retok (list new-item) types last-expr-type? table))
-         ((erp new-items more-types last-expr-type? table)
-          (valid-block-item-list (cdr items) table ienv)))
+          (retok (list new-item) types last-expr-type? table next-uident))
+         ((erp new-items more-types last-expr-type? table next-uident)
+          (valid-block-item-list (cdr items) table next-uident ienv)))
       (retok (cons new-item new-items)
              (set::union types more-types)
              last-expr-type?
-             table))
+             table
+             next-uident))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5574,7 +6036,8 @@
       (implies (not erp)
                (expr-unambp new-expr))
       :hyp (expr-unambp expr)
-      :fn valid-expr)
+      :fn valid-expr
+      :hints ('(:expand (valid-expr expr table next-uident ienv))))
     (defret expr-list-unambp-of-valid-expr-list
       (implies (not erp)
                (expr-list-unambp new-exprs))
@@ -5616,14 +6079,17 @@
                     (type-spec-list-unambp new-tyspecs)))
       :hyp (and (type-spec-unambp tyspec)
                 (type-spec-list-unambp tyspecs))
-      :fn valid-type-spec)
+      :fn valid-type-spec
+      :hints ('(:expand (:free (type?)
+                               (valid-type-spec tyspec type? tyspecs table next-uident ienv)))))
     (defret spec/qual-unambp-of-valid-spec/qual
       (implies (not erp)
                (and (spec/qual-unambp new-specqual)
                     (type-spec-list-unambp new-tyspecs)))
       :hyp (and (spec/qual-unambp specqual)
                 (type-spec-list-unambp tyspecs))
-      :fn valid-spec/qual)
+      :fn valid-spec/qual
+      :hints ('(:expand (valid-spec/qual specqual type? tyspecs table next-uident ienv))))
     (defret spec/qual-list-unambp-of-valid-spec/qual-list
       (implies (not erp)
                (spec/qual-list-unambp new-specquals))
@@ -5641,23 +6107,28 @@
                     (type-spec-list-unambp new-tyspecs)))
       :hyp (and (decl-spec-unambp declspec)
                 (type-spec-list-unambp tyspecs))
-      :fn valid-decl-spec)
+      :fn valid-decl-spec
+      :hints ('(:expand (valid-decl-spec declspec type? tyspecs storspecs table next-uident ienv))))
     (defret decl-spec-list-unambp-of-valid-decl-spec-list
       (implies (not erp)
                (decl-spec-list-unambp new-declspecs))
       :hyp (and (decl-spec-list-unambp declspecs)
                 (type-spec-list-unambp tyspecs))
-      :fn valid-decl-spec-list)
+      :fn valid-decl-spec-list
+      :hints ('(:expand (:free (type?)
+                               (valid-decl-spec-list declspecs type? tyspecs storspecs table next-uident ienv)))))
     (defret initer-unambp-of-valid-initer
       (implies (not erp)
                (initer-unambp new-initer))
       :hyp (initer-unambp initer)
-      :fn valid-initer)
+      :fn valid-initer
+      :hints ('(:expand (valid-initer initer target-type lifetime table next-uident ienv))))
     (defret initer-option-unambp-of-valid-initer-option
       (implies (not erp)
                (initer-option-unambp new-initer?))
       :hyp (initer-option-unambp initer?)
-      :fn valid-initer-option)
+      :fn valid-initer-option
+      :hints ('(:expand (valid-initer-option initer? target-type lifetime? table next-uident ienv))))
     (defret desiniter-unambp-of-valid-desiniter
       (implies (not erp)
                (desiniter-unambp new-desiniter))
@@ -5672,7 +6143,8 @@
       (implies (not erp)
                (designor-unambp new-designor))
       :hyp (designor-unambp designor)
-      :fn valid-designor)
+      :fn valid-designor
+      :hints ('(:expand (valid-designor designor target-type table next-uident ienv))))
     (defret designor-list-unambp-of-valid-designor-list
       (implies (not erp)
                (designor-list-unambp new-designors))
@@ -5692,7 +6164,8 @@
       (implies (not erp)
                (dirdeclor-unambp new-dirdeclor))
       :hyp (dirdeclor-unambp dirdeclor)
-      :fn valid-dirdeclor)
+      :fn valid-dirdeclor
+      :hints ('(:expand (valid-dirdeclor dirdeclor fundef-params-p type table next-uident ienv))))
     (defret absdeclor-unambp-of-valid-absdeclor
       (implies (not erp)
                (absdeclor-unambp new-absdeclor))
@@ -5707,7 +6180,8 @@
       (implies (not erp)
                (dirabsdeclor-unambp new-dirabsdeclor))
       :hyp (dirabsdeclor-unambp dirabsdeclor)
-      :fn valid-dirabsdeclor)
+      :fn valid-dirabsdeclor
+      :hints ('(:expand (valid-dirabsdeclor dirabsdeclor type table next-uident ienv))))
     (defret dirabsdeclor-option-unambp-of-valid-dirabsdeclor-option
       (implies (not erp)
                (dirabsdeclor-option-unambp new-dirabsdeclor?))
@@ -5717,7 +6191,9 @@
       (implies (not erp)
                (param-declon-unambp new-paramdecl))
       :hyp (param-declon-unambp paramdecl)
-      :fn valid-param-declon)
+      :fn valid-param-declon
+      :hints ('(:expand (:free (fundef-params-p)
+                               (valid-param-declon paramdecl fundef-params-p table next-uident ienv)))))
     (defret param-declon-list-unambp-of-valid-param-declon-list
       (implies (not erp)
                (param-declon-list-unambp new-paramdecls))
@@ -5727,7 +6203,8 @@
       (implies (not erp)
                (param-declor-unambp new-paramdeclor))
       :hyp (param-declor-unambp paramdeclor)
-      :fn valid-param-declor)
+      :fn valid-param-declor
+      :hints ('(:expand (valid-param-declor paramdeclor type table next-uident ienv))))
     (defret tyname-unambp-of-valid-tyname
       (implies (not erp)
                (tyname-unambp new-tyname))
@@ -5742,7 +6219,8 @@
       (implies (not erp)
                (structdecl-unambp new-structdecl))
       :hyp (structdecl-unambp structdecl)
-      :fn valid-structdecl)
+      :fn valid-structdecl
+      :hints ('(:expand (valid-structdecl structdecl previous table next-uident ienv))))
     (defret structdecl-list-unambp-of-valid-structdecl-list
       (implies (not erp)
                (structdecl-list-unambp new-structdecls))
@@ -5782,7 +6260,8 @@
       (implies (not erp)
                (initdeclor-unambp new-initdeclor))
       :hyp (initdeclor-unambp initdeclor)
-      :fn valid-initdeclor)
+      :fn valid-initdeclor
+      :hints ('(:expand (valid-initdeclor initdeclor type storspecs table next-uident ienv))))
     (defret initdeclor-list-unambp-of-valid-initdeclor-list
       (implies (not erp)
                (initdeclor-list-unambp new-initdeclors))
@@ -5797,17 +6276,20 @@
       (implies (not erp)
                (decl-list-unambp new-decls))
       :hyp (decl-list-unambp decls)
-      :fn valid-decl-list)
+      :fn valid-decl-list
+      :hints ('(:expand (valid-decl-list decls table next-uident ienv))))
     (defret label-unambp-of-valid-label
       (implies (not erp)
                (label-unambp new-label))
       :hyp (label-unambp label)
-      :fn valid-label)
+      :fn valid-label
+      :hints ('(:expand (valid-label label table next-uident ienv))))
     (defret stmt-unambp-of-valid-stmt
       (implies (not erp)
                (stmt-unambp new-stmt))
       :hyp (stmt-unambp stmt)
-      :fn valid-stmt)
+      :fn valid-stmt
+      :hints ('(:expand (valid-stmt stmt table next-uident ienv))))
     (defret block-item-unambp-of-valid-block-item
       (implies (not erp)
                (block-item-unambp new-item))
@@ -5818,20 +6300,21 @@
                (block-item-list-unambp new-items))
       :hyp (block-item-list-unambp items)
       :fn valid-block-item-list)
-    ;; These hints only enable VALID-DECL-SPEC-LIST
-    ;; in the cases involving that function.
+    ;; We disable VALID-DECL-SPEC-LIST in general
     ;; Without this, the proof seems to hang, or at least take a very long time.
-    :hints (("Goal" :in-theory (disable valid-decl-spec-list))
-            (and (acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
-                 '(:in-theory (enable valid-decl-spec-list))))))
+    :hints (("Goal" :in-theory (disable valid-decl-spec-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-fundef ((fundef fundefp) (table valid-tablep) (ienv ienvp))
+(define valid-fundef ((fundef fundefp)
+                      (table valid-tablep)
+                      (next-uident uidentp)
+                      (ienv ienvp))
   :guard (fundef-unambp fundef)
   :returns (mv (erp maybe-msgp)
                (new-fundef fundefp)
-               (new-table valid-tablep))
+               (new-table valid-tablep)
+               (new-next-uident uidentp))
   :short "Validate a function definition."
   :long
   (xdoc::topstring
@@ -5910,12 +6393,12 @@
     "Finally we pop the scope of the function body.
      Recall that the function itself stays in the validation table,
      because we have added it to the file scope."))
-  (b* (((reterr) (irr-fundef) (irr-valid-table))
+  (b* (((reterr) (irr-fundef) (irr-valid-table) (irr-uident))
        ((fundef fundef) fundef)
-       ((erp new-spec type storspecs types table)
-        (valid-decl-spec-list fundef.spec nil nil nil table ienv))
-       ((erp new-declor & type ident more-types table)
-        (valid-declor fundef.declor t type table ienv))
+       ((erp new-spec type storspecs types table next-uident)
+        (valid-decl-spec-list fundef.spec nil nil nil table next-uident ienv))
+       ((erp new-declor & type ident more-types table next-uident)
+        (valid-declor fundef.declor t type table next-uident ienv))
        ((unless (and (set::emptyp types)
                      (set::emptyp more-types)))
         (retmsg$ "The declarator of the function definition ~x0 ~
@@ -5931,16 +6414,18 @@
         (retmsg$ "The function definition ~x0 has type ~x1."
                  (fundef-fix fundef) type))
        (info? (valid-lookup-ord-file-scope ident table))
-       ((erp table)
-        (b* (((reterr) (irr-valid-table))
+       ((erp table next-uident)
+        (b* (((reterr) (irr-valid-table) (irr-uident))
              ((when (not info?))
               (retok
                (valid-add-ord-file-scope ident
                                          (make-valid-ord-info-objfun
                                           :type (type-function)
                                           :linkage linkage
-                                          :defstatus (valid-defstatus-defined))
-                                         table)))
+                                          :defstatus (valid-defstatus-defined)
+                                          :uident next-uident)
+                                         table)
+               (uident-increment next-uident)))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -5975,26 +6460,48 @@
                                      (make-valid-ord-info-objfun
                                       :type (type-function)
                                       :linkage linkage
-                                      :defstatus (valid-defstatus-defined))
-                                     table))))
-       ((erp new-decls types table) (valid-decl-list fundef.decls table ienv))
+                                      :defstatus (valid-defstatus-defined)
+                                      :uident next-uident)
+                                     table)
+           (uident-increment next-uident))))
+       ((erp new-decls types table next-uident)
+        (valid-decl-list fundef.decls table next-uident ienv))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
                  (fundef-fix fundef)))
-       (ainfo (make-valid-ord-info-objfun
-                :type (type-array)
-                :linkage (linkage-none)
-                :defstatus (valid-defstatus-defined)))
-       (table (valid-add-ord (ident "__func__") ainfo table))
-       (table (if (ienv->gcc ienv)
-                  (valid-add-ord (ident "__FUNCTION__")
-                                 ainfo
-                                 (valid-add-ord (ident "__PRETTY_FUNCTION__")
-                                                ainfo
-                                                table))
-                table))
-       ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
+       (table (valid-add-ord (ident "__func__")
+                             (make-valid-ord-info-objfun
+                               :type (type-array)
+                               :linkage (linkage-none)
+                               :defstatus (valid-defstatus-defined)
+                               :uident next-uident)
+                             table))
+       (next-uident (uident-increment next-uident))
+       ((mv table next-uident)
+        (if (ienv->gcc ienv)
+            (mv (valid-add-ord (ident "__FUNCTION__")
+                               (make-valid-ord-info-objfun
+                                 :type (type-array)
+                                 :linkage (linkage-none)
+                                 :defstatus (valid-defstatus-defined)
+                                 :uident next-uident)
+                               table)
+                (uident-increment next-uident))
+          (mv table next-uident)))
+       ((mv table next-uident)
+        (if (ienv->gcc ienv)
+            (mv (valid-add-ord (ident "__PRETTY_FUNCTION__")
+                               (make-valid-ord-info-objfun
+                                 :type (type-array)
+                                 :linkage (linkage-none)
+                                 :defstatus (valid-defstatus-defined)
+                                 :uident next-uident)
+                               table)
+                (uident-increment next-uident))
+          (mv table next-uident)))
+       ((erp new-body & & table next-uident)
+        (valid-block-item-list fundef.body table next-uident ienv))
        (table (valid-pop-scope table)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
@@ -6003,7 +6510,8 @@
                         :attribs fundef.attribs
                         :decls new-decls
                         :body new-body)
-           table))
+           table
+           next-uident))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :hooks (:fix)
 
@@ -6016,11 +6524,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-extdecl ((edecl extdeclp) (table valid-tablep) (ienv ienvp))
+(define valid-extdecl ((edecl extdeclp)
+                       (table valid-tablep)
+                       (next-uident uidentp)
+                       (ienv ienvp))
   :guard (extdecl-unambp edecl)
   :returns (mv (erp maybe-msgp)
                (new-edecl extdeclp)
-               (new-table valid-tablep))
+               (new-table valid-tablep)
+               (new-next-uident uidentp))
   :short "Validate an external declaration."
   :long
   (xdoc::topstring
@@ -6028,21 +6540,22 @@
     "For now we do not do anything with assembler statements.
      The empty external declaration is always valid.
      We check that declarations contain no return statements."))
-  (b* (((reterr) (irr-extdecl) (irr-valid-table)))
+  (b* (((reterr) (irr-extdecl) (irr-valid-table) (irr-uident))
+       (next-uident (uident-fix next-uident)))
     (extdecl-case
      edecl
-     :fundef (b* (((erp new-fundef table)
-                   (valid-fundef edecl.unwrap table ienv)))
-               (retok (extdecl-fundef new-fundef) table))
-     :decl (b* (((erp new-decl types table)
-                 (valid-decl edecl.unwrap table ienv))
+     :fundef (b* (((erp new-fundef table next-uident)
+                   (valid-fundef edecl.unwrap table next-uident ienv)))
+               (retok (extdecl-fundef new-fundef) table next-uident))
+     :decl (b* (((erp new-decl types table next-uident)
+                 (valid-decl edecl.unwrap table next-uident ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
                           edecl.unwrap)))
-             (retok (extdecl-decl new-decl) table))
-     :empty (retok (extdecl-empty) (valid-table-fix table))
-     :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
+             (retok (extdecl-decl new-decl) table next-uident))
+     :empty (retok (extdecl-empty) (valid-table-fix table) next-uident)
+     :asm (retok (extdecl-fix edecl) (valid-table-fix table) next-uident)))
   :hooks (:fix)
 
   ///
@@ -6056,21 +6569,27 @@
 
 (define valid-extdecl-list ((edecls extdecl-listp)
                             (table valid-tablep)
+                            (next-uident uidentp)
                             (ienv ienvp))
   :guard (extdecl-list-unambp edecls)
   :returns (mv (erp maybe-msgp)
                (new-edecls extdecl-listp)
-               (new-table valid-tablep))
+               (new-table valid-tablep)
+               (new-next-uident uidentp))
   :short "Validate a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
     "We validate them in order, threading the validation table through."))
-  (b* (((reterr) nil (irr-valid-table))
-       ((when (endp edecls)) (retok nil (valid-table-fix table)))
-       ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
-       ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
-    (retok (cons new-edecl new-edecls) table))
+  (b* (((reterr) nil (irr-valid-table) (irr-uident))
+       (next-uident (uident-fix next-uident))
+       ((when (endp edecls))
+        (retok nil (valid-table-fix table) next-uident))
+       ((erp new-edecl table next-uident)
+        (valid-extdecl (car edecls) table next-uident ienv))
+       ((erp new-edecls table next-uident)
+        (valid-extdecl-list (cdr edecls) table next-uident ienv)))
+    (retok (cons new-edecl new-edecls) table next-uident))
   :hooks (:fix)
 
   ///
@@ -6083,9 +6602,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((tunit transunitp) (ienv ienvp))
+(define valid-transunit ((tunit transunitp) (next-uident uidentp) (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv (erp maybe-msgp) (new-tunit transunitp))
+  :returns (mv (erp maybe-msgp)
+               (new-tunit transunitp)
+               (new-next-uident uidentp))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -6117,31 +6638,31 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit))
+  (b* (((reterr) (irr-transunit) (irr-uident))
        (gcc (ienv->gcc ienv))
        (table (valid-init-table))
-       (table
+       ((mv table next-uident)
          (if gcc
-             (b* ((finfo (make-valid-ord-info-objfun
-                          :type (type-function)
-                          :linkage (linkage-external)
-                          :defstatus (valid-defstatus-defined)))
-                  (oinfo (make-valid-ord-info-objfun
-                          :type (type-unknown)
-                          :linkage (linkage-external)
-                          :defstatus (valid-defstatus-defined)))
-                  (table
-                    (valid-add-ords-file-scope
-                      *gcc-builtin-functions* finfo table))
-                  (table
-                    (valid-add-ords-file-scope
-                      *gcc-builtin-vars* oinfo table)))
-               table)
-           table))
-       ((erp new-edecls table)
-        (valid-extdecl-list (transunit->decls tunit) table ienv))
+             (b* (((mv next-uident table)
+                    (valid-add-ord-objfuns-file-scope *gcc-builtin-functions*
+                                                      (type-function)
+                                                      (linkage-external)
+                                                      (valid-defstatus-defined)
+                                                      next-uident
+                                                      table))
+                  ((mv next-uident table)
+                    (valid-add-ord-objfuns-file-scope *gcc-builtin-vars*
+                                                      (type-unknown)
+                                                      (linkage-external)
+                                                      (valid-defstatus-defined)
+                                                      next-uident
+                                                      table)))
+               (mv table next-uident))
+           (mv table next-uident)))
+       ((erp new-edecls table next-uident)
+        (valid-extdecl-list (transunit->decls tunit) table next-uident ienv))
        (info (make-transunit-info :table table)))
-    (retok (make-transunit :decls new-edecls :info info)))
+    (retok (make-transunit :decls new-edecls :info info) next-uident))
   :hooks (:fix)
 
   ///
@@ -6168,26 +6689,29 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
-       ((erp new-map)
+       ((erp new-map -)
         (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) ienv)))
+         (transunit-ensemble->unwrap tunits) (uident 0) ienv)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
+                                          (next-uident uidentp)
                                           (ienv ienvp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
-                           :hyp (filepath-transunit-mapp map)))
+                           :hyp (filepath-transunit-mapp map))
+                  (new-next-uident uidentp))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (omap::emptyp map)) (retok nil))
+     (b* (((reterr) nil (irr-uident))
+          ((when (omap::emptyp map)) (retok nil (uident-fix next-uident)))
           (path (omap::head-key map))
-          ((erp new-tunit) (valid-transunit (omap::head-val map) ienv))
-          ((erp new-map)
-           (valid-transunit-ensemble-loop (omap::tail map) ienv)))
-       (retok (omap::update path new-tunit new-map)))
+          ((erp new-tunit next-uident)
+           (valid-transunit (omap::head-val map) next-uident ienv))
+          ((erp new-map next-uident)
+           (valid-transunit-ensemble-loop (omap::tail map) next-uident ienv)))
+       (retok (omap::update path new-tunit new-map) next-uident))
      :verify-guards :after-returns
 
      ///
