@@ -2498,6 +2498,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-initer-single ((expr exprp)
+                                (expr-new exprp)
+                                (expr-thm-name symbolp)
+                                (gin simpadd0-ginp))
+  :guard (expr-unambp expr)
+  :returns (mv (initer initerp) (gout simpadd0-goutp))
+  :short "Transform an initializer consisting of a single expression."
+  (declare (ignore expr expr-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (initer-new (initer-single expr-new)))
+    (mv initer-new (simpadd0-gout-no-thm gin)))
+
+  ///
+
+  (defret initer-unambp-of-simpadd0-initer-single
+    (initer-unambp initer)
+    :hyp (expr-unambp expr-new)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-expr ((expr? expr-optionp)
                             (expr?-new expr-optionp)
                             (expr?-thm-name symbolp)
@@ -4107,8 +4127,10 @@
        :single (b* (((mv new-expr (simpadd0-gout gout-expr))
                      (simpadd0-expr initer.expr gin))
                     (gin (simpadd0-gin-update gin gout-expr)))
-                 (mv (initer-single new-expr)
-                     (simpadd0-gout-no-thm gin)))
+                 (simpadd0-initer-single initer.expr
+                                         new-expr
+                                         gout-expr.thm-name
+                                         gin))
        :list (b* (((mv new-elems (simpadd0-gout gout-elems))
                    (simpadd0-desiniter-list initer.elems gin))
                   (gin (simpadd0-gin-update gin gout-elems)))
