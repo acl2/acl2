@@ -524,6 +524,7 @@
 
     ;; purity:
     expr-purep
+    expr-option-purep
 
     ;; formalized:
 
