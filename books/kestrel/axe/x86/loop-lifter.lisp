@@ -45,6 +45,7 @@
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
+(include-book "kestrel/x86/assumptions-new" :dir :system)
 (include-book "x86-rules")
 (include-book "../merge-term-into-dag-array-simple")
 (include-book "../bitops-rules")
@@ -120,6 +121,8 @@
 (acl2::ensure-rules-known (read-and-write-rules-non-bv))
 
 ;(in-theory (disable acl2::bvplus-of-minus1-tighten-32)) ;caused problems in proofs about examples
+
+(add-known-boolean canonical-regionp) ; todo: move
 
 (defun acl2::pack-in-package-of-base-symbol-list (base-sym items)
   (if (endp items)
@@ -236,6 +239,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun add-to-cars (alist base)
+  (if (endp alist)
+      nil
+    (let* ((pair (first alist))
+           (key (car pair))
+           (val (cdr pair)))
+      (acons (+ key base) val (add-to-cars (rest alist) base)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun add-to-vals (vals base)
+  (if (endp vals)
+      nil
+    (cons (+ (first vals) base)
+          (add-to-vals (rest vals) base))))
+
+(defun add-to-loop-alist (loop-alist base)
+  (if (endp loop-alist)
+      nil
+    (let* ((pair (first loop-alist))
+           (offset (car pair))
+           (loop-pc-offsets (cdr pair)))
+      (acons (+ offset base)
+             (add-to-vals loop-pc-offsets base)
+             (add-to-loop-alist (rest loop-alist) base)))))
+
 ;maps loop headers (PCs) to lists of PCs in the corresponding loops
 ;todo: use doublets, for readability
 ;todo: may evetually need to convert these to be absolute rather than relative to the start of the text section
@@ -278,7 +307,7 @@
 ;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
 (defun get-pc (x86)
   (declare (xargs :stobjs x86))
-  (x86isa::rip x86))
+  (rip x86))
 
 ;;TODO: How can we determine whether we are in a subroutine call (can't just
 ;;look at RSP)?  I guess we could include subroutine PCs as part of the code
@@ -383,13 +412,24 @@
 ;;              (member-equal a x))))
 
 (acl2::defconst-computed-simple *loop-lifter-state-component-extraction-rule-alist*
-  (acl2::make-rule-alist! (loop-lifter-state-component-extraction-rules) (w state)))
+  (acl2::make-rule-alist! (append (new-normal-form-rules64) ;todo: combine
+                                  '(acl2::bvchop-of-bvplus-same)
+                                  (loop-lifter-state-component-extraction-rules))
+                          (w state)))
 
 (acl2::defconst-computed-simple *loop-lifter-pc-extraction-rule-alist*
   (acl2::make-rule-alist! (append '(x86isa::logext-48-does-nothing-when-canonical-address-p
                                     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
                                     acl2::equal-same
                                     x86isa::canonical-address-p-between-special3)
+                                  (new-normal-form-rules64)
+                                  (unsigned-canonical-rules) ; some of this is to get rid of the bvsx 64 48
+                                  '(acl2::integerp-of-bvplus
+                                    acl2::unsigned-byte-p-of-bvplus
+                                    unsigned-byte-p-of-read ; so we know that the saved return address is canonical, via bvsx-when-unsigned-canonical-address-p
+                                    )
+                                  (canonical-rules-bv)
+                                  ;;'(rip-of-set-rip)
                                   (loop-lifter-state-component-extraction-rules))
                           (w state)))
 
@@ -402,7 +442,7 @@
   (declare (xargs :guard (and (acl2::pseudo-dagp state-dag)
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
-  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '4 :x86) :x86 state-dag))
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(rsp :x86) :x86 state-dag))
        ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0.")
@@ -432,7 +472,7 @@
   (declare (xargs :guard (and (acl2::pseudo-dagp state-dag)
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
-  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(rbp :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0.")
@@ -462,7 +502,7 @@
   (declare (xargs :guard (and (acl2::pseudo-dagp state-dag)
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
-  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rip 'nil :x86) :x86 state-dag))
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(rip :x86) :x86 state-dag))
        ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0.")
@@ -480,6 +520,8 @@
                             nil ;count-hits
                             nil ;print
                             '(x86isa::logext-48-does-nothing-when-canonical-address-p
+                              bvsx-when-unsigned-canonical-address-p
+                              unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
                               ;;acl2::ifix-when-integerp
                               ;;acl2::integerp-of-+
                               ;;x86isa::integerp-when-canonical-address-p-cheap
@@ -487,23 +529,24 @@
                             nil ; no-warn-ground-functions
                             nil)))
 
-(defun offsets-up-to (num)
-  (declare (xargs :guard (or (natp num)
-                             (eql -1 num))
+(defun offsets-up-to (num base)
+  (declare (xargs :guard (and (or (natp num)
+                                  (eql -1 num))
+                              (natp base))
                   :measure (if (not (natp num))
                                0
                              (+ 1 num))))
   (if (not (natp num))
-      (reverse nil)
-    (cons num
-          (offsets-up-to (+ -1 num)))))
+      nil ; (reverse nil)
+    (cons (+ num base)
+          (offsets-up-to (+ -1 num) base))))
 
 (defun relative-pc-term (offset base)
   (declare (xargs :guard (and (integerp offset)
                               (pseudo-termp base))))
   (if (= 0 offset)
-      base ;no need to add 0
-    `(binary-+ ',offset ,base)))
+      base ;no need to add 0 ; maybe chop?
+    `(bvplus '64 ',offset ,base)))
 
 ;; ;;TODO: What about offset 0?
 ;; (defun create-text-offset-terms (num)
@@ -512,7 +555,6 @@
 ;;       (list 'text-offset)
 ;;     (cons (relative-pc-term num 'text-offset)
 ;;           (create-text-offset-terms (+ -1 num)))))
-
 
 (defun relative-pc-terms (offsets base)
   (declare (xargs :guard (and (integer-listp offsets)
@@ -607,10 +649,11 @@
 (defun get-added-offset (term base-var)
   (if (eq term base-var)
       0
-    (if (and (eq 'binary-+ (ffn-symb term))
-             (quotep (farg1 term))
-             (eq base-var (farg2 term)))
-        (unquote (farg1 term))
+    (if (and (eq 'bvplus (ffn-symb term))
+             (equal ''64 (farg1 term))
+             (quotep (farg2 term))
+             (eq base-var (farg3 term)))
+        (unquote (farg2 term))
       (er hard 'get-added-offset "Unexpected term: ~x0." term))))
 
 (local (defthm symbol-listp-of-boolean-rules (symbol-listp (acl2::boolean-rules))))
@@ -756,39 +799,80 @@
 
 ;todo: this is slowing stuff down: ACL2::USE-ALL-HEAPREF-TABLE-ENTRYP-FOR-CAR
 
-;todo: speed this up
-;; Returns (mv okp xw-triples core-term).  Each xw-triple is of the form (<field> <index> <value>).
-(defun check-and-extract-xws (term xw-triples-acc)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (true-listp xw-triples-acc))))
-  (if (not (and (call-of 'xw term)
-                (= 4 (len (fargs term)))))
-      ;; the core term will be subject to further checking outside this function
-      (mv t (reverse xw-triples-acc) term)
-    (let* ((field (farg1 term))
-           (index (farg2 term))
-           (value (farg3 term))
-           (x86 (farg4 term)))
-      (if (or ;; registers:
-            (and (myquotep field)
-                 (eq (unquote field) :rgf)
-                 (myquotep index)
-                 (member (unquote index) *register-numbers*))
-            ;; instruction pointer:
-            (and (equal field '':rip)
-                 (equal index ''nil))
-            ;; the source of undefined values:
-            (and (equal field '':undef)
-                 (equal index ''nil)))
-          (check-and-extract-xws x86 (cons (list (unquote field) (unquote index) value) xw-triples-acc))
-        ;; Anything else is an error (TODO: Allow more things here?)
-        (prog2$ (er hard? 'check-and-extract-xws "Unsupported call to XW in one-rep-dag: ~x0." term)
-                (mv nil nil term))))))
+(defconst *setters-to-getters-alist*
+  '((set-rip . rip)
+    (set-rax . rax)
+    (set-rbx . rbx)
+    (set-rcx . rcx)
+    (set-rdx . rdx)
+    (set-rsi . rsi)
+    (set-rdi . rdi)
+    (set-r8 . r8)
+    (set-r9 . r9)
+    (set-r10 . r10)
+    (set-r11 . r11)
+    (set-r12 . r12)
+    (set-r13 . r13)
+    (set-r14 . r14)
+    (set-r15 . r15)
+    (set-rsp . rsp)
+    (set-rbp . rbp)
+    (set-undef . undef)))
+
+(defconst *setters*
+  (strip-cars *setters-to-getters-alist*))
+
+(defconst *getters*
+  (strip-cdrs *setters-to-getters-alist*))
+
+(defun change-pairp (p)
+  (declare (xargs :guard t))
+  (and (consp p)
+       (member-eq (car p) *setters*)
+       (pseudo-termp (cdr p))))
+
+(defun change-pair-listp (ps)
+  (declare (xargs :guard t))
+  (if (not (consp ps))
+      (null ps)
+    (and (change-pairp (first ps))
+         (change-pair-listp (rest ps)))))
 
 (local
-  (defthm pseudo-termp-of-mv-nth-2-of-check-and-extract-xws
+  (defthm change-pair-listp-of-reverse-list
+    (implies (change-pair-listp change-pairs-acc)
+             (change-pair-listp (acl2::reverse-list change-pairs-acc)))))
+
+(local
+  (defthm true-listp-when-change-pair-listp
+    (implies (change-pair-listp ps)
+             (true-listp ps))))
+
+;todo: speed this up
+;; Returns (mv okp change-pairs core-term).  Each change-pair form (<setter> <term>).
+(defun check-and-extract-change-pairs (term change-pairs-acc)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (change-pair-listp change-pairs-acc))))
+  (if (and (consp term) ; (set-XXX <val> <state-var>)
+           (member-eq (ffn-symb term) *setters*)
+           (true-listp term)
+           (= 2 (len (fargs term))))
+      (check-and-extract-change-pairs (farg2 term)
+                                      (cons (cons (ffn-symb term) (farg1 term))
+                                            change-pairs-acc))
+    ;; the core term will be subject to further checking outside this function
+    (mv t (reverse change-pairs-acc) term)))
+
+(local
+  (defthm change-pair-listp-of-mv-nth-1-of-check-and-extract-change-pairs
+    (implies (and (pseudo-termp term)
+                  (change-pair-listp change-pairs-acc))
+             (change-pair-listp (mv-nth 1 (check-and-extract-change-pairs term change-pairs-acc))))))
+
+(local
+  (defthm pseudo-termp-of-mv-nth-2-of-check-and-extract-change-pairs
     (implies (pseudo-termp term)
-             (pseudo-termp (mv-nth 2 (check-and-extract-xws term xw-triples-acc))))))
+             (pseudo-termp (mv-nth 2 (check-and-extract-change-pairs term change-pairs-acc))))))
 
 ;; Returns (mv okp write-triples core-term). Each triple is (list numbytes base-addr val)
 (defun check-and-extract-writes (term write-triples-acc)
@@ -842,29 +926,31 @@
 
 ;; We expect TERM to be a nest of calls to XW, around a nest of calls to WRITE,
 ;; around a nest of calls to SET-FLAG, around the state-var.  Returns (mv okp
-;; xw-triples write-triples flag-pairs).
+;; change-pairs write-triples flag-pairs).
 (defun check-and-split-one-rep-term (term state-var)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp state-var))))
-  (b* (((mv xws-okp xw-triples term) (check-and-extract-xws term nil))
+  (b* (((mv xws-okp change-pairs term) (check-and-extract-change-pairs term nil))
        ((mv writes-okp write-triples term) (check-and-extract-writes term nil))
-       ((mv flags-okp flag-pairs term) (check-and-extract-flags term nil)))
+       ((mv flags-okp flag-pairs term) (check-and-extract-flags term nil))
+       ;; we do this again so we can get the set-undef, which is usually buried:
+       ((mv xws-okp2 change-pairs2 term) (check-and-extract-change-pairs term nil)))
     (if (not (eq state-var term))
         (prog2$ (er hard? 'check-and-split-one-rep-term "Unexpected core term: ~X01." term nil)
                 (mv (erp-t) nil nil nil))
-      (mv (and xws-okp writes-okp flags-okp)
-          xw-triples
+      (mv (and xws-okp writes-okp flags-okp xws-okp2)
+          (append change-pairs change-pairs2)
           write-triples
           flag-pairs))))
 
-;; Keep only the fields and indices (drop the values)
-(defun get-xw-pairs (xw-triples)
-  (if (endp xw-triples)
-      nil
-    (let ((triple (first xw-triples)))
-      (cons (list (first triple)
-                  (second triple))
-            (get-xw-pairs (rest xw-triples))))))
+;; ;; Keep only the fields and indices (drop the values)
+;; (defun get-xw-pairs (xw-triples)
+;;   (if (endp xw-triples)
+;;       nil
+;;     (let ((triple (first xw-triples)))
+;;       (cons (list (first triple)
+;;                   (second triple))
+;;             (get-xw-pairs (rest xw-triples))))))
 
 ;; ;; Keep only the numbytes and base-addrs (drop the values)
 ;; (defun get-write-pairs (write-triples)
@@ -1010,66 +1096,69 @@
   (declare (xargs :guard (and (pseudo-termp expr)
                               (symbolp state-var))))
   ;; Match a register access:
-  (mv-let (matchp alist)
-    (acl2::unify-term expr '(xr ':rgf :index :state-var))
-    (if matchp
-        (if (and state-var
-                 (not (equal state-var (lookup-eq :state-var alist))))
-            "State-var mismatch"
-          (let ((index (lookup-eq :index alist)))
-            (if (myquotep index)
-                (let ((index (unquote index)))
-                  (if (and (natp index)
-                           (< index (len *register-names*)))
-                      (nth index *register-names*)
-                    "Bad register number"))
-              "Register number is not a quoted constant")))
-      ;; Match the undefined count:
-      (mv-let (matchp alist)
-        (acl2::unify-term expr '(xr ':undef 'nil :state-var))
-        (if matchp
-            (if (and state-var
-                     (not (equal state-var (lookup-eq :state-var alist))))
-                "State-var mismatch"
-              'undef)
-          ;; Match a flag:
-          (mv-let (matchp alist)
-            (acl2::unify-term expr '(get-flag :flag-name :state-var))
-            (if matchp
-                (if (and state-var
-                         (not (equal state-var (lookup-eq :state-var alist))))
-                    "State-var mismatch"
-                  (let ((flag-name (lookup-eq :flag-name alist)))
-                    (if (not (myquotep flag-name))
-                        "Flag name is not a quoted constant."
-                      (let ((flag-name (unquote flag-name)))
-                        (case flag-name
-                          (:af 'flag-af)
-                          (:cf 'flag-cf)
-                          (:pf 'flag-pf)
-                          (:of 'flag-of)
-                          (:sf 'flag-sf)
-                          (:zf 'flag-zf) ;todo: add more flags
-                          (otherwise "Unsupported flag name.")
-                          )))))
-              ;; A read with the BV normal form:
-              (mv-let (matchp alist)
-                ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
-                ;; todo: generalize the 4 here?:
-                (acl2::unify-term expr '(read '4 (bvplus '48 :offset (XR ':RGF '4 :state-var)) :state-var2))
-                (if matchp
-                    (if (and state-var
-                             (or (not (equal state-var (lookup-eq :state-var alist)))
-                                 (not (equal state-var (lookup-eq :state-var2 alist)))))
-                        "State-var mismatch"
-                      (let ((offset (lookup-eq :offset alist)))
-                        (if (not (and (myquotep offset)
-                                      (integerp (unquote offset))
-                                      (< (logext 48 (unquote offset)) 0)
-                                      ))
-                            "Unsupported memory read."
-                          (pack-in-package-of-symbol 'var 'var (- (logext 48 (unquote offset)))))))
-                  "Unexpected state component."))
+  (if (and (consp expr)
+           (member-eq (ffn-symb expr) *getters*))
+      (ffn-symb expr)
+    (mv-let (matchp alist)
+      (acl2::unify-term expr '(xr ':rgf :index :state-var)) ; todo: deprecate
+      (if matchp
+          (if (and state-var
+                   (not (equal state-var (lookup-eq :state-var alist))))
+              "State-var mismatch"
+            (let ((index (lookup-eq :index alist)))
+              (if (myquotep index)
+                  (let ((index (unquote index)))
+                    (if (and (natp index)
+                             (< index (len *register-names*)))
+                        (nth index *register-names*)
+                      "Bad register number"))
+                "Register number is not a quoted constant")))
+        ;; Match the undefined count:
+        (mv-let (matchp alist)
+          (acl2::unify-term expr '(xr ':undef 'nil :state-var)) ; todo: deprecate
+          (if matchp
+              (if (and state-var
+                       (not (equal state-var (lookup-eq :state-var alist))))
+                  "State-var mismatch"
+                'undef)
+            ;; Match a flag:
+            (mv-let (matchp alist)
+              (acl2::unify-term expr '(get-flag :flag-name :state-var))
+              (if matchp
+                  (if (and state-var
+                           (not (equal state-var (lookup-eq :state-var alist))))
+                      "State-var mismatch"
+                    (let ((flag-name (lookup-eq :flag-name alist)))
+                      (if (not (myquotep flag-name))
+                          "Flag name is not a quoted constant."
+                        (let ((flag-name (unquote flag-name)))
+                          (case flag-name
+                            (:af 'flag-af)
+                            (:cf 'flag-cf)
+                            (:pf 'flag-pf)
+                            (:of 'flag-of)
+                            (:sf 'flag-sf)
+                            (:zf 'flag-zf) ;todo: add more flags
+                            (otherwise "Unsupported flag name.")
+                            )))))
+                ;; A read with the BV normal form:
+                (mv-let (matchp alist)
+                  ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
+                  ;; todo: generalize the 4 here?:
+                  (acl2::unify-term expr '(read '4 (bvplus '48 :offset (rsp :state-var)) :state-var2))
+                  (if matchp
+                      (if (and state-var
+                               (or (not (equal state-var (lookup-eq :state-var alist)))
+                                   (not (equal state-var (lookup-eq :state-var2 alist)))))
+                          "State-var mismatch"
+                        (let ((offset (lookup-eq :offset alist)))
+                          (if (not (and (myquotep offset)
+                                        (integerp (unquote offset))
+                                        (< (logext 48 (unquote offset)) 0)
+                                        ))
+                              "Unsupported memory read."
+                            (pack-in-package-of-symbol 'var 'var (- (logext 48 (unquote offset)))))))
+                    "Unexpected state component."))
                 ;; ;; Handle a non-bv read:
                 ;; (mv-let (matchp alist)
                 ;;   ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
@@ -1087,7 +1176,7 @@
                 ;;               "Unsupported memory read."
                 ;;             (pack-in-package-of-symbol 'var 'var (- (unquote offset))))))
                 ;;     "Unexpected state component."))
-              )))))))
+                ))))))))
 
 (defun name-of-state-component (expr)
   (declare (xargs :guard (pseudo-termp expr)))
@@ -1129,41 +1218,45 @@
            (replace-components-of-initial-state-in-terms (rest terms))))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
-(defun make-loop-parameters-for-xw-triples (xw-triples next-param-number
-                                                       updated-state-term
-                                                       paramnum-update-alist
-                                                       paramnum-extractor-alist
-                                                       paramnum-name-alist)
-  (if (endp xw-triples)
+(defun make-loop-parameters-for-change-pairs (change-pairs
+                                              next-param-number
+                                              updated-state-term
+                                              paramnum-update-alist
+                                              paramnum-extractor-alist
+                                              paramnum-name-alist)
+  (declare (xargs :guard (change-pair-listp change-pairs)
+                  :verify-guards nil ; todo
+                  ))
+  (if (endp change-pairs)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-    (b* ((xw-triple (first xw-triples))
-         (field (first xw-triple))  ;not quoted
-         (index (second xw-triple)) ;not quoted
-         )
-      (if (and (equal field :rip)
-               (equal index nil))
-          ;; Don't make a param for the RIP:
-          (make-loop-parameters-for-xw-triples (rest xw-triples)
-                                               next-param-number
-                                               updated-state-term
-                                               paramnum-update-alist
-                                               paramnum-extractor-alist
-                                               paramnum-name-alist)
-        (b* ((value-term (third xw-triple))
-             (updated-state-term `(xw ',field ',index (nth ',next-param-number :loop-function-result) ,updated-state-term))
+    (b* ((change-pair (first change-pairs))
+         (setter (car change-pair))
+         (getter (lookup-eq-safe setter *setters-to-getters-alist*))
+         (value-term (cdr change-pair)))
+      (if (eq 'set-rip setter)
+          ;; Don't make a param for the SET-RIP:
+          (make-loop-parameters-for-change-pairs (rest change-pairs)
+                                                 next-param-number
+                                                 updated-state-term
+                                                 paramnum-update-alist
+                                                 paramnum-extractor-alist
+                                                 paramnum-name-alist)
+        (b* ((updated-state-term `(,setter (nth ',next-param-number :loop-function-result) ,updated-state-term))
              (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
-             (paramnum-extractor `(xr ',field ',index :initial-loop-top-state))
+             (paramnum-extractor `(,getter :initial-loop-top-state))
              (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-             (param-name (name-of-state-component paramnum-extractor))
+             (param-name (lookup-eq-safe setter *setters-to-getters-alist*) ;(name-of-state-component paramnum-extractor) ; todo: now some of name-of-state-component can be deprecated
+                         ;; todo: watch for name clashes (with any user vars?) and check for no eip and rip, etc (32 and 64 bit notions) in the same lift
+                         )
              (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
              (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist)) ;just some name
              )
-          (make-loop-parameters-for-xw-triples (rest xw-triples)
-                                               (+ 1 next-param-number)
-                                               updated-state-term
-                                               paramnum-update-alist
-                                               paramnum-extractor-alist
-                                               paramnum-name-alist))))))
+          (make-loop-parameters-for-change-pairs (rest change-pairs)
+                                                 (+ 1 next-param-number)
+                                                 updated-state-term
+                                                 paramnum-update-alist
+                                                 paramnum-extractor-alist
+                                                 paramnum-name-alist))))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-write-triples (write-triples next-param-number updated-state-term
@@ -1257,7 +1350,8 @@
          ((mv erp simplified-invariant state)
           (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
                                nil nil
-                               '(x86isa::xr-of-xw-diff) ; rules-to-monitor
+                               '(x86isa::xr-of-xw-diff
+                                 acl2::bvchop-of-bvplus-same) ; rules-to-monitor
                                nil ; no-warn-ground-functions
                                nil state))
          ((when erp) (mv erp nil nil state)))
@@ -1332,14 +1426,10 @@
                     (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                     )
                  (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
-             (if (eq 'xr fn)
-                 (b* ((fld (farg1 expr)) ;often quoted
-                      (index (farg2 expr))
-                      (state-term (farg3 expr))
-                      ((when (not (and (equal fld '':rgf)
-                                       (quotep index)
-                                       (eq state-term state-var))))
-                       (er hard 'make-read-only-parameters-for-expr "Unexpected xr term: ~x0." expr)
+             (if (member-eq fn *getters*)
+                 (b* ((state-term (farg1 expr))
+                      ((when (not (eq state-term state-var)))
+                       (er hard 'make-read-only-parameters-for-expr "Unexpected getter term: ~x0." expr)
                        (mv nil nil nil nil nil))
                       ;; make a read-only param:
                       ;; TODO: If it's a read-only-param, why are we writing it here?:
@@ -1347,9 +1437,10 @@
                       ;; The param gets updated with the read expression itself:
                       (paramnum-update-alist (acons next-param-number expr ;value-term
                                                     paramnum-update-alist))
-                      (paramnum-extractor `(xr ':rgf ,index :initial-loop-top-state))
+                      (paramnum-extractor `(,fn :initial-loop-top-state))
                       (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
-                      (param-name (name-of-state-component paramnum-extractor)) ;for now, just some name
+                      (param-name fn ; the getter ;(name-of-state-component paramnum-extractor)
+                                  )
                       (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
                       (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                       )
@@ -1525,8 +1616,8 @@
         ((when erp) (mv erp nil nil nil state))
         (loop-top-pc-term (dag-to-term loop-top-pc-dag))
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
-        (pc-offset (get-added-offset loop-top-pc-term 'text-offset)) ; relative to text-offset
-        (pc-assumption `(equal (xr ':rip 'nil ,state-var) ,loop-top-pc-term))
+        (pc-offset (get-added-offset loop-top-pc-term 'base-address)) ; relative to base-address
+        (pc-assumption `(equal (rip ,state-var) ,loop-top-pc-term))
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top: ; todo: do we need the assumptions?
         ((mv erp loop-top-rsp-dag &)
@@ -1576,6 +1667,7 @@
                                     candidate-assumptions
                                     (acl2::make-rule-alist! (set-difference-eq
                                                               (append (loop-lifter-invariant-preservation-rules)
+                                                                      ;'(acl2::bvchop-of-bvplus-same) ; todo: think about this
                                                                       lifter-rules
                                                                       extra-rules)
                                                               remove-rules)
@@ -1596,7 +1688,7 @@
         ;; (segment-pc-terms (relative-pc-terms this-loop-offsets 'text-offset))
         ;; (- (cw "(segment-pc-terms: ~x0)~%" segment-pc-terms))
         ;; TODO: This assumes there is a single loop:
-        (all-loop-header-pc-terms (relative-pc-terms (list pc-offset) 'text-offset))
+        (all-loop-header-pc-terms (relative-pc-terms (list pc-offset) 'base-address))
         (- (cw "(all-loop-header-pc-terms ~x0)~%" all-loop-header-pc-terms))
         ;; (term-to-run `(run-until-exit-segment-or-hit-loop-header (xr ':rgf '4 ,state-var) ;;starting-rsp
         ;;                                                          ,(acl2::make-cons-nest segment-pc-terms)
@@ -1605,9 +1697,9 @@
         ;;                                                          (x86-fetch-decode-execute ,state-var)))
         ;; (- (cw "(Term for symbolically executing the loop body: ~x0)~%" term-to-run))
         (possible-loop-invariants ;; The base pointer and stack pointer should not change inside the routine (TODO: Do I need this?):
-          (append `((equal (xr ':rgf '5 ,state-var) ;; this "pushes" back the RBP to some expression over the initial state
+          (append `((equal (rbp ,state-var) ;; this "pushes" back the RBP to some expression over the initial state
                            ,loop-top-rbp-term)
-                    (equal (xr ':rgf '4 ,state-var) ;; this "pushes" back the RSP to some expression over the initial state
+                    (equal (rsp ,state-var) ;; this "pushes" back the RSP to some expression over the initial state
                            ,loop-top-rsp-term))
                  loop-top-assumptions
                  assumptions ;these are about previous state vars and should still hold (and things about state-var may be "pushed back" so we need these)
@@ -1631,7 +1723,7 @@
         ;; Ananlyze the lifted loop body (e.g., Figure out which leaves returned to the loop top):
         ;; TODO: Maybe use dags instead of terms here
         ((mv erp one-rep-term exit-term exit-test-term state)
-         (analyze-loop-body loop-body-term loop-top-pc-term '(xr ':rgf '4 x86_1) assumptions extra-rules remove-rules lifter-rules state))
+         (analyze-loop-body loop-body-term loop-top-pc-term '(rsp x86_1) assumptions extra-rules remove-rules lifter-rules state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(one-rep-term: ~x0)~%" (untranslate one-rep-term nil (w state))))
         (- (cw "(exit-term: ~x0)~%" (untranslate exit-term nil (w state))))
@@ -1639,6 +1731,7 @@
         (- (cw "(Attempting to prove invariants:~%"))
         (rules (set-difference-eq
                  (append (loop-lifter-invariant-preservation-rules) ; optimze?
+                         '(acl2::bvchop-of-bvplus-same)
                          lifter-rules
                          extra-rules)
                  remove-rules))
@@ -1664,16 +1757,16 @@
 
         ;; Now process the state updates done by the loop body (3 kinds: call of xw, calls of write, and calls of set-flag):
         ;; TODO: Do we need to check the PC/RIP (maybe analyze-loop-body handles that)?
-        ((mv okp xw-triples write-triples flag-pairs)
+        ((mv okp change-pairs write-triples flag-pairs)
          (check-and-split-one-rep-term one-rep-term state-var))
         ((when (not okp))
          (prog2$ (er hard? 'lift-loop "Bad one rep term: ~x0." one-rep-term)
                  (mv (erp-t) nil nil nil state)))
-        (- (cw "(xw-triples: ~x0.)~%" xw-triples))
+        (- (cw "(change-pairs: ~x0.)~%" change-pairs))
         (- (cw "(write-triples: ~x0)~%" write-triples))
         (- (cw "(flag-pairs: ~x0)~%" flag-pairs))
-        ((when (not (no-duplicatesp (get-xw-pairs xw-triples))))
-         (er hard 'lift-loop "Duplicates detected in xw calls: ~x0." xw-triples)
+        ((when (not (no-duplicatesp (strip-cars change-pairs))))
+         (er hard 'lift-loop "Duplicates detected in xw calls: ~x0." change-pairs)
          (mv (erp-t) nil nil nil state))
         ((when (not (no-duplicatesp (get-flag-names flag-pairs))))
          (er hard 'lift-loop "Duplicates detected in flag updates: ~x0." flag-pairs)
@@ -1725,7 +1818,7 @@
 
         (- (cw "(Making loop params for XW triples:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-         (make-loop-parameters-for-xw-triples xw-triples next-param-number updated-state-term
+         (make-loop-parameters-for-change-pairs change-pairs next-param-number updated-state-term
                                               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
@@ -1974,7 +2067,7 @@
                                       (acons :then-part then-branch-dag
                                              (acons :else-part else-branch-dag
                                                     nil))
-                                      :extra-vars (cons 'text-offset all-state-vars)))
+                                      :extra-vars (cons 'base-address all-state-vars)))
               ;((when erp) (mv erp nil nil nil nil state))
               )
            (mv nil changep result-dag generated-events next-loop-num state))
@@ -1996,9 +2089,9 @@
                (if (equal pc-term
                           ;; We've jumped to the return address of the main subroutine, so we've exited the segment:
                           ;; TODO: Check this:
-                          '(logext '64 (READ '8 (XR ':RGF '4 X86_0) X86_0)))
+                          '(read '8 (rsp x86_0) x86_0))
                    (mv (erp-nil) t state)
-                 (let ((pc-offset (get-added-offset pc-term 'text-offset)))
+                 (let ((pc-offset (get-added-offset pc-term 'base-address)))
                    (if (member pc-offset segment-offsets)
                        (mv (erp-nil) nil state)
                      (mv (erp-nil) t state)))))))
@@ -2067,9 +2160,9 @@
                                    (alistp measure-alist))
                                (acl2::print-levelp print))
                    :stobjs state))
-   (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'text-offset))
+   (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'base-address))
         (all-loop-header-offsets (strip-cars loop-alist))
-        (all-loop-header-pc-terms (relative-pc-terms all-loop-header-offsets 'text-offset))
+        (all-loop-header-pc-terms (relative-pc-terms all-loop-header-offsets 'base-address))
         ;; TODO: Do we need to pass the RSP here, or is it enough to check whether we are in the code segment?
         (dag-to-run ;(mv erp dag-to-run)
          (compose-term-and-dags `(run-until-exit-segment-or-hit-loop-header :starting-rsp
@@ -2077,7 +2170,7 @@
                                                                                        ,(make-cons-nest all-loop-header-pc-terms)
                                                                                        :state-dag)
                                            (acons :starting-rsp rsp-dag (acons :state-dag state-dag nil))
-                                           :extra-vars (cons 'text-offset all-state-vars)))
+                                           :extra-vars (cons 'base-address all-state-vars)))
         ;((when erp) (mv erp nil nil nil state))
         (- (cw "(DAG to symbolically execute: ~x0)~%" dag-to-run))
         ;; Perform the symbolic execution:
@@ -2190,8 +2283,10 @@
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
-         (make-rule-alist (append (old-normal-form-rules) ; don't use the new normal forms
-                                  '(x86isa::rip) ; open this (at least for now), to expose xr
+         (make-rule-alist (append (new-normal-form-rules64) ; todo: what if 32-bit?!
+                                  (new-normal-form-rules-common)
+                                  ;(old-normal-form-rules) ; don't use the new normal forms
+                                  ; '(x86isa::rip) ; open this (at least for now), to expose xr
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
@@ -2320,26 +2415,44 @@
        (- (acl2::ensure-x86 parsed-executable))
        (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
-       (assumptions (if (eq :mach-o-64 executable-type)
-                        (cons `(standard-assumptions-mach-o-64 ',subroutine-name
-                                                               ',parsed-executable
-                                                               ',stack-slots-needed
-                                                               text-offset
-                                                               't
-                                                               x86_0)
-                              user-assumptions)
-                      (if (eq :pe-64 executable-type) ;; TODO: Support :pe-32
-                          (cons `(standard-assumptions-pe-64 ',subroutine-name
-                                                             ',parsed-executable
-                                                             ',stack-slots-needed
-                                                             text-offset
-                                                             't
-                                                             x86_0)
-                                user-assumptions)
-                        user-assumptions)))
-       ;; TODO: Not all of these are necessarily PCs (should we give a range?):
+       ((mv erp tool-assumptions &)
+        (if (eq :mach-o-64 executable-type)
+            (assumptions-macho64-new subroutine-name
+                                     t ; position-independentp
+                                     stack-slots-needed
+                                     1 ; existing-stack-slots ; todo
+                                     'x86_0
+                                     nil ; inputs ; todo
+                                     nil ; type-assumptions-for-array-varsp ; todo
+                                     :all ; inputs-disjoint-from
+                                     parsed-executable)
+          (if (eq :pe-64 executable-type) ;; TODO: Support :pe-32
+              (assumptions-pe64-new subroutine-name
+                                    t ; position-independentp
+                                    stack-slots-needed
+                                    5 ; existing-stack-slots ; todo
+                                    'x86_0
+                                    nil ; inputs ; todo
+                                    nil ; type-assumptions-for-array-varsp ; todo
+                                    :all ; inputs-disjoint-from
+                                    parsed-executable)
+            ;; todo: support other executable types!
+            (mv :unsupported-executable-type nil nil))))
+       ((when erp) (mv erp nil state))
+       (tool-assumptions (acl2::translate-terms tool-assumptions 'lift-subroutine-fn (w state))) ; needed?
+       (assumptions (append tool-assumptions user-assumptions))
+
+       ((mv erp target-offset)
+        (if (eq :mach-o-64 executable-type)
+            (mv nil (acl2::subroutine-address-mach-o subroutine-name parsed-executable))
+          (if (eq :pe-64 executable-type) ;; TODO: Support more executable types
+              (acl2::subroutine-address-pe-64 subroutine-name parsed-executable)
+            (mv :unsupported-executable-type nil))))
+       ((when erp) (mv erp nil state))
+
+       ;; TODO: Not all of these are necessarily locations of instructions (should we give a range?):
        ;; TODO: What about offset 0?
-       (segment-offsets (offsets-up-to (- subroutine-length 1)))
+       (segment-offsets (offsets-up-to (- subroutine-length 1) target-offset))
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
@@ -2347,7 +2460,7 @@
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32)) ; todo: what about elf32?
                          (loop-lifter-rules32)
                        (append (read-and-write-rules-bv) ;; (read-and-write-rules-non-bv)
-                               (if nil ; for now
+                               (if t ; todo
                                    (append (unsigned-canonical-rules)
                                            (canonical-rules-bv))
                                  (canonical-rules-non-bv))
@@ -2369,15 +2482,15 @@
          extra-rules
          remove-rules
          rules-to-monitor
-         loop-alist
-         measure-alist
+         (add-to-loop-alist loop-alist target-offset)
+         (if (eq :skip measure-alist) measure-alist (add-to-cars measure-alist target-offset))
          lifted-name
          lifter-rules
          print
          state))
        ((when erp) (mv erp nil state))
        ;; Extract the output (TODO: generalize!)
-       ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag)) ; todo: use rax or eax?
+       ((mv erp output-dag) (acl2::wrap-term-around-dag '(rax :dag) :dag dag)) ; todo: use eax if 32-bit
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
        ((mv erp output-dag & state)
