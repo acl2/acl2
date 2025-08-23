@@ -45,14 +45,14 @@
 
 ;; Below, we simplify this (e.g., by projecting out just the state component we care about).
 (lift-subroutine factorial
-                 "_fact"
-                 "factorial.macho64"
-                 3
-                 60 ;number of bytes in factorial
-                 ((20 . ;offset to loop header
-                      (20 24 30 33 37 40 43 46 49) ;loop pc offsets
-                      ))
-                 :measures ((20 (bvchop 32 var20))))
+                 :target "_fact"
+                 :executable "factorial.macho64"
+                 :subroutine-length 60 ;number of bytes in fact
+                 :loops ((20 . ;offset to loop header
+                             (20 24 30 33 37 40 43 46 49) ;loop pc offsets
+                             ))
+                 :measures ((20 (bvchop 32 var20)))
+                 :stack-slots 3)
 
 ;; Test the lifted code:
 (acl2::assert-equal (factorial 6 0) 720)
