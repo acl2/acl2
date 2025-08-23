@@ -43,17 +43,17 @@
     ;; return n * (n-1)! :
     (bvmult 32 n (factorial-spec (bvminus 32 n 1)))))
 
+;; Lift the x86 machine code for factorial into logic:
 ;; Below, we simplify this (e.g., by projecting out just the state component we care about).
 (lift-subroutine factorial
-                 "fact"
-                 "factorial.elf64"
-                 10
-                 50 ;number of bytes in factorial
-                 ((40 . ;offset to loop header
-                      (40 44 26 29 33 36) ;loop pc offsets
-                      ))
+                 :target "fact"
+                 :executable "factorial.elf64"
+                 :subroutine-length 50 ; number of bytes in fact
+                 :loops ((40 . ;offset to loop header
+                             (40 44 26 29 33 36) ; offsets to instructions in loop
+                             ))
                  :measures ((40 (bvchop 32 var12)))
-                 )
+                 :stack-slots 4)
 
 ;; Test the lifted code:
 (acl2::assert-equal (factorial 6 0) 720)

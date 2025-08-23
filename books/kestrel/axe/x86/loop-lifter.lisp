@@ -2071,7 +2071,7 @@
                  `(defun ,loop-fn (,@param-names)
                     (declare (xargs :measure ,measure))
                     ,defun-body)))
-        (state (acl2::submit-event-brief defun state)) ;; todo: can this be delayed?
+        ;; (state (acl2::submit-event-brief defun state)) ;; todo: can this be delayed?
 
         ;; TODO: Need to prove that x86p is preserved... ugh... example: show that nth 0 of the loop function is a SIGNED-BYTE-P '64.
 
@@ -2233,7 +2233,9 @@
                    (mv (erp-nil) t state)
                  (let ((pc-offset (get-added-offset pc-term 'base-address)))
                    (if (member pc-offset segment-offsets)
+                       ;; We have not exited the segment:
                        (mv (erp-nil) nil state)
+                     ;; We have exited the segment:
                      (mv (erp-nil) t state)))))))
          (if erp
              (mv erp nil nil nil nil state)
@@ -2494,7 +2496,7 @@
 
 ;; Returns (mv erp event state)
 (defun lift-subroutine-fn (lifted-name
-                           subroutine-name
+                           target ; todo: add support for :entry-point and for a numeric offset
                            executable
                            stack-slots-needed
                            subroutine-length ;todo: drop this (would need to support :all for the segment-pcs?)
@@ -2503,7 +2505,7 @@
                            remove-rules
                            produce-theorem
                            ;;output
-                           user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
+                           extra-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable
                            ;;restrict-theory
                            monitor
@@ -2511,13 +2513,10 @@
                            whole-form
                            print
                            state)
-  (declare (xargs :guard (and (symbolp lifted-name)
-                              (stringp subroutine-name)
+  (declare (xargs :guard (and
 ;                              (output-indicatorp output)
-                              (booleanp non-executable)
-                              (or (symbol-listp monitor)
-                                  (eq :debug monitor))
-                              (acl2::print-levelp print))
+;                              (booleanp non-executable)
+                           )
                   :mode :program
                   :stobjs state)
            (ignore produce-theorem non-executable) ; todo
@@ -2526,8 +2525,22 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
-       (- (cw "(Lifting subroutine ~x0:~%" subroutine-name))
        ;; Check user input:
+       ((when (not (symbolp lifted-name)))
+        (er hard? 'lift-subroutine-fn "The name to create should be a symbol, but it is ~x0." lifted-name)
+        (mv (erp-t) nil state))
+       ((when (not (stringp target)))
+        (er hard? 'lift-subroutine-fn "No :target supplied (must be the name of a subroutine).")
+        (mv (erp-t) nil state))
+       ((when (eq :none executable))
+        (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option (need a predicate for that)
+        (mv (erp-t) nil state))
+       ((when (eq :none loop-alist))
+        (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
+        (mv (erp-t) nil state))
+       ((when (eq :none subroutine-length))
+        (er hard? 'lift-subroutine-fn "No :subroutine-length supplied (should be the length, in bytes, of the target subroutine).")
+        (mv (erp-t) nil state))
        ((when (not (natp stack-slots-needed)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots-needed: ~x0" stack-slots-needed)
                 (mv (erp-t) nil state)))
@@ -2539,7 +2552,15 @@
                         )))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
+       ((when (not (or (symbol-listp monitor)
+                       (eq :debug monitor))))
+        (er hard? 'lift-subroutine-fn "Bad value for :monitor (should be a symbol-list or :debug): ~x0" monitor)
+        (mv (erp-t) nil state))
+       ((when (not (acl2::print-levelp print)))
+        (er hard? 'lift-subroutine-fn "Bad value for :print (should be a print-level): ~x0" print)
+        (mv (erp-t) nil state))
 
+       (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
        ((mv erp parsed-executable state)
         (if (stringp executable)
@@ -2553,11 +2574,11 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Throws an error if we have a non-x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
-       (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
+       (extra-assumptions (acl2::translate-terms extra-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
        ((mv erp tool-assumptions &)
         (if (eq :mach-o-64 executable-type)
-            (assumptions-macho64-new subroutine-name
+            (assumptions-macho64-new target
                                      t ; position-independentp
                                      stack-slots-needed
                                      1 ; existing-stack-slots
@@ -2567,7 +2588,7 @@
                                      :all ; inputs-disjoint-from
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
-              (assumptions-pe64-new subroutine-name
+              (assumptions-pe64-new target
                                     t ; position-independentp
                                     stack-slots-needed
                                     5 ; existing-stack-slots ; different for PE64 due to calling conventions
@@ -2577,7 +2598,7 @@
                                     :all ; inputs-disjoint-from
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
-                (assumptions-elf64-new subroutine-name
+                (assumptions-elf64-new target
                                        t ; position-independentp
                                        stack-slots-needed
                                        1 ; existing-stack-slots
@@ -2590,15 +2611,15 @@
               (mv :unsupported-executable-type nil nil)))))
        ((when erp) (mv erp nil state))
        (tool-assumptions (acl2::translate-terms tool-assumptions 'lift-subroutine-fn (w state))) ; needed?
-       (assumptions (append tool-assumptions user-assumptions))
+       (assumptions (append tool-assumptions extra-assumptions))
        ;; Get the target address:
        ((mv erp target-offset)
         (if (eq :mach-o-64 executable-type)
-            (mv nil (acl2::subroutine-address-mach-o subroutine-name parsed-executable))
+            (mv nil (acl2::subroutine-address-mach-o target parsed-executable))
           (if (eq :pe-64 executable-type)
-              (acl2::subroutine-address-pe-64 subroutine-name parsed-executable)
+              (acl2::subroutine-address-pe-64 target parsed-executable)
             (if (eq :elf-64 executable-type)
-                (mv nil (acl2::subroutine-address-elf subroutine-name parsed-executable))
+                (mv nil (acl2::subroutine-address-elf target parsed-executable))
               ;; TODO: Support more executable types
               (mv :unsupported-executable-type nil)))))
        ((when erp) (mv erp nil state))
@@ -2702,40 +2723,41 @@
        (event `(progn ,@events
                       ,defun))
        (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event)))
-       (- (cw "Done Lifting subroutine ~x0)~%" subroutine-name))
+       (- (cw "Done Lifting subroutine ~x0)~%" target))
        )
     (mv erp event state)))
 
+;; todo: add position-indendent option
 (defmacro lift-subroutine (&whole
                            whole-form
                            lifted-name ;the name to use for the function created by the lifter
-                           subroutine-name
-                           executable ; a string (filename), or (for example) a defconst created by defconst-x86
-                           stack-slots-needed
-                           subroutine-length
-                           loop-alist ;offsets (from start of subroutine) of loops, paired with offset lists for their bodies
                            &key
+                           (target ':none) ; required (for now).  must be a string naming a subroutine
+                           (executable ':none) ; required, a string (filename), or (for example) a defconst created by defconst-x86
+                           (subroutine-length ':none) ; todo: drop
+                           (extra-assumptions 'nil)
+                           (loops ':none) ; required (for now)
+                           (stack-slots '10)
+                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            (extra-rules 'nil)
                            (remove-rules 'nil)
                            (produce-theorem 't) ;todo: not used.
                            ;;output
-                           (assumptions 'nil)
                            (non-executable 'nil)
                            ;;restrict-theory
                            (monitor 'nil)
-                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            (print ':brief))
   `(make-event (lift-subroutine-fn ',lifted-name
-                                   ',subroutine-name
+                                   ',target
                                    ,executable
-                                   ',stack-slots-needed
+                                   ',stack-slots
                                    ',subroutine-length
-                                   ',loop-alist
+                                   ',loops
                                    ,extra-rules
                                    ,remove-rules
                                    ',produce-theorem
                                    ;;output
-                                   ,assumptions
+                                   ,extra-assumptions
                                    ',non-executable
                                    ;;restrict-theory
                                    ,monitor
