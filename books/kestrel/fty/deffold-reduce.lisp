@@ -795,12 +795,15 @@
         (acl2::packn-pos (list type-suffix '-of-cons) suffix))
        (type-suffix-of-append
         (acl2::packn-pos (list type-suffix '-of-append) suffix))
+       (type-suffix-of-rcons
+        (acl2::packn-pos (list type-suffix '-of-rcons) suffix))
        (elt-type-suffix-of-car-when-type-suffix
         (acl2::packn-pos (list elt-type-suffix '-of-car-when- type-suffix)
                          suffix))
        (type-suffix-of-cdr-when-type-suffix
         (acl2::packn-pos (list type-suffix '-of-cdr-when- type-suffix) suffix))
        (type1 (add-suffix-to-fn type "1"))
+       (type-elem (add-suffix-to-fn type "-ELEM"))
        (thm-events
         (append
          `((defruled ,type-suffix-when-atom
@@ -826,6 +829,14 @@
                   :enable (append
                            ,type-suffix
                            ,type-suffix-of-cons))
+                (defruled ,type-suffix-of-rcons
+                  (equal (,type-suffix (rcons ,type-elem ,type)
+                                       ,@extra-args-names)
+                         (and (,type-suffix ,type ,@extra-args-names)
+                              (,elt-type-suffix ,type-elem ,@extra-args-names)))
+                  :enable (rcons
+                           ,type-suffix-of-append
+                           ,type-suffix-of-cons))
                 (defruled ,elt-type-suffix-of-car-when-type-suffix
                   (implies (and (,type-suffix ,type ,@extra-args-names)
                                 (consp ,type))
@@ -838,6 +849,7 @@
                 (add-to-ruleset
                  ,(deffoldred-gen-ruleset-name suffix)
                  '(,type-suffix-of-append
+                   ,type-suffix-of-rcons
                    ,elt-type-suffix-of-car-when-type-suffix
                    ,type-suffix-of-cdr-when-type-suffix)))))))
     (mv fn-event thm-events)))

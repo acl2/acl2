@@ -352,6 +352,8 @@
       (xdoc::li
        "@('<type>-<suffix>-of-append')")
       (xdoc::li
+       "@('<type>-<suffix>-of-rcons')")
+      (xdoc::li
        "@('<elemtype>-<suffix>-of-car-when-<type>-<suffix>')")
       (xdoc::li
        "@('<type>-<suffix>-of-cdr-when-<type>-<suffix>')"))
