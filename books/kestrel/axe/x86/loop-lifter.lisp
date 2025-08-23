@@ -1997,7 +1997,7 @@
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
-        (- (cw "(Making params for read-only values in the exit-term term:%"))
+        (- (cw "(Making params for read-only values in the exit-term term:~%"))
         ((mv & ;next-param-number
               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters-for-expr exit-test-term
@@ -2014,9 +2014,9 @@
         (paramnum-extractor-alist (reverse paramnum-extractor-alist))
         (paramnum-name-alist (reverse paramnum-name-alist))
 
-        (- (cw "(param names: ~X01)~%" (reverse paramnum-name-alist) nil))
-        (- (cw "(param extractors: ~X01)~%" (reverse paramnum-extractor-alist) nil))
-        (- (cw "(param updates: ~X01)~%" (reverse paramnum-update-alist) nil))
+        (- (cw "(param names: ~X01)~%" paramnum-name-alist nil))
+        (- (cw "(param extractors: ~X01)~%" paramnum-extractor-alist nil))
+        (- (cw "(param updates: ~X01)~%" paramnum-update-alist nil))
 
         ;; TODO: Think about the order of param-names.  What do we prefer?
 
@@ -2641,12 +2641,10 @@
                         (doublets-to-alist measures)))
        ;; Changes the numbers to be relative to the base-address, not the start of the subroutine to lift:
        (measure-alist (if (eq :skip measure-alist) :skip (add-to-cars measure-alist target-offset)))
-       (32-bitp (member-eq executable-type *executable-types32*)) ; todo: instead use a 64-bitp flag
+       (64-bitp (member-eq executable-type *executable-types64*))
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
-       (lifter-rules (if 32-bitp
-                         (loop-lifter-rules32)
-                       (loop-lifter-rules64)))
-       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (lifter-rules (if 64-bitp (loop-lifter-rules64) (loop-lifter-rules32)))
+       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp dag events
             ;; & ; rules
