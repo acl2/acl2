@@ -307,15 +307,11 @@
 ;;                   :guard (natp old-rsp))) ;tighten?
 ;;   (< (rgfi *rsp* x86) old-rsp))
 
-;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
-(defun get-pc (x86)
-  (declare (xargs :stobjs x86))
-  (rip x86))
-
 ;;TODO: How can we determine whether we are in a subroutine call (can't just
 ;;look at RSP)?  I guess we could include subroutine PCs as part of the code
 ;;segment for now...  Or check RBP?
 
+;; TODO: make a version that uses eip for 32-bit mode, or do we always use rip?
 (defp run-until-exit-segment-or-hit-loop-header (starting-rsp
                                                  segment-pcs ; a list of addresses (will not include the header of the current loop), or :all
                                                  loop-headers ; a list of addresses
@@ -326,21 +322,21 @@
     ;; If we are at the loop header of a nested loop (or perhaps of the current
     ;; loop, but that usually won't happen since we exclude it from the segment
     ;; PCs), then stop:
-    (if (memberp (get-pc x86) loop-headers)
+    (if (memberp (rip x86) loop-headers)
         x86
       ;;otherwise, we are not at a loop header:
       (if nil ;;(stack-height-increased-wrt x86 starting-rsp) ;if we are in a subroutine call, take another step
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86))
         ;;the stack height is the same as the height of the segment:
         (if (and (not (eq :all segment-pcs))
-                 (not (member (get-pc x86) segment-pcs)))
+                 (not (member (rip x86) segment-pcs)))
             x86 ;if we are at the right stack height and not at one of the segment pcs, we've exited the segment
           ;;otherwise, take a step:
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))))
 
 ;; (defthm run-until-exit-segment-or-hit-loop-header-opener-1
 ;;   (implies (and (stack-height-increased-wrt x86 starting-rsp)
-;;                 (not (memberp (get-pc x86) loop-headers)))
+;;                 (not (memberp (rip x86) loop-headers)))
 ;;            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
 ;;                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
 
@@ -348,8 +344,8 @@
   (implies (and ;(not (stack-height-increased-wrt x86 starting-rsp))
                 (not (rsp-is-abovep starting-rsp x86))
                 (or (eq :all segment-pcs)
-                    (memberp (get-pc x86) segment-pcs))
-                (not (memberp (get-pc x86) loop-headers)))
+                    (memberp (rip x86) segment-pcs))
+                (not (memberp (rip x86) loop-headers)))
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
 
@@ -359,7 +355,7 @@
                   x86)))
 
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-2
-  (implies (memberp (get-pc x86) loop-headers)
+  (implies (memberp (rip x86) loop-headers)
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   x86)))
 
@@ -367,7 +363,7 @@
   (implies (and ;;(not (stack-height-increased-wrt x86 starting-rsp))
              (not (rsp-is-abovep starting-rsp x86))
                 (consp segment-pcs) ;; easier to prove than (not (eq :all segment-pcs)) when segment-pcs is a symbolic cons nest
-                (not (memberp (get-pc x86) segment-pcs)))
+                (not (memberp (rip x86) segment-pcs)))
            (equal (run-until-exit-segment-or-hit-loop-header
                     starting-rsp
                    segment-pcs loop-headers x86)
@@ -719,11 +715,11 @@
            ;;   (if (stack-height-increased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;       'nil
            ;;     ;; stack height is the same as when we entered the loop:
-           ;;     (not (equal (get-pc ,loop-body-term) ,loop-top-pc-term))))
+           ;;     (not (equal (rip ,loop-body-term) ,loop-top-pc-term))))
            ;; assuming no recursion, we don't need to check the stack height:
-           `(not (equal (get-pc ,loop-body-term) ,loop-top-pc-term))
+           `(not (equal (rip ,loop-body-term) ,loop-top-pc-term))
            assumptions
-;;           *loop-lifter-pc-extraction-rule-alist* ; todo: get this to work -- what is get-pc?
+;;           *loop-lifter-pc-extraction-rule-alist* ; todo: get this to work?
            (acl2::make-rule-alist!
              (set-difference-eq
                (append (extra-loop-lifter-rules)
@@ -1404,7 +1400,7 @@
                                            paramnum-extractor-alist
                                            paramnum-name-alist))))
 
-;; maps param-extractors over :initial-loop-top-state to the corresponding names
+;; The resulting alist maps param-extractors (fixed up to be over state-var) to the corresponding names
 (defun make-replacement-alist (paramnum-extractor-alist paramnum-name-alist state-var)
   (declare (xargs :guard (and (paramnum-extractor-alistp paramnum-extractor-alist)
                               (paramnum-name-alistp paramnum-name-alist)
@@ -1412,13 +1408,13 @@
                   :guard-hints (("Goal" :in-theory (enable strip-cars)))))
   (if (endp paramnum-extractor-alist)
       nil
-    (let* ((entry (car paramnum-extractor-alist))
+    (let* ((entry (first paramnum-extractor-alist))
            (parameter-number (car entry))
+           (extractor-term (cdr entry)) ; over :initial-loop-top-state (and more vars?)
            (parameter-name (lookup-safe parameter-number paramnum-name-alist))
-           (term (cdr entry)) ; over :initial-loop-top-state
-           (term (acl2::sublis-var-simple (acons :initial-loop-top-state state-var nil) term)) ; over state-var
+           (extractor-term (acl2::sublis-var-simple (acons :initial-loop-top-state state-var nil) extractor-term)) ; over state-var
            )
-      (cons (cons term parameter-name)
+      (cons (cons extractor-term parameter-name)
             (make-replacement-alist (rest paramnum-extractor-alist) paramnum-name-alist state-var)))))
 
 ;; Check that each of the INVARIANTS holds over ONE-REP-TERM
@@ -1669,6 +1665,8 @@
                                  ;; extra-vars
                                  ))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun make-initial-params-terms (paramnum-extractor-alist paramnum-name-alist param-update-terms)
   (if (endp paramnum-extractor-alist)
       nil
@@ -1676,14 +1674,14 @@
          (paramnum (car entry))
          (extractor (cdr entry))
          ;;check for write-only;
-         (term-to-seek ;`(nth ',paramnum params)
+         (name ;`(nth ',paramnum params)
           (lookup-safe paramnum paramnum-name-alist))
-         (occursp (acl2::subterm-of-anyp term-to-seek param-update-terms))
+         (occursp (acl2::subterm-of-anyp name param-update-terms))
          (initial-value-term (if occursp
                                  extractor
                                (prog2$
-                                (cw "(Note that param ~x0, ~x1, is write-only.)~%" paramnum extractor)
-                                '':unused))))
+                                 (cw "(Note that param ~x0, ~x1, is write-only.)~%" paramnum extractor)
+                                 '':unused))))
       (cons initial-value-term
             (make-initial-params-terms (rest paramnum-extractor-alist) paramnum-name-alist param-update-terms)))))
 
@@ -1901,7 +1899,7 @@
         (- (cw "All invariants proved)~%"))
         (loop-invariants possible-loop-invariants) ; we now know that they are true invariants
 
-        ;; Now process the state updates done by the loop body (3 kinds: call of xw, calls of write, and calls of set-flag):
+        ;; Now process the state updates done by the loop body (3 kinds: call of setterssimple , calls of write, and calls of set-flag):
         ;; TODO: Do we need to check the PC/RIP (maybe analyze-loop-body handles that)?
         ((mv okp setter-pairs write-triples flag-pairs)
          (check-and-split-one-rep-term one-rep-term state-var))
@@ -1912,7 +1910,7 @@
         (- (cw "(write-triples: ~x0)~%" write-triples))
         (- (cw "(flag-pairs: ~x0)~%" flag-pairs))
         ((when (not (no-duplicatesp (strip-cars setter-pairs))))
-         (er hard? 'lift-loop "Duplicates detected in xw calls: ~x0." setter-pairs)
+         (er hard? 'lift-loop "Duplicates detected in setter calls: ~x0." setter-pairs)
          (mv (erp-t) nil nil nil state))
         ((when (not (no-duplicatesp (get-flag-names flag-pairs))))
          (er hard? 'lift-loop "Duplicates detected in flag updates: ~x0." flag-pairs)
@@ -1950,22 +1948,22 @@
         ;; the call of the loop function.
         (updated-state-term :initial-loop-top-state)
 
+        ;; The paramnum-name-alist maps each paramnum to its corresponding formal parameter names:
+        (paramnum-name-alist nil)
         ;;  The paramnum-update-alist maps each paramnum to a term
         ;;  representing the updated value of that param after the
-        ;;  loop body (in terms of what state-var, previous state-vars, and inputs)
+        ;;  loop body (in terms of state-var, previous state-vars, inputs (not yet supported), and possibly base-address)
         (paramnum-update-alist nil)
         ;; The paramnum-extractor-alist maps each paramnum to a term
         ;; representing how to extract it from :initial-loop-top-state. May also
-        ;; mention previous state-vars (and inputs?) since heap
-        ;; addresses may mention those.
+        ;; mention previous state-vars (and inputs?) (and base-address?) since heap
+        ;; addresses may mention those other vars.
         (paramnum-extractor-alist nil)
-        ;; The paramnum-name-alist maps paramnums to their "names" for debugging.
-        (paramnum-name-alist nil)
 
-        (- (cw "(Making loop params for XW triples:~%"))
+        (- (cw "(Making loop params for setter pairs:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-setter-pairs setter-pairs next-param-number updated-state-term
-                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                                                paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for write triples:~%"))
@@ -1981,7 +1979,7 @@
         (- (cw "Done.)~%"))
 
         ;; We are done with the state components that get written by the loop,
-        ;; but other state components may get read in the loop, and we have to
+        ;; but other state components may get read in the loop (to update the state components written), and we have to
         ;; pass these values around as loop params as well.
         (- (cw "(param names (before handling read-only params): ~X01)~%" (reverse paramnum-name-alist) nil))
         (- (cw "(param extractors (before handling read-only params): ~X01)~%" (reverse paramnum-extractor-alist) nil))

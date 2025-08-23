@@ -6137,8 +6137,7 @@
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
-   '(get-pc
-     acl2::memberp-of-cons-irrel-strong
+   '(acl2::memberp-of-cons-irrel-strong
      acl2::memberp-of-cons-same
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
@@ -6184,7 +6183,7 @@
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
      read-of-set-flag ; drop
-     read-of-write-when-separate ; drop
+     ;read-of-write-when-separate ; drop
      write-of-write-same ; drop
      ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
      ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
