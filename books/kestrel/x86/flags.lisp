@@ -1149,3 +1149,14 @@
 ;;   :hints (("Goal" :in-theory (e/d (logcount-opener-8
 ;;                                    x86isa::bitcount8-and-logcount)
 ;;                                   (x86isa::bitcount8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move?
+
+(defthm unsigned-byte-p-of-rflagsbits->af (implies (posp size) (unsigned-byte-p size (rflagsbits->af x))) :hints (("Goal" :in-theory (enable rflagsbits->af))))
+(defthm unsigned-byte-p-of-rflagsbits->cf (implies (posp size) (unsigned-byte-p size (rflagsbits->cf x))) :hints (("Goal" :in-theory (enable rflagsbits->cf))))
+(defthm unsigned-byte-p-of-rflagsbits->of (implies (posp size) (unsigned-byte-p size (rflagsbits->of x))) :hints (("Goal" :in-theory (enable rflagsbits->of))))
+(defthm unsigned-byte-p-of-rflagsbits->pf (implies (posp size) (unsigned-byte-p size (rflagsbits->pf x))) :hints (("Goal" :in-theory (enable rflagsbits->pf))))
+(defthm unsigned-byte-p-of-rflagsbits->sf (implies (posp size) (unsigned-byte-p size (rflagsbits->sf x))) :hints (("Goal" :in-theory (enable rflagsbits->sf))))
+(defthm unsigned-byte-p-of-rflagsbits->zf (implies (posp size) (unsigned-byte-p size (rflagsbits->zf x))) :hints (("Goal" :in-theory (enable rflagsbits->zf))))
