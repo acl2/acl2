@@ -788,12 +788,16 @@
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
            ,@(and (not mutrecp) '(:hooks (:fix)))))
+       (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
        (type-suffix-when-atom
         (acl2::packn-pos (list type-suffix '-when-atom) suffix))
        (type-suffix-of-cons
         (acl2::packn-pos (list type-suffix '-of-cons) suffix))
        (type-suffix-of-append
         (acl2::packn-pos (list type-suffix '-of-append) suffix))
+       (elt-type-suffix-of-car-when-type-suffix
+        (acl2::packn-pos (list elt-type-suffix '-of-car-when- type-suffix)
+                         suffix))
        (type1 (add-suffix-to-fn type "1"))
        (thm-events
         (append
@@ -820,8 +824,15 @@
                   :enable (append
                            ,type-suffix
                            ,type-suffix-of-cons))
-                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                                '(,type-suffix-of-append)))))))
+                (defruled ,elt-type-suffix-of-car-when-type-suffix
+                  (implies (and (,type-suffix ,type ,@extra-args-names)
+                                (consp ,type))
+                           (,elt-type-suffix (car ,type) ,@extra-args-names))
+                  :enable ,type-suffix)
+                (add-to-ruleset
+                 ,(deffoldred-gen-ruleset-name suffix)
+                 '(,type-suffix-of-append
+                   ,elt-type-suffix-of-car-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
