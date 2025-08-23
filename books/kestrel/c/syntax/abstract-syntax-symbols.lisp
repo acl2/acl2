@@ -524,12 +524,14 @@
 
     ;; purity:
     expr-purep
+    expr-option-purep
 
     ;; formalized:
 
     ident-formalp
     expr-pure-formalp
     expr-asg-formalp
+    initer-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
@@ -542,6 +544,7 @@
     ldm-binop
     ldm-expr
     ldm-expr-option
+    ldm-initer
     ldm-stmt
     ldm-block-item
     ldm-block-item-list
@@ -588,6 +591,7 @@
     coerce-fundef-info
 
     expr-type
+    initer-type
     stmt-type
     block-item-type
     block-item-list-type

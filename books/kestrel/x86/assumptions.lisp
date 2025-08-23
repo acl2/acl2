@@ -18,6 +18,17 @@
 ;; Not sure where this should go:
 (in-theory (disable bitops::signed-byte-p-induct))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
+(defun lifter-targetp (target)
+  (declare (xargs :guard t))
+  (or (natp target)
+      (stringp target)
+      (eq :entry-point target)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a list of (untranslated) terms over STATE-VAR.
 (defund make-standard-state-assumptions-fn (state-var)
   (declare (xargs :guard (symbolp state-var)))
@@ -81,11 +92,3 @@
   (make-standard-state-assumptions x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
-;move?
-(defun lifter-targetp (target)
-  (declare (xargs :guard t))
-  (or (natp target)
-      (stringp target)
-      (eq :entry-point target)))

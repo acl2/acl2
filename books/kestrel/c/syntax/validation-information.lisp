@@ -798,6 +798,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define initer-type ((initer initerp))
+  :guard (initer-unambp initer)
+  :returns (type typep)
+  :short "Type of an initializer, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only cover the case of a single initializer,
+     for which we return the type of the underlying expression.
+     We return the unknown type for a non-single initializer for now."))
+  (initer-case
+   initer
+   :single (expr-type initer.expr)
+   :list (type-unknown))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stmt-type ((stmt stmtp))
   :guard (stmt-unambp stmt)
   :returns (type? type-optionp)

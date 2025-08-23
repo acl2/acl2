@@ -13,9 +13,8 @@
 
 (include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
 (include-book "canonical-unsigned")
-(include-book "assumptions") ; todo: for lifter-targetp
+(include-book "assumptions") ; for make-standard-state-assumptions-fn
 (include-book "assumptions-for-inputs")
-;(include-book "assumptions64")  ; reduce?
 (include-book "parsers/parsed-executable-tools")
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)

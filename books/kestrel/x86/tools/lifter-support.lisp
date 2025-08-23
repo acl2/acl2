@@ -18,6 +18,12 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "../read-and-write")
 
+;; We don't evaluate or open calls to feature-flag, so we don't want to be warned when
+;; ground calls of it appear
+(defconst *no-warn-ground-functions* '(feature-flag))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; An "output-indicator" indicates the desired result of lifting, either :all
 ;; or some component of the state.  There is no recognizer for an
 ;; output-indicator, such as 'output-indicatorp'.  Instead we call
