@@ -456,12 +456,12 @@
     acl2::bvmult-tighten-when-power-of-2p-axe ; helps rules like in-region48p-when-non-negative-and-negative-range fire
     ))
 
-;; Non-SMT-amendable read-of-write rules:
-(defund read-and-write-rules-non-bv ()
-  (declare (xargs :guard t))
-  '(read-of-write-irrel
-    read-of-write-when-separate ; todo: rename to have separate in the name
-    ))
+;; ;; Non-SMT-amendable read-of-write rules:
+;; (defund read-and-write-rules-non-bv ()
+;;   (declare (xargs :guard t))
+;;   '(read-of-write-irrel
+;;     read-of-write-when-separate ; todo: rename to have separate in the name
+;;     ))
 
 ;; SMT-amendable read-of-write rules:
 (defund read-and-write-rules-bv ()
@@ -487,6 +487,7 @@
     read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version?
     read-when-equal-of-read-and-subregion48p
     read-when-equal-of-read-and-subregion48p-alt
+    ;; todo: move these?:
     acl2::bvchop-of-+-becomes-bvplus
     ;;acl2::bvplus-of-*-arg1
     ;;acl2::bvplus-of-*-arg2
@@ -1930,6 +1931,18 @@
     ;; acl2::bvminus-of-+-arg3
     acl2::bvminus-of-+-cancel-arg3))
 
+;; todo: consider making a 32-bit variant (see above)
+(defund symbolic-execution-rules-loop-lifter ()
+  (declare (xargs :guard t))
+  '(;stack-height-increased-wrt
+    rsp-is-abovep
+    run-until-exit-segment-or-hit-loop-header-opener
+    run-until-exit-segment-or-hit-loop-header-base-case-1
+    run-until-exit-segment-or-hit-loop-header-base-case-2
+    run-until-exit-segment-or-hit-loop-header-base-case-3
+    run-until-exit-segment-or-hit-loop-header-of-if-split))
+
+;; todo: deprecate?
 (defund separate-rules ()
   (declare (xargs :guard t))
   '(x86isa::separate-normalize-r-w-x-1
@@ -5505,7 +5518,10 @@
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
-          (new-normal-form-rules64)))
+          (new-normal-form-rules64)
+          (read-and-write-rules-bv)
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6196,17 +6212,6 @@
 ;(x86isa::lifter-rules)
    ))
 
-;; todo: consider making a 32-bit variant (see above)
-(defund symbolic-execution-rules-loop-lifter ()
-  (declare (xargs :guard t))
-  '(;stack-height-increased-wrt
-    rsp-is-abovep
-    run-until-exit-segment-or-hit-loop-header-opener
-    run-until-exit-segment-or-hit-loop-header-base-case-1
-    run-until-exit-segment-or-hit-loop-header-base-case-2
-    run-until-exit-segment-or-hit-loop-header-base-case-3
-    run-until-exit-segment-or-hit-loop-header-of-if-split))
-
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
 (defund loop-lifter-invariant-preservation-rules ()
   (declare (xargs :guard t))
@@ -6280,14 +6285,16 @@
   (append (lifter-rules32)
           (old-normal-form-rules)))
 
-;; now same as unroller-rules64
+;; compare to unroller-rules64
 (defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
           (new-normal-form-rules64)
           ;(old-normal-form-rules)
-          ))
+          (read-and-write-rules-bv)
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
