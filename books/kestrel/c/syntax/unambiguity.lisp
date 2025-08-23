@@ -126,44 +126,6 @@
      they support guard and return proofs.
      We plan to extend @(tsee defpred) to generate at least some of these."))
 
-  ;; Theorems for option types (base implies option):
-
-  ;; (defrule expr-option-unambp-when-expr-unambp
-  ;;   (implies (expr-unambp expr)
-  ;;            (expr-option-unambp expr))
-  ;;   :expand (expr-option-unambp expr)
-  ;;   :enable expr-option-some->val)
-
-  ;; (defrule const-expr-option-unambp-when-const-expr-unambp
-  ;;   (implies (const-expr-unambp expr)
-  ;;            (const-expr-option-unambp expr))
-  ;;   :expand (const-expr-option-unambp expr)
-  ;;   :enable const-expr-option-some->val)
-
-  ;; (defrule initer-option-unambp-when-initer-unambp
-  ;;   (implies (initer-unambp initer)
-  ;;            (initer-option-unambp initer))
-  ;;   :expand (initer-option-unambp initer)
-  ;;   :enable initer-option-some->val)
-
-  ;; (defrule declor-option-unambp-when-declor-unambp
-  ;;   (implies (declor-unambp declor)
-  ;;            (declor-option-unambp declor))
-  ;;   :expand (declor-option-unambp declor)
-  ;;   :enable declor-option-some->val)
-
-  ;; (defrule absdeclor-option-unambp-when-absdeclor-unambp
-  ;;   (implies (absdeclor-unambp absdeclor)
-  ;;            (absdeclor-option-unambp absdeclor))
-  ;;   :expand (absdeclor-option-unambp absdeclor)
-  ;;   :enable absdeclor-option-some->val)
-
-  ;; (defrule dirabsdeclor-option-unambp-when-dirabsdeclor-unambp
-  ;;   (implies (dirabsdeclor-unambp dirabsdeclor)
-  ;;            (dirabsdeclor-option-unambp dirabsdeclor))
-  ;;   :expand (dirabsdeclor-option-unambp dirabsdeclor)
-  ;;   :enable dirabsdeclor-option-some->val)
-
   ;; Theorems for option types (option implies base if not nil):
 
   (defrule expr-unambp-when-expr-option-unambp-and-not-nil
