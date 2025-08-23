@@ -40,6 +40,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-listp" :dir :system)
+(include-book "kestrel/typed-lists-light/integer-list-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/lists-light/union-eql-tail" :dir :system)
@@ -1228,12 +1229,7 @@
            (min-so-far (min min-so-far integer-value)))
       (min-and-max-integer-list (rest list) min-so-far max-so-far))))
 
-(defun integer-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (integer-listp (first x))
-         (integer-list-listp (rest x)))))
+
 
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
