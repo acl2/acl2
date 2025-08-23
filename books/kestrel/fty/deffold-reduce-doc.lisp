@@ -352,7 +352,9 @@
       (xdoc::li
        "@('<type>-<suffix>-of-append')")
       (xdoc::li
-       "@('<elemtype>-<suffix>-of-car-when-<type>-<suffix>')"))
+       "@('<elemtype>-<suffix>-of-car-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-cdr-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))

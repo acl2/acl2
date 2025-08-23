@@ -798,6 +798,8 @@
        (elt-type-suffix-of-car-when-type-suffix
         (acl2::packn-pos (list elt-type-suffix '-of-car-when- type-suffix)
                          suffix))
+       (type-suffix-of-cdr-when-type-suffix
+        (acl2::packn-pos (list type-suffix '-of-cdr-when- type-suffix) suffix))
        (type1 (add-suffix-to-fn type "1"))
        (thm-events
         (append
@@ -829,10 +831,15 @@
                                 (consp ,type))
                            (,elt-type-suffix (car ,type) ,@extra-args-names))
                   :enable ,type-suffix)
+                (defruled ,type-suffix-of-cdr-when-type-suffix
+                  (implies (,type-suffix ,type ,@extra-args-names)
+                           (,type-suffix (cdr ,type) ,@extra-args-names))
+                  :enable ,type-suffix)
                 (add-to-ruleset
                  ,(deffoldred-gen-ruleset-name suffix)
                  '(,type-suffix-of-append
-                   ,elt-type-suffix-of-car-when-type-suffix)))))))
+                   ,elt-type-suffix-of-car-when-type-suffix
+                   ,type-suffix-of-cdr-when-type-suffix)))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
