@@ -123,7 +123,7 @@
 (acl2::ensure-rules-known (loop-lifter-rules32))
 (acl2::ensure-rules-known (loop-lifter-rules64))
 (acl2::ensure-rules-known (read-and-write-rules-bv))
-(acl2::ensure-rules-known (read-and-write-rules-non-bv))
+;; (acl2::ensure-rules-known (read-and-write-rules-non-bv))
 
 ;(in-theory (disable acl2::bvplus-of-minus1-tighten-32)) ;caused problems in proofs about examples
 
@@ -2645,20 +2645,14 @@
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
        (lifter-rules (if 32-bitp
                          (loop-lifter-rules32)
-                       (append (read-and-write-rules-bv) ;; (read-and-write-rules-non-bv)
-                               (if t ; todo
-                                   (append (unsigned-canonical-rules)
-                                           (canonical-rules-bv))
-                                 (canonical-rules-non-bv))
-                               (loop-lifter-rules64))))
-
+                       (loop-lifter-rules64)))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp dag events
-            ;; & ;;rules
-            & ;;next-loop-num
+            ;; & ; rules
+            & ; next-loop-num
             state)
-        (lift-code-segment 0 ; loop-depth;
+        (lift-code-segment 0 ; loop-depth
                            nil ; generated-events
                            1 ; next-loop-num
                            segment-offsets

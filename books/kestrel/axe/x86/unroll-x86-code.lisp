@@ -102,13 +102,13 @@
 (acl2::ensure-rules-known (unroller-rules32))
 (acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (read-and-write-rules-bv))
-(acl2::ensure-rules-known (read-and-write-rules-non-bv))
+;; (acl2::ensure-rules-known (read-and-write-rules-non-bv))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
 
 (local (defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv))))
-(local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
+;; (local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
 
 (local (in-theory (disable
                    ;; (:e new-normal-form-rules-common)
@@ -116,7 +116,7 @@
                    ;; (:e new-normal-form-rules64)
                    ;;  (:e constant-opener-rules)
                    (:e read-and-write-rules-bv)
-                   (:e read-and-write-rules-non-bv)
+                   ;; (:e read-and-write-rules-non-bv)
                    intersection-equal
                    acl2::append-of-cons-arg1 acl2::append-of-cons ; bad?
                    )))
@@ -1221,9 +1221,6 @@
         (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (lifter-rules (append (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
-                             (append (unsigned-canonical-rules) (canonical-rules-bv))
-                             lifter-rules))
        (symbolic-execution-rules (if stop-pcs
                                      (if 64-bitp
                                          (symbolic-execution-rules-with-stop-pcs64)
