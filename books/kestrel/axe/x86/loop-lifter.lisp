@@ -19,8 +19,6 @@
 
 ;; TODO: Consider using PC ranges for code segment, rather than lists of offsets.
 
-;; TODO: Remove the subroutine-length argument.
-
 ;; TODO: Maybe add back the option for non-flattened loop function params (then
 ;; maybe also support mentioning param names in measures).
 
@@ -319,8 +317,8 @@
 ;;segment for now...  Or check RBP?
 
 (defp run-until-exit-segment-or-hit-loop-header (starting-rsp
-                                                 segment-pcs ;a list of addresses (will not include the header of the current loop)
-                                                 loop-headers ;a list of addresses
+                                                 segment-pcs ; a list of addresses (will not include the header of the current loop), or :all
+                                                 loop-headers ; a list of addresses
                                                  x86)
   ;; If we've exited the subroutine call, then we've exited the segment, so stop:
   (if (rsp-is-abovep starting-rsp x86)
@@ -334,7 +332,8 @@
       (if nil ;;(stack-height-increased-wrt x86 starting-rsp) ;if we are in a subroutine call, take another step
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86))
         ;;the stack height is the same as the height of the segment:
-        (if (not (member (get-pc x86) segment-pcs))
+        (if (and (not (eq :all segment-pcs))
+                 (not (member (get-pc x86) segment-pcs)))
             x86 ;if we are at the right stack height and not at one of the segment pcs, we've exited the segment
           ;;otherwise, take a step:
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))))
@@ -348,7 +347,8 @@
 (defthm run-until-exit-segment-or-hit-loop-header-opener
   (implies (and ;(not (stack-height-increased-wrt x86 starting-rsp))
                 (not (rsp-is-abovep starting-rsp x86))
-                (memberp (get-pc x86) segment-pcs)
+                (or (eq :all segment-pcs)
+                    (memberp (get-pc x86) segment-pcs))
                 (not (memberp (get-pc x86) loop-headers)))
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
@@ -365,10 +365,11 @@
 
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-3
   (implies (and ;;(not (stack-height-increased-wrt x86 starting-rsp))
-                (not (rsp-is-abovep starting-rsp x86))
+             (not (rsp-is-abovep starting-rsp x86))
+                (consp segment-pcs) ;; easier to prove than (not (eq :all segment-pcs)) when segment-pcs is a symbolic cons nest
                 (not (memberp (get-pc x86) segment-pcs)))
            (equal (run-until-exit-segment-or-hit-loop-header
-                   starting-rsp
+                    starting-rsp
                    segment-pcs loop-headers x86)
                   x86)))
 
@@ -535,17 +536,17 @@
                             *no-warn-ground-functions*
                             nil)))
 
-(defun offsets-up-to (num base)
-  (declare (xargs :guard (and (or (natp num)
-                                  (eql -1 num))
-                              (natp base))
-                  :measure (if (not (natp num))
-                               0
-                             (+ 1 num))))
-  (if (not (natp num))
-      nil ; (reverse nil)
-    (cons (+ num base)
-          (offsets-up-to (+ -1 num) base))))
+;; (defun offsets-up-to (num base)
+;;   (declare (xargs :guard (and (or (natp num)
+;;                                   (eql -1 num))
+;;                               (natp base))
+;;                   :measure (if (not (natp num))
+;;                                0
+;;                              (+ 1 num))))
+;;   (if (not (natp num))
+;;       nil ; (reverse nil)
+;;     (cons (+ num base)
+;;           (offsets-up-to (+ -1 num) base))))
 
 (defun relative-pc-term (offset base)
   (declare (xargs :guard (and (integerp offset)
@@ -1723,7 +1724,7 @@
                    extra-rules
                    remove-rules
                    rules-to-monitor
-                   loop-alist
+                   loop-alist ; all relative to base-address
                    measure-alist
                    base-name
                    lifter-rules
@@ -1824,10 +1825,10 @@
         (- (cw "(~x0 assumptions hold before the loop: ~x1.)~%" (len loop-top-assumptions) loop-top-assumptions))
         (- (cw "(~x0 assumptions failed to hold at the loop top: ~x1)~%" (len failed-loop-top-assumptions) failed-loop-top-assumptions))
         ;; Now lift the loop body wrt the loop-top-assumptions
-        (this-loop-offsets (lookup-safe pc-offset loop-alist))
-        (this-loop-offsets-no-header (remove pc-offset this-loop-offsets))
-        (- (cw "(PC offsets in this loop: ~x0.)~%" this-loop-offsets))
-        ;; (segment-pc-terms (relative-pc-terms this-loop-offsets 'text-offset))
+        (this-loop-segment-offsets (lookup-safe pc-offset loop-alist)) ; relative to base-address
+        (this-loop-segment-offsets-no-header (remove pc-offset this-loop-segment-offsets)) ; relative to base-address
+        (- (cw "(PC offsets in this loop: ~x0.)~%" this-loop-segment-offsets))
+        ;; (segment-pc-terms (relative-pc-terms this-loop-segment-offsets 'text-offset))
         ;; (- (cw "(segment-pc-terms: ~x0)~%" segment-pc-terms))
         ;; TODO: This assumes there is a single loop:
         (all-loop-header-pc-terms (relative-pc-terms (list pc-offset) 'base-address))
@@ -1854,7 +1855,7 @@
 
         ;; Symbolically execute the loop body:
         ((mv erp loop-body-dag generated-events next-loop-num state)
-         (lift-code-segment loop-depth generated-events next-loop-num this-loop-offsets-no-header loop-body-assumptions extra-rules
+         (lift-code-segment loop-depth generated-events next-loop-num this-loop-segment-offsets-no-header loop-body-assumptions extra-rules
                             remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
@@ -2137,12 +2138,12 @@
                           loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                           generated-events
                           next-loop-num
-                          segment-offsets
+                          segment-offsets ; relative to base-address
                           assumptions ; over x86_0 and perhaps other vars (see the Essay on Variables)
                           extra-rules ; rules to enable
                           remove-rules
                           rules-to-monitor ; rules to monitor
-                          loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
+                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets ( relative to base-address) in the corresponding loops
                           measure-alist
                           base-name
                           lifter-rules
@@ -2241,7 +2242,8 @@
                           '(read '8 (rsp x86_0) x86_0))
                    (mv (erp-nil) t state)
                  (let ((pc-offset (get-added-offset pc-term 'base-address)))
-                   (if (member pc-offset segment-offsets)
+                   (if (or (eq :all segment-offsets)
+                           (member pc-offset segment-offsets))
                        ;; We have not exited the segment:
                        (mv (erp-nil) nil state)
                      ;; We have exited the segment:
@@ -2288,13 +2290,13 @@
                                loop-depth
                                generated-events
                                next-loop-num
-                               segment-offsets
+                               segment-offsets ; relative to base-address
                                assumptions
                                ;; rsp-term
                                extra-rules
                                remove-rules
                                rules-to-monitor
-                               loop-alist
+                               loop-alist ; all relative to base-address
                                measure-alist
                                base-name
                                lifter-rules
@@ -2304,19 +2306,21 @@
                                (posp next-loop-num)
                                (symbolp base-name)
                                (loop-alistp loop-alist)
-                               (nat-listp segment-offsets)
+                               (or (nat-listp segment-offsets)
+                                   (eq :all segment-offsets))
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
                                (acl2::print-levelp print))
                    :stobjs state))
-   (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'base-address))
-        (all-loop-header-offsets (strip-cars loop-alist))
+   (b* ((all-loop-header-offsets (strip-cars loop-alist))
         (all-loop-header-pc-terms (relative-pc-terms all-loop-header-offsets 'base-address))
         ;; TODO: Do we need to pass the RSP here, or is it enough to check whether we are in the code segment?
         (dag-to-run ;(mv erp dag-to-run)
           (compose-term-and-dags `(run-until-exit-segment-or-hit-loop-header :starting-rsp
-                                                                             ,(make-cons-nest segment-pc-terms)
+                                                                             ,(if (eq :all segment-offsets)
+                                                                                  '':all
+                                                                                (make-cons-nest (relative-pc-terms segment-offsets 'base-address)))
                                                                              ,(make-cons-nest all-loop-header-pc-terms)
                                                                              :state-dag)
                                  (acons :starting-rsp rsp-dag (acons :state-dag state-dag nil))
@@ -2407,13 +2411,13 @@
                            loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                            generated-events
                            next-loop-num
-                           segment-offsets ;;these represent PCs of the code segment to lift (if it's a loop body, should not include the loop header)
+                           segment-offsets ; these represent offset of the code segment to lift (if it's a loop body, should not include the loop header), relative to base-address, or :all if not in a loop body
                            assumptions ; over x86_0 and perhaps other vars (see the Essay on Variables)
                            extra-rules ; rules to enable
                            remove-rules ; rules to disable
                            rules-to-monitor ; rules to monitor
 ;                          starting-rsp ;tells us the stack height of the current subroutine
-                           loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
+                           loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets (relative to base-address) in the corresponding loops
                            measure-alist ;may be :skip
                            base-name
                            lifter-rules
@@ -2423,7 +2427,8 @@
                                (posp next-loop-num)
                                (symbolp base-name)
                                (loop-alistp loop-alist)
-                               (nat-listp segment-offsets)
+                               (or (nat-listp segment-offsets)
+                                   (eq :all segment-offsets))
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
@@ -2508,8 +2513,7 @@
                            target ; todo: add support for :entry-point and for a numeric offset
                            executable
                            stack-slots-needed
-                           subroutine-length ;todo: drop this (would need to support :all for the segment-pcs?)
-                           loop-alist
+                           loop-alist ; relative to the target-offset (but adjusted below)
                            extra-rules
                            remove-rules
                            produce-theorem
@@ -2528,8 +2532,9 @@
                            )
                   :mode :program
                   :stobjs state)
-           (ignore produce-theorem non-executable) ; todo
-           )
+           (ignore produce-theorem ; todo
+                   non-executable ; todo
+                   ))
   (b* ( ;; Check whether this call to the lifter has already been made:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
@@ -2547,18 +2552,10 @@
        ((when (eq :none loop-alist))
         (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
         (mv (erp-t) nil state))
-       ((when (eq :none subroutine-length))
-        (er hard? 'lift-subroutine-fn "No :subroutine-length supplied (should be the length, in bytes, of the target subroutine).")
-        (mv (erp-t) nil state))
        ((when (not (natp stack-slots-needed)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots-needed: ~x0" stack-slots-needed)
                 (mv (erp-t) nil state)))
-       ((when (not (natp subroutine-length)))
-        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for subroutine-length: ~x0" subroutine-length)
-                (mv (erp-t) nil state)))
-       ((when (not (and (loop-alistp loop-alist)
-                        ;(all-< loop-header-offset subroutine-length)
-                        )))
+       ((when (not (and (loop-alistp loop-alist))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
        ((when (not (or (symbol-listp monitor)
@@ -2633,9 +2630,6 @@
               (mv :unsupported-executable-type nil)))))
        ((when erp) (mv erp nil state))
 
-       ;; TODO: Not all of these are necessarily locations of instructions (should we give a range?):
-       ;; TODO: What about offset 0?
-       (segment-offsets (offsets-up-to (- subroutine-length 1) target-offset))
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
@@ -2653,7 +2647,7 @@
         (lift-code-segment 0 ; loop-depth
                            nil ; generated-events
                            1 ; next-loop-num
-                           segment-offsets
+                           :all ; segment-offsets
                            assumptions
                            extra-rules
                            remove-rules
@@ -2735,7 +2729,6 @@
                            &key
                            (target ':none) ; required (for now).  must be a string naming a subroutine
                            (executable ':none) ; required, a string (filename), or (for example) a defconst created by defconst-x86
-                           (subroutine-length ':none) ; todo: drop
                            (extra-assumptions 'nil)
                            (loops ':none) ; required (for now)
                            (stack-slots '10)
@@ -2752,7 +2745,6 @@
                                    ',target
                                    ,executable
                                    ',stack-slots
-                                   ',subroutine-length
                                    ',loops
                                    ,extra-rules
                                    ,remove-rules

@@ -47,7 +47,6 @@
 (lift-subroutine factorial
                  :target "_fact"
                  :executable "factorial.macho64"
-                 :subroutine-length 60 ;number of bytes in fact
                  :loops ((20 . ;offset to loop header
                              (20 24 30 33 37 40 43 46 49) ;loop pc offsets
                              ))
