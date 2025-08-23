@@ -124,7 +124,8 @@
    (xdoc::p
     "These are mentioned in @(see unambiguity):
      they support guard and return proofs.
-     We plan to extend @(tsee defpred) to generate at least some of these."))
+     We plan to extend @(tsee fty::deffold-reduce)
+     to generate at least some of these."))
 
   ;; Theorems for option types (option implies base if not nil):
 
