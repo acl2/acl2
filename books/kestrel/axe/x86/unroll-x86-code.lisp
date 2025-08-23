@@ -1126,7 +1126,7 @@
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+       (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Make sure it's an x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
