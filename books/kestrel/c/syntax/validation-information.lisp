@@ -44,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uident
+(fty::defprod uid
   :short "Unique identifiers."
   :long
   (xdoc::topstring
@@ -59,22 +59,22 @@
      to aid subsequent analysis. By annotating identifiers
      with their unique alias, disambiguation of variables becomes simple."))
   ((ident nat))
-  :pred uidentp)
+  :pred uidp)
 
-(defirrelevant irr-uident
+(defirrelevant irr-uid
   :short "An irrelevant unique identifier."
-  :type uidentp
-  :body (uident 0))
+  :type uidp
+  :body (uid 0))
 
-(define uident-increment ((uident uidentp))
-  :returns (new-uident uidentp)
+(define uid-increment ((uid uidp))
+  :returns (new-uid uidp)
   :short "Create a fresh unique identifier."
   :long
   (xdoc::topstring
    (xdoc::p
     "This simply increments the numerical value of the unique identifier."))
-  (b* (((uident uident) uident))
-    (uident (1+ uident.ident)))
+  (b* (((uid uid) uid))
+    (uid (1+ uid.ident)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,7 +218,7 @@
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
      We also assign a "
-    (xdoc::seetopic "uident" "unique identifier")
+    (xdoc::seetopic "uid" "unique identifier")
     ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
@@ -228,7 +228,7 @@
   (:objfun ((type type)
             (linkage linkage)
             (defstatus valid-defstatus)
-            (uident uident)))
+            (uid uid)))
   (:enumconst ())
   (:typedef ((def type)))
   :pred valid-ord-infop)
@@ -389,11 +389,11 @@
      The information for a variable consists of
      the type and linkage of the object denoted by the variable,
      as well as a "
-    (xdoc::seetopic "uident" "unique identifier")
+    (xdoc::seetopic "uid" "unique identifier")
     "."))
   ((type type)
    (linkage linkage)
-   (uident uident))
+   (uid uid))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -403,7 +403,7 @@
   :type var-infop
   :body (make-var-info :type (irr-type)
                        :linkage (irr-linkage)
-                       :uident (irr-uident)))
+                       :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
