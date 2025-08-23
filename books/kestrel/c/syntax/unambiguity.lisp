@@ -12,7 +12,8 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "code-ensembles")
-(include-book "defpred")
+
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -56,13 +57,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpred unambp
-  :short "Definition of the unambiguity predicates,
-          with accompanying theorems."
+(fty::deffold-reduce unambp
+  :short "Definition of the unambiguity predicates."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee defpred) to define these predicates concisely.")
+    "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
    (xdoc::p
     "The @(':default') value is @('t'),
      because constructs like identifiers and constants are unambiguous;
@@ -79,7 +79,21 @@
    (xdoc::p
     "We override the boilerplate to return @('t') on
      GCC attributes, attribute specifiers, and assembler constructs."))
+  :types (exprs/decls/stmts
+          type-spec-list
+          expr/tyname
+          declor/absdeclor
+          decl/stmt
+          fundef
+          fundef-option
+          extdecl
+          extdecl-list
+          transunit
+          filepath-transunit-map
+          transunit-ensemble)
+  :result booleanp
   :default t
+  :combine and
   :override
   ((expr :sizeof-ambig nil)
    (expr :cast/call-ambig nil)
@@ -110,45 +124,8 @@
    (xdoc::p
     "These are mentioned in @(see unambiguity):
      they support guard and return proofs.
-     We plan to extend @(tsee defpred) to generate at least some of these."))
-
-  ;; Theorems for option types (base implies option):
-
-  (defrule expr-option-unambp-when-expr-unambp
-    (implies (expr-unambp expr)
-             (expr-option-unambp expr))
-    :expand (expr-option-unambp expr)
-    :enable expr-option-some->val)
-
-  (defrule const-expr-option-unambp-when-const-expr-unambp
-    (implies (const-expr-unambp expr)
-             (const-expr-option-unambp expr))
-    :expand (const-expr-option-unambp expr)
-    :enable const-expr-option-some->val)
-
-  (defrule initer-option-unambp-when-initer-unambp
-    (implies (initer-unambp initer)
-             (initer-option-unambp initer))
-    :expand (initer-option-unambp initer)
-    :enable initer-option-some->val)
-
-  (defrule declor-option-unambp-when-declor-unambp
-    (implies (declor-unambp declor)
-             (declor-option-unambp declor))
-    :expand (declor-option-unambp declor)
-    :enable declor-option-some->val)
-
-  (defrule absdeclor-option-unambp-when-absdeclor-unambp
-    (implies (absdeclor-unambp absdeclor)
-             (absdeclor-option-unambp absdeclor))
-    :expand (absdeclor-option-unambp absdeclor)
-    :enable absdeclor-option-some->val)
-
-  (defrule dirabsdeclor-option-unambp-when-dirabsdeclor-unambp
-    (implies (dirabsdeclor-unambp dirabsdeclor)
-             (dirabsdeclor-option-unambp dirabsdeclor))
-    :expand (dirabsdeclor-option-unambp dirabsdeclor)
-    :enable dirabsdeclor-option-some->val)
+     We plan to extend @(tsee fty::deffold-reduce)
+     to generate at least some of these."))
 
   ;; Theorems for option types (option implies base if not nil):
 
@@ -1772,7 +1749,8 @@
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-spec/qual-list-all-typespec)
+    :enable (check-spec/qual-list-all-typespec
+             abstract-syntax-unambp-rules))
 
   (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec
     (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec specquals)))
@@ -1780,7 +1758,8 @@
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-decl-spec-list-all-typespec)
+    :enable (check-decl-spec-list-all-typespec
+             abstract-syntax-unambp-rules))
 
   (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec/stoclass
     (b* (((mv okp tyspecs &)
@@ -1789,7 +1768,8 @@
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-decl-spec-list-all-typespec/stoclass))
+    :enable (check-decl-spec-list-all-typespec/stoclass
+             abstract-syntax-unambp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1812,7 +1792,8 @@
     (implies (expr-unambp expr)
              (expr-list-unambp (expr-to-asg-expr-list expr)))
     :induct t
-    :enable expr-to-asg-expr-list)
+    :enable (expr-to-asg-expr-list
+             abstract-syntax-unambp-rules))
 
   (defrule expr-unambp-of-check-expr-mul
     (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))

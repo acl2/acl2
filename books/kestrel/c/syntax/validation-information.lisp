@@ -17,6 +17,8 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -792,6 +794,24 @@
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-type ((initer initerp))
+  :guard (initer-unambp initer)
+  :returns (type typep)
+  :short "Type of an initializer, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only cover the case of a single initializer,
+     for which we return the type of the underlying expression.
+     We return the unknown type for a non-single initializer for now."))
+  (initer-case
+   initer
+   :single (expr-type initer.expr)
+   :list (type-unknown))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

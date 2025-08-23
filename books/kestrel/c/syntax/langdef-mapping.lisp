@@ -16,6 +16,8 @@
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ mapping-to-language-definition

@@ -19,8 +19,6 @@
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
-(include-book "defpred")
-(include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "builtin")
@@ -76,13 +74,6 @@
     "The idea of this tool-oriented abstract syntax is also discussed in
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
      We plan to have ATC use this new tool-oriented abstract syntax.")
-   (xdoc::p
-    "We provide a macro tool @(tsee defpred)
-     to concisely define predicates over the abstract syntax.
-     This should be fairly easy to generalize to
-     a more general tool for "
-    (xdoc::seetopic "fty::fty" "fixtypes")
-    ".")
    (xdoc::p
     "Accompanying our abstract syntax,
      we provide a concrete syntax, based on an ABNF grammar.
@@ -200,7 +191,6 @@
   :order-subtopics (concrete-syntax
                     abstract-syntax
                     code-ensembles
-                    defpred
                     unambiguity
                     validation-information
                     ascii-identifiers

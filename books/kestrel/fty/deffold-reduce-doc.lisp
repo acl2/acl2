@@ -337,6 +337,7 @@
      (xdoc::p
       "For each @(tsee deflist) type @('<type>')
        specified by the @(':types') input,
+       with element type @('<elemtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
@@ -349,7 +350,13 @@
        the following additional theorems are generated:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-of-append')"))
+       "@('<type>-<suffix>-of-append')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-rcons')")
+      (xdoc::li
+       "@('<elemtype>-<suffix>-of-car-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-cdr-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
