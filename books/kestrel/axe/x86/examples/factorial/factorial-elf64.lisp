@@ -48,7 +48,6 @@
 (lift-subroutine factorial
                  :target "fact"
                  :executable "factorial.elf64"
-                 :subroutine-length 50 ; number of bytes in fact
                  :loops ((40 . ;offset to loop header
                              (40 44 26 29 33 36) ; offsets to instructions in loop
                              ))

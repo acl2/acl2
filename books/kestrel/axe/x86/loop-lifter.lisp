@@ -19,8 +19,6 @@
 
 ;; TODO: Consider using PC ranges for code segment, rather than lists of offsets.
 
-;; TODO: Remove the subroutine-length argument.
-
 ;; TODO: Maybe add back the option for non-flattened loop function params (then
 ;; maybe also support mentioning param names in measures).
 
@@ -106,10 +104,12 @@
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
-(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
+;(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
+(include-book "kestrel/typed-lists-light/integer-list-listp" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;for logext-identity
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/terms-light/all-vars1" :dir :system))
 
 (local (in-theory (enable acl2::member-equal-becomes-memberp))) ;todo
 
@@ -121,7 +121,7 @@
 (acl2::ensure-rules-known (loop-lifter-rules32))
 (acl2::ensure-rules-known (loop-lifter-rules64))
 (acl2::ensure-rules-known (read-and-write-rules-bv))
-(acl2::ensure-rules-known (read-and-write-rules-non-bv))
+;; (acl2::ensure-rules-known (read-and-write-rules-non-bv))
 
 ;(in-theory (disable acl2::bvplus-of-minus1-tighten-32)) ;caused problems in proofs about examples
 
@@ -274,8 +274,8 @@
 (defun loop-alistp (alist)
   (declare (xargs :guard t))
   (and (alistp alist)
-       (nat-listp (strip-cars alist))
-       (acl2::nat-list-listp (strip-cdrs alist))))
+       (integer-listp (strip-cars alist)) ; may need to be negative if relative to the target?
+       (acl2::integer-list-listp (strip-cdrs alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,8 +317,8 @@
 ;;segment for now...  Or check RBP?
 
 (defp run-until-exit-segment-or-hit-loop-header (starting-rsp
-                                                 segment-pcs ;a list of addresses (will not include the header of the current loop)
-                                                 loop-headers ;a list of addresses
+                                                 segment-pcs ; a list of addresses (will not include the header of the current loop), or :all
+                                                 loop-headers ; a list of addresses
                                                  x86)
   ;; If we've exited the subroutine call, then we've exited the segment, so stop:
   (if (rsp-is-abovep starting-rsp x86)
@@ -332,7 +332,8 @@
       (if nil ;;(stack-height-increased-wrt x86 starting-rsp) ;if we are in a subroutine call, take another step
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86))
         ;;the stack height is the same as the height of the segment:
-        (if (not (member (get-pc x86) segment-pcs))
+        (if (and (not (eq :all segment-pcs))
+                 (not (member (get-pc x86) segment-pcs)))
             x86 ;if we are at the right stack height and not at one of the segment pcs, we've exited the segment
           ;;otherwise, take a step:
           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))))
@@ -346,7 +347,8 @@
 (defthm run-until-exit-segment-or-hit-loop-header-opener
   (implies (and ;(not (stack-height-increased-wrt x86 starting-rsp))
                 (not (rsp-is-abovep starting-rsp x86))
-                (memberp (get-pc x86) segment-pcs)
+                (or (eq :all segment-pcs)
+                    (memberp (get-pc x86) segment-pcs))
                 (not (memberp (get-pc x86) loop-headers)))
            (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers x86)
                   (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (x86-fetch-decode-execute x86)))))
@@ -363,10 +365,11 @@
 
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-3
   (implies (and ;;(not (stack-height-increased-wrt x86 starting-rsp))
-                (not (rsp-is-abovep starting-rsp x86))
+             (not (rsp-is-abovep starting-rsp x86))
+                (consp segment-pcs) ;; easier to prove than (not (eq :all segment-pcs)) when segment-pcs is a symbolic cons nest
                 (not (memberp (get-pc x86) segment-pcs)))
            (equal (run-until-exit-segment-or-hit-loop-header
-                   starting-rsp
+                    starting-rsp
                    segment-pcs loop-headers x86)
                   x86)))
 
@@ -390,7 +393,7 @@
 ;; aliasing? Maybe we only introduce such vars for registers?  Or maybe it's
 ;; okay to refer to the same input with several names.)  Assumptions can be
 ;; over the variable x86 and perhaps other vars.  Equality assumptions can be
-;; used to introduce the pther vars.
+;; used to introduce the other vars.
 
 ;; ;; Repeatedly advance the state and lift loops.
 ;; ;; Returns (mv erp event state)
@@ -533,17 +536,17 @@
                             *no-warn-ground-functions*
                             nil)))
 
-(defun offsets-up-to (num base)
-  (declare (xargs :guard (and (or (natp num)
-                                  (eql -1 num))
-                              (natp base))
-                  :measure (if (not (natp num))
-                               0
-                             (+ 1 num))))
-  (if (not (natp num))
-      nil ; (reverse nil)
-    (cons (+ num base)
-          (offsets-up-to (+ -1 num) base))))
+;; (defun offsets-up-to (num base)
+;;   (declare (xargs :guard (and (or (natp num)
+;;                                   (eql -1 num))
+;;                               (natp base))
+;;                   :measure (if (not (natp num))
+;;                                0
+;;                              (+ 1 num))))
+;;   (if (not (natp num))
+;;       nil ; (reverse nil)
+;;     (cons (+ num base)
+;;           (offsets-up-to (+ -1 num) base))))
 
 (defun relative-pc-term (offset base)
   (declare (xargs :guard (and (integerp offset)
@@ -570,35 +573,35 @@
 
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 
-;; Replace state vars in the assumptions with the current state-var and try to
+;; Replace state-vars in the assumptions with the current state-dag and try to
 ;; show that they still hold.  Returns (mv erp proved-assumptions
 ;; failed-assumptions state).  TODO: Don't bother to try
 ;; ones that are only about the RSP, since we push back the RSP of state-var
 ;; anyway?
-(defund try-to-reestablish-assumptions (assumptions
-                                  rule-alist
-                                  rules-to-monitor
-                                  state-dag
-                                  state-var
-                                  previous-state-vars
-                                  all-assumptions
-                                  proved-assumptions-acc
-                                  failed-assumptions-acc
-                                  print
-                                  known-booleans
-                                  state)
+(defund try-to-reestablish-assumptions (assumptions ; over previous state var(s) and perhaps base-address
+                                        state-dag
+                                        state-var ; the successful assumptions returned are rephrased to be over this var
+                                        previous-state-vars
+                                        all-assumptions ; over previous state var(s) and perhaps base-address
+                                        rule-alist
+                                        rules-to-monitor
+                                        print
+                                        known-booleans
+                                        proved-assumptions-acc
+                                        failed-assumptions-acc
+                                        state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
-                              (acl2::rule-alistp rule-alist)
-                              (symbol-listp rules-to-monitor)
                               (acl2::pseudo-dagp state-dag)
-                              (<= (len state-dag) 1152921504606846974)
+                              (<= (len state-dag) 1152921504606846974) ; or thrown an error if it is too big
                               (symbolp state-var)
                               (symbol-listp previous-state-vars)
                               (pseudo-term-listp all-assumptions)
-                              (pseudo-term-listp proved-assumptions-acc)
-                              (pseudo-term-listp failed-assumptions-acc)
+                              (acl2::rule-alistp rule-alist)
+                              (symbol-listp rules-to-monitor)
                               (acl2::print-levelp print)
-                              (symbol-listp known-booleans))
+                              (symbol-listp known-booleans)
+                              (pseudo-term-listp proved-assumptions-acc)
+                              (pseudo-term-listp failed-assumptions-acc))
                   :stobjs state))
   (if (endp assumptions)
       (mv (erp-nil)
@@ -606,12 +609,20 @@
           (reverse failed-assumptions-acc)
           state)
     (b* ((assumption (first assumptions))
+         ((when (not (intersection-eq (all-vars assumption) previous-state-vars)))
+          (cw "(Skipping ~x0 as it mentions no state vars.)~%" assumption)
+          (try-to-reestablish-assumptions (rest assumptions) state-dag state-var previous-state-vars all-assumptions
+                                          rule-alist rules-to-monitor print known-booleans
+                                          proved-assumptions-acc failed-assumptions-acc
+                                          state))
+         ;; We replace *all* previous-state-vars in the assumpton with STATE-DAG:
+         ;; TODO: Think about this:
          (updated-assumption (acl2::sublis-var-simple (map-all-to-val previous-state-vars state-var) assumption))
-         (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
+         (- (cw "(Attempting to prove updated assumption holds at the loop top:~%~x0~%" updated-assumption))
          ((mv erp dag-to-prove) (acl2::wrap-term-around-dag updated-assumption state-var state-dag))
          ((when erp) (mv erp nil nil state))
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
-         (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
+         ;; (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
          ((mv erp res & state)
           (if (quotep dag-to-prove)
@@ -627,27 +638,19 @@
                                     nil
                                     state)))
          ((when erp) (mv erp nil nil state)))
-      (if (equal res *t*) ;todo: allow other non-nil constants?
+      (if (equal res *t*) ;todo: allow other non-nil constants?  or at least warn
           (prog2$ (cw "Success.)~%")
-                  (try-to-reestablish-assumptions (rest assumptions)
-                                             rule-alist
-                                             rules-to-monitor
-                                             state-dag state-var previous-state-vars all-assumptions
-                                             (cons updated-assumption proved-assumptions-acc)
-                                             failed-assumptions-acc
-                                             print
-                                             known-booleans
-                                             state))
+                  (try-to-reestablish-assumptions (rest assumptions) state-dag state-var previous-state-vars all-assumptions
+                                                  rule-alist rules-to-monitor print known-booleans
+                                                  (cons updated-assumption proved-assumptions-acc)
+                                                  failed-assumptions-acc
+                                                  state))
         (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
-                (try-to-reestablish-assumptions (rest assumptions)
-                                           rule-alist
-                                           rules-to-monitor
-                                           state-dag state-var previous-state-vars all-assumptions
-                                           proved-assumptions-acc
-                                           (cons updated-assumption failed-assumptions-acc)
-                                           print
-                                           known-booleans
-                                           state))))))
+                (try-to-reestablish-assumptions (rest assumptions) state-dag state-var previous-state-vars all-assumptions
+                                                rule-alist rules-to-monitor print known-booleans
+                                                proved-assumptions-acc
+                                                (cons updated-assumption failed-assumptions-acc)
+                                                state))))))
 
 (defun get-added-offset (term base-var)
   (if (eq term base-var)
@@ -966,15 +969,15 @@
 (defun check-and-split-one-rep-term (term state-var)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp state-var))))
-  (b* (((mv xws-okp setter-pairs term) (check-and-extract-setter-pairs term nil))
+  (b* (((mv setters-okp setter-pairs term) (check-and-extract-setter-pairs term nil))
        ((mv writes-okp write-triples term) (check-and-extract-writes term nil))
        ((mv flags-okp flag-pairs term) (check-and-extract-flags term nil))
        ;; we do this again so we can get the set-undef, which is usually buried:
-       ((mv xws-okp2 setter-pairs2 term) (check-and-extract-setter-pairs term nil)))
+       ((mv setters-okp2 setter-pairs2 term) (check-and-extract-setter-pairs term nil)))
     (if (not (eq state-var term))
         (prog2$ (er hard? 'check-and-split-one-rep-term "Unexpected core term: ~X01." term nil)
                 (mv (erp-t) nil nil nil))
-      (mv (and xws-okp writes-okp flags-okp xws-okp2)
+      (mv (and setters-okp writes-okp flags-okp setters-okp2)
           (append setter-pairs setter-pairs2)
           write-triples
           flag-pairs))))
@@ -1171,8 +1174,7 @@
                 ;; A read with the BV normal form:
                 (mv-let (matchp alist)
                   ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
-                  ;; todo: generalize the 4 here?:
-                  (acl2::unify-term expr '(read '4 (bvplus '48 :offset (rsp :state-var)) :state-var2))
+                  (acl2::unify-term expr '(read :size (bvplus '48 :offset (rsp :state-var)) :state-var2))
                   (if matchp
                       (if (and state-var
                                (or (not (equal state-var (lookup-eq :state-var alist)))
@@ -1181,7 +1183,7 @@
                         (let ((offset (lookup-eq :offset alist)))
                           (if (not (and (myquotep offset)
                                         (integerp (unquote offset))
-                                        (< (logext 48 (unquote offset)) 0)
+                                        (< (logext 48 (unquote offset)) 0) ; todo: allow this?
                                         ))
                               "Unsupported memory read."
                             (pack-in-package-of-symbol 'var 'var (- (logext 48 (unquote offset)))))))
@@ -1268,6 +1270,13 @@
               (pseudo-termp val)
               (paramnum-update-alistp a)))
   :hints (("Goal" :in-theory (enable paramnum-update-alistp))))
+
+(local
+  (defthm paramnum-update-alistp-forward-to-alistp
+    (implies (paramnum-update-alistp a)
+             (alistp a))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable paramnum-update-alistp)))))
 
 (defun paramnum-extractor-alistp (a)
   (declare (xargs :guard t))
@@ -1475,11 +1484,10 @@
 
 (mutual-recursion
 
- ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+ ;; Returns (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
  ;; TODO Handle more things here (maybe get-flag)!
  (defun make-read-only-parameters-for-expr (expr
                                             next-param-number
-                                            updated-state-term
                                             paramnum-update-alist
                                             paramnum-extractor-alist
                                             paramnum-name-alist
@@ -1488,7 +1496,6 @@
                                             )
    (declare (xargs :guard (and (pseudo-termp expr)
                                (natp next-param-number)
-                               (pseudo-termp updated-state-term)
                                (paramnum-update-alistp paramnum-update-alist)
                                (paramnum-extractor-alistp paramnum-extractor-alist)
                                (paramnum-name-alistp paramnum-name-alist)
@@ -1496,16 +1503,17 @@
                    :verify-guards nil ; done below
                    ))
    (if (member-equal (acl2::sublis-var-simple (acons state-var :initial-loop-top-state nil) expr)
-                     (strip-cdrs paramnum-extractor-alist)) ;this expr already corresponds to a param
-       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+                     (strip-cdrs paramnum-extractor-alist)) ; todo: optimize
+       ;;this expr already corresponds to a param:
+       (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
      (if (variablep expr)
          (if nil ; (member-eq expr extra-vars)
-             (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+             (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
            (prog2$ (er hard? 'make-read-only-parameters-for-expr "Unexpected var: ~x0." expr)
-                   (mv nil nil nil nil nil)))
+                   (mv next-param-number nil nil nil)))
        (if (quotep expr)
            ;; nothing to do:
-           (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+           (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (let ((fn (ffn-symb expr)))
            (if (eq 'read fn)
                (b* ((n (farg1 expr)) ;often quoted
@@ -1513,9 +1521,9 @@
                     (state-term (farg3 expr))
                     ((when (not (eq state-term state-var)))
                      (er hard? 'make-read-only-parameters-for-expr "Unexpected read term: ~x0." expr)
-                     (mv nil nil nil nil nil))
+                     (mv next-param-number nil nil nil))
                     ;; make a read-only param:
-                    ;; TODO: If it's a read-only-param, why are we writing it here?:
+                    ;; Since it's a read-only-param, there is no need to update the updated-state-term
                     ;; (updated-state-term `(write ,n ,base-addr (nth ',next-param-number :loop-function-result) ,updated-state-term))
                     ;; The param gets updated with the read expression itself:
                     (paramnum-update-alist (acons next-param-number expr ;value-term
@@ -1526,14 +1534,14 @@
                     (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
                     (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                     )
-                 (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                 (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
              (if (member-eq fn *getters*)
                  (b* ((state-term (farg1 expr))
                       ((when (not (eq state-term state-var)))
                        (er hard? 'make-read-only-parameters-for-expr "Unexpected getter term: ~x0." expr)
-                       (mv nil nil nil nil nil))
+                       (mv next-param-number nil nil nil))
                       ;; make a read-only param:
-                      ;; TODO: If it's a read-only-param, why are we writing it here?:
+                      ;; Since it's a read-only-param, there is no need to update the updated-state-term
                       ;; (updated-state-term `(xw ':rgf ,index (nth ',next-param-number :loop-function-result) ,updated-state-term))
                       ;; The param gets updated with the read expression itself:
                       (paramnum-update-alist (acons next-param-number expr ;value-term
@@ -1545,11 +1553,10 @@
                       (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
                       (paramnum-name-alist (acons next-param-number param-name paramnum-name-alist))
                       )
-                   (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                   (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
                ;;  Otherwise, recur on the args:
                (make-read-only-parameters-for-exprs (fargs expr)
                                                     next-param-number
-                                                    updated-state-term
                                                     paramnum-update-alist
                                                     paramnum-extractor-alist
                                                     paramnum-name-alist
@@ -1557,10 +1564,9 @@
                                                     ;; extra-vars
                                                     ))))))))
 
- ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+ ;; Returns (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
  (defun make-read-only-parameters-for-exprs (exprs
                                              next-param-number
-                                             updated-state-term
                                              paramnum-update-alist
                                              paramnum-extractor-alist
                                              paramnum-name-alist
@@ -1569,18 +1575,16 @@
                                              )
    (declare (xargs :guard (and (pseudo-term-listp exprs)
                                (natp next-param-number)
-                               (pseudo-termp updated-state-term)
                                (paramnum-update-alistp paramnum-update-alist)
                                (paramnum-extractor-alistp paramnum-extractor-alist)
                                (paramnum-name-alistp paramnum-name-alist)
                                (symbolp state-var))))
    (if (endp exprs)
-       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+       (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
      (b* ((expr (first exprs))
-          ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+          ((mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
            (make-read-only-parameters-for-expr expr
                                                next-param-number
-                                               updated-state-term
                                                paramnum-update-alist
                                                paramnum-extractor-alist
                                                paramnum-name-alist
@@ -1589,7 +1593,6 @@
                                                )))
        (make-read-only-parameters-for-exprs (rest exprs)
                                             next-param-number
-                                            updated-state-term
                                             paramnum-update-alist
                                             paramnum-extractor-alist
                                             paramnum-name-alist
@@ -1599,56 +1602,58 @@
 
 (local (acl2::make-flag make-read-only-parameters-for-expr))
 
-;; (defthm-flag-make-read-only-parameters-for-expr
-;;   (defthm theorem-for-make-read-only-parameters-for-expr
-;;     (implies (and (pseudo-termp expr)
-;;                   (natp next-param-number)
-;;                   (pseudo-termp updated-state-term)
-;;                   (paramnum-update-alistp paramnum-update-alist)
-;;                   (paramnum-extractor-alistp paramnum-extractor-alist)
-;;                   (paramnum-name-alistp paramnum-name-alist)
-;;                   (symbolp state-var))
-;;              (and (natp (mv-nth 0 (make-read-only-parameters-for-expr expr next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (pseudo-termp (mv-nth 1 (make-read-only-parameters-for-expr expr next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-update-alistp (mv-nth 2 (make-read-only-parameters-for-expr expr next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-extractor-alistp (mv-nth 3 (make-read-only-parameters-for-expr expr next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-name-alistp (mv-nth 4 (make-read-only-parameters-for-expr expr next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))))
-;;     :flag make-read-only-parameters-for-expr)
-;;   (defthm theorem-for-make-read-only-parameters-for-exprs
-;;     (implies (and (pseudo-term-listp exprs)
-;;                   (natp next-param-number)
-;;                   (pseudo-termp updated-state-term)
-;;                   (paramnum-update-alistp paramnum-update-alist)
-;;                   (paramnum-extractor-alistp paramnum-extractor-alist)
-;;                   (paramnum-name-alistp paramnum-name-alist)
-;;                   (symbolp state-var))
-;;              (and (natp (mv-nth 0 (make-read-only-parameters-for-exprs exprs next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (pseudo-termp (mv-nth 1 (make-read-only-parameters-for-exprs exprs next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-update-alistp (mv-nth 2 (make-read-only-parameters-for-exprs exprs next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-extractor-alistp (mv-nth 3 (make-read-only-parameters-for-exprs exprs next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
-;;                   (paramnum-name-alistp (mv-nth 4 (make-read-only-parameters-for-exprs exprs next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))))
-;;     :flag make-read-only-parameters-for-exprs))
+(local
+  (defthm-flag-make-read-only-parameters-for-expr
+    (defthm theorem-for-make-read-only-parameters-for-expr
+      (implies (and (pseudo-termp expr)
+                    (natp next-param-number)
+                    (paramnum-update-alistp paramnum-update-alist)
+                    (paramnum-extractor-alistp paramnum-extractor-alist)
+                    (paramnum-name-alistp paramnum-name-alist)
+                    (symbolp state-var))
+               (and (natp (mv-nth 0 (make-read-only-parameters-for-expr expr next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-update-alistp (mv-nth 1 (make-read-only-parameters-for-expr expr next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-extractor-alistp (mv-nth 2 (make-read-only-parameters-for-expr expr next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-name-alistp (mv-nth 3 (make-read-only-parameters-for-expr expr next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))))
+      :flag make-read-only-parameters-for-expr)
+    (defthm theorem-for-make-read-only-parameters-for-exprs
+      (implies (and (pseudo-term-listp exprs)
+                    (natp next-param-number)
+                    (paramnum-update-alistp paramnum-update-alist)
+                    (paramnum-extractor-alistp paramnum-extractor-alist)
+                    (paramnum-name-alistp paramnum-name-alist)
+                    (symbolp state-var))
+               (and (natp (mv-nth 0 (make-read-only-parameters-for-exprs exprs next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-update-alistp (mv-nth 1 (make-read-only-parameters-for-exprs exprs next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-extractor-alistp (mv-nth 2 (make-read-only-parameters-for-exprs exprs next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))
+                    (paramnum-name-alistp (mv-nth 3 (make-read-only-parameters-for-exprs exprs next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)))))
+      :flag make-read-only-parameters-for-exprs)))
 
-; (verify-guards make-read-only-parameters-for-expr :otf-flg t) ; todo
+(verify-guards make-read-only-parameters-for-expr)
 
-;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+;; Returns (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
 (defun make-read-only-parameters (paramnum-update-alist-to-check ; we harvest terms from the cdrs of this
                                   next-param-number
-                                  updated-state-term
                                   paramnum-update-alist
                                   paramnum-extractor-alist
                                   paramnum-name-alist
                                   state-var
                                   ;; extra-vars
                                   )
+  (declare (xargs :guard (and (paramnum-update-alistp paramnum-update-alist-to-check)
+                              (natp next-param-number)
+                              (paramnum-update-alistp paramnum-update-alist)
+                              (paramnum-extractor-alistp paramnum-extractor-alist)
+                              (paramnum-name-alistp paramnum-name-alist)
+                              (symbolp state-var))
+                  :guard-hints (("Goal" :in-theory (enable paramnum-update-alistp strip-cars)))))
   (if (endp paramnum-update-alist-to-check)
-      (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+      (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((entry (first paramnum-update-alist-to-check))
          (update-expr (cdr entry))
-         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+         ((mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
           (make-read-only-parameters-for-expr update-expr
                                               next-param-number
-                                              updated-state-term
                                               paramnum-update-alist
                                               paramnum-extractor-alist
                                               paramnum-name-alist
@@ -1657,7 +1662,6 @@
                                               )))
       (make-read-only-parameters (rest paramnum-update-alist-to-check)
                                  next-param-number
-                                 updated-state-term
                                  paramnum-update-alist
                                  paramnum-extractor-alist
                                  paramnum-name-alist
@@ -1715,12 +1719,12 @@
                    loop-depth
                    generated-events ; an accumulator
                    next-loop-num
-                   assumptions ;over x86_0 and perhaps other vars (see the Essay on Variables) ?
+                   assumptions ;over previous state-vars and perhaps base-address
 ;                   original-rsp-term ; the RSP for the initial state (which the assumptions describe)
                    extra-rules
                    remove-rules
                    rules-to-monitor
-                   loop-alist
+                   loop-alist ; all relative to base-address
                    measure-alist
                    base-name
                    lifter-rules
@@ -1758,6 +1762,7 @@
         (loop-top-pc-term (dag-to-term loop-top-pc-dag))
         (- (cw "(Loop top PC is ~x0.)~%" loop-top-pc-term))
         (pc-offset (get-added-offset loop-top-pc-term 'base-address)) ; relative to base-address
+        ;; Assume that the RIP is at the loop top:
         (pc-assumption `(equal (rip ,state-var) ,loop-top-pc-term))
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top: ; todo: do we need the assumptions?
@@ -1789,7 +1794,7 @@
         (loop-top-rbp-term (dag-to-term loop-top-rbp-dag))
         (- (cw "(Loop top RBP is ~x0.)~%" loop-top-rbp-term))
 
-        (- (cw "(Determining which assumptions still hold before the loop:~%"))
+        (- (cw "(Determining which assumptions still hold at the loop top:~%"))
         (candidate-assumptions assumptions
                                ;; (acl2::replace-in-terms assumptions
                                ;;                         (acons '(xr ':rgf '4 x86_0) ;todo: generalize the _0
@@ -1804,29 +1809,26 @@
 
         ;; The assumption about the RIP almost certainly doesn't still hold now that we are at the loop top:
         ((mv erp loop-top-assumptions failed-loop-top-assumptions state)
-         (try-to-reestablish-assumptions
-                                    candidate-assumptions
-                                    (acl2::make-rule-alist! (set-difference-eq
-                                                              (append (loop-lifter-invariant-preservation-rules)
+         (try-to-reestablish-assumptions candidate-assumptions loop-top-state-dag state-var previous-state-vars assumptions
+                                         (acl2::make-rule-alist! (set-difference-eq
+                                                                   (append (loop-lifter-invariant-preservation-rules)
                                                                       ;'(acl2::bvchop-of-bvplus-same) ; todo: think about this
-                                                                      lifter-rules
-                                                                      extra-rules)
-                                                              remove-rules)
-                                                            (w state))
-                                    rules-to-monitor loop-top-state-dag state-var previous-state-vars
-                                    assumptions
-                                    nil nil print
-                                    (acl2::known-booleans (w state))
-                                    state))
+                                                                           lifter-rules
+                                                                           extra-rules)
+                                                                   remove-rules)
+                                                                 (w state))
+                                         rules-to-monitor print (acl2::known-booleans (w state))
+                                         nil nil ; the accumulators
+                                         state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done determining which assumptions hold before the loop)~%"))
         (- (cw "(~x0 assumptions hold before the loop: ~x1.)~%" (len loop-top-assumptions) loop-top-assumptions))
         (- (cw "(~x0 assumptions failed to hold at the loop top: ~x1)~%" (len failed-loop-top-assumptions) failed-loop-top-assumptions))
         ;; Now lift the loop body wrt the loop-top-assumptions
-        (this-loop-offsets (lookup-safe pc-offset loop-alist))
-        (this-loop-offsets-no-header (remove pc-offset this-loop-offsets))
-        (- (cw "(PC offsets in this loop: ~x0.)~%" this-loop-offsets))
-        ;; (segment-pc-terms (relative-pc-terms this-loop-offsets 'text-offset))
+        (this-loop-segment-offsets (lookup-safe pc-offset loop-alist)) ; relative to base-address
+        (this-loop-segment-offsets-no-header (remove pc-offset this-loop-segment-offsets)) ; relative to base-address
+        (- (cw "(PC offsets in this loop: ~x0.)~%" this-loop-segment-offsets))
+        ;; (segment-pc-terms (relative-pc-terms this-loop-segment-offsets 'text-offset))
         ;; (- (cw "(segment-pc-terms: ~x0)~%" segment-pc-terms))
         ;; TODO: This assumes there is a single loop:
         (all-loop-header-pc-terms (relative-pc-terms (list pc-offset) 'base-address))
@@ -1837,8 +1839,11 @@
         ;;                                                          ;; Step once to start, to get past the loop header:
         ;;                                                          (x86-fetch-decode-execute ,state-var)))
         ;; (- (cw "(Term for symbolically executing the loop body: ~x0)~%" term-to-run))
+        ;; todo: duplicates can arise here:
+        ;; WARNING: At least for now, we require all of these to be true invariants (but see todo below):
+        ;; TODO: Allow user-supplied invariants (and invariant suppressions)
         (possible-loop-invariants ;; The base pointer and stack pointer should not change inside the routine (TODO: Do I need this?):
-          (append `((equal (rbp ,state-var) ;; this "pushes" back the RBP to some expression over the initial state
+          (append `((equal (rbp ,state-var) ;; this "pushes" back the RBP to some expression over the initial state ; todo: should we do this for more state components?
                            ,loop-top-rbp-term)
                     (equal (rsp ,state-var) ;; this "pushes" back the RSP to some expression over the initial state
                            ,loop-top-rsp-term))
@@ -1850,7 +1855,7 @@
 
         ;; Symbolically execute the loop body:
         ((mv erp loop-body-dag generated-events next-loop-num state)
-         (lift-code-segment loop-depth generated-events next-loop-num this-loop-offsets-no-header loop-body-assumptions extra-rules
+         (lift-code-segment loop-depth generated-events next-loop-num this-loop-segment-offsets-no-header loop-body-assumptions extra-rules
                             remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
@@ -1974,12 +1979,18 @@
          (make-loop-parameters-for-flag-pairs flag-pairs next-param-number updated-state-term
                                               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
+
         ;; We are done with the state components that get written by the loop,
         ;; but other state components may get read in the loop, and we have to
         ;; pass these values around as loop params as well.
+        (- (cw "(param names (before handling read-only params): ~X01)~%" (reverse paramnum-name-alist) nil))
+        (- (cw "(param extractors (before handling read-only params): ~X01)~%" (reverse paramnum-extractor-alist) nil))
+        (- (cw "(param updates (before handling read-only params): ~X01)~%" (reverse paramnum-update-alist) nil))
+        (- (cw "(updated-state-term: ~X01)~%" updated-state-term nil))
+
         (- (cw "(Making read-only loop params:~%"))
-        ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-         (make-read-only-parameters paramnum-update-alist next-param-number updated-state-term
+        ((mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+         (make-read-only-parameters paramnum-update-alist next-param-number
                                     paramnum-update-alist paramnum-extractor-alist paramnum-name-alist
                                     state-var
                                     ;; nil
@@ -1987,12 +1998,11 @@
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
-        (- (cw "(Making params for read-only values in the exit-term term:%"))
+        (- (cw "(Making params for read-only values in the exit-term term:~%"))
         ((mv & ;next-param-number
-             updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters-for-expr exit-test-term
                                              next-param-number
-                                             updated-state-term
                                              paramnum-update-alist
                                              paramnum-extractor-alist
                                              paramnum-name-alist
@@ -2005,10 +2015,10 @@
         (paramnum-extractor-alist (reverse paramnum-extractor-alist))
         (paramnum-name-alist (reverse paramnum-name-alist))
 
-        (- (cw "(updated-state-term: ~X01)~%" updated-state-term nil))
-        (- (cw "(param updates: ~X01)~%" paramnum-update-alist nil))
-        (- (cw "(param extractors: ~X01)~%" paramnum-extractor-alist nil))
         (- (cw "(param names: ~X01)~%" paramnum-name-alist nil))
+        (- (cw "(param extractors: ~X01)~%" paramnum-extractor-alist nil))
+        (- (cw "(param updates: ~X01)~%" paramnum-update-alist nil))
+
         ;; TODO: Think about the order of param-names.  What do we prefer?
 
         ;; Check for aliasing among the params:
@@ -2128,12 +2138,12 @@
                           loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                           generated-events
                           next-loop-num
-                          segment-offsets
+                          segment-offsets ; relative to base-address
                           assumptions ; over x86_0 and perhaps other vars (see the Essay on Variables)
                           extra-rules ; rules to enable
                           remove-rules
                           rules-to-monitor ; rules to monitor
-                          loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
+                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets ( relative to base-address) in the corresponding loops
                           measure-alist
                           base-name
                           lifter-rules
@@ -2232,7 +2242,8 @@
                           '(read '8 (rsp x86_0) x86_0))
                    (mv (erp-nil) t state)
                  (let ((pc-offset (get-added-offset pc-term 'base-address)))
-                   (if (member pc-offset segment-offsets)
+                   (if (or (eq :all segment-offsets)
+                           (member pc-offset segment-offsets))
                        ;; We have not exited the segment:
                        (mv (erp-nil) nil state)
                      ;; We have exited the segment:
@@ -2279,13 +2290,13 @@
                                loop-depth
                                generated-events
                                next-loop-num
-                               segment-offsets
+                               segment-offsets ; relative to base-address
                                assumptions
                                ;; rsp-term
                                extra-rules
                                remove-rules
                                rules-to-monitor
-                               loop-alist
+                               loop-alist ; all relative to base-address
                                measure-alist
                                base-name
                                lifter-rules
@@ -2295,23 +2306,25 @@
                                (posp next-loop-num)
                                (symbolp base-name)
                                (loop-alistp loop-alist)
-                               (nat-listp segment-offsets)
+                               (or (nat-listp segment-offsets)
+                                   (eq :all segment-offsets))
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
                                (acl2::print-levelp print))
                    :stobjs state))
-   (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'base-address))
-        (all-loop-header-offsets (strip-cars loop-alist))
+   (b* ((all-loop-header-offsets (strip-cars loop-alist))
         (all-loop-header-pc-terms (relative-pc-terms all-loop-header-offsets 'base-address))
         ;; TODO: Do we need to pass the RSP here, or is it enough to check whether we are in the code segment?
         (dag-to-run ;(mv erp dag-to-run)
-         (compose-term-and-dags `(run-until-exit-segment-or-hit-loop-header :starting-rsp
-                                                                                       ,(make-cons-nest segment-pc-terms)
-                                                                                       ,(make-cons-nest all-loop-header-pc-terms)
-                                                                                       :state-dag)
-                                           (acons :starting-rsp rsp-dag (acons :state-dag state-dag nil))
-                                           :extra-vars (cons 'base-address all-state-vars)))
+          (compose-term-and-dags `(run-until-exit-segment-or-hit-loop-header :starting-rsp
+                                                                             ,(if (eq :all segment-offsets)
+                                                                                  '':all
+                                                                                (make-cons-nest (relative-pc-terms segment-offsets 'base-address)))
+                                                                             ,(make-cons-nest all-loop-header-pc-terms)
+                                                                             :state-dag)
+                                 (acons :starting-rsp rsp-dag (acons :state-dag state-dag nil))
+                                 :extra-vars (cons 'base-address all-state-vars)))
         ;((when erp) (mv erp nil nil nil state))
         (- (cw "(DAG to symbolically execute: ~x0)~%" dag-to-run))
         ;; Perform the symbolic execution:
@@ -2398,13 +2411,13 @@
                            loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                            generated-events
                            next-loop-num
-                           segment-offsets ;;these represent PCs of the code segment to lift (if it's a loop body, should not include the loop header)
+                           segment-offsets ; these represent offset of the code segment to lift (if it's a loop body, should not include the loop header), relative to base-address, or :all if not in a loop body
                            assumptions ; over x86_0 and perhaps other vars (see the Essay on Variables)
                            extra-rules ; rules to enable
                            remove-rules ; rules to disable
                            rules-to-monitor ; rules to monitor
 ;                          starting-rsp ;tells us the stack height of the current subroutine
-                           loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
+                           loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets (relative to base-address) in the corresponding loops
                            measure-alist ;may be :skip
                            base-name
                            lifter-rules
@@ -2414,7 +2427,8 @@
                                (posp next-loop-num)
                                (symbolp base-name)
                                (loop-alistp loop-alist)
-                               (nat-listp segment-offsets)
+                               (or (nat-listp segment-offsets)
+                                   (eq :all segment-offsets))
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
@@ -2499,8 +2513,7 @@
                            target ; todo: add support for :entry-point and for a numeric offset
                            executable
                            stack-slots-needed
-                           subroutine-length ;todo: drop this (would need to support :all for the segment-pcs?)
-                           loop-alist
+                           loop-alist ; relative to the target-offset (but adjusted below)
                            extra-rules
                            remove-rules
                            produce-theorem
@@ -2519,8 +2532,9 @@
                            )
                   :mode :program
                   :stobjs state)
-           (ignore produce-theorem non-executable) ; todo
-           )
+           (ignore produce-theorem ; todo
+                   non-executable ; todo
+                   ))
   (b* ( ;; Check whether this call to the lifter has already been made:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
@@ -2538,18 +2552,10 @@
        ((when (eq :none loop-alist))
         (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
         (mv (erp-t) nil state))
-       ((when (eq :none subroutine-length))
-        (er hard? 'lift-subroutine-fn "No :subroutine-length supplied (should be the length, in bytes, of the target subroutine).")
-        (mv (erp-t) nil state))
        ((when (not (natp stack-slots-needed)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots-needed: ~x0" stack-slots-needed)
                 (mv (erp-t) nil state)))
-       ((when (not (natp subroutine-length)))
-        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for subroutine-length: ~x0" subroutine-length)
-                (mv (erp-t) nil state)))
-       ((when (not (and (loop-alistp loop-alist)
-                        ;(all-< loop-header-offset subroutine-length)
-                        )))
+       ((when (not (and (loop-alistp loop-alist))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
        ((when (not (or (symbol-listp monitor)
@@ -2624,35 +2630,24 @@
               (mv :unsupported-executable-type nil)))))
        ((when erp) (mv erp nil state))
 
-       ;; TODO: Not all of these are necessarily locations of instructions (should we give a range?):
-       ;; TODO: What about offset 0?
-       (segment-offsets (offsets-up-to (- subroutine-length 1) target-offset))
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
        ;; Changes the numbers to be relative to the base-address, not the start of the subroutine to lift:
        (measure-alist (if (eq :skip measure-alist) :skip (add-to-cars measure-alist target-offset)))
-       (32-bitp (member-eq executable-type *executable-types32*)) ; todo: instead use a 64-bitp flag
+       (64-bitp (member-eq executable-type *executable-types64*))
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
-       (lifter-rules (if 32-bitp
-                         (loop-lifter-rules32)
-                       (append (read-and-write-rules-bv) ;; (read-and-write-rules-non-bv)
-                               (if t ; todo
-                                   (append (unsigned-canonical-rules)
-                                           (canonical-rules-bv))
-                                 (canonical-rules-non-bv))
-                               (loop-lifter-rules64))))
-
-       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (lifter-rules (if 64-bitp (loop-lifter-rules64) (loop-lifter-rules32)))
+       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp dag events
-            ;; & ;;rules
-            & ;;next-loop-num
+            ;; & ; rules
+            & ; next-loop-num
             state)
-        (lift-code-segment 0 ; loop-depth;
+        (lift-code-segment 0 ; loop-depth
                            nil ; generated-events
                            1 ; next-loop-num
-                           segment-offsets
+                           :all ; segment-offsets
                            assumptions
                            extra-rules
                            remove-rules
@@ -2734,7 +2729,6 @@
                            &key
                            (target ':none) ; required (for now).  must be a string naming a subroutine
                            (executable ':none) ; required, a string (filename), or (for example) a defconst created by defconst-x86
-                           (subroutine-length ':none) ; todo: drop
                            (extra-assumptions 'nil)
                            (loops ':none) ; required (for now)
                            (stack-slots '10)
@@ -2751,7 +2745,6 @@
                                    ',target
                                    ,executable
                                    ',stack-slots
-                                   ',subroutine-length
                                    ',loops
                                    ,extra-rules
                                    ,remove-rules
