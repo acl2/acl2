@@ -17,6 +17,8 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))

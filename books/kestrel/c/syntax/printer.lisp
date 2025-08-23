@@ -24,6 +24,7 @@
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-aidentp-rules)))
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
