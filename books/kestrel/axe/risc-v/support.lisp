@@ -233,31 +233,3 @@
 
 
 ;todo: write of the read rule for mem
-
-;; Set up the theory for code proofs:
-(in-theory (e/d (step32n-base-1
-                 step32n-base-2
-                 step32n-unroll
-                 step32
-                 exec32-op-imm
-                 exec32-op
-                 exec32-add
-                 exec32-addi
-                 exec32-store
-                 exec32-sw
-                 exec32-load
-                 exec32-lw
-                 exec32-jalr
-                 inc32-pc
-                 exec32-instr-base ; todo: improve name in defopeners call
-                 eff32-addr ; for now
-                 write32-mem-ubyte8-of-+-arg1
-                 write32-mem-ubyte32-lendian-of-+-arg1
-                 acl2::bvplus-of-+-arg3
-                 x::in-region32p-of-+-arg3
-                 write32-xreg-of-+-arg2
-                 read32-mem-ubyte32-lendian-of-+-arg1
-                 read32-xreg-signed
-                 x::disjoint-regions32p-of-+-arg4
-                 write32-xreg-when-equal-of-read32-xreg-unsigned)
-                (equal-of-stat32i)))

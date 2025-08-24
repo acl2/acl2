@@ -14,18 +14,13 @@
 
 ;; STATUS: COMPLETE, needs automation
 
-(include-book "support")
-(include-book "read-and-write")
+(include-book "support-top")
 (include-book "kestrel/x86/parsers/elf-tools" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system)) ; for acl2::mod-becomes-bvchop-when-power-of-2p
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for ACL2::BVPLUS-OF-LOGEXT-ARG3, etc.
 ;(include-book "kestrel/x86/assumptions-new" :dir :system) ; reduce!  has ttags!
-
-(local (in-theory (enable acl2::mod-becomes-bvchop-when-power-of-2p)))
-
-(local (in-theory (disable logext)))
 
 (acl2::defconst-x86 *executable* "add.elf32")
 

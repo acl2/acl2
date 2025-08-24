@@ -35,6 +35,12 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p))))
 
+(defthm read32-xreg-unsigned-upper-bound-linear
+  (<= (read32-xreg-unsigned riscv::reg stat) 4294967295)
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance riscv::ubyte32p-of-read32-xreg-unsigned)
+           :in-theory (e/d (ubyte32p) (riscv::ubyte32p-of-read32-xreg-unsigned)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read32-xreg-unsigned-of-write32-pc
@@ -65,6 +71,16 @@
            (equal (read32-xreg-unsigned reg1 (write32-xreg reg2 val stat))
                   (read32-xreg-unsigned reg1 stat)))
   :hints (("Goal" :in-theory (enable read32-xreg-unsigned write32-xreg xregs32i-fix xregs32ip))))
+
+(defthm read32-xreg-unsigned-of-write32-xreg-both
+  (equal (read32-xreg-unsigned reg1 (write32-xreg reg2 val stat))
+         (if (equal (ubyte5-fix reg1) (ubyte5-fix reg2))
+             ;; same register:
+             (if (equal (ubyte5-fix reg1) 0)
+                 0
+               (loghead 32 val))
+           ;; different registers:
+           (read32-xreg-unsigned reg1 stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

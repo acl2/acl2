@@ -10,14 +10,16 @@
 
 (in-package "R")
 
+;; TODO: Consider adding 32 to the names of the functions in this file (or
+;; making separate packages for 32-bit and 64-bit RISC-V proofs).  Note that
+;; the functions defined in this file are analogous to the functions used by
+;; Axe for x86 reasoning (except for the memory size).
+
 (include-book "portcullis")
-
-;(include-book "kestrel/risc-v/specialized/execution32" :dir :system)
 (include-book "kestrel/risc-v/specialized/states32" :dir :system)
-
 (include-book "kestrel/memory/memory32" :dir :system)
-
-(include-book "support") ; for read32-mem-ubyte8-of-write32-pc
+(include-book "risc-v-rules")
+(include-book "support") ; for write32-mem-ubyte32-lendian-alt-def
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
@@ -36,16 +38,13 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-
-(in-theory (enable (:e riscv::feat-rv32im-le) ; needed for code proofs
-                    ))
-
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 ;(local (include-book "kestrel/bv/top" :dir :system)) ; reduce
+
 ;move
 (local
   (encapsulate ()
@@ -69,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: add 32 to the name?
+;; Reads the byte at address ADDR.
 (defund read-byte (addr stat)
   (declare (xargs :guard (and (unsigned-byte-p 32 addr)
                               (stat32ip stat))))
@@ -691,7 +690,7 @@
                 (integerp y))
            (equal (write n (+ x y) val stat)
                   (write n (bvplus 32 x y) val stat)))
-  :hints (("Goal" :in-theory (enable write write-byte-of-+))))
+  :hints (("Goal" :in-theory (enable write write-byte-of-+ acl2::bvplus-of-+-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -856,105 +855,3 @@
                                    (:e expt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
-  (defthm unsigned-byte-p-when-ubyte32p
-    (implies (ubyte32p x)
-             (unsigned-byte-p 32 x))
-    :hints (("Goal" :in-theory (enable ubyte32p)))))
-
-(defund reg (n stat)
-  (declare (xargs :guard (and (posp n)
-                              (< n 31)
-                              (stat32ip stat))
-                  :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
-  (read32-xreg-unsigned n stat))
-
-(defthm unsigned-byte-p-of-reg (unsigned-byte-p 32 (reg n stat)) :hints (("Goal" :in-theory (enable reg))))
-
-(defthmd read32-xreg-unsigned-becomes-reg
-  (equal (read32-xreg-unsigned n stat)
-         (reg n stat))
-  :hints (("Goal" :in-theory (enable reg))))
-
-(defund set-reg (n val stat)
-  (declare (xargs :guard (and (posp n)
-                              (< n 31)
-                              (unsigned-byte-p 32 val)
-                              (stat32ip stat))
-                  :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
-  (write32-xreg n val stat))
-
-;; writing to "register 0" has no effect
-(defthm set-reg-of-0
-  (implies (stat32ip stat) ; too bad
-           (equal (set-reg 0 val stat)
-                  stat))
-  :hints (("Goal" :in-theory (enable set-reg))))
-
-(defthmd write32-xreg-becomes-set-reg
-  (equal (write32-xreg n val stat)
-         (set-reg n val stat))
-  :hints (("Goal" :in-theory (enable set-reg))))
-
-(defthm error32p-of-set-reg (equal (error32p (set-reg n val stat)) (error32p stat)) :hints (("Goal" :in-theory (enable set-reg))))
-(defthm read32-pc-of-set-reg (equal (read32-pc (set-reg n val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable set-reg))))
-(defthm read-byte-of-set-reg (equal (read-byte addr (set-reg n val stat)) (read-byte addr stat)) :hints (("Goal" :in-theory (enable set-reg read-byte))))
-(defthm read-of-set-reg (equal (read n addr (set-reg n2 val stat)) (read n addr stat)) :hints (("Goal" :in-theory (enable read))))
-
-;; both cases
-(defthm reg-of-set-reg
-  (implies (and (posp n1)
-                (posp n2)
-                (< n1 32)
-                (< n2 32))
-           (equal (reg n1 (set-reg n2 val stat))
-                  (if (equal n1 n2)
-                      (bvchop 32 val)
-                    (reg n1 stat))))
-  :hints (("Goal" :in-theory (enable reg set-reg ubyte5-fix ubyte5p))))
-
-(defthm reg-of-write32-pc (equal (reg n (write32-pc pc stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg))))
-(defthm reg-of-write-byte (equal (reg n (write-byte addr val stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg write-byte))))
-(defthm reg-of-write (equal (reg n (write n2 addr val stat)) (reg n stat)) :hints (("Goal" :in-theory (enable write))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; register aliases (we plan to keep these enabled):
-(defund x1 (stat) (declare (xargs :guard (stat32ip stat))) (reg 1 stat))
-(defund x2 (stat) (declare (xargs :guard (stat32ip stat))) (reg 2 stat))
-(defund x8 (stat) (declare (xargs :guard (stat32ip stat))) (reg 8 stat))
-(defund x10 (stat) (declare (xargs :guard (stat32ip stat))) (reg 10 stat))
-(defund x11 (stat) (declare (xargs :guard (stat32ip stat))) (reg 11 stat))
-
-;; register aliases (we plan to keep these enabled):
-(defun ra (stat) (declare (xargs :guard (stat32ip stat))) (x1 stat))
-(defun sp (stat) (declare (xargs :guard (stat32ip stat))) (x2 stat))
-(defun a0 (stat) (declare (xargs :guard (stat32ip stat))) (x10 stat))
-(defun a1 (stat) (declare (xargs :guard (stat32ip stat))) (x11 stat))
-
-;; Introduce new normal forms:
-(in-theory (enable read32-mem-ubyte8-becomes-read-byte
-                   write32-mem-ubyte8-becomes-write-byte
-                   write32-mem-ubyte32-lendian-becomes-write
-                   ;; read32-xreg-unsigned-becomes-x1
-                   ;; read32-xreg-unsigned-becomes-x2
-                   ;; read32-xreg-unsigned-becomes-x8
-                   ;; read32-xreg-unsigned-becomes-x10
-                   ;; read32-xreg-unsigned-becomes-x10
-                   ;; write32-xreg-becomes-set-x1
-                   ;; write32-xreg-becomes-set-x2
-                   ;; write32-xreg-becomes-set-x8
-                   ;; write32-xreg-becomes-set-x10
-                   ;; write32-xreg-becomes-set-x11
-                   ;; write32-xreg-becomes-set-x14
-                   read32-xreg-unsigned-becomes-reg
-                   write32-xreg-becomes-set-reg
-                   x1
-                   x2
-                   x8
-                   x10
-                   x11
-                   read-of-+
-                   write-of-+
-                   acl2::bvchop-of-+-becomes-bvplus))
