@@ -64,7 +64,7 @@ my $json = JSON->new;
 sub lookup_keys {
     if (!($arg_keys =~ /^[A-Za-z0-9:._\-]*$/)) {
         print $json->encode(
-            { error => "keys contain illegal characters, rejecting to prevent xss attacks." });
+            { error => "Keys contain illegal characters, rejecting to prevent xss attacks." });
         exit;
     }
 
@@ -106,10 +106,23 @@ sub lookup_keys {
     $dbh->disconnect();
 }
 
+sub escape_fts5_query {
+    my ($query) = @_;
+
+    # Add quotes around characters that would otherwise be interpreted specially
+    # by FTS5.
+    $query =~ s/-/"-"/g;
+    $query =~ s/\*/"\*"/g;
+    $query =~ s/\^/"\^"/g;
+    $query =~ s/\+/"\+"/g;
+
+    return $query;
+}
+
 sub search {
-    if (!($arg_search =~ /^[A-Za-z0-9:._\- \"]*$/)) {
+    if (!($arg_search =~ /^[A-Za-z0-9:._\- \"\^\*\+]*$/)) {
         print $json->encode(
-            { error => "search contain illegal characters, rejecting to prevent xss attacks." });
+            { error => "Search contains illegal characters, rejecting to prevent xss attacks." });
         exit;
     }
 
@@ -120,35 +133,31 @@ sub search {
 
     my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
     my $query = $dbh->prepare(q{
-        SELECT XKEY,
-               snippet(XTABLE_fts, 1, '<mark>', '</mark>', '...', 20) as snippet,
-               rank
-        FROM XTABLE_fts
-        WHERE XLONG MATCH ?
-        ORDER BY rank
+        SELECT xkey,
+               snippet(xtable_fts, 1, '<mark>', '</mark>', '...', 20) as snippet,
+               bm25(xtable_fts, 0.0, 100.0, 5.0, 1.0) as score
+        FROM xtable_fts
+        WHERE xtable_fts MATCH ?
+        ORDER BY score
         LIMIT 100
     });
-    $query->execute($arg_search);
+    $query->execute(escape_fts5_query($arg_search));
 
     my $rows = $query->fetchall_arrayref({});
     my $json = JSON->new;
     my @results = ();
 
     foreach my $row (@$rows) {
-        # Clean up the snippet
         my $safe_snippet = encode_entities($row->{snippet});
         $safe_snippet =~ s/&lt;mark&gt;/<mark>/g;
         $safe_snippet =~ s/&lt;\/mark&gt;/<\/mark>/g;
-        $safe_snippet =~ s/\\n//g; # Remove all \n characters
+        $safe_snippet =~ s/\\n//g;
 
-        # Update the row
         $row->{snippet} = $safe_snippet;
 
-        # Add to results array
         push @results, $row;
     }
 
-    # THEN encode to JSON
     my $json_output = $json->encode({results => \@results});
     print $json_output;
 
@@ -158,6 +167,10 @@ sub search {
 
 if ($arg_keys ne "") {
     lookup_keys();
-} else {
+} elsif ($arg_search ne "") {
     search();
+} else {
+    print $json->encode(
+        { error => "No query string parameter provided." });
+    exit;
 }
