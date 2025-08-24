@@ -11,6 +11,7 @@
 (in-package "R")
 
 (include-book "read-over-write-rules")
+(include-book "assumptions")
 
 ;; Set up the theory for code proofs:
 (in-theory (e/d (step32n-base-1

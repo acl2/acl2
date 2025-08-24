@@ -27,7 +27,10 @@
             acl2::bvlt
 
             acl2::repeat
+
             acl2::b*
+            acl2::patbind-when
+
             acl2::unsigned-byte-listp
             acl2::defopeners
 
@@ -37,6 +40,9 @@
             acl2::ubyte32-list-fix
 
             x::disjoint-regionsp ; todo: move these
+            x::disjoint-regions32p
+            x::memory-regionp
+            x::memory-regionsp
 
             riscv::memory32i-fix
             riscv::memory32ip
