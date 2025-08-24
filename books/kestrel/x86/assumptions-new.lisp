@@ -365,36 +365,36 @@
 (defund make-standard-assumptions64-new (stack-slots-needed
                                          existing-stack-slots
                                          state-var
-                                         base-var ; only needed if position-independentp ;todo: rename to base-address-var?
+                                         base-address-var ; only needed if position-independentp
                                          target-offset
                                          position-independentp)
   (declare (xargs :guard (and (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var)
-                              (symbolp base-var)
+                              (symbolp base-address-var)
                               (natp target-offset)
                               (booleanp position-independentp))))
   (if (<= (expt 2 47) target-offset)
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
-                                   ;; Position-independent, so the target is the base-var plus the target-offset:
+                                   ;; Position-independent, so the target is the base-address-var plus the target-offset:
                                    ;; We posulate that there exists some canonical base var wrt which  the executable is loaded.
                                    ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                    (if (= 0 target-offset)
-                                       base-var ; avoids adding 0
-                                     ;;`(logext 64 ,base-var) ; avoids adding 0
+                                       base-address-var ; avoids adding 0
+                                     ;;`(logext 64 ,base-address-var) ; avoids adding 0
                                      ;; The RIP (in the X package, not the X86ISA package) is a u64 that satisfies unsigned-canonical-address-p:
-                                     ;;`(bvsx 64 48 (bvplus 48 ',target-offset ,base-var))
-                                     `(bvplus 64 ',target-offset ,base-var))
+                                     ;;`(bvsx 64 48 (bvplus 48 ',target-offset ,base-address-var))
+                                     `(bvplus 64 ',target-offset ,base-address-var))
                                  ;; Not position-independent, so the target is a concrete address:
                                  (acl2::enquote target-offset))))
       (append (make-standard-state-assumptions-fn state-var)
-              ;; Assumptions about the BASE-VAR:
+              ;; Assumptions about the BASE-ADDRESS-VAR:
               (if position-independentp
-                  `((integerp ,base-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
-                    ;; (unsigned-byte-p 64 ,base-var) ; uncomment?
-                    (unsigned-canonical-address-p ,base-var)
-                    (equal (bvchop 6 ,base-var) 0) ; the BASE-VAR is 64-byte aligned
+                  `((integerp ,base-address-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
+                    ;; (unsigned-byte-p 64 ,base-address-var) ; uncomment?
+                    (unsigned-canonical-address-p ,base-address-var)
+                    (equal (bvchop 6 ,base-address-var) 0) ; the BASE-ADDRESS-VAR is 64-byte aligned
                     )
                 nil)
               `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
@@ -436,15 +436,15 @@
               ))))
 
 (defthm true-listp-of-make-standard-assumptions64-new
-  (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp)))
+  (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Creates assumptions about STATE-VAR and BASE-VAR.
+;; Creates assumptions about STATE-VAR and BASE-ADDRESS-VAR.
 ;; Returns (mv erp assumptions).
-(defund assumptions-for-memory-regions (regions base-var state-var stack-slots-needed existing-stack-slots position-independentp acc)
+(defund assumptions-for-memory-regions (regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp acc)
   (declare (xargs :guard (and (memory-regionsp regions)
-                              (symbolp base-var) ; only used if position-independentp
+                              (symbolp base-address-var) ; only used if position-independentp
                               (symbolp state-var)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
@@ -463,18 +463,18 @@
          (bytes (third region))
          ((mv erp assumptions-for-region)
           (if position-independentp
-              ;; Relative addresses make everything relative to the base-var:
+              ;; Relative addresses make everything relative to the base-address-var:
               (b* ((last-addr (+ 1 (+ -1 addr length))) ; adding 1 for the one-past-RET issue
                    ;; Ensures that the canonical assumptions are satisfiable:
                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
                     (mv :bad-address nil))
-                   (first-addr-term (symbolic-bvplus-constant 64 addr base-var))
+                   (first-addr-term (symbolic-bvplus-constant 64 addr base-address-var))
                    ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                                                 (+ -1 addr length))
-                   ;;                                           base-var)
+                   ;;                                           base-address-var)
                    ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                 ;;                             (+ -1 addr length))
-                   ;;                 ;;                          base-var)
+                   ;;                 ;;                          base-address-var)
                    ;;                 )
 ; todo: use bvplus?
                    )
@@ -482,7 +482,7 @@
                     (append
                       ;; Assert that the addresses are canonical:
                       `((canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above about RET)
-                                           ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var)) ; todo: call symbolic-bvplus-constant
+                                           ,(if (= addr 0) base-address-var `(bvplus 64 ,addr ,base-address-var)) ; todo: call symbolic-bvplus-constant
                                            ))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
@@ -528,14 +528,14 @@
          ((when erp)
           (mv erp nil)))
       (assumptions-for-memory-regions (rest regions)
-                                      base-var state-var stack-slots-needed existing-stack-slots position-independentp
+                                      base-address-var state-var stack-slots-needed existing-stack-slots position-independentp
                                       ;; todo: think about the order:
                                       (append assumptions-for-region acc)))))
 
 (local
   (defthm true-list-of-mv-nth-1-of-assumptions-for-memory-regions
     (implies (true-listp acc)
-             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-var state-var stack-slots-needed existing-stack-slots position-independentp acc))))
+             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp acc))))
     :hints (("Goal" :in-theory (enable assumptions-for-memory-regions)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -563,7 +563,7 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
-  (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
+  (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
        ;; Decide where to start lifting:
        (target-offset (if (eq :entry-point target)
                           (acl2::parsed-elf-entry-point parsed-elf)
@@ -575,7 +575,7 @@
         (er hard? 'assumptions-elf64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::elf64-regions-to-load parsed-elf)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -584,7 +584,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -602,7 +602,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-var)
+                                       (symbolic-bvplus-constant 48 code-address base-address-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
@@ -656,7 +656,7 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (acl2::parsed-mach-o-p parsed-macho))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-mach-o-p acl2::true-listp-when-pseudo-term-listp-2)))))
-  (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
+  (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
        ;; Decide where to start lifting:
        (target-offset (if (eq :entry-point target)
                           (er hard? 'assumptions-macho64-new ":entry-point is not yet supported for MACH-O files.") ;; (acl2::parsed-elf-entry-point parsed-elf) ; todo
@@ -668,7 +668,7 @@
         (er hard? 'assumptions-macho64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::macho64-regions-to-load parsed-macho)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -677,7 +677,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from existing and future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -695,7 +695,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-var)
+                                       (symbolic-bvplus-constant 48 code-address base-address-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
@@ -748,7 +748,7 @@
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p acl2::true-listp-when-pseudo-term-listp-2))))
            (ignore type-assumptions-for-array-varsp) ; todo: use this
            )
-  (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
+  (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
        ;; Decide where to start lifting:
        ((mv erp target-offset)
         (if (eq :entry-point target)
@@ -762,7 +762,7 @@
         (er hard? 'assumptions-pe64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::pe64-regions-to-load parsed-pe)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -771,7 +771,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future and existing stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp & ;addresses-and-lens-of-chunks-disjoint-from-inputs ; todo: use this!
@@ -791,7 +791,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-var)
+                                       (symbolic-bvplus-constant 48 code-address base-address-var)
                                      code-address))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
