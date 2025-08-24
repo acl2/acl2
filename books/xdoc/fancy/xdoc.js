@@ -947,8 +947,16 @@ function searchAddHit(matches, hits, key) {
 }
 
 function searchGoServer(query_str) {
-    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+    // Should these first couple of things be factored out? Same between Server and Local
+    $("#searching_message").hide();
+    if (query_str.length === 0) {
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
+    }
 
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
+
+    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
     fetch(url, {
         method: 'GET',
     }).then(res => res.json()).then(obj => {
@@ -962,7 +970,8 @@ function searchGoServer(query_str) {
             let hits = jQuery("<dl></dl>");
             for (let i = 0; i < results.length; i++) {
                 // TODO: check for error
-                const score = (-results[i].rank).toFixed(2);
+                // const score = (-results[i].rank).toFixed(2);
+                const score = (-results[i].score).toFixed(2);
                 hits.append("<dt><a href=\"index.html?topic=" + results[i].xkey + "\""
                             + " onclick=\"return dolink(event, '" + results[i].xkey + "');\">"
                             + xindexObj.topicName(results[i].xkey)
@@ -980,7 +989,7 @@ function searchGoServer(query_str) {
             console.error("Error: malformed response " + obj);
         }
     }).catch(err => {
-        const val = `Error: AJAX query failed. ${err}`;
+        const val = "Error: AJAX query failed. " + err;
         console.error(err);
     });
 }
