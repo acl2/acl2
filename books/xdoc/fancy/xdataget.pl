@@ -134,7 +134,6 @@ sub search {
     my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
     my $query = $dbh->prepare(q{
         SELECT xkey,
-               snippet(xtable_fts, 1, '<mark>', '</mark>', '...', 20) as snippet,
                bm25(xtable_fts, 0.0, 100.0, 5.0, 1.0) as score
         FROM xtable_fts
         WHERE xtable_fts MATCH ?
@@ -145,20 +144,7 @@ sub search {
 
     my $rows = $query->fetchall_arrayref({});
     my $json = JSON->new;
-    my @results = ();
-
-    foreach my $row (@$rows) {
-        my $safe_snippet = encode_entities($row->{snippet});
-        $safe_snippet =~ s/&lt;mark&gt;/<mark>/g;
-        $safe_snippet =~ s/&lt;\/mark&gt;/<\/mark>/g;
-        $safe_snippet =~ s/\\n//g;
-
-        $row->{snippet} = $safe_snippet;
-
-        push @results, $row;
-    }
-
-    my $json_output = $json->encode({results => \@results});
+    my $json_output = $json->encode({results => \@$rows});
     print $json_output;
 
     $query->finish();
