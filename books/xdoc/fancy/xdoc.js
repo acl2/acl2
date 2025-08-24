@@ -211,12 +211,20 @@ function closeAllPowertips()
 
 function keyTitle(key)
 {
-    var prefix = XDOCTITLE;
+    let prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
     return (xindexObj.topicExists(key))
         ? (prefix + " &mdash; " + xindexObj.topicName(key))
         : (prefix + " &mdash; " + key);
+}
+
+function searchTitle(query)
+{
+    let prefix = XDOCTITLE;
+    if (!prefix) { prefix = "XDOC"; }
+
+    return prefix + " Search &mdash; " + query;
 }
 
 
@@ -919,6 +927,8 @@ function searchGo(str) {
     // user navigates to a new page.
     $("#left").removeClass("active");
     closeAllPowertips();
+
+    $("title").html(searchTitle(str));
 
     ta_data_initialize();
 
