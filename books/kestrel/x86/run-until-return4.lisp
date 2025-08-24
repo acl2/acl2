@@ -19,7 +19,7 @@
 (include-book "register-readers-and-writers32") ; for esp
 (include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
 
-;; Tests whether the stack points is "above" OLD-ESP.  For now, we define
+;; Tests whether the stack pointer is "above" OLD-ESP.  For now, we define
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
 ;; larger ESP means a shorter stack.
 (defund esp-is-abovep (old-esp x86)

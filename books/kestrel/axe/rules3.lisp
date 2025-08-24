@@ -423,17 +423,6 @@
 
 ;(in-theory (disable LOGEXT-BOUNDS)) ; now in a locally included book
 
-(defthm bvplus-equal-constant
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (integerp k1)
-                (integerp k2)
-                (integerp x))
-           (equal (equal (bvplus 32 k2 x) k1)
-                  (and (unsigned-byte-p 32 k1)
-                       (equal (bvchop 32 x) (bvchop 32 (- k1 k2))))))
-  :hints (("Goal" :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))
-
 ;gen
 ;; (defthm integerp-of-*-of-1/4-of-bvchop
 ;;   (implies (integerp x)
@@ -13531,16 +13520,6 @@
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 ;move
-(defthm *-of-expt-and-expr-of-+-of---same
-  (implies (and (integerp i)
-                (integerp j)
-                (acl2-numberp r)
-                (not (equal 0 r)) ;gen?
-                )
-           (equal (* (expt r i) (expt r (+ j (- i))))
-                  (expt r j))))
-
-;move
 (defthm <-of-bvchop-and-bvchop-when-not-<-of-bvchop-and-bvchop-smaller-cheap
   (implies (and (not (< (bvchop n-1 x) (bvchop n-1 y))) ; n-1 is a free var but we check it below
                 (equal n-1 (+ -1 n))
@@ -13640,6 +13619,7 @@
                                   (size size)
                                   (lowsize (+ 1 n))))))
 
+;; todo: use polarities?
 (defthm <-of-constant-and-bvchop-when-equal-of-getbit
   (IMPLIES (AND (syntaxp (and (quotep k)
                               (quotep size)))
