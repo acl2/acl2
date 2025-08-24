@@ -923,7 +923,8 @@
        (type-suffix-of-update
         (acl2::packn-pos (list type-suffix '-of-update) suffix))
        (val-type-suffix-of-head-when-type-suffix
-        (acl2::packn-pos (list val-type '-of-head-when- type-suffix) suffix))
+        (acl2::packn-pos (list val-type-suffix '-of-head-when- type-suffix)
+                         suffix))
        (thm-events
         (append
          `((defruled ,type-suffix-when-emptyp
