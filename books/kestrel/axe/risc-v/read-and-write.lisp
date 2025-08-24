@@ -1,0 +1,960 @@
+; Read and write operations for 32-bit RISC-V code reasoning
+;
+; Copyright (C) 2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "R")
+
+(include-book "portcullis")
+
+;(include-book "kestrel/risc-v/specialized/execution32" :dir :system)
+(include-book "kestrel/risc-v/specialized/states32" :dir :system)
+
+(include-book "kestrel/memory/memory32" :dir :system)
+
+(include-book "support") ; for read32-mem-ubyte8-of-write32-pc
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+;(local (include-book "kestrel/bv/logapp" :dir :system)) ; reduce
+;(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/take" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/bv/logand" :dir :system))
+(local (include-book "kestrel/bv/intro" :dir :system))
+(local (include-book "kestrel/bv/bvcat" :dir :system))
+;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
+(local (include-book "kestrel/bv/ash" :dir :system))
+(local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+
+(in-theory (enable (:e riscv::feat-rv32im-le) ; needed for code proofs
+                    ))
+
+;(local (include-book "kestrel/arithmetic-light/top" :dir :system))
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+;(local (include-book "kestrel/bv/top" :dir :system)) ; reduce
+;move
+(local
+  (encapsulate ()
+    (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+    (defthm unsigned-byte-p-of-+-of-*-of-expt
+      (implies (and (unsigned-byte-p m x)
+                    (unsigned-byte-p (- n m) y)
+                    (posp n))
+               (unsigned-byte-p n (+ x (* (expt 2 m) y))))
+      :hints (("Goal" :in-theory (enable unsigned-byte-p acl2::expt-of-+))))))
+
+(defthm unsigned-byte-p-of-+-of-*-of-power-of-2
+  (implies (and (acl2::power-of-2p k)
+                (unsigned-byte-p (acl2::lg k) x)
+                (unsigned-byte-p (- n (acl2::lg k)) y)
+                (posp n))
+           (unsigned-byte-p n (+ x (* k y))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-*-of-expt
+                                  (m (acl2::lg k)))
+           :in-theory (disable unsigned-byte-p-of-+-of-*-of-expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: add 32 to the name?
+(defund read-byte (addr stat)
+  (declare (xargs :guard (and (unsigned-byte-p 32 addr)
+                              (stat32ip stat))))
+  (read32-mem-ubyte8 addr stat))
+
+(defthm read-byte-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (read-byte addr stat)
+                  (read-byte 0 stat)))
+  :hints (("Goal" :in-theory (enable read-byte read32-mem-ubyte8))))
+
+; maybe drop the arg1 from the name
+(defthm read-byte-of-bvchop-arg1
+  (equal (read-byte (bvchop 32 addr) stat)
+         (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read-byte read32-mem-ubyte8))))
+
+(defthm read-byte-of-constant-arg2
+  (implies (and (syntaxp (quotep addr))
+                (not (unsigned-byte-p 32 addr)))
+           (equal (read-byte addr stat)
+                  (read-byte (bvchop 32 addr) stat)))
+  :hints (("Goal" :in-theory (enable read-byte
+                                     read32-mem-ubyte8 ; todo
+                                     ))))
+
+;rename to have 8 in the name?
+(defthmd unsigned-byte-p-of-read-byte-simple
+  (unsigned-byte-p 8 (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+(defthm unsigned-byte-p-of-read-byte
+  (implies (<= 8 size)
+           (equal (unsigned-byte-p size (read-byte addr stat))
+                  (natp size)))
+  :hints (("Goal" :use unsigned-byte-p-of-read-byte-simple
+           :cases ((integerp size))
+           :in-theory (disable  unsigned-byte-p-of-read-byte-simple))))
+
+(defthm <=-of-read-byte-linear
+  (<= (read-byte addr stat) 255)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+
+(defthmd read-byte-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read-byte (+ x y) stat)
+                  (read-byte (bvplus 32 x y) stat)))
+  :hints (("Goal" :in-theory (e/d (read-byte read32-mem-ubyte8 bvplus)
+                                  (acl2::bvplus-of-+-arg3
+                                   x::disjoint-regions32p-of-+-arg4
+                                   x::in-region32p-of-+-arg3)))))
+
+;rename
+;todo: same as read-byte-equal-when-bvchops-equal?
+(defthmd read-byte-when-bvchops-agree
+  (implies (equal (bvchop 32 addr)
+                  (bvchop 32 addr2))
+           (equal (equal (read-byte addr stat)
+                         (read-byte addr2 stat))
+                  t))
+  :hints (("Goal" :in-theory (enable read-byte
+                                     read32-mem-ubyte8 ; todo
+                                     ))))
+
+;or do we want to introduce bvchop?
+(defthm read-byte-of-+-of-bvchop-arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read-byte (+ x (bvchop 32 y)) stat)
+                  (read-byte (+ x y) stat)))
+  :hints (("Goal" :use ((:instance read-byte-of-bvchop-arg1 (addr (+ x (bvchop 32 y))))
+                        (:instance read-byte-of-bvchop-arg1 (addr (+ x y))))
+           :in-theory (disable read-byte-of-bvchop-arg1))))
+
+;or do we want to introduce bvchop?
+(defthm read-byte-of-+-of-bvchop-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read-byte (+ (bvchop 32 y) x) stat)
+                  (read-byte (+ y x) stat)))
+  :hints (("Goal" :use ((:instance read-byte-of-bvchop-arg1 (addr (+ (bvchop 32 y) x)))
+                        (:instance read-byte-of-bvchop-arg1 (addr (+ x y))))
+           :in-theory (disable read-byte-of-bvchop-arg1))))
+
+;or do we want to introduce bvchop?
+(defthm read-byte-of-+-of-bvchop-arg2+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read-byte (+ x (bvchop 32 y) z) stat)
+                  (read-byte (+ x y z) stat)))
+  :hints (("Goal" :use ((:instance read-byte-of-bvchop-arg1 (addr (+ x (bvchop 32 y) z)))
+                        (:instance read-byte-of-bvchop-arg1 (addr (+ x y z))))
+           :in-theory (disable read-byte-of-bvchop-arg1))))
+
+(defthm bvchop-of-+-of-bvimunus-arg3
+  (implies  (and (integerp x)
+                 (integerp y)
+                 (integerp z))
+            (equal (bvchop 32 (+ x y (bvuminus 32 z)))
+                   (bvchop 32 (+ x y (- z)))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
+;or do we want to introduce bvchop?
+(defthm read-byte-of-+-of-bvuminus-arg3
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (read-byte (+ x y (bvuminus 32 z)) stat)
+                  (read-byte (+ y x (- z)) stat)))
+  :hints (("Goal" :use ((:instance read-byte-of-bvchop-arg1 (addr (+ x y (bvuminus 32 z))))
+                        (:instance read-byte-of-bvchop-arg1 (addr (+ y x (- z)))))
+           :in-theory (e/d (;bvuminus
+                            )
+                           (read-byte-of-bvchop-arg1)))))
+
+(defthm read-byte-of-+-subst-constant-arg1
+  (implies (and (equal (bvchop 32 x) freek)
+                (syntaxp (and (quotep freek)
+                              ;; avoid loops:
+                              (not (quotep x))))
+                (integerp x)
+                (integerp y))
+           (equal (read-byte (+ x y) stat)
+                  (read-byte (+ freek y) stat)))
+  :hints (("Goal" :in-theory (enable read-byte-of-+))))
+
+(defthm read-byte-of-+-subst-constant-arg2
+  (implies (and (equal (bvchop 32 y) freek)
+                (syntaxp (and (quotep freek)
+                              (not (quotep y))))
+                (integerp x)
+                (integerp y))
+           (equal (read-byte (+ x y) stat)
+                  (read-byte (+ x freek) stat)))
+  :hints (("Goal" :in-theory (enable read-byte-of-+))))
+
+
+(defthmd read32-mem-ubyte8-becomes-read-byte
+  (equal (read32-mem-ubyte8 addr stat)
+         (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read32-mem-ubyte8 read-byte))))
+
+(theory-invariant (incompatible (:rewrite read32-mem-ubyte8-redef) (:definition read-byte )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
+;; TODO: Consider putting the N parameter first
+(defund read-bytes (addr n stat)
+  (declare (xargs :guard (and (unsigned-byte-p 32 addr)
+                              (natp n)
+                              (stat32ip stat))))
+  (if (zp n)
+      nil
+    (cons (read-byte addr stat)
+          (read-bytes (bvplus 32 1 addr) (+ -1 n) stat))))
+
+(local
+  ;rename
+  (defun indf (n1 ad1 ad2 stat)
+    (if (zp n1)
+        (list n1 ad1 ad2 stat)
+      (indf (+ -1 n1)
+            (+ -1 ad1)
+            (+ 1 ad2)
+            stat))))
+
+(defthm len-of-read-bytes
+  (equal (len (read-bytes addr n stat))
+         (nfix n))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm bv-array-read-of-read-bytes-helper
+  (implies (and (< ad1 len) ;(force (< ad1 len))
+                (natp ad1)
+                (natp len)
+                (integerp ad2))
+           (equal (acl2::bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+                  (read-byte (bvplus 32 ad1 ad2) stat)))
+  :hints (("Goal" :induct (indf len ad1 ad2 stat) ; (read-bytes ad2 len stat)
+           :expand (read-bytes ad2 len stat)
+           ;(read-induct-two-sizes len ad1 ad2 stat)
+           :in-theory (enable read-bytes read-byte-of-+
+                              acl2::bvplus-of-+-arg2
+                              acl2::bvplus-of-+-arg3))))
+
+;;  ; todo: different from the version for x86
+;; (defthm bv-array-read-of-read-bytes
+;;   (implies (and (natp ad1)
+;;                 (natp len)
+;;                 (integerp ad2))
+;;            (equal (acl2::bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+;;                   (if (< ad1 len)
+;;                       (read-byte (bvplus 32 ad1 ad2) stat)
+;;                     0)))
+;;   :hints (("Goal" :use (:instance bv-array-read-of-read-bytes-helper)
+;;            :in-theory (disable bv-array-read-of-read-bytes-helper))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reads an N-byte chunk starting at ADDR (in little endian fashion).
+;; Unlike read-bytes, this returns the value as a bit-vector.
+(defund read (n addr stat)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p 32 addr)
+                              (stat32ip stat))))
+  (if (zp n)
+      0
+    (let ((addr (mbe :logic (ifix addr) :exec addr)) ; treats non-integer address as 0
+          )
+      (bvcat (* 8 (- n 1))
+             (read (- n 1) (bvplus 32 1 addr) stat)
+             8
+             (read-byte addr stat)))))
+
+;; includes the n=0 case
+(defthm read-when-not-posp-cheap
+  (implies (not (posp n))
+           (equal (read n addr x86)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm read-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (read n addr stat)
+                  (read n 0 stat)))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm read-of-constant-arg2
+  (implies (and (syntaxp (quotep addr))
+                (not (unsigned-byte-p 32 addr)))
+           (equal (read n addr stat)
+                  (read n (bvchop 32 addr) stat)))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm ash-becomes-bvcat-when-byte-p
+  (implies (and (unsigned-byte-p 8 x)
+                (natp amt))
+           (equal (ash x amt)
+                  (bvcat (+ 8 amt) x amt 0)))
+  :hints (("Goal" :use (:instance acl2::ash-becomes-bvcat (x x) (amt amt) (xsize 8))
+           :in-theory (disable acl2::ash-becomes-bvcat))))
+
+(defthmd +-of-bvcat-combine
+  (implies (unsigned-byte-p low x)
+           (equal (+ x (bvcat high highval low 0))
+                  (bvcat high highval low x)))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(defthmd +-of-bvcat-combine-extra
+  (implies (unsigned-byte-p low x)
+           (equal (+ x (bvcat high highval low 0) rest)
+                  (+ (bvcat high highval low x) rest)))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(local (include-book "kestrel/bv/ash" :dir :system))
+(defthm read32-mem-ubyte32-lendian-redef
+  (implies (integerp addr)
+           (equal (read32-mem-ubyte32-lendian addr stat)
+                  (bvcat2 8 (read-byte (bvplus 32 3 addr) stat)
+                          8 (read-byte (bvplus 32 2 addr) stat)
+                          8 (read-byte (bvplus 32 1 addr) stat)
+                          8 (read-byte addr stat))))
+  :hints (("Goal" :in-theory (e/d (read32-mem-ubyte32-lendian
+                                   bvcat logapp
+                                   ;ash
+                                   unsigned-byte-p
+                                   read32-mem-ubyte8-becomes-read-byte
+                                    read-byte-of-+)
+                                  (acl2::bvcat-equal-rewrite
+                                   acl2::bvcat-equal-rewrite-alt
+                                   acl2::logapp-equal-rewrite
+                                   acl2::logapp-equal-rewrite-8
+                                   acl2::logapp-equal-rewrite-16
+                                   acl2::logapp-equal-rewrite-24)))))
+
+(defthm read32-mem-ubyte32-lendian-becomes-read
+  (implies (integerp addr)
+           (equal (read32-mem-ubyte32-lendian addr stat)
+                  (read 4 addr stat)))
+  :hints (("Goal" :expand ((:free (n addr) (read n addr stat)))
+           :in-theory (enable read))))
+
+(defthmd read-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read n (+ x y) stat)
+                  (read n (bvplus 32 x y) stat)))
+  :hints (("Goal" :in-theory (enable read read-byte-of-+
+                                     acl2::bvplus-of-+-arg2
+                                     acl2::bvplus-of-+-arg3))))
+
+(defthmd read-becomes-read-byte
+  (equal (read 1 addr stat)
+         (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm unsigned-byte-p-of-read
+  (implies (<= (* n 8) size)
+           (equal (unsigned-byte-p size (read n addr stat))
+                  (natp size)))
+  :hints (("Goal" :in-theory (enable read))))
+
+(local
+  (defun bvchop-of-read-induct (numbits numbytes addr)
+    (if (zp numbytes)
+        (list numbits numbytes addr)
+      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 (ifix addr))))))
+
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+(defthm bvchop-of-read
+  (implies (and (equal 0 (mod numbits 8))
+                (natp numbits)
+                (natp numbytes))
+           (equal (bvchop numbits (read numbytes addr stat))
+                  (if (< numbits (* 8 numbytes))
+                      (read (/ numbits 8) addr stat)
+                    (read numbytes addr stat))))
+  :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
+           :expand (read numbytes addr stat)
+           :in-theory (enable READ read-of-+))))
+
+(local
+  (defun read-high-low-induct (n addr stat high low)
+    (declare (xargs :verify-guards nil))
+    (if (zp n)
+        (mv n addr stat high low)
+      (read-high-low-induct (- n 1) (+ 1 addr) stat (+ -8 high) (+ -8 low)))))
+
+;rename since used for a read proof as well
+;add -alt to name?
+(local
+  (defun double-write-induct-two-addrs (n addr addr2 val stat)
+    (if (zp n)
+        (list n addr addr2 val stat)
+      (double-write-induct-two-addrs (+ -1 n)
+                                     (+ 1 addr)
+                                     (+ 1 addr2)
+                                     (logtail 8 val)
+                                     stat))))
+
+;rename
+(local
+  (defthmd read-when-bvchops-agree-helper
+    (implies (and (equal (bvchop 32 addr)
+                         (bvchop 32 addr2))
+                  (integerp addr)
+                  (integerp addr2))
+             (equal (equal (read n addr stat)
+                           (read n addr2 stat))
+                    t))
+    :hints (("Goal" :induct (double-write-induct-two-addrs N ADDR addr2 VAL STAT)
+             :in-theory (enable read
+                                acl2::bvchop-of-sum-cases
+                                read-byte-when-bvchops-agree
+                                ;bvplus
+                                )))))
+
+(defthmd read-when-bvchops-agree
+  (implies (equal (bvchop 32 addr)
+                  (bvchop 32 addr2))
+           (equal (equal (read n addr stat)
+                         (read n addr2 stat))
+                  t))
+  :hints (("Goal" :in-theory (enable ifix)
+           :use (:instance read-when-bvchops-agree-helper
+                           (addr (ifix addr))
+                           (addr2 (ifix addr2))))))
+
+(defthm read-of-bvchop-32
+  (equal (read n (bvchop 32 addr) stat)
+         (read n addr stat))
+  :hints (("Goal" :in-theory (enable read-when-bvchops-agree))))
+
+(local (include-book "kestrel/bv/arith" :dir :system))
+
+;for whole bytes
+;move up
+(defthm slice-of-read
+  (implies (and ;; (syntaxp (and (quotep low)
+                ;;               (quotep high)))
+                (equal 0 (mod low 8)) ; low bit of some byte
+                ;;(equal 7 (mod high 8)) ; high bit of some byte
+                (integerp (/ (+ high 1) 8))
+                (< high (* 8 n))
+;                (<= low high)
+                (natp low)
+                (natp high)
+                (natp n)
+                (integerp addr))
+           (equal (slice high low (read n addr stat))
+                  (read (/ (+ 1 high (- low)) 8) ; number if bytes to read
+                        (+ (/ low 8) ; number of bytes we skip
+                           addr)
+                        stat)))
+  :hints (("subgoal *1/2" :cases ((< high 7)))
+          ("Goal" :induct (read-high-low-induct n addr stat high low)
+           :do-not '(generalize eliminate-destructors)
+           :expand ((read n addr stat)
+                    (read (+ 1/8 (* 1/8 high)) addr stat))
+           :in-theory (e/d (read acl2::integerp-squeeze read-of-+
+                                 )
+                           (acl2::<=-of-*-and-*-same-linear
+                            acl2::<=-of-*-and-*-same-alt-linear
+                            ;; these seemed to add stuff to the goal itself?!  why?
+                            acl2::<-of-*-and-*-same-forward-1
+                            acl2::<-of-*-and-*-same-forward-2
+                            acl2::<-of-*-and-*-same-forward-3
+                            acl2::<-of-*-and-*-same-forward-4)))))
+
+
+(local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
+
+(defthmd bvplus-helper
+  (implies (and (< x n2)
+                (unsigned-byte-p 32 n2) ; gen?
+                (unsigned-byte-p 32 x) ; if we keep this, simplify the rhs
+                ;(integerp x)
+                (natp n2))
+           (equal (< (bvplus 32 1 x) n2)
+                  (not (and ;(unsigned-byte-p 32 n2)
+                         (equal (bvchop 32 x) (bvminus 32 n2 1))
+                         (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
+  :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
+                                  (acl2::bvplus-of-+-arg3
+                                   x::disjoint-regions32p-of-+-arg4
+                                   x::in-region32p-of-+-arg3)))))
+
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(defthm read-when-equal-of-read-bytes-and-subregion32p
+  (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (x::subregion32p n1 ad1 n2 ad2)
+                ;; (syntaxp (quotep bytes)) ; maybe uncomment
+                ;; (unsigned-byte-p 32 n1)
+                (natp n1)
+                (< n1 (expt 2 32)) ; allow equal?
+                (unsigned-byte-p 32 n2) ; allow 2^32?
+                (unsigned-byte-p 32 n1) ; todo
+                (integerp ad1) ; todo
+                (integerp ad2) ; todo
+                (unsigned-byte-p 32 ad1) ; drop?
+                (unsigned-byte-p 32 ad2) ; drop?
+                )
+           (equal (read n1 ad1 stat)
+                  (acl2::bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)))
+  :hints (("Goal"
+           :do-not '(generalize eliminate-destructors)
+;           :expand (read n1 ad1 stat)
+           :expand ((read n1 ad1 stat)
+                    (bv-array-read-chunk-little n1 8 n2 ad1 (read-bytes 0 n2 stat))
+                    (bv-array-read-chunk-little n1 8 n2 (+ (bvchop 32 ad1) (bvuminus 32 ad2)) (read-bytes ad2 n2 stat))
+                    (bv-array-read-chunk-little n1 8 n2 (bvchop 32 (+ ad1 (- ad2))) (read-bytes ad2 n2 stat)))
+           :induct (read n1 ad1 stat)
+           :in-theory (e/d ((:i read)
+                            bvplus
+                            ;bvuminus
+                            bvuminus
+                            ;acl2::bvchop-of-sum-cases
+                            x::subregion32p
+                            bvlt
+                            x::in-region32p
+                            read-becomes-read-byte
+                            ifix
+                            ;read-byte-of-+
+                            ;read-of-+ ; loops with bvplus
+                            acl2::expt-becomes-expt-limited
+                            bvplus-helper
+                            zp
+                            unsigned-byte-p
+                            )
+                           (;distributivity
+                            acl2::+-of-minus-constant-version ; fixme disable
+                            (:e expt)
+                            acl2::bvplus-of-+-arg3
+                            x::disjoint-regions32p-of-+-arg4
+                            x::in-region32p-of-+-arg3
+                            ;bvchop-of-read ;looped, but we need it
+                            ;acl2::bvcat-equal-rewrite acl2::bvcat-equal-rewrite-alt ; looped
+                            ;; for speed:
+                            ;acl2::usb-when-usb8
+                            ;acl2::bvchop-identity
+                            x::in-region32p-when-in-region32p-and-subregion32p
+                            ;acl2::bound-lemma-for-adder
+                            acl2::<-of-*-same-linear-special
+                            acl2::bv-array-read-chunk-little-unroll ; looped
+                            )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;read-over-write-rules
+
+(defthm read-byte-of-write32-pc
+  (equal (read-byte addr (write32-pc pc stat))
+         (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+(defthm read-of-write32-pc
+  (equal (read n addr (write32-pc pc stat))
+         (read n addr stat))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm read-byte-of-write32-xreg
+  (equal (read-byte addr (write32-xreg reg val stat))
+         (read-byte addr stat))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+(defthm read-of-write32-xreg
+  (equal (read n addr (write32-xreg reg val stat))
+         (read n addr stat))
+  :hints (("Goal" :in-theory (enable read))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable ubyte8p)))
+
+;; Writes the BYTE at address ADDR.
+(defund write-byte (addr byte stat)
+  (declare (xargs :guard (and (acl2::unsigned-byte-p 32 addr)
+                              (acl2::unsigned-byte-p 8 byte)
+                              (stat32ip stat))))
+  (write32-mem-ubyte8 addr byte stat))
+
+(defthm write-byte-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (write-byte addr val stat)
+                  (write-byte 0 val stat)))
+  :hints (("Goal" :in-theory (enable write-byte write32-mem-ubyte8))))
+
+(defthm stat32ip-of-write-byte
+  (implies (stat32ip stat)
+           (stat32ip (write-byte addr byte stat)))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm error32p-of-write-byte
+  (equal (error32p (write-byte addr byte stat))
+         (error32p stat))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm read32-pc-of-write-byte (equal (read32-pc (write-byte addr val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthmd write32-mem-ubyte8-becomes-write-byte
+  (equal (write32-mem-ubyte8 addr byte stat)
+         (write-byte addr byte stat))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthmd write-byte-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (write-byte (+ x y) val stat)
+                  (write-byte (bvplus 32 x y) val stat)))
+  :hints (("Goal" :in-theory (e/d (write-byte write32-mem-ubyte8 bvplus)
+                                  (acl2::bvplus-of-+-arg3
+                                   x::disjoint-regions32p-of-+-arg4
+                                   x::in-region32p-of-+-arg3)))))
+
+(theory-invariant (incompatible (:rewrite write-byte-of-+) (:definition bvplus)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Writes the N-byte chunk VAL starting at ADDR (in little endian fashion).
+(defund write (n addr val stat)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p (* 8 n) val)
+                              (unsigned-byte-p 32 addr)
+                              (stat32ip stat))))
+  (if (zp n)
+      stat
+    (let ((stat (write-byte addr (bvchop 8 val) stat)))
+      (write (+ -1 n)
+             (bvplus 32 1 addr)
+             (logtail 8 val) ;(slice (+ -1 (* 8 n)) 8 val)
+             stat))))
+
+(defthm write-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (write n addr val stat)
+                  (write n 0 val stat)))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm error32p-of-write
+  (equal (error32p (write n addr byte stat))
+         (error32p stat))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm stat32ip-of-write
+  (implies (stat32ip stat)
+           (stat32ip (write n addr byte stat)))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm read32-pc-of-write (equal (read32-pc (write n addr val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable write))))
+
+(defthmd write32-mem-ubyte32-lendian-becomes-write
+  (implies (and (integerp addr)
+                ;(unsigned-byte-p 32 val)
+                )
+           (equal (write32-mem-ubyte32-lendian addr val stat)
+                  (write 4 addr val stat)))
+  :hints (("Goal" :expand ((:free (n addr val stat) (write n addr val stat)))
+           :in-theory (enable write32-mem-ubyte32-lendian-alt-def
+                              acl2::bvchop-of-logtail-becomes-slice
+                              ;write32-mem-ubyte32-lendian
+                              write
+                              ubyte32-fix
+                              acl2::ash-of-negative-becomes-logtail
+                              write32-mem-ubyte8-becomes-write-byte
+                              ubyte32p
+                              acl2::bvand-with-constant-mask-arg2
+                              write-byte-of-+))))
+
+(defthmd write-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (write n (+ x y) val stat)
+                  (write n (bvplus 32 x y) val stat)))
+  :hints (("Goal" :in-theory (enable write write-byte-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Could weaken to just require the bvchops to be equal
+(defthm read-byte-of-write-byte-same
+  (equal (read-byte addr (write-byte addr byte stat))
+         (bvchop 8 byte))
+  :hints (("Goal" :in-theory (enable read-byte write-byte))))
+
+(defthm read-byte-of-write-byte-diff
+  (implies (not (equal (bvchop 32 addr1)
+                       (bvchop 32 addr2)))
+           (equal (read-byte addr1 (write-byte addr2 byte stat))
+                  (read-byte addr1 stat)))
+  :hints (("Goal" :in-theory (enable read-byte write-byte))))
+
+(defthm read-byte-subst-term-arg1
+  (implies (and (equal (bvchop 32 ad) (bvchop 32 free))
+                (syntaxp (acl2::smaller-termp free ad)))
+           (equal (read-byte ad stat)
+                  (read-byte free stat)))
+  :hints (("Goal" :in-theory (enable read-byte read32-mem-ubyte8))))
+
+;move up
+(defthm write-byte-subst-term-arg1
+  (implies (and (equal (bvchop 32 ad) (bvchop 32 free))
+                (syntaxp (acl2::smaller-termp free ad))
+                ;(integerp ad)
+                ;(integerp free)
+                )
+           (equal (write-byte ad byte stat)
+                  (write-byte free byte stat)))
+  :hints (("Goal" :in-theory (enable write-byte write32-mem-ubyte8))))
+
+;; Handles both cases (same address, different address).
+;; Could add separate -same and -diff rules that would not cause case splits.
+(defthm read-byte-of-write-byte
+  (equal (read-byte addr1 (write-byte addr2 byte stat))
+         (if (equal (bvchop 32 addr1)
+                    (bvchop 32 addr2))
+             (bvchop 8 byte)
+           (read-byte addr1 stat)))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm read-byte-of-write-irrel-gen
+  (implies (and (<= n (bvminus 32 addr1 addr2))
+        ;        (integerp addr1)
+         ;       (integerp addr2)
+                )
+           (equal (read-byte addr1 (write n addr2 val stat))
+                  (read-byte addr1 stat)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct t
+           :in-theory (e/d (read write bvplus
+                                 acl2::bvchop-of-sum-cases
+                                 acl2::bvuminus bvminus
+                                 ;read-byte
+                                 read32-mem-ubyte8-becomes-read-byte)
+                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                            acl2::bvcat-of-+-high
+                            acl2::bvchop-identity
+                            acl2::bvplus-of-+-arg3
+                            x::disjoint-regions32p-of-+-arg4
+                            x::in-region32p-of-+-arg3
+                            )))))
+
+(defthm read-byte-of-write-within
+  (implies (and (< (bvminus 32 ad1 ad2) n)
+                (<= n (expt 2 32))
+                (integerp n)
+;                (integerp ad1) ;needed?
+                ;(integerp ad2)
+                )
+           (equal (read-byte ad1 (write n ad2 val stat))
+                  (slice (+ 7 (* 8 (bvminus 32 ad1 ad2)))
+                         (* 8 (bvminus 32 ad1 ad2))
+                         val)))
+  :hints (("Goal" :induct t
+           :do-not '(preprocess)
+           :in-theory (e/d (read
+                            write posp
+                            ;read-byte
+                            ;write-byte
+                            acl2::bvuminus
+                            bvplus acl2::bvchop-of-sum-cases
+                            read32-mem-ubyte8-becomes-read-byte ; todo: loop
+                            acl2::expt-becomes-expt-limited
+                            )
+                           (acl2::bvplus-of-+-arg3
+                            x::disjoint-regions32p-of-+-arg4
+                            x::in-region32p-of-+-arg3
+                            write32-mem-ubyte8-of-+-arg1 ; todo: loop
+                            (:e expt)
+                            )))))
+
+(defthm read-byte-of-write-both
+  (implies (and (<= n (expt 2 32))
+                (integerp n)
+                ;; (integerp ad1)
+                ;; (integerp ad2)
+                )
+           (equal (read-byte ad1 (write n ad2 val stat))
+                  (if (< (bvminus 32 ad1 ad2) n)
+                      (slice (+ 7 (* 8 (bvminus 32 ad1 ad2)))
+                             (* 8 (bvminus 32 ad1 ad2))
+                             val)
+                    (read-byte ad1 stat)))))
+
+(DEFTHM READ-BYTE-OF-WRITE-BOTH-new
+  (IMPLIES (AND ;(<= N (EXPT 2 32))
+             (unsigned-byte-p 32 n)
+             (INTEGERP N)
+             ;; (INTEGERP AD1)
+             ;; (INTEGERP AD2)
+             )
+           (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL STAT))
+                  (IF (x::in-region32p ad1 n ad2)
+                      (SLICE (+ 7 (* 8 (BVMINUS 32 AD1 AD2)))
+                             (* 8 (BVMINUS 32 AD1 AD2))
+                             VAL)
+                    (READ-BYTE AD1 STAT))))
+  :hints (("Goal" :in-theory (enable x::in-region32p acl2::bvlt))))
+
+;build in to tool
+(defthm subregion32p-of-+-of--1-same
+  (implies (posp n)
+           (x::subregion32p (+ -1 n) 1 n 0))
+  :hints (("Goal" :in-theory (enable x::subregion32p x::in-region32p acl2::bvlt))))
+
+(defthm read-of-write-when-disjoint-regions32p
+  (implies (and (x::disjoint-regions32p n1 ad1 n2 ad2)
+                (integerp ad1)
+                (integerp ad2)
+                (unsigned-byte-p 32 n1)
+                (unsigned-byte-p 32 n2))
+           (equal (read n1 ad1 (write n2 ad2 val stat))
+                  (read n1 ad1 stat)))
+  :hints (("Goal" :in-theory (enable read write zp))))
+
+(local
+  (defthm read-of-write-same-helper
+    (implies (and (<= n 4294967296) ; 2^32
+                  (integerp addr) ; drop?
+                  (integerp n))
+             (equal (read n addr (write n addr val stat))
+                    (bvchop (* 8 n) val)))
+    :hints (("Goal"
+             :in-theory (e/d (read write acl2::bvchop-of-logtail-becomes-slice)
+                             (;memi
+                              (:e expt) ; memory exhaustion
+                              ))))))
+
+; same n and same address
+(defthm read-of-write-same
+  (implies (and (<= n 4294967296) ; 2^32
+                ;; (integerp addr)
+                (integerp n))
+           (equal (read n addr (write n addr val stat))
+                  (bvchop (* 8 n) val)))
+  :hints (("Goal" :use (:instance read-of-write-same-helper (addr (ifix addr)))
+           :in-theory (e/d (ifix) (read-of-write-same-helper
+                                   (:e expt))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm unsigned-byte-p-when-ubyte32p
+    (implies (ubyte32p x)
+             (unsigned-byte-p 32 x))
+    :hints (("Goal" :in-theory (enable ubyte32p)))))
+
+(defund reg (n stat)
+  (declare (xargs :guard (and (posp n)
+                              (< n 31)
+                              (stat32ip stat))
+                  :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
+  (read32-xreg-unsigned n stat))
+
+(defthm unsigned-byte-p-of-reg (unsigned-byte-p 32 (reg n stat)) :hints (("Goal" :in-theory (enable reg))))
+
+(defthmd read32-xreg-unsigned-becomes-reg
+  (equal (read32-xreg-unsigned n stat)
+         (reg n stat))
+  :hints (("Goal" :in-theory (enable reg))))
+
+(defund set-reg (n val stat)
+  (declare (xargs :guard (and (posp n)
+                              (< n 31)
+                              (unsigned-byte-p 32 val)
+                              (stat32ip stat))
+                  :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
+  (write32-xreg n val stat))
+
+;; writing to "register 0" has no effect
+(defthm set-reg-of-0
+  (implies (stat32ip stat) ; too bad
+           (equal (set-reg 0 val stat)
+                  stat))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthmd write32-xreg-becomes-set-reg
+  (equal (write32-xreg n val stat)
+         (set-reg n val stat))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm error32p-of-set-reg (equal (error32p (set-reg n val stat)) (error32p stat)) :hints (("Goal" :in-theory (enable set-reg))))
+(defthm read32-pc-of-set-reg (equal (read32-pc (set-reg n val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable set-reg))))
+(defthm read-byte-of-set-reg (equal (read-byte addr (set-reg n val stat)) (read-byte addr stat)) :hints (("Goal" :in-theory (enable set-reg read-byte))))
+(defthm read-of-set-reg (equal (read n addr (set-reg n2 val stat)) (read n addr stat)) :hints (("Goal" :in-theory (enable read))))
+
+;; both cases
+(defthm reg-of-set-reg
+  (implies (and (posp n1)
+                (posp n2)
+                (< n1 32)
+                (< n2 32))
+           (equal (reg n1 (set-reg n2 val stat))
+                  (if (equal n1 n2)
+                      (bvchop 32 val)
+                    (reg n1 stat))))
+  :hints (("Goal" :in-theory (enable reg set-reg ubyte5-fix ubyte5p))))
+
+(defthm reg-of-write32-pc (equal (reg n (write32-pc pc stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg))))
+(defthm reg-of-write-byte (equal (reg n (write-byte addr val stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg write-byte))))
+(defthm reg-of-write (equal (reg n (write n2 addr val stat)) (reg n stat)) :hints (("Goal" :in-theory (enable write))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; register aliases (we plan to keep these enabled):
+(defund x1 (stat) (declare (xargs :guard (stat32ip stat))) (reg 1 stat))
+(defund x2 (stat) (declare (xargs :guard (stat32ip stat))) (reg 2 stat))
+(defund x8 (stat) (declare (xargs :guard (stat32ip stat))) (reg 8 stat))
+(defund x10 (stat) (declare (xargs :guard (stat32ip stat))) (reg 10 stat))
+(defund x11 (stat) (declare (xargs :guard (stat32ip stat))) (reg 11 stat))
+
+;; register aliases (we plan to keep these enabled):
+(defun ra (stat) (declare (xargs :guard (stat32ip stat))) (x1 stat))
+(defun sp (stat) (declare (xargs :guard (stat32ip stat))) (x2 stat))
+(defun a0 (stat) (declare (xargs :guard (stat32ip stat))) (x10 stat))
+(defun a1 (stat) (declare (xargs :guard (stat32ip stat))) (x11 stat))
+
+;; Introduce new normal forms:
+(in-theory (enable read32-mem-ubyte8-becomes-read-byte
+                   write32-mem-ubyte8-becomes-write-byte
+                   write32-mem-ubyte32-lendian-becomes-write
+                   ;; read32-xreg-unsigned-becomes-x1
+                   ;; read32-xreg-unsigned-becomes-x2
+                   ;; read32-xreg-unsigned-becomes-x8
+                   ;; read32-xreg-unsigned-becomes-x10
+                   ;; read32-xreg-unsigned-becomes-x10
+                   ;; write32-xreg-becomes-set-x1
+                   ;; write32-xreg-becomes-set-x2
+                   ;; write32-xreg-becomes-set-x8
+                   ;; write32-xreg-becomes-set-x10
+                   ;; write32-xreg-becomes-set-x11
+                   ;; write32-xreg-becomes-set-x14
+                   read32-xreg-unsigned-becomes-reg
+                   write32-xreg-becomes-set-reg
+                   x1
+                   x2
+                   x8
+                   x10
+                   x11
+                   read-of-+
+                   write-of-+
+                   acl2::bvchop-of-+-becomes-bvplus))
