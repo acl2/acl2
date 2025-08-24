@@ -31,6 +31,7 @@
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (in-theory (enable* c$::abstract-syntax-aidentp-rules)))
+(local (in-theory (enable* c$::abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -503,6 +504,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-initer-single-thm ((old initerp)
+                                        (new initerp)
+                                        (vartys ident-type-mapp)
+                                        (const-new symbolp)
+                                        (thm-index posp)
+                                        (hints true-listp))
+  :guard (and (initer-unambp old)
+              (initer-unambp new)
+              (initer-case old :single)
+              (initer-case new :single))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of a single initializer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem says that
+     if the execution of the old initializer does not yield an error,
+     neither does the execution of the new initializer,
+     and that the two executions give the same result;
+     the theorem also says that the result has the type of the initializer."))
+  (b* ((old (initer-fix old))
+       (new (initer-fix new))
+       ((unless (initer-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (initer-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (initer-type old))
+       ((unless (equal (initer-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new initializer ~x1 differs from ~
+                the type ~x2 of the old initializer ~x3."
+               (initer-type new) new type old)
+        (mv '(_) nil 1))
+       (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
+       ((unless (type-formalp type))
+        (raise "Internal error: initializer ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
+       (formula
+        `(b* ((old-initer (mv-nth 1 (ldm-initer ',old)))
+              (new-initer (mv-nth 1 (ldm-initer ',new)))
+              ((mv old-result old-compst)
+               (c::exec-initer old-initer compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-initer new-initer compst new-fenv limit)))
+           (implies (and ,@vars-pre
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         (equal (c::init-type-of-init-value old-result)
+                                (c::init-type-single ',ctype))
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (simpadd0-gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-initer-single-thm
+    :args ((old initerp) (new initerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-expr-asg-thm ((old exprp)
                                    (new exprp)
                                    (vartys ident-type-mapp)
@@ -548,24 +621,16 @@
         (raise "Internal error: ~x0 is not an assignment expression." old)
         (mv '(_) nil 1))
        (old-left (expr-binary->arg1 old))
-       (old-right (expr-binary->arg2 old))
        ((unless (expr-case old-left :ident))
         (raise "Internal error: ~x0 is not a variable." old-left)
-        (mv '(_) nil 1))
-       ((unless (expr-purep old-right))
-        (raise "Internal error: ~x0 is not a pure expression." old-right)
         (mv '(_) nil 1))
        ((unless (and (expr-case new :binary)
                      (binop-case (expr-binary->op new) :asg)))
         (raise "Internal error: ~x0 is not an assignment expression." new)
         (mv '(_) nil 1))
        (new-left (expr-binary->arg1 new))
-       (new-right (expr-binary->arg2 new))
        ((unless (equal new-left old-left))
         (raise "Internal error: ~x0 and ~x1 differ." old-left new-left)
-        (mv '(_) nil 1))
-       ((unless (expr-purep new-right))
-        (raise "Internal error: ~x0 is not a pure expression." new-right)
         (mv '(_) nil 1))
        (vars-pre (simpadd0-gen-var-assertions vartys 'compst))
        (vars-post (simpadd0-gen-var-assertions vartys 'old-compst))
@@ -1395,7 +1460,7 @@
      parenthesizing the possibly transformed inner expression.
      We generate a theorem iff
      a theorem was generated for the inner expression,
-     which we see from whether the theorem name is @('nil') or not.
+     and the inner expression is pure.
      The function @(tsee ldm-expr) maps
      a parenthesized expression to the same as the inner expression.
      Thus, the theorem for the parenthesized expression
@@ -1403,7 +1468,8 @@
   (b* ((expr (expr-paren inner))
        (expr-new (expr-paren inner-new))
        ((simpadd0-gin gin) gin)
-       ((unless inner-thm-name)
+       ((unless (and inner-thm-name
+                     (expr-purep inner)))
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr))
@@ -1448,12 +1514,14 @@
    (xdoc::p
     "We generate a theorem iff
      a theorem was generated for the argument expression,
+     the argument expression is pure,
      and the unary operator is among @('+'), @('-'), @('~') and @('!').
      The theorem is proved via two general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
+                     (expr-purep arg)
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new (simpadd0-gout-no-thm gin)))
@@ -1595,7 +1663,8 @@
    (xdoc::p
     "For now, we generate no theorem for the transformation of the type name,
      but we double-check that here.
-     We generate a theorem only if we generated one for the argument expression
+     We generate a theorem only if we generated one for the argument expression,
+     the argument expression is pure,
      and the old and new type names are the same (i.e. no transformation)."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-cast :type type :arg arg))
@@ -1607,6 +1676,7 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        ((c$::tyname-info info) info)
        ((unless (and arg-thm-name
+                     (expr-purep arg)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
@@ -1718,7 +1788,12 @@
      This is the core of this simple transformation.")
    (xdoc::p
     "We generate a theorem only if
-     theorems were generated for both argument expressions.
+     theorems were generated for both argument expressions,
+     and the argument expressions are pure
+     (the latter check excludes cases in which an assignment expression,
+     for which we may have generated a theorem,
+     is combined into a larger expression,
+     which our dynamic semantics does not handle currently).
      We generate a theorem for pure strict and non-strict operators.
      We generate a theorem for simple assignment expressions
      whose left side is a variable of integer type
@@ -1734,7 +1809,9 @@
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and arg1-thm-name
-                     arg2-thm-name))
+                     arg2-thm-name
+                     (expr-purep arg1)
+                     (expr-purep arg2)))
         (mv expr-new gout-no-thm)))
     (cond
      ((member-eq (binop-kind op)
@@ -1853,7 +1930,6 @@
                                 :vartys gin.vartys))))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
-                         (expr-purep arg2)
                          (equal (expr-type arg1)
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
@@ -2317,7 +2393,8 @@
      combining the possibly transformed argument expression.")
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the argument expressions.
+     a theorem was generated for the argument expressions,
+     and the argument expressions are pure.
      The theorem is proved via a few general ones that we prove below.
      These are a bit more complicated than for strict expressions,
      because conditional expressions are non-strict:
@@ -2328,7 +2405,10 @@
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name))
+                     else-thm-name
+                     (expr-purep test)
+                     (expr-option-purep then)
+                     (expr-purep else)))
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
@@ -2495,6 +2575,133 @@
     :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-initer-single ((expr exprp)
+                                (expr-new exprp)
+                                (expr-thm-name symbolp)
+                                (gin simpadd0-ginp))
+  :guard (and (expr-unambp expr)
+              (expr-unambp expr-new))
+  :returns (mv (initer initerp) (gout simpadd0-goutp))
+  :short "Transform an initializer consisting of a single expression."
+  (b* (((simpadd0-gin gin) gin)
+       (initer (initer-single expr))
+       (initer-new (initer-single expr-new))
+       ((unless (and expr-thm-name
+                     (expr-purep expr)))
+        (mv initer-new (simpadd0-gout-no-thm gin)))
+       (lemma-instances
+        (simpadd0-initer-single-pure-lemma-instances gin.vartys expr))
+       (hints
+        `(("Goal"
+           :in-theory '((:e ldm-initer)
+                        (:e ldm-expr)
+                        (:e ldm-ident)
+                        (:e ldm-type)
+                        (:e c::expr-kind)
+                        (:e c::initer-single)
+                        (:e c::type-nonchar-integerp))
+           :use ((:instance ,expr-thm-name)
+                 (:instance simpadd0-initer-single-pure-support-lemma
+                            (old-expr (mv-nth 1 (ldm-expr ',expr)))
+                            (new-expr (mv-nth 1 (ldm-expr ',expr-new))))
+                 (:instance simpadd0-initer-single-pure-error-support-lemma
+                            (expr (mv-nth 1 (ldm-expr ',expr)))
+                            (fenv old-fenv))
+                 ,@lemma-instances))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-initer-single-thm initer
+                                        initer-new
+                                        gin.vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+    (mv initer-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-initer-single-pure-lemma-instances ((vartys ident-type-mapp)
+                                                        (expr exprp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-initer-single-pure-vartys-support-lemma
+                       (expr (mv-nth 1 (ldm-expr ',expr)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
+          (lemma-instances
+           (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
+                                                        expr)))
+       (cons lemma-instance lemma-instances))))
+
+  ///
+
+  (defret initer-unambp-of-simpadd0-initer-single
+    (initer-unambp initer)
+    :hyp (expr-unambp expr-new))
+
+  (defruled simpadd0-initer-single-pure-support-lemma
+    (b* ((old (c::initer-single old-expr))
+         (new (c::initer-single new-expr))
+         (old-expr-result (c::exec-expr-pure old-expr compst))
+         (new-expr-result (c::exec-expr-pure new-expr compst))
+         (old-expr-value (c::expr-value->value old-expr-result))
+         (new-expr-value (c::expr-value->value new-expr-result))
+         ((mv old-result old-compst)
+          (c::exec-initer old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-initer new compst new-fenv limit))
+         (type (c::type-of-value old-expr-value)))
+      (implies (and (not (equal (c::expr-kind old-expr) :call))
+                    (not (equal (c::expr-kind new-expr) :call))
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-expr-result))
+                    (equal old-expr-value new-expr-value)
+                    (c::type-nonchar-integerp type))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::init-type-of-init-value old-result)
+                           (c::init-type-single type)))))
+    :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
+             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
+    :enable (c::exec-expr-call-or-pure
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp
+             c::init-type-of-init-value))
+
+  (defruled simpadd0-initer-single-pure-error-support-lemma
+    (implies (and (not (equal (c::expr-kind expr) :call))
+                  (c::errorp (c::exec-expr-pure expr compst)))
+             (c::errorp
+              (mv-nth 0 (c::exec-initer
+                         (c::initer-single expr) compst fenv limit))))
+    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
+    :enable c::exec-expr-call-or-pure)
+
+  (defruled simpadd0-initer-single-pure-vartys-support-lemma
+    (implies (not (equal (c::expr-kind expr) :call))
+             (b* ((initer (c::initer-single expr))
+                  ((mv result compst1)
+                   (c::exec-initer initer compst fenv limit)))
+               (implies (and (not (c::errorp result))
+                             (c::type-nonchar-integerp
+                              (c::type-of-value
+                               (c::expr-value->value
+                                (c::exec-expr-pure expr compst))))
+                             (c::compustate-has-var-with-type-p var type compst))
+                        (c::compustate-has-var-with-type-p var type compst1))))
+    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
+    :enable (c::exec-expr-call-or-pure
+             c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2717,7 +2924,8 @@
                expr? expr?-new)
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
-                    expr?-thm-name))
+                    (and expr?-thm-name
+                         (not (expr-purep expr?)))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
                                                               expr?))
@@ -4107,8 +4315,10 @@
        :single (b* (((mv new-expr (simpadd0-gout gout-expr))
                      (simpadd0-expr initer.expr gin))
                     (gin (simpadd0-gin-update gin gout-expr)))
-                 (mv (initer-single new-expr)
-                     (simpadd0-gout-no-thm gin)))
+                 (simpadd0-initer-single initer.expr
+                                         new-expr
+                                         gout-expr.thm-name
+                                         gin))
        :list (b* (((mv new-elems (simpadd0-gout gout-elems))
                    (simpadd0-desiniter-list initer.elems gin))
                   (gin (simpadd0-gin-update gin gout-elems)))

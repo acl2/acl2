@@ -158,7 +158,7 @@
 
      "<p>Theorem @('fundamental-theorem-of-calculus').</p>"
 
-     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp#L136\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
 
      "<p>Note: This theorem requires <see topic=\"@(url real)\">ACL2(r)</see>.</p>"
 
@@ -237,7 +237,7 @@
 
      "<p>An alternate formulation in pure set theory by Matt Kaufmann, derived
      from Grant Jurgensen's proof and statement, in <a
-     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
+     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp#L28\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,7 +410,7 @@
 
      "@(def zf::cantor)"
 
-     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp\">books/projects/set-theory/cantor.lisp</a>.</p>"
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp#L79\">books/projects/set-theory/cantor.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
