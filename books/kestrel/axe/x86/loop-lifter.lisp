@@ -882,7 +882,7 @@
   (declare (xargs :guard t))
   (and (true-listp triple)
        (= 3 (len triple))
-       (pseudo-termp (first triple)) ; numbytes
+       (pseudo-termp (first triple)) ; num-bytes
        (pseudo-termp (second triple)) ; the base-addr
        (pseudo-termp (third triple)) ; the val
        ))
@@ -894,7 +894,7 @@
     (and (write-triplep (first triples))
          (write-triple-listp (rest triples)))))
 
-;; Returns (mv okp write-triples core-term). Each triple is (list numbytes base-addr val)
+;; Returns (mv okp write-triples core-term). Each triple is (list num-bytes base-addr val)
 (defun check-and-extract-writes (term write-triples-acc)
   (declare (xargs :guard (and (pseudo-termp term)
                               (true-listp write-triples-acc))))
@@ -978,7 +978,7 @@
           write-triples
           flag-pairs))))
 
-;; ;; Keep only the numbytes and base-addrs (drop the values)
+;; ;; Keep only the num-bytes and base-addrs (drop the values)
 ;; (defun get-write-pairs (write-triples)
 ;;   (if (endp write-triples)
 ;;       nil
@@ -987,7 +987,7 @@
 ;;                   (second triple))
 ;;             (get-write-pairs (rest write-triples))))))
 
-;; Keep only the addresses (drop the numbytes and value)
+;; Keep only the addresses (drop the num-bytes and value)
 (defun get-write-addresses (write-triples)
   (declare (xargs :guard (write-triple-listp write-triples)))
   (if (endp write-triples)
@@ -1006,28 +1006,22 @@
       (cons flag-name
             (get-flag-names (rest flag-pairs))))))
 
-;;
-;; Checking for aliasing
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp res state).
-(defun no-overlap-between-write-pairs (write-pair1
-                                       write-pair2
-                                       assumptions
-                                       rule-alist
-                                       state)
-  (declare (xargs :guard (and (mem-pairp write-pair1)
-                              (mem-pairp write-pair2)
+;; Tries to prove that the memory regions represented by the 2 mem-pairs do not overlap.
+;; Returns (mv erp no-overlapp state).
+(defun no-overlap-between-mem-pairs (mem-pair1 mem-pair2 assumptions rule-alist state)
+  (declare (xargs :guard (and (mem-pairp mem-pair1)
+                              (mem-pairp mem-pair2)
                               (pseudo-term-listp assumptions)
-                              (acl2::rule-alistp rule-alist)
-                              )
+                              (acl2::rule-alistp rule-alist))
                   :guard-hints (("Goal" :in-theory (enable mem-pairp)))
                   :stobjs state))
   ;; make a dag
-  (b* ((num-bytes1 (first write-pair1)) ; should this always be a constant?
-       (base-addr1 (second write-pair1))
-       (num-bytes2 (first write-pair2)) ; should this always be a constant?
-       (base-addr2 (second write-pair2))
+  (b* ((num-bytes1 (first mem-pair1)) ; should this always be a constant?
+       (base-addr1 (second mem-pair1))
+       (num-bytes2 (first mem-pair2)) ; should this always be a constant?
+       (base-addr2 (second mem-pair2))
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" num-bytes1 base-addr1 num-bytes2 base-addr2))
        (separation-term `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2))
        ((mv erp result state)
@@ -1041,51 +1035,44 @@
               (cw "Assumptions:~%")
               (acl2::print-list assumptions)
 ;              (cw ")")
-              (hard-error 'no-overlap-between-write-pairs "Failed overlap check (see above)." nil)
+              (hard-error 'no-overlap-between-mem-pairs "Failed overlap check (see above)." nil)
               (mv (erp-t) nil state)))))
 
-;; Returns (mv erp res state).
-(defun no-overlap-between-write-pair-and-write-pairs (write-pair
-                                                      write-pairs
-                                                      assumptions
-                                                      rule-alist
-                                                      state)
-  (declare (xargs :guard (and (mem-pairp write-pair)
-                              (mem-pair-listp write-pairs)
-                              (pseudo-term-listp assumptions)
-                              (acl2::rule-alistp rule-alist)
-                              )
-                  :stobjs state))
-  (if (endp write-pairs)
-      (mv nil t state)
-    (b* ((write-pair2 (first write-pairs))
-         ((mv erp res state)
-          (no-overlap-between-write-pairs write-pair write-pair2 assumptions rule-alist state))
-         ((when erp) (mv erp res state)))
-      (if res
-          (no-overlap-between-write-pair-and-write-pairs write-pair (rest write-pairs) assumptions rule-alist state)
-        (mv nil nil state)  ;failed
-        ))))
-
-;todo: repace write- with mem- in these functions
-;; Returns (mv erp res state).
-(defund no-overlap-in-write-pairs (write-pairs
-                                  assumptions
-                                  rule-alist
-                                  state)
-  (declare (xargs :guard (and (mem-pair-listp write-pairs)
+;; Returns (mv erp no-overlapp state).
+(defun no-overlap-between-mem-pair-and-any (mem-pair mem-pairs assumptions rule-alist state)
+  (declare (xargs :guard (and (mem-pairp mem-pair)
+                              (mem-pair-listp mem-pairs)
                               (pseudo-term-listp assumptions)
                               (acl2::rule-alistp rule-alist))
                   :stobjs state))
-  (if (endp write-pairs)
+  (if (endp mem-pairs)
       (mv nil t state)
-    (b* (((mv erp res state)
-          (no-overlap-between-write-pair-and-write-pairs (first write-pairs) (rest write-pairs) assumptions rule-alist state))
+    (b* ((first-mem-pair (first mem-pairs))
+         ((mv erp no-overlapp state)
+          (no-overlap-between-mem-pairs mem-pair first-mem-pair assumptions rule-alist state))
          ((when erp) (mv erp nil state)))
-      (if res
-          (no-overlap-in-write-pairs (rest write-pairs) assumptions rule-alist state)
-        (mv nil nil state) ;; we failed
+      (if no-overlapp
+          (no-overlap-between-mem-pair-and-any mem-pair (rest mem-pairs) assumptions rule-alist state)
+        (mv nil nil state) ;; failed to prove no overlap
         ))))
+
+;; Returns (mv erp no-overlapp state).
+(defund no-overlap-in-mem-pair-list (mem-pairs assumptions rule-alist state)
+  (declare (xargs :guard (and (mem-pair-listp mem-pairs)
+                              (pseudo-term-listp assumptions)
+                              (acl2::rule-alistp rule-alist))
+                  :stobjs state))
+  (if (endp mem-pairs)
+      (mv nil t state)
+    (b* (((mv erp no-overlapp state)
+          (no-overlap-between-mem-pair-and-any (first mem-pairs) (rest mem-pairs) assumptions rule-alist state))
+         ((when erp) (mv erp nil state)))
+      (if no-overlapp
+          (no-overlap-in-mem-pair-list (rest mem-pairs) assumptions rule-alist state)
+        (mv nil nil state) ;; failed to prove no overlap
+        ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp okp state).
 (defun ensure-addresses-unchanged-by-body (address-terms ;todo: what vars are in this?
@@ -1298,13 +1285,15 @@
                                               updated-state-term
                                               paramnum-update-alist
                                               paramnum-extractor-alist
-                                              paramnum-name-alist)
+                                              paramnum-name-alist
+                                              state-var)
   (declare (xargs :guard (and (setter-pair-listp setter-pairs)
                               (natp next-param-number)
                               (pseudo-termp updated-state-term)
                               (paramnum-update-alistp paramnum-update-alist)
                               (paramnum-extractor-alistp paramnum-extractor-alist)
-                              (paramnum-name-alistp paramnum-name-alist))
+                              (paramnum-name-alistp paramnum-name-alist)
+                              (symbolp state-var))
                   :guard-hints (("Goal" :in-theory (enable paramnum-update-alistp)))))
   (if (endp setter-pairs)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
@@ -1319,10 +1308,11 @@
                                                  updated-state-term
                                                  paramnum-update-alist
                                                  paramnum-extractor-alist
-                                                 paramnum-name-alist)
+                                                 paramnum-name-alist
+                                                 state-var)
         (b* ((updated-state-term `(,setter (nth ',next-param-number :loop-function-result) ,updated-state-term))
              (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
-             (paramnum-extractor `(,getter :initial-loop-top-state))
+             (paramnum-extractor `(,getter ,state-var))
              (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
              (param-name (lookup-eq-safe setter *setters-to-getters-alist*) ;(name-of-state-component paramnum-extractor) ; todo: now some of name-of-state-component can be deprecated
                          ;; todo: watch for name clashes (with any user vars?) and check for no eip and rip, etc (32 and 64 bit notions) in the same lift
@@ -1335,27 +1325,29 @@
                                                  updated-state-term
                                                  paramnum-update-alist
                                                  paramnum-extractor-alist
-                                                 paramnum-name-alist))))))
+                                                 paramnum-name-alist
+                                                 state-var))))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-write-triples (write-triples next-param-number updated-state-term
-                                                             paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+                                                             paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)
   (declare (xargs :guard (and (write-triple-listp write-triples)
                               (natp next-param-number)
                               (pseudo-termp updated-state-term)
                               (paramnum-update-alistp paramnum-update-alist)
                               (paramnum-extractor-alistp paramnum-extractor-alist)
-                              (paramnum-name-alistp paramnum-name-alist))
+                              (paramnum-name-alistp paramnum-name-alist)
+                              (symbolp state-var))
                   :guard-hints (("Goal" :in-theory (enable paramnum-update-alistp)))))
   (if (endp write-triples)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((write-triple (first write-triples))
          (n (first write-triple)) ; must be quoted
-         (base-addr (second write-triple))
+         (base-addr (second write-triple)) ; todo: consider when this depends on state-var
          (value-term (third write-triple))
          (updated-state-term `(write ,n ,base-addr (nth ',next-param-number :loop-function-result) ,updated-state-term))
          (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
-         (paramnum-extractor `(read ,n ,base-addr :initial-loop-top-state))
+         (paramnum-extractor `(read ,n ,base-addr , state-var))
          (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
          (param-name (name-of-state-component paramnum-extractor))
          (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
@@ -1366,17 +1358,19 @@
                                               updated-state-term
                                               paramnum-update-alist
                                               paramnum-extractor-alist
-                                              paramnum-name-alist))))
+                                              paramnum-name-alist
+                                              state-var))))
 
 ;; Returns (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist).
 (defun make-loop-parameters-for-flag-pairs (flag-pairs next-param-number updated-state-term
-                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)
   (declare (xargs :guard (and (flag-pairsp flag-pairs)
                               (natp next-param-number)
                               (pseudo-termp updated-state-term)
                               (paramnum-update-alistp paramnum-update-alist)
                               (paramnum-extractor-alistp paramnum-extractor-alist)
-                              (paramnum-name-alistp paramnum-name-alist))
+                              (paramnum-name-alistp paramnum-name-alist)
+                              (symbolp state-var))
                   :guard-hints (("Goal" :in-theory (enable flag-pairsp flag-pairp
                                                            paramnum-update-alistp)))))
   (if (endp flag-pairs)
@@ -1386,7 +1380,7 @@
          (value-term (second flag-pair))
          (updated-state-term `(set-flag ',flag-name (nth ',next-param-number :loop-function-result) ,updated-state-term))
          (paramnum-update-alist (acons next-param-number value-term paramnum-update-alist))
-         (paramnum-extractor `(get-flag ',flag-name :initial-loop-top-state))
+         (paramnum-extractor `(get-flag ',flag-name ,state-var))
          (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
          (param-name (name-of-state-component paramnum-extractor) ;(list :flag flag-name)
                      )
@@ -1398,10 +1392,11 @@
                                            updated-state-term
                                            paramnum-update-alist
                                            paramnum-extractor-alist
-                                           paramnum-name-alist))))
+                                           paramnum-name-alist
+                                           state-var))))
 
-;; The resulting alist maps param-extractors (fixed up to be over state-var) to the corresponding names
-(defun make-replacement-alist (paramnum-extractor-alist paramnum-name-alist state-var)
+;; The resulting alist maps param-extractors to the corresponding names
+(defun make-extractor-name-alist (paramnum-extractor-alist paramnum-name-alist state-var)
   (declare (xargs :guard (and (paramnum-extractor-alistp paramnum-extractor-alist)
                               (paramnum-name-alistp paramnum-name-alist)
                               (symbolp state-var))
@@ -1410,12 +1405,12 @@
       nil
     (let* ((entry (first paramnum-extractor-alist))
            (parameter-number (car entry))
-           (extractor-term (cdr entry)) ; over :initial-loop-top-state (and more vars?)
+           (extractor-term (cdr entry)) ; over state-var (and more vars?)
            (parameter-name (lookup-safe parameter-number paramnum-name-alist))
-           (extractor-term (acl2::sublis-var-simple (acons :initial-loop-top-state state-var nil) extractor-term)) ; over state-var
+           ;; (extractor-term (acl2::sublis-var-simple (acons :initial-loop-top-state state-var nil) extractor-term)) ; over state-var
            )
       (cons (cons extractor-term parameter-name)
-            (make-replacement-alist (rest paramnum-extractor-alist) paramnum-name-alist state-var)))))
+            (make-extractor-name-alist (rest paramnum-extractor-alist) paramnum-name-alist state-var)))))
 
 ;; Check that each of the INVARIANTS holds over ONE-REP-TERM
 ;; Returns (mv erp proved-invariants failed-invariants state)
@@ -1498,7 +1493,7 @@
                                (symbolp state-var))
                    :verify-guards nil ; done below
                    ))
-   (if (member-equal (acl2::sublis-var-simple (acons state-var :initial-loop-top-state nil) expr)
+   (if (member-equal expr ; (acl2::sublis-var-simple (acons state-var :initial-loop-top-state nil) expr)
                      (strip-cdrs paramnum-extractor-alist)) ; todo: optimize
        ;;this expr already corresponds to a param:
        (mv next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
@@ -1513,7 +1508,7 @@
          (let ((fn (ffn-symb expr)))
            (if (eq 'read fn)
                (b* ((n (farg1 expr)) ;often quoted
-                    (base-addr (farg2 expr))
+                    (base-addr (farg2 expr)) ; todo: consider when this depends on state-var
                     (state-term (farg3 expr))
                     ((when (not (eq state-term state-var)))
                      (er hard? 'make-read-only-parameters-for-expr "Unexpected read term: ~x0." expr)
@@ -1524,7 +1519,7 @@
                     ;; The param gets updated with the read expression itself:
                     (paramnum-update-alist (acons next-param-number expr ;value-term
                                                   paramnum-update-alist))
-                    (paramnum-extractor `(read ,n ,base-addr :initial-loop-top-state))
+                    (paramnum-extractor `(read ,n ,base-addr ,state-var))
                     (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
                     (param-name (name-of-state-component paramnum-extractor)) ;for now, just some name
                     (- (cw "(Param ~x0 is ~x1.)~%" next-param-number param-name))
@@ -1542,7 +1537,7 @@
                       ;; The param gets updated with the read expression itself:
                       (paramnum-update-alist (acons next-param-number expr ;value-term
                                                     paramnum-update-alist))
-                      (paramnum-extractor `(,fn :initial-loop-top-state))
+                      (paramnum-extractor `(,fn ,state-var))
                       (paramnum-extractor-alist (acons next-param-number paramnum-extractor paramnum-extractor-alist))
                       (param-name fn ; the getter ;(name-of-state-component paramnum-extractor)
                                   )
@@ -1667,6 +1662,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These are over state-var (and other vars)
 (defun make-initial-params-terms (paramnum-extractor-alist paramnum-name-alist param-update-terms)
   (if (endp paramnum-extractor-alist)
       nil
@@ -1864,14 +1860,17 @@
          (cw "~X01" (dag-to-term loop-body-dag) nil) ;todo: can blow up
          (er hard? 'lift-loop "Symbolic execution for loop body did not finish; a call of run-until-exit-segment-or-hit-loop-header remains in the DAG (see above).")
          (mv erp nil nil nil state))
-        ;; Ananlyze the lifted loop body (e.g., Figure out which leaves returned to the loop top):
+        ;; Split loop-body into the one-rep-term (from leaves that returned to the loop top), the exit-test-term, and the exit-term:
         ;; TODO: Maybe use dags instead of terms here
         ((mv erp one-rep-term exit-term exit-test-term state)
          (analyze-loop-body loop-body-term loop-top-pc-term '(rsp x86_1) assumptions extra-rules remove-rules lifter-rules state))
+        ;; TODO: What if the one-rep-term here is an IF?
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(one-rep-term: ~x0)~%" (untranslate one-rep-term nil (w state))))
         (- (cw "(exit-term: ~x0)~%" (untranslate exit-term nil (w state))))
         (- (cw "(exit-test-term: ~x0)~%" (untranslate exit-test-term nil (w state))))
+
+        ;; Now we must show that all the invariants are preserved by the loop body:
         (- (cw "(Attempting to prove invariants:~%"))
         (rules (set-difference-eq
                  (append (loop-lifter-invariant-preservation-rules) ; optimze?
@@ -1889,7 +1888,7 @@
              & ;proved-invariants
              failed-invariants
              state)
-         ;; TODO: In general, we may need to assume the negation of the exit test here:
+         ;; TODO: In general, we may need to assume the negation of the exit-test here:
          (prove-invariants-preserved possible-loop-invariants state-var one-rep-term possible-loop-invariants ;assume the invariants hold on the state-var
                                      rule-alist rules-to-monitor nil nil print state))
         ((when erp) (mv erp nil nil nil state))
@@ -1899,7 +1898,7 @@
         (- (cw "All invariants proved)~%"))
         (loop-invariants possible-loop-invariants) ; we now know that they are true invariants
 
-        ;; Now process the state updates done by the loop body (3 kinds: call of setterssimple , calls of write, and calls of set-flag):
+        ;; Now process the state updates done by the one-rep-term (3 kinds: calls of simple setters, calls of write, and calls of set-flag):
         ;; TODO: Do we need to check the PC/RIP (maybe analyze-loop-body handles that)?
         ((mv okp setter-pairs write-triples flag-pairs)
          (check-and-split-one-rep-term one-rep-term state-var))
@@ -1938,7 +1937,7 @@
          (mv (erp-t) nil nil nil state))
         (- (cw "Done proving that addresses are unchanged.)~%"))
 
-        ;; Make the loop params:
+        ;; Start numbering loop params at 0 (they correspond to calls of NTH on the loop function result):
         (next-param-number 0)
 
         ;; UPDATED-STATE-TERM represents writing the return values of the loop
@@ -1946,7 +1945,7 @@
         ;; to :initial-loop-top-state where the values written are components of
         ;; the variable :loop-function-result, which will be replaced below by
         ;; the call of the loop function.
-        (updated-state-term :initial-loop-top-state)
+        (updated-state-term state-var)
 
         ;; The paramnum-name-alist maps each paramnum to its corresponding formal parameter names:
         (paramnum-name-alist nil)
@@ -1955,7 +1954,7 @@
         ;;  loop body (in terms of state-var, previous state-vars, inputs (not yet supported), and possibly base-address)
         (paramnum-update-alist nil)
         ;; The paramnum-extractor-alist maps each paramnum to a term
-        ;; representing how to extract it from :initial-loop-top-state. May also
+        ;; representing how to extract it from state-var. May also
         ;; mention previous state-vars (and inputs?) (and base-address?) since heap
         ;; addresses may mention those other vars.
         (paramnum-extractor-alist nil)
@@ -1963,19 +1962,19 @@
         (- (cw "(Making loop params for setter pairs:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-setter-pairs setter-pairs next-param-number updated-state-term
-                                                paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                                                paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for write triples:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-write-triples write-triples next-param-number updated-state-term
-                                                 paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                                                 paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for flag pairs:~%"))
         ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-flag-pairs flag-pairs next-param-number updated-state-term
-                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
+                                              paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var))
         (- (cw "Done.)~%"))
 
         ;; We are done with the state components that get written by the loop,
@@ -1999,39 +1998,33 @@
         (- (cw "(Making params for read-only values in the exit-term term:~%"))
         ((mv & ;next-param-number
               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
-         (make-read-only-parameters-for-expr exit-test-term
-                                             next-param-number
-                                             paramnum-update-alist
-                                             paramnum-extractor-alist
-                                             paramnum-name-alist
-                                             state-var
-                                             ;; nil
+         (make-read-only-parameters-for-expr exit-test-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var ;; nil
                                              ))
         (- (cw "Done.)~%"))
 
-        (paramnum-update-alist (reverse paramnum-update-alist))
-        (paramnum-extractor-alist (reverse paramnum-extractor-alist))
+        ;; Put in numeric order: ;; TODO: Think about the order of param-names.  What do we prefer?
         (paramnum-name-alist (reverse paramnum-name-alist))
+        (paramnum-extractor-alist (reverse paramnum-extractor-alist))
+        (paramnum-update-alist (reverse paramnum-update-alist))
 
         (- (cw "(param names: ~X01)~%" paramnum-name-alist nil))
         (- (cw "(param extractors: ~X01)~%" paramnum-extractor-alist nil))
         (- (cw "(param updates: ~X01)~%" paramnum-update-alist nil))
 
-        ;; TODO: Think about the order of param-names.  What do we prefer?
-
+        ;; todo: prove that the extractors list contains no duplicates
         ;; Check for aliasing among the params:
         (- (cw "(Proving lack of aliasing:~%"))
-        (param-mem-pairs (get-mem-pairs (strip-cdrs paramnum-extractor-alist)))
+        (param-mem-pairs (get-mem-pairs (strip-cdrs paramnum-extractor-alist))) ; each is (<num-bytes> <base-addr>)
         (- (cw "(Param-mem-pairs: ~x0)~%" param-mem-pairs))
-        ((mv erp res state)
-         (no-overlap-in-write-pairs param-mem-pairs
-                                    loop-invariants
-                                    (acl2::make-rule-alist! (append (extra-loop-lifter-rules)
-                                                                    lifter-rules)
-                                                            (w state))
-                                    state))
+        ((mv erp no-overlapp state)
+         (no-overlap-in-mem-pair-list param-mem-pairs
+                                      loop-invariants
+                                      (acl2::make-rule-alist! (append (extra-loop-lifter-rules)
+                                                                      lifter-rules)
+                                                              (w state))
+                                  state))
         ((when erp) (mv erp nil nil nil state))
-        ((when (not res))
+        ((when (not no-overlapp))
          (er hard? 'lift-loop "Overlap detected in writes: ~x0." write-triples)
          (mv (erp-t) nil nil nil state))
         (- (cw "Done proving lack of aliasing)~%"))
@@ -2039,18 +2032,26 @@
         ;; Choose a name for this loop function:
         (loop-fn (pack-in-package-of-first-symbol base-name '-loop- this-loop-num))
 
+        ;; Now we have:
+        ;; - all the state components changed by the loop (represented by extractor terms applied to state-var and perhaps other vars),
+        ;; - a name for each param (these will become the formals of the loop function)
+        ;; - an expression for how each param is updated
+
+        ;; We now have to change the update expressions to put replace the extractor terms with the corresponding param names.
         ;; Rewrite the update functions and exit test in terms of params:
         (param-names (strip-cdrs paramnum-name-alist))
         (param-update-terms (strip-cdrs paramnum-update-alist))
         ;(param-update-term (make-cons-nest param-update-terms))
         ;; Now we have to replace expressions in this that are over state-var with expressions over params:
-        (replacement-alist (make-replacement-alist paramnum-extractor-alist paramnum-name-alist state-var))
-        ;; (- (cw "(Replacement-alist: ~X01)~%" replacement-alist nil))
-        (param-update-terms (acl2::replace-in-terms param-update-terms replacement-alist))
+        (extractor-name-alist (make-extractor-name-alist paramnum-extractor-alist paramnum-name-alist state-var))
+        ;; (- (cw "(extractor-name-alist: ~X01)~%" extractor-name-alist nil))
+        (param-update-terms (acl2::replace-in-terms param-update-terms extractor-name-alist))
         (- (cw "(param-update-terms: ~x0)~%" param-update-terms))
-        ;; Same for the exit test
-        (exit-test-term (acl2::replace-in-term exit-test-term replacement-alist))
+        ;; Same for the exit-test-term
+        (exit-test-term (acl2::replace-in-term exit-test-term extractor-name-alist))
+        ;; TODO: Also the exit-term?  No, since it is just a state update that happens outside the loop?
 
+        ;; Check some vars:
         (exit-test-vars (acl2::get-vars-from-term exit-test-term))
         ((when (not (subsetp-eq exit-test-vars param-names)))
          (er hard? 'lift-loop "Unexpected vars (~x2) in exit-test-term: ~X01." exit-test-term nil
@@ -2083,9 +2084,17 @@
 
         ;; TODO: Need to prove that x86p is preserved... ugh... example: show that nth 0 of the loop function is a SIGNED-BYTE-P '64.
 
+        ;; Now we have the loop function and exit-term, and we need to apply
+        ;; them to the loop-top-dag.  The resulting DAG does the following:
+        ;; - Extract from the loop-top-dag the values of the loop params.
+        ;; - Pass these values to the loop function
+        ;; - Extract the return values of the loop function
+        ;; - Write them back into the state
+        ;; - Apply the state change represented by the exit-test
+
         (- (cw "(Splicing in the loop function:~%"))
         ;; Build the new DAG that includes the effect of the loop
-;        (initial-params-terms (strip-cdrs paramnum-extractor-alist)) ;these are over :INITIAL-LOOP-TOP-STATE and perhaps previous state vars and inputs (may occur in addresses)
+;        (initial-params-terms (strip-cdrs paramnum-extractor-alist)) ;these are over state-var and perhaps previous state vars and inputs (may occur in addresses)
         (initial-params-terms (make-initial-params-terms paramnum-extractor-alist paramnum-name-alist param-update-terms))
         ;(initial-params-term (make-cons-nest initial-params-terms))
         (loop-function-call-term `(,loop-fn ,@initial-params-terms))
@@ -2104,9 +2113,10 @@
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag exit-term state-var new-state-dag))
         ((when erp) (mv erp nil nil nil state))
         ;; Apply the effect of the loop to the initial loop-top-state-dag:
-        ((mv erp new-state-dag) (compose-dags new-state-dag :initial-loop-top-state loop-top-state-dag t))
+        ((mv erp new-state-dag) (compose-dags new-state-dag state-var ;:initial-loop-top-state
+                                              loop-top-state-dag t))
         ((when erp) (mv erp nil nil nil state))
-        ;; Simplify again:
+        ;; Simplify again (why?):
         ((mv erp new-state-dag & state)
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
