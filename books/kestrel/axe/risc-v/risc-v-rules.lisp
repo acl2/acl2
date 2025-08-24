@@ -16,6 +16,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable floor ash logand)))
 
@@ -206,3 +207,32 @@
   (equal (write32-xreg reg val1 (write32-xreg reg val2 stat))
          (write32-xreg reg val1 stat))
   :hints (("Goal" :in-theory (enable write32-xreg xregs32i-fix acl2::ubyte32-list-fix xregs32ip ubyte32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write32-mem-ubyte8-of-write-32-pc
+  (equal (write32-mem-ubyte8 addr val (write32-pc pc stat))
+         (write32-pc pc (write32-mem-ubyte8 addr val stat)))
+  :hints (("Goal" :in-theory (enable write32-mem-ubyte8 write32-pc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read32-xreg-unsigned-of-0
+  (equal (read32-xreg-unsigned 0 stat) 0)
+  :hints (("Goal" :in-theory (enable read32-xreg-unsigned))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; kept disabled to prevent loops
+(defthmd write32-xreg-of-write32-xreg-diff-helper
+  (implies (not (equal reg1 reg2))
+           (equal (write32-xreg reg1 val1 (write32-xreg reg2 val2 stat))
+                  (write32-xreg reg2 val2 (write32-xreg reg1 val1 stat))))
+  :hints (("Goal" :in-theory (enable write32-xreg xregs32i-fix acl2::ubyte32-list-fix xregs32ip ubyte32p ubyte5-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write32-mem-ubyte8-of-write32-xreg
+  (equal (write32-mem-ubyte8 addr val1 (write32-xreg reg val2 stat))
+         (write32-xreg reg val2 (write32-mem-ubyte8 addr val1 stat)))
+  :hints (("Goal" :in-theory (enable write32-mem-ubyte8 write32-xreg))))

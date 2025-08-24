@@ -43,6 +43,11 @@
          (reg n stat))
   :hints (("Goal" :in-theory (enable reg))))
 
+(defthm reg-of-0
+  (equal (reg 0 stat)
+         0)
+  :hints (("Goal" :in-theory (enable reg))))
+
 ;; todo: reg-of-0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,17 +76,35 @@
 
 (defthm error32p-of-set-reg (equal (error32p (set-reg n val stat)) (error32p stat)) :hints (("Goal" :in-theory (enable set-reg))))
 (defthm read32-pc-of-set-reg (equal (read32-pc (set-reg n val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable set-reg))))
+(defthm stat32ip-of-set-reg (implies (stat32ip stat) (stat32ip (set-reg n val stat))) :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm set-reg-of-set-reg-same
+  (equal (set-reg reg val1 (set-reg reg val2 stat))
+         (set-reg reg val1 stat))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm set-reg-of-set-reg-diff
+  (implies (and (syntaxp (and (quotep reg1)
+                              (quotep reg2)))
+                (< reg2 reg1))
+           (equal (set-reg reg1 val1 (set-reg reg2 val2 stat))
+                  (set-reg reg2 val2 (set-reg reg1 val1 stat))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :use write32-xreg-of-write32-xreg-diff-helper
+           :in-theory (enable set-reg))))
 
 ;; both cases (the register numbers should usually be constants)
 (defthm reg-of-set-reg
-  (implies (and (posp n1)
-                (posp n2)
+  (implies (and (natp n1)
+                (natp n2)
                 (< n1 32)
                 (< n2 32))
            (equal (reg n1 (set-reg n2 val stat))
-                  (if (equal n1 n2)
-                      (bvchop 32 val)
-                    (reg n1 stat))))
+                  (if (equal 0 n1)
+                      0
+                    (if (equal n1 n2)
+                        (bvchop 32 val)
+                      (reg n1 stat)))))
   :hints (("Goal" :in-theory (enable reg set-reg ubyte5-fix ubyte5p bvchop))))
 
 (defthm reg-of-write32-pc (equal (reg n (write32-pc pc stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg))))

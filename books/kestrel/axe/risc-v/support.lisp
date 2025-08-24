@@ -218,13 +218,14 @@
                                      ))))
 
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
 (defthm write32-xreg-of-write32-xreg-diff
   (implies (and (acl2::smaller-termp reg2 reg1)
                 (not (equal reg1 reg2)))
            (equal (write32-xreg reg1 val1 (write32-xreg reg2 val2 stat))
                   (write32-xreg reg2 val2 (write32-xreg reg1 val1 stat))))
   :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :in-theory (enable write32-xreg xregs32i-fix acl2::ubyte32-list-fix xregs32ip ubyte32p ubyte5-fix))))
+  :hints (("Goal" :use write32-xreg-of-write32-xreg-diff-helper)))
 
 ;
 ;         (write32-xreg

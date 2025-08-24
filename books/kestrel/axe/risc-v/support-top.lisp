@@ -11,7 +11,9 @@
 (in-package "R")
 
 (include-book "read-over-write-rules")
+(include-book "write-over-write-rules")
 (include-book "assumptions")
+(include-book "run-until-return")
 
 ;; Set up the theory for code proofs:
 (in-theory (e/d (step32n-base-1
@@ -76,3 +78,7 @@
 (in-theory (enable acl2::mod-becomes-bvchop-when-power-of-2p))
 
 (in-theory (disable logext))
+
+(in-theory (enable run-subroutine
+                   run-until-return
+                   sp-is-abovep))

@@ -126,7 +126,7 @@
                                           nil))
        ((when erp) (mv erp nil))
        (standard-assumptions '((not (error32p stat))
-                               ;; (state32p stat)
+                               ;; (stat32ip stat)
                                )) ; todo: what else?
        )
     (mv nil ; no error

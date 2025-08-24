@@ -39,6 +39,8 @@
 
             acl2::ubyte32-list-fix
 
+            acl2::defpun
+
             x::disjoint-regionsp ; todo: move these
             x::disjoint-regions32p
             x::memory-regionp
