@@ -932,6 +932,10 @@ function searchGo(str) {
 
     ta_data_initialize();
 
+    // We have two different searching schemes: one for when running the webpage
+    // locally, and the other for the server-supported case. In the
+    // server-supported version, we do mostly server-side searching with sqlite
+    // FTS5.
     if (!XDATAGET) {
         searchGoLocal(str);
     } else {
@@ -940,24 +944,90 @@ function searchGo(str) {
     return false;
 }
 
-function searchAddHit(matches, hits, key) {
-    if (key in matches) {
-        // already showed this result, don't show it again
-        return;
-    }
-    matches[key] = 1;
+function searchAddHit(hits, key, score = null) {
+    const scoreStr = score !== null
+          ? " <span class=\"search-score\">(" + score.toFixed(2) + ")</span>"
+          : ""
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
                 + " onclick=\"return dolink(event, '" + key + "');\">"
                 + xindexObj.topicName(key)
                 + "</a>"
+                + scoreStr
                 + "</dt>");
-    var dd = jQuery("<dd></dd>");
+    let dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
 }
 
+async function fetchSearch(url) {
+    let results = new Map();
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+        });
+        const obj = await response.json();
+
+        const results_obj = "results" in obj && obj["results"];
+        if (results_obj && 0 < results_obj.length) {
+            for (let i = 0; i < results_obj.length; i++) {
+                const score = -results_obj[i].score;
+                results.set(results_obj[i].xkey, score);
+            }
+        } else {
+            console.error("Error: malformed response " + obj);
+        }
+        return results;
+    } catch(err) {
+        const val = "Error: AJAX query failed. " + err;
+        console.error(err);
+        return results;
+    }
+}
+
+async function serverSupportedSearch(query_str) {
+    const max_display = 100;
+    const max_results = 1000;
+
+    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+    const [results, [client_results, _, query_tokenized]] = await Promise.all([
+        fetchSearch(url),
+        clientSideSearch(query_str, max_display, max_results, false)
+    ]);
+
+    for (const [key, val] of client_results) {
+        const rank_weight = (2 - val.rank)*10;
+        const freq_weight = 1 + (val.freq / (val.freq + 1));
+        const weight = rank_weight * freq_weight;
+        if (results.has(key)) {
+            const old_score = results.get(key);
+            const new_score = (old_score + 1) * weight;
+            results.set(key, new_score);
+        } else {
+            results.set(key, weight);
+        }
+    }
+
+    const results_array = [...results]
+          .map(([key, score]) => ({
+              key: key,
+              score: score
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (let i = 0; i < results_array.length; i++) {
+        searchAddHit(hits, results_array[i].key, results_array[i].score);
+    }
+    $("#data").append(hits);
+}
+
 function searchGoServer(query_str) {
-    // Should these first couple of things be factored out? Same between Server and Local
     $("#searching_message").hide();
     if (query_str.length === 0) {
         $("#data").append("<h3>No results (empty search)</h3>");
@@ -966,74 +1036,17 @@ function searchGoServer(query_str) {
 
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
-    fetch(url, {
-        method: 'GET',
-    }).then(res => res.json()).then(obj => {
-        const results = "results" in obj && obj["results"];
-        if (results && 0 < results.length) {
-            if (results.length === 100) {
-                $("#data").append("<h3><b>100+</b> Results</h3>");
-            } else {
-                $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
-            }
-            let hits = jQuery("<dl></dl>");
-            for (let i = 0; i < results.length; i++) {
-                // TODO: check for error
-                // const score = (-results[i].rank).toFixed(2);
-                const score = (-results[i].score).toFixed(2);
-                hits.append("<dt><a href=\"index.html?topic=" + results[i].xkey + "\""
-                            + " onclick=\"return dolink(event, '" + results[i].xkey + "');\">"
-                            + xindexObj.topicName(results[i].xkey)
-                            + "</a> "
-                            + "<span class=\"search-score\">("
-                            + score
-                            + ")</span>"
-                            + "</dt>");
-                let dd = jQuery("<dd></dd>");
-                dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(results[i].xkey)));
-                hits.append(dd);
-            }
-            $("#data").append(hits);
-        } else {
-            console.error("Error: malformed response " + obj);
-        }
-    }).catch(err => {
-        const val = "Error: AJAX query failed. " + err;
-        console.error(err);
-    });
+    serverSupportedSearch(query_str);
 }
 
-function searchGoLocal(query_str) {
+function clientSideSearch(query_str, soft_max, hard_max, search_shorts) {
     const query_str_low = query_str.toLowerCase();
     const query_tokenized = searchTokenize(query_str_low);
 
-    $("#searching_message").hide();
+    let results = new Map();
+
     if (query_tokenized.length === 0) {
-        $("#data").append("<h3>No results (empty search)</h3>");
-        return;
-    }
-
-    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
-
-    const max_display = 100;
-    // 10,000 is too much, visible stutter
-    const max_results = 1000;
-    let matches = {};
-    let results = [];
-
-    // Assumption: results.length < max_results
-    // Assumption: !(key in matches)
-    function addResult(key, rank) {
-        const rawname = xindexObj.topicRawname(key).toLowerCase();
-        const title = xindexObj.topicName(key).toLowerCase();
-        const short_plain = topicShortPlaintext(key).toLowerCase();
-        const freq = countOccurrences(rawname, query_str_low) +
-            countOccurrences(title, query_str_low) +
-            countOccurrences(short_plain, query_str_low);
-        matches[key] = true;
-        results.push({key, rank, freq});
-        return results.length >= max_results;
+        return [results, query_str_low, query_tokenized];
     }
 
     // Search Ranking System:
@@ -1045,28 +1058,43 @@ function searchGoLocal(query_str) {
     // Rank 2.5: Individual word matches in short descriptions (multi-word queries)
     // Within each rank, results are sorted by ACL2 Sources priority, then frequency
 
-
     // We borrow the ta_data structure from the "jump to" feature.
 
-    // 0. Exact matches of topics
+    // Assumption: results.length < hard_max
+    // Assumption: !(key in matches)
+    function addResult(key, rank) {
+        const rawname = xindexObj.topicRawname(key).toLowerCase();
+        const title = xindexObj.topicName(key).toLowerCase();
+        let freq = countOccurrences(rawname, query_str_low) +
+            countOccurrences(title, query_str_low);
+        if (search_shorts) {
+            const short_plain = topicShortPlaintext(key).toLowerCase();
+            freq += countOccurrences(short_plain, query_str_low);
+        }
+        results.set(key, {rank: rank, freq: freq});
+        return results.size >= hard_max;
+    }
+
     for (const key of ta_data) {
         if (key.rawlow === query_str_low) {
             if (addResult(key.value, 0)) break;
         }
     }
-    if (results.length < max_display) {
+    if (results.size < soft_max) {
         // 0.5. Prefix matches of topics
         for (const key of ta_data) {
-            if (key.value in matches) continue;
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
             if (key.rawlow.startsWith(query_str_low)) {
                 if (addResult(key.value, 0.5)) break;
             }
         }
     }
-    if (results.length < max_display) {
+    if (results.size < soft_max) {
         // 1. Substring matches in topics
         for (const key of ta_data) {
-            if (key.value in matches) continue;
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
             // Check for exact phrase first (higher priority)
             if (key.rawlow.indexOf(query_str_low) !== -1) {
                 if (addResult(key.value, 1)) break;
@@ -1077,73 +1105,103 @@ function searchGoLocal(query_str) {
             }
         }
     }
-    if (results.length < max_display) {
-        // 2. Short description matches
-        for (const key of ta_data) {
-            if (key.value in matches) continue;
-            // Perhaps it would be better to use topicShortPlaintext,
-            // but this is *very* slow.
-            const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
-            // Check for exact phrase first (higher priority)
-            if (short_plain_low.indexOf(query_str_low) !== -1) {
-                if (addResult(key.value, 2)) break;
-            }
-            // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
-                if (addResult(key.value, 2.5)) break;
+    if (search_shorts) {
+        if (results.size < soft_max) {
+            // 2. Short description matches
+            for (const key of ta_data) {
+                // if (key.value in matches) continue;
+                if (results.has(key.value)) continue;
+                // Perhaps it would be better to use topicShortPlaintext,
+                // but this is *very* slow.
+                const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
+                // Check for exact phrase first (higher priority)
+                if (short_plain_low.indexOf(query_str_low) !== -1) {
+                    if (addResult(key.value, 2)) break;
+                }
+                // Fall back to individual word matching (lower priority)
+                else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
+                    if (addResult(key.value, 2.5)) break;
+                }
             }
         }
     }
+    return [results, query_str_low, query_tokenized];
+}
 
-    if (results.length != 0) {
-        // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
-        results.sort(function(a, b) {
-            if (a.rank !== b.rank) return a.rank - b.rank;
+function searchGoLocal(query_str) {
+    $("#data").append("<p><b style='color: red'>Note:</b> "
+                      + "Operating without a database; "
+                      + "no searching of <tt>:long</tt> sections.</p>");
 
-            // ACL2 Sources priority
-            // Note: on the server-supported flavor of the manual, topicFrom may
-            //   return undefined for keys which have not been loaded. We can't
-            //   load the data for every key, so for now we accept this
-            //   restriction. Eventually, we may address this by adding this
-            //   information to the always-available XDocIndex, instead of the
-            //   larger, on-demand XDocData object.
-            const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
-            const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
-            if (sysA && !sysB) return -1;
-            if (!sysA && sysB) return 1;
+    $("#searching_message").hide();
 
-            // Then by frequency
-            if (a.freq !== b.freq) {
-                return b.freq - a.freq;
-            }
+    const max_display = 100;
+    // 10,000 is too much, visible stutter
+    const max_results = 1000;
 
-            // Then by alphabetical order
-            const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
-            if (compareNice !== 0) {
-                return compareNice;
-            }
-            return a.key.localeCompare(b.key);
-        });
+    const [results, _, query_tokenized] =
+          clientSideSearch(query_str, max_display, max_results, true);
 
-        if (results.length > max_display) {
-            $("#data").append("<h3><b>Over " + max_display +
-                              "</b> Results (Showing the First "
-                              + max_display + ")</h3>");
-        } else {
-            $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
-        }
-        let hits = jQuery("<dl></dl>");
-        for (const result of results.slice(0, max_display)) {
-            // We don't display the frequency, because not all results have a
-            // frequency. Furthermore, some results ranked higher will have
-            // lower frequenccy, which may be confusing to the user.
-            // var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
-            searchAddHit({}, hits, result.key);
-        }
-        $("#data").append(hits);
-    } else {
+    if (query_tokenized.length === 0) {
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
+    }
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
+
+    let results_array = [...results]
+        .map(([key, val]) => ({
+            key: key,
+            rank: val.rank,
+            freq: val.freq
+        }));
+
+    if (results_array.length === 0) {
         $("#data").append("<h3>No results</h3>");
+        return;
     }
+
+    // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
+    results_array = results_array.sort(function(a, b) {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+
+        // ACL2 Sources priority
+        // Note: on the server-supported flavor of the manual, topicFrom may
+        //   return undefined for keys which have not been loaded. We can't
+        //   load the data for every key, so for now we accept this
+        //   restriction. Eventually, we may address this by adding this
+        //   information to the always-available XDocIndex, instead of the
+        //   larger, on-demand XDocData object.
+        const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
+        const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
+        if (sysA && !sysB) return -1;
+        if (!sysA && sysB) return 1;
+
+        // Then by frequency
+        if (a.freq !== b.freq) {
+            return b.freq - a.freq;
+        }
+
+        // Then by alphabetical order
+        const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
+        if (compareNice !== 0) {
+            return compareNice;
+        }
+        return a.key.localeCompare(b.key);
+    }).slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (const result of results_array) {
+        // We don't display the frequency, because not all results have a
+        // frequency. Furthermore, some results ranked higher will have
+        // lower frequenccy, which may be confusing to the user.
+        searchAddHit(hits, result.key);
+    }
+    $("#data").append(hits);
 }
 
 
