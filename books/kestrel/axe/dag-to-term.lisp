@@ -106,6 +106,7 @@
 ;; Convert DAG to an equivalent term. Of course, this can blow up exponentially
 ;; if there is a lot of sharing in DAG. Another option to convert a dag to a
 ;; term would be to quote the dag and pass it to the Axe evaluator.
+;; todo: remove handing of quoteps here (use dag-or-quotep-to-term below)
 (defund dag-to-term (dag)
   (declare (xargs :guard (or (weak-dagp dag)
                              (quotep dag))
@@ -113,6 +114,13 @@
   (if (quotep dag)
       dag
     (dag-to-term-aux (top-nodenum dag) dag)))
+
+(defthm pseudo-termp-of-dag-to-term
+  (implies (pseudo-dagp dag)
+           (pseudo-termp (dag-to-term dag)))
+  :hints (("Goal" :in-theory (enable dag-to-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
 (defund dag-to-term-unguarded (dag)
@@ -122,10 +130,16 @@
       (dag-to-term dag)
     (er hard? 'dag-to-term-unguarded "Bad input: ~x0" dag)))
 
-(defthm pseudo-termp-of-dag-to-term
-  (implies (pseudo-dagp dag)
-           (pseudo-termp (dag-to-term dag)))
-  :hints (("Goal" :in-theory (enable dag-to-term))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-quotep-to-term (x)
+  (declare (xargs :guard (or (weak-dagp x)
+                             (quotep x))))
+  (if (quotep x)
+      x ; already a term
+    (dag-to-term x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;)
 
 ;; (defun dags-to-terms (dags)
 ;;   (if (endp dags)

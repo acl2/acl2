@@ -691,6 +691,7 @@
 
 ;; Returns a sorted list of symbols.
 ;; todo: use a better ordering that sorted numbered symbols numerically (x10 should not follow x1; x2-x9 should come first)
+;; todo: remove handling of quoteps here (use dag-or-quotep-vars below)
 (defund dag-vars (dag)
   (declare (xargs :guard (or (quotep dag)
                              (weak-dagp dag))))
@@ -702,6 +703,15 @@
   (implies (weak-dagp dag)
            (symbol-listp (dag-vars dag)))
   :hints (("Goal" :in-theory (enable dag-vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-quotep-vars (x)
+  (declare (xargs :guard (or (quotep x)
+                             (weak-dagp x))))
+  (if (quotep x)
+      nil ; no vars
+    (dag-vars x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -741,6 +751,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Return a list of all the functions that appear in the DAG-OR-QUOTEP
+;; todo: remove handling of quoteps here (use dag-or-quotep-fns below)
 (defund dag-fns (dag-or-quotep)
   (declare (xargs :guard (or (quotep dag-or-quotep)
                              (weak-dagp dag-or-quotep))))
@@ -753,6 +764,15 @@
                (weak-dagp dag-or-quotep))
            (symbol-listp (dag-fns dag-or-quotep)))
   :hints (("Goal" :in-theory (enable dag-fns))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-quotep-fns (x)
+  (declare (xargs :guard (or (quotep x)
+                             (weak-dagp x))))
+  (if (quotep x)
+      nil ; no fns
+    (dag-fns x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
