@@ -27,9 +27,13 @@
 ;; todo: also characterize the rest of the state components
 (make-event
   `(defthm add-correct
-     (implies (and (equal (read32-pc stat) #x101b0) ; this is the offset of "f" ; todo: shorter name
+     (implies (and (equal (read32-pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name for read32-pc
+                          ;(bvplus 32  base-address) ; for position-independent mode (but see below)
+                          )
                    ;; Generates the assumptions:
-                   ,@(assumptions-elf32! *executable*)
+                   ,@(assumptions-elf32! *executable*
+                                         nil ; t doesn't work because ACL2 doesn't want to substitute in the PC expression
+                                         )
                    )
               (equal (a0 (run-subroutine stat) ; btw, 14 steps seem needed
                          )
