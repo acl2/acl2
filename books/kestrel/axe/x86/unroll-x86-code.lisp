@@ -326,7 +326,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits new-style-elf-assumptionsp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
@@ -345,10 +345,9 @@
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
                                                (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
-                                               (if new-style-elf-assumptionsp
-                                                   (append (unsigned-canonical-rules)
-                                                           (canonical-rules-bv))
-                                                 (canonical-rules-non-bv)))
+                                               (unsigned-canonical-rules)
+                                               (canonical-rules-bv)
+                                               )
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
@@ -454,7 +453,7 @@
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
               (mv nil assumptions nil state)))
            ((when erp) (mv erp nil nil nil nil state)))
         (mv nil assumptions
@@ -483,7 +482,7 @@
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
+                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                 (mv nil assumptions nil state)))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions
@@ -512,7 +511,7 @@
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits t state)
+                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                   (mv nil assumptions nil state)))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions
@@ -676,7 +675,7 @@
         ;;      ;; others, because opening things like read64 involves testing
         ;;      ;; canonical-addressp (which we know from other assumptions is true):
         ;;      ((mv erp assumptions assumption-rules state)
-        ;;       (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
+        ;;       (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
         ;;      ((when erp) (mv erp nil nil nil nil state)))
         ;;   (mv nil assumptions
         ;;       untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
@@ -773,7 +772,7 @@
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
              ((mv erp assumptions assumption-rules state)
-              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits nil state))
+              (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
              ((when erp) (mv erp nil nil nil nil state)))
           (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
 
@@ -1361,7 +1360,7 @@
         (if (stringp executable)
             ;; it's a filename, so parse the file:
             (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable: ; todo: can we deprecate this case?
+          ;; it's already a parsed-executable: ; todo: can we deprecate this case?  could be de-obfuscated
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
@@ -1373,32 +1372,14 @@
           inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
-       ;; TODO: Fully handle a quotep result here:
-       (result-dag-size (acl2::dag-or-quotep-size result-dag))
-       (result-dag-fns (acl2::dag-fns result-dag))
+       ;; Extract info from the result-dag:
+       (result-dag-size (dag-or-quotep-size result-dag))
+       (result-dag-fns (dag-or-quotep-fns result-dag))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (acl2::dag-vars result-dag))
-       ;; Build the defconst that will contain the result DAG:
-       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
-       ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       ;; Build the defun that will contain the result of lifting:
-       ;; Create the list of formals for the function:
-       ;; todo: move some of this to after we check produce-function below
-       (param-names (if (and 64-bitp
-                             (not (equal :skip inputs)))
-                        ;; The user gave names to the params (and/or their components, etc), and those vars will be put in:
-                        assumption-vars ; (strip-cars inputs) ; fixme: handle array and pointer values (just look at the dag vars?) -- done?
-                      ;; The register names may be being introduced (todo: deprecate this?):
-                      '(rdi rsi rdx rcx r8 r9))) ; todo: handle 32-bit calling convention
-       (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
-       ;; these will be ordered like common-formals:
-       (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
-       (fn-formals (append expected-formals unexpected-formals))
+       (result-dag-vars (dag-or-quotep-vars result-dag))
+       ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
@@ -1409,7 +1390,7 @@
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))
@@ -1429,14 +1410,36 @@
                  (progn$ (cw "(Result:~%")
                          (cw "~X01" result-dag nil)
                          (cw ")~%")))))
+
+       ;; Build the defconst that will contain the result DAG:
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
+
        ;; Possibly produce a defun:
+
+       ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+       ;; Build the defun that will contain the result of lifting:
+       ;; Create the list of formals for the function:
+       ;; todo: move some of this to after we check produce-function below
+       (param-names (if (and 64-bitp
+                             (not (equal :skip inputs)))
+                        ;; The user gave names to the params (and/or their components, etc), and those vars will be put in:
+                        assumption-vars ; (strip-cars inputs) ; fixme: handle array and pointer values (just look at the dag vars?) -- done?
+                      ;; The register names may be being introduced (todo: deprecate this?):
+                      '(rdi rsi rdx rcx r8 r9))) ; todo: handle 32-bit calling convention
+       (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
+       ;; these will be ordered like common-formals:
+       (expected-formals (intersection-eq common-formals result-dag-vars))
+       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
+       (fn-formals (append expected-formals unexpected-formals))
        ((mv erp defuns) ; defuns is nil or a singleton list
         (if (not produce-function)
             (mv (erp-nil) nil)
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
                (function-body (if (< result-dag-size 1000)
                                   maybe-result-term
-                                `(acl2::dag-val-with-axe-evaluator ',result-dag
+                                `(acl2::dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < 1000)
                                                                    ,(acl2::make-acons-nest result-dag-vars)
                                                                    ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
                                                                    '0 ;array depth (not very important)
@@ -1475,7 +1478,7 @@
                                          nil)
                                t)))
        (defthms ; either nil or a singleton list
-         (and produce-theorem
+         (and produce-theorem ; todo: what if we are not producing the function?
               (if stop-pcs
                   (prog2$ (cw "Suppressing theorem because :stop-pcs were given.~%")
                           nil)
@@ -1615,7 +1618,7 @@
          (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
-         (untranslatep "Whether to untranslate term when printing.")
+         (untranslatep "Whether to untranslate terms when printing.")
          (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
