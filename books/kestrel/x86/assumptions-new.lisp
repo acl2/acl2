@@ -557,7 +557,7 @@
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
-                              (names-and-typesp inputs)
+                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (acl2::parsed-elfp parsed-elf))
@@ -650,7 +650,7 @@
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
-                              (names-and-typesp inputs)
+                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (acl2::parsed-mach-o-p parsed-macho))
@@ -740,7 +740,7 @@
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
-                              (names-and-typesp inputs)
+                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (acl2::parsed-pe-p parsed-pe))
