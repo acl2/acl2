@@ -1456,6 +1456,7 @@
     axe-quotep
     result-array-stobj
     dag-to-term
+    dag-or-quotep-to-term
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
@@ -1463,6 +1464,9 @@
     dag-fns
     dag-vars
     dag-size
+    dag-or-quotep-fns
+    dag-or-quotep-vars
+    dag-or-quotep-size
     make-rule-alist
     make-rule-alist!
     dagify-term
