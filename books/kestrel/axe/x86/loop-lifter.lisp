@@ -113,7 +113,7 @@
 
 (local (in-theory (enable acl2::member-equal-becomes-memberp))) ;todo
 
-(local (in-theory (disable w state-p acl2::ilks-plist-worldp ;move
+(local (in-theory (disable w state-p
                            strip-cars
                            ;; for speed:
                            acl2::true-listp-of-car-when-true-list-listp)))

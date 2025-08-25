@@ -696,6 +696,7 @@
          (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
          (local (include-book "kestrel/utilities/mv-nth" :dir :system))
          (local (include-book "kestrel/utilities/read-run-time" :dir :system)) ; for get-real-time, below
+         (local (include-book "kestrel/utilities/w" :dir :system))
 
          (local (in-theory (disable mv-nth
                                     wf-dagp wf-dagp-expander
@@ -726,7 +727,6 @@
                                     alistp
                                     ;;axe-rule-hypp-when-simple ; caused case splits
                                     assoc-equal
-                                    ilks-plist-worldp
                                     integerp-of-nth-when-all-natp
                                     acl2::natp-of-nth-when-nat-listp-type ; brought in above
                                     ;; for the smtp variant:
@@ -6872,8 +6872,7 @@
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
                                        (symbol-listp no-warn-ground-functions)
-                                       (symbol-listp fns-to-elide)
-                                       (plist-worldp (w state)))
+                                       (symbol-listp fns-to-elide))
                            :stobjs state
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (not (starts-and-ends-with-starsp defconst-name))) ; todo: stricter check?
@@ -6977,8 +6976,7 @@
                                        (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide)
                                        (consp whole-form)
-                                       (symbolp (car whole-form))
-                                       (plist-worldp (w state)))
+                                       (symbolp (car whole-form)))
                            :stobjs state
                            :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))

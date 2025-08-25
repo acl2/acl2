@@ -1610,8 +1610,7 @@
 ;; ;todo: compare to phased-bv-axe-rule-sets
 ;; note that this builds in the "smart" symbolic execution rules.
 (defun phased-rule-alists-for-symbolic-execution (state)
-  (declare (xargs :stobjs state
-                  :guard (ilks-plist-worldp (w state))))
+  (declare (xargs :stobjs state))
   (list (make-rule-alist! (phase-1-rules)
                           (w state))
         ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
