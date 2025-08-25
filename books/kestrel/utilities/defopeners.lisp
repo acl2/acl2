@@ -48,19 +48,13 @@
 (include-book "defthm-forms")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
 (include-book "remove-guard-holders")
+(local (include-book "w"))
 ;(local (include-book "state"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (in-theory (disable mv-nth w true-listp plist-worldp)))
-
-;; This prevents us from having to include state.lisp
-(local
- (defthm plist-worldp-of-w
-   (implies (state-p1 state)
-            (plist-worldp (w state)))
-   :hints (("Goal" :in-theory (enable state-p1 w)))))
 
 (defthmd symbol-listp-of-strip-cadrs-when-defthm-form-listp
   (implies (defthm-form-listp forms)
