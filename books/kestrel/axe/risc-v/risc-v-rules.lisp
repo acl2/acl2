@@ -236,3 +236,20 @@
   (equal (write32-mem-ubyte8 addr val1 (write32-xreg reg val2 stat))
          (write32-xreg reg val2 (write32-mem-ubyte8 addr val1 stat)))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte8 write32-xreg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable step32))
+
+;; can't use the definition of step32 because stepping an error state causes a loop
+;; todo: don't open unless we can resolve the next instruction?
+(defthm step32-opener
+  (implies (not (error32p stat))
+           (equal (step32 stat)
+                  (b* ((pc (read32-pc stat))
+                       (riscv::enc (read32-mem-ubyte32-lendian pc stat))
+                       (riscv::instr? (riscv::decodex riscv::enc (riscv::feat-rv32im-le)))
+                       ((common-lisp::unless riscv::instr?)
+                        (riscv::error32 stat)))
+                    (exec32-instr riscv::instr? pc stat))))
+  :hints (("Goal" :in-theory (enable step32))))
