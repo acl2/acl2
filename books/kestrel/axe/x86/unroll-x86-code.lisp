@@ -96,6 +96,7 @@
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
+(local (include-book "kestrel/utilities/set-print-base-radix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
@@ -173,8 +174,7 @@
 ;;         (mv (or v2 :error) nil)
 ;;         (mv nil v2))))
 
-(local (in-theory (disable set-print-base-radix
-                           w
+(local (in-theory (disable w
                            acl2::ilks-plist-worldp
                            acl2::myquotep
                            quotep
@@ -182,13 +182,6 @@
 
 (local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
                           acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
-
-;move
-(local
- (defthm w-of-set-print-base-radix
-   (equal (w (set-print-base-radix base state))
-          (w state))
-   :hints (("Goal" :in-theory (enable set-print-base-radix w)))))
 
 ;; (local
 ;;   (defthm not-quotep-forward-to-not-myquotep
