@@ -108,20 +108,39 @@
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
+(acl2::ensure-rules-known (new-normal-form-rules-common))
+(acl2::ensure-rules-known (canonical-rules-bv))
+(acl2::ensure-rules-known (new-normal-form-rules64))
+(acl2::ensure-rules-known (unsigned-canonical-rules))
+;; todo: more?
 
+(local (defthm symbol-listp-of-unroller-rules32 (symbol-listp (unroller-rules32))))
+(local (defthm symbol-listp-of-unroller-rules64 (symbol-listp (unroller-rules64))))
 (local (defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv))))
 ;; (local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
+(local (defthm symbol-listp-of-assumption-simplification-rules (symbol-listp (assumption-simplification-rules))))
+(local (defthm symbol-listp-of-step-opener-rules32 (symbol-listp (step-opener-rules32))))
+(local (defthm symbol-listp-of-step-opener-rules64 (symbol-listp (step-opener-rules64))))
+(local (defthm symbol-listp-of-new-normal-form-rules-common (symbol-listp (new-normal-form-rules-common))))
+(local (defthm symbol-listp-of-new-canonical-rules-bv (symbol-listp (canonical-rules-bv))))
+(local (defthm symbol-listp-of-new-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64))))
+(local (defthm symbol-listp-of-new-unsigned-canonical-rules (symbol-listp (unsigned-canonical-rules))))
 
-(local (in-theory (disable
-                   ;; (:e new-normal-form-rules-common)
-                   ;; (:e assumption-simplification-rules)
-                   ;; (:e new-normal-form-rules64)
-                   ;;  (:e constant-opener-rules)
-                   (:e read-and-write-rules-bv)
-                   ;; (:e read-and-write-rules-non-bv)
-                   intersection-equal
-                   acl2::append-of-cons-arg1 acl2::append-of-cons ; bad?
-                   )))
+(local (in-theory (disable (:e unroller-rules32)
+                           (:e unroller-rules64)
+                           (:e read-and-write-rules-bv)
+                           ;; (:e read-and-write-rules-non-bv)
+                           (:e assumption-simplification-rules)
+                           (:e step-opener-rules32)
+                           (:e step-opener-rules64)
+                           (:e new-normal-form-rules-common)
+                           (:e canonical-rules-bv)
+                           (:e new-normal-form-rules64)
+                           (:e unsigned-canonical-rules)
+                           intersection-equal
+                           acl2::append-of-cons-arg1
+                           acl2::append-of-cons ; bad?
+                           )))
 
 ;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
 ;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
@@ -175,7 +194,6 @@
 ;;         (mv nil v2))))
 
 (local (in-theory (disable w
-                           acl2::ilks-plist-worldp
                            acl2::myquotep
                            quotep
                            mv-nth)))
@@ -191,8 +209,8 @@
 ;;     :hints (("Goal" :in-theory (enable myquotep)))))
 
 ;; If these break, consider how to update the uses of these step-opener functions below:
-(thm (equal (len (step-opener-rules32)) 1))
-(thm (equal (len (step-opener-rules64)) 1))
+(thm (equal (len (step-opener-rules32)) 1) :hints (("Goal" :in-theory (enable step-opener-rules32))))
+(thm (equal (len (step-opener-rules64)) 1) :hints (("Goal" :in-theory (enable step-opener-rules64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -704,9 +722,7 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
-                              (booleanp memoizep)
-                              (acl2::ilks-plist-worldp (w state)) ; why?
-                              )
+                              (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
                   :stobjs state
                   :hints (("Goal" :in-theory (disable min)))
