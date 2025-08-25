@@ -567,16 +567,6 @@
 
 ;read-over-write-rules
 
-(defthm read-byte-of-write32-pc
-  (equal (read-byte addr (write32-pc pc stat))
-         (read-byte addr stat))
-  :hints (("Goal" :in-theory (enable read-byte))))
-
-(defthm read-of-write32-pc
-  (equal (read n addr (write32-pc pc stat))
-         (read n addr stat))
-  :hints (("Goal" :in-theory (enable read))))
-
 (defthm read-byte-of-write32-xreg
   (equal (read-byte addr (write32-xreg reg val stat))
          (read-byte addr stat))
@@ -613,8 +603,6 @@
   (equal (error32p (write-byte addr byte stat))
          (error32p stat))
   :hints (("Goal" :in-theory (enable write-byte))))
-
-(defthm read32-pc-of-write-byte (equal (read32-pc (write-byte addr val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthmd write32-mem-ubyte8-becomes-write-byte
   (equal (write32-mem-ubyte8 addr byte stat)
@@ -664,8 +652,6 @@
   (implies (stat32ip stat)
            (stat32ip (write n addr byte stat)))
   :hints (("Goal" :in-theory (enable write))))
-
-(defthm read32-pc-of-write (equal (read32-pc (write n addr val stat)) (read32-pc stat)) :hints (("Goal" :in-theory (enable write))))
 
 (defthmd write32-mem-ubyte32-lendian-becomes-write
   (implies (and (integerp addr)

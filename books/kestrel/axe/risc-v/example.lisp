@@ -27,7 +27,7 @@
 ;; todo: also characterize the rest of the state components
 (make-event
   `(defthm add-correct
-     (implies (and (equal (read32-pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name for read32-pc
+     (implies (and (equal (pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name afor read32-pc
                           ;(bvplus 32  base-address) ; for position-independent mode (but see below)
                           )
                    ;; Generates the assumptions:
