@@ -102,6 +102,7 @@
 (defthm <-of-max-same2
   (not (< (max y x) x)))
 
+;; todo: also in books/kestrel/utilities/w.lisp
 (defthm plist-worldp-of-w
   (implies (state-p state)
            (plist-worldp (w state)))

@@ -22,8 +22,6 @@
 
 (in-theory (disable fgetprop)) ;move
 
-(local (in-theory (disable ilks-plist-worldp)))
-
 ;; Rule-alists are structures that index rules by the top function symbol of their LHSes.
 ;; TODO: Consider using a property list world to make the lookups faster.
 

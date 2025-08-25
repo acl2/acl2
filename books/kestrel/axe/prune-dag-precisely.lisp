@@ -20,8 +20,9 @@
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
+(local (include-book "kestrel/utilities/w" :dir :system))
 
-(local (in-theory (disable mv-nth myquotep w symbol-listp ilks-plist-worldp)))
+(local (in-theory (disable mv-nth myquotep w symbol-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,8 +94,7 @@
                               (symbol-listp monitored-rules)
                               (call-stp-optionp call-stp)
                               (booleanp check-fnsp)
-                              (print-levelp print)
-                              (ilks-plist-worldp (w state)))
+                              (print-levelp print))
                   :stobjs state))
   (b* (((mv erp rule-alist)
         (if (not (eq :none rule-alist))
@@ -119,7 +119,6 @@
                 (interpreted-function-alistp interpreted-function-alist)
                 ;; (symbol-listp monitored-rules)
                 ;; (call-stp-optionp call-stp)
-                ;; (ilks-plist-worldp (w state))
                 )
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely))))
@@ -158,8 +157,7 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
                               (call-stp-optionp call-stp)
-                              (print-levelp print)
-                              (ilks-plist-worldp (w state)))
+                              (print-levelp print))
                   :stobjs state))
   (b* (((when (not prune-precise))
         ;; don't even print anything in this case, as we've been told not to prune
@@ -225,7 +223,6 @@
                 ;; (symbol-listp monitored-rules)
                 ;; (or (booleanp call-stp)
                 ;;     (natp call-stp))
-                ;; (ilks-plist-worldp (w state))
                 )
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
@@ -243,7 +240,6 @@
                 ;; (symbol-listp monitored-rules)
                 ;; (or (booleanp call-stp)
                 ;;     (natp call-stp))
-                ;; (ilks-plist-worldp (w state))
                 )
            (equal (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))
                   (not (quotep (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))))

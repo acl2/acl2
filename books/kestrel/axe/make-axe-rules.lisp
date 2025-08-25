@@ -50,7 +50,7 @@
 ;(local (include-book "kestrel/terms-light/pre-simplify-term-proofs" :dir :system))
 
 (local
- (in-theory (disable ilks-plist-worldp
+ (in-theory (disable ;ilks-plist-worldp
                      plist-worldp
                      set-difference-equal intersection-equal symbol-listp true-listp ;prevent inductions
                      )))
@@ -114,12 +114,12 @@
            (pseudo-termp (caddr x)))
   :hints (("Goal" :expand ((pseudo-termp x)))))
 
-;move
-(defthm ilks-plist-worldp-forward-to-plist-worldp
-  (implies (ilks-plist-worldp wrld)
-           (plist-worldp wrld))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ilks-plist-worldp))))
+;; ;move
+;; (defthm ilks-plist-worldp-forward-to-plist-worldp
+;;   (implies (ilks-plist-worldp wrld)
+;;            (plist-worldp wrld))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable ilks-plist-worldp))))
 
 ;move
 ;because they are symbols

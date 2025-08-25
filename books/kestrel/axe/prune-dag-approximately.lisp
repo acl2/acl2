@@ -54,7 +54,7 @@
                            default-cdr
                            member-equal
                            nat-listp ; prevent induction
-                           ilks-plist-worldp)))
+                           )))
 
 ;move:
 
@@ -439,8 +439,7 @@
                               ;; (call-stp-optionp call-stp)
                               (print-levelp print)
                               (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (ilks-plist-worldp (w state)))
+                                  (natp max-conflicts)))
                   :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
   (b* (((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big dag state))
@@ -537,7 +536,6 @@
                   (pseudo-dagp dag)
                   ;; (<= (len dag) *max-1d-array-length*)
                   (pseudo-term-listp assumptions)
-                  (ilks-plist-worldp (w state))
                   (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state)))))
              (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state))))
     :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
@@ -564,8 +562,7 @@
                               (pseudo-term-listp assumptions)
                               (print-levelp print)
                               (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (ilks-plist-worldp (w state)))
+                                  (natp max-conflicts)))
                   :stobjs state))
   (b* (((when (not prune-branches))
         ;; We print nothing, as we've been told not to prune:
@@ -599,7 +596,6 @@
                 (pseudo-term-listp assumptions)
                 ;; (print-levelp print)
                 (or (null max-conflicts)
-                    (natp max-conflicts))
-                (ilks-plist-worldp (w state)))
+                    (natp max-conflicts)))
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
   :hints (("Goal" :in-theory (e/d (maybe-prune-dag-approximately) (quotep)))))

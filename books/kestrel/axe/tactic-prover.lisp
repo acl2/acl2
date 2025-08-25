@@ -559,8 +559,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (ilks-plist-worldp (w state)))
+                              (booleanp print-cex-as-signedp))
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules
                                                          len-when-stp-resultp
                                                          true-listp-when-stp-resultp
@@ -570,7 +569,7 @@
                                                          myquotep-when-pseudo-dag-or-quotep-cheap
                                                          ;; pseudo-dagp-when-pseudo-dag-or-quotep-cheap
                                                          )
-                                                        (myquotep quotep ilks-plist-worldp))
+                                                        (myquotep quotep))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state))
   (b* ((dag-or-quotep (first problem))

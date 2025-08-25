@@ -43,7 +43,7 @@
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
 (local (in-theory (disable acl2-count ;for speed
-                           )))
+                           w)))
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
@@ -200,8 +200,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable ilks-plist-worldp w)))
-
 (defthm count-hits-argp-when-booleanp
   (implies (booleanp x)
            (count-hits-argp x))
@@ -251,8 +249,7 @@
                               (booleanp memoizep)
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
-                              (natp total-steps)
-                              (ilks-plist-worldp (w state)))
+                              (natp total-steps))
 ;                  :mode :program ;; because we call untranslate
                   :measure (nfix steps-left)
                   :stobjs state
@@ -387,8 +384,7 @@
                 (booleanp memoizep)
                 ;; (prune-precise-optionp prune-precise)
                 ;; (prune-approx-optionp prune-approx)
-                (natp total-steps)
-                (ilks-plist-worldp (w state)))
+                (natp total-steps))
            (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor print print-interval memoizep prune-precise prune-approx total-steps state)))
                   (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor print print-interval memoizep prune-precise prune-approx total-steps state))))))
   :hints (("Goal" :induct t
@@ -428,7 +424,7 @@
                       strip-cars-of-non-consp
                       assoc-equal-when-member-equal-of-strip-cars
                       subsetp-equal
-                      ilks-plist-worldp-forward-to-plist-worldp
+                      ;; ilks-plist-worldp-forward-to-plist-worldp
                       default-car
                       default-cdr
                       ;; pseudo-term-listp
@@ -542,8 +538,7 @@
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
-                              (booleanp error-on-incomplete-runsp)
-                              (ilks-plist-worldp (w state)))
+                              (booleanp error-on-incomplete-runsp))
                   :stobjs state
 ;                  :verify-guards nil ; todo: works but slow!
                   ;; :guard-simplify :limited

@@ -60,7 +60,6 @@
            :in-theory (enable unsigned-canonical-address-p bvlt
                               acl2::bvchop-when-negative-lemma))))
 
-
 (defthm unsigned-canonical-address-p-of-bvsx-64-48
   (unsigned-canonical-address-p (bvsx 64 48 x))
   :hints (("Goal" :cases ((equal 0 (getbit 47 x)))
@@ -70,6 +69,18 @@
   (equal (unsigned-canonical-address-p (bvchop 64 x))
          (unsigned-canonical-address-p x))
   :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+
+(defthm unsigned-canonical-address-p-of-+-when-small
+  (implies (and (unsigned-byte-p 46 x)
+                (unsigned-byte-p 46 y))
+           (unsigned-canonical-address-p (+ x y)))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt))))
+
+(defthm unsigned-canonical-address-p-of-bvplus-when-small
+  (implies (and (unsigned-byte-p 46 x)
+                (unsigned-byte-p 46 y))
+           (unsigned-canonical-address-p (bvplus 64 x y)))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus ifix))))
 
 ;; also shows that unsigned-canonical-address-p means what we intend it to mean
 (defthmd canonical-address-p-of-logext-64-becomes-unsigned-canonical-address-p
@@ -146,14 +157,4 @@
                                      in-region64p-of-+-arg1
                                      acl2::bvplus-of-+-arg3))))
 
-(defthm unsigned-canonical-address-p-of-+-when-small
-  (implies (and (unsigned-byte-p 46 x)
-                (unsigned-byte-p 46 y))
-           (unsigned-canonical-address-p (+ x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt))))
-
-(defthm unsigned-canonical-address-p-of-bvplus-when-small
-  (implies (and (unsigned-byte-p 46 x)
-                (unsigned-byte-p 46 y))
-           (unsigned-canonical-address-p (bvplus 64 x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus ifix))))
+;; todo: prove that a subregion of a canonical region is a canonical region

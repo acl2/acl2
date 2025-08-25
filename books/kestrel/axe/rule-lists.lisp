@@ -4346,8 +4346,7 @@
 
 ;todo: use this more?
 (defun phased-bv-axe-rule-sets (state) ;bozo redo the state stuff here
-  (declare (xargs :stobjs state
-                  :guard (ilks-plist-worldp (w state))))
+  (declare (xargs :stobjs state))
 ;always do this sequence? merge the trim phases into this sequence?
   (list (make-axe-rules! (amazing-rules-bv) (w state))
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
