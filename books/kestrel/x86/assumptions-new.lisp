@@ -453,13 +453,12 @@
                   :guard-hints (("Goal" :in-theory (e/d (memory-regionsp
                                                          memory-regionp)
                                                         (acl2::acl2-numberp-of-car-when-acl2-number-listp ; todo, for speed
-                                                         rationalp-implies-acl2-numberp
-                                                         ))))))
+                                                         rationalp-implies-acl2-numberp))))))
   (if (endp regions)
       (mv nil (reverse acc))
     (b* ((region (first regions))
          (length (first region))
-         (addr (second region))
+         (addr (second region)) ; a virtual address
          (bytes (third region))
          ((mv erp assumptions-for-region)
           (if position-independentp
@@ -481,7 +480,7 @@
                 (mv nil ; no error
                     (append
                       ;; Assert that the addresses are canonical:
-                      `((canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above about RET)
+                      `((canonical-regionp ,length ; (+ 1 length)  ; todo: why the +1? (see above about RET)
                                            ,(if (= addr 0) base-address-var `(bvplus 64 ,addr ,base-address-var)) ; todo: call symbolic-bvplus-constant
                                            ))
                       ;; Assert that the chunk is loaded into memory:
