@@ -657,6 +657,13 @@
          (implies objdes
                   (equal (objdesign-kind objdes) :auto))))
 
+     (defrule objdesign-auto->name-of-objdesign-of-var-aux
+       (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+         (implies objdes
+                  (equal (objdesign-auto->name objdes)
+                         (ident-fix var))))
+       :induct t)
+
      (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
          (implies objdes
@@ -706,14 +713,41 @@
                 len
                 fix
                 nfix
-                max))))
+                max))
+
+     (defruled objdesign-of-var-aux-of-cons-of-cdr
+       (implies (and (scope-listp scopes)
+                     (consp scopes)
+                     (identp var)
+                     (identp var1)
+                     (valuep val))
+                (b* ((scope (omap::update var val (car scopes))))
+                  (equal (objdesign-of-var-aux var1 frame (cons scope (cdr scopes)))
+                         (if (equal var1 var)
+                             (objdesign-auto var frame (1- (len scopes)))
+                           (objdesign-of-var-aux var1 frame scopes)))))
+       :enable len)))
 
   ///
 
   (defrule objdesign-kind-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
       (implies objdes
-               (member-equal (objdesign-kind objdes) '(:auto :static))))))
+               (member-equal (objdesign-kind objdes) '(:auto :static)))))
+
+  (defruled objdesign-static->name-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies (and objdes
+                    (equal (objdesign-kind objdes) :static))
+               (equal (objdesign-static->name objdes)
+                      (ident-fix var)))))
+
+  (defruled objdesign-auto->name-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies (and objdes
+                    (equal (objdesign-kind objdes) :auto))
+               (equal (objdesign-auto->name objdes)
+                      (ident-fix var))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
