@@ -1,1 +1,4 @@
-A preliminary partial model of the RISC-V ISA in ACL2.
+This directory contains a library for RISC-V.
+
+This library is documented in the manual at
+https://acl2.org/doc/?topic=RISCV____RISCV.

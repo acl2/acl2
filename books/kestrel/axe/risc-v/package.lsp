@@ -77,6 +77,7 @@
             riscv::read32-xreg-unsigned
             riscv::read32-xreg-signed
             riscv::write32-xreg
+            riscv::error32
             riscv::error32p
             riscv::read32-pc
             riscv::write32-pc
@@ -105,4 +106,6 @@
             ;; var names:
             riscv::stat
             )
-          *acl2-exports*))
+          (set-difference-eq *acl2-exports*
+                             '(pc ; we need this name for accessing the program counter
+                               ))))

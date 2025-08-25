@@ -17,13 +17,26 @@
 (include-book "../../x86/parsers/elf-tools")
 (include-book "read-and-write")
 
+(defconst *stack-slot-size* 4) ; since 32-bit
+
+;todo: dup!
+;; Result is untranslated
+(defund symbolic-bvplus-constant (size constant term)
+  (declare (xargs :guard (integerp constant)))
+  (if (= 0 constant)
+      term ; could chop
+    `(bvplus ,size ,constant ,term)))
+
 ;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
 (defund assumptions-for-memory-regions32 (regions
                                           base-var
                                           state-var
                                           stack-pointer-expression ; over state-var
-                                          stack-slots-needed existing-stack-slots position-independentp acc)
+                                          stack-slots-needed
+                                          existing-stack-slots
+                                          position-independentp
+                                          acc)
   (declare (xargs :guard (and (memory-regionsp regions)
                               (symbolp base-var) ; only used if position-independentp
                               (symbolp state-var)
@@ -43,52 +56,42 @@
          (addr (second region))
          (bytes (third region))
          ((mv erp assumptions-for-region)
-          ;(if position-independentp
-          ;;todo:
-          ;;               ;; Relative addresses make everything relative to the base-var:
-          ;;               (b* ((last-addr (+ 1 (+ -1 addr length))) ; adding 1 for the one-past-RET issue
-          ;;                    ;; Ensures that the canonical assumptions are satisfiable:
-          ;;                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
-          ;;                     (mv :bad-address nil))
-          ;;                    (first-addr-term (symbolic-bvplus-constant 64 addr base-var))
-          ;;                    ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-          ;;                    ;;                                                 (+ -1 addr length))
-          ;;                    ;;                                           base-var)
-          ;;                    ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-          ;;                    ;;                 ;;                             (+ -1 addr length))
-          ;;                    ;;                 ;;                          base-var)
-          ;;                    ;;                 )
-          ;; ; todo: use bvplus?
-          ;;                    )
-          ;;                 (mv nil ; no error
-          ;;                     (append
-          ;;                       ;; Assert that the addresses are canonical:
-          ;;                       `((canonical-regionp ,(+ 1 length)  ; todo: why the +1? (see above about RET)
-          ;;                                            ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var)) ; todo: call symbolic-bvplus-constant
-          ;;                                            ))
-          ;;                       ;; Assert that the chunk is loaded into memory:
-          ;;                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-          ;;                       `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
-          ;;                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
-          ;;                       ;; TODO: Do this only for writable chunks?
-          ;;                       (if (posp existing-stack-slots)
-          ;;                           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-          ;;                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-          ;;                                                  ',(* 8 existing-stack-slots) ,stack-pointer-expression))
-          ;;                         nil)
-          ;;                       ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
-          ;;                       ;; TODO: Do this only for writable chunks?
-          ;;                       (if (posp stack-slots-needed)
-          ;;                           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-          ;;                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-          ;;                                                  ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) ,stack-pointer-expression)))
-          ;;                         nil))))
-          ;; Absolute addresses are just numbers:
-          (let* ((first-addr addr)
-                 (last-addr (+ -1 addr length)) ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
-                 )
-            (if (not (unsigned-byte-p 32 last-addr))
-                (mv :bad-address nil)
+          (if position-independentp
+              ;; Position-independent mode makes addresses relative to the base-var:
+              (b* ((first-addr addr)
+                   (last-addr (+ -1 addr length))
+                   ((when (not (unsigned-byte-p 32 last-addr)))
+                    (mv :bad-address nil))
+                   (first-addr-term (symbolic-bvplus-constant 32 first-addr base-var))
+                   ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   ;;                                                 (+ -1 addr length))
+                   ;;                                           base-var)
+                   ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   ;;                 ;;                             (+ -1 addr length))
+                   ;;                 ;;                          base-var)
+                   ;;                 )
+; todo: use bvplus?
+                   )
+                (mv nil ; no error
+                    `(;; Assert that the chunk is loaded into memory:
+                      (equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
+                      ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
+                      ;; TODO: Do this only for writable chunks?
+                      ,@(if (posp existing-stack-slots)
+                            `((disjoint-regions32p ',(len bytes) ,first-addr-term
+                                                   ',(* *stack-slot-size* existing-stack-slots) ,stack-pointer-expression))
+                          nil)
+                      ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
+                      ;; TODO: Do this only for writable chunks?
+                      ,@(if (posp stack-slots-needed)
+                            `((disjoint-regions32p ',(len bytes) ,first-addr-term
+                                                   ',(* *stack-slot-size* stack-slots-needed) (bvplus 32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
+                          nil))))
+            ;; Absolute addresses are just numbers:
+            (b* ((first-addr addr)
+                 (last-addr (+ -1 addr length))
+                 ((when (not (unsigned-byte-p 32 last-addr)))
+                  (mv :bad-address nil)))
               (mv nil ; no error
                   `(;; Assert that the chunk is loaded into memory:
                     (equal (read-bytes ',first-addr ',(len bytes) ,state-var) ',bytes)
@@ -96,13 +99,13 @@
                     ;; TODO: Do this only for writable chunks?
                     ,@(if (posp existing-stack-slots)
                           `((disjoint-regions32p ',(len bytes) ',first-addr
-                                                 ',(* 4 existing-stack-slots) ,stack-pointer-expression))
+                                                 ',(* *stack-slot-size* existing-stack-slots) ,stack-pointer-expression))
                         nil)
                     ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                     ;; TODO: Do this only for writable chunks?
                     ,@(if (posp stack-slots-needed)
                           `((disjoint-regions32p ',(len bytes) ',first-addr
-                                                 ',(* 4 stack-slots-needed) (bvplus 32 ',(bvchop 32 (* -4 stack-slots-needed)) ,stack-pointer-expression)))
+                                                 ',(* *stack-slot-size* stack-slots-needed) (bvplus 32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
                         nil))))))
          ((when erp) (mv erp nil)))
       (assumptions-for-memory-regions32 (rest regions)
@@ -111,8 +114,9 @@
                                         (append assumptions-for-region acc)))))
 
 ;; Returns (mv erp assumptions).
-(defun assumptions-elf32 (parsed-elf)
-  (declare (xargs :guard (acl2::parsed-elfp parsed-elf)))
+(defun assumptions-elf32 (parsed-elf position-independentp)
+  (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (booleanp position-independentp))))
   (b* (((mv erp regions) (acl2::elf64-regions-to-load parsed-elf))
        (state-var 'stat)
        ((when erp) (mv erp nil))
@@ -122,7 +126,7 @@
                                           `(reg '2 ,state-var) ; over the state-var
                                           10 ; todo: stack-slots-needed
                                           0 ; todo: existing-stack-slots
-                                          nil ; todo: position-independentp
+                                          position-independentp
                                           nil))
        ((when erp) (mv erp nil))
        (standard-assumptions '((not (error32p stat))
@@ -134,9 +138,11 @@
                 memory-region-assumptions))))
 
 ;; does not return an error
-(defund assumptions-elf32! (parsed-elf)
+(defund assumptions-elf32! (parsed-elf position-independentp)
+  (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (booleanp position-independentp))))
   (mv-let (erp assumptions)
-    (assumptions-elf32 parsed-elf)
+    (assumptions-elf32 parsed-elf position-independentp)
     (if erp
         (er hard? 'assumptions-elf32! "Error generating assumptions: ~x0." erp)
       assumptions)))
