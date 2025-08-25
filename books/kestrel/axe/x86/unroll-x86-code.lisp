@@ -21,6 +21,7 @@
 (include-book "x86-rules")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
+(include-book "../lifter-common")
 (include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
@@ -152,127 +153,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: move this util
-
-;; Recognizes an alist from functions to boolean-lists representing which arguments to print.
-(defun elision-spec-alistp (alist)
-  (declare (xargs :guard t))
-  (if (atom alist)
-      (null alist)
-    (let ((entry (first alist)))
-      (and (consp entry)
-           (symbolp (car entry))
-           (boolean-listp (cdr entry))
-           (elision-spec-alistp (rest alist))))))
-
-(defthm elision-spec-alistp-forward-to-alistp
-    (implies (elision-spec-alistp alist)
-             (alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable elision-spec-alistp alistp))))
-
-;; Replace with :elided any large constant list arg that corresponds with nil in the bools.
-;; todo: clarify the sense of t and nil (nil means maybe don't print)
-(defun apply-elision-spec (args bools)
-  (declare (xargs :guard (and (true-listp args)
-                              (boolean-listp bools))))
-  (if (endp args)
-      nil
-    (cons (if (and (not (first bools))
-                   (let ((arg (first args)))
-                     (and (myquotep arg)
-                          (consp (unquote arg)) ; checks for a fairly long list
-                          (<= 100 (len (unquote arg))))))
-              :elided
-            (first args))
-          (apply-elision-spec (rest args) (rest bools)))))
-
-(defund print-term-elided (term firstp elision-specs)
-  (declare (xargs :guard (elision-spec-alistp elision-specs)))
-  (let ((elision-spec (and (consp term)
-                           (acl2::lookup-eq (car term) elision-specs))))
-    (if elision-spec
-        ;; eliding:
-        (if (not (true-listp term))
-            (er hard? 'print-term-elided "Bad term.")
-          (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
-              (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
-            (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
-              (if firstp
-                  (cw "(~y0" elided-term)
-                (cw " ~y0" elided-term)))))
-      ;; not eliding (todo: share code with the above):
-      (if firstp
-          (cw "(~y0" term)
-        (cw " ~y0" term)))))
-
-;; Prints each of the TERMS, each starting with a space and ending with a newline.
-;tail recursive, to support printing a large list
-(defund print-terms-elided-aux (terms elision-specs)
-  (declare (xargs :guard (and (true-listp terms)
-                              (elision-spec-alistp elision-specs))))
-  (if (atom terms)
-      nil
-    (prog2$ (print-term-elided (first terms) nil elision-specs)
-            (print-terms-elided-aux (rest terms) elision-specs))))
-
-(defund print-terms-elided (terms elision-specs)
-  (declare (xargs :guard (and (true-listp terms)
-                              (elision-spec-alistp elision-specs))))
-  (if (consp terms)
-      (prog2$ (print-term-elided (first terms) t elision-specs) ;print the first element separately to put in an open paren
-              (prog2$ (print-terms-elided-aux (rest terms) elision-specs)
-                      (cw ")")))
-    (cw "nil") ; or could do ()
-    ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund remove-assumptions-about (fns-to-remove terms)
-  (declare (xargs :guard (and (symbol-listp fns-to-remove)
-                              (pseudo-term-listp terms))))
-  (if (endp terms)
-      nil
-    (let* ((term (first terms))
-           ;; strip a NOT if present:
-           (core-term (if (and (consp term)
-                               (eq 'not (ffn-symb term))
-                               (= 1 (len (fargs term))))
-                          (farg1 term)
-                        term)))
-      (if (and (consp core-term)
-               (member-eq (ffn-symb core-term) fns-to-remove))
-          (remove-assumptions-about fns-to-remove (rest terms))
-        (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
-
-;; Sanity check:
-(thm
-  (subsetp-equal (remove-assumptions-about fns-to-remove terms)
-                 terms)
-  :hints (("Goal" :in-theory (enable remove-assumptions-about))))
-
-(local
-  (defthm pseudo-term-listp-of-remove-assumptions-about
-    (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (remove-assumptions-about fns-to-remove terms)))
-    :hints (("Goal" :in-theory (enable remove-assumptions-about)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; These assumptions get removed during pruning (unlikely to help and lead to
-;; messages about non-known-boolean literals being dropped)
-;; TODO: Add more?
-;; TODO: Include IF?
-(defconst *non-stp-assumption-functions*
-  '(canonical-address-p$inline
-    program-at
-    separate
-    x86p
-    cr0bits-p$inline
-    cr4bits-p$inline
-    alignment-checking-enabled-p
-    app-view))
-
 ;move
 ;; ; TODO: Errors about program-only code
 ;; (defund untranslate-logic (term wrld state)
@@ -293,8 +173,6 @@
 ;;         (mv (or v2 :error) nil)
 ;;         (mv nil v2))))
 
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-
 (local (in-theory (disable set-print-base-radix
                            w
                            acl2::ilks-plist-worldp
@@ -312,12 +190,12 @@
           (w state))
    :hints (("Goal" :in-theory (enable set-print-base-radix w)))))
 
-(local
-  (defthm not-quotep-forward-to-not-myquotep
-    (implies (not (quotep x))
-             (not (myquotep x)))
-    :rule-classes :forward-chaining
-    :hints (("Goal" :in-theory (enable myquotep)))))
+;; (local
+;;   (defthm not-quotep-forward-to-not-myquotep
+;;     (implies (not (quotep x))
+;;              (not (myquotep x)))
+;;     :rule-classes :forward-chaining
+;;     :hints (("Goal" :in-theory (enable myquotep)))))
 
 ;; If these break, consider how to update the uses of these step-opener functions below:
 (thm (equal (len (step-opener-rules32)) 1))
@@ -331,8 +209,7 @@
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::ilks-plist-worldp (w state)))
+                              (acl2::count-hits-argp count-hits))
                   :stobjs state))
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -800,13 +677,6 @@
 (defconst *error-fns*
   '(set-ms set-fault))
 
-;; todo: respect the print-base?
-(defund print-dag-or-term (dag)
-  (declare (xargs :guard (acl2::pseudo-dagp dag)))
-  (if (acl2::dag-or-quotep-size-less-than dag 1000)
-      (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
-    (cw "~X01" dag nil)))
-
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -1006,13 +876,13 @@
                (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
-                (print-dag-or-term dag)
+                (print-dag-nicely dag)
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                 (mv :unresolved-error-branches nil state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
-                (print-dag-or-term dag)
+                (print-dag-nicely dag)
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))

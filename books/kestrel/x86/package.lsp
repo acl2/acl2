@@ -1457,7 +1457,11 @@
     result-array-stobj
     dag-to-term
     dag-or-quotep-to-term
+    print-dag-nicely
+    print-terms-elided
     make-term-into-dag
+    remove-assumptions-about
+    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest
     dag-info
