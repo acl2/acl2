@@ -1468,6 +1468,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This wrapper does not return an error, just the result, which is a dag-or-quotep.
+(defun compose-term-and-dag! (term var-to-replace dag)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbolp var-to-replace)
+                              (or (myquotep dag)
+                                  (pseudo-dagp dag)))
+                  :verify-guards nil ; todo
+                  ))
+  (mv-let (erp dag-or-quotep)
+    (compose-term-and-dag term var-to-replace dag)
+    (if erp
+        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0.")
+      dag-or-quotep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;fffixme use this more!  actually, use wrap-term-around-dag-safe instead.
 ;; TODO: Consider returning the dag-array, etc. if we are just going to turn the result of this into an array anyway.
 ;; Returns (mv erp dag-or-quote).

@@ -31,6 +31,8 @@
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
     dag-fns
+    dag-vars
+    dag-size
     remove-assumptions-about
     *non-stp-assumption-functions*
     equivalent-dagsp2
@@ -54,6 +56,7 @@
 
     def-constant-opener
     dag-to-term
+    fargs
     ))
 
 (defpkg "R"
@@ -67,9 +70,14 @@
             bvuminus
             bvchop
             slice
+            getbit
             bvcat
             bvcat2
             bvlt
+            bvand
+            bvor
+            bvxor
+            bvnot
 
             repeat
 

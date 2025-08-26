@@ -30,6 +30,7 @@
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
+(include-book "kestrel/bv/ash" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "../step-increments")
 (include-book "../rule-limits")
@@ -50,12 +51,50 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
+(include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (defconst *incomplete-run-fns* '(run-until-sp-is-above step32))
 (defconst *error-fns* '(error32))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move and gen
+
+;; may help with sbox lookup, etc.
+(defthm in-region32p-byte-special
+  (implies (and (unsigned-byte-p 8 x)
+                (<= 256 len)
+                (natp len))
+           (in-region32p x len 0))
+  :hints (("Goal" :in-theory (enable in-region32p bvlt))))
+
+(defthm disjoint-regions32p-byte-special
+  (implies (and (syntaxp (and (quotep ad)
+                              (quotep len)))
+                (unsigned-byte-p 32 len)
+                (unsigned-byte-p 32 ad)
+                (bvlt 32 255 ad)
+                (acl2::bvle 32 len (bvminus 32 (+ -1 (expt 2 32)) ad))
+                (integerp ad)
+                (natp len)
+                (unsigned-byte-p 8 byte))
+           (disjoint-regions32p 1 byte len ad))
+  :hints (("Goal" :in-theory (enable disjoint-regions32p bvlt bvminus unsigned-byte-p acl2::bvchop-of-sum-cases))))
+
+;move acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version out of axe/rules3.
+
+;;special case for isize=8
+(defthmd bv-array-read-shorten-8
+  (implies (and (unsigned-byte-p 8 index)
+                (< (expt 2 8) len)
+                (equal len (len data)))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (expt 2 8) index (take (expt 2 8) data))))
+  :hints (("Goal" :use (:instance acl2::bv-array-read-shorten-core (isize 8))
+           :in-theory (disable acl2::bv-array-read-shorten-core))))
 
 (local (in-theory (disable myquotep ; todo: loop involving acl2::simplify-dag-basic-return-type-corollary-2
                            intersection-equal
@@ -342,8 +381,11 @@
 (def-constant-opener riscv::get-funct7)
 
 (def-constant-opener riscv::get-opcode)
+(def-constant-opener riscv::get-imm-btype)
 (def-constant-opener riscv::get-imm-itype)
+(def-constant-opener riscv::get-imm-jtype)
 (def-constant-opener riscv::get-imm-stype)
+(def-constant-opener riscv::get-imm-utype)
 (def-constant-opener bitops::part-select-low-high$inline)
 (def-constant-opener bitops::part-select-width-low$inline)
 (def-constant-opener riscv::feat-64p)
@@ -357,6 +399,8 @@
 (def-constant-opener acl2::expt2$inline)
 (def-constant-opener acl2::ifloor$inline)
 (def-constant-opener acl2::logapp)
+(def-constant-opener acl2::binary-logand)
+(def-constant-opener ash)
 
 (def-constant-opener riscv::instr-op-imm)
 (def-constant-opener riscv::op-imm-funct-kind$inline)
@@ -398,6 +442,8 @@
     run-until-sp-is-above-of-if-arg2
     step32-opener))
 
+;; todo: arrange t (safely) eval binary-logand
+
 (defun lifter-rules ()
   (declare (xargs :guard t))
   (append
@@ -410,14 +456,79 @@
      error32p-of-set-pc
 
      read32-mem-ubyte32-lendian-becomes-read
+     read32-mem-ubyte8-becomes-read-byte
+     read-byte-becomes-read
+     read-of-bvchop-32 ; todo: say which arg
+     write-of-bvchop-32-arg2
+     write-of-bvchop-arg3
+     write-of-logext-arg3
+     write32-mem-ubyte8-becomes-write-byte
      write32-mem-ubyte32-lendian-becomes-write
      read-of-+
+     integerp-of-read
+     natp-of-read
+     unsigned-byte-p-of-read
      write-of-+
      read-of-write-same
+     read-of-write-1-within
+     read-1-of-write-within
      read-when-equal-of-read-bytes-and-subregion32p
      read-of-write-when-disjoint-regions32p
+     read-of-write-when-disjoint-regions32p-gen
+     read-of-write-when-disjoint-regions32p-gen-alt
+     bvchop-of-read
      x::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      x::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
+
+     x::subregion32p-of-1-arg1     ;; trying
+     x::disjoint-regions32p-of-1-and-1 ; trying
+     acl2::equal-of-bvplus-constant-and-constant-alt
+     acl2::equal-of-bvplus-constant-and-constant
+     not-equal-of-read-and-constant
+     not-equal-of-constant-and-read
+     acl2::equal-of-bvplus-and-bvplus-reduce-constants
+     disjoint-regions32p-byte-special
+     acl2::bv-array-read-chunk-little-of-1
+     acl2::bv-array-read-of-bvplus-of-constant-no-wrap
+     <-of-read ; for an array pattern rule
+     bv-array-read-shorten-8
+     acl2::not-equal-of-constant-and-bv-term-axe
+     acl2::not-equal-of-constant-and-bv-term-alt-axe
+     acl2::equal-of-bvchop-and-bvplus-of-same
+     acl2::equal-of-bvchop-and-bvplus-of-same-alt
+     acl2::logext-identity-when-usb-smaller-axe
+     acl2::bvxor-of-logext-arg3
+     acl2::bvxor-of-logext-arg2
+
+     x::in-region32p-cancel-constants-1-1+
+    x::in-region32p-cancel-constants-1+-1
+    x::in-region32p-cancel-constants-1+-1+
+    x::in-region32p-cancel-1-1+
+    x::in-region32p-cancel-1+-1
+    x::in-region32p-cancel-1+-1+
+    x::in-region32p-cancel-1-2
+    x::in-region32p-cancel-2-1
+    x::in-region32p-cancel-1+-2
+    x::in-region32p-cancel-2-1+
+    x::in-region32p-cancel-2+-1
+    x::in-region32p-cancel-1-3
+    x::in-region32p-cancel-3-1
+    x::in-region32p-cancel-2-2
+    x::in-region32p-when-non-negative-and-negative-range
+    x::in-region32p-of-0-arg3 ; introduces bvlt
+    x::in-region32p-of-bvchop-arg1
+    x::in-region32p-of-bvchop-arg3
+    x::in-region32p-of-bvsx-arg1
+    x::in-region32p-of-bvsx-arg3
+    x::in-region32p-same
+
+
+     in-region32p-byte-special ; have the memory machinery generate this?
+
+     write-byte-becomes-write
+     read-normalize-constant-arg2
+     write-normalize-constant-arg2
+     write-normalize-constant-arg3
 
      x::disjoint-regions32p-cancel-1-1+
      x::disjoint-regions32p-cancel-1+-1
@@ -510,6 +621,12 @@
      riscv::feat-embedp
      riscv::feat->base$inline
 
+     riscv::branch-funct-fix$inline
+     riscv::branch-funct-kind$inline
+
+     riscv::op-imms-funct-fix$inline
+     riscv::op-imms-funct-kind$inline
+
      riscv::decodex-constant-opener
      acl2::ubyte32-fix-constant-opener
      acl2::ubyte32p-constant-opener
@@ -522,8 +639,11 @@
      riscv::get-funct7-constant-opener
 
      riscv::get-opcode-constant-opener
+     riscv::get-imm-btype-constant-opener
      riscv::get-imm-itype-constant-opener
+     riscv::get-imm-jtype-constant-opener
      riscv::get-imm-stype-constant-opener
+     riscv::get-imm-utype-constant-opener
      bitops::part-select-low-high$inline-constant-opener
      bitops::part-select-width-low$inline-constant-opener
      riscv::feat-64p-constant-opener
@@ -537,16 +657,28 @@
 
      acl2::logtail$inline-constant-opener
      acl2::expt2$inline-constant-opener
+;     acl2::binary-logand-constant-opener ; todo: led to stack overflow -- need to make a safe opener?  and eval zip and evenp
      acl2::ifloor$inline-constant-opener
      acl2::logapp-constant-opener
+     common-lisp::ash-constant-opener ; todo: use acl2 package
+     acl2::ash-becomes-logtail ; do better?
+     acl2::bvchop-of-ash
+     acl2::logtail-of-logext
+     ;acl2::logtail-of-bvcat
+     acl2::logtail-becomes-slice-bind-free-axe
+     acl2::bvcat-of-logext-arg2
+     acl2::bvcat-of-logext-arg4
 
      acl2::loghead-becomes-bvchop
 
      ubyte5-fix
      acl2::ubyte12-fix
-     acl2::ubyte12p
+     acl2::ubyte20-fix
+
      ubyte5p
-     acl2::ubyte12-fix
+     acl2::ubyte12p
+     acl2::ubyte20p
+
      riscv::op-imm-funct-fix$inline
      riscv::instr-kind$inline
 
@@ -565,6 +697,11 @@
      riscv::instr-op-imm->rs1$inline
      riscv::instr-op-imm->funct$inline
      riscv::instr-op-imm->rd$inline
+
+     riscv::instr-op-imms32->funct$inline
+     riscv::instr-op-imms32->rd$inline
+     riscv::instr-op-imms32->rs1$inline
+     riscv::instr-op-imms32->imm$inline
 
      riscv::instr-load->funct$inline
      riscv::instr-load->rs1$inline
@@ -585,25 +722,82 @@
      riscv::instr-jalr->rs1$inline
      riscv::instr-jalr->imm$inline
 
+     riscv::instr-jal->imm$inline
+     riscv::instr-jal->rd$inline
+
+     riscv::instr-branch->funct$inline
+     riscv::instr-branch->rs1$inline
+     riscv::instr-branch->rs2$inline
+     riscv::instr-branch->imm$inline
+
+     riscv::instr-auipc->rd$inline
+     riscv::instr-auipc->imm$inline
+
+     riscv::instr-lui->rd$inline
+     riscv::instr-lui->imm$inline
+
      exec32-instr-base
      exec32-store
      exec32-load
      exec32-lw
+     riscv::exec32-lb
+     riscv::exec32-lbu
      exec32-sw
      exec32-op
      exec32-add
      exec32-jalr
+     riscv::exec32-jal
+     riscv::exec32-sb
+     riscv::exec32-branch
+     riscv::exec32-bgeu
+     riscv::exec32-blt
+     riscv::exec32-bne
+     riscv::exec32-beq
+     riscv::exec32-bge
+     riscv::exec32-auipc
+     riscv::exec32-lui
+     riscv::exec32-op-imms
+     riscv::exec32-srli
+     riscv::exec32-slli
+     riscv::exec32-andi
+     riscv::exec32-xor
+     riscv::exec32-srai
+     riscv::exec32-sub
+
+     /= ;; !!
 
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
      riscv::op-imm-funct-kind$inline-constant-opener
      riscv::store-funct-sw
+     riscv::store-funct-sb
      riscv::load-funct-lw
+     riscv::load-funct-lb
+     riscv::load-funct-lbu
      riscv::instr-store-constant-opener
      riscv::instr-load-constant-opener
-     riscv::op-funct-add
-     riscv::instr-jalr
 
+     riscv::op-funct-add
+     riscv::op-funct-xor
+     riscv::op-funct-sub
+
+     riscv::instr-op-imms32
+     riscv::op-imms-funct-srli
+     riscv::op-imms-funct-slli
+     riscv::op-imms-funct-srai
+     riscv::op-imm-funct-andi
+     riscv::branch-funct-bne
+     riscv::branch-funct-beq
+     riscv::branch-funct-blt
+     riscv::branch-funct-bge
+
+     riscv::instr-jalr
+     riscv::instr-jal
+     riscv::instr-branch
+     riscv::instr-auipc
+     riscv::instr-lui
+
+     riscv::branch-funct-bgeu
 
      riscv::exec32-op-imm-base
 
@@ -614,6 +808,8 @@
      acl2::bvchop-of-+-becomes-bvplus
      acl2::bvminus-of-bvplus-and-bvplus-same
      acl2::bvminus-of-bvplus-same
+     acl2::bvminus-of-bvplus-of-constant-and-bvplus-of-constant
+     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
 
      eff32-addr
 
@@ -624,6 +820,9 @@
      acl2::integerp-of-logext
 
      riscv::stat32i-fix-when-stat32ip
+
+     acl2::ifix-when-integerp
+     acl2::mod-becomes-bvchop-when-power-of-2p
      )))
 
 (defun debug-rules ()
@@ -639,7 +838,7 @@
   (defun wrap-in-normal-output-extractor (output-indicator term wrld)
     (declare (xargs :guard (and ;; see above comment on output-indicator
                              (plist-worldp wrld))
-;;                    :mode :program ; because of translate-term
+                    :mode :program ; because of translate-term
                     ))
     (if (symbolp output-indicator)
         (case output-indicator
@@ -688,6 +887,10 @@
           ;;             `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld) ,term)
           ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
+          ;; (:read <N> <ADDR-TERM>)
+          (:read (if (= 2 (len (fargs output-indicator)))
+                     (acl2::translate-term `(read ,(acl2::farg1 output-indicator) ,(acl2::farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
+                   (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
           ;;                       (posp (farg2 output-indicator)) ; number of bytes to read
           ;;                       )
@@ -734,36 +937,36 @@
       (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
             (wrap-in-normal-output-extractors (rest output-indicators) term wrld)))))
 
-(local (acl2::make-flag wrap-in-normal-output-extractor))
+;; (local (acl2::make-flag wrap-in-normal-output-extractor))
 
-(defthm-flag-wrap-in-normal-output-extractor
-  (defthm pseudo-termp-of-wrap-in-normal-output-extractor
-    (implies (and (pseudo-termp term)
-                  (plist-worldp wrld))
-             (pseudo-termp (wrap-in-normal-output-extractor output-indicator term wrld)))
-    :flag wrap-in-normal-output-extractor)
-  (defthm pseudo-term-listp-of--wrap-in-normal-output-extractors
-    (implies (and (pseudo-termp term)
-                  (true-listp output-indicators)
-                  (plist-worldp wrld))
-             (pseudo-term-listp (wrap-in-normal-output-extractors output-indicators term wrld)))
-    :flag wrap-in-normal-output-extractors))
+;; (defthm-flag-wrap-in-normal-output-extractor
+;;   (defthm pseudo-termp-of-wrap-in-normal-output-extractor
+;;     (implies (and (pseudo-termp term)
+;;                   (plist-worldp wrld))
+;;              (pseudo-termp (wrap-in-normal-output-extractor output-indicator term wrld)))
+;;     :flag wrap-in-normal-output-extractor)
+;;   (defthm pseudo-term-listp-of--wrap-in-normal-output-extractors
+;;     (implies (and (pseudo-termp term)
+;;                   (true-listp output-indicators)
+;;                   (plist-worldp wrld))
+;;              (pseudo-term-listp (wrap-in-normal-output-extractors output-indicators term wrld)))
+;;     :flag wrap-in-normal-output-extractors))
 
 ;; Wraps TERM as indicated by OUTPUT-INDICATOR.
 ;; todo: reorder args?
 (defund wrap-in-output-extractor (output-indicator term wrld)
   (declare (xargs :guard (plist-worldp wrld)
-                  ;; :mode :program ; because of translate-term
+                  :mode :program ; because of translate-term
                   ))
   (if (eq :all output-indicator)
       term
     (wrap-in-normal-output-extractor output-indicator term wrld)))
 
-(defthm pseudo-termp-of-wrap-in-output-extractor
-  (implies (and (pseudo-termp term)
-                (plist-worldp wrld))
-           (pseudo-termp (wrap-in-output-extractor output-indicator term wrld)))
-  :hints (("Goal" :in-theory (enable wrap-in-output-extractor))))
+;; (defthm pseudo-termp-of-wrap-in-output-extractor
+;;   (implies (and (pseudo-termp term)
+;;                 (plist-worldp wrld))
+;;            (pseudo-termp (wrap-in-output-extractor output-indicator term wrld)))
+;;   :hints (("Goal" :in-theory (enable wrap-in-output-extractor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1039,7 +1242,7 @@
                         executable
                         ;;inputs
                         output-indicator
-                        extra-assumptions
+                        extra-assumptions ; todo: translate!
                         ;;suppress-assumptions
                         ;;inputs-disjoint-from
                         stack-slots
