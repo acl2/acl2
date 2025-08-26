@@ -434,10 +434,10 @@ accessors applied to cons structures.</p>")
                   (can-be-false (suffix-symbol tree.varname "-CAN-BE-FALSE" pkg)))
                (append `((,can-be-true
                           (,check-might-be-true ,can-be-true
-                                                    (and ,@pathcond ,tree.varname t)))
+                                                (and ,@pathcond ,tree.varname t)))
                          (,can-be-false
                           (,check-might-be-true ,can-be-false
-                                                    (and ,@pathcond (not ,tree.varname) t))))
+                                                (and ,@pathcond (not ,tree.varname) t))))
                        (fgl-fty-splitter-can-be-true/false-bindings (append pathcond (list tree.varname)) tree.true-branch pkg check-might-be-true)
                        (fgl-fty-splitter-can-be-true/false-bindings (append pathcond `((not ,tree.varname))) tree.false-branch pkg check-might-be-true))))
     (t nil)))
@@ -719,7 +719,8 @@ accessors applied to cons structures.</p>")
          (equal (,if-name test
                           (,splitter-name . ,varnames-1)
                           (,splitter-name . ,varnames-2))
-                (b* (,@(fgl-fty-splitter-can-be-true/false-bindings '(test) tree-1 splitter-name check-might-be-true)
+                (b* ((?t-might-be-true (,check-might-be-true t-might-be-true t))
+                     ,@(fgl-fty-splitter-can-be-true/false-bindings '(test) tree-1 splitter-name check-might-be-true)
                      ,@(fgl-fty-splitter-can-be-true/false-bindings '((not test)) tree-2 splitter-name check-might-be-true))
                   (,splitter-name . ,(fgl-fty-splitter-merge-args nil nil tree-1 tree-2 splitter-name))))
          :hints ,hints)
