@@ -57,13 +57,28 @@
     def-constant-opener
     dag-to-term
     fargs
-    ))
+    ffn-symb
+    farg1
+    farg2
+    farg3
+
+    lookup-equal
+    lookup-eq
+
+    make-rule-alist
+
+    translate-term))
 
 (defpkg "R"
   (append '(loghead
             logapp
             logtail
+            acl2::logtail$inline
             logext
+            acl2::binary-logand
+
+            acl2::expt2$inline
+            acl2::ifloor$inline
 
             bvplus
             bvminus
@@ -74,12 +89,32 @@
             bvcat
             bvcat2
             bvlt
+            bvle
+            bvgt
+            bvge
             bvand
             bvor
             bvxor
             bvnot
 
+            trim
+
+            putbyte
+
+            power-of-2p
+            lg
+
+            axe-syntaxp
+            axe-bind-free
+            term-should-be-converted-to-bvp
+
+            bv-array-read
+            bv-array-read-chunk-little
+            bv-array-write
+
             repeat
+
+            smaller-termp
 
             b*
             patbind-when
@@ -87,8 +122,6 @@
             unsigned-byte-listp
             defopeners
 
-            bv-array-read
-            bv-array-read-chunk-little
 
             ubyte32-list-fix
 

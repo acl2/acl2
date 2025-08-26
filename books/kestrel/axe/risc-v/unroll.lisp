@@ -77,7 +77,7 @@
                 (unsigned-byte-p 32 len)
                 (unsigned-byte-p 32 ad)
                 (bvlt 32 255 ad)
-                (acl2::bvle 32 len (bvminus 32 (+ -1 (expt 2 32)) ad))
+                (bvle 32 len (bvminus 32 (+ -1 (expt 2 32)) ad))
                 (integerp ad)
                 (natp len)
                 (unsigned-byte-p 8 byte))
@@ -138,7 +138,7 @@
     (if (not (alistp table-alist))
         (hard-error 'previous-lifter-result "Invalid table alist for risc-v-lifter-table: ~x0."
                     (acons #\0 table-alist nil))
-      (let ((previous-result (acl2::lookup-equal whole-form table-alist)))
+      (let ((previous-result (lookup-equal whole-form table-alist)))
         (if previous-result
             (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
                     previous-result)
@@ -395,11 +395,11 @@
 (def-constant-opener riscv::get-fields-stype)
 (def-constant-opener riscv::feat->m$inline)
 
-(def-constant-opener acl2::logtail$inline)
-(def-constant-opener acl2::expt2$inline)
-(def-constant-opener acl2::ifloor$inline)
-(def-constant-opener acl2::logapp)
-(def-constant-opener acl2::binary-logand)
+(def-constant-opener logtail$inline)
+(def-constant-opener expt2$inline)
+(def-constant-opener ifloor$inline)
+(def-constant-opener logapp)
+(def-constant-opener binary-logand)
 (def-constant-opener ash)
 
 (def-constant-opener riscv::instr-op-imm)
@@ -410,11 +410,11 @@
 (def-constant-opener riscv::instr-op)
 
 (defthmd set-pc-convert-arg1-to-bv-axe
-  (implies (and (acl2::axe-syntaxp (acl2::term-should-be-converted-to-bvp pc nil dag-array))
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp pc nil dag-array))
                 )
            (equal (set-pc pc x)
-                  (set-pc (acl2::trim 32 pc) x)))
-  :hints (("Goal" :in-theory (enable acl2::trim set-pc write32-pc))))
+                  (set-pc (trim 32 pc) x)))
+  :hints (("Goal" :in-theory (enable trim set-pc write32-pc))))
 
 (defthmd set-reg-of-bvchop
   (equal (set-reg reg (bvchop 32 val) x)
@@ -422,11 +422,11 @@
   :hints (("Goal" :in-theory (enable set-reg))))
 
 (defthmd set-reg-convert-arg2-to-bv-axe
-  (implies (and (acl2::axe-syntaxp (acl2::term-should-be-converted-to-bvp val nil dag-array))
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp val nil dag-array))
                 )
            (equal (set-reg reg val x)
-                  (set-reg reg (acl2::trim 32 val) x)))
-  :hints (("Goal" :in-theory (enable acl2::trim set-reg))))
+                  (set-reg reg (trim 32 val) x)))
+  :hints (("Goal" :in-theory (enable trim set-reg))))
 
 
 ;todo: more
@@ -865,7 +865,7 @@
       (if (not (and (consp output-indicator)
                     (true-listp output-indicator)))
           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)
-        (case (acl2::ffn-symb output-indicator)
+        (case (ffn-symb output-indicator)
           ;; ;; (:register <N>)
           ;; (:register (if (and (eql 1 (len (fargs output-indicator)))
           ;;                     (natp (farg1 output-indicator)) ;todo: what is the max allowed?
@@ -889,7 +889,7 @@
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
           ;; (:read <N> <ADDR-TERM>)
           (:read (if (= 2 (len (fargs output-indicator)))
-                     (acl2::translate-term `(read ,(acl2::farg1 output-indicator) ,(acl2::farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
+                     (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
           ;;                       (posp (farg2 output-indicator)) ; number of bytes to read
@@ -923,7 +923,7 @@
           ;;    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
-          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (acl2::fargs output-indicator) term wrld)))
+          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))
           (otherwise (er hard? 'wrap-in-normal-output-extractor "Bad output indicator: ~x0" output-indicator))
           ))))
 
@@ -1195,7 +1195,7 @@
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
        ;; Make the rule-alist for lifting:
        ((mv erp lifter-rule-alist)
-        (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
+        (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil ; nil nil nil nil nil
                        state))
        ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
@@ -1203,7 +1203,7 @@
                       ;(set-difference-eq lifter-rules (x86-rewriter-rules))
                       ) ; optimize?  should we pre-sort rule-lists?
        ((mv erp pruning-rule-alist)
-        (acl2::make-rule-alist pruning-rules (w state)))
+        (make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil ; nil nil nil nil nil
                        state))
        ;; Decide which rules to monitor:
@@ -1324,7 +1324,7 @@
        ;; Check inputs:
        ((when (eq :none executable))
         (er hard? 'def-unrolled-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option (need a predicate for that)
-        (mv (acl2::erp-t) nil state))
+        (mv (erp-t) nil state))
        ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)

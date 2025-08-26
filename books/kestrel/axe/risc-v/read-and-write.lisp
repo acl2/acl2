@@ -60,13 +60,13 @@
       :hints (("Goal" :in-theory (enable unsigned-byte-p acl2::expt-of-+))))))
 
 (defthm unsigned-byte-p-of-+-of-*-of-power-of-2
-  (implies (and (acl2::power-of-2p k)
-                (unsigned-byte-p (acl2::lg k) x)
-                (unsigned-byte-p (- n (acl2::lg k)) y)
+  (implies (and (power-of-2p k)
+                (unsigned-byte-p (lg k) x)
+                (unsigned-byte-p (- n (lg k)) y)
                 (posp n))
            (unsigned-byte-p n (+ x (* k y))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-*-of-expt
-                                  (m (acl2::lg k)))
+                                  (m (lg k)))
            :in-theory (disable unsigned-byte-p-of-+-of-*-of-expt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,7 +252,7 @@
                 (natp ad1)
                 (natp len)
                 (integerp ad2))
-           (equal (acl2::bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+           (equal (bv-array-read 8 len ad1 (read-bytes ad2 len stat))
                   (read-byte (bvplus 32 ad1 ad2) stat)))
   :hints (("Goal" :induct (indf len ad1 ad2 stat) ; (read-bytes ad2 len stat)
            :expand (read-bytes ad2 len stat)
@@ -266,7 +266,7 @@
 ;;   (implies (and (natp ad1)
 ;;                 (natp len)
 ;;                 (integerp ad2))
-;;            (equal (acl2::bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+;;            (equal (bv-array-read 8 len ad1 (read-bytes ad2 len stat))
 ;;                   (if (< ad1 len)
 ;;                       (read-byte (bvplus 32 ad1 ad2) stat)
 ;;                     0)))
@@ -556,7 +556,7 @@
                 (unsigned-byte-p 32 ad2) ; drop?
                 )
            (equal (read n1 ad1 stat)
-                  (acl2::bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)))
+                  (bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)))
   :hints (("Goal"
            :do-not '(generalize eliminate-destructors)
 ;           :expand (read n1 ad1 stat)
@@ -619,8 +619,8 @@
 
 ;; Writes the BYTE at address ADDR.
 (defund write-byte (addr byte stat)
-  (declare (xargs :guard (and (acl2::unsigned-byte-p 32 addr)
-                              (acl2::unsigned-byte-p 8 byte)
+  (declare (xargs :guard (and (unsigned-byte-p 32 addr)
+                              (unsigned-byte-p 8 byte)
                               (stat32ip stat))))
   (write32-mem-ubyte8 addr byte stat))
 
@@ -790,7 +790,7 @@
 
 (defthm read-byte-subst-term-arg1
   (implies (and (equal (bvchop 32 ad) (bvchop 32 free))
-                (syntaxp (acl2::smaller-termp free ad)))
+                (syntaxp (smaller-termp free ad)))
            (equal (read-byte ad stat)
                   (read-byte free stat)))
   :hints (("Goal" :in-theory (enable read-byte read32-mem-ubyte8))))
@@ -798,7 +798,7 @@
 ;move up
 (defthm write-byte-subst-term-arg1
   (implies (and (equal (bvchop 32 ad) (bvchop 32 free))
-                (syntaxp (acl2::smaller-termp free ad))
+                (syntaxp (smaller-termp free ad))
                 ;(integerp ad)
                 ;(integerp free)
                 )
@@ -905,13 +905,13 @@
                              (* 8 (BVMINUS 32 AD1 AD2))
                              VAL)
                     (READ-BYTE AD1 STAT))))
-  :hints (("Goal" :in-theory (enable x::in-region32p acl2::bvlt))))
+  :hints (("Goal" :in-theory (enable x::in-region32p bvlt))))
 
 ;build in to tool
 (defthm subregion32p-of-+-of--1-same
   (implies (posp n)
            (x::subregion32p (+ -1 n) 1 n 0))
-  :hints (("Goal" :in-theory (enable x::subregion32p x::in-region32p acl2::bvlt))))
+  :hints (("Goal" :in-theory (enable x::subregion32p x::in-region32p bvlt))))
 
 (defthm read-of-write-when-disjoint-regions32p
   (implies (and (x::disjoint-regions32p n1 ad1 n2 ad2)
@@ -992,7 +992,7 @@
 
 (defthm read-of-+-subst-arg2
   (implies (and (equal (bvchop 32 ad) free)
-                (syntaxp (acl2::smaller-termp free ad))
+                (syntaxp (smaller-termp free ad))
                 (integerp k)
                 (integerp ad))
            (equal (read n (+ k ad) stat)
@@ -1021,7 +1021,7 @@
                 ;; (integerp addr2)
                 (unsigned-byte-p 32 n))
            (equal (read n addr1 (write 1 addr2 val stat))
-                  (acl2::putbyte n (bvminus 32 addr2 addr1) val (read n addr1 stat))))
+                  (putbyte n (bvminus 32 addr2 addr1) val (read n addr1 stat))))
   :hints (("Goal" :induct (read n addr1 stat)
            :do-not '(generalize eliminate-destructors)
            :expand (read n addr1 (write-byte 0 val stat))
@@ -1040,7 +1040,6 @@
 
 
 
-
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (defthm write-byte-of-write-byte-same
   (implies (integerp ad)
@@ -1052,7 +1051,7 @@
                                      ))))
 
 (defthm write-byte-of-write-byte-diff
-  (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
+  (implies (and (syntaxp (smaller-termp ad2 ad1))
                 (not (equal (bvchop 32 ad1)
                             (bvchop 32 ad2)))
                 (integerp ad1)
@@ -1065,7 +1064,7 @@
                                      ))))
 
 (defthm write-byte-of-write-byte-gen
-  (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
+  (implies (and (syntaxp (smaller-termp ad2 ad1))
                 (integerp ad1)
                 (integerp ad2))
            (equal (write-byte ad1 byte1 (write-byte ad2 byte2 stat))
@@ -1087,7 +1086,7 @@
 
 (defthm write-of-+-subst-arg2
   (implies (and (equal (bvchop 32 ad) free)
-                (syntaxp (acl2::smaller-termp free ad))
+                (syntaxp (smaller-termp free ad))
                 (integerp k)
                 (integerp ad))
            (equal (write n (+ k ad) val stat)
