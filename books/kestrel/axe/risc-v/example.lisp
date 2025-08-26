@@ -21,6 +21,7 @@
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for ACL2::BVPLUS-OF-LOGEXT-ARG3, etc.
 
 ;; Read in the executable:
+; (depends-on "add.elf32")
 (acl2::defconst-x86 *executable* "add.elf32")
 
 ;; after running, we extract the return value and prove that it is the correct sum
@@ -30,11 +31,13 @@
      (implies (and (equal (pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name afor read32-pc
                           ;(bvplus 32  base-address) ; for position-independent mode (but see below)
                           )
+                   (stat32ip stat)
                    ;; Generates the assumptions:
                    ,@(assumptions-elf32! *executable*
+                                         10 ; stack-slots
+                                         0 ; existing-stack-slots
                                          nil ; t doesn't work because ACL2 doesn't want to substitute in the PC expression
-                                         )
-                   )
+                                         ))
               (equal (a0 (run-subroutine stat) ; btw, 14 steps seem needed
                          )
                      (bvplus 32 (a0 stat) (a1 stat))))

@@ -14,6 +14,7 @@
 ;move this list?
 (defconst *axe-implementation-functions*
   '(erp-nil
+    erp-t
     myquotep
     step-incrementp
     print-levelp
@@ -37,7 +38,23 @@
     print-dag-nicely
     print-dag-nicely-with-base
     print-level-at-least-tp
-    nat-to-string))
+    nat-to-string
+    dag-or-quotep-size
+    dag-or-quotep-fns
+    dag-or-quotep-vars
+    dag-or-quotep-to-term
+    defmacrodoc
+    add-known-boolean
+
+    ;; todo: organize
+
+    x::in-region32p ; todo: move to acl2 or mem? package?
+    x::subregion32p
+    x::disjoint-regions32p
+
+    def-constant-opener
+    dag-to-term
+    ))
 
 (defpkg "R"
   (append '(loghead

@@ -139,8 +139,10 @@
   :hints (("Goal" :in-theory (enable assumptions-for-memory-regions32 memory-regionsp memory-regionp))))
 
 ;; Returns (mv erp assumptions).
-(defun assumptions-elf32 (parsed-elf position-independentp)
+(defun assumptions-elf32 (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (natp stack-slots)
+                              (natp existing-stack-slots)
                               (booleanp position-independentp))))
   (b* (((mv erp regions) (acl2::elf64-regions-to-load parsed-elf))
        (state-var 'stat)
@@ -149,8 +151,8 @@
         (assumptions-for-memory-regions32 regions 'base-address ; not used yet
                                           state-var
                                           `(reg '2 ,state-var) ; over the state-var
-                                          10 ; todo: stack-slots-needed
-                                          0 ; todo: existing-stack-slots
+                                          stack-slots
+                                          existing-stack-slots
                                           position-independentp
                                           nil))
        ((when erp) (mv erp nil))
@@ -164,11 +166,13 @@
 
 ;; does not return an error
 
-(defund assumptions-elf32! (parsed-elf position-independentp)
+(defund assumptions-elf32! (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (natp stack-slots)
+                              (natp existing-stack-slots)
                               (booleanp position-independentp))))
   (mv-let (erp assumptions)
-    (assumptions-elf32 parsed-elf position-independentp)
+    (assumptions-elf32 parsed-elf stack-slots existing-stack-slots position-independentp)
     (if erp
         (er hard? 'assumptions-elf32! "Error generating assumptions: ~x0." erp)
       assumptions)))
