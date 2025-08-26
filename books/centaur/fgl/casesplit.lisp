@@ -671,7 +671,7 @@ Usually this is evidence of a typo. If not, set keyword argument ~x1 to suppress
                 (pseudo-term-fncall 'if
                                     (list (wrap-vacuity-check (car x.args) config)
                                           (wrap-fgl-pathcond-fix
-                                           (expand-implies-wrap-fgl-prove x config))
+                                           (expand-implies-wrap-fgl-prove (cadr x.args) config))
                                           ''t))
               (expand-implies-wrap-fgl-prove x config))
     :lambda (pseudo-term-lambda
