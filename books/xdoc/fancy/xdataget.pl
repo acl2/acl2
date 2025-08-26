@@ -78,19 +78,17 @@ for(my $i = 0; $i < @keys; ++$i)
     $query->execute($key);
     my $ret = $query->fetchrow_hashref();
     if (!$ret) {
-	print "  \"Error: no such topic.\"";
+        print "  \"Error: no such topic.\"";
     }
     else {
-	my $val = $ret->{"XDATA"};
-	print "  $val";
+        my $val = $ret->{"XDATA"};
+        print "  $val";
     }
     if ($i != @keys-1) {
-	print ",\n";
+        print ",\n";
     }
 }
 print "\n]}\n";
 
 $query->finish();
 $dbh->disconnect();
-
-

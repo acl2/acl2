@@ -19,7 +19,8 @@
 (in-theory (e/d (step32n-base-1
                  step32n-base-2
                  step32n-unroll
-                 step32
+                 step32-opener
+                 ;; step32 ; causes loops
                  exec32-op-imm
                  exec32-op
                  exec32-add
@@ -82,3 +83,6 @@
 (in-theory (enable run-subroutine
                    run-until-return
                    sp-is-abovep))
+
+(in-theory (enable read32-pc-becomes-pc
+                   write32-pc-becomes-set-pc))

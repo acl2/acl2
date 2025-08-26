@@ -135,4 +135,6 @@
             riscv::stat
             )
           *axe-implementation-functions*
-          *acl2-exports*))
+          (set-difference-eq *acl2-exports*
+                             '(pc ; we need this name for accessing the program counter
+                               ))))

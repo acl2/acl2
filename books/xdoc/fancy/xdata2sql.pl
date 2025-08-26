@@ -125,14 +125,14 @@ print "; Using temporary dir $dir\n";
 chdir($dir) or die("can't change to temp directory $dir\n");
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
-		       {RaiseError=>1, AutoCommit=>0})
+                       {RaiseError=>1, AutoCommit=>0})
     or die $DBI::errstr;
 
 print "; Creating xdoc_data table.\n";
 
 $dbh->do("CREATE TABLE XTABLE ("
-	 . "XKEY TEXT PRIMARY KEY NOT NULL,"
-	 . "XDATA TEXT)");
+         . "XKEY TEXT PRIMARY KEY NOT NULL,"
+         . "XDATA TEXT)");
 
 
 print "; Populating xdoc_data table.\n";

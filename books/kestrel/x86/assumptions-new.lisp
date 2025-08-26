@@ -52,12 +52,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Result is untranslated
-(defund symbolic-add-constant (constant term)
-  (declare (xargs :guard (integerp constant)))
-  (if (= 0 constant)
-      term
-    `(+ ,constant ,term)))
+;; ;; Result is untranslated
+;; (defund symbolic-add-constant (constant term)
+;;   (declare (xargs :guard (integerp constant)))
+;;   (if (= 0 constant)
+;;       term
+;;     `(+ ,constant ,term)))
 
 ;; Result is untranslated
 (defund symbolic-bvplus-constant (size constant term)
