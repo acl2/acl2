@@ -427,19 +427,19 @@ accessors applied to cons structures.</p>")
          (change-fgl-fty-splitter-leaf tree :field-vars (suffix-symbols tree.field-vars suffix pkg))))))
 
 
-(define fgl-fty-splitter-can-be-true/false-bindings (pathcond tree pkg)
+(define fgl-fty-splitter-can-be-true/false-bindings (pathcond tree pkg check-might-be-true)
   (case (tag tree)
     (:branch (b* (((fgl-fty-splitter-branch tree))
                   (can-be-true (suffix-symbol tree.varname "-CAN-BE-TRUE" pkg))
                   (can-be-false (suffix-symbol tree.varname "-CAN-BE-FALSE" pkg)))
                (append `((,can-be-true
-                          (fgl::check-might-be-true ,can-be-true
+                          (,check-might-be-true ,can-be-true
                                                     (and ,@pathcond ,tree.varname t)))
                          (,can-be-false
-                          (fgl::check-might-be-true ,can-be-false
+                          (,check-might-be-true ,can-be-false
                                                     (and ,@pathcond (not ,tree.varname) t))))
-                       (fgl-fty-splitter-can-be-true/false-bindings (append pathcond (list tree.varname)) tree.true-branch pkg)
-                       (fgl-fty-splitter-can-be-true/false-bindings (append pathcond `((not ,tree.varname))) tree.false-branch pkg))))
+                       (fgl-fty-splitter-can-be-true/false-bindings (append pathcond (list tree.varname)) tree.true-branch pkg check-might-be-true)
+                       (fgl-fty-splitter-can-be-true/false-bindings (append pathcond `((not ,tree.varname))) tree.false-branch pkg check-might-be-true))))
     (t nil)))
 
 
@@ -674,7 +674,8 @@ accessors applied to cons structures.</p>")
                                         ;; Can be nil, in which case it defaults to (:kind1 :kind2 ... :kindn-1 . :kindn)
                               field-merges ;; Elements of the form (prod-kind field-name merge-function) or just (field-name merge-function).
                               hints ;; for the main splitter merge theorem
-                              sum)
+                              sum
+                              check-might-be-true)
   (b* (((flexsum sum))
        (base-tree (or prod-tree (fgl-fty-sum-default-prod-tree sum.prods)))
        (elab-tree (fgl-fty-sum-elaborate-prod-tree base-tree sum field-merges))
@@ -718,8 +719,8 @@ accessors applied to cons structures.</p>")
          (equal (,if-name test
                           (,splitter-name . ,varnames-1)
                           (,splitter-name . ,varnames-2))
-                (b* (,@(fgl-fty-splitter-can-be-true/false-bindings '(test) tree-1 splitter-name)
-                     ,@(fgl-fty-splitter-can-be-true/false-bindings '((not test)) tree-2 splitter-name))
+                (b* (,@(fgl-fty-splitter-can-be-true/false-bindings '(test) tree-1 splitter-name check-might-be-true)
+                     ,@(fgl-fty-splitter-can-be-true/false-bindings '((not test)) tree-2 splitter-name check-might-be-true))
                   (,splitter-name . ,(fgl-fty-splitter-merge-args nil nil tree-1 tree-2 splitter-name))))
          :hints ,hints)
 
@@ -754,7 +755,8 @@ accessors applied to cons structures.</p>")
          :other-args bad-args
          prod-tree
          field-merges
-         hints)
+         hints
+         (check-might-be-true 'fgl::check-might-be-true))
         args)
        (- (and bad-args (raise "Bad arguments: ~x0" bad-args)))
        ((mv & sum) (search-deftypes-table sumname (get-flextypes wrld))))
@@ -762,7 +764,7 @@ accessors applied to cons structures.</p>")
                           prod-tree
                           field-merges
                           hints
-                          sum)))
+                          sum check-might-be-true)))
 
 (defmacro def-fgl-fty-sum-splitter (splitter-name sumname &rest args)
   `(make-event (def-fgl-fty-sum-splitter-fn ',splitter-name ',sumname ',args (w state))))
@@ -801,6 +803,10 @@ provide a good solution to this.</p>
     ;; rather than trying to symbolically represent the contents of both.
     :field-merges ((:second-kind some-field fgl::if!)             ;; specify both the kind and the field
                    (another-field my-particular-if-equivalent))   ;; specify just the field, if it's uniquely named
+
+    ;; FGL function/macro to check whether the second argument is possibly true
+    ;; Defaults to fgl::check-might-be-true
+    :check-might-be-true fgl::check-might-be-true
 
     ;; Hints to prove the main theorem that merges representations -- usually not needed
     :hints ...)
