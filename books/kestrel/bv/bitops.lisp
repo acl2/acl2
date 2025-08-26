@@ -26,6 +26,7 @@
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "intro"))
+(local (include-book "ash"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

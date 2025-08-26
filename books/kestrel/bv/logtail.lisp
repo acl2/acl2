@@ -271,23 +271,6 @@
            (<= 0 (logtail n x)))
   :rule-classes :linear)
 
-(defthmd logtail-becomes-ash
-  (implies (natp n)
-           (equal (logtail n x)
-                  (ash x (- n))))
-  :hints (("Goal" :in-theory (enable logtail ash))))
-
-(defthmd ash-becomes-logtail
-  (implies (and (<= n 0)
-                (integerp n))
-           (equal (ash x n)
-                  (logtail (- n) x)))
-  :hints (("Goal" :use (:instance logtail-becomes-ash (n (- n))))))
-
-(theory-invariant (incompatible (:rewrite ash-becomes-logtail)
-                                (:rewrite logtail-becomes-ash)))
-
-
 (defthmd equal-of-logtail
   (implies (and (natp pos)
                 (integerp i))

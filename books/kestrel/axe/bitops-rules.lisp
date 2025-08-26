@@ -45,7 +45,7 @@
                 (integerp n))
            (equal (ash x n)
                   (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal"; :in-theory (enable unsigned-byte-p)
+  :hints (("Goal" :in-theory (disable ash-negative-becomes-slice)
            :use ash-negative-becomes-slice)))
 
 ; Only needed for Axe.

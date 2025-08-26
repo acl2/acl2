@@ -15,10 +15,11 @@
 ;; ../arithmetic-light/ash.lisp
 
 (include-book "bv-syntax")
-(include-book "slice")
+(include-book "slice-def")
 (include-book "bvcat-def")
 (include-book "bvshr-def")
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "rules")) ; todo, for logtail-becomes-slice-bind-free
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -31,6 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 
 ;move
 (defthm unsigned-byte-p-shift-lemma
@@ -40,19 +42,45 @@
            (unsigned-byte-p (- xsize n) (floor (* x (expt 2 (- n))) 1)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm ash-negative-becomes-slice
+(defthmd logtail-becomes-ash
+  (implies (natp n)
+           (equal (logtail n x)
+                  (ash x (- n))))
+  :hints (("Goal" :in-theory (enable logtail ash))))
+
+(defthmd ash-becomes-logtail
+  (implies (and (<= n 0)
+                (integerp n))
+           (equal (ash x n)
+                  (logtail (- n) x)))
+  :hints (("Goal" :use (:instance logtail-becomes-ash (n (- n))))))
+
+(theory-invariant (incompatible (:rewrite ash-becomes-logtail)
+                                (:rewrite logtail-becomes-ash)))
+
+(local
+  (defthm ash-negative-becomes-slice-helper
+    (implies (and (< n 0)
+                  (bind-free (bind-var-to-bv-term-size 'xsize x))
+                  (unsigned-byte-p xsize x)
+                  (<= (- n) xsize) ; dropped below
+                  (integerp n))
+             (equal (ash x n)
+                    (slice (+ -1 xsize) (- n) x)))
+    :hints (("Goal" :use (:instance unsigned-byte-p-shift-lemma (n (- n)))
+             :in-theory (enable ash-becomes-logtail slice logtail unsigned-byte-p)))))
+
+(defthmd ash-negative-becomes-slice
   (implies (and (< n 0)
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (unsigned-byte-p xsize x)
-                (<= (- n) xsize)
                 (integerp n))
            (equal (ash x n)
                   (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal"
-           :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
-           :in-theory (e/d (ash SLICE LOGTAIL ;floor
-                                )
-                           ()))))
+  :hints (("Goal" :in-theory (disable ash-negative-becomes-slice-helper
+                                      ;<-of-*-and-0
+                                      ash)
+           :use ash-negative-becomes-slice-helper)))
 
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
@@ -94,18 +122,6 @@
          (if test
              (ash i1 c)
            (ash i2 c))))
-
-;; (defthm getbit-of-ash
-;;   (implies (and (natp c)
-;;                 (natp i)
-;;                 (natp n))
-;;            (equal (getbit n (ash i c))
-;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
-;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
-;;                                        BVCHOP-OF-LOGTAIL)
-;;                                   (
-;;
-;;                                    )))))
 
 ;gen the -1
 (defthm ash-of-bvchop-32-and-minus1
