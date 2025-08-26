@@ -2777,7 +2777,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                         (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (hints
         (if expr?
@@ -2963,7 +2963,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                         (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
                                                               expr?))
