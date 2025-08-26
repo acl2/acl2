@@ -1457,7 +1457,9 @@
     result-array-stobj
     dag-to-term
     dag-or-quotep-to-term
+    nat-to-string
     print-dag-nicely
+    print-dag-nicely-with-base
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
@@ -1489,6 +1491,9 @@
     defthm-stp
     prove-with-stp
     defmacrodoc
+    simplify-conjunction-basic
+    print-to-hundredths
+    equivalent-dagsp2
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
