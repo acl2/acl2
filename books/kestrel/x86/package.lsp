@@ -1494,6 +1494,7 @@
     simplify-conjunction-basic
     print-to-hundredths
     equivalent-dagsp2
+    maybe-add-debug-rules
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp

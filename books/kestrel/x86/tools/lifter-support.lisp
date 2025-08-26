@@ -194,16 +194,3 @@
   (member-eq type *executable-types*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns a symbol-list.
-(defund maybe-add-debug-rules (debug-rules monitor)
-  (declare (xargs :guard (and (or (eq :debug monitor)
-                                  (symbol-listp monitor))
-                              (symbol-listp debug-rules))))
-  (if (eq :debug monitor)
-      debug-rules
-    (if (member-eq :debug monitor)
-        ;; replace :debug in the list with all the debug-rules:
-        (union-eq debug-rules (remove-eq :debug monitor))
-      ;; no special treatment:
-      monitor)))
