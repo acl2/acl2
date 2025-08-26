@@ -61,22 +61,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move
-(defun acl2::compose-term-and-dag! (term var-to-replace dag)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbolp var-to-replace)
-                              (or (myquotep dag)
-                                  (pseudo-dagp dag)))
-                  :verify-guards nil ; todo
-                  ))
-  (mv-let (erp result)
-    (acl2::compose-term-and-dag term var-to-replace dag)
-    (if erp
-        (er hard? 'compose-term-and-dag! "Error composing term and DAG: ~x0.")
-      result)))
-
-
-                  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;move and gen
 
 ;; may help with sbox lookup, etc.
