@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; This book mixes ASH with BV functions.  More other theorems about ASH, see
+;; This book mixes ASH with BV functions.  For other theorems about ASH, see
 ;; ../arithmetic-light/ash.lisp
 
 (include-book "bv-syntax")

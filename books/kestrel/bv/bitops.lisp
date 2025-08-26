@@ -300,7 +300,7 @@
            :in-theory (enable rotate-right
                               rightrotate
                               bvchop-of-logior-becomes-bvor
-                              ash-of-negative-becomes-logtail
+                              ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor
@@ -317,7 +317,7 @@
            :in-theory (enable rotate-left
                               leftrotate
                               bvchop-of-logior-becomes-bvor
-                              ash-of-negative-becomes-logtail
+                              ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor

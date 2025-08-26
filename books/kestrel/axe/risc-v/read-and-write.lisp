@@ -754,7 +754,7 @@
                               ;write32-mem-ubyte32-lendian
                               write
                               ubyte32-fix
-                              acl2::ash-of-negative-becomes-logtail
+                              acl2::ash-becomes-logtail
                               write32-mem-ubyte8-becomes-write-byte
                               ubyte32p
                               acl2::bvand-with-constant-mask-arg2

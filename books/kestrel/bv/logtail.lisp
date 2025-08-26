@@ -389,13 +389,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd ash-of-negative-becomes-logtail
-  (implies (and (<= amt 0)
-                (integerp amt))
-           (equal (ash x amt)
-                  (logtail (- amt) x)))
-  :hints (("Goal" :in-theory (enable logtail ash))))
-
 (defthm logtail-of-floor-of-expt
   (implies (and (integerp x)
                 (natp pos)
