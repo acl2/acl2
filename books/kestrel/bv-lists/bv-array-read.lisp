@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -300,12 +300,13 @@
                   (bv-array-read element-size k index (take k data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; Discards array values at the end that cannot be accessed
 (defthmd bv-array-read-shorten-when-<=
   (implies (and (syntaxp (quotep data))
                 (<= index k) ; k is a free var
                 (syntaxp (and (quotep k)
                               (quotep len)))
-                (< (+ 1 k) len) ; avoid loops
+                (< (+ 1 k) len) ; avoids loops
                 (natp index)
                 (natp k)
                 (natp len))

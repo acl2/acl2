@@ -1,6 +1,6 @@
 ; A book about discarding irrelevant array values
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -131,6 +131,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Discards array values at the front that cannot be accessed
 (defthm bv-array-read-of-+-of-constant-shorten
   (implies (and (syntaxp (and (quotep k)
                               (quotep vals)))
