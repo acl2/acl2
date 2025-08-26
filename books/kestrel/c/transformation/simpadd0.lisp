@@ -75,7 +75,8 @@
    in the top-level generated event that is submitted to ACL2."
 
   "For a growing number of constructs,
-   we have ACL2 functions that do most of the transformation of the construct,
+   we have ACL2 functions that perform
+   the core of the transformation of the construct,
    including theorem generation when applicable,
    and these ACL2 function are outside the large mutual recursion.
    The recursive functions recursively transform the sub-constructs,
@@ -89,7 +90,21 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."))
+   from the aforementioned @(tsee simpadd0-gout)."
+
+  "The above paragraph also illustrates
+   a naming convention used for the transformation functions.
+   The functions in the mutual recursion are called @('simpadd0-<construct>'),
+   where @('<construct>') is the fixtype of the construct,
+   e.g. @('expr') in the example above.
+   The functions not in the mutual recursion have more specific names,
+   such as @('simpadd0-<construct>-<kind>'),
+   where @('<kind>') is the appropriate kind of the @('<construct>') fixtype,
+   such as @(':paren') (without the colon) in the example above.
+   For fixtypes that are not tagged sums,
+   we add @('core') to the name of the function outside the mutual recursion.
+   For non-sum non-product fixtypes, e.g. lists,
+   we add designations for empty and @(tsee cons) lists to the names."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
