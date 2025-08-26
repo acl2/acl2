@@ -16,6 +16,7 @@
 (include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "../../x86/parsers/elf-tools")
 (include-book "read-and-write")
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
@@ -102,13 +103,20 @@
                     ;; TODO: Do this only for writable chunks?
                     ,@(if (posp stack-slots-needed)
                           `((disjoint-regions32p ',(len bytes) ',first-addr
-                                                 ',(* 4 stack-slots-needed) (bvplus 32 ',(bvchop 32 (* -4 stack-slots-needed)) ,stack-pointer-expression)))
+                                                 ',(* 4 stack-slots-needed) (bvplus '32 ',(bvchop 32 (* -4 stack-slots-needed)) ,stack-pointer-expression)))
                         nil))))))
          ((when erp) (mv erp nil)))
       (assumptions-for-memory-regions32 (rest regions)
                                         base-var state-var stack-pointer-expression stack-slots-needed existing-stack-slots position-independentp
                                         ;; todo: think about the order:
                                         (append assumptions-for-region acc)))))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-regions32
+  (implies (and (pseudo-termp stack-pointer-expression)
+                (symbolp state-var)
+                (pseudo-term-listp acc))
+           (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-regions32 regions base-var state-var stack-pointer-expression stack-slots-needed existing-stack-slots position-independentp acc))))
+  :hints (("Goal" :in-theory (enable assumptions-for-memory-regions32 memory-regionsp))))
 
 ;; Returns (mv erp assumptions).
 (defun assumptions-elf32 (parsed-elf)
@@ -135,6 +143,7 @@
 
 ;; does not return an error
 (defund assumptions-elf32! (parsed-elf)
+  (declare (xargs :guard (acl2::parsed-elfp parsed-elf)))
   (mv-let (erp assumptions)
     (assumptions-elf32 parsed-elf)
     (if erp

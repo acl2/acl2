@@ -45,6 +45,9 @@
 ;(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 ;(local (include-book "kestrel/bv/top" :dir :system)) ; reduce
 
+;; Disable bad rules that come in via fty via risc-v:
+(in-theory (disable acl2::reverse-removal acl2::revappend-removal))
+
 ;move
 (local
   (encapsulate ()

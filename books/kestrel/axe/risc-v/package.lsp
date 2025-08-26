@@ -11,35 +11,63 @@
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/x86/portcullis" :dir :system)
 
+;move this list?
+(defconst *axe-implementation-functions*
+  '(erp-nil
+    myquotep
+    step-incrementp
+    print-levelp
+    count-hits-argp
+    normalize-xors-optionp
+    rule-alistp
+    pseudo-dagp
+    this-step-increment
+    add-limit-for-rules
+    limit-for-rule
+    simplify-dag-basic
+    known-booleans
+    real-time-since
+    maybe-prune-dag-approximately
+    maybe-prune-dag-precisely
+    dag-fns
+    remove-assumptions-about
+    *non-stp-assumption-functions*
+    equivalent-dagsp2
+    print-to-hundredths
+    print-dag-nicely
+    print-dag-nicely-with-base
+    print-level-at-least-tp
+    nat-to-string))
+
 (defpkg "R"
-  (append '(acl2::loghead
-            acl2::logapp
-            acl2::logtail
-            acl2::logext
+  (append '(loghead
+            logapp
+            logtail
+            logext
 
-            acl2::bvplus
-            acl2::bvminus
-            acl2::bvuminus
-            acl2::bvchop
-            acl2::slice
-            acl2::bvcat
-            acl2::bvcat2
-            acl2::bvlt
+            bvplus
+            bvminus
+            bvuminus
+            bvchop
+            slice
+            bvcat
+            bvcat2
+            bvlt
 
-            acl2::repeat
+            repeat
 
-            acl2::b*
-            acl2::patbind-when
+            b*
+            patbind-when
 
-            acl2::unsigned-byte-listp
-            acl2::defopeners
+            unsigned-byte-listp
+            defopeners
 
-            acl2::bv-array-read
-            acl2::bv-array-read-chunk-little
+            bv-array-read
+            bv-array-read-chunk-little
 
-            acl2::ubyte32-list-fix
+            ubyte32-list-fix
 
-            acl2::defpun
+            defpun
 
             x::disjoint-regionsp ; todo: move these
             x::disjoint-regions32p
@@ -77,6 +105,7 @@
             riscv::read32-xreg-unsigned
             riscv::read32-xreg-signed
             riscv::write32-xreg
+            riscv::error32
             riscv::error32p
             riscv::read32-pc
             riscv::write32-pc
@@ -105,4 +134,5 @@
             ;; var names:
             riscv::stat
             )
+          *axe-implementation-functions*
           *acl2-exports*))
