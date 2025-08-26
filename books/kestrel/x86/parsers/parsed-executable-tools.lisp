@@ -68,3 +68,14 @@
             (if (not (member-eq cpu-type '(:IMAGE_FILE_MACHINE_I386 :IMAGE_FILE_MACHINE_AMD64)))
                 (er hard? 'ensure-x86 "Non-x86 executable detected.  CPU type is ~x0" cpu-type)
               nil))))))
+
+(defund ensure-risc-v (parsed-executable)
+  ;; todo: guard
+  (let ((executable-type (parsed-executable-type parsed-executable)))
+    (if (not (eq executable-type :elf-32))
+        ;; todo: handle :elf-64 and maybe other executable-types
+        (er hard? 'ensure-risc-v "Non-ELF-32 executable detected.  Executable type is ~x0" executable-type)
+      (let ((cpu-type (parsed-elf-cpu-type parsed-executable)))
+        (if (not (eq :em_riscv cpu-type))
+            (er hard? 'ensure-risc-v "Non-RISC-V executable detected.  CPU type is ~x0" cpu-type)
+          nil)))))
