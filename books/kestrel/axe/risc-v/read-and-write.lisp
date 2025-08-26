@@ -437,7 +437,6 @@
 
 (local
   (defun read-high-low-induct (n addr stat high low)
-    (declare (xargs :verify-guards nil))
     (if (zp n)
         (mv n addr stat high low)
       (read-high-low-induct (- n 1) (+ 1 addr) stat (+ -8 high) (+ -8 low)))))
