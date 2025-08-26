@@ -18,6 +18,7 @@
 (include-book "parsers/parsed-executable-tools")
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
+(include-book "../axe/lifter-common") ; for lifter-targetp ; todo
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 ;(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
@@ -552,7 +553,7 @@
                                type-assumptions-for-array-varsp
                                inputs-disjoint-from
                                parsed-elf)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
@@ -645,7 +646,7 @@
                                  type-assumptions-for-array-varsp
                                  inputs-disjoint-from
                                  parsed-macho)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
@@ -735,7 +736,7 @@
                               type-assumptions-for-array-varsp
                               inputs-disjoint-from
                               parsed-pe)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
