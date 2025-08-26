@@ -42,6 +42,36 @@
            (unsigned-byte-p (- xsize n) (floor (* x (expt 2 (- n))) 1)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
+(defthm slice-of-ash
+  (implies (and (<= n low)
+                (integerp low)
+                (integerp high)
+                (natp n))
+           (equal (slice high low (ash x n))
+                  (slice (- high n) (- low n) x)))
+  :hints (("Goal" :in-theory (enable ash slice logtail ;floor
+                                     expt-of-+))))
+
+;can't just turn ash into slice because we don't know what the top bit is, so
+;we need the overarching slice.
+(defthm slice-of-ash-right
+  (implies (and (< n 0)
+                (natp low)
+                (natp high)
+                (integerp n))
+           (equal (slice high low (ash x n))
+                  (slice (+ high (- n)) (+ low (- n)) x)))
+  :hints (("Goal" :in-theory (enable ash slice logtail ;floor
+                                     ifix
+                                     expt-of-+))))
+
+(defthm slice-of-ash-same
+  (implies (and (natp high)
+                (natp low))
+           (equal (slice high low (ash x low))
+                  (bvchop (+ 1 (- high low)) x)))
+  :hints (("Goal" :cases ((<= n 0)))))
+
 (defthmd logtail-becomes-ash
   (implies (natp n)
            (equal (logtail n x)
