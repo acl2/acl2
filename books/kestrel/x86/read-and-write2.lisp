@@ -175,8 +175,7 @@
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
            (equal (read n1 ad1 (write n2 ad2 val x86))
-                  (read n1 ad1 x86)))
-  :hints (("Goal" :in-theory (enable read write))))
+                  (read n1 ad1 x86))))
 
 (defthm read-of-write-when-disjoint-regions48p-gen-alt
   (implies (and (disjoint-regions48p len2 start2 len1 start1) ; todo: rename vars
