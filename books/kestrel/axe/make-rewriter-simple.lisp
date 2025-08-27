@@ -493,6 +493,11 @@
   (normalize-xors-optionp (normalize-xors-option-fix n))
   :hints (("Goal" :in-theory (enable normalize-xors-option-fix))))
 
+;; We make this a separate function to support using :redef to change it easily.
+(defund verbose-monitorp ()
+  (declare (xargs :guard t))
+  nil)
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -1078,10 +1083,13 @@
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
                                                     (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
-                                                    (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
-                                                    (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
-                                                    (cw ")~%")
-                                                    (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                    (cw "(Alist: ~x0)~%" alist)
+                                                    (and (verbose-monitorp) ; to turn on verbose monitoring, :redef this to return t
+                                                         (progn$ (cw "(Refined assumption alist:~%"))
+                                                         (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                         (cw ")~%")
+                                                         (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                         )
                                                     (cw "(Relevant DAG nodes:~%")
                                                     (if (consp relevant-nodes)
                                                         (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
