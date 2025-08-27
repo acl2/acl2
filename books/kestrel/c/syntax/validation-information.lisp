@@ -453,42 +453,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod block-item-info
-  :short "Fixtype of validation information for block items."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) block items.
-     This information currently consists of
-     the validation table at the beginning of the block item."))
-  ((table-start valid-table))
-  :pred block-item-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-block-item-info
-  :short "An irrelevant validation information for block items."
-  :type block-item-infop
-  :body (block-item-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-block-item-info (x)
-  :returns (info block-item-infop)
-  :short "Coerce a value to @(tsee block-item-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (block-item-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy BLOCK_ITEM-INFOP." x)
-            (irr-block-item-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
@@ -687,12 +651,6 @@
    (asm-stmt t)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
-   (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
-                          (block-item-infop
-                           (block-item-decl->info block-item))))
-   (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
-                          (block-item-infop
-                           (block-item-stmt->info block-item))))
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))
    (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
@@ -912,26 +870,4 @@
     (if item-type?
         item-type?
       items-type?))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define block-item-valid-table ((item block-itemp))
-  :guard (block-item-unambp item)
-  :returns (table valid-tablep)
-  :short "Validation table at the start of a block item."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Validated block items are unambiguous and always contain annotations
-     that include the validation table at the beginning of the block item.
-     For now we perform a runtime check that should never fail,
-     but eventually we should use an annotation guard."))
-  (b* ((info (block-item-case
-              item
-              :decl item.info
-              :stmt item.info
-              :ambig (impossible)))
-       (info (coerce-block-item-info info)))
-    (block-item-info->table-start info))
   :hooks (:fix))
