@@ -464,6 +464,199 @@
                   (bfr-eval test env (interp-st->logicman interp-st)))
              (not contra))))
 
+(define interp-st-pathcond-implies ((test interp-st-bfr-p)
+                                    interp-st)
+
+  :returns (mv (ans acl2::maybe-bitp)
+               (new-interp-st))
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-ok)))
+  (b* (((when (booleanp test)) (mv (bool->bit test) interp-st)))
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (pathcond (interp-st->pathcond interp-st))
+                (constraint-pathcond (interp-st->constraint interp-st)))
+               (ans pathcond constraint-pathcond)
+               ;; this is a bit weak... would be better to check against
+               ;; both constraint and pathcond at once somehow
+               (b* ((constraint-pathcond (pathcond-fix constraint-pathcond))
+                    ;; ((mv constraint-implies constraint-pathcond)
+                    ;;  (logicman-pathcond-implies test constraint-pathcond))
+                    ;; ((when (eql constraint-implies 0))
+                    ;;  (mv t pathcond constraint-pathcond))
+                    ((mv ans1 constraint-pathcond)
+                     (logicman-pathcond-implies test constraint-pathcond))
+                    ((when ans1)
+                     (mv ans1 pathcond constraint-pathcond))
+                    ((mv ans2 pathcond) (logicman-pathcond-implies test pathcond)))
+                 (mv ans2 pathcond constraint-pathcond))
+               (mv ans interp-st)))
+  ///
+  (defretd eval-when-interp-st-pathcond-implies
+    (implies (and ans
+                  (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st)))
+             (equal (bfr-eval test env (interp-st->logicman interp-st))
+                    (bit->bool ans))))
+  
+  (defret interp-st-get-of-interp-st-pathcond-implies
+    (implies (and (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st)))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfr-p test)
+                  (interp-st-bfrs-ok interp-st))
+             (interp-st-bfrs-ok new-interp-st)))
+  
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
+
+
+(define interp-st-pathcond-fix-bfr ((test interp-st-bfr-p)
+                                    interp-st)
+
+  :returns (mv (ans)
+               (new-interp-st))
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-ok)))
+  (b* (((when (booleanp test)) (mv test interp-st))
+       ((mv bit? interp-st) (interp-st-pathcond-implies test interp-st)))
+    (mv (if bit? (bit->bool bit?) test) interp-st))
+  ///
+  (local (defthm bfr-p-of-equal
+           (bfr-p (equal x y))
+           :hints (("goal" :cases ((equal x y))))))
+  
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+  
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st)))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfr-p test)
+                  (interp-st-bfrs-ok interp-st))
+             (interp-st-bfrs-ok new-interp-st)))
+
+  (defret bfr-p-of-<fn>
+    (implies (and (interp-st-bfr-p test)
+                  (logicman-extension-p logicman (interp-st->logicman interp-st)))
+             (lbfr-p ans logicman)))
+
+  (defret bfr-eval-of-<fn>
+    (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st)))
+             (equal (bfr-eval ans env (interp-st->logicman interp-st))
+                    (bfr-eval test env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable eval-when-interp-st-pathcond-implies))))
+
+  (defret bfr-eval-of-<fn>-free
+    (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bfr-p test)
+                  (logicman-extension-p logicman (interp-st->logicman interp-st)))
+             (equal (bfr-eval ans env logicman)
+                    (bfr-eval test env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (disable <fn>
+                                       bfr-eval-of-<fn>)
+            :use bfr-eval-of-<fn>)))
+  
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
+
+
+(define interp-st-pathcond-fix-bfr-list ((x interp-st-bfr-listp)
+                                         interp-st)
+
+  :returns (mv (ans true-listp)
+               (new-interp-st))
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-ok)))
+  (if (atom x)
+      (mv nil interp-st)
+    (b* (((mv first interp-st) (interp-st-pathcond-fix-bfr (car x) interp-st))
+         ((mv rest interp-st) (interp-st-pathcond-fix-bfr-list (cdr x) interp-st)))
+      (mv (cons first rest) interp-st)))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+  
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st)))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfr-listp x)
+                  (interp-st-bfrs-ok interp-st))
+             (interp-st-bfrs-ok new-interp-st)))
+
+  (defret bfr-p-of-<fn>
+    (implies (and (interp-st-bfr-listp x)
+                  (logicman-extension-p logicman (interp-st->logicman interp-st)))
+             (lbfr-listp ans logicman)))
+
+  (defret bfr-list-eval-of-<fn>
+    (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st)))
+             (equal (bfr-list-eval ans env (interp-st->logicman interp-st))
+                    (bfr-list-eval x env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable eval-when-interp-st-pathcond-implies
+                                      bfr-list-eval))))
+
+  (defret bfr-list-eval-of-<fn>-free
+    (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bfr-listp x)
+                  (logicman-extension-p logicman (interp-st->logicman interp-st)))
+             (equal (bfr-list-eval ans env logicman)
+                    (bfr-list-eval x env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (disable <fn>
+                                       bfr-list-eval-of-<fn>)
+            :use bfr-list-eval-of-<fn>)))
+  
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
+
+
+
+                  
+    
+
+
 
 
 (define interp-st-pathcond-rewind (interp-st)
@@ -737,16 +930,20 @@
   :hints(("Goal" :in-theory (enable bfr-ite-bss-fn
                                     bfr-ite-bss-fn-aux))))
 
-(define fgl-object-basic-merge ((test lbfr-p)
-                               (then fgl-object-p)
-                               (else fgl-object-p)
-                               (make-ites-p)
-                               &optional
-                               (logicman 'logicman))
+(define interp-st-object-basic-merge ((test interp-st-bfr-p)
+                                      (then fgl-object-p)
+                                      (else fgl-object-p)
+                                      (make-ites-p)
+                                      &optional (interp-st 'interp-st))
   :measure (acl2::two-nats-measure (+ (fgl-object-count then)
                                       (fgl-object-count else))
                                    (+ (acl2-count (g-concrete->val then))
                                       (acl2-count (g-concrete->val else))))
+
+  :guard (and (fgl-bfr-object-p then (interp-st-bfr-state))
+              (fgl-bfr-object-p else (interp-st-bfr-state)))
+
+
   :prepwork ((local (include-book "primitive-lemmas"))
              (local (defthm-fgl-bfr-object-fix-flag
                       (defthm fgl-object-count-of-fgl-bfr-object-fix
@@ -869,106 +1066,168 @@
                                             (:instance fgl-object-eval-of-fgl-bfr-object-fix
                                              (x y)))
                                :in-theory (disable fgl-object-eval-of-fgl-bfr-object-fix))))))
+
   :verify-guards nil
   :returns (mv (okp)
                (obj fgl-object-p)
-               new-logicman)
-  :guard-hints (("goal" :in-theory (enable bfr-ite-bss-fn)))
-  :guard (and (fgl-bfr-object-p then (logicman->bfrstate))
-              (fgl-bfr-object-p else (logicman->bfrstate)))
-  (b* ((bfrstate (logicman->bfrstate))
+               new-interp-st)
+
+  (b* ((bfrstate (interp-st-bfr-state))
        (then (fgl-bfr-object-fix then))
        (else (fgl-bfr-object-fix else))
        ((when (equal (fgl-object-fix then)
                      (fgl-object-fix else)))
-        (mv t (fgl-bfr-object-fix then) logicman))
+        (mv t (fgl-bfr-object-fix then) interp-st))
        ((when (and (gobj-syntactic-booleanp then)
                    (gobj-syntactic-booleanp else)))
-        (b* (((mv bfr logicman)
-              (bfr-ite (bfr-fix test)
-                       (gobj-syntactic-boolean->bool then)
-                       (gobj-syntactic-boolean->bool else)
-                       logicman)))
-          (mv t (mk-g-boolean bfr) logicman)))
+        (b* (((mv bfr interp-st)
+              (stobj-let ((logicman (interp-st->logicman interp-st)))
+                         (bfr logicman)
+                         (bfr-ite (bfr-fix test)
+                                  (gobj-syntactic-boolean->bool then)
+                                  (gobj-syntactic-boolean->bool else)
+                                  logicman)
+                         (mv bfr interp-st)))
+             ((mv bfr interp-st) (interp-st-pathcond-fix-bfr bfr interp-st)))
+          (mv t (mk-g-boolean bfr) interp-st)))
        ((when (and (gobj-syntactic-integerp then)
                    (gobj-syntactic-integerp else)))
-        (b* (((mv bfr logicman)
-              (bfr-ite-bss-fn (bfr-fix test)
-                            (gobj-syntactic-integer->bits then)
-                            (gobj-syntactic-integer->bits else)
-                            logicman)))
-          (mv t (mk-g-integer bfr) logicman)))
+        (b* (((mv bfr interp-st)
+              (stobj-let ((logicman (interp-st->logicman interp-st)))
+                         (bfr logicman)
+                         (bfr-ite-bss-fn (bfr-fix test)
+                                         (gobj-syntactic-integer->bits then)
+                                         (gobj-syntactic-integer->bits else)
+                                         logicman)
+                         (mv bfr interp-st)))
+             ((mv bfr interp-st) (interp-st-pathcond-fix-bfr-list bfr interp-st)))
+          (mv t (mk-g-integer bfr) interp-st)))
        ((when (and (gobj-syntactic-consp then)
                    (gobj-syntactic-consp else)))
         (b* ((test (bfr-fix test))
-             ((mv car-ok car logicman)
-              (fgl-object-basic-merge test
+             ((mv car-ok car interp-st)
+              (interp-st-object-basic-merge test
                                      (gobj-syntactic-list->car then)
                                      (gobj-syntactic-list->car else)
                                      make-ites-p
-                                     logicman))
+                                     interp-st))
              ((unless car-ok)
-              (mv nil nil logicman))
-             ((mv cdr-ok cdr logicman)
-              (fgl-object-basic-merge test
+              (mv nil nil interp-st))
+             ((mv cdr-ok cdr interp-st)
+              (interp-st-object-basic-merge test
                                      (gobj-syntactic-list->cdr then)
                                      (gobj-syntactic-list->cdr else)
                                      make-ites-p
-                                     logicman))
+                                     interp-st))
              ((unless cdr-ok)
-              (mv nil nil logicman)))
-          (mv t (mk-g-cons car cdr) logicman))))
+              (mv nil nil interp-st)))
+          (mv t (mk-g-cons car cdr) interp-st))))
     (mv make-ites-p
         (if make-ites-p (g-ite (mk-g-boolean (bfr-fix test)) then else) nil)
-        logicman))
+        interp-st))
   ///
-  (local (in-theory (disable bfr-listp-when-not-member-witness
+  (local (in-theory (disable member-equal
+                             bfr-listp-when-not-member-witness
                              fgl-bfr-object-fix-when-fgl-bfr-object-p
-                             (:d fgl-object-basic-merge))))
-  ;; (defret fgl-bfr-object-p-of-<fn>
-  ;;   (fgl-bfr-object-p obj (logicman->bfrstate new-logicman)))
+                             (:d interp-st-object-basic-merge))))
 
-  (fty::deffixequiv fgl-object-basic-merge
-    :hints (("goal" :induct t)
-            '(:expand ((:free (test else) (fgl-object-basic-merge test then else make-ites-p))
-                       (:free (test then) (fgl-object-basic-merge test then else make-ites-p))))))
+  (deffixequiv interp-st-object-basic-merge
+    :hints (("goal" :induct (interp-st-object-basic-merge test then else make-ites-p interp-st)
+             :expand ((:free (then) (interp-st-object-basic-merge test then else make-ites-p interp-st))
+                      (:free (else) (interp-st-object-basic-merge test then else make-ites-p interp-st))))))
 
-
+  
   (local (defthm bfr-listp-fgl-object-bfrlist-of-fgl-bfr-object-fix
            (bfr-listp (fgl-object-bfrlist (fgl-bfr-object-fix x)))
            :hints (("goal" :use ((:instance return-type-of-fgl-bfr-object-fix.new-x))
                     :in-theory (disable return-type-of-fgl-bfr-object-fix.new-x)))))
 
   (defret logicman-extension-p-of-<fn>
-    (logicman-extension-p new-logicman logicman)
+    (implies (logicman-extension-p (interp-st->logicman interp-st) old-logicman)
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman))
     :hints (("goal" :expand (<call>) :induct <call>)))
 
   (defret bfr-nvars-of-<fn>
-    (equal (bfr-nvars new-logicman)
-           (bfr-nvars logicman))
+    (equal (bfr-nvars (interp-st->logicman new-interp-st))
+           (bfr-nvars (interp-st->logicman interp-st)))
     :hints (("goal" :expand (<call>) :induct <call>)))
 
-  (defret bfr-listp-of-fgl-object-basic-merge
-    ;; (implies (and (lbfr-p test)
-    ;;               (lbfr-listp (fgl-object-bfrlist thenval))
-    ;;               (lbfr-listp (fgl-object-bfrlist elseval)))
-    (bfr-listp (fgl-object-bfrlist obj) (logicman->bfrstate new-logicman))
+  (local
+   (defret interp-st-bfrs-ok-of-<fn>-free
+     (implies (and (interp-st-bfr-p test)
+                   (interp-st-bfrs-ok interp-st)
+                   (logicman-extension-p logicman (interp-st->logicman interp-st)))
+              (lbfr-p ans logicman))
+     :fn interp-st-pathcond-fix-bfr))
+
+  (local
+   (defret interp-st-bfrs-ok-of-<fn>-free
+     (implies (and (interp-st-bfr-listp x)
+                   (interp-st-bfrs-ok interp-st)
+                   (logicman-extension-p logicman (interp-st->logicman interp-st)))
+              (lbfr-listp ans logicman))
+     :fn interp-st-pathcond-fix-bfr-list))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints (("goal" :expand (<call>) :induct <call>)))
+  
+  (defret bfr-listp-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (bfr-listp (fgl-object-bfrlist obj) (logicman->bfrstate (interp-st->logicman new-interp-st))))
     :hints (("goal" :expand (<call>) :induct <call>)
             (and stable-under-simplificationp
                  '(:in-theory (enable bfr-listp-when-not-member-witness)))))
 
-  (verify-guards fgl-object-basic-merge-fn
+  (verify-guards interp-st-object-basic-merge-fn
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable bfr-listp-when-not-member-witness)))))
 
-  (defret eval-of-fgl-object-basic-merge
-    (implies okp
-             (equal (fgl-object-eval obj env new-logicman)
-                    (if (gobj-bfr-eval test env)
-                        (fgl-object-eval then env logicman)
-                      (fgl-object-eval else env logicman))))
+  (local (defthm bfr-list-eval-of-bfr-ite-bss-fn
+           (B* (((MV VV NEW-MAN)
+                 (BFR-ITE-BSS-FN C V1 V0 LOGICMAN)))
+             (IMPLIES
+              (AND (LBFR-P C LOGICMAN)
+                   (LBFR-LISTP V1 LOGICMAN)
+                   (LBFR-LISTP V0 LOGICMAN))
+              (AND
+               (EQUAL
+                (BOOLS->INT (BFR-LIST-EVAL VV ENV NEW-MAN))
+                (IF (BFR-EVAL C ENV LOGICMAN)
+                    (BOOLS->INT (BFR-LIST-EVAL V1 ENV LOGICMAN))
+                    (BOOLS->INT (BFR-LIST-EVAL V0 ENV LOGICMAN)))))))
+           :hints (("goal" :use ((:instance bfr-eval-of-bfr-ite-bss-fn
+                                  (env (fgl-env nil env))))
+                    :in-theory (e/d (gobj-bfr-list-eval-is-bfr-list-eval
+                                     gobj-bfr-eval)
+                                    (bfr-eval-of-bfr-ite-bss-fn))))))
+
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st))
+    :hints(("Goal" :expand (<call>) :induct <call>)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st))
+    :hints(("Goal" :expand (<call>) :induct <call>)))
+  
+  (defret eval-of-interp-st-object-basic-merge
+    (implies (and okp
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                   (interp-st-bfrs-ok interp-st))
+             (equal (fgl-object-eval obj env (interp-st->logicman new-interp-st))
+                    (if (gobj-bfr-eval test env (interp-st->logicman interp-st))
+                        (fgl-object-eval then env (interp-st->logicman interp-st))
+                      (fgl-object-eval else env (interp-st->logicman interp-st)))))
     :hints(("Goal" :expand (<call>) :induct <call>
-            :in-theory (enable gobj-bfr-eval ;; gobj-bfr-list-eval-is-bfr-list-eval
+            :in-theory (enable gobj-bfr-eval gobj-bfr-list-eval-is-bfr-list-eval
                                fgl-object-eval-when-gobj-syntactic-consp))))
 
   (local (defthm fgl-bfr-objectlist-of-fgl-bfr-object-fix
@@ -976,17 +1235,33 @@
            :hints (("goal" :use ((:instance fgl-bfr-object-p-when-fgl-object-p
                                   (x (fgl-bfr-object-fix x bfrstate))))))))
 
-  (deffixequiv fgl-object-basic-merge
-    :hints (("goal" :induct (fgl-object-basic-merge test then else logicman)
-             :expand ((:free (then) (fgl-object-basic-merge test then else logicman))
-                      (:free (else) (fgl-object-basic-merge test then else logicman))))))
+  ;; (deffixequiv fgl-object-basic-merge
+  ;;   :hints (("goal" :induct (fgl-object-basic-merge test then else logicman)
+  ;;            :expand ((:free (then) (fgl-object-basic-merge test then else logicman))
+  ;;                     (:free (else) (fgl-object-basic-merge test then else logicman))))))
 
   (defret logicman-get-of-<fn>
     (implies (and (not (equal (logicman-field-fix key) :aignet))
                   (not (equal (logicman-field-fix key) :strash)))
-             (equal (logicman-get key new-logicman)
-                    (logicman-get key logicman)))
+             (equal (logicman-get key (interp-st->logicman new-interp-st))
+                    (logicman-get key (interp-st->logicman interp-st))))
+    :hints(("Goal" :expand (<call>) :induct <call>)))
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint))
+                  (not (equal (interp-st-field-fix key) :logicman)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))
+    :hints(("Goal" :expand (<call>) :induct <call>)))
+
+  
+  
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))
     :hints(("Goal" :expand (<call>) :induct <call>))))
+  
 
 (define interp-st-fgl-object-basic-merge ((test interp-st-bfr-p)
                                          (then fgl-object-p)
@@ -999,16 +1274,15 @@
 
   :guard (and (interp-st-bfr-listp (fgl-object-bfrlist then) interp-st)
               (interp-st-bfr-listp (fgl-object-bfrlist else) interp-st))
-  (b* ((make-ites (interp-flags->make-ites (interp-st->flags interp-st))))
-    (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (okp obj logicman)
-               (fgl-object-basic-merge test then else make-ites logicman)
-               (b* (((unless okp)
-                     (fgl-interp-error :msg "If-then-else failed to merge -- see debug obj"
-                                      :debug-obj (list :test test
-                                                       :then (fgl-object-fix then)
-                                                       :else (fgl-object-fix else)))))
-                 (mv obj interp-st state))))
+  (b* ((make-ites (interp-flags->make-ites (interp-st->flags interp-st)))
+       ((mv okp obj interp-st)
+        (interp-st-object-basic-merge test then else make-ites))
+       ((unless okp)
+        (fgl-interp-error :msg "If-then-else failed to merge -- see debug obj"
+                          :debug-obj (list :test test
+                                           :then (fgl-object-fix then)
+                                           :else (fgl-object-fix else)))))
+    (mv obj interp-st state))
   ///
 
 
@@ -1017,13 +1291,21 @@
              (interp-st-bfrs-ok new-interp-st)))
 
   (defret bfr-object-p-of-<fn>
-    (lbfr-listp (fgl-object-bfrlist obj) (interp-st->logicman new-interp-st)))
+    (implies (interp-st-bfrs-ok interp-st)
+             (lbfr-listp (fgl-object-bfrlist obj) (interp-st->logicman new-interp-st))))
 
   (defret logicman-extension-p-of-<fn>
     (logicman-extension-p (interp-st->logicman new-interp-st) (interp-st->logicman interp-st)))
 
   (defret eval-of-interp-st-fgl-object-basic-merge
-    (implies (not (interp-st->errmsg new-interp-st))
+    (implies (and (not (interp-st->errmsg new-interp-st))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bfrs-ok interp-st))
              (equal (fgl-object-eval obj env (interp-st->logicman new-interp-st))
                     (if (gobj-bfr-eval test env (interp-st->logicman interp-st))
                         (fgl-object-eval then env (interp-st->logicman interp-st))
@@ -1034,10 +1316,21 @@
                   (not (equal key1 :logicman))
                   (not (equal key1 :errmsg))
                   (not (equal key1 :debug-info))
-                  (not (equal key1 :debug-stack)))
+                  (not (equal key1 :debug-stack))
+                  (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 
+
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st)))
+  
   (defret <fn>-return-values-correct
     (equal (list . <values>)
            <call>))
@@ -1054,7 +1347,11 @@
              (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
 
   (defret w-state-of-<fn>
-    (equal (w new-state) (w state))))
+    (equal (w new-state) (w state)))
+  
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
 
 
 
@@ -1081,7 +1378,8 @@
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (ite logicman)
                (bfr-ite test-bfr then-bfr else-bfr)
-               (mv ite interp-st state)))
+               (b* (((mv ite interp-st) (interp-st-pathcond-fix-bfr ite interp-st)))
+                 (mv ite interp-st state))))
   ///
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (interp-st-bfrs-ok interp-st)
@@ -1092,9 +1390,20 @@
 
   (defret interp-st-get-of-<fn>
     (implies (and (not (equal (interp-st-field-fix key) :logicman))
-                  (not (equal (interp-st-field-fix key) :errmsg)))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :pathcond))
+                  (not (equal (interp-st-field-fix key) :constraint)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
+
+  
+  (defret interp-st->pathcond-of-<fn>
+    (pathcond-equiv (interp-st->pathcond new-interp-st)
+                    (interp-st->pathcond interp-st)))
+
+  (defret interp-st->constraint-of-<fn>
+    (pathcond-equiv (interp-st->constraint new-interp-st)
+                    (interp-st->constraint interp-st)))
 
   (defret logicman-extension-p-of-<fn>
     (implies (equal old-logicman (interp-st->logicman interp-st))
@@ -1109,7 +1418,14 @@
     (implies (and (implies then-unreachable
                            (not (gobj-bfr-eval test-bfr env (interp-st->logicman interp-st))))
                   (implies else-unreachable
-                           (gobj-bfr-eval test-bfr env (interp-st->logicman interp-st))))
+                           (gobj-bfr-eval test-bfr env (interp-st->logicman interp-st)))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->constraint interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bfrs-ok interp-st))
              (equal (gobj-bfr-eval ite env (interp-st->logicman new-interp-st))
                     (if* (gobj-bfr-eval test-bfr env (interp-st->logicman interp-st))
                          (gobj-bfr-eval then-bfr env (interp-st->logicman interp-st))
@@ -1131,7 +1447,11 @@
                     (interp-st->errmsg interp-st))))
 
   (defret w-state-of-<fn>
-    (equal (w new-state) (w state))))
+    (equal (w new-state) (w state)))
+
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
 
 
 
@@ -4098,7 +4418,8 @@
                                         (member-eq 'unequiv (interp-st->equiv-contexts interp-st))
                                         state))
              ((when successp)
-              (b* ((interp-st (interp-st-prof-simple-increment-exec fn interp-st)))
+              (b* ((interp-st (interp-st-tick-steplimit interp-st)) ;; count execution of the function as a step
+                   (interp-st (interp-st-prof-simple-increment-exec fn interp-st)))
                 (fgl-interp-value ans)))
              (interp-st (interp-st-push-scratch-fgl-objlist args interp-st))
              ((fgl-interp-value successp ans)
@@ -5008,10 +5329,10 @@
                   (fgl-interp-value t nil))))
             (fgl-interp-value nil ans))))
 
-      (define fgl-interp-simplify-if-test ((already-rewrittenp)
-                                          (xobj fgl-object-p)
-                                          (interp-st interp-st-bfrs-ok)
-                                          state)
+      (define fgl-interp-simplify-if-test1 ((already-rewrittenp)
+                                            (xobj fgl-object-p)
+                                            (interp-st interp-st-bfrs-ok)
+                                            state)
         :guard (interp-st-bfr-listp (fgl-object-bfrlist xobj))
         :returns (mv
                   xbfr
@@ -5019,7 +5340,7 @@
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2000
                        (fgl-object-count xobj)
-                       40)
+                       38)
         (fgl-object-case xobj
           :g-concrete (fgl-interp-value (bool-fix xobj.val))
           :g-boolean (fgl-interp-value xobj.bool)
@@ -5030,6 +5351,23 @@
           :g-ite (fgl-interp-simplify-if-test-ite xobj interp-st state)
           :g-apply (fgl-interp-simplify-if-test-fncall already-rewrittenp xobj interp-st state)
           :g-map (fgl-interp-value (bool-fix xobj.alist))))
+
+
+      (define fgl-interp-simplify-if-test ((already-rewrittenp)
+                                           (xobj fgl-object-p)
+                                           (interp-st interp-st-bfrs-ok)
+                                           state)
+        :guard (interp-st-bfr-listp (fgl-object-bfrlist xobj))
+        :returns (mv
+                  xbfr
+                  new-interp-st new-state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2000
+                       (fgl-object-count xobj)
+                       40)
+        (b* (((mv ans1 interp-st state) (fgl-interp-simplify-if-test1 already-rewrittenp xobj interp-st state))
+             ((mv ans interp-st) (interp-st-pathcond-fix-bfr ans1 interp-st)))
+          (mv ans interp-st state)))
 
       ;; BOZO should we have a version of this for OR?
       (define fgl-interp-simplify-if-test-ite ((xobj fgl-object-p)
@@ -5690,6 +6028,12 @@
                           (:free (stack) (minor-stack-nth-scratch m stack)))))))
 
 
+
+
+
+(local (defthm bfr-p-of-equal
+         (bfr-p (equal x y))
+         :hints(("Goal" :cases ((equal x y))))))
 
 (progn
   (with-output
@@ -9603,6 +9947,18 @@
 
 (local
  (defsection-unique fgl-interp-correct
+
+   (local (defret gobj-bfr-eval-of-interp-st-pathcond-fix
+            (implies (and (logicman-pathcond-eval (fgl-env->bfr-vals env) (interp-st->pathcond interp-st)
+                                                  (interp-st->logicman interp-st))
+                          (logicman-pathcond-eval (fgl-env->bfr-vals env) (interp-st->constraint interp-st)
+                                                  (interp-st->logicman interp-st))
+                          (interp-st-bfr-p test)
+                          (logicman-extension-p logicman (interp-st->logicman interp-st)))
+                     (equal (gobj-bfr-eval ans env logicman)
+                            (gobj-bfr-eval test env (interp-st->logicman interp-st))))
+            :hints(("Goal" :in-theory (enable gobj-bfr-eval)))
+            :fn interp-st-pathcond-fix-bfr))
    
    (defretd interp-st-pathcond-assume-contradictionp-implies
      (implies (and contra
@@ -10479,7 +10835,14 @@
                            (and (iff* (gobj-bfr-eval xbfr env new-logicman)
                                       (fgl-object-eval xobj env logicman))
                                 (not unreachable)))))
-                ((:fnname fgl-interp-simplify-if-test)
+                ((:fnname fgl-interp-maybe-simplify-if-test)
+                 (:add-concl
+                  (implies (gobj-bfr-eval test env logicman)
+                           (and (iff* (gobj-bfr-eval xbfr env new-logicman)
+                                      (fgl-object-eval xobj env logicman))
+                                (not unreachable)))))
+                ((or (:fnname fgl-interp-simplify-if-test)
+                     (:fnname fgl-interp-simplify-if-test1))
                  (:add-concl
                   (iff* (gobj-bfr-eval xbfr env new-logicman)
                         (fgl-object-eval xobj env logicman))))
@@ -10692,6 +11055,7 @@
       ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
 
       :mutual-recursion fgl-interp)))
+
 
 
 
