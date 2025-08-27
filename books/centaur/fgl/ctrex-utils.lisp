@@ -3074,8 +3074,8 @@ compute a value for @('x').</p>
                              (interp-st interp-st-bfrs-ok)
                              state)
   :returns (mv errmsg new-interp-st)
-  (b* (((unless (fgl-config->counterexample-analysis-enabledp
-                 (interp-st->config interp-st)))
+  (b* (((fgl-config config) (interp-st->config interp-st))
+       ((unless config.counterexample-analysis-enabledp)
         (mv nil interp-st))
        (goal (cdr (hons-get :goal-term (interp-st->user-scratch interp-st))))
        ((unless (pseudo-termp goal))
@@ -3091,10 +3091,13 @@ compute a value for @('x').</p>
                (fmt-to-comment-window
                 "Warnings/errors from deriving counterexample: ~@0~%"
                 (list (cons #\0 ctrex-errmsg))
-                0 '(nil 7 10 nil) 10)))
+                0 config.evisc-tuple nil)))
        ;; ((when ctrex-errmsg)
        ;;  (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
-       (- (cw "~%*** Counterexample assignment: ***~%~x0~%~%" ctrex-bindings))
+       (- (fmt-to-comment-window
+           "~%*** Counterexample assignment: ***~%~x0~%~%"
+           `((#\0 . ,ctrex-bindings))
+           0 config.evisc-tuple nil))
        (- (cw "Running counterexample on top-level goal:~%"))
        ((mv err ans) (magitastic-ev goal ctrex-bindings 1000 state t t))
        (- (cond (err (cw "Error running goal on counterexample: ~@0~%" err))

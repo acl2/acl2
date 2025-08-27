@@ -128,14 +128,17 @@ that the SAT check will be attempted when the interpreter gets there.. If
 @(':nil'), then we do neither of these.")
     (skip-vacuity-check booleanp :default 'nil
                         "If NIL, we use SAT to check vacuity of the
-hypotheses. Set to T to disable this vacuity check.")))
+hypotheses. Set to T to disable this vacuity check.")
+    (evisc-tuple t :default '(nil 12 100 nil)
+                 "Evisc tuple to use for printing potentially large objects.")))
 
 (local
  (defun fgl-config-process-field (field)
    (cond ((atom field) field)
          ((eq (car field) ':default)
           (if (quotep (cadr field))
-              (cons :default (cons (unquote (cadr field)) (cddr field)))
+              (cons :default
+                    (cons (cadr field) (cddr field)))
             (cons :default (cons nil (cddr field)))))
          (t (cons (car field)
                   (fgl-config-process-field (cdr field)))))))
