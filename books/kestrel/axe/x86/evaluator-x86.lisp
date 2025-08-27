@@ -13,11 +13,11 @@
 (in-package "ACL2") ; change to X package?
 
 (include-book "../evaluator-basic")
+(include-book "../unguarded-defuns2")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline, has ttag :UNDEF-FLG
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline, has ttag :OTHER-NON-DET
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))
@@ -39,20 +39,6 @@
 
 (in-theory (disable acl2::posp-redefinition ; yuck, from std/basic/arith-equivs
                     ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund integer-range-p-unguarded (lower upper x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (not (<-unguarded x lower))
-       (<-unguarded x upper)))
-
-(defthm integer-range-p-unguarded-correct
-  (equal (integer-range-p-unguarded lower upper x)
-         (integer-range-p lower upper x))
-  :hints (("Goal" :in-theory (enable integer-range-p-unguarded
-                                     integer-range-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,50 +149,6 @@
   (equal (x86isa::prefixes-fix$inline-unguarded x)
          (x86isa::prefixes-fix$inline x))
   :hints (("Goal" :in-theory (enable x86isa::prefixes-fix$inline-unguarded x86isa::prefixes-fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund loghead$inline-unguarded (n x)
-  (declare (xargs :guard t))
-  (loghead$inline (nfix n) (ifix x)))
-
-(defthm loghead$inline-unguarded-correct
-  (equal (loghead$inline-unguarded n x)
-         (loghead$inline n x))
-  :hints (("Goal" :in-theory (enable loghead$inline-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund logbitp-unguarded (i j)
-  (declare (xargs :guard t))
-  (logbitp (nfix i) (ifix j)))
-
-(defthm logbitp-unguarded-correct
-  (equal (logbitp-unguarded i j)
-         (logbitp i j))
-  :hints (("Goal" :in-theory (enable logbitp-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-logand-unguarded (i j)
-  (declare (xargs :guard t))
-  (binary-logand (ifix i) (ifix j)))
-
-(defthm binary-logand-unguarded-correct
-  (equal (binary-logand-unguarded i j)
-         (binary-logand i j))
-  :hints (("Goal" :in-theory (enable binary-logand-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-logior-unguarded (i j)
-  (declare (xargs :guard t))
-  (binary-logior (ifix i) (ifix j)))
-
-(defthm binary-logior-unguarded-correct
-  (equal (binary-logior-unguarded i j)
-         (binary-logior i j))
-  :hints (("Goal" :in-theory (enable binary-logior-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,28 +287,6 @@
   (equal (x86isa::!prefixes->rep-unguarded rep x)
          (x86isa::!prefixes->rep rep x))
   :hints (("Goal" :in-theory (enable x86isa::!prefixes->rep x86isa::!prefixes->rep-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund bitops::part-select-width-low$inline-unguarded (x width low)
-  (declare (xargs :guard t))
-  (loghead$inline-unguarded width (logtail$inline-unguarded low x)))
-
-(defthm bitops::part-select-width-low$inline-unguarded-correct
-  (equal (bitops::part-select-width-low$inline-unguarded x width low)
-         (bitops::part-select-width-low$inline x width low))
-  :hints (("Goal" :in-theory (enable bitops::part-select-width-low$inline-unguarded bitops::part-select-width-low$inline))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund zip-unguarded (x)
-  (declare (xargs :guard t))
-  (zip (ifix x)))
-
-(defthm zip-unguarded-correct
-  (equal (zip-unguarded x)
-         (zip x))
-  :hints (("Goal" :in-theory (enable zip-unguarded zip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -532,39 +452,6 @@
   (equal (x86isa::n64-to-i64$inline-unguarded x)
          (x86isa::n64-to-i64$inline x))
   :hints (("Goal" :in-theory (enable x86isa::n64-to-i64$inline-unguarded x86isa::n64-to-i64$inline))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund evenp-unguarded (x)
-  (declare (xargs :guard t ))
-  (integerp (binary-*-unguarded x (unary-/-unguarded 2))))
-
-(defthm evenp-unguarded-correct
-  (equal (evenp-unguarded x)
-         (evenp x))
-  :hints (("Goal" :in-theory (enable evenp-unguarded evenp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund logcount-unguarded (x)
-  (declare (xargs :guard t ))
-  (logcount (ifix x)))
-
-(defthm logcount-unguarded-correct
-  (equal (logcount-unguarded x)
-         (logcount x))
-  :hints (("Goal" :in-theory (enable logcount-unguarded logcount))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund ash-unguarded (i c)
-  (declare (xargs :guard t ))
-  (ash (ifix i) (ifix c)))
-
-(defthm ash-unguarded-correct
-  (equal (ash-unguarded i c)
-         (ash i c))
-  :hints (("Goal" :in-theory (enable ash-unguarded ash))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -752,75 +639,6 @@
                                      x86isa::sib-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::assoc-keyword-unguarded (key l)
-  (declare (xargs :guard t))
-  (cond ((atom l) nil)
-        ((equal key (car l)) l)
-        (t (assoc-keyword-unguarded key (acl2::cdr-unguarded (acl2::cdr-unguarded l))))))
-
-(defthm assoc-keyword-unguarded-correct
-  (equal (acl2::assoc-keyword-unguarded key l)
-         (assoc-keyword key l))
-  :hints (("Goal" :in-theory (enable acl2::assoc-keyword-unguarded))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::header-unguarded (name l)
-  (declare (xargs :guard t))
-  (if (or (array1p name l)
-          (array2p name l))
-      (header name l)
-    ;; todo: make an assoc-eq-unguarded:
-    (acl2::assoc-equal-unguarded :header l)))
-
-(defthm header-unguarded-correct
-  (equal (acl2::header-unguarded name l)
-         (acl2::header name l))
-  :hints (("Goal" :in-theory (enable acl2::header-unguarded acl2::header))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::default-unguarded (name l)
-  (declare (xargs :guard t
-                  :guard-hints (("Goal" :in-theory (disable dimensions default)))))
-  (if (or (array1p name l)
-          (array2p name l))
-      ;; normal case:
-      (cadr (assoc-keyword :default (cdr (header name l))))
-    (acl2::car-unguarded (acl2::cdr-unguarded (acl2::assoc-keyword-unguarded :default (acl2::cdr-unguarded (acl2::header-unguarded name l)))))))
-
-(defthm default-unguarded-correct
-  (equal (acl2::default-unguarded name l)
-         (acl2::default name l))
-  :hints (("Goal" :in-theory (enable acl2::default-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; I hope this is still fast in the normal case.
-;; TOOD: For some reason, I am seeing slow array warnings.
-(defund acl2::aref1-unguarded (name l n)
-  (declare (xargs :guard t
-                  :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))
-  (if (and (symbolp name)
-           (array1p name l)
-           (natp n)
-           (let ((dims (dimensions name l)))
-             (and (consp dims)
-                  (let ((len (car dims)))
-                    (and (natp len)
-                         (< n len))))))
-      ;; hope this is fast:
-      (aref1 name l n)
-    (let ((x (and (not (eq n :header))
-                  (acl2::assoc-equal-unguarded n l))))
-      (cond ((null x) (acl2::default-unguarded name l))
-            (t (acl2::cdr-unguarded x))))))
-
-(defthm aref1-unguarded-correct
-  (equal (acl2::aref1-unguarded name l n)
-         (acl2::aref1 name l n))
-  :hints (("Goal" :in-theory (enable acl2::aref1-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1109,23 +927,6 @@
   (equal (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded x86isa::opcode x86isa::prefixes)
          (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline x86isa::opcode x86isa::prefixes))
   :hints (("Goal" :in-theory (enable x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund bv-array-read-chunk-little-unguarded (element-count element-size array-len index array)
-  (declare (xargs :guard t))
-  (if (zp-unguarded element-count)
-      0
-    (bvcat-unguarded (binary-*-unguarded element-size (binary-+-unguarded -1 element-count))
-                     (bv-array-read-chunk-little-unguarded (binary-+-unguarded -1 element-count) element-size array-len (binary-+-unguarded 1 index) array)
-                     element-size
-                     (bv-array-read-unguarded element-size array-len index array))))
-
-(defthm bv-array-read-chunk-little-unguarded-correct
-  (equal (bv-array-read-chunk-little-unguarded element-count element-size array-len index array)
-         (bv-array-read-chunk-little element-count element-size array-len index array))
-  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little-unguarded
-                                     bv-array-read-chunk-little))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
