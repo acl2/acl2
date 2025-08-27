@@ -308,6 +308,11 @@
                   (read n 0 stat)))
   :hints (("Goal" :in-theory (enable read))))
 
+(defthm unsigned-byte-p-of-read-simple
+  (implies (natp n)
+           (unsigned-byte-p (* n 8) (read n addr stat)))
+  :hints (("Goal" :in-theory (enable read))))
+
 (defthm unsigned-byte-p-of-read
   (implies (<= (* n 8) size)
            (equal (unsigned-byte-p size (read n addr stat))

@@ -20,6 +20,9 @@
 (include-book "kestrel/risc-v/specialized/states32" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
+(include-book "kestrel/bv/trim" :dir :system)
+(include-book "kestrel/axe/axe-syntax" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 
 (local
@@ -30,8 +33,8 @@
 
 ;; Gets the value of register N.
 (defund reg (n stat)
-  (declare (xargs :guard (and (posp n)
-                              (< n 31)
+  (declare (xargs :guard (and (natp n) ; allows 0, which is special
+                              (< n 32)
                               (stat32ip stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
   (read32-xreg-unsigned n stat))
@@ -60,8 +63,8 @@
 
 ;; Sets the value of register N.
 (defund set-reg (n val stat)
-  (declare (xargs :guard (and (posp n)
-                              (< n 31)
+  (declare (xargs :guard (and (natp n) ; allows 0, which is special
+                              (< n 32)
                               (unsigned-byte-p 32 val)
                               (stat32ip stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte5p)))))
@@ -130,6 +133,17 @@
 
 (defthm reg-of-write32-pc (equal (reg n (write32-pc pc stat)) (reg n stat)) :hints (("Goal" :in-theory (enable reg))))
 
+(defthmd set-reg-of-bvchop
+  (equal (set-reg reg (bvchop 32 val) x)
+         (set-reg reg val x))
+  :hints (("Goal" :in-theory (enable set-reg write32-xreg))))
+
+(defthmd set-reg-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp val nil dag-array))
+           (equal (set-reg reg val x)
+                  (set-reg reg (trim 32 val) x)))
+  :hints (("Goal" :in-theory (enable trim set-reg write32-xreg))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; register aliases (we plan to keep these enabled):
@@ -149,21 +163,59 @@
 (defund x14 (stat) (declare (xargs :guard (stat32ip stat))) (reg 14 stat))
 (defund x15 (stat) (declare (xargs :guard (stat32ip stat))) (reg 15 stat))
 
+(defund x16 (stat) (declare (xargs :guard (stat32ip stat))) (reg 16 stat))
+(defund x17 (stat) (declare (xargs :guard (stat32ip stat))) (reg 17 stat))
+(defund x18 (stat) (declare (xargs :guard (stat32ip stat))) (reg 18 stat))
+(defund x19 (stat) (declare (xargs :guard (stat32ip stat))) (reg 19 stat))
+(defund x20 (stat) (declare (xargs :guard (stat32ip stat))) (reg 20 stat))
+(defund x21 (stat) (declare (xargs :guard (stat32ip stat))) (reg 21 stat))
+(defund x22 (stat) (declare (xargs :guard (stat32ip stat))) (reg 22 stat))
+(defund x23 (stat) (declare (xargs :guard (stat32ip stat))) (reg 23 stat))
+(defund x24 (stat) (declare (xargs :guard (stat32ip stat))) (reg 24 stat))
+(defund x25 (stat) (declare (xargs :guard (stat32ip stat))) (reg 25 stat))
+(defund x26 (stat) (declare (xargs :guard (stat32ip stat))) (reg 26 stat))
+(defund x27 (stat) (declare (xargs :guard (stat32ip stat))) (reg 27 stat))
+(defund x28 (stat) (declare (xargs :guard (stat32ip stat))) (reg 28 stat))
+(defund x29 (stat) (declare (xargs :guard (stat32ip stat))) (reg 29 stat))
+(defund x30 (stat) (declare (xargs :guard (stat32ip stat))) (reg 30 stat))
+(defund x31 (stat) (declare (xargs :guard (stat32ip stat))) (reg 31 stat))
+
 ;; register aliases (we plan to keep these enabled):
 ;; (defun zero (stat) (declare (xargs :guard (stat32ip stat))) (x0 stat))
 (defun ra (stat) (declare (xargs :guard (stat32ip stat))) (x1 stat))
 (defun sp (stat) (declare (xargs :guard (stat32ip stat))) (x2 stat))
 (defun gp (stat) (declare (xargs :guard (stat32ip stat))) (x3 stat))
 (defun tp (stat) (declare (xargs :guard (stat32ip stat))) (x4 stat))
+
 (defun t0 (stat) (declare (xargs :guard (stat32ip stat))) (x5 stat))
 (defun t1 (stat) (declare (xargs :guard (stat32ip stat))) (x6 stat))
 (defun t2 (stat) (declare (xargs :guard (stat32ip stat))) (x7 stat))
+
 (defun s0 (stat) (declare (xargs :guard (stat32ip stat))) (x8 stat)) ; 2 aliases for x8
 (defun fp (stat) (declare (xargs :guard (stat32ip stat))) (x8 stat))
 (defun s1 (stat) (declare (xargs :guard (stat32ip stat))) (x9 stat))
+
 (defun a0 (stat) (declare (xargs :guard (stat32ip stat))) (x10 stat))
 (defun a1 (stat) (declare (xargs :guard (stat32ip stat))) (x11 stat))
 (defun a2 (stat) (declare (xargs :guard (stat32ip stat))) (x12 stat))
 (defun a3 (stat) (declare (xargs :guard (stat32ip stat))) (x13 stat))
 (defun a4 (stat) (declare (xargs :guard (stat32ip stat))) (x14 stat))
 (defun a5 (stat) (declare (xargs :guard (stat32ip stat))) (x15 stat))
+(defun a6 (stat) (declare (xargs :guard (stat32ip stat))) (x16 stat))
+(defun a7 (stat) (declare (xargs :guard (stat32ip stat))) (x17 stat))
+
+(defun s2 (stat) (declare (xargs :guard (stat32ip stat))) (x18 stat))
+(defun s3 (stat) (declare (xargs :guard (stat32ip stat))) (x19 stat))
+(defun s4 (stat) (declare (xargs :guard (stat32ip stat))) (x20 stat))
+(defun s5 (stat) (declare (xargs :guard (stat32ip stat))) (x21 stat))
+(defun s6 (stat) (declare (xargs :guard (stat32ip stat))) (x22 stat))
+(defun s7 (stat) (declare (xargs :guard (stat32ip stat))) (x23 stat))
+(defun s8 (stat) (declare (xargs :guard (stat32ip stat))) (x24 stat))
+(defun s9 (stat) (declare (xargs :guard (stat32ip stat))) (x25 stat))
+(defun s10 (stat) (declare (xargs :guard (stat32ip stat))) (x26 stat))
+(defun s11 (stat) (declare (xargs :guard (stat32ip stat))) (x27 stat))
+
+(defun t3 (stat) (declare (xargs :guard (stat32ip stat))) (x28 stat))
+(defun t4 (stat) (declare (xargs :guard (stat32ip stat))) (x29 stat))
+(defun t5 (stat) (declare (xargs :guard (stat32ip stat))) (x30 stat))
+(defun t6 (stat) (declare (xargs :guard (stat32ip stat))) (x31 stat))

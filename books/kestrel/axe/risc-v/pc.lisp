@@ -17,6 +17,11 @@
 (include-book "risc-v-rules")
 (include-book "kestrel/risc-v/specialized/states32" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "kestrel/bv/trim" :dir :system)
+(include-book "kestrel/axe/axe-syntax" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 (local (in-theory (disable mod)))
 
@@ -62,3 +67,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm error32p-of-set-pc (equal (error32p (set-pc pc stat)) (error32p stat)) :hints (("Goal" :in-theory (enable set-pc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd set-pc-convert-arg1-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp pc nil dag-array))
+           (equal (set-pc pc x)
+                  (set-pc (trim 32 pc) x)))
+  :hints (("Goal" :in-theory (enable trim set-pc write32-pc ubyte32-fix ubyte32p acl2::mod-becomes-bvchop-when-power-of-2p))))

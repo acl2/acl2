@@ -31,6 +31,7 @@
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
    (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2:: boolean-rules-safe)
    '(error32p-of-set-reg
      error32p-of-write
      error32p-of-set-pc
@@ -80,6 +81,15 @@
      acl2::logext-identity-when-usb-smaller-axe
      acl2::bvxor-of-logext-arg3
      acl2::bvxor-of-logext-arg2
+
+     not-bvlt-when-not-in-region32p ; backchains from bvlt to in-region32p
+
+     not-in-region32p-when-disjoint-regions32p-special
+     ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
+     ;; not-in-region32p-when-disjoint-regions32p-two
+     acl2::bvlt-of-1
+     ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
+     bvlt-of-read-and-constant
 
      in-region32p-cancel-constants-1-1+
     in-region32p-cancel-constants-1+-1
@@ -349,6 +359,7 @@
      riscv::exec32-branch
      riscv::exec32-bgeu
      riscv::exec32-blt
+     riscv::exec32-bltu
      riscv::exec32-bne
      riscv::exec32-beq
      riscv::exec32-bge
@@ -439,3 +450,6 @@
   '(step32-opener
     run-until-sp-is-above-opener
     read-when-equal-of-read-bytes-and-subregion32p))
+
+;; try late
+(acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)

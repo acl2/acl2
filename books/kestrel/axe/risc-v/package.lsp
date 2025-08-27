@@ -52,6 +52,7 @@
 
     def-constant-opener
     dag-to-term
+    dag-node-to-term
     fargs
     ffn-symb
     farg1
@@ -75,6 +76,12 @@
 
             acl2::expt2$inline
             acl2::ifloor$inline
+
+            boolif
+            booland
+            boolor
+            acl2::bool-fix
+            acl2::bool-fix$inline
 
             bvplus
             bvminus
