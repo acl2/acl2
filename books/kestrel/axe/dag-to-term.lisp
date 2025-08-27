@@ -1,7 +1,7 @@
 ; Converting DAGs to terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,7 @@
 (include-book "dags")
 (include-book "dag-arrays") ;for greatest-nodenum-in-list (factor out?)
 (include-book "tools/flag" :dir :system)
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 (defun dag-walker-measure-for-item (nodenum-or-quotep)
   (make-ord 1
@@ -146,3 +147,54 @@
 ;;       nil
 ;;     (cons (dag-to-term (first dags))
 ;;           (dags-to-terms (rest dags)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; If nodes are missing, the result may not start with NODENUM
+(defund discard-nodes-above (nodenum dag)
+  (declare (xargs :guard (and (natp nodenum)
+                              ;; allows gaps in the numbering:
+                              (weak-dagp-aux dag))))
+  (if (endp dag)
+      nil ; (er hard? 'discard-nodes-above "Nodenum not found: ~x0." nodenum)
+    (let* ((entry (first dag))
+           (this-nodenum (car entry)))
+      (if (< nodenum this-nodenum)
+          (discard-nodes-above nodenum (rest dag))
+        dag))))
+
+(local
+  (defthm weak-dagp-aux-of-discard-nodes-above
+    (implies (weak-dagp-aux dag)
+             (weak-dagp-aux (discard-nodes-above nodenum dag)))
+    :hints (("Goal" :in-theory (enable discard-nodes-above)))))
+
+(defthmd consp-of-car-when-weak-aux
+  (implies (weak-dagp-aux dag)
+           (equal (consp (car dag))
+                  (consp dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+(defthmd car-when-weak-aux-iff
+  (implies (weak-dagp-aux dag)
+           (iff (car dag)
+                dag))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+;; Useful when the whole DAG is too big to print but the part we are interested in is limited.
+(defun dag-node-to-term (nodenum dag)
+  (declare (xargs :guard (and (natp nodenum)
+                              ;; allows gaps in the numbering:
+                              (weak-dagp dag))
+                  :guard-hints (("Goal" :in-theory (enable consp-of-car-when-weak-aux
+                                                           car-when-weak-aux-iff
+                                                           weak-dagp
+                                                           acl2-numberp-when-natp
+                                                           natp-of-car-of-car-when-weak-dagp-aux)))))
+  (if (< (top-nodenum dag) nodenum)
+      (er hard? 'dag-node-to-term "Bad nodenum: ~x0." nodenum)
+    (let ((dag (discard-nodes-above nodenum dag)))
+      (if (not (and (consp dag)
+                    (= nodenum (car (first dag)))))
+          (er hard? 'dag-node-to-term "Node not found in DAG: ~x0." nodenum)
+        (dag-to-term dag)))))
