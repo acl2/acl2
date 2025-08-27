@@ -37,3 +37,5 @@
   return y + 0;
 }
 ")
+
+; no c::exec-fun theorem because of float

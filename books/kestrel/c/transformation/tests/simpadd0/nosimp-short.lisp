@@ -40,3 +40,5 @@
   return x1 + x2 + x3 + x4;
 }
 ")
+
+(assert-highest-thm-has-exec-fun *new-code*)

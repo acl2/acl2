@@ -36,3 +36,5 @@
   long long ll = 34LL;
 }
 ")
+
+(assert-highest-thm-has-exec-fun *new-code*)

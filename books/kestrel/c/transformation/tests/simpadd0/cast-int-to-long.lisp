@@ -36,3 +36,5 @@
   return (long) x;
 }
 ")
+
+(assert-highest-thm-has-exec-fun *new-code*)
