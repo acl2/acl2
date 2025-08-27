@@ -75,7 +75,8 @@
    in the top-level generated event that is submitted to ACL2."
 
   "For a growing number of constructs,
-   we have ACL2 functions that do most of the transformation of the construct,
+   we have ACL2 functions that perform
+   the core of the transformation of the construct,
    including theorem generation when applicable,
    and these ACL2 function are outside the large mutual recursion.
    The recursive functions recursively transform the sub-constructs,
@@ -89,7 +90,21 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."))
+   from the aforementioned @(tsee simpadd0-gout)."
+
+  "The above paragraph also illustrates
+   a naming convention used for the transformation functions.
+   The functions in the mutual recursion are called @('simpadd0-<construct>'),
+   where @('<construct>') is the fixtype of the construct,
+   e.g. @('expr') in the example above.
+   The functions not in the mutual recursion have more specific names,
+   such as @('simpadd0-<construct>-<kind>'),
+   where @('<kind>') is the appropriate kind of the @('<construct>') fixtype,
+   such as @(':paren') (without the colon) in the example above.
+   For fixtypes that are not tagged sums,
+   we add @('core') to the name of the function outside the mutual recursion.
+   For non-sum non-product fixtypes, e.g. lists,
+   we add designations for empty and @(tsee cons) lists to the names."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2762,7 +2777,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                         (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (hints
         (if expr?
@@ -2948,7 +2963,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                         (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
                                                               expr?))
@@ -3342,13 +3357,17 @@
                          gin.vartys var tyspecs initer))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
-                              (:e ldm-decl)
                               (:e ldm-initer)
                               (:e ldm-type-spec-list)
                               (:e ldm-ident)
                               (:e ldm-type)
                               (:e ident)
-                              (:e c::block-item-decl))
+                              (:e c::obj-declor-ident)
+                              (:e c::scspecseq-none)
+                              (:e c::obj-declon)
+                              (:e c::tyspecseq-to-type)
+                              (:e c::identp)
+                              (:e c::block-item-declon))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
@@ -5196,19 +5215,29 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an initializer declarator."
-    (b* (((simpadd0-gin gin) gin)
-         ((initdeclor initdeclor) initdeclor)
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If a theorem was generated for the initializer,
+       it is regarded as the theorem for the initializer declarator.
+       This is so that the theorem can surface up to block item declarations."))
+    (b* (((initdeclor initdeclor) initdeclor)
          ((mv new-declor (simpadd0-gout gout-declor))
           (simpadd0-declor initdeclor.declor gin))
          (gin (simpadd0-gin-update gin gout-declor))
          ((mv new-init? (simpadd0-gout gout-init?))
           (simpadd0-initer-option initdeclor.init? gin))
-         (gin (simpadd0-gin-update gin gout-init?)))
+         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
                            :init? new-init?)
-          (simpadd0-gout-no-thm gin)))
+          (if gout-init?.thm-name
+              (make-simpadd0-gout :events gin.events
+                                  :thm-index gin.thm-index
+                                  :thm-name gout-init?.thm-name
+                                  :vartys gout-init?.vartys)
+            (simpadd0-gout-no-thm gin))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5220,17 +5249,29 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of initializer declarators."
-    (b* (((simpadd0-gin gin) gin)
-         ((when (endp initdeclors))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the list is a singleton
+       and a theorem was generated for that one element,
+       it is regarded as the theorem for the list of initializer declarators.
+       This is so that the theorem can surface up to block item declarations."))
+    (b* (((when (endp initdeclors))
           (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
           (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
          ((mv new-initdeclors (simpadd0-gout gout-initdeclors))
           (simpadd0-initdeclor-list (cdr initdeclors) gin))
-         (gin (simpadd0-gin-update gin gout-initdeclors)))
+         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-initdeclors)))
       (mv (cons new-initdeclor new-initdeclors)
-          (simpadd0-gout-no-thm gin)))
+          (if (and (not (consp new-initdeclors))
+                   gout-initdeclor.thm-name)
+              (make-simpadd0-gout :events gin.events
+                                  :thm-index gin.thm-index
+                                  :thm-name gout-initdeclor.thm-name
+                                  :vartys gout-initdeclor.vartys)
+            (simpadd0-gout-no-thm gin))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5241,24 +5282,35 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a declaration."
-    (b* (((simpadd0-gin gin) gin))
-      (decl-case
-       decl
-       :decl (b* (((mv new-specs (simpadd0-gout gout-specs))
-                   (simpadd0-decl-spec-list decl.specs gin))
-                  (gin (simpadd0-gin-update gin gout-specs))
-                  ((mv new-init (simpadd0-gout gout-init))
-                   (simpadd0-initdeclor-list decl.init gin))
-                  (gin (simpadd0-gin-update gin gout-init)))
-               (mv (make-decl-decl :extension decl.extension
-                                   :specs new-specs
-                                   :init new-init)
-                   (simpadd0-gout-no-thm gin)))
-       :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-statassert decl.unwrap gin))
-                        (gin (simpadd0-gin-update gin gout-decl)))
-                     (mv (decl-statassert new-decl)
-                         (simpadd0-gout-no-thm gin)))))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "In the case of a non-static-assert declaration,
+       if a theorem was generated for the list of initializer declarators,
+       it is regarded as the theorem for the declaration.
+       This is so that the theorem can surface up to block item declarations."))
+    (decl-case
+     decl
+     :decl (b* (((mv new-specs (simpadd0-gout gout-specs))
+                 (simpadd0-decl-spec-list decl.specs gin))
+                (gin (simpadd0-gin-update gin gout-specs))
+                ((mv new-init (simpadd0-gout gout-init))
+                 (simpadd0-initdeclor-list decl.init gin))
+                ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init)))
+             (mv (make-decl-decl :extension decl.extension
+                                 :specs new-specs
+                                 :init new-init)
+                 (if gout-init.thm-name
+                     (make-simpadd0-gout :events gin.events
+                                         :thm-index gin.thm-index
+                                         :thm-name gout-init.thm-name
+                                         :vartys gout-init.vartys)
+                   (simpadd0-gout-no-thm gin))))
+     :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
+                       (simpadd0-statassert decl.unwrap gin))
+                      (gin (simpadd0-gin-update gin gout-decl)))
+                   (mv (decl-statassert new-decl)
+                       (simpadd0-gout-no-thm gin))))
     :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
