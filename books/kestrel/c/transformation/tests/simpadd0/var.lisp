@@ -15,11 +15,11 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
-; (depends-on "old/file.c")
+; (depends-on "old/var.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("file.c")
+(c$::input-files :files ("var.c")
                  :path "old"
                  :const *old-code*)
 
