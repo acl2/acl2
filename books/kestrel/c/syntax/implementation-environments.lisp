@@ -135,7 +135,8 @@
   (xdoc::topstring
    (xdoc::p
     "The @('ldm') part of this function's name
-     is related to the one used for the functions in @(tsee langdef-mapping),
+     is related to the one used for the functions in
+     @(see mapping-to-language-definition),
      since we are mapping from the C syntax for tools
      to the formal language definition.")
    (xdoc::p
