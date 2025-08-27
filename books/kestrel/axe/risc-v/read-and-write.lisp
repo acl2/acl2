@@ -1015,6 +1015,7 @@
 
 (include-book "kestrel/bv/putbits" :dir :system)
 
+;; todo: use in-regionp?
 (defthm read-of-write-1-within
   (implies (and (bvlt 32 (bvminus 32 addr2 addr1) n)
                 ;; (integerp addr1)
@@ -1130,7 +1131,7 @@
 ;rename -bv
 ; needs write-of-write-byte
 (defthm read-1-of-write-within ; in x86, this is called read-1-of-write-within-new
-  (implies (and (bvlt 32 (bvminus 32 addr1 addr2) n)
+  (implies (and (bvlt 32 (bvminus 32 addr1 addr2) n) ; todo: use in-regionp?
                 (unsigned-byte-p 32 n) ; allow 2^32?
                 )
            (equal (read 1 addr1 (write n addr2 val stat))

@@ -19,6 +19,7 @@
 (include-book "risc-v-rules")
 (include-book "kestrel/risc-v/specialized/states32" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "kestrel/bv/bvif" :dir :system)
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 
 (local
@@ -51,7 +52,9 @@
          0)
   :hints (("Goal" :in-theory (enable reg))))
 
-;; todo: reg-of-0
+(defthm reg-of-if
+  (equal (reg n (if test tp ep))
+         (bvif 32 test (reg n tp) (reg n ep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

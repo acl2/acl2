@@ -92,6 +92,7 @@
             bvor
             bvxor
             bvnot
+            bvif
 
             trim
 

@@ -27,6 +27,7 @@
   (declare (xargs :guard t))
   (append
    (acl2::core-rules-bv)
+   (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
    (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
@@ -71,6 +72,7 @@
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      <-of-read ; for an array pattern rule
      bv-array-read-shorten-8
+     acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
      acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
@@ -94,7 +96,7 @@
     in-region32p-cancel-3-1
     in-region32p-cancel-2-2
     in-region32p-when-non-negative-and-negative-range
-    in-region32p-of-0-arg3 ; introduces bvlt
+    ;in-region32p-of-0-arg3 ; introduces bvlt
     in-region32p-of-bvchop-arg1
     in-region32p-of-bvchop-arg3
     in-region32p-of-bvsx-arg1
@@ -138,8 +140,24 @@
      acl2::bvplus-convert-arg3-to-bv-axe
      acl2::bvplus-of-logext-arg2
      acl2::bvplus-of-logext-arg3
+     acl2::bvchop-of-logext
 
      acl2::bvplus-associative
+
+     ;; add some of these to core-rules?:
+     acl2::boolif-of-nil-and-t
+     acl2::not-of-not
+
+     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but nore for giant nests of crypto ops.  so limit the size of the nests?
+     acl2::bvplus-commute-constant2
+
+     acl2::equal-of-bvif-safe ; add to core-rules-bv
+     acl2::equal-of-bvif-safe-alt
+     acl2::equal-of-bvif-constants
+     acl2::equal-of-bvif-constants2
+     acl2::bvchop-of-if-becomes-bvif
+     acl2::<-becomes-bvlt-axe-bind-free-arg1 ; or use stronger rules?
+     acl2::<-becomes-bvlt-axe-bind-free-arg2
 
      read32-pc-becomes-pc
      write32-pc-becomes-set-pc
@@ -155,6 +173,8 @@
      reg-of-write
      ;; reg-of-write-byte
      reg-of-set-pc
+     reg-of-if
+
      set-reg-of-bvchop
      set-reg-does-nothing
 
@@ -341,8 +361,14 @@
      riscv::exec32-xor
      riscv::exec32-srai
      riscv::exec32-sub
+     riscv::exec32-sltiu
+     riscv::exec32-sltu
+     riscv::exec32-or
+
 
      /= ;; !!
+     = ; todo: try base-rules
+
 
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
@@ -358,16 +384,20 @@
      riscv::op-funct-add
      riscv::op-funct-xor
      riscv::op-funct-sub
+     riscv::op-funct-or
+     riscv::op-funct-sltu
 
      riscv::instr-op-imms32
      riscv::op-imms-funct-srli
      riscv::op-imms-funct-slli
      riscv::op-imms-funct-srai
      riscv::op-imm-funct-andi
+     riscv::op-imm-funct-sltiu
      riscv::branch-funct-bne
      riscv::branch-funct-beq
      riscv::branch-funct-blt
      riscv::branch-funct-bge
+     riscv::branch-funct-bltu
 
      riscv::instr-jalr
      riscv::instr-jal
