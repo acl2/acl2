@@ -76,6 +76,24 @@
                     t ; the region covers the whole address space
                   (bvlt ,num-address-bits (bvminus ,num-address-bits ad start-ad) len))))
 
+         ;; How to prevent this from backchaining to in-regionp about values that are not addresses?
+         ;; todo: alt version?
+         (defthmd ,(acl2::pack-in-package pkg 'bvlt-when- in-regionp-name)
+           (implies (and (,in-regionp-name y len (bvuminus ,num-address-bits x))
+                         (< len (expt 2 ,num-address-bits))
+                         ;; (natp len)
+                         )
+                    (bvlt ,num-address-bits (bvplus ,num-address-bits x y) len))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         ;; How to prevent this from backchaining to in-regionp about values that are not addresses?
+         ;; todo: alt version?
+         (defthmd ,(acl2::pack-in-package pkg 'not-bvlt-when-not- in-regionp-name)
+           (implies (and (not (,in-regionp-name y len (bvuminus ,num-address-bits x)))
+                         (natp len))
+                    (not (bvlt ,num-address-bits (bvplus ,num-address-bits x y) len)))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
          ;; Nothing is in a region of size 0
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-of-0-arg2)
            (not (,in-regionp-name ad 0 start-ad))
