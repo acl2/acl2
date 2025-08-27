@@ -15,6 +15,7 @@
 
 ;; TODO: Add guards (will require defining what a well-formed parsed mach-o looks like)
 
+(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)

@@ -50,10 +50,6 @@
 
     ;; todo: organize
 
-    x::in-region32p ; todo: move to acl2 or mem? package?
-    x::subregion32p
-    x::disjoint-regions32p
-
     def-constant-opener
     dag-to-term
     fargs
@@ -127,10 +123,12 @@
 
             defpun
 
-            x::disjoint-regionsp ; todo: move these
-            x::disjoint-regions32p
-            x::memory-regionp
-            x::memory-regionsp
+            in-region32p ; todo: move to mem package?
+            subregion32p
+            disjoint-regions32p
+            memory-regionp
+            memory-regionsp
+            memory-region-addresses-and-lens
 
             riscv::memory32i-fix
             riscv::memory32ip

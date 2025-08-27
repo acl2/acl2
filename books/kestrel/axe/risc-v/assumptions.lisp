@@ -12,7 +12,6 @@
 
 ;; This is for 32-bit only
 
-(include-book "kestrel/memory/memory32" :dir :system)
 (include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "../../x86/parsers/elf-tools")
 (include-book "read-and-write")

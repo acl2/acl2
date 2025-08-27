@@ -36,13 +36,12 @@
                  write32-mem-ubyte8-of-+-arg1
                  write32-mem-ubyte32-lendian-of-+-arg1
                  acl2::bvplus-of-+-arg3
-                 x::in-region32p-of-+-arg3
+                 in-region32p-of-+-arg3
                  write32-xreg-of-+-arg2
                  read32-mem-ubyte32-lendian-of-+-arg1
                  read32-xreg-signed
-                 x::disjoint-regions32p-of-+-arg4
+                 disjoint-regions32p-of-+-arg4
                  write32-xreg-when-equal-of-read32-xreg-unsigned
-
                  (:e riscv::feat-rv32im-le) ; needed for code proofs
                  )
                 (equal-of-stat32i)))

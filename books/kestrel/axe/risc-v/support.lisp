@@ -86,7 +86,7 @@
 (in-theory (disable (:e repeat))) ; avoid out-of-memory error
 
 (defthm read32-mem-ubyte32-of-write32-mem-ubyte32-when-disjoint-regions32p
-  (implies (and (x::disjoint-regions32p 4 addr1 4 addr2)
+  (implies (and (disjoint-regions32p 4 addr1 4 addr2)
                 (integerp addr1)
                 (integerp addr2))
            (equal (read32-mem-ubyte32-lendian addr1 (write32-mem-ubyte32-lendian addr2 val stat))

@@ -1591,6 +1591,10 @@
     defconst-computed-simple
 
     _  ; for printing non-pure node patterns
+
+    memory-regionp
+    memory-regionsp
+    memory-region-addresses-and-lens
     ))
 
 ;; Ideally, these would all be rewritten to BV ops

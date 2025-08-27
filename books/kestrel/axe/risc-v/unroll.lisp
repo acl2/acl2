@@ -114,7 +114,6 @@
 
 ;move:
 
-(include-book "kestrel/memory/memory32" :dir :system)
 (add-known-boolean in-region32p)
 (add-known-boolean subregion32p)
 (add-known-boolean disjoint-regions32p)

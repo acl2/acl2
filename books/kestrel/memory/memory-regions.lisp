@@ -9,9 +9,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X") ; todo pull out of x86
+(in-package "ACL2")
 
-(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 (local (include-book "kestrel/lists-light/reverse" :dir :system))

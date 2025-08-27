@@ -56,11 +56,11 @@
      read-of-write-when-disjoint-regions32p-gen
      read-of-write-when-disjoint-regions32p-gen-alt
      bvchop-of-read
-     x::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
-     x::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
 
-     x::subregion32p-of-1-arg1     ;; trying
-     x::disjoint-regions32p-of-1-and-1 ; trying
+     subregion32p-of-1-arg1     ;; trying
+     disjoint-regions32p-of-1-and-1 ; trying
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::equal-of-bvplus-constant-and-constant
      not-equal-of-read-and-constant
@@ -79,27 +79,27 @@
      acl2::bvxor-of-logext-arg3
      acl2::bvxor-of-logext-arg2
 
-     x::in-region32p-cancel-constants-1-1+
-    x::in-region32p-cancel-constants-1+-1
-    x::in-region32p-cancel-constants-1+-1+
-    x::in-region32p-cancel-1-1+
-    x::in-region32p-cancel-1+-1
-    x::in-region32p-cancel-1+-1+
-    x::in-region32p-cancel-1-2
-    x::in-region32p-cancel-2-1
-    x::in-region32p-cancel-1+-2
-    x::in-region32p-cancel-2-1+
-    x::in-region32p-cancel-2+-1
-    x::in-region32p-cancel-1-3
-    x::in-region32p-cancel-3-1
-    x::in-region32p-cancel-2-2
-    x::in-region32p-when-non-negative-and-negative-range
-    x::in-region32p-of-0-arg3 ; introduces bvlt
-    x::in-region32p-of-bvchop-arg1
-    x::in-region32p-of-bvchop-arg3
-    x::in-region32p-of-bvsx-arg1
-    x::in-region32p-of-bvsx-arg3
-    x::in-region32p-same
+     in-region32p-cancel-constants-1-1+
+    in-region32p-cancel-constants-1+-1
+    in-region32p-cancel-constants-1+-1+
+    in-region32p-cancel-1-1+
+    in-region32p-cancel-1+-1
+    in-region32p-cancel-1+-1+
+    in-region32p-cancel-1-2
+    in-region32p-cancel-2-1
+    in-region32p-cancel-1+-2
+    in-region32p-cancel-2-1+
+    in-region32p-cancel-2+-1
+    in-region32p-cancel-1-3
+    in-region32p-cancel-3-1
+    in-region32p-cancel-2-2
+    in-region32p-when-non-negative-and-negative-range
+    in-region32p-of-0-arg3 ; introduces bvlt
+    in-region32p-of-bvchop-arg1
+    in-region32p-of-bvchop-arg3
+    in-region32p-of-bvsx-arg1
+    in-region32p-of-bvsx-arg3
+    in-region32p-same
 
 
      in-region32p-byte-special ; have the memory machinery generate this?
@@ -109,28 +109,27 @@
      write-normalize-constant-arg2
      write-normalize-constant-arg3
 
-     x::disjoint-regions32p-cancel-1-1+
-     x::disjoint-regions32p-cancel-1+-1
-     x::disjoint-regions32p-cancel-1+-1+
-     x::disjoint-regions32p-cancel-1-2
-     x::disjoint-regions32p-cancel-2-1
-     x::disjoint-regions32p-cancel-1+-2
-     x::disjoint-regions32p-cancel-2-1+
-     x::disjoint-regions32p-cancel-2-2
-     x::disjoint-regions32p-cancel-2+-2
-     x::disjoint-regions32p-of-bvplus-of-constant-and-constant
+     disjoint-regions32p-cancel-1-1+
+     disjoint-regions32p-cancel-1+-1
+     disjoint-regions32p-cancel-1+-1+
+     disjoint-regions32p-cancel-1-2
+     disjoint-regions32p-cancel-2-1
+     disjoint-regions32p-cancel-1+-2
+     disjoint-regions32p-cancel-2-1+
+     disjoint-regions32p-cancel-2-2
+     disjoint-regions32p-cancel-2+-2
+     disjoint-regions32p-of-bvplus-of-constant-and-constant
 
-
-     x::subregion32p-cancel-1-1
-     x::subregion32p-cancel-1+-1
-     x::subregion32p-cancel-1-1+
-     x::subregion32p-cancel-2-1
-     x::subregion32p-cancel-2-1+
-     x::subregion32p-cancel-1-2
-     x::subregion32p-cancel-1+-2
-     x::subregion32p-cancel-2-2
-     x::subregion32p-cancel-constants-1+-1
-     x::subregion32p-cancel-constants-1+-1+
+     subregion32p-cancel-1-1
+     subregion32p-cancel-1+-1
+     subregion32p-cancel-1-1+
+     subregion32p-cancel-2-1
+     subregion32p-cancel-2-1+
+     subregion32p-cancel-1-2
+     subregion32p-cancel-1+-2
+     subregion32p-cancel-2-2
+     subregion32p-cancel-constants-1+-1
+     subregion32p-cancel-constants-1+-1+
 
      set-pc-convert-arg1-to-bv-axe
      set-reg-convert-arg2-to-bv-axe
@@ -183,9 +182,9 @@
      ;; zero
      ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
 
-     x::subregion32p-constant-opener
-     x::in-region32p-constant-opener
-     x::disjoint-regions32p-constant-opener
+     acl2::subregion32p-constant-opener
+     acl2::in-region32p-constant-opener
+     acl2::disjoint-regions32p-constant-opener
 
      acl2::bv-array-read-chunk-little-constant-opener
      riscv::feat-rv32im-le ; todo: use constant-openers more for these?

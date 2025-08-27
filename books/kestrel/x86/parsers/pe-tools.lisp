@@ -13,6 +13,7 @@
 
 ;; TODO: Should these be in a PE package?
 
+(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; todo: replace uses of this with proper error returns
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "std/util/bstar" :dir :system)

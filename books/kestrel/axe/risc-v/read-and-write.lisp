@@ -124,8 +124,8 @@
                   (read-byte (bvplus 32 x y) stat)))
   :hints (("Goal" :in-theory (e/d (read-byte read32-mem-ubyte8 bvplus)
                                   (acl2::bvplus-of-+-arg3
-                                   x::disjoint-regions32p-of-+-arg4
-                                   x::in-region32p-of-+-arg3)))))
+                                   disjoint-regions32p-of-+-arg4
+                                   in-region32p-of-+-arg3)))))
 
 ;rename
 ;todo: same as read-byte-equal-when-bvchops-equal?
@@ -537,13 +537,13 @@
                          (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
   :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
                                   (acl2::bvplus-of-+-arg3
-                                   x::disjoint-regions32p-of-+-arg4
-                                   x::in-region32p-of-+-arg3)))))
+                                   disjoint-regions32p-of-+-arg4
+                                   in-region32p-of-+-arg3)))))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (defthm read-when-equal-of-read-bytes-and-subregion32p
   (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
-                (x::subregion32p n1 ad1 n2 ad2)
+                (subregion32p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
                 ;; (unsigned-byte-p 32 n1)
                 (natp n1)
@@ -570,9 +570,9 @@
                             ;bvuminus
                             bvuminus
                             ;acl2::bvchop-of-sum-cases
-                            x::subregion32p
+                            subregion32p
                             bvlt
-                            x::in-region32p
+                            in-region32p
                             read-becomes-read-byte
                             ifix
                             ;read-byte-of-+
@@ -586,14 +586,14 @@
                             acl2::+-of-minus-constant-version ; fixme disable
                             (:e expt)
                             acl2::bvplus-of-+-arg3
-                            x::disjoint-regions32p-of-+-arg4
-                            x::in-region32p-of-+-arg3
+                            disjoint-regions32p-of-+-arg4
+                            in-region32p-of-+-arg3
                             ;bvchop-of-read ;looped, but we need it
                             ;acl2::bvcat-equal-rewrite acl2::bvcat-equal-rewrite-alt ; looped
                             ;; for speed:
                             ;acl2::usb-when-usb8
                             ;acl2::bvchop-identity
-                            x::in-region32p-when-in-region32p-and-subregion32p
+                            in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
                             acl2::bv-array-read-chunk-little-unroll ; looped
@@ -657,8 +657,8 @@
                   (write-byte (bvplus 32 x y) val stat)))
   :hints (("Goal" :in-theory (e/d (write-byte write32-mem-ubyte8 bvplus)
                                   (acl2::bvplus-of-+-arg3
-                                   x::disjoint-regions32p-of-+-arg4
-                                   x::in-region32p-of-+-arg3)))))
+                                   disjoint-regions32p-of-+-arg4
+                                   in-region32p-of-+-arg3)))))
 
 (theory-invariant (incompatible (:rewrite write-byte-of-+) (:definition bvplus)))
 
@@ -845,8 +845,8 @@
                             acl2::bvcat-of-+-high
                             acl2::bvchop-identity
                             acl2::bvplus-of-+-arg3
-                            x::disjoint-regions32p-of-+-arg4
-                            x::in-region32p-of-+-arg3
+                            disjoint-regions32p-of-+-arg4
+                            in-region32p-of-+-arg3
                             write-of-bvchop-32-arg2 ; why?
                             )))))
 
@@ -873,8 +873,8 @@
                             acl2::expt-becomes-expt-limited
                             )
                            (acl2::bvplus-of-+-arg3
-                            x::disjoint-regions32p-of-+-arg4
-                            x::in-region32p-of-+-arg3
+                            disjoint-regions32p-of-+-arg4
+                            in-region32p-of-+-arg3
                             write32-mem-ubyte8-of-+-arg1 ; todo: loop
                             (:e expt)
                             )))))
@@ -900,21 +900,21 @@
              ;; (INTEGERP AD2)
              )
            (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL STAT))
-                  (IF (x::in-region32p ad1 n ad2)
+                  (IF (in-region32p ad1 n ad2)
                       (SLICE (+ 7 (* 8 (BVMINUS 32 AD1 AD2)))
                              (* 8 (BVMINUS 32 AD1 AD2))
                              VAL)
                     (READ-BYTE AD1 STAT))))
-  :hints (("Goal" :in-theory (enable x::in-region32p bvlt))))
+  :hints (("Goal" :in-theory (enable in-region32p bvlt))))
 
 ;build in to tool
 (defthm subregion32p-of-+-of--1-same
   (implies (posp n)
-           (x::subregion32p (+ -1 n) 1 n 0))
-  :hints (("Goal" :in-theory (enable x::subregion32p x::in-region32p bvlt))))
+           (subregion32p (+ -1 n) 1 n 0))
+  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt))))
 
 (defthm read-of-write-when-disjoint-regions32p
-  (implies (and (x::disjoint-regions32p n1 ad1 n2 ad2)
+  (implies (and (disjoint-regions32p n1 ad1 n2 ad2)
                 (integerp ad1)
                 (integerp ad2)
                 (unsigned-byte-p 32 n1)
