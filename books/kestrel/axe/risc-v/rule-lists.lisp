@@ -386,6 +386,7 @@
      acl2::bvchop-of-+-becomes-bvplus
      acl2::bvminus-of-bvplus-and-bvplus-same
      acl2::bvminus-of-bvplus-same
+     acl2::bvminus-of-bvplus-same-arg2
      acl2::bvminus-of-bvplus-of-constant-and-bvplus-of-constant
      acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
 
