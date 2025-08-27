@@ -38,4 +38,4 @@
 }
 ")
 
-;; (assert-highest-thm-has-exec-fun *new-code*)
+(assert-highest-thm-has-exec-fun *new-code*)
