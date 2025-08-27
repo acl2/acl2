@@ -2761,6 +2761,7 @@
     "We generate a theorem
      if there is no expression (i.e. the null statement),
      or if there is an assignment expression
+     (which we recognize by checking that it is not pure)
      for which a theorem was generated.
      An expression statement does not change the variables in scope,
      so we use the variable-type map from the validation table in the AST
@@ -2777,7 +2778,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (expr-purep expr?))))
+                         (not (expr-purep expr?)))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (hints
         (if expr?
