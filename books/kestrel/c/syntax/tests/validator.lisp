@@ -39,12 +39,12 @@
          (int-bytes (or ,int-bytes 2))
          (long-bytes (or ,long-bytes 4))
          (llong-bytes (or ,llong-bytes 8))
-         (ienv (ienv-simple short-bytes
-                            int-bytes
-                            long-bytes
-                            llong-bytes
-                            ,plain-char-signedp
-                            ,gcc))
+         (ienv (make-ienv :short-bytes short-bytes
+                          :int-bytes int-bytes
+                          :long-bytes long-bytes
+                          :llong-bytes llong-bytes
+                          :plain-char-signedp ,plain-char-signedp
+                          :gcc ,gcc))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
@@ -67,12 +67,12 @@
          (int-bytes (or ,int-bytes 4))
          (long-bytes (or ,long-bytes 8))
          (llong-bytes (or ,llong-bytes 8))
-         (ienv (ienv-simple short-bytes
-                            int-bytes
-                            long-bytes
-                            llong-bytes
-                            ,plain-char-signedp
-                            ,gcc))
+         (ienv (make-ienv :short-bytes short-bytes
+                          :int-bytes int-bytes
+                          :long-bytes long-bytes
+                          :llong-bytes llong-bytes
+                          :plain-char-signedp ,plain-char-signedp
+                          :gcc ,gcc))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
