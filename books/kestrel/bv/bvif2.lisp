@@ -135,20 +135,45 @@
                              (quotep b))
                          (quotep size)))
            (equal (equal x (bvif size test a b))
-                  ;one of the branches here will be computed
+                  ;; at least one of the branches here will be computed
                   (boolif test
                           (equal x (bvchop size a))
                           (equal x (bvchop size b)))))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm equal-of-bvif-safe2 ; todo: replace the other?
+;doesn't replicate any big terms
+(defthm equal-of-bvif-safe-alt
+  (implies (syntaxp (and (quotep x)
+                         ;;could drop this one?:
+                         (or (quotep a)
+                             (quotep b))
+                         (quotep size)))
+           (equal (equal (bvif size test a b) x)
+                  ;; at least one of the branches here will be computed
+                  (boolif test
+                          (equal x (bvchop size a))
+                          (equal x (bvchop size b)))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm equal-of-bvif-safe2
   (implies (syntaxp (and (quotep x)
                          ;; ;;could drop this one?:
                          ;; (or (quotep a)
                          ;;     (quotep b))
                          (quotep size)))
            (equal (equal x (bvif size test a b))
-                  ;one of the branches here will be computed
+                  (boolif test
+                          (equal x (bvchop size a))
+                          (equal x (bvchop size b)))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm equal-of-bvif-safe2-alt
+  (implies (syntaxp (and (quotep x)
+x                         ;; ;;could drop this one?:
+                         ;; (or (quotep a)
+                         ;;     (quotep b))
+                         (quotep size)))
+           (equal (equal x (bvif size test a b))
                   (boolif test
                           (equal x (bvchop size a))
                           (equal x (bvchop size b)))))
