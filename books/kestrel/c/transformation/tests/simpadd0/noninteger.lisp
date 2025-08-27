@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/noninteger.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,11 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/noninteger.c"
+ :content "int noninteger() {
+  float y = 5.0f;
+  return y + 0;
+}
+")

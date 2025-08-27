@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/gg.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,11 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/gg.c"
+ :content "int gg(int y) {
+  int z = (y);
+  return z;
+}
+")

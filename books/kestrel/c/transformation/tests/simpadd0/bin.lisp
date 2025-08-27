@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/bin.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,10 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/bin.c"
+ :content "int bin(int x, int y) {
+  return (x + y);
+}
+")

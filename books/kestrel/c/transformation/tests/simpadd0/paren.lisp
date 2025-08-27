@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/paren.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,12 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/paren.c"
+ :content "int paren() {
+  int w = 1;
+  int u = ((w));
+  return 0;
+}
+")

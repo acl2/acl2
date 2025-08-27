@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/return_void.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,10 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/return_void.c"
+ :content "void return_void() {
+  return;
+}
+")

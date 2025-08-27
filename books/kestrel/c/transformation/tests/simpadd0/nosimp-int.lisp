@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "../utilities")
+
 ; (depends-on "old/nosimp_int.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,3 +29,14 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/nosimp_int.c"
+ :content "int nosimp_int(int x) {
+  int x1 = +x;
+  int x2 = -x;
+  int x3 = ~x;
+  int x4 = !x;
+  return x1 + x2 + x3 + x4;
+}
+")
