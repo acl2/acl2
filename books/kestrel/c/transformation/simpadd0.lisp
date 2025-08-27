@@ -3109,7 +3109,7 @@
 (define simpadd0-block-item-stmt ((stmt stmtp)
                                   (stmt-new stmtp)
                                   (stmt-thm-name symbolp)
-                                  (info block-item-infop)
+                                  info
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new))
@@ -3299,7 +3299,7 @@
 (define simpadd0-block-item-decl ((decl declp)
                                   (decl-new declp)
                                   (decl-thm-name symbolp)
-                                  (info block-item-infop)
+                                  info
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
               (decl-unambp decl-new))
@@ -5507,7 +5507,7 @@
                (simpadd0-block-item-decl item.decl
                                          new-decl
                                          gout-decl.thm-name
-                                         (coerce-block-item-info item.info)
+                                         item.info
                                          gin))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
@@ -5515,7 +5515,7 @@
                (simpadd0-block-item-stmt item.stmt
                                          new-stmt
                                          gout-stmt.thm-name
-                                         (coerce-block-item-info item.info)
+                                         item.info
                                          gin))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
     :measure (block-item-count item))
@@ -5529,44 +5529,10 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of block items."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The handling of the variable-type maps is as follows.
-       If the list is empty,
-       we generate a theorem for the empty list of block items,
-       which includes hypotheses and conclusions about
-       the variables in the @('vartys') component of @('gin').
-       If instead the list is not empty,
-       we take the @('vartys') from the annotations of the first block item,
-       and we use it to transform the first block item,
-       possibly generating a theorem.
-       Then we take the @('vartys') out of the first block item
-       and we use it to transform the rest of the list of block items,
-       by recursively calling this function.
-       But note that that @('vartys') is used
-       only if the rest of the list is empty;
-       if it is not, the recursive call will use instead
-       the one from the first block item of the rest of the list,
-       i.e. the second block item of the list passed to this call.")
-     (xdoc::p
-      "The reason for taking the @('vartys') from each block item
-       is so that we can generate more theorems.
-       In particular, we can generate theorems for a block item
-       without having generate (complete) theorems for preceding block items.")
-     (xdoc::p
-      "The @('vartys-post') passed to @(tsee simpadd0-block-item-list-cons)
-       is either the one after the first block item
-       or the one after the list of block items,
-       depending on whether the rest of block items are actually executed,
-       based on whether the first block item returns or not."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
          (item (car items))
-         (table (c$::block-item-valid-table item))
-         (vartys (simpadd0-vartys-from-valid-table table))
-         (gin (change-simpadd0-gin gin :vartys vartys))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item item gin))
          (gin (simpadd0-gin-update gin gout-item))
@@ -5574,17 +5540,14 @@
           (simpadd0-block-item-list (cdr items)
                                     (change-simpadd0-gin
                                      gin :vartys gout-item.vartys)))
-         (gin (simpadd0-gin-update gin gout-items))
-         (vartys-post (if (block-item-type item)
-                          gout-item.vartys
-                        gout-items.vartys)))
+         (gin (simpadd0-gin-update gin gout-items)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
                                      (cdr items)
                                      new-items
                                      gout-items.thm-name
-                                     vartys-post
+                                     gout-items.vartys
                                      gin))
     :measure (block-item-list-count items))
 
