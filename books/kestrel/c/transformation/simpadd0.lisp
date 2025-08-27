@@ -728,14 +728,18 @@
        ((unless (stmt-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (stmt-type old))
-       ((unless (equal (stmt-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new statement ~x1 differs from ~
-                the type ~x2 of the old statement ~x3."
-               (stmt-type new) new type old)
+       (types (stmt-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (stmt-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new statement ~x1 differ from ~
+                the types ~x2 of the old statement ~x3."
+               (stmt-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -784,6 +788,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-stmt-thm
     :args ((old stmtp) (new stmtp))))
@@ -816,14 +821,18 @@
        ((unless (block-item-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-type old))
-       ((unless (equal (block-item-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new block item ~x1 differs from ~
-                the type ~x2 of the old block item ~x3."
-               (block-item-type new) new type old)
+       (types (block-item-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (block-item-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item ~x1 differ from ~
+                the types ~x2 of the old block item ~x3."
+               (block-item-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -872,6 +881,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-block-item-thm
     :args ((old block-itemp) (new block-itemp))))
@@ -904,14 +914,18 @@
        ((unless (block-item-list-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-list-type old))
-       ((unless (equal (block-item-list-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new block item list ~x1 differs from ~
-                the type ~x2 of the old block item list ~x3."
-               (block-item-list-type new) new type old)
+       (types (block-item-list-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (block-item-list-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item list ~x1 differ from ~
+                the types ~x2 of the old block item list ~x3."
+               (block-item-list-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -960,6 +974,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-block-item-list-thm
     :args ((old block-item-listp) (new block-item-listp))))
@@ -3133,7 +3148,10 @@
        (item-new (make-block-item-stmt :stmt stmt-new :info info))
        ((unless stmt-thm-name)
         (mv item-new (simpadd0-gout-no-thm gin)))
-       (type (stmt-type stmt))
+       (types (stmt-types stmt))
+       ((unless (= (set::cardinality types) 1))
+        (mv item-new (simpadd0-gout-no-thm gin)))
+       (type (set::head types))
        (support-lemma
         (cond ((not type)
                'simpadd0-block-item-stmt-none-support-lemma)
@@ -3172,6 +3190,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
@@ -3657,8 +3676,14 @@
        ((unless (and item-thm-name
                      items-thm-name))
         (mv item+items-new gout-no-thm))
-       (first-type (block-item-type item))
-       (rest-type (block-item-list-type items))
+       (first-types (block-item-types item))
+       ((unless (= (set::cardinality first-types) 1))
+        (mv item+items-new gout-no-thm))
+       (first-type (set::head first-types))
+       (rest-types (block-item-list-types items))
+       ((unless (= (set::cardinality rest-types) 1))
+        (mv item+items-new gout-no-thm))
+       (rest-type (set::head rest-types))
        ((mv support-lemma support-lemma-vartys)
         (cond
          ((not first-type)
@@ -3729,6 +3754,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-list-cons-lemma-instances
@@ -5883,8 +5909,10 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (type? (block-item-list-type fundef.body))
-       (type (or type? (type-void)))
+       (types (block-item-list-types fundef.body))
+       ((unless (= (set::cardinality types) 1)) (mv new-fundef gout-no-thm))
+       (type (set::head types))
+       (type (or type (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)
@@ -5977,7 +6005,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys nil)))
-  :guard-hints (("Goal" :in-theory (enable posp)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   :hooks (:fix)
 
   :prepwork
