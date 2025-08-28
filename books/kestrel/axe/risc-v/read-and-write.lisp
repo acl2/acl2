@@ -247,6 +247,33 @@
          (nfix n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
+(defthm car-of-read-bytes
+  (implies (and (posp n)
+                (integerp addr))
+           (equal (car (read-bytes addr n x86))
+                  (read-byte addr x86)))
+  :hints (("Goal" :expand
+           (read-bytes addr n x86))))
+
+(local
+ (defun inc-dec-dec-induct (x y z)
+   (if (zp y)
+       (list x y z)
+     (inc-dec-dec-induct (bvplus 32 1 x) (+ -1 y) (+ -1 z)))))
+
+(defthm nth-of-read-bytes
+  (implies (and (< n1 n2)
+                (natp n1)
+                (natp n2)
+                (integerp addr))
+           (equal (nth n1 (read-bytes addr n2 x86))
+                  (read-byte (bvplus 32 addr n1) x86)))
+  :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
+           :expand (read-bytes addr n2 x86)
+           :in-theory (enable read-bytes
+                              acl2::bvplus-of-+-arg3))))
+
+;; prove from nth-of-read-bytes?
 (defthm bv-array-read-of-read-bytes-helper
   (implies (and (< ad1 len) ;(force (< ad1 len))
                 (natp ad1)

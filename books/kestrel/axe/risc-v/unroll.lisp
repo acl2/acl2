@@ -94,8 +94,8 @@
   (defun wrap-in-normal-output-extractor (output-indicator term wrld)
     (declare (xargs :guard (and ;; see above comment on output-indicator
                              (plist-worldp wrld))
-                    :mode :program ; because of translate-term
-                    ))
+                    :mode :program ; because of translate-term ; todo: do that outside this function, while also checking the output-indicator?
+                     ))
     (if (symbolp output-indicator)
         (case output-indicator
           ;; Extract a 64-bit register:
@@ -143,17 +143,21 @@
           ;;             `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld) ,term)
           ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
+
           ;; (:read <N> <ADDR-TERM>)
           (:read (if (= 2 (len (fargs output-indicator)))
                      (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
-          ;; (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
-          ;;                       (posp (farg2 output-indicator)) ; number of bytes to read
-          ;;                       )
-          ;;                  `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-          ;;                                                         ',(farg2 output-indicator)
-          ;;                                                         ,term))
-          ;;                (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+
+          ;; (:byte-array <element-count> <addr-term>) ; not sure what order is best for the args
+          (:byte-array (if (and (= 2 (len (fargs output-indicator)))
+                                ;; (posp (farg2 output-indicator)) ; number of bytes to read
+                                )
+                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld) ; note the order
+                                                                  ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                                  ,term))
+                         (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+
           ;; ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
           ;; (:array (if (and (eql 3 (len (fargs output-indicator)))
           ;;                  (posp (farg1 output-indicator))
@@ -739,7 +743,7 @@
                         executable
                         ;;inputs
                         output-indicator
-                        extra-assumptions ; todo: translate!
+                        extra-assumptions
                         ;;suppress-assumptions
                         ;;inputs-disjoint-from
                         stack-slots
@@ -832,6 +836,9 @@
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
+       ;; Translate assumptions:
+       (extra-assumptions (acl2::translate-terms extra-assumptions 'def-unrolled-fn (w state)))
+
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag ;assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
             state)

@@ -30,9 +30,15 @@
     real-time-since
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
-    dag-fns
+
+    dag-fns ; todo: collect into *axe-tools* list
     dag-vars
     dag-size
+    dag-info
+    dag-to-term
+    dag-node-to-term
+    add-known-boolean
+
     remove-assumptions-about
     *non-stp-assumption-functions*
     equivalent-dagsp2
@@ -46,13 +52,11 @@
     dag-or-quotep-vars
     dag-or-quotep-to-term
     defmacrodoc
-    add-known-boolean
+
 
     ;; todo: organize
 
     def-constant-opener
-    dag-to-term
-    dag-node-to-term
     fargs
     ffn-symb
     farg1
@@ -66,7 +70,10 @@
 
     translate-term
 
-    parse-elf-file-bytes))
+    parse-elf-file-bytes
+
+    _ ;; used to print non-pure patterns
+    ))
 
 (defpkg "R"
   (append '(loghead
