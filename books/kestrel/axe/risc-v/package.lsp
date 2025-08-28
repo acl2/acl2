@@ -11,35 +11,88 @@
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/x86/portcullis" :dir :system)
 
+;move this list?
+(defconst *axe-implementation-functions*
+  '(erp-nil
+    erp-t
+    myquotep
+    step-incrementp
+    print-levelp
+    count-hits-argp
+    normalize-xors-optionp
+    rule-alistp
+    pseudo-dagp
+    this-step-increment
+    add-limit-for-rules
+    limit-for-rule
+    simplify-dag-basic
+    known-booleans
+    real-time-since
+    maybe-prune-dag-approximately
+    maybe-prune-dag-precisely
+    dag-fns
+    dag-vars
+    dag-size
+    remove-assumptions-about
+    *non-stp-assumption-functions*
+    equivalent-dagsp2
+    print-to-hundredths
+    print-dag-nicely
+    print-dag-nicely-with-base
+    print-level-at-least-tp
+    nat-to-string
+    dag-or-quotep-size
+    dag-or-quotep-fns
+    dag-or-quotep-vars
+    dag-or-quotep-to-term
+    defmacrodoc
+    add-known-boolean
+
+    ;; todo: organize
+
+    x::in-region32p ; todo: move to acl2 or mem? package?
+    x::subregion32p
+    x::disjoint-regions32p
+
+    def-constant-opener
+    dag-to-term
+    fargs
+    ))
+
 (defpkg "R"
-  (append '(acl2::loghead
-            acl2::logapp
-            acl2::logtail
-            acl2::logext
+  (append '(loghead
+            logapp
+            logtail
+            logext
 
-            acl2::bvplus
-            acl2::bvminus
-            acl2::bvuminus
-            acl2::bvchop
-            acl2::slice
-            acl2::bvcat
-            acl2::bvcat2
-            acl2::bvlt
+            bvplus
+            bvminus
+            bvuminus
+            bvchop
+            slice
+            getbit
+            bvcat
+            bvcat2
+            bvlt
+            bvand
+            bvor
+            bvxor
+            bvnot
 
-            acl2::repeat
+            repeat
 
-            acl2::b*
-            acl2::patbind-when
+            b*
+            patbind-when
 
-            acl2::unsigned-byte-listp
-            acl2::defopeners
+            unsigned-byte-listp
+            defopeners
 
-            acl2::bv-array-read
-            acl2::bv-array-read-chunk-little
+            bv-array-read
+            bv-array-read-chunk-little
 
-            acl2::ubyte32-list-fix
+            ubyte32-list-fix
 
-            acl2::defpun
+            defpun
 
             x::disjoint-regionsp ; todo: move these
             x::disjoint-regions32p
@@ -106,6 +159,7 @@
             ;; var names:
             riscv::stat
             )
+          *axe-implementation-functions*
           (set-difference-eq *acl2-exports*
                              '(pc ; we need this name for accessing the program counter
                                ))))

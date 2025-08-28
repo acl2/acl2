@@ -79,7 +79,7 @@
 (include-book "kestrel/x86/run-until-return" :dir :system)
 ;(include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
-(include-book "kestrel/x86/assumptions64" :dir :system)
+;(include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
 (include-book "kestrel/x86/if-lowering" :dir :system)
@@ -1722,6 +1722,7 @@
                    measure-alist
                    base-name
                    lifter-rules
+                   64-bitp
                    print
                    state)
    (declare (xargs :guard (and (posp loop-depth)
@@ -1735,6 +1736,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
+                               (booleanp 64-bitp)
                                (acl2::print-levelp print))
                    :mode :program ; because of submit-event-brief, untranslate, and untranslate-terms
                    :stobjs state))
@@ -1850,7 +1852,7 @@
         ;; Symbolically execute the loop body:
         ((mv erp loop-body-dag generated-events next-loop-num state)
          (lift-code-segment loop-depth generated-events next-loop-num this-loop-segment-offsets-no-header loop-body-assumptions extra-rules
-                            remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print state))
+                            remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules 64-bitp print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
         (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
@@ -2155,6 +2157,7 @@
                           measure-alist
                           base-name
                           lifter-rules
+                          64-bitp
                           print
                           state)
    (declare (xargs :stobjs state
@@ -2169,6 +2172,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
+                               (booleanp 64-bitp)
                                (acl2::print-levelp print))))
    (if (not (consp state-term)) ;is this case possible?
        (mv-let (erp state-dag)
@@ -2193,6 +2197,7 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
+                                 64-bitp
                                  print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
@@ -2211,6 +2216,7 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
+                                 64-bitp
                                  print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
@@ -2283,6 +2289,7 @@
                               measure-alist
                               base-name
                               lifter-rules
+                              64-bitp
                               print
                               state))
                   ((when erp) (mv erp nil nil nil nil state)))
@@ -2308,6 +2315,7 @@
                                measure-alist
                                base-name
                                lifter-rules
+                               64-bitp
                                print
                                state)
    (declare (xargs :guard (and (natp loop-depth)
@@ -2319,6 +2327,7 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
+                               (booleanp 64-bitp)
                                (acl2::print-levelp print))
                    :stobjs state))
    (b* ((all-loop-header-offsets (strip-cars loop-alist))
@@ -2384,6 +2393,7 @@
                            measure-alist
                            base-name
                            lifter-rules
+                           64-bitp
                            print
                            state))
         ((when erp) (mv erp nil nil nil state)))
@@ -2404,6 +2414,7 @@
                                 measure-alist
                                 base-name
                                 lifter-rules
+                                64-bitp
                                 print
                                 state)
        ;; No loops were lifted, so we are done
@@ -2429,6 +2440,7 @@
                            measure-alist ;may be :skip
                            base-name
                            lifter-rules
+                           64-bitp
                            print
                            state)
    (declare (xargs :guard (and (natp loop-depth)
@@ -2440,16 +2452,20 @@
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
+                               (booleanp 64-bitp)
                                (acl2::print-levelp print))
                    :stobjs state))
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
+        (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32))
+                          ;; (append (new-normal-form-rules64) ; todo: what if 32-bit?!
+                          ;;                           (new-normal-form-rules-common)
+                          ;;                           ;(old-normal-form-rules) ; don't use the new normal forms
+                          ;;                           ; '(x86isa::rip) ; open this (at least for now), to expose xr
+                          ;;                           (assumption-simplification-rules))
+                          )
         ((mv erp rule-alist)  ;todo: include the extra-rules?
-         (make-rule-alist (append (new-normal-form-rules64) ; todo: what if 32-bit?!
-                                  (new-normal-form-rules-common)
-                                  ;(old-normal-form-rules) ; don't use the new normal forms
-                                  ; '(x86isa::rip) ; open this (at least for now), to expose xr
-                                  (assumption-simplification-rules))
+         (make-rule-alist assumption-rules
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
         ;; ((mv erp assumptions state)
@@ -2505,6 +2521,7 @@
                                 measure-alist
                                 base-name
                                 lifter-rules
+                                64-bitp
                                 print
                                 state))
         ((when erp) (mv erp nil nil nil state))
@@ -2664,6 +2681,7 @@
                            measure-alist
                            lifted-name
                            lifter-rules
+                           64-bitp
                            print
                            state))
        ((when erp) (mv erp nil state))

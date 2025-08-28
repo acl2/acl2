@@ -75,7 +75,8 @@
    in the top-level generated event that is submitted to ACL2."
 
   "For a growing number of constructs,
-   we have ACL2 functions that do most of the transformation of the construct,
+   we have ACL2 functions that perform
+   the core of the transformation of the construct,
    including theorem generation when applicable,
    and these ACL2 function are outside the large mutual recursion.
    The recursive functions recursively transform the sub-constructs,
@@ -89,7 +90,21 @@
    resulting from that transformation;
    it also passes a @(tsee simpadd0-gin)
    whose components have been updated
-   from the aforementioned @(tsee simpadd0-gout)."))
+   from the aforementioned @(tsee simpadd0-gout)."
+
+  "The above paragraph also illustrates
+   a naming convention used for the transformation functions.
+   The functions in the mutual recursion are called @('simpadd0-<construct>'),
+   where @('<construct>') is the fixtype of the construct,
+   e.g. @('expr') in the example above.
+   The functions not in the mutual recursion have more specific names,
+   such as @('simpadd0-<construct>-<kind>'),
+   where @('<kind>') is the appropriate kind of the @('<construct>') fixtype,
+   such as @(':paren') (without the colon) in the example above.
+   For fixtypes that are not tagged sums,
+   we add @('core') to the name of the function outside the mutual recursion.
+   For non-sum non-product fixtypes, e.g. lists,
+   we add designations for empty and @(tsee cons) lists to the names."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -303,7 +318,30 @@
              (equal (c::type-of-value
                      (c::read-object (c::objdesign-of-var var compst)
                                      compst))
-                    type))))
+                    type)))
+
+  (defruled c::compustate-has-var-with-type-p-of-create-other-var
+    (b* ((compst1 (c::create-var var1 val compst)))
+      (implies (and (not (c::errorp compst1))
+                    (c::identp var)
+                    (c::identp var1)
+                    (not (equal var var1))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::objdesign-of-var-of-create-var
+             c::read-object-of-create-var-when-auto-or-static
+             c::objdesign-static->name-of-objdesign-of-var
+             c::objdesign-auto->name-of-objdesign-of-var))
+
+  (defruled c::compustate-has-var-with-type-p-of-create-same-var
+    (b* ((compst1 (c::create-var var val compst)))
+      (implies (and (not (c::errorp compst1))
+                    (c::identp var)
+                    (equal type (c::type-of-value val)))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::objdesign-of-var-of-create-var
+             c::read-object-of-create-var-when-auto-or-static
+             nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -690,14 +728,18 @@
        ((unless (stmt-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (stmt-type old))
-       ((unless (equal (stmt-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new statement ~x1 differs from ~
-                the type ~x2 of the old statement ~x3."
-               (stmt-type new) new type old)
+       (types (stmt-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (stmt-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new statement ~x1 differ from ~
+                the types ~x2 of the old statement ~x3."
+               (stmt-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -746,6 +788,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-stmt-thm
     :args ((old stmtp) (new stmtp))))
@@ -778,14 +821,18 @@
        ((unless (block-item-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-type old))
-       ((unless (equal (block-item-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new block item ~x1 differs from ~
-                the type ~x2 of the old block item ~x3."
-               (block-item-type new) new type old)
+       (types (block-item-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (block-item-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item ~x1 differ from ~
+                the types ~x2 of the old block item ~x3."
+               (block-item-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -834,6 +881,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-block-item-thm
     :args ((old block-itemp) (new block-itemp))))
@@ -866,14 +914,18 @@
        ((unless (block-item-list-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (type (block-item-list-type old))
-       ((unless (equal (block-item-list-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new block item list ~x1 differs from ~
-                the type ~x2 of the old block item list ~x3."
-               (block-item-list-type new) new type old)
+       (types (block-item-list-types old))
+       ((unless (= (set::cardinality types) 1))
+        (raise "Internal error: non-singleton type set ~x0." types)
         (mv '(_) nil 1))
+       ((unless (equal (block-item-list-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item list ~x1 differ from ~
+                the types ~x2 of the old block item list ~x3."
+               (block-item-list-types new) new types old)
+        (mv '(_) nil 1))
+       (type (set::head types))
        ((unless (or (not type)
                     (type-formalp type)))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
@@ -922,6 +974,7 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv simpadd0-gen-block-item-list-thm
     :args ((old block-item-listp) (new block-item-listp))))
@@ -1019,7 +1072,7 @@
         (simpadd0-gen-from-params (cdr params) gin))
        ((unless okp) (mv nil nil nil nil nil nil))
        (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
-       (vartys (omap::update (ident par) (c$::ildm-type type) more-vartys)))
+       (vartys (omap::update (ident par) (ildm-type type) more-vartys)))
     (mv t
         (cons arg more-args)
         parargs
@@ -1674,7 +1727,7 @@
                 unexpected type name transformation theorem ~x0."
                type-thm-name)
         (mv (irr-expr) (irr-simpadd0-gout)))
-       ((c$::tyname-info info) info)
+       ((tyname-info info) info)
        ((unless (and arg-thm-name
                      (expr-purep arg)
                      (type-formalp info.type)
@@ -2723,6 +2776,7 @@
     "We generate a theorem
      if there is no expression (i.e. the null statement),
      or if there is an assignment expression
+     (which we recognize by checking that it is not pure)
      for which a theorem was generated.
      An expression statement does not change the variables in scope,
      so we use the variable-type map from the validation table in the AST
@@ -2925,7 +2979,7 @@
         (mv (irr-stmt) (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                         (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
                                                               expr?))
@@ -3070,7 +3124,7 @@
 (define simpadd0-block-item-stmt ((stmt stmtp)
                                   (stmt-new stmtp)
                                   (stmt-thm-name symbolp)
-                                  (info block-item-infop)
+                                  info
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new))
@@ -3094,7 +3148,10 @@
        (item-new (make-block-item-stmt :stmt stmt-new :info info))
        ((unless stmt-thm-name)
         (mv item-new (simpadd0-gout-no-thm gin)))
-       (type (stmt-type stmt))
+       (types (stmt-types stmt))
+       ((unless (= (set::cardinality types) 1))
+        (mv item-new (simpadd0-gout-no-thm gin)))
+       (type (set::head types))
        (support-lemma
         (cond ((not type)
                'simpadd0-block-item-stmt-none-support-lemma)
@@ -3133,6 +3190,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
@@ -3260,7 +3318,7 @@
 (define simpadd0-block-item-decl ((decl declp)
                                   (decl-new declp)
                                   (decl-thm-name symbolp)
-                                  (info block-item-infop)
+                                  info
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
               (decl-unambp decl-new))
@@ -3272,16 +3330,234 @@
     "We put the new declaration into a block item.")
    (xdoc::p
     "We do not generate a theorem yet."))
-  (declare (ignore decl decl-thm-name))
   (b* (((simpadd0-gin gin) gin)
-       (item-new (make-block-item-decl :decl decl-new :info info)))
-    (mv item-new (simpadd0-gout-no-thm gin)))
+       (item (make-block-item-decl :decl decl :info info))
+       (item-new (make-block-item-decl :decl decl-new :info info))
+       ((unless (and decl-thm-name
+                     (decl-block-formalp decl)))
+        (mv item-new (simpadd0-gout-no-thm gin)))
+       ((unless (decl-block-formalp decl-new))
+        (raise "Internal error: ~
+                new declaration ~x0 is not in the formalized subset ~
+                while old declaration ~x1 is."
+               decl-new decl)
+        (mv (irr-block-item) (irr-simpadd0-gout)))
+       (initdeclor (car (decl-decl->init decl)))
+       (var (dirdeclor-ident->ident
+             (declor->direct
+              (initdeclor->declor initdeclor))))
+       (initer (initdeclor->init? initdeclor))
+       (initdeclor-new (car (decl-decl->init decl-new)))
+       ((unless (equal var (dirdeclor-ident->ident
+                            (declor->direct
+                             (initdeclor->declor initdeclor-new)))))
+        (raise "Internal error: ~
+                new variable ~x0 differs from old variable ~x1."
+               (dirdeclor-ident->ident
+                (declor->direct
+                 (initdeclor->declor initdeclor-new)))
+               var)
+        (mv (irr-block-item) (irr-simpadd0-gout)))
+       (initer-new (initdeclor->init? initdeclor-new))
+       (specs (decl-decl->specs decl))
+       ((unless (equal specs (decl-decl->specs decl-new)))
+        (raise "Internal error: ~
+                new declaration specifiers ~x0 differ from ~
+                old declaration specifiers ~x1."
+               (decl-decl->specs decl-new) specs)
+        (mv (irr-block-item) (irr-simpadd0-gout)))
+       ((mv & tyspecs) (check-decl-spec-list-all-typespec specs))
+       ((mv & tyspecseq) (ldm-type-spec-list tyspecs))
+       (ctype (c::tyspecseq-to-type tyspecseq))
+       ((unless (c::type-nonchar-integerp ctype))
+        (mv item-new (simpadd0-gout-no-thm gin)))
+       (type (ildm-type ctype))
+       (post-vartys (omap::update var type gin.vartys))
+       (lemma-instances (simpadd0-block-item-decl-lemma-instances
+                         gin.vartys var tyspecs initer))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-block-item)
+                              (:e ldm-initer)
+                              (:e ldm-type-spec-list)
+                              (:e ldm-ident)
+                              (:e ldm-type)
+                              (:e ident)
+                              (:e c::obj-declor-ident)
+                              (:e c::scspecseq-none)
+                              (:e c::obj-declon)
+                              (:e c::tyspecseq-to-type)
+                              (:e c::identp)
+                              (:e c::block-item-declon))
+                 :use ((:instance ,decl-thm-name (limit (1- limit)))
+                       (:instance
+                        simpadd0-block-item-decl-support-lemma
+                        (var (mv-nth 1 (ldm-ident ',var)))
+                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
+                        (old-initer (mv-nth 1 (ldm-initer ',initer)))
+                        (new-initer (mv-nth 1 (ldm-initer ',initer-new))))
+                       (:instance
+                        simpadd0-block-item-decl-error-support-lemma
+                        (var (mv-nth 1 (ldm-ident ',var)))
+                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
+                        (initer (mv-nth 1 (ldm-initer ',initer)))
+                        (fenv old-fenv))
+                       ,@lemma-instances
+                       (:instance
+                        simpadd0-block-item-decl-vartys-new-support-lemma
+                        (var (mv-nth 1 (ldm-ident ',var)))
+                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
+                        (initer (mv-nth 1 (ldm-initer ',initer)))
+                        (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-block-item-thm item
+                                     item-new
+                                     gin.vartys
+                                     post-vartys
+                                     gin.const-new
+                                     gin.thm-index
+                                     hints)))
+    (mv item-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys post-vartys)))
+  :guard-hints (("Goal" :in-theory (enable decl-block-formalp
+                                           initdeclor-block-formalp
+                                           declor-block-formalp
+                                           dirdeclor-block-formalp)))
+
+  :prepwork
+  ((define simpadd0-block-item-decl-lemma-instances ((vartys ident-type-mapp)
+                                                     (var identp)
+                                                     (tyspecs type-spec-listp)
+                                                     (initer initerp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var1 type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-decl-vartys-old-support-lemma
+                       (var1 (mv-nth 1 (ldm-ident ',var1)))
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))
+                       (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
+                       (initer (mv-nth 1 (ldm-initer ',initer)))
+                       (fenv old-fenv)))
+          (lemma-instances
+           (simpadd0-block-item-decl-lemma-instances
+            (omap::tail vartys) var tyspecs initer)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
   (defret block-item-unambp-of-simpadd0-block-item-decl
     (block-item-unambp item)
-    :hyp (decl-unambp decl-new)))
+    :hyp (decl-unambp decl-new)
+    :hints (("Goal" :in-theory (enable (:e irr-block-item)))))
+
+  (defruled simpadd0-block-item-decl-support-lemma
+    (b* ((declor (c::obj-declor-ident var))
+         (old-declon (c::obj-declon (c::scspecseq-none)
+                                    tyspec
+                                    declor
+                                    old-initer))
+         (new-declon (c::obj-declon (c::scspecseq-none)
+                                    tyspec
+                                    declor
+                                    new-initer))
+         (old (c::block-item-declon old-declon))
+         (new (c::block-item-declon new-declon))
+         ((mv old-init-value old-init-compst)
+          (c::exec-initer old-initer compst old-fenv (1- limit)))
+         ((mv new-init-value new-init-compst)
+          (c::exec-initer new-initer compst new-fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item new compst new-fenv limit)))
+      (implies (and old-initer
+                    new-initer
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-init-value))
+                    (equal old-init-value new-init-value)
+                    (equal old-init-compst new-init-compst))
+               (and (not (c::errorp old-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (equal (c::stmt-value-kind old-result) :none))))
+    :expand ((c::exec-block-item
+              (c::block-item-declon
+               (c::obj-declon
+                '(:none) tyspec (c::obj-declor-ident var) old-initer))
+              compst old-fenv limit)
+             (c::exec-block-item
+              (c::block-item-declon
+               (c::obj-declon
+                '(:none) tyspec (c::obj-declor-ident var) new-initer))
+              compst new-fenv limit))
+    :enable c::obj-declon-to-ident+scspec+tyname+init)
+
+  (defruled simpadd0-block-item-decl-error-support-lemma
+    (b* ((declor (c::obj-declor-ident var))
+         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
+         (item (c::block-item-declon declon)))
+      (implies (and initer
+                    (c::errorp
+                     (mv-nth 0 (c::exec-initer initer compst fenv (1- limit)))))
+               (c::errorp
+                (mv-nth 0 (c::exec-block-item item compst fenv limit)))))
+    :expand (c::exec-block-item
+             (c::block-item-declon
+              (c::obj-declon
+               '(:none) tyspec (c::obj-declor-ident var) initer))
+             compst fenv limit)
+    :enable c::obj-declon-to-ident+scspec+tyname+init)
+
+  (defruled simpadd0-block-item-decl-vartys-old-support-lemma
+    (b* ((declor (c::obj-declor-ident var))
+         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
+         (item (c::block-item-declon declon))
+         ((mv & compst0) (c::exec-initer initer compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::identp var)
+                    (c::identp var1)
+                    (not (equal var var1))
+                    (c::compustate-has-var-with-type-p var1 type compst0))
+               (c::compustate-has-var-with-type-p var1 type compst1)))
+    :expand (c::exec-block-item
+             (c::block-item-declon
+              (c::obj-declon
+               '(:none) tyspec (c::obj-declor-ident var) initer))
+             compst fenv limit)
+    :enable (c::obj-declon-to-ident+scspec+tyname+init
+             c::tyspec+declor-to-ident+tyname
+             c::obj-declor-to-ident+adeclor
+             c::tyname-to-type
+             c::tyname-to-type-aux
+             c::compustate-has-var-with-type-p-of-create-other-var))
+
+  (defruled simpadd0-block-item-decl-vartys-new-support-lemma
+    (b* ((declor (c::obj-declor-ident var))
+         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
+         (item (c::block-item-declon declon))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit))
+         (type (c::tyspecseq-to-type tyspec)))
+      (implies (and (not (c::errorp result))
+                    (c::identp var))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :expand (c::exec-block-item
+             (c::block-item-declon
+              (c::obj-declon
+               '(:none) tyspec (c::obj-declor-ident var) initer))
+             compst fenv limit)
+    :enable (c::compustate-has-var-with-type-p-of-create-same-var
+             c::obj-declon-to-ident+scspec+tyname+init
+             c::tyspec+declor-to-ident+tyname
+             c::obj-declor-to-ident+adeclor
+             c::tyname-to-type
+             c::tyname-to-type-aux
+             c::init-value-to-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3400,8 +3676,14 @@
        ((unless (and item-thm-name
                      items-thm-name))
         (mv item+items-new gout-no-thm))
-       (first-type (block-item-type item))
-       (rest-type (block-item-list-type items))
+       (first-types (block-item-types item))
+       ((unless (= (set::cardinality first-types) 1))
+        (mv item+items-new gout-no-thm))
+       (first-type (set::head first-types))
+       (rest-types (block-item-list-types items))
+       ((unless (= (set::cardinality rest-types) 1))
+        (mv item+items-new gout-no-thm))
+       (rest-type (set::head rest-types))
        ((mv support-lemma support-lemma-vartys)
         (cond
          ((not first-type)
@@ -3472,6 +3754,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-list-cons-lemma-instances
@@ -3856,7 +4139,7 @@
                              expr.arg
                              new-arg
                              gout-arg.thm-name
-                             (coerce-tyname-info (c$::tyname->info expr.type))
+                             (coerce-tyname-info (tyname->info expr.type))
                              gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
@@ -4959,19 +5242,29 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an initializer declarator."
-    (b* (((simpadd0-gin gin) gin)
-         ((initdeclor initdeclor) initdeclor)
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If a theorem was generated for the initializer,
+       it is regarded as the theorem for the initializer declarator.
+       This is so that the theorem can surface up to block item declarations."))
+    (b* (((initdeclor initdeclor) initdeclor)
          ((mv new-declor (simpadd0-gout gout-declor))
           (simpadd0-declor initdeclor.declor gin))
          (gin (simpadd0-gin-update gin gout-declor))
          ((mv new-init? (simpadd0-gout gout-init?))
           (simpadd0-initer-option initdeclor.init? gin))
-         (gin (simpadd0-gin-update gin gout-init?)))
+         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
                            :init? new-init?)
-          (simpadd0-gout-no-thm gin)))
+          (if gout-init?.thm-name
+              (make-simpadd0-gout :events gin.events
+                                  :thm-index gin.thm-index
+                                  :thm-name gout-init?.thm-name
+                                  :vartys gout-init?.vartys)
+            (simpadd0-gout-no-thm gin))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4983,17 +5276,29 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of initializer declarators."
-    (b* (((simpadd0-gin gin) gin)
-         ((when (endp initdeclors))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the list is a singleton
+       and a theorem was generated for that one element,
+       it is regarded as the theorem for the list of initializer declarators.
+       This is so that the theorem can surface up to block item declarations."))
+    (b* (((when (endp initdeclors))
           (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
           (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
          ((mv new-initdeclors (simpadd0-gout gout-initdeclors))
           (simpadd0-initdeclor-list (cdr initdeclors) gin))
-         (gin (simpadd0-gin-update gin gout-initdeclors)))
+         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-initdeclors)))
       (mv (cons new-initdeclor new-initdeclors)
-          (simpadd0-gout-no-thm gin)))
+          (if (and (not (consp new-initdeclors))
+                   gout-initdeclor.thm-name)
+              (make-simpadd0-gout :events gin.events
+                                  :thm-index gin.thm-index
+                                  :thm-name gout-initdeclor.thm-name
+                                  :vartys gout-initdeclor.vartys)
+            (simpadd0-gout-no-thm gin))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5004,24 +5309,35 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a declaration."
-    (b* (((simpadd0-gin gin) gin))
-      (decl-case
-       decl
-       :decl (b* (((mv new-specs (simpadd0-gout gout-specs))
-                   (simpadd0-decl-spec-list decl.specs gin))
-                  (gin (simpadd0-gin-update gin gout-specs))
-                  ((mv new-init (simpadd0-gout gout-init))
-                   (simpadd0-initdeclor-list decl.init gin))
-                  (gin (simpadd0-gin-update gin gout-init)))
-               (mv (make-decl-decl :extension decl.extension
-                                   :specs new-specs
-                                   :init new-init)
-                   (simpadd0-gout-no-thm gin)))
-       :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-statassert decl.unwrap gin))
-                        (gin (simpadd0-gin-update gin gout-decl)))
-                     (mv (decl-statassert new-decl)
-                         (simpadd0-gout-no-thm gin)))))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "In the case of a non-static-assert declaration,
+       if a theorem was generated for the list of initializer declarators,
+       it is regarded as the theorem for the declaration.
+       This is so that the theorem can surface up to block item declarations."))
+    (decl-case
+     decl
+     :decl (b* (((mv new-specs (simpadd0-gout gout-specs))
+                 (simpadd0-decl-spec-list decl.specs gin))
+                (gin (simpadd0-gin-update gin gout-specs))
+                ((mv new-init (simpadd0-gout gout-init))
+                 (simpadd0-initdeclor-list decl.init gin))
+                ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init)))
+             (mv (make-decl-decl :extension decl.extension
+                                 :specs new-specs
+                                 :init new-init)
+                 (if gout-init.thm-name
+                     (make-simpadd0-gout :events gin.events
+                                         :thm-index gin.thm-index
+                                         :thm-name gout-init.thm-name
+                                         :vartys gout-init.vartys)
+                   (simpadd0-gout-no-thm gin))))
+     :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
+                       (simpadd0-statassert decl.unwrap gin))
+                      (gin (simpadd0-gin-update gin gout-decl)))
+                   (mv (decl-statassert new-decl)
+                       (simpadd0-gout-no-thm gin))))
     :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5217,7 +5533,7 @@
                (simpadd0-block-item-decl item.decl
                                          new-decl
                                          gout-decl.thm-name
-                                         (coerce-block-item-info item.info)
+                                         item.info
                                          gin))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
@@ -5225,7 +5541,7 @@
                (simpadd0-block-item-stmt item.stmt
                                          new-stmt
                                          gout-stmt.thm-name
-                                         (coerce-block-item-info item.info)
+                                         item.info
                                          gin))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
     :measure (block-item-count item))
@@ -5239,44 +5555,10 @@
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of block items."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The handling of the variable-type maps is as follows.
-       If the list is empty,
-       we generate a theorem for the empty list of block items,
-       which includes hypotheses and conclusions about
-       the variables in the @('vartys') component of @('gin').
-       If instead the list is not empty,
-       we take the @('vartys') from the annotations of the first block item,
-       and we use it to transform the first block item,
-       possibly generating a theorem.
-       Then we take the @('vartys') out of the first block item
-       and we use it to transform the rest of the list of block items,
-       by recursively calling this function.
-       But note that that @('vartys') is used
-       only if the rest of the list is empty;
-       if it is not, the recursive call will use instead
-       the one from the first block item of the rest of the list,
-       i.e. the second block item of the list passed to this call.")
-     (xdoc::p
-      "The reason for taking the @('vartys') from each block item
-       is so that we can generate more theorems.
-       In particular, we can generate theorems for a block item
-       without having generate (complete) theorems for preceding block items.")
-     (xdoc::p
-      "The @('vartys-post') passed to @(tsee simpadd0-block-item-list-cons)
-       is either the one after the first block item
-       or the one after the list of block items,
-       depending on whether the rest of block items are actually executed,
-       based on whether the first block item returns or not."))
     (b* (((simpadd0-gin gin) gin)
          ((when (endp items))
           (mv nil (simpadd0-block-item-list-empty gin)))
          (item (car items))
-         (table (c$::block-item-valid-table item))
-         (vartys (simpadd0-vartys-from-valid-table table))
-         (gin (change-simpadd0-gin gin :vartys vartys))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item item gin))
          (gin (simpadd0-gin-update gin gout-item))
@@ -5284,17 +5566,14 @@
           (simpadd0-block-item-list (cdr items)
                                     (change-simpadd0-gin
                                      gin :vartys gout-item.vartys)))
-         (gin (simpadd0-gin-update gin gout-items))
-         (vartys-post (if (block-item-type item)
-                          gout-item.vartys
-                        gout-items.vartys)))
+         (gin (simpadd0-gin-update gin gout-items)))
       (simpadd0-block-item-list-cons (car items)
                                      new-item
                                      gout-item.thm-name
                                      (cdr items)
                                      new-items
                                      gout-items.thm-name
-                                     vartys-post
+                                     gout-items.vartys
                                      gin))
     :measure (block-item-list-count items))
 
@@ -5630,8 +5909,10 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (type? (block-item-list-type fundef.body))
-       (type (or type? (type-void)))
+       (types (block-item-list-types fundef.body))
+       ((unless (= (set::cardinality types) 1)) (mv new-fundef gout-no-thm))
+       (type (set::head types))
+       (type (or type (type-void)))
        ((unless (type-formalp type))
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)
@@ -5724,7 +6005,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys nil)))
-  :guard-hints (("Goal" :in-theory (enable posp)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   :hooks (:fix)
 
   :prepwork

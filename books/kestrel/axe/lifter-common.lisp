@@ -13,8 +13,10 @@
 
 (include-book "dag-size")
 (include-book "dag-to-term")
+(include-book "count-branches")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
+(include-book "std/system/untranslate-dollar" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,6 +27,35 @@
   (if (dag-or-quotep-size-less-than dag 1000)
       (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
     (cw "~X01" dag nil)))
+
+;; Returns state.
+;; restores the print-base to 10 (do better?)
+(defund print-dag-nicely-with-base (dag descriptor untranslatep print-base state)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (stringp descriptor)
+                              (booleanp untranslatep)
+                              (member print-base '(10 16)))
+                  :stobjs state))
+  (if (dag-or-quotep-size-less-than dag 1000) ; todo: drop the "-or-quotep"
+      (b* ((- (cw "(Term ~x0:~%" descriptor))
+           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                      (set-print-base-radix print-base state)
+                    state))
+           (term (dag-to-term dag))
+           (term (if untranslatep (acl2::untranslate$ term nil state) term))
+           (- (cw "~X01" term nil))
+           (state (set-print-base-radix 10 state)) ;make-event sets it to 10
+           (- (cw ")~%"))) ; matches "(Term after"
+        state)
+    (b* ((- (cw "(DAG ~x0:~%" descriptor))
+         (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                    (set-print-base-radix print-base state)
+                  state))
+         (- (cw "~X01" dag nil))
+         (state (set-print-base-radix 10 state))
+         (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
+         (- (cw ")~%"))) ; matches "(DAG after"
+      state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,3 +180,27 @@
     cr4bits-p$inline
     alignment-checking-enabled-p
     app-view))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
+(defun lifter-targetp (target)
+  (declare (xargs :guard t))
+  (or (natp target)
+      (stringp target)
+      (eq :entry-point target)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a symbol-list.
+(defund maybe-add-debug-rules (debug-rules monitor)
+  (declare (xargs :guard (and (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (symbol-listp debug-rules))))
+  (if (eq :debug monitor)
+      debug-rules
+    (if (member-eq :debug monitor)
+        ;; replace :debug in the list with all the debug-rules:
+        (union-eq debug-rules (remove-eq :debug monitor))
+      ;; no special treatment:
+      monitor)))

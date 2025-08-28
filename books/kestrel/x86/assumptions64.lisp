@@ -177,7 +177,6 @@
          ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
          t)))
 
-;; still used in loop-lifter
 (defun standard-assumptions-mach-o-64 (subroutine-name
                                        parsed-mach-o
                                        stack-slots-needed
@@ -204,7 +203,6 @@
                                   x86)))
 
 ;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
-;; still used in loop-lifter
 (defun standard-assumptions-pe-64 (subroutine-name
                                    parsed-executable
                                    stack-slots-needed
@@ -225,7 +223,6 @@
 
 ;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
 ;; text section)?  Transition to just generating a list of terms?
-;; should be used in loop-lifter?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf
                                     stack-slots-needed
@@ -239,7 +236,7 @@
                               (booleanp bvp)
                               )
                   :stobjs x86
-                  :verify-guards nil ;todo, first do acl2::get-elf-text-section-address and acl2::subroutine-address-elf
+                  :verify-guards nil ; todo
                   ))
   (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
         (text-section-address (acl2::get-elf-text-section-address parsed-elf))

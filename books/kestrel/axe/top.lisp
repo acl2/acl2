@@ -47,6 +47,7 @@
 (include-book "consecutivep")
 (include-book "contexts")
 (include-book "contexts2")
+(include-book "count-branches")
 (include-book "count-worlds")
 (include-book "crunch-dag2")
 (include-book "crunch-dag")

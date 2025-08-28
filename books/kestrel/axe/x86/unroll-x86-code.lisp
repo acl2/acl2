@@ -92,7 +92,6 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
-(include-book "std/system/untranslate-dollar" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
@@ -105,7 +104,8 @@
 (acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (read-and-write-rules-bv))
 ;; (acl2::ensure-rules-known (read-and-write-rules-non-bv))
-(acl2::ensure-rules-known (assumption-simplification-rules))
+(acl2::ensure-rules-known (assumption-simplification-rules32))
+(acl2::ensure-rules-known (assumption-simplification-rules64))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
 (acl2::ensure-rules-known (new-normal-form-rules-common))
@@ -118,19 +118,21 @@
 (local (defthm symbol-listp-of-unroller-rules64 (symbol-listp (unroller-rules64))))
 (local (defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv))))
 ;; (local (defthm symbol-listp-of-read-and-write-rules-non-bv (symbol-listp (read-and-write-rules-non-bv))))
-(local (defthm symbol-listp-of-assumption-simplification-rules (symbol-listp (assumption-simplification-rules))))
+(local (defthm symbol-listp-of-assumption-simplification-rules32 (symbol-listp (assumption-simplification-rules32))))
+(local (defthm symbol-listp-of-assumption-simplification-rules64 (symbol-listp (assumption-simplification-rules64))))
 (local (defthm symbol-listp-of-step-opener-rules32 (symbol-listp (step-opener-rules32))))
 (local (defthm symbol-listp-of-step-opener-rules64 (symbol-listp (step-opener-rules64))))
 (local (defthm symbol-listp-of-new-normal-form-rules-common (symbol-listp (new-normal-form-rules-common))))
-(local (defthm symbol-listp-of-new-canonical-rules-bv (symbol-listp (canonical-rules-bv))))
-(local (defthm symbol-listp-of-new-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64))))
-(local (defthm symbol-listp-of-new-unsigned-canonical-rules (symbol-listp (unsigned-canonical-rules))))
+(local (defthm symbol-listp-of-canonical-rules-bv (symbol-listp (canonical-rules-bv))))
+(local (defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64))))
+(local (defthm symbol-listp-of-unsigned-canonical-rules (symbol-listp (unsigned-canonical-rules))))
 
-(local (in-theory (disable (:e unroller-rules32)
+(local (in-theory (disable (:e unroller-rules32) ; makes proof output more compact
                            (:e unroller-rules64)
                            (:e read-and-write-rules-bv)
                            ;; (:e read-and-write-rules-non-bv)
-                           (:e assumption-simplification-rules)
+                           (:e assumption-simplification-rules32)
+                           (:e assumption-simplification-rules64)
                            (:e step-opener-rules32)
                            (:e step-opener-rules64)
                            (:e new-normal-form-rules-common)
@@ -140,10 +142,13 @@
                            intersection-equal
                            acl2::append-of-cons-arg1
                            acl2::append-of-cons ; bad?
-                           )))
+                           w
+                           acl2::myquotep
+                           quotep
+                           mv-nth)))
 
-;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
-;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
+(local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
+                          acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
 
 ;; ;move
 ;; ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -193,14 +198,6 @@
 ;;         (mv (or v2 :error) nil)
 ;;         (mv nil v2))))
 
-(local (in-theory (disable w
-                           acl2::myquotep
-                           quotep
-                           mv-nth)))
-
-(local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
-                          acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
-
 ;; (local
 ;;   (defthm not-quotep-forward-to-not-myquotep
 ;;     (implies (not (quotep x))
@@ -225,40 +222,30 @@
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
-       (assumption-rules (set-difference-equal
-                           (append extra-assumption-rules
-                                   (new-normal-form-rules-common)
-                                   (assumption-simplification-rules)
-                                   (if 64-bitp
-                                       ;; needed to match the normal forms used during lifting:
-                                       (append (new-normal-form-rules64)
-                                               (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
-                                               (unsigned-canonical-rules)
-                                               (canonical-rules-bv)
-                                               )
-                                     nil ; todo: why not use (new-normal-form-rules32)?
-                                     ))
-                           remove-assumption-rules))
+       (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32)))
+       ;; Add the extra-assumption-rules:
+       (assumption-rules (append extra-assumption-rules assumption-rules))
+       ;; Remove the remove-assumption-rules:
+       (assumption-rules (set-difference-equal assumption-rules remove-assumption-rules))
        ((mv erp assumption-rule-alist)
-        (acl2::make-rule-alist assumption-rules (w state)))
+        (make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
        ((mv erp assumptions)
-        (acl2::simplify-conjunction-basic ;simplify-terms-repeatedly
-          assumptions
-          assumption-rule-alist
-          (acl2::known-booleans (w state))
-          nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
-          *no-warn-ground-functions*
-          nil ; don't memoize (avoids time spent making empty-memoizations)
-          count-hits
-          t   ; todo: warn just once
-          ))
+        (simplify-conjunction-basic assumptions
+                                    assumption-rule-alist
+                                    (acl2::known-booleans (w state))
+                                    nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+                                    *no-warn-ground-functions*
+                                    nil ; don't memoize (avoids time spent making empty-memoizations)
+                                    count-hits
+                                    t   ; todo: warn just once
+                                    ))
        ((when erp) (mv erp nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
        ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
        (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
-          (acl2::print-to-hundredths assumption-simp-elapsed)
+          (print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%")))
     (mv nil assumptions assumption-rules state)))
@@ -296,7 +283,7 @@
                         executable-type
                         position-independentp
                         state)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               ;; parsed-executable ; todo: add a guard (even if it's weak for now)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
@@ -692,11 +679,13 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
+;; WARNING: Keep in sync with the risc-v version.
 (defun repeatedly-run (steps-done step-limit step-increment
                                   dag ; the state may be wrapped in an output-extractor
                                   rule-alist pruning-rule-alist
-                                  assumptions 64-bitp rules-to-monitor
-                                  use-internal-contextsp ; todo: not used?
+                                  assumptions
+                                  step-opener-rule ; the rule that gets limited
+                                  rules-to-monitor
                                   prune-precise prune-approx
                                   normalize-xors count-hits print print-base untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
@@ -708,9 +697,8 @@
                               (acl2::rule-alistp rule-alist)
                               (acl2::rule-alistp pruning-rule-alist)
                               (pseudo-term-listp assumptions)
-                              (booleanp 64-bitp)
+                              (symbolp step-opener-rule)
                               (symbol-listp rules-to-monitor)
-                              (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -745,9 +733,7 @@
          ;;                       (cw ")~%"))))
          ;; Limit the run to the given number of steps:
          (limits nil) ; todo: call this empty-rule-limits?
-         (limits (acl2::add-limit-for-rules (if 64-bitp
-                                                (step-opener-rules64)
-                                              (step-opener-rules32))
+         (limits (acl2::add-limit-for-rules (list step-opener-rule)
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
          ;; Do the run:
@@ -769,9 +755,7 @@
          ((when erp) (mv erp nil state))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
-           (acl2::limit-for-rule (first (if 64-bitp
-                                            (step-opener-rules64)
-                                          (step-opener-rules32)))
+           (acl2::limit-for-rule step-opener-rule
                                  limits))
          (steps-done-this-time (- steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -829,17 +813,17 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
-         (dag-fns (acl2::dag-fns dag))
+         (dag-fns (dag-fns dag))
 
          ;; TODO: Maybe don't prune if the run completed and there are no error branches?
          (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))) ; todo: call contains-anyp-eq
          ((mv erp nothing-changedp) (if run-completedp
                                         (mv nil nil) ; we know something changed since the run is now complete
-                                      (acl2::equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
+                                      (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
          ((when erp) (mv erp nil state))
 
-         ;; Stop if we hit an unimplemented instruction (if may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
-         ;; ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns)) ;; fixme: wrong test!  We need to look for set-ms
+         ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
+         ;; ((when ..)
          ;;  (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%") ; todo: print the name of the instruction
          ;;          (cw "~%")
          ;;          (mv :unimplemented-instruction dag state)))
@@ -880,18 +864,18 @@
                ;; todo: also prune here, if the simplfication does anything?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
-               (dag-fns (if (quotep dag-or-constant) nil (acl2::dag-fns dag-or-constant)))
+               (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
                (error-branch-functions (intersection-eq *error-fns* dag-fns))
                (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
-                (print-dag-nicely dag)
+                (print-dag-nicely dag) ; use the print-base?
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                 (mv :unresolved-error-branches nil state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
-                (print-dag-nicely dag)
+                (print-dag-nicely dag) ; use the print-base?
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))
@@ -900,33 +884,11 @@
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
                (if (acl2::print-level-at-least-tp print)
-                   (if (acl2::dag-or-quotep-size-less-than dag 1000) ; todo: drop the "-or-constant"
-                       (b* ((- (cw "(Term after ~x0 steps:~%" steps-done))
-                            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                       (set-print-base-radix print-base state)
-                                     state))
-                            (term (dag-to-term dag))
-                            (term (if untranslatep (acl2::untranslate$ term nil state) term))
-                            ((when erp)
-                             (er hard? 'repeatedly-run "Error untranslating.")
-                             state)
-                            (- (cw "~X01" term nil))
-                            (state (set-print-base-radix 10 state)) ;make-event sets it to 10
-                            (- (cw ")~%"))) ; matches "(Term after"
-                         state)
-                     (b* ((- (cw "(DAG after ~x0 steps:~%" steps-done))
-                          (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                     (set-print-base-radix print-base state)
-                                   state))
-                          (- (cw "~X01" dag nil))
-                          (state (set-print-base-radix 10 state))
-                          (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
-                          (- (cw ")~%"))) ; matches "(DAG after"
-                       state))
+                   (print-dag-nicely-with-base dag (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -944,7 +906,6 @@
                              inputs
                              type-assumptions-for-array-varsp
                              output-indicator
-                             use-internal-contextsp
                              prune-precise
                              prune-approx
                              extra-rules
@@ -962,7 +923,7 @@
                              print-base
                              untranslatep
                              state)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               ;; parsed-executable ; todo: add a guard (even if it's weak for now)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
@@ -974,7 +935,6 @@
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
-                              (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -1131,7 +1091,11 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
+        (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
+                        (if 64-bitp
+                            (first (step-opener-rules64))
+                          (first (step-opener-rules32)))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -1161,7 +1125,6 @@
                         existing-stack-slots
                         position-independent
                         type-assumptions-for-array-varsp
-                        use-internal-contextsp
                         prune-precise
                         prune-approx
                         extra-rules
@@ -1186,7 +1149,7 @@
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
-                              (lifter-targetp target)
+                              (acl2::lifter-targetp target)
                               ;; executable
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
@@ -1198,7 +1161,6 @@
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
-                              (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -1248,7 +1210,7 @@
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
-          inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+          inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
@@ -1404,7 +1366,6 @@
                                   (existing-stack-slots ':auto)
                                   (position-independent ':auto)
                                   (type-assumptions-for-array-vars 't)
-                                  (use-internal-contextsp 't)
                                   (prune-precise '1000)
                                   (prune-approx 't)
                                   (extra-rules 'nil)
@@ -1441,7 +1402,6 @@
       ',existing-stack-slots
       ',position-independent
       ',type-assumptions-for-array-vars
-      ',use-internal-contextsp
       ',prune-precise
       ',prune-approx
       ,extra-rules ; gets evaluated since not quoted
@@ -1479,7 +1439,7 @@
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
          (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
-         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
+;;         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
          ;; todo: better name?  only for precise pruning:
          (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")

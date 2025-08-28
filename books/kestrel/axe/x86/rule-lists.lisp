@@ -1875,11 +1875,11 @@
     stack-shorter-thanp
 
     ;; new scheme:
-    run-until-return32
-    run-until-return64
-    run-until-rsp-is-opener-axe ; not for IFs
-    run-until-rsp-is-base-axe ; not for IFs
-    run-until-rsp-is-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ;; run-until-return32
+    ;; run-until-return64
+    ;; run-until-rsp-is-opener-axe ; not for IFs
+    ;; run-until-rsp-is-base-axe ; not for IFs
+    ;; run-until-rsp-is-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
     acl2::equal-of-+-cancel-2
 
     ;; newer scheme:
@@ -1913,12 +1913,12 @@
     run-until-stack-shorter-than-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
 
     ;; new scheme:
-    run-until-return-or-reach-pc32
-    run-until-return-or-reach-pc64
-    run-until-rsp-is-or-reach-pc-opener-axe ; not for IFs
-    run-until-rsp-is-or-reach-pc-base-axe ; not for IFs
+    ;; run-until-return-or-reach-pc32
+    ;; run-until-return-or-reach-pc64
+    ;; run-until-rsp-is-or-reach-pc-opener-axe ; not for IFs
+    ;; run-until-rsp-is-or-reach-pc-base-axe ; not for IFs
     ;; stack-shorter-thanp
-    run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ;; run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
 
     ;;newer-scheme:
     run-until-return-or-reach-pc3
@@ -2810,119 +2810,6 @@
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
-;; Used in both versions of the lifter
-;; TODO: Split into 32-bit and 64-bit rules:
-(defund assumption-simplification-rules ()
-  (declare (xargs :guard t))
-  (append
-   '(standard-state-assumption
-     standard-state-assumption-32
-     ;standard-assumptions-core-64 ; only needed by loop lifter?
-     standard-state-assumption-64
-     ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
-     ;standard-assumptions-elf-64 ; only needed by loop lifter?
-     ;standard-assumptions-pe-64 ; only needed by loop lifter?
-     ;bytes-loaded-at-address-64  ; only needed by loop lifter?
-     ;; Mach-O stuff:
-     acl2::get-mach-o-code
-     acl2::subroutine-address-mach-o
-     acl2::get-mach-o-symbol-table
-     acl2::get-mach-o-code-address
-     acl2::get-mach-o-section-base-1
-     acl2::get-mach-o-section-base-2
-     acl2::get-mach-o-section-unroll
-     acl2::get-mach-o-segment-base-1
-     acl2::get-mach-o-segment-base-2
-     acl2::get-mach-o-segment-unroll-1
-     acl2::get-mach-o-segment-unroll-2
-     acl2::get-symbol-table-entry-mach-o-base-1
-     acl2::get-symbol-table-entry-mach-o-base-2
-     acl2::get-symbol-table-entry-mach-o-unroll
-     acl2::get-text-section-number-mach-o
-     acl2::get-all-sections-from-mach-o
-     acl2::get-all-sections-from-mach-o-load-commands-base
-     acl2::get-all-sections-from-mach-o-load-commands-unroll
-     acl2::get-all-sections-from-mach-o-load-command
-     acl2::get-section-number-mach-o
-     acl2::get-section-number-mach-o-aux-base-1
-     acl2::get-section-number-mach-o-aux-base-2
-     acl2::get-section-number-mach-o-aux-unroll
-     acl2::get-mach-o-load-command-base-1
-     acl2::get-mach-o-load-command-base-2
-     acl2::get-mach-o-load-command-unroll
-     ;; PE stuff:
-     acl2::get-pe-sections
-     acl2::get-pe-section-info
-     acl2::get-pe-text-section-info
-     acl2::get-pe-section-info-bytes
-     acl2::get-pe-text-section-bytes
-     acl2::get-pe-section-info-aux-base-1
-     acl2::get-pe-section-info-aux-base-2
-     acl2::get-pe-section-info-aux-unroll
-     acl2::lookup-pe-symbol-base-1
-     acl2::lookup-pe-symbol-base-2
-     acl2::lookup-pe-symbol-unroll
-     acl2::subroutine-address-within-text-section-pe-64
-     ;; ELF stuff:
-     lookup-equal-safe
-     acl2::subroutine-address-elf
-     acl2::parsed-elf-symbol-table
-     acl2::get-elf-section-address
-     acl2::get-elf-section-bytes
-     acl2::get-elf-code
-     acl2::get-elf-text-section-address ; todo: use segments!
-     acl2::get-elf-section-header-base-1
-     acl2::get-elf-section-header-base-2
-     acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address
-     acl2::get-elf-symbol-address-aux-base-1
-     acl2::get-elf-symbol-address-aux-base-2
-     acl2::get-elf-symbol-address-aux-unroll
-
-     acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
-     acl2::mv-nth-of-if
-     acl2::mv-nth-of-cons-safe
-     x86isa::canonical-address-p-of-if
-     the-check
-     lookup-eq-safe
-     eql ; just include base-rules?
-     acl2::+-commutative-axe
-     unicity-of-0
-     ;; all-addreses-of-stack-slots
-
-     rgfi rgfi$a ;expose xr -- why?  shouldn't we then turn these into get-rax, set-rax, etc?  we could use the (get-register-intro-rules64) but only for the non-loop-lifter
-     x86isa::integerp-of-xr-rgf ; drop if we are not using this normal form?
-     x86isa::fix-of-xr-rgf-4 ; drop if we are not using this normal form?
-
-     x86isa::canonical-address-p$inline-constant-opener
-     addresses-of-subsequent-stack-slots
-     ;; addresses-of-subsequent-stack-slots-aux-base
-     ;; addresses-of-subsequent-stack-slots-aux-unroll
-     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux ; seems needed, for assumption simplification
-     x86isa::canonical-address-listp-of-cons
-     x86isa::canonical-address-p-between-special1
-     x86isa::canonical-address-p-between-special2
-     x86isa::canonical-address-p-between-special3
-     acl2::fold-consts-in-+
-     x86isa::canonical-address-listp-of-nil
-     acl2::integerp-of-+-when-integerp-1-cheap
-     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
-     acl2::fix-when-integerp
-     acl2::equal-same
-     acl2::if-of-nil
-     acl2::if-of-t
-
-     acl2::bvplus-of-logext-arg2
-     acl2::bvplus-of-logext-arg3
-     acl2::signed-byte-p-logext
-     read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
-     )
-   (region-rules)
-   (acl2::lookup-rules)
-   (constant-opener-rules)
-   ;; needed for BV-mode:
-   '(acl2::bvchop-of-+-becomes-bvplus
-     acl2::bvplus-trim-leading-constant)))
 
 ;; ;move?
 ;; ;todo: most of these are not myif rules
@@ -5520,6 +5407,138 @@
           (new-normal-form-rules-common)
           (new-normal-form-rules64)
           (read-and-write-rules-bv)
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
+
+;; Used in both versions of the lifter
+;; TODO: Split into 32-bit and 64-bit rules:
+(defund assumption-simplification-rules ()
+  (declare (xargs :guard t))
+  (append
+   '(standard-state-assumption
+     standard-state-assumption-32
+     ;standard-assumptions-core-64 ; only needed by loop lifter?
+     standard-state-assumption-64
+     ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     ;standard-assumptions-elf-64 ; only needed by loop lifter?
+     ;standard-assumptions-pe-64 ; only needed by loop lifter?
+     ;bytes-loaded-at-address-64  ; only needed by loop lifter?
+     ;; Mach-O stuff:
+     acl2::get-mach-o-code
+     acl2::subroutine-address-mach-o
+     acl2::get-mach-o-symbol-table
+     acl2::get-mach-o-code-address
+     acl2::get-mach-o-section-base-1
+     acl2::get-mach-o-section-base-2
+     acl2::get-mach-o-section-unroll
+     acl2::get-mach-o-segment-base-1
+     acl2::get-mach-o-segment-base-2
+     acl2::get-mach-o-segment-unroll-1
+     acl2::get-mach-o-segment-unroll-2
+     acl2::get-symbol-table-entry-mach-o-base-1
+     acl2::get-symbol-table-entry-mach-o-base-2
+     acl2::get-symbol-table-entry-mach-o-unroll
+     acl2::get-text-section-number-mach-o
+     acl2::get-all-sections-from-mach-o
+     acl2::get-all-sections-from-mach-o-load-commands-base
+     acl2::get-all-sections-from-mach-o-load-commands-unroll
+     acl2::get-all-sections-from-mach-o-load-command
+     acl2::get-section-number-mach-o
+     acl2::get-section-number-mach-o-aux-base-1
+     acl2::get-section-number-mach-o-aux-base-2
+     acl2::get-section-number-mach-o-aux-unroll
+     acl2::get-mach-o-load-command-base-1
+     acl2::get-mach-o-load-command-base-2
+     acl2::get-mach-o-load-command-unroll
+     ;; PE stuff:
+     acl2::get-pe-sections
+     acl2::get-pe-section-info
+     acl2::get-pe-text-section-info
+     acl2::get-pe-section-info-bytes
+     acl2::get-pe-text-section-bytes
+     acl2::get-pe-section-info-aux-base-1
+     acl2::get-pe-section-info-aux-base-2
+     acl2::get-pe-section-info-aux-unroll
+     acl2::lookup-pe-symbol-base-1
+     acl2::lookup-pe-symbol-base-2
+     acl2::lookup-pe-symbol-unroll
+     acl2::subroutine-address-within-text-section-pe-64
+     ;; ELF stuff:
+     lookup-equal-safe
+     acl2::subroutine-address-elf
+     acl2::parsed-elf-symbol-table
+     acl2::get-elf-section-address
+     acl2::get-elf-section-bytes
+     acl2::get-elf-code
+     acl2::get-elf-text-section-address ; todo: use segments!
+     acl2::get-elf-section-header-base-1
+     acl2::get-elf-section-header-base-2
+     acl2::get-elf-section-header-unroll
+     acl2::get-elf-symbol-address
+     acl2::get-elf-symbol-address-aux-base-1
+     acl2::get-elf-symbol-address-aux-base-2
+     acl2::get-elf-symbol-address-aux-unroll
+
+     acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
+     acl2::mv-nth-of-if
+     acl2::mv-nth-of-cons-safe
+     x86isa::canonical-address-p-of-if
+     the-check
+     lookup-eq-safe
+     eql ; just include base-rules?
+     acl2::+-commutative-axe
+     unicity-of-0
+     ;; all-addreses-of-stack-slots
+
+     rgfi rgfi$a ;expose xr -- why?  shouldn't we then turn these into get-rax, set-rax, etc?  we could use the (get-register-intro-rules64) but only for the non-loop-lifter
+     x86isa::integerp-of-xr-rgf ; drop if we are not using this normal form?
+     x86isa::fix-of-xr-rgf-4 ; drop if we are not using this normal form?
+
+     x86isa::canonical-address-p$inline-constant-opener
+     addresses-of-subsequent-stack-slots
+     ;; addresses-of-subsequent-stack-slots-aux-base
+     ;; addresses-of-subsequent-stack-slots-aux-unroll
+     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux ; seems needed, for assumption simplification
+     x86isa::canonical-address-listp-of-cons
+     x86isa::canonical-address-p-between-special1
+     x86isa::canonical-address-p-between-special2
+     x86isa::canonical-address-p-between-special3
+     acl2::fold-consts-in-+
+     x86isa::canonical-address-listp-of-nil
+     acl2::integerp-of-+-when-integerp-1-cheap
+     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+     acl2::fix-when-integerp
+     acl2::equal-same
+     acl2::if-of-nil
+     acl2::if-of-t
+
+     acl2::bvplus-of-logext-arg2
+     acl2::bvplus-of-logext-arg3
+     acl2::signed-byte-p-logext
+     read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
+     )
+   (region-rules)
+   (acl2::lookup-rules)
+   (constant-opener-rules)
+   ;; needed for BV-mode:
+   '(acl2::bvchop-of-+-becomes-bvplus
+     acl2::bvplus-trim-leading-constant)))
+
+;;todo: improve
+; todo: why not use (new-normal-form-rules32)?
+(defund assumption-simplification-rules32 ()
+  (declare (xargs :guard t))
+  (append (new-normal-form-rules-common)
+          (assumption-simplification-rules)))
+
+;;todo: improve
+(defund assumption-simplification-rules64 ()
+  (declare (xargs :guard t))
+  (append (new-normal-form-rules-common)
+          (assumption-simplification-rules)
+          ;; needed to match the normal forms used during lifting:
+          (new-normal-form-rules64)
+          (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
 

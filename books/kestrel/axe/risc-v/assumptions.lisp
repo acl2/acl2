@@ -16,16 +16,25 @@
 (include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "../../x86/parsers/elf-tools")
 (include-book "read-and-write")
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (defconst *stack-slot-size* 4) ; since 32-bit
 
 ;todo: dup!
 ;; Result is untranslated
 (defund symbolic-bvplus-constant (size constant term)
-  (declare (xargs :guard (integerp constant)))
+  (declare (xargs :guard (and (natp size)
+                              (integerp constant))))
   (if (= 0 constant)
       term ; could chop
-    `(bvplus ,size ,constant ,term)))
+    `(bvplus ',size ',constant ,term)))
+
+(defthm pseudo-termp-of-symbolic-bvplus-constant
+  (implies (and (natp size)
+                (integerp constant)
+                (pseudo-termp term))
+           (pseudo-termp (symbolic-bvplus-constant size constant term)))
+  :hints (("Goal" :in-theory (enable symbolic-bvplus-constant))))
 
 ;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
@@ -84,8 +93,10 @@
                       ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       ,@(if (posp stack-slots-needed)
-                            `((disjoint-regions32p ',(len bytes) ,first-addr-term
-                                                   ',(* *stack-slot-size* stack-slots-needed) (bvplus 32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
+                            `((disjoint-regions32p ',(len bytes)
+                                                   ,first-addr-term
+                                                   ',(* *stack-slot-size* stack-slots-needed)
+                                                   (bvplus '32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
                           nil))))
             ;; Absolute addresses are just numbers:
             (b* ((first-addr addr)
@@ -104,8 +115,10 @@
                     ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
                     ;; TODO: Do this only for writable chunks?
                     ,@(if (posp stack-slots-needed)
-                          `((disjoint-regions32p ',(len bytes) ',first-addr
-                                                 ',(* *stack-slot-size* stack-slots-needed) (bvplus 32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
+                          `((disjoint-regions32p ',(len bytes)
+                                                 ',first-addr
+                                                 ',(* *stack-slot-size* stack-slots-needed)
+                                                 (bvplus '32 ',(bvchop 32 (* (- *stack-slot-size*) stack-slots-needed)) ,stack-pointer-expression)))
                         nil))))))
          ((when erp) (mv erp nil)))
       (assumptions-for-memory-regions32 (rest regions)
@@ -113,9 +126,23 @@
                                         ;; todo: think about the order:
                                         (append assumptions-for-region acc)))))
 
+(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-regions32
+  (implies (and (memory-regionsp regions)
+                (pseudo-termp stack-pointer-expression)
+                (symbolp state-var)
+                (symbolp base-var)
+                (pseudo-term-listp acc)
+                (integerp stack-slots-needed)
+                (integerp existing-stack-slots)
+                )
+           (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-regions32 regions base-var state-var stack-pointer-expression stack-slots-needed existing-stack-slots position-independentp acc))))
+  :hints (("Goal" :in-theory (enable assumptions-for-memory-regions32 memory-regionsp memory-regionp))))
+
 ;; Returns (mv erp assumptions).
-(defun assumptions-elf32 (parsed-elf position-independentp)
+(defun assumptions-elf32 (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (natp stack-slots)
+                              (natp existing-stack-slots)
                               (booleanp position-independentp))))
   (b* (((mv erp regions) (acl2::elf64-regions-to-load parsed-elf))
        (state-var 'stat)
@@ -124,8 +151,8 @@
         (assumptions-for-memory-regions32 regions 'base-address ; not used yet
                                           state-var
                                           `(reg '2 ,state-var) ; over the state-var
-                                          10 ; todo: stack-slots-needed
-                                          0 ; todo: existing-stack-slots
+                                          stack-slots
+                                          existing-stack-slots
                                           position-independentp
                                           nil))
        ((when erp) (mv erp nil))
@@ -138,11 +165,14 @@
                 memory-region-assumptions))))
 
 ;; does not return an error
-(defund assumptions-elf32! (parsed-elf position-independentp)
+
+(defund assumptions-elf32! (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
+                              (natp stack-slots)
+                              (natp existing-stack-slots)
                               (booleanp position-independentp))))
   (mv-let (erp assumptions)
-    (assumptions-elf32 parsed-elf position-independentp)
+    (assumptions-elf32 parsed-elf stack-slots existing-stack-slots position-independentp)
     (if erp
         (er hard? 'assumptions-elf32! "Error generating assumptions: ~x0." erp)
       assumptions)))

@@ -144,6 +144,8 @@
 
     type-spec-optionp
 
+    type-spec-listp
+
     spec/qual-p
     spec/qual-fix
     spec/qual-count
@@ -289,6 +291,7 @@
     tyname-count
     tyname
     make-tyname
+    tyname->info
 
     struni-specp
     struni-spec-fix
@@ -345,6 +348,8 @@
     initdeclor-count
     initdeclor
     make-initdeclor
+    initdeclor->declor
+    initdeclor->init?
 
     initdeclor-listp
     initdeclor-list-fix
@@ -356,6 +361,9 @@
     decl-count
     decl-case
     make-decl-decl
+    decl-decl->extension
+    decl-decl->specs
+    decl-decl->init
     decl-statassert
 
     decl-listp
@@ -532,6 +540,10 @@
     expr-pure-formalp
     expr-asg-formalp
     initer-formalp
+    dirdeclor-block-formalp
+    declor-block-formalp
+    initdeclor-block-formalp
+    decl-block-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
@@ -545,11 +557,15 @@
     ldm-expr
     ldm-expr-option
     ldm-initer
+    ldm-type-spec-list
+    ldm-decl-obj
     ldm-stmt
     ldm-block-item
     ldm-block-item-list
     ldm-param-declon-list
     ldm-fundef
+
+    ildm-type
 
     ;; validation information:
 
@@ -581,6 +597,7 @@
     expr-binary-infop
     coerce-expr-binary-info
 
+    tyname-info
     tyname-infop
     coerce-tyname-info
 
@@ -592,9 +609,9 @@
 
     expr-type
     initer-type
-    stmt-type
-    block-item-type
-    block-item-list-type
+    stmt-types
+    block-item-types
+    block-item-list-types
 
     transunit-ensemble-annop
     code-ensemble-annop
@@ -602,5 +619,6 @@
     ;; other operations:
 
     expr-zerop
+    check-decl-spec-list-all-typespec
 
    ))

@@ -359,7 +359,7 @@
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
-          t                   ; use-internal-contextsp
+          ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
           ;; extra-rules:

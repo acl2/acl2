@@ -522,42 +522,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod block-item-info
-  :short "Fixtype of validation information for block items."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the type of annotations that
-     the validator adds to (for now only some kinds of) block items.
-     This information currently consists of
-     the validation table at the beginning of the block item."))
-  ((table-start valid-table))
-  :pred block-item-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-block-item-info
-  :short "An irrelevant validation information for block items."
-  :type block-item-infop
-  :body (block-item-info (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-block-item-info (x)
-  :returns (info block-item-infop)
-  :short "Coerce a value to @(tsee block-item-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (block-item-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy BLOCK_ITEM-INFOP." x)
-            (irr-block-item-info))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
@@ -756,12 +720,6 @@
    (asm-stmt t)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
-   (block-item :decl (and (decl-annop (block-item-decl->decl block-item))
-                          (block-item-infop
-                           (block-item-decl->info block-item))))
-   (block-item :stmt (and (stmt-annop (block-item-stmt->stmt block-item))
-                          (block-item-infop
-                           (block-item-stmt->info block-item))))
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))
    (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
@@ -885,122 +843,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stmt-type ((stmt stmtp))
+(define stmt-types ((stmt stmtp))
   :guard (stmt-unambp stmt)
-  :returns (type? type-optionp)
-  :short "Type of a statement, from the validation information."
+  :returns (types type-option-setp)
+  :short "Types of a statement, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return an optional type:
-     @('nil') means that the statement's execution falls through,
-     while the @('void') type means that
-     the statement terminates execution with a @('return') without expression.")
+    "We return a set of optional types:
+     a @('nil') means that the statement's may terminate
+     without a @('return') (e.g. an expression statement);
+     a @('void') means that the statement may terminate
+     with a @('return') without an expression;
+     and a non-@('void') type means that the statemetn may terminate
+     with a @('return') with an expression of that type.")
    (xdoc::p
     "Similarly to @(tsee expr-type),
-     the type calculated by this function is an approximation.
-     We return the unknown type in cases that we do not handle yet.")
-   (xdoc::p
-    "If the statement is a return statement with an expression,
-     the type of the expression is returned;
-     if the return statement has no expression, @('void') is returned.
-     For the other kinds of statement, the unknown type is returned.")
-   (xdoc::p
-    "This is adequate for the current use of this function,
-     but it will need to be suitably extended.
-     In particular, a statement may have multiple types,
-     in the sense of returning values of possibly different types;
-     cf. @(tsee valid-stmt).")
-   (xdoc::p
-    "We relax the return theorem of this function to an optional type,
-     as a step towards generalizing this function
-     to actually return optional types."))
+     the types calculated by this function are an approximation.
+     We return the empty set in cases that we do not handle yet.
+     This is adequate for the current use of this function,
+     but it will need to be suitably extended."))
   (stmt-case
    stmt
-   :labeled (stmt-type stmt.stmt)
-   :compound (type-unknown)
-   :expr nil
-   :if (type-unknown)
-   :ifelse (type-unknown)
-   :switch (type-unknown)
-   :while (type-unknown)
-   :dowhile (type-unknown)
-   :for-expr (type-unknown)
-   :for-decl (type-unknown)
-   :for-ambig (prog2$ (impossible) (type-unknown))
-   :goto (type-unknown)
-   :continue (type-unknown)
-   :break (type-unknown)
+   :labeled (stmt-types stmt.stmt)
+   :compound nil
+   :expr (set::insert nil nil)
+   :if (stmt-types stmt.then)
+   :ifelse (set::union (stmt-types stmt.then)
+                       (stmt-types stmt.else))
+   :switch nil
+   :while nil
+   :dowhile nil
+   :for-expr nil
+   :for-decl nil
+   :for-ambig (impossible)
+   :goto nil
+   :continue nil
+   :break nil
    :return (expr-option-case
             stmt.expr?
-            :some (expr-type stmt.expr?.val)
-            :none (type-void))
-   :asm (type-unknown))
+            :some (set::insert (expr-type stmt.expr?.val) nil)
+            :none (set::insert (type-void) nil))
+   :asm nil)
   :measure (stmt-count stmt)
   :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define block-item-type ((item block-itemp))
+(define block-item-types ((item block-itemp))
   :guard (block-item-unambp item)
-  :returns (type? type-optionp)
-  :short "Type of a block item, from the validation information."
+  :returns (types type-option-setp)
+  :short "Types of a block item, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return an optional type:
-     @('nil') means that the block item's execution falls through,
-     while the @('void') type means that
-     the block item terminates execution
-     with a @('return') without expression."))
+    "We return a set of optional types, as in @(tsee stmt-types):
+     see the documentation of that function for a rationale."))
   (block-item-case
    item
-   :decl nil
-   :stmt (stmt-type item.stmt)
-   :ambig (prog2$ (impossible) (type-unknown)))
+   :decl (set::insert nil nil)
+   :stmt (stmt-types item.stmt)
+   :ambig (impossible))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define block-item-list-type ((items block-item-listp))
+(define block-item-list-types ((items block-item-listp))
   :guard (block-item-list-unambp items)
-  :returns (type? type-optionp)
-  :short "Type of a list of block items, from the validation information."
+  :returns (types type-option-setp)
+  :short "Types of a list of block items, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An empty list returns nothing, so its type is @('nil').
-     For a non-empty list, we look at the types of
-     the first block items and the rest of the block items.
-     If the former is @('nil'), we return the latter.
-     If the former is not @('nil'), we return it."))
-  (b* (((when (endp items)) nil)
-       (item-type? (block-item-type (car items)))
-       (items-type? (block-item-list-type (cdr items))))
-    (if item-type?
-        item-type?
-      items-type?))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define block-item-valid-table ((item block-itemp))
-  :guard (block-item-unambp item)
-  :returns (table valid-tablep)
-  :short "Validation table at the start of a block item."
-  :long
-  (xdoc::topstring
+    "We return a set of optional types, as in @(tsee stmt-types):
+     see the documentation of that function for a rationale.")
    (xdoc::p
-    "Validated block items are unambiguous and always contain annotations
-     that include the validation table at the beginning of the block item.
-     For now we perform a runtime check that should never fail,
-     but eventually we should use an annotation guard."))
-  (b* ((info (block-item-case
-              item
-              :decl item.info
-              :stmt item.info
-              :ambig (impossible)))
-       (info (coerce-block-item-info info)))
-    (block-item-info->table-start info))
+    "If @('nil') is among the set of optional types for the first block item,
+     then we remove it
+     and we add the set of optional types for the rest of the block items."))
+  (b* (((when (endp items)) (set::insert nil nil))
+       (item-types (block-item-types (car items)))
+       (items-types (block-item-list-types (cdr items))))
+    (if (set::in nil item-types)
+        (set::union (set::delete nil item-types) items-types)
+      item-types))
+  :verify-guards :after-returns
   :hooks (:fix))

@@ -569,6 +569,7 @@
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-create-var
@@ -588,7 +589,28 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        compustate-frames-number
-                                       len)))))
+                                       len))))
+
+  (defruled assoc-of-compustate-static-of-create-var
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (identp var))
+               (equal (omap::assoc var1 (compustate->static compst1))
+                      (if (and (equal var1 var)
+                               (equal (compustate-frames-number compst) 0))
+                          (cons var (remove-flexible-array-member val))
+                        (omap::assoc var1 (compustate->static compst))))))
+    :enable (push-frame
+             pop-frame))
+
+  (defrule compustate->static-of-create-var-when-frames
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (> (compustate-frames-number compst) 0))
+               (equal (compustate->static compst1)
+                      (compustate->static compst))))
+    :enable (push-frame
+             pop-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -657,6 +679,13 @@
          (implies objdes
                   (equal (objdesign-kind objdes) :auto))))
 
+     (defrule objdesign-auto->name-of-objdesign-of-var-aux
+       (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+         (implies objdes
+                  (equal (objdesign-auto->name objdes)
+                         (ident-fix var))))
+       :induct t)
+
      (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
          (implies objdes
@@ -706,14 +735,81 @@
                 len
                 fix
                 nfix
-                max))))
+                max))
+
+     (defruled objdesign-of-var-aux-of-cons-of-cdr
+       (implies (and (scope-listp scopes)
+                     (consp scopes)
+                     (identp var)
+                     (identp var1)
+                     (valuep val))
+                (b* ((scope (omap::update var val (car scopes))))
+                  (equal (objdesign-of-var-aux var1 frame (cons scope (cdr scopes)))
+                         (if (equal var1 var)
+                             (objdesign-auto var frame (1- (len scopes)))
+                           (objdesign-of-var-aux var1 frame scopes)))))
+       :enable len)
+
+
+     (defruled objdesign-of-var-aux-of-create-var
+       (b* ((compst1 (create-var var val compst))
+            (scopes (frame->scopes (top-frame compst)))
+            (scopes1 (frame->scopes (top-frame compst1))))
+         (implies (and (not (errorp compst1))
+                       (identp var)
+                       (identp var1))
+                  (equal (objdesign-of-var-aux var1 frame scopes1)
+                         (if (and (equal var1 var)
+                                  (> (compustate-frames-number compst) 0))
+                             (objdesign-auto var frame (1- (len scopes)))
+                           (objdesign-of-var-aux var1 frame scopes)))))
+       :enable (create-var
+                nfix
+                max
+                objdesign-of-var-aux-of-cons-of-cdr
+                push-frame
+                pop-frame
+                top-frame)
+       :disable objdesign-of-var-aux)))
 
   ///
 
   (defrule objdesign-kind-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
       (implies objdes
-               (member-equal (objdesign-kind objdes) '(:auto :static))))))
+               (member-equal (objdesign-kind objdes) '(:auto :static)))))
+
+  (defruled objdesign-static->name-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies (and objdes
+                    (equal (objdesign-kind objdes) :static))
+               (equal (objdesign-static->name objdes)
+                      (ident-fix var)))))
+
+  (defruled objdesign-auto->name-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies (and objdes
+                    (equal (objdesign-kind objdes) :auto))
+               (equal (objdesign-auto->name objdes)
+                      (ident-fix var)))))
+
+  (defruled objdesign-of-var-of-create-var
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (identp var)
+                    (identp var1))
+               (equal (objdesign-of-var var1 compst1)
+                      (if (equal var1 var)
+                          (if (equal (compustate-frames-number compst) 0)
+                              (objdesign-static var)
+                            (objdesign-auto var
+                                            (1- (compustate-frames-number compst))
+                                            (1- (len (frame->scopes
+                                                      (top-frame compst))))))
+                        (objdesign-of-var var1 compst)))))
+    :enable (objdesign-of-var-aux-of-create-var
+             assoc-of-compustate-static-of-create-var
+             compustatep-when-compustate-resultp-and-not-errorp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,6 +883,7 @@
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
   :hooks (:fix)
+
   ///
 
   (defruled valuep-of-read-object-of-objdesign-of-var
@@ -801,7 +898,75 @@
     :use
     (:instance objdesign-of-var-aux-lemma
                (frame (+ -1 (len (compustate->frames compst))))
-               (scopes (frame->scopes (car (compustate->frames compst)))))))
+               (scopes (frame->scopes (car (compustate->frames compst))))))
+
+  (defruled read-object-of-create-var-when-static
+    (implies (and (equal (objdesign-kind objdes) :static)
+                  (not (errorp (create-var var val compst)))
+                  (identp var))
+             (equal (read-object objdes (create-var var val compst))
+                    (if (and (equal (compustate-frames-number compst) 0)
+                             (equal (objdesign-static->name objdes) var))
+                        (remove-flexible-array-member val)
+                      (read-object objdes compst))))
+    :enable assoc-of-compustate-static-of-create-var)
+
+  (defruled read-object-of-create-var-when-auto
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (not (errorp (create-var var val compst)))
+                  (identp var))
+             (equal (read-object objdes (create-var var val compst))
+                    (if (and (> (compustate-frames-number compst) 0)
+                             (equal (objdesign-auto->name objdes)
+                                    var)
+                             (equal (objdesign-auto->frame objdes)
+                                    (1- (compustate-frames-number compst)))
+                             (equal (objdesign-auto->scope objdes)
+                                    (1- (len (frame->scopes
+                                              (top-frame compst))))))
+                        (remove-flexible-array-member val)
+                      (read-object objdes compst))))
+    :enable (read-object
+             create-var
+             top-frame
+             push-frame
+             pop-frame
+             compustate-frames-number
+             nfix
+             fix
+             len
+             nth)
+    :prep-lemmas
+    ((defrule lemma
+       (equal (nth i (cons a (cdr x)))
+              (if (zp i)
+                  a
+                (nth i x)))
+       :induct t
+       :enable nth)))
+
+  (defruled read-object-of-create-var-when-auto-or-static
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+                  (not (errorp (create-var var val compst)))
+                  (identp var))
+             (equal (read-object objdes (create-var var val compst))
+                    (if (or (and (equal (objdesign-kind objdes) :static)
+                                 (equal (compustate-frames-number compst) 0)
+                                 (equal (objdesign-static->name objdes)
+                                        var))
+                            (and (equal (objdesign-kind objdes) :auto)
+                                 (> (compustate-frames-number compst) 0)
+                                 (equal (objdesign-auto->name objdes)
+                                        var)
+                                 (equal (objdesign-auto->frame objdes)
+                                        (1- (compustate-frames-number compst)))
+                                 (equal (objdesign-auto->scope objdes)
+                                        (1- (len (frame->scopes
+                                                  (top-frame compst)))))))
+                        (remove-flexible-array-member val)
+                      (read-object objdes compst))))
+    :enable (read-object-of-create-var-when-static
+             read-object-of-create-var-when-auto)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
