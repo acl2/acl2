@@ -41,8 +41,32 @@
 
 (defstub error-wrapper (msg stat) t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This is separate so we can prevent opening it when INSTR is not a constant
+;; How do we determine when to stop the symbolic execution?
+;;
+;; RISC-V code often looks like this (grow stack, do stuff, shrink stack, return):
+;;
+;; 101b0:       fe010113                addi    sp,sp,-32    // increase stack height (grows downward)
+;;  ... instructions ...
+;; 101e0:       02010113                addi    sp,sp,32     // decrease stack height (grows downward)
+;; 101e4:       00008067                ret                  // jump to saved return address
+;;
+;; but not always! For example, consider this code:
+;;
+;; 000101c0 <inc>:
+;; 101c0:00150513          add   ia0,a0,1
+;; 101c4:00008067          ret                 /// just jumps to RA
+;;
+;; 000101c8 <inc_wrapper>:
+;; 101c8:ff9ff06f          j     101c0 <inc>
+;;
+;; To determine when to stop symbolic execution, we track the implicit stack
+;; height, relative to the start of the symbolic execution.  Calls increase the
+;; height and returns decrease it.  We stop symbolic execution when the height
+;; goes negative.
+
+;; This is separate so we can prevent opening it when INSTR is not a constant.
 (defund update-call-stack-height-aux (instr call-stack-height stat)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr)
                               (integerp call-stack-height)
@@ -56,15 +80,16 @@
       :some (riscv::instr-case
               decoded-instr.val
               (:jal
+               ;; Recognize a call:
                (if (= 1 (riscv::instr-jal->rd decoded-instr.val))
-                   ;; it's a jump that saves the addres in the RA register (register 1)
+                   ;; it's a jump that saves the address in the RA register (register 1)
                    ;; so we consider this a push of a frame onto the stack and we
                    ;; expect this to be balanced later by a suitable JALR
                    (+ 1 call-stack-height)
                  ;; some other kind of jump:
                  call-stack-height))
               (:jalr
-               ;; recognize a RET:
+               ;; recognize a return (RET):
                (if (and (= 1 (riscv::instr-jalr->rs1 decoded-instr.val)) ; jump is to RA
                         (= 0 (riscv::instr-jalr->imm decoded-instr.val)) ; no offset from RA
                         (= 0 (riscv::instr-jalr->rd decoded-instr.val)) ; address not stored anywhere
@@ -80,6 +105,7 @@
                    call-stack-height)))
               (otherwise call-stack-height)))))
 
+;; Open only when we can determine the instruction
 (defopeners update-call-stack-height-aux :hyps ((syntaxp (quotep instr))))
 
 (defthm update-call-stack-height-aux-of-if-arg1
@@ -88,9 +114,10 @@
              (update-call-stack-height-aux instr1 call-stack-height stat)
            (update-call-stack-height-aux instr2 call-stack-height stat))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Increment on call, decrement on return
-(defun update-call-stack-height (call-stack-height stat)
+(defund update-call-stack-height (call-stack-height stat)
   (declare (xargs :guard (and (integerp call-stack-height)
                               (stat32ip stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte32p)))
@@ -116,11 +143,11 @@
 ;;       ;; return address:
 ;;       (equal (pc stat) return-address))))
 
-;; What should we do about faults?
+;; TODO: What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
 (defpun run-until-return-aux (call-stack-height stat)
   (if (< call-stack-height 0)
-      stat
+      stat ; stop since we've returned from the function being lifted
     (run-until-return-aux (update-call-stack-height call-stack-height stat) (step32 stat))))
 
 ;; todo: restrict to when stat is not an IF/MYIF
@@ -144,26 +171,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Run until we return from the current function.
 (defund run-until-return (stat)
   (declare (xargs :guard (stat32ip stat)))
   (run-until-return-aux
    0 ; initial call-stack-height
    stat))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; The RISC-V calling convention seems to involve code like this:
-;;
-;; 101b0:       fe010113                addi    sp,sp,-32    // increase stack height (grows downward)
-;;  ... instructions ...
-;; 101e0:       02010113                addi    sp,sp,32     // decrease stack height (grows downward)
-;; 101e4:       00008067                ret                  // jump to saved return address
-;;
-;; So we start by stepping once.  This increases the stack height.  Then we run
-;; until the stack height decreases again.  Finally, we step one more time to
-;; do the RET.
 (defund run-subroutine (stat)
-   ;; (declare (xargs :guard (stat32ip stat))) ; todo: need a property of the defpun
-  ;;(step32 (run-until-return (step32 stat)))
+  ;; (declare (xargs :guard (stat32ip stat))) ; todo: need a property of the defpun
+  ;; OLD: We start by stepping once.  This increases the stack height.  Then we run
+  ;; until the stack height decreases again.  Finally, we step one more time to
+  ;; do the RET.
+  ;;(step32 (run-until-return (step32 stat)))x
   (run-until-return stat)
   )
