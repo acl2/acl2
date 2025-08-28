@@ -1505,7 +1505,7 @@
   :guard (and (expr-unambp inner)
               (expr-unambp inner-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
-  :short "Transform a parenthesized expression."
+  :short "Transform a parenthesized pure expression."
   :long
   (xdoc::topstring
    (xdoc::p
