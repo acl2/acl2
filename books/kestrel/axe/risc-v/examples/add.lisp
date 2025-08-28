@@ -10,11 +10,9 @@
 
 (in-package "R")
 
-;; TODO: Move to examples subdir
-
 ;; STATUS: COMPLETE
 
-(include-book "unroll")
+(include-book "../unroll")
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ; (depends-on "add.elf32")

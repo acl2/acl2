@@ -62,7 +62,9 @@
 
 ;; The presence of any of these function in the DAG indicates that the symbolic
 ;; execution is incomplete:
-(defconst *incomplete-run-fns* '(run-until-sp-is-above step32))
+(defconst *incomplete-run-fns* '(run-until-return-aux
+                                 ;run-until-sp-is-above
+                                 step32))
 
 ;; The presence of any of these function in the DAG indicates an error state
 ;; arising during lifting (perhaps only on one branch of the execution, and

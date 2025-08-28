@@ -147,3 +147,7 @@
                 (natp size))
            (bvlt size (read n addr stat) k))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm step32-of-if
+  (equal (step32 (if test x y))
+         (if test (step32 x) (step32 y))))

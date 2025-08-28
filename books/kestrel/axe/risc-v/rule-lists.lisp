@@ -16,12 +16,31 @@
 (defun symbolic-execution-rules ()
   (declare (xargs :guard t))
   '(run-until-return
+    run-until-return-aux-opener
+    run-until-return-aux-base
+    run-until-return-aux-of-if-arg2
     run-subroutine
-    sp-is-abovep
-    run-until-sp-is-above-opener
-    run-until-sp-is-above-base
-    run-until-sp-is-above-of-if-arg2
-    step32-opener))
+    ;; sp-is-abovep
+    ;; run-until-sp-is-above-opener
+    ;; run-until-sp-is-above-base
+    ;; run-until-sp-is-above-of-if-arg2
+    update-call-stack-height
+    update-call-stack-height-aux-base
+    update-call-stack-height-aux-of-if-arg1
+    riscv::instr-option-some->val$inline
+    riscv::instr-fix$inline
+    step32-opener
+    step32-of-if
+    pc-of-if
+    read-of-if-arg2
+    read-of-if-arg3))
+
+(defun debug-rules ()
+  (declare (xargs :guard t))
+  '(step32-opener
+    run-until-return-aux-opener
+    ;;run-until-sp-is-above-opener
+    read-when-equal-of-read-bytes-and-subregion32p))
 
 (defun lifter-rules ()
   (declare (xargs :guard t))
@@ -277,6 +296,11 @@
      acl2::bvcat-of-logext-arg2
      acl2::bvcat-of-logext-arg4
 
+     ;acl2::bvcat-of-if-arg2
+     ;acl2::bvcat-of-if-arg4
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
+
      acl2::loghead-becomes-bvchop
 
      ubyte5-fix
@@ -443,13 +467,12 @@
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
+
+     eq
+     eql
      )))
 
-(defun debug-rules ()
-  (declare (xargs :guard t))
-  '(step32-opener
-    run-until-sp-is-above-opener
-    read-when-equal-of-read-bytes-and-subregion32p))
+
 
 ;; try late
 (acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)

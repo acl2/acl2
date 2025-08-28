@@ -38,6 +38,15 @@
 
 (theory-invariant (incompatible (:rewrite read32-pc-becomes-pc) (:definition pc)))
 
+(defthm unsigned-byte-p-32-of-pc
+  (implies (stat32ip stat)
+           (unsigned-byte-p 32 (pc stat)))
+  :hints (("Goal" :in-theory (enable pc acl2::unsigned-byte-p-rewrite-ubyte32p))))
+
+(defthm pc-of-if
+  (equal (pc (if test x y))
+         (if test (pc x) (pc y))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund set-pc (pc stat)

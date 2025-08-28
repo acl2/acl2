@@ -291,6 +291,39 @@
              8
              (read-byte addr stat)))))
 
+(defthmd read-opener
+  (implies (and (syntaxp (quotep n))
+                (< 1 n) ; prevents loops with read-byte-becomes-read
+                (integerp n)
+                )
+           (equal (read n addr stat)
+                  (let ((addr (ifix addr)))
+                    (bvcat (* 8 (- n 1))
+                           (read (- n 1) (bvplus 32 1 addr) stat)
+                           8
+                           (read 1 addr stat)))))
+  :hints (("Goal" :expand ((read n addr stat)
+                           (read 1 addr stat)
+                           (read 1 0 stat)))))
+
+;; todo: take off 4 bytes at a a time
+(defthmd read-opener-to-4
+  (implies (and (syntaxp (quotep n))
+                (< 4 n) ; prevents loops with read-byte-becomes-read ; todo: gen the 4
+                (integerp n)
+                )
+           (equal (read n addr stat)
+                  (let ((addr (ifix addr)))
+                    (bvcat (* 8 (- n 1))
+                           (read (- n 1) (bvplus 32 1 addr) stat)
+                           8
+                           (read 1 addr stat)))))
+  :hints (("Goal" :expand ((read n addr stat)
+                           (read 1 addr stat)
+                           (read 1 0 stat)))))
+
+;(defopeners read :hyps ())
+
 ;; includes the n=0 case
 (defthm read-when-not-posp-cheap
   (implies (not (posp n))
@@ -301,6 +334,14 @@
 
 (defthmd integerp-of-read (integerp (read n addr stat)))
 (defthmd natp-of-read (natp (read n addr stat)))
+
+(defthmd read-of-if-arg2
+  (equal (read n (if test addr1 addr2) stat)
+         (if test (read n addr1 stat) (read n addr2 stat))))
+
+(defthmd read-of-if-arg3
+  (equal (read n addr (if test x y))
+         (if test (read n addr x) (read n addr y))))
 
 (defthm read-when-not-integerp
   (implies (not (integerp addr))

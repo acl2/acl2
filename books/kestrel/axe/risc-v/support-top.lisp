@@ -81,7 +81,17 @@
 
 (in-theory (enable run-subroutine
                    run-until-return
-                   sp-is-abovep))
+                   run-until-return-aux-opener
+                   run-until-return-aux-base
+                   run-subroutine
+                   ;; sp-is-abovep
+                   ;; run-until-sp-is-above-opener
+                   ;; run-until-sp-is-above-base
+                   ;; run-until-sp-is-above-of-if-arg2
+                   update-call-stack-height
+                   riscv::instr-option-some->val$inline
+                   riscv::instr-fix$inline
+                   ))
 
 (in-theory (enable read32-pc-becomes-pc
                    write32-pc-becomes-set-pc))

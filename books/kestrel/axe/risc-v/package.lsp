@@ -64,24 +64,26 @@
 
     make-rule-alist
 
-    translate-term))
+    translate-term
+
+    parse-elf-file-bytes))
 
 (defpkg "R"
   (append '(loghead
             logapp
             logtail
-            acl2::logtail$inline
+            logtail$inline
             logext
-            acl2::binary-logand
+            binary-logand
 
-            acl2::expt2$inline
-            acl2::ifloor$inline
+            expt2$inline
+            ifloor$inline
 
             boolif
             booland
             boolor
-            acl2::bool-fix
-            acl2::bool-fix$inline
+            bool-fix
+            bool-fix$inline
 
             bvplus
             bvminus
