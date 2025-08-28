@@ -15,6 +15,8 @@
 ;(include-book "xdoc/top" :dir :system)
 (include-book "jvm/doc")
 (include-book "x86/doc")
+(include-book "risc-v/doc")
+(include-book "r1cs/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "equivalence-checker") ;todo: prove-equal-with-axe+, prove-with-axe
@@ -50,7 +52,7 @@ See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for mo
   :short "Axe tools to lift code into logic."
   :long
   (xdoc::topparas
-   "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, and rank-1 constraint systems.
+   "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, RISC-V binaries,and rank-1 constraint systems.
 
    For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(tsee unroll-java-code) (or try the more experimental @(tsee unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
 

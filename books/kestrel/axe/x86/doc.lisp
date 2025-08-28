@@ -13,6 +13,7 @@
 ;; TODO: Add more doc for this variant
 
 (include-book "unroll-x86-code")
+(include-book "loop-lifter")
 (include-book "prove-equivalence")
 
 ;; todo: extend this

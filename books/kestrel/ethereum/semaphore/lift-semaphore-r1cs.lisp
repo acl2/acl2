@@ -1,6 +1,6 @@
 ; A Semaphore-specific version of lift-r1cs
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,9 +16,9 @@
 ;; If the VARS are keywords (which is common), they get converted to the ZKSEMAPHORE package."
 (defmacro lift-semaphore-r1cs (name-of-defconst vars constraints &rest args)
   `(r1cs::lift-r1cs ,name-of-defconst
-                        ,vars
-                        ,constraints
-                        ;; This is baby-jubjub-prime:
-                        21888242871839275222246405745257275088548364400416034343698204186575808495617
-                        :package "ZKSEMAPHORE"
-                        ,@args))
+                    ,vars
+                    ,constraints
+                    ;; This is baby-jubjub-prime:
+                    21888242871839275222246405745257275088548364400416034343698204186575808495617
+                    :package "ZKSEMAPHORE"
+                    ,@args))

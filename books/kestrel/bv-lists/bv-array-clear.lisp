@@ -136,10 +136,9 @@
   :hints (("Goal" :cases ((< KEY1 KEY2)
                           (< KEY2 KEY1)
                           )
-           :in-theory (e/d (BV-ARRAY-CLEAR ;bv-array-write
-                            BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF ;could this ever loop?  make a syntaxp version for non constants?
-                            )
-                           ()))))
+           :in-theory (enable BV-ARRAY-CLEAR ;bv-array-write
+                              BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF ;could this ever loop?  make a syntaxp version for non constants?
+                              ))))
 
 (defthm bv-array-clear-of-bv-array-write-same
   (implies (and (natp esize)
@@ -151,7 +150,7 @@
                   (bv-array-clear esize len key lst)))
   :hints (("Goal" :cases ((< KEY1 KEY2)
                           (< KEY2 KEY1))
-           :in-theory (e/d (BV-ARRAY-CLEAR) ()))))
+           :in-theory (enable BV-ARRAY-CLEAR))))
 
 (defthm bv-array-clear-of-bvchop-list
   (equal (bv-array-clear elemement-width len index (bvchop-list elemement-width array))
@@ -269,7 +268,7 @@
                 (natp element-size))
            (equal (bv-array-clear element-size len index (bv-array-clear element-size len index lst))
                   (bv-array-clear element-size len index lst)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write bv-array-clear update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write bv-array-clear update-nth2))))
 
 ;could drop hyps if we change what bv-array-clear-range does in the base case
 (defthm take-of-bv-array-clear-irrel
@@ -281,7 +280,7 @@
                 (natp index2))
            (equal (take index (bv-array-clear elem-size len index2 lst))
                   (bvchop-list elem-size (take index lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2 ceiling-of-lg))))
 
 (defthm nthcdr-of-bv-array-clear
   (implies (and (<= n len)
