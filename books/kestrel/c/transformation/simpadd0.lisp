@@ -3325,6 +3325,7 @@
                                   (decl-new declp)
                                   (decl-thm-name symbolp)
                                   info
+                                  (vartys-post ident-type-mapp)
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
               (decl-unambp decl-new))
@@ -3333,15 +3334,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put the new declaration into a block item.")
-   (xdoc::p
-    "We do not generate a theorem yet."))
+    "We put the new declaration into a block item."))
   (b* (((simpadd0-gin gin) gin)
        (item (make-block-item-decl :decl decl :info info))
        (item-new (make-block-item-decl :decl decl-new :info info))
+       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                          :vartys vartys-post))
        ((unless (and decl-thm-name
                      (decl-block-formalp decl)))
-        (mv item-new (simpadd0-gout-no-thm gin)))
+        (mv item-new gout-no-thm))
        ((unless (decl-block-formalp decl-new))
         (raise "Internal error: ~
                 new declaration ~x0 is not in the formalized subset ~
@@ -3376,9 +3377,9 @@
        ((mv & tyspecseq) (ldm-type-spec-list tyspecs))
        (ctype (c::tyspecseq-to-type tyspecseq))
        ((unless (c::type-nonchar-integerp ctype))
-        (mv item-new (simpadd0-gout-no-thm gin)))
+        (mv item-new gout-no-thm))
        (type (ildm-type ctype))
-       (post-vartys (omap::update var type gin.vartys))
+       (vartys-post (omap::update var type gin.vartys))
        (lemma-instances (simpadd0-block-item-decl-lemma-instances
                          gin.vartys var tyspecs initer))
        (hints `(("Goal"
@@ -3418,7 +3419,7 @@
         (simpadd0-gen-block-item-thm item
                                      item-new
                                      gin.vartys
-                                     post-vartys
+                                     vartys-post
                                      gin.const-new
                                      gin.thm-index
                                      hints)))
@@ -3426,7 +3427,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys post-vartys)))
+                            :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable decl-block-formalp
                                            initdeclor-block-formalp
                                            declor-block-formalp
@@ -3678,7 +3679,8 @@
        (items-new (block-item-list-fix items-new))
        (item+items (cons item items))
        (item+items-new (cons item-new items-new))
-       (gout-no-thm (simpadd0-gout-no-thm gin))
+       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                          :vartys vartys-post))
        ((unless (and item-thm-name
                      items-thm-name))
         (mv item+items-new gout-no-thm))
@@ -3759,7 +3761,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys gin.vartys)))
+                            :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
@@ -5540,6 +5542,7 @@
                                          new-decl
                                          gout-decl.thm-name
                                          item.info
+                                         gout-decl.vartys
                                          gin))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
