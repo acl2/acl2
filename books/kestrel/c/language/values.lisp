@@ -389,6 +389,22 @@
   (:list ((get value-list)))
   :pred init-valuep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult init-value "initialization values"
+  :enable (errorp init-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection init-value-result-theorems
+  :extension init-value-result
+
+  (defruled not-errorp-when-init-valuep
+    (implies (init-valuep x)
+             (not (errorp x)))
+    :enable (init-valuep
+             errorp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stmt-value
@@ -842,19 +858,3 @@
                    :single (init-type-single (type-of-value ival.get))
                    :list (init-type-list (type-list-of-value-list ival.get)))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defresult init-value "initialization values"
-  :enable (errorp init-valuep))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defsection init-value-result-theorems
-  :extension init-value-result
-
-  (defruled not-errorp-when-init-valuep
-    (implies (init-valuep x)
-             (not (errorp x)))
-    :enable (init-valuep
-             errorp)))
