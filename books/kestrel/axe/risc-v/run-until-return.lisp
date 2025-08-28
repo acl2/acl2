@@ -73,15 +73,15 @@
                               (stat32ip stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte32p)))
                   ))
-  (let ((decoded-instr (riscv::decodex instr *features*)))
+  (let ((instr? (riscv::decodex instr *features*)))
     (riscv::instr-option-case
-      decoded-instr
+      instr?
       :none (error-wrapper "Can't decode instr." stat)
       :some (riscv::instr-case
-              decoded-instr.val
+              instr?.val
               (:jal
                ;; Recognize a call:
-               (if (= 1 (riscv::instr-jal->rd decoded-instr.val))
+               (if (= 1 (riscv::instr-jal->rd instr?.val))
                    ;; it's a jump that saves the address in the RA register (register 1)
                    ;; so we consider this a push of a frame onto the stack and we
                    ;; expect this to be balanced later by a suitable JALR
@@ -90,15 +90,15 @@
                  call-stack-height))
               (:jalr
                ;; recognize a return (RET):
-               (if (and (= 1 (riscv::instr-jalr->rs1 decoded-instr.val)) ; jump is to RA
-                        (= 0 (riscv::instr-jalr->imm decoded-instr.val)) ; no offset from RA
-                        (= 0 (riscv::instr-jalr->rd decoded-instr.val)) ; address not stored anywhere
+               (if (and (= 1 (riscv::instr-jalr->rs1 instr?.val)) ; jump is to RA
+                        (= 0 (riscv::instr-jalr->imm instr?.val)) ; no offset from RA
+                        (= 0 (riscv::instr-jalr->rd instr?.val)) ; address not stored anywhere
                         )
                    (+ -1 call-stack-height)
                  ;; recognize a call:
-                 (if (and ;; (= 1 (riscv::instr-jalr->rs1 decoded-instr.val)) ; jump is to RA  ; todo: can the address be both read from RA and stored in RA?
-                       ;; (= 0 (riscv::instr-jalr->imm decoded-instr.val)) ; no offset from RA
-                       (= 1 (riscv::instr-jalr->rd decoded-instr.val)) ; address stored in RA
+                 (if (and ;; (= 1 (riscv::instr-jalr->rs1 instr?.val)) ; jump is to RA  ; todo: can the address be both read from RA and stored in RA?
+                       ;; (= 0 (riscv::instr-jalr->imm instr?.val)) ; no offset from RA
+                       (= 1 (riscv::instr-jalr->rd instr?.val)) ; address stored in RA
                        )
                      (+ 1 call-stack-height)
                    ;; some other kind of jump:
@@ -160,6 +160,7 @@
 (defthm run-until-return-aux-opener
   (implies (not (< call-stack-height 0))
            (equal (run-until-return-aux call-stack-height stat)
+                  ;; todo: decoding is done here twice (in update-call-stack-height and step32):
                   (run-until-return-aux (update-call-stack-height call-stack-height stat) (step32 stat)))))
 
 ;; todo: add "smart" if handling, like we do elsewhere
