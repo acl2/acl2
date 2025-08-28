@@ -13,6 +13,7 @@
 ;; This book supports lifts that use the ACL2 rewriter.  Most lifts will
 ;; instead use the Axe Rewriter and should instead include unroll.lisp.
 
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
 (include-book "assumptions")
