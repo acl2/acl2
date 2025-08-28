@@ -98,14 +98,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-init-table ()
+(define valid-init-table ((filepath filepathp)
+                          &optional (externals valid-externalsp))
   :returns (table valid-tablep)
   :short "Initial validation table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This contains one empty scope (the initial file scope)."))
-  (make-valid-table :scopes (list (valid-empty-scope))))
+  (make-valid-table :filepath filepath
+                    :scopes (list (valid-empty-scope))
+                    :externals externals)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,12 +147,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The popped scope is discarded."))
-  (b* (((unless (> (valid-table-num-scopes table) 0))
+    "The popped scope is discarded"))
+  (b* (((valid-table table) table)
+       ((unless (> (valid-table-num-scopes table) 0))
         (raise "Internal error: no scopes in validation table.")
         (valid-table-fix table))
-       (scopes (valid-table->scopes table))
-       (new-scopes (cdr scopes)))
+       (new-scopes (cdr table.scopes)))
     (change-valid-table table :scopes new-scopes))
   :hooks (:fix)
   ///
@@ -219,6 +223,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-lookup-externals ((ident identp) (table valid-tablep))
+  :returns (info? valid-external-info-optionp)
+  :short "Look up the validation information of an identifier in the
+          @('externals') map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This holds the validation information
+     for an identifier with external linkage
+     which has been declared in any scope or translation unit.
+     See @(see valid-table)."))
+  (b* (((valid-table table) table))
+    (cdr (omap::assoc (ident-fix ident) table.externals)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-update-externals ((ident identp)
+                                (type typep)
+                                (table valid-tablep))
+  :returns (new-table valid-tablep)
+  :short "Update the @('externals') map with an identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If no entry exists for the identifier,
+     add a new @(tsee valid-external-info).
+     If an entry does exist, update the @('declared-in') field to include
+     the name of the current translation unit.")
+   (xdoc::p
+    "When an existing entry already exists, type compatibility is not checked.
+     Instead, the caller should check compatibility before updating."))
+  (b* (((valid-table table) table)
+       (info? (valid-lookup-externals ident table))
+       (new-info
+         (valid-external-info-option-case
+           info?
+           :some (change-valid-external-info
+                   info?
+                   :declared-in (insert table.filepath
+                                        (valid-external-info->declared-in
+                                          info?.val)))
+           :none (make-valid-external-info
+                   :type type
+                   :declared-in (insert table.filepath nil))))
+       (new-externals
+         (omap::update (ident-fix ident) new-info table.externals)))
+    (change-valid-table table :externals new-externals))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-add-ord ((ident identp)
                        (info valid-ord-infop)
                        (table valid-tablep))
@@ -240,19 +296,31 @@
      this overwriting is acceptable,
      i.e. when it ``refines'' the validation information for the identifier.
      We could consider adding a guard to this function
-     that characterizes the acceptable overwriting."))
-  (b* (((unless (> (valid-table-num-scopes table) 0))
+     that characterizes the acceptable overwriting.")
+   (xdoc::p
+    "If @('info') indicates external linkage, we update the @('externals') map.
+     See (tsee valid-update-externals)."))
+  (b* (((valid-table table) table)
+       ((unless (> (valid-table-num-scopes table) 0))
         (raise "Internal error: no scopes in validation table.")
         (valid-table-fix table))
-       (scopes (valid-table->scopes table))
-       (scope (car scopes))
+       (scope (car table.scopes))
        (ord-scope (valid-scope->ord scope))
        (new-ord-scope (acons (ident-fix ident)
                              (valid-ord-info-fix info)
                              ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (cons new-scope (cdr scopes))))
-    (change-valid-table table :scopes new-scopes))
+       (new-scopes (cons new-scope (cdr table.scopes)))
+       (table (change-valid-table table :scopes new-scopes))
+       (table
+         (valid-ord-info-case
+           info
+           :objfun (linkage-case
+                     info.linkage
+                     :external (valid-update-externals ident info.type table)
+                     :otherwise table)
+           :otherwise table)))
+    table)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
   :hooks (:fix))
 
@@ -303,6 +371,35 @@
                                       (valid-add-ord-file-scope (car idents)
                                                                 info
                                                                 table))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-has-internalp ((ident identp) (table valid-tablep))
+  :returns (has-internalp booleanp :rule-classes :type-prescription)
+  :short "Check whether an identifier has been declared with internal linkage
+          in the validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This checks whether the identifier has been declared with internal linkage
+     anywhere in the translation unit, not just the visible declaration
+     (if it exists).")
+   (xdoc::p
+    "We perform this check by looking through declarations in the file scope.
+     We are able to avoid looking through block scopes because
+     an identifier may only be declared with internal linkage in a block scope
+     if it has been previously declared with internal linkage in the file scope
+     [C17:6.2.2/4], [C17:6.2.2/6]."))
+  (b* ((info? (valid-lookup-ord-file-scope ident table)))
+    (and info?
+         (valid-ord-info-case
+           info?
+           :objfun (linkage-case
+                     info?.linkage
+                     :internal t
+                     :otherwise nil)
+           :otherwise nil)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4872,6 +4969,18 @@
        but it seems clear that this neglects to consider @('_Thread_local');
        in fact, the wording in the newly released C23 standard is clearer.")
      (xdoc::p
+      "If the declaration being validated has external linkage,
+       we lookup the identifier in the @('externals') map.
+       If we find the identifier has already been declared elsewhere
+       with external linkage,
+       we check that the types are compatible [C17:6.2.2/2], [C17:6.2.7/2].
+       We also check that the identifier has not been previously declared
+       in this translation unit with internal linkage [C17:6.2.2/7].
+       If the declaration being validated has internal linkage,
+       we lookup the identifier in the @('externals') map
+       and check that no previous declaration of the identifier
+       exists in this translation unit with external linkage [C17:6.2.2/7].")
+     (xdoc::p
       "We look up the identifier in the validation table.
        If no information is found in the validation table,
        we add the identifier to the table.
@@ -4903,6 +5012,7 @@
       "For now we ignore the optional assembler name specifier,
        as well as any attribute specifiers."))
     (b* (((reterr) (irr-initdeclor) nil (irr-valid-table))
+         ((valid-table table) table)
          ((initdeclor initdeclor) initdeclor)
          ((erp new-declor & type ident types table)
           (valid-declor initdeclor.declor nil type table ienv))
@@ -4953,6 +5063,33 @@
                               (valid-defstatus-undefined)
                             (valid-defstatus-tentative))))))
          ((mv info? currentp) (valid-lookup-ord ident table))
+         ((when (and (linkage-case linkage :external)
+                     (let ((external-info? (valid-lookup-externals ident table)))
+                       (and external-info?
+                            (not (type-compatiblep
+                                   (valid-external-info->type external-info?)
+                                   type))))))
+          (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
+                    was previously declared with incompatible type ~x2."
+                   ident
+                   type
+                   (valid-external-info->type
+                     (valid-lookup-externals ident table))))
+         ((when (and (linkage-case linkage :external)
+                     (valid-has-internalp ident table)))
+          (retmsg$ "The identifier ~x0 with external linkage ~
+                    was previously declared with internal linkage ~
+                    in the same translation unit."
+                   ident))
+         ((when (and (linkage-case linkage :internal)
+                     (let ((external-info? (valid-lookup-externals ident table)))
+                       (and external-info?
+                            (in table.filepath
+                                (valid-external-info->declared-in external-info?))))))
+          (retmsg$ "The identifier ~x0 with internal linkage ~
+                    was previously declared with external linkage ~
+                    in the same translation unit."
+                   ident))
          ((when (not info?))
           (b* ((new-info (make-valid-ord-info-objfun
                           :type type
@@ -6083,9 +6220,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((tunit transunitp) (ienv ienvp))
+(define valid-transunit ((filepath filepathp)
+                         (tunit transunitp)
+                         (externals valid-externalsp)
+                         (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv (erp maybe-msgp) (new-tunit transunitp))
+  :returns (mv (erp maybe-msgp) (new-tunit transunitp) (table valid-tablep))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -6117,9 +6257,9 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit))
+  (b* (((reterr) (irr-transunit) (irr-valid-table))
        (gcc (ienv->gcc ienv))
-       (table (valid-init-table))
+       (table (valid-init-table filepath externals))
        (table
          (if gcc
              (b* ((finfo (make-valid-ord-info-objfun
@@ -6141,7 +6281,8 @@
        ((erp new-edecls table)
         (valid-extdecl-list (transunit->decls tunit) table ienv))
        (info (make-transunit-info :table-end table)))
-    (retok (make-transunit :decls new-edecls :info info)))
+    (retok (make-transunit :decls new-edecls :info info)
+           table))
   :hooks (:fix)
 
   ///
@@ -6170,11 +6311,12 @@
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) ienv)))
+         (transunit-ensemble->unwrap tunits) nil ienv)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
+                                          (externals valid-externalsp)
                                           (ienv ienvp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
@@ -6184,9 +6326,11 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit) (valid-transunit (omap::head-val map) ienv))
+          ((erp new-tunit table)
+           (valid-transunit path (omap::head-val map) externals ienv))
+          (externals (valid-table->externals (valid-pop-scope table)))
           ((erp new-map)
-           (valid-transunit-ensemble-loop (omap::tail map) ienv)))
+           (valid-transunit-ensemble-loop (omap::tail map) externals ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
 
