@@ -266,14 +266,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod valid-ext-info
+  :short "Fixtype of validation information about identifiers with external
+          linkage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We store the following information about identifiers
+     with external linkage for the purpose of validation
+     across unrelated scopes and across different translation units
+     (by ``unrelated,'' we mean neither scope is nested within the other).")
+   (xdoc::p
+    "Each declaration of a given identifier with external linkage
+     must agree on the type [C17:6.2.2/2] [C17:6.2.7/2].
+     Therefore, we store the type to check type compatibility
+     of any declaration after the first.")
+   (xdoc::p
+    "We also store the set of translation units
+     (represented by their @(see filepath)s)
+     in which the identifier has been declared.
+     This is used to ensure the same identifier has not been declared
+     with both internal and external linkage in the same translation unit
+     [C17:6.2.2/7].")
+   (xdoc::p
+    "Eventually, we may wish to store a boolean flag indicating
+     whether the identifier has been externally defined.
+     This would be used to ensure
+     that externally linked identifiers are defined at most once
+     (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
+     For now, we conservatively allow any number of definitions."))
+  ((type type)
+   (declared-in filepath-set))
+  :pred valid-ext-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-ext-info-option
+  valid-ext-info
+  :short "Fixtype of optional validation information
+          about identifiers with external linkage."
+  :pred valid-ext-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap valid-externals
+  :short "Fixtype of validation information associated with identifiers with
+          external linkage."
+  :key-type ident
+  :val-type valid-ext-info
+  :pred valid-externalsp
+  ///
+
+  (defrule valid-ext-info-optionp-of-cdr-assoc-when-valid-externalsp
+    (implies (valid-externalsp externals)
+             (valid-ext-info-optionp (cdr (omap::assoc ident externals))))
+    :induct t
+    :enable (valid-externalsp omap::assoc valid-ext-info-optionp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod valid-table
   :short "Fixtype of validation tables."
   :long
   (xdoc::topstring
    (xdoc::p
+    "A validation table is a collection of validation information
+     for translation units and ensembles.")
+   (xdoc::p
+    "The @('filepath') field stores the name of the translation unit
+     which we are validating.")
+   (xdoc::p
     "Scopes are treated in a stack-like manner [C17:6.2.1].
-     Thus, we define a validation table as
-     containing a list (i.e. stack) of scopes.
+     Thus, a validation table contains a list (i.e. stack) of scopes.
      The stack grows from right to left:
      the leftmost scope is the top, and the rightmost scope is the bottom;
      in other words, in the nesting of scopes in the stack,
@@ -281,9 +345,14 @@
      and the rightmost scope is the outermost
      (i.e. the file scope [C17:6.2.1/4].)")
    (xdoc::p
-    "We wrap the list of scopes into a @(tsee fty::defprod)
-     for abstraction and extensibility."))
-  ((scopes valid-scope-list))
+    "We also track information about identifiers with external linkage,
+     which we use for cross-checking across disjoint scopes
+     and different translation units.
+     This information accumulates
+     as we validate each translation unit in the ensemble."))
+  ((filepath filepath)
+   (scopes valid-scope-list)
+   (externals valid-externals))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -291,7 +360,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table nil))
+  :body (valid-table (irr-filepath) nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
