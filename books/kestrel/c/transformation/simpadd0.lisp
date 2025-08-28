@@ -1348,8 +1348,9 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has a type supported in our C formalization,
-     which we check in the validation information,
+    "If the variable has a type supported in our C formalization
+     (which we check in the validation information),
+     and if the variable is in the variable-type map,
      then we generate a theorem saying that the expression,
      when executed, yields a value of the appropriate type.
      The generated theorem is proved via a general supporting lemma,
@@ -1360,11 +1361,9 @@
        (expr (make-expr-ident :ident ident :info info))
        ((unless (and (type-formalp info.type)
                      (not (type-case info.type :void))
-                     (not (type-case info.type :char))))
+                     (not (type-case info.type :char))
+                     (omap::assoc ident gin.vartys)))
         (mv expr (simpadd0-gout-no-thm gin)))
-       ((unless (type-formalp info.type))
-        (raise "Internal error: variable ~x0 has type ~x1." ident info.type)
-        (mv (irr-expr) (irr-simpadd0-gout)))
        ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
         (ldm-type info.type))
        (hints `(("Goal"
