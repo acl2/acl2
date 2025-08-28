@@ -4732,7 +4732,8 @@
          (gin (simpadd0-gin-update gin gout-direct)))
       (mv (make-declor :pointers declor.pointers
                        :direct new-direct)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-direct.vartys)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4973,7 +4974,8 @@
          (gin (simpadd0-gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4992,10 +4994,13 @@
           (simpadd0-param-declon (car paramdecls) gin))
          (gin (simpadd0-gin-update gin gout-paramdecl))
          ((mv new-paramdecls (simpadd0-gout gout-paramdecls))
-          (simpadd0-param-declon-list (cdr paramdecls) gin))
+          (simpadd0-param-declon-list (cdr paramdecls)
+                                      (change-simpadd0-gin
+                                       gin :vartys gout-paramdecl.vartys)))
          (gin (simpadd0-gin-update gin gout-paramdecls)))
       (mv (cons new-paramdecl new-paramdecls)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-paramdecls.vartys)))
     :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5261,7 +5266,9 @@
           (simpadd0-declor initdeclor.declor gin))
          (gin (simpadd0-gin-update gin gout-declor))
          ((mv new-init? (simpadd0-gout gout-init?))
-          (simpadd0-initer-option initdeclor.init? gin))
+          (simpadd0-initer-option initdeclor.init?
+                                  (change-simpadd0-gin
+                                   gin :vartys gout-declor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
@@ -5272,7 +5279,8 @@
                                   :thm-index gin.thm-index
                                   :thm-name gout-init?.thm-name
                                   :vartys gout-init?.vartys)
-            (simpadd0-gout-no-thm gin))))
+            (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                  :vartys gout-init?.vartys))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5297,7 +5305,9 @@
           (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
          ((mv new-initdeclors (simpadd0-gout gout-initdeclors))
-          (simpadd0-initdeclor-list (cdr initdeclors) gin))
+          (simpadd0-initdeclor-list (cdr initdeclors)
+                                    (change-simpadd0-gin
+                                     gin :vartys gout-initdeclor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-initdeclors)))
       (mv (cons new-initdeclor new-initdeclors)
           (if (and (not (consp new-initdeclors))
@@ -5306,7 +5316,8 @@
                                   :thm-index gin.thm-index
                                   :thm-name gout-initdeclor.thm-name
                                   :vartys gout-initdeclor.vartys)
-            (simpadd0-gout-no-thm gin))))
+            (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                  :vartys gout-initdeclors.vartys))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5340,7 +5351,8 @@
                                          :thm-index gin.thm-index
                                          :thm-name gout-init.thm-name
                                          :vartys gout-init.vartys)
-                   (simpadd0-gout-no-thm gin))))
+                   (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                         :vartys gout-init.vartys))))
      :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
                        (simpadd0-statassert decl.unwrap gin))
                       (gin (simpadd0-gin-update gin gout-decl)))
@@ -5363,10 +5375,13 @@
           (simpadd0-decl (car decls) gin))
          (gin (simpadd0-gin-update gin gout-decl))
          ((mv new-decls (simpadd0-gout gout-decls))
-          (simpadd0-decl-list (cdr decls) gin))
+          (simpadd0-decl-list (cdr decls)
+                              (change-simpadd0-gin
+                               gin :vartys gout-decl.vartys)))
          (gin (simpadd0-gin-update gin gout-decls)))
       (mv (cons new-decl new-decls)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-decls.vartys)))
     :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5495,14 +5510,15 @@
        :for-decl (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-decl stmt.init gin))
                       (gin (simpadd0-gin-update gin gout-init))
+                      (gin1 (change-simpadd0-gin gin :vartys gout-init.vartys))
                       ((mv new-test (simpadd0-gout gout-test))
-                       (simpadd0-expr-option stmt.test gin))
+                       (simpadd0-expr-option stmt.test gin1))
                       (gin (simpadd0-gin-update gin gout-test))
                       ((mv new-next (simpadd0-gout gout-next))
-                       (simpadd0-expr-option stmt.next gin))
+                       (simpadd0-expr-option stmt.next gin1))
                       (gin (simpadd0-gin-update gin gout-next))
                       ((mv new-body (simpadd0-gout gout-body))
-                       (simpadd0-stmt stmt.body gin))
+                       (simpadd0-stmt stmt.body gin1))
                       (gin (simpadd0-gin-update gin gout-body)))
                    (mv (make-stmt-for-decl :init new-init
                                            :test new-test
