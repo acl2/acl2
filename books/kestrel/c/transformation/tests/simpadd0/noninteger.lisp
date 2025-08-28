@@ -38,4 +38,4 @@
 }
 ")
 
-; no c::exec-fun theorem because of float
+; no assert-highest-thm-has-exec-fun here because the code involves float
