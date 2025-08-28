@@ -1,4 +1,4 @@
-; Top-level support book for code proofs
+; Top-level support book for non-Axe code proofs
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -9,6 +9,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "R")
+
+;; This book supports lifts that use the ACL2 rewriter.  Most lifts will
+;; instead use the Axe Rewriter and should instead include unroll.lisp.
 
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
@@ -50,11 +53,11 @@
 (in-theory (enable read32-xreg-unsigned-becomes-reg
                    write32-xreg-becomes-set-reg
 
-                   x1
-                   x2
-                   x8
-                   x10
-                   x11))
+                   x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
+                   ;; register aliases:
+                   ;; zero
+                   ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
+                   ))
 
 ;; Introduce new normal forms:
 (in-theory (enable read32-mem-ubyte8-becomes-read-byte
