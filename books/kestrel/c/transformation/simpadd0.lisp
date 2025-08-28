@@ -179,9 +179,13 @@
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
    (vartys ident-type-mapp
-           "Variables for which the generated theorem (if any)
+           "Variables in scope at the beginning of the construct.
+            The generated theorem (if any)
             includes hypotheses about their presence in the computation state
-            before the execution of the C construct.")
+            before the execution of the C construct.
+            Currently this could be actually a subset of the variables in scope,
+            but it is adequate to the current proof generation,
+            and we are working on extending this.")
    (events pseudo-event-form-list
            "Theorems generated so far, in reverse order;
             see @(see simpadd0-implementation).")
@@ -214,10 +218,13 @@
               that the transformation function operates on.
               This is @('nil') if no theorem is generated.")
    (vartys ident-type-map
-           "Variables for which the generated theorem (if any)
+           "Variables in scope at the end of the construct.
+            The generated theorem (if any)
             includes conclusions about their presence in the computation state
             after the execution of the construct.
-            This is @('nil') if @('thm-name') is @('nil')."))
+            Currently this could be actually a subset of the variables in scope,
+            but it is adequate to the current proof generation,
+            and we are working on extending this."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -268,15 +275,14 @@
   (xdoc::topstring
    (xdoc::p
     "This is used for constructs for which we do not generate proofs yet.
-     Since the theorem name is @('nil'),
-     the variable-type map is empty (see @(tsee simpadd0-gout)).
-     The events and theorem index are taken from a @(tsee simpadd0-gin),
-     which is the result of previous transformations."))
+     The events, theorem index, and variable-type map
+     are taken from a @(tsee simpadd0-gin),
+     as they result from previous transformations."))
   (b* (((simpadd0-gin gin) gin))
     (make-simpadd0-gout :events gin.events
                         :thm-index gin.thm-index
                         :thm-name nil
-                        :vartys nil))
+                        :vartys gin.vartys))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
