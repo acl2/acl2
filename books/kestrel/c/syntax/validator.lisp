@@ -147,7 +147,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The popped scope is discarded"))
+    "The popped scope is discarded."))
   (b* (((valid-table table) table)
        ((unless (> (valid-table-num-scopes table) 0))
         (raise "Internal error: no scopes in validation table.")
@@ -223,8 +223,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-lookup-externals ((ident identp) (table valid-tablep))
-  :returns (info? valid-external-info-optionp)
+(define valid-lookup-ext ((ident identp) (table valid-tablep))
+  :returns (info? valid-ext-info-optionp)
   :short "Look up the validation information of an identifier in the
           @('externals') map."
   :long
@@ -240,32 +240,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-update-externals ((ident identp)
-                                (type typep)
-                                (table valid-tablep))
+(define valid-update-ext ((ident identp) (type typep) (table valid-tablep))
   :returns (new-table valid-tablep)
   :short "Update the @('externals') map with an identifier."
   :long
   (xdoc::topstring
    (xdoc::p
     "If no entry exists for the identifier,
-     add a new @(tsee valid-external-info).
+     add a new @(tsee valid-ext-info).
      If an entry does exist, update the @('declared-in') field to include
      the name of the current translation unit.")
    (xdoc::p
     "When an existing entry already exists, type compatibility is not checked.
      Instead, the caller should check compatibility before updating."))
   (b* (((valid-table table) table)
-       (info? (valid-lookup-externals ident table))
+       (info? (valid-lookup-ext ident table))
        (new-info
-         (valid-external-info-option-case
+         (valid-ext-info-option-case
            info?
-           :some (change-valid-external-info
+           :some (change-valid-ext-info
                    info?
                    :declared-in (insert table.filepath
-                                        (valid-external-info->declared-in
+                                        (valid-ext-info->declared-in
                                           info?.val)))
-           :none (make-valid-external-info
+           :none (make-valid-ext-info
                    :type type
                    :declared-in (insert table.filepath nil))))
        (new-externals
@@ -299,7 +297,7 @@
      that characterizes the acceptable overwriting.")
    (xdoc::p
     "If @('info') indicates external linkage, we update the @('externals') map.
-     See (tsee valid-update-externals)."))
+     See (tsee valid-update-ext)."))
   (b* (((valid-table table) table)
        ((unless (> (valid-table-num-scopes table) 0))
         (raise "Internal error: no scopes in validation table.")
@@ -317,7 +315,7 @@
            info
            :objfun (linkage-case
                      info.linkage
-                     :external (valid-update-externals ident info.type table)
+                     :external (valid-update-ext ident info.type table)
                      :otherwise table)
            :otherwise table)))
     table)
@@ -390,7 +388,7 @@
      We are able to avoid looking through block scopes because
      an identifier may only be declared with internal linkage in a block scope
      if it has been previously declared with internal linkage in the file scope
-     [C17:6.2.2/4], [C17:6.2.2/6]."))
+     [C17:6.2.2/4] [C17:6.2.2/6]."))
   (b* ((info? (valid-lookup-ord-file-scope ident table)))
     (and info?
          (valid-ord-info-case
@@ -4970,14 +4968,14 @@
        in fact, the wording in the newly released C23 standard is clearer.")
      (xdoc::p
       "If the declaration being validated has external linkage,
-       we lookup the identifier in the @('externals') map.
+       we look up the identifier in the @('externals') map.
        If we find the identifier has already been declared elsewhere
        with external linkage,
-       we check that the types are compatible [C17:6.2.2/2], [C17:6.2.7/2].
+       we check that the types are compatible [C17:6.2.2/2] [C17:6.2.7/2].
        We also check that the identifier has not been previously declared
        in this translation unit with internal linkage [C17:6.2.2/7].
        If the declaration being validated has internal linkage,
-       we lookup the identifier in the @('externals') map
+       we look up the identifier in the @('externals') map
        and check that no previous declaration of the identifier
        exists in this translation unit with external linkage [C17:6.2.2/7].")
      (xdoc::p
@@ -5064,17 +5062,17 @@
                             (valid-defstatus-tentative))))))
          ((mv info? currentp) (valid-lookup-ord ident table))
          ((when (and (linkage-case linkage :external)
-                     (let ((external-info? (valid-lookup-externals ident table)))
+                     (let ((external-info? (valid-lookup-ext ident table)))
                        (and external-info?
                             (not (type-compatiblep
-                                   (valid-external-info->type external-info?)
+                                   (valid-ext-info->type external-info?)
                                    type))))))
           (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
                     was previously declared with incompatible type ~x2."
                    ident
                    type
-                   (valid-external-info->type
-                     (valid-lookup-externals ident table))))
+                   (valid-ext-info->type
+                     (valid-lookup-ext ident table))))
          ((when (and (linkage-case linkage :external)
                      (valid-has-internalp ident table)))
           (retmsg$ "The identifier ~x0 with external linkage ~
@@ -5082,10 +5080,10 @@
                     in the same translation unit."
                    ident))
          ((when (and (linkage-case linkage :internal)
-                     (let ((external-info? (valid-lookup-externals ident table)))
+                     (let ((external-info? (valid-lookup-ext ident table)))
                        (and external-info?
                             (in table.filepath
-                                (valid-external-info->declared-in external-info?))))))
+                                (valid-ext-info->declared-in external-info?))))))
           (retmsg$ "The identifier ~x0 with internal linkage ~
                     was previously declared with external linkage ~
                     in the same translation unit."

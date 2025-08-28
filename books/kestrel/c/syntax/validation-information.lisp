@@ -266,7 +266,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod valid-external-info
+(fty::defprod valid-ext-info
   :short "Fixtype of validation information about identifiers with external
           linkage."
   :long
@@ -278,7 +278,7 @@
      (by ``unrelated,'' we mean neither scope is nested within the other).")
    (xdoc::p
     "Each declaration of a given identifier with external linkage
-     must agree on the type [C17:6.2.2/2], [C17:6.2.7/2].
+     must agree on the type [C17:6.2.2/2] [C17:6.2.7/2].
      Therefore, we store the type to check type compatibility
      of any declaration after the first.")
    (xdoc::p
@@ -297,15 +297,15 @@
      For now, we conservatively allow any number of definitions."))
   ((type type)
    (declared-in filepath-set))
-  :pred valid-external-infop)
+  :pred valid-ext-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption valid-external-info-option
-  valid-external-info
+(fty::defoption valid-ext-info-option
+  valid-ext-info
   :short "Fixtype of optional validation information
           about identifiers with external linkage."
-  :pred valid-external-info-optionp)
+  :pred valid-ext-info-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -313,15 +313,15 @@
   :short "Fixtype of validation information associated with identifiers with
           external linkage."
   :key-type ident
-  :val-type valid-external-info
+  :val-type valid-ext-info
   :pred valid-externalsp
   ///
 
-  (defrule valid-external-info-optionp-of-cdr-assoc-when-valid-externalsp
+  (defrule valid-ext-info-optionp-of-cdr-assoc-when-valid-externalsp
     (implies (valid-externalsp externals)
-             (valid-external-info-optionp (cdr (omap::assoc ident externals))))
+             (valid-ext-info-optionp (cdr (omap::assoc ident externals))))
     :induct t
-    :enable (valid-externalsp omap::assoc valid-external-info-optionp)))
+    :enable (valid-externalsp omap::assoc valid-ext-info-optionp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
