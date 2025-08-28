@@ -15,11 +15,13 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
-; (depends-on "old/file.c")
+(include-book "../utilities")
+
+; (depends-on "old/nosimp_short.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("file.c")
+(c$::input-files :files ("nosimp_short.c")
                  :path "old"
                  :const *old-code*)
 
@@ -27,3 +29,16 @@
 
 (c$::output-files :const *new-code*
                   :path "new")
+
+(assert-file-contents
+ :file "new/nosimp_short.c"
+ :content "int nosimp_short(short x) {
+  int x1 = +x;
+  int x2 = -x;
+  int x3 = ~x;
+  int x4 = !x;
+  return x1 + x2 + x3 + x4;
+}
+")
+
+(assert-highest-thm-has-exec-fun *new-code*)

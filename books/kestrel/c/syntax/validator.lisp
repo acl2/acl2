@@ -5492,19 +5492,18 @@
        the @('last-expr-type?') result is @('nil'),
        because the block item is not a statement of the kind
        described in @(tsee valid-stmt)."))
-    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table))
-         (info (make-block-item-info :table-start table)))
+    (b* (((reterr) (irr-block-item) nil nil (irr-valid-table)))
       (block-item-case
        item
        :decl (b* (((erp new-decl types table)
                    (valid-decl item.decl table ienv)))
-               (retok (make-block-item-decl :decl new-decl :info info)
+               (retok (make-block-item-decl :decl new-decl :info nil)
                       types
                       nil
                       table))
        :stmt (b* (((erp new-stmt types last-expr-type? table)
                    (valid-stmt item.stmt table ienv)))
-               (retok (make-block-item-stmt :stmt new-stmt :info info)
+               (retok (make-block-item-stmt :stmt new-stmt :info nil)
                       types
                       last-expr-type?
                       table))

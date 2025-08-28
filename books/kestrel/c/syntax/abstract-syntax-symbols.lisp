@@ -609,9 +609,9 @@
 
     expr-type
     initer-type
-    stmt-type
-    block-item-type
-    block-item-list-type
+    stmt-types
+    block-item-types
+    block-item-list-types
 
     transunit-ensemble-annop
     code-ensemble-annop
