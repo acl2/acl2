@@ -1565,7 +1565,7 @@
       ',whole-form
       state))
   :parents (acl2::axe-risc-v acl2::axe-lifters)
-  :short "A tool to lift risc-v binary code into logic, unrolling loops as needed."
+  :short "A tool to lift RISC-V binary code into logic, unrolling loops as needed."
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
          (executable "The risc-v binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.") ; todo: defconst-risc-v?
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
