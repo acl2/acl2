@@ -50,7 +50,7 @@
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
    (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
-   (acl2:: boolean-rules-safe)
+   (acl2::boolean-rules-safe)
    (acl2::list-to-bv-array-rules)
    '(len-of-read-bytes nth-of-read-bytes) ; for output-indicator handling
    '(error32p-of-set-reg
