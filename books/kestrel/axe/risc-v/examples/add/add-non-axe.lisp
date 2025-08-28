@@ -15,7 +15,7 @@
 ;; This example is simple enough that we can use the ACL2 rewriter rather than
 ;; the normal Axe Rewriter.
 
-(include-book "../support-top")
+(include-book "kestrel/axe/risc-v/support-top" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system)) ; for acl2::mod-becomes-bvchop-when-power-of-2p

@@ -12,7 +12,7 @@
 
 ;; STATUS: COMPLETE
 
-(include-book "../unroll")
+(include-book "kestrel/axe/risc-v/unroll" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ; (depends-on "add.elf32")
