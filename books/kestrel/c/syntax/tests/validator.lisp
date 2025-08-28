@@ -26,62 +26,109 @@
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
 ;; Optional COND may be over variables AST.
 
-(defmacro test-valid (input &key
-                            gcc
-                            short-bytes
-                            int-bytes
-                            long-bytes
-                            llong-bytes
-                            plain-char-signedp
-                            cond)
-  `(assert-event
-    (b* ((short-bytes (or ,short-bytes 2))
-         (int-bytes (or ,int-bytes 2))
-         (long-bytes (or ,long-bytes 4))
-         (llong-bytes (or ,llong-bytes 8))
-         (ienv (make-ienv :short-bytes short-bytes
-                          :int-bytes int-bytes
-                          :long-bytes long-bytes
-                          :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-char-signedp
-                          :gcc ,gcc))
-         ((mv erp1 ast) (parse-file (filepath "test")
-                                    (acl2::string=>nats ,input)
-                                    ,gcc))
-         ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 ?ast) (valid-transunit ast ienv)))
-      (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
-            (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
-            (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
-            (t ,(or cond t))))))
+(defconst *test-valid-allowed-options*
+  '(:gcc
+    :short-bytes
+    :int-bytes
+    :long-bytes
+    :llong-bytes
+    :plain-char-signedp
+    :cond))
 
-(defmacro test-valid-fail (input &key
-                                 gcc
-                                 short-bytes
-                                 int-bytes
-                                 long-bytes
-                                 llong-bytes
-                                 plain-char-signedp)
-  `(assert-event
-    (b* ((short-bytes (or ,short-bytes 2))
-         (int-bytes (or ,int-bytes 4))
-         (long-bytes (or ,long-bytes 8))
-         (llong-bytes (or ,llong-bytes 8))
-         (ienv (make-ienv :short-bytes short-bytes
-                          :int-bytes int-bytes
-                          :long-bytes long-bytes
-                          :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-char-signedp
-                          :gcc ,gcc))
-         ((mv erp1 ast) (parse-file (filepath "test")
-                                    (acl2::string=>nats ,input)
-                                    ,gcc))
-         ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ienv)))
-      (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
-            (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
-            (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
-            (t nil)))))
+(defconst *test-valid-fail-allowed-options*
+  '(:gcc
+    :short-bytes
+    :int-bytes
+    :long-bytes
+    :llong-bytes
+    :plain-char-signedp
+    :cond))
+
+(define make-dummy-filepath-filedata-map ((filepath-names true-listp) input)
+  :returns (map filepath-filedata-mapp)
+  (b* (((when (endp filepath-names))
+        (raise "Too many translation units provided."))
+       ((when (atom input))
+        nil)
+       ((unless (stringp (first input)))
+        (raise "Not a string: ~x0" (first input)))
+       (bytes (acl2::string=>nats (first input)))
+       ((unless (byte-listp bytes))
+        (raise "Internal error: converted string is not a byte list: ~x0"
+               bytes)))
+    (omap::update (filepath (first filepath-names))
+                  (filedata bytes)
+                  (make-dummy-filepath-filedata-map (rest filepath-names)
+                                                    (rest input)))))
+
+
+(define make-dummy-fileset (input)
+  :returns (fileset fileset)
+  (fileset (make-dummy-filepath-filedata-map
+             '("test0" "test1" "test2" "test2" "test3" "test4" "test5" "test6")
+             input)))
+
+(defmacro test-valid (&rest args)
+  (b* (((mv erp inputs options)
+        (partition-rest-and-keyword-args args *test-valid-allowed-options*))
+       ((when erp)
+        (cw "The inputs must be a sequence of strings ~
+             followed by the options ~&0."
+            *test-valid-allowed-options*)
+        `(mv t nil state))
+       (short-bytes (or (cdr (assoc-eq :short-bytes options)) 2))
+       (int-bytes (or (cdr (assoc-eq :int-bytes options)) 2))
+       (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
+       (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
+       (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
+       (gcc (cdr (assoc-eq :gcc options)))
+       (cond (cdr (assoc-eq :cond options)))
+       (ienv (make-ienv :short-bytes short-bytes
+                        :int-bytes int-bytes
+                        :long-bytes long-bytes
+                        :llong-bytes llong-bytes
+                        :plain-char-signedp plain-char-signedp
+                        :gcc gcc))
+       (fileset (make-dummy-fileset inputs)))
+    `(assert-event
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+         (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
+               (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
+               (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
+               (t ,(or cond t)))))))
+
+(defmacro test-valid-fail (&rest args)
+  (b* (((mv erp inputs options)
+        (partition-rest-and-keyword-args args
+                                         *test-valid-fail-allowed-options*))
+       ((when erp)
+        (cw "The inputs must be a sequence of strings ~
+             followed by the options ~&0."
+            *test-valid-fail-allowed-options*)
+        `(mv t nil state))
+       (short-bytes (or (cdr (assoc-eq :short-bytes options)) 2))
+       (int-bytes (or (cdr (assoc-eq :int-bytes options)) 2))
+       (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
+       (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
+       (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
+       (gcc (cdr (assoc-eq :gcc options)))
+       (ienv (make-ienv :short-bytes short-bytes
+                        :int-bytes int-bytes
+                        :long-bytes long-bytes
+                        :llong-bytes llong-bytes
+                        :plain-char-signedp plain-char-signedp
+                        :gcc gcc))
+       (fileset (make-dummy-fileset inputs)))
+    `(assert-event
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+         (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
+               (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
+               (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
+               (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,7 +233,8 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((transunit (omap::head-val (transunit-ensemble->unwrap ast)))
+            (edecls (transunit->decls transunit))
             (edecl (cadr edecls))
             (fundef (extdecl-fundef->unwrap edecl))
             (items (fundef->body fundef))
@@ -621,3 +669,146 @@ int bar (void);
  "__thread int x;
 "
  :gcc t)
+
+(test-valid-fail
+  "int foo(void) {
+  int x;
+  extern int x;
+  return x;
+}
+")
+
+(test-valid
+  "int foo(void) {
+  int x;
+  {
+    extern int x;
+    return x;
+  }
+}
+")
+
+(test-valid-fail
+  "int foo(void) {
+  extern int x;
+  return x;
+}
+
+static int x;
+")
+
+(test-valid
+  "int foo(void) {
+  static int x;
+  return x;
+}
+
+extern int x;
+")
+
+(test-valid
+  "static int x;
+
+int foo(void) {
+  extern int x;
+  return x;
+}
+")
+
+(test-valid-fail
+  "static int x;
+
+int * foo(void) {
+  extern int * x;
+  return * x;
+}
+")
+
+(test-valid-fail
+  "static int x;
+
+int foo(void) {
+  int x;
+  {
+    extern int x;
+    return x;
+  }
+}
+")
+
+(test-valid
+  "int foo(void) {
+ extern int x;
+ return x;
+}
+
+int bar(void) {
+ extern int x;
+ return x;
+}
+")
+
+(test-valid-fail
+  "int foo(void) {
+ extern int x;
+ return x;
+}
+
+int * bar(void) {
+ extern int * x;
+ return x;
+}
+")
+
+(test-valid
+  "int * foo(void) {
+ extern int x;
+ {
+   int * x;
+   {
+     extern int x;
+     return x;
+   }
+ }
+}
+")
+
+(test-valid-fail
+  "int * foo(void) {
+ extern int x;
+ {
+   int x;
+   {
+     extern int * x;
+     return x;
+   }
+ }
+}
+")
+
+(test-valid
+  "inline int foo(void) { return 0; }
+"
+  "int foo(void) { return 1; }
+")
+
+(test-valid
+  "extern int x;
+"
+  "static int * x;
+")
+
+(test-valid-fail
+  "extern int x;
+"
+  "extern int * x;
+")
+
+(test-valid-fail
+  "int foo(void) {
+ extern int x;
+ return x;
+}
+"
+  "extern int * x;
+")
