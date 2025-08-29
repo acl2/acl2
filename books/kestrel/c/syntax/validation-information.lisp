@@ -78,6 +78,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uid
+  :short "Fixtype of unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are numerical identifiers which are intended
+     to be unique to a given variable, function, type name, etc.
+     E.g., there may be many variables throughout a program
+     with the name @('x'), but all such distinct variables
+     will have distinct unique identifiers.")
+   (xdoc::p
+    "Unique identifiers are assigned during validation
+     to aid subsequent analysis.
+     By annotating identifiers with their unique alias,
+     disambiguation of variables becomes trivial."))
+  ((ident nat))
+  :pred uidp)
+
+(defirrelevant irr-uid
+  :short "An irrelevant unique identifier."
+  :type uidp
+  :body (uid 0))
+
+(define uid-increment ((uid uidp))
+  :returns (new-uid uidp)
+  :short "Create a fresh unique identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This simply increments the numerical value of the unique identifier."))
+  (b* (((uid uid) uid))
+    (uid (1+ uid.ident)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum linkage
   :short "Fixtype of linkages."
   :long
@@ -184,7 +220,9 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants names,
+     We also assign a "
+    (xdoc::seetopic "uid" "unique identifier")
+    ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
      definition.")
@@ -192,7 +230,8 @@
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
-            (defstatus valid-defstatus)))
+            (defstatus valid-defstatus)
+            (uid uid)))
   (:enumconst ())
   (:typedef ((def type)))
   :pred valid-ord-infop)
@@ -289,6 +328,13 @@
      with both internal and external linkage in the same translation unit
      [C17:6.2.2/7].")
    (xdoc::p
+     "Finally, we store a "
+     (xdoc::seetopic "uid" "unique identifier")
+     " for the object.
+      All identifiers of the same name with external linkage
+      refer to the same object and therefore possess
+      the same unique identifier.")
+   (xdoc::p
     "Eventually, we may wish to store a boolean flag indicating
      whether the identifier has been externally defined.
      This would be used to ensure
@@ -296,7 +342,8 @@
      (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
      For now, we conservatively allow any number of definitions."))
   ((type type)
-   (declared-in filepath-set))
+   (declared-in filepath-set)
+   (uid uid))
   :pred valid-ext-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -349,10 +396,15 @@
      which we use for cross-checking across disjoint scopes
      and different translation units.
      This information accumulates
-     as we validate each translation unit in the ensemble."))
+     as we validate each translation unit in the ensemble.")
+   (xdoc::p
+    "The @('next-uid') field stores the next unused "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((filepath filepath)
    (scopes valid-scope-list)
-   (externals valid-externals))
+   (externals valid-externals)
+   (next-uid uidp))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -360,7 +412,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil))
+  :body (valid-table (irr-filepath) nil nil (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

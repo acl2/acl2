@@ -812,3 +812,22 @@ int * bar(void) {
 "
   "extern int * x;
 ")
+
+(test-valid-fail
+  "static int foo(void);
+
+void bar(void) {
+  int foo;
+  {
+    extern int foo(void);
+  }
+}
+")
+
+(test-valid-fail
+  "int foo(void) {
+  return 0;
+}
+"
+  "int foo;
+")
