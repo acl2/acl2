@@ -179,9 +179,13 @@
   ((const-new symbolp
               "The @(':const-new') input of the transformation.")
    (vartys ident-type-mapp
-           "Variables for which the generated theorem (if any)
+           "Variables in scope at the beginning of the construct.
+            The generated theorem (if any)
             includes hypotheses about their presence in the computation state
-            before the execution of the C construct.")
+            before the execution of the C construct.
+            Currently this could be actually a subset of the variables in scope,
+            but it is adequate to the current proof generation,
+            and we are working on extending this.")
    (events pseudo-event-form-list
            "Theorems generated so far, in reverse order;
             see @(see simpadd0-implementation).")
@@ -214,10 +218,13 @@
               that the transformation function operates on.
               This is @('nil') if no theorem is generated.")
    (vartys ident-type-map
-           "Variables for which the generated theorem (if any)
+           "Variables in scope at the end of the construct.
+            The generated theorem (if any)
             includes conclusions about their presence in the computation state
             after the execution of the construct.
-            This is @('nil') if @('thm-name') is @('nil')."))
+            Currently this could be actually a subset of the variables in scope,
+            but it is adequate to the current proof generation,
+            and we are working on extending this."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -268,15 +275,14 @@
   (xdoc::topstring
    (xdoc::p
     "This is used for constructs for which we do not generate proofs yet.
-     Since the theorem name is @('nil'),
-     the variable-type map is empty (see @(tsee simpadd0-gout)).
-     The events and theorem index are taken from a @(tsee simpadd0-gin),
-     which is the result of previous transformations."))
+     The events, theorem index, and variable-type map
+     are taken from a @(tsee simpadd0-gin),
+     as they result from previous transformations."))
   (b* (((simpadd0-gin gin) gin))
     (make-simpadd0-gout :events gin.events
                         :thm-index gin.thm-index
                         :thm-name nil
-                        :vartys nil))
+                        :vartys gin.vartys))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1342,8 +1348,9 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has a type supported in our C formalization,
-     which we check in the validation information,
+    "If the variable has a type supported in our C formalization
+     (which we check in the validation information),
+     and if the variable is in the variable-type map,
      then we generate a theorem saying that the expression,
      when executed, yields a value of the appropriate type.
      The generated theorem is proved via a general supporting lemma,
@@ -1354,11 +1361,9 @@
        (expr (make-expr-ident :ident ident :info info))
        ((unless (and (type-formalp info.type)
                      (not (type-case info.type :void))
-                     (not (type-case info.type :char))))
+                     (not (type-case info.type :char))
+                     (omap::assoc ident gin.vartys)))
         (mv expr (simpadd0-gout-no-thm gin)))
-       ((unless (type-formalp info.type))
-        (raise "Internal error: variable ~x0 has type ~x1." ident info.type)
-        (mv (irr-expr) (irr-simpadd0-gout)))
        ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
         (ldm-type info.type))
        (hints `(("Goal"
@@ -1505,7 +1510,7 @@
   :guard (and (expr-unambp inner)
               (expr-unambp inner-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
-  :short "Transform a parenthesized expression."
+  :short "Transform a parenthesized pure expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3319,6 +3324,7 @@
                                   (decl-new declp)
                                   (decl-thm-name symbolp)
                                   info
+                                  (vartys-post ident-type-mapp)
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
               (decl-unambp decl-new))
@@ -3327,15 +3333,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put the new declaration into a block item.")
-   (xdoc::p
-    "We do not generate a theorem yet."))
+    "We put the new declaration into a block item."))
   (b* (((simpadd0-gin gin) gin)
        (item (make-block-item-decl :decl decl :info info))
        (item-new (make-block-item-decl :decl decl-new :info info))
+       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                          :vartys vartys-post))
        ((unless (and decl-thm-name
                      (decl-block-formalp decl)))
-        (mv item-new (simpadd0-gout-no-thm gin)))
+        (mv item-new gout-no-thm))
        ((unless (decl-block-formalp decl-new))
         (raise "Internal error: ~
                 new declaration ~x0 is not in the formalized subset ~
@@ -3370,9 +3376,9 @@
        ((mv & tyspecseq) (ldm-type-spec-list tyspecs))
        (ctype (c::tyspecseq-to-type tyspecseq))
        ((unless (c::type-nonchar-integerp ctype))
-        (mv item-new (simpadd0-gout-no-thm gin)))
+        (mv item-new gout-no-thm))
        (type (ildm-type ctype))
-       (post-vartys (omap::update var type gin.vartys))
+       (vartys-post (omap::update var type gin.vartys))
        (lemma-instances (simpadd0-block-item-decl-lemma-instances
                          gin.vartys var tyspecs initer))
        (hints `(("Goal"
@@ -3412,7 +3418,7 @@
         (simpadd0-gen-block-item-thm item
                                      item-new
                                      gin.vartys
-                                     post-vartys
+                                     vartys-post
                                      gin.const-new
                                      gin.thm-index
                                      hints)))
@@ -3420,7 +3426,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys post-vartys)))
+                            :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable decl-block-formalp
                                            initdeclor-block-formalp
                                            declor-block-formalp
@@ -3672,7 +3678,8 @@
        (items-new (block-item-list-fix items-new))
        (item+items (cons item items))
        (item+items-new (cons item-new items-new))
-       (gout-no-thm (simpadd0-gout-no-thm gin))
+       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                          :vartys vartys-post))
        ((unless (and item-thm-name
                      items-thm-name))
         (mv item+items-new gout-no-thm))
@@ -3753,7 +3760,7 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys gin.vartys)))
+                            :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
@@ -4724,7 +4731,8 @@
          (gin (simpadd0-gin-update gin gout-direct)))
       (mv (make-declor :pointers declor.pointers
                        :direct new-direct)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-direct.vartys)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4965,7 +4973,8 @@
          (gin (simpadd0-gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4984,10 +4993,13 @@
           (simpadd0-param-declon (car paramdecls) gin))
          (gin (simpadd0-gin-update gin gout-paramdecl))
          ((mv new-paramdecls (simpadd0-gout gout-paramdecls))
-          (simpadd0-param-declon-list (cdr paramdecls) gin))
+          (simpadd0-param-declon-list (cdr paramdecls)
+                                      (change-simpadd0-gin
+                                       gin :vartys gout-paramdecl.vartys)))
          (gin (simpadd0-gin-update gin gout-paramdecls)))
       (mv (cons new-paramdecl new-paramdecls)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-paramdecls.vartys)))
     :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5253,7 +5265,9 @@
           (simpadd0-declor initdeclor.declor gin))
          (gin (simpadd0-gin-update gin gout-declor))
          ((mv new-init? (simpadd0-gout gout-init?))
-          (simpadd0-initer-option initdeclor.init? gin))
+          (simpadd0-initer-option initdeclor.init?
+                                  (change-simpadd0-gin
+                                   gin :vartys gout-declor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
@@ -5264,7 +5278,8 @@
                                   :thm-index gin.thm-index
                                   :thm-name gout-init?.thm-name
                                   :vartys gout-init?.vartys)
-            (simpadd0-gout-no-thm gin))))
+            (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                  :vartys gout-init?.vartys))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5289,7 +5304,9 @@
           (simpadd0-initdeclor (car initdeclors) gin))
          (gin (simpadd0-gin-update gin gout-initdeclor))
          ((mv new-initdeclors (simpadd0-gout gout-initdeclors))
-          (simpadd0-initdeclor-list (cdr initdeclors) gin))
+          (simpadd0-initdeclor-list (cdr initdeclors)
+                                    (change-simpadd0-gin
+                                     gin :vartys gout-initdeclor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-initdeclors)))
       (mv (cons new-initdeclor new-initdeclors)
           (if (and (not (consp new-initdeclors))
@@ -5298,7 +5315,8 @@
                                   :thm-index gin.thm-index
                                   :thm-name gout-initdeclor.thm-name
                                   :vartys gout-initdeclor.vartys)
-            (simpadd0-gout-no-thm gin))))
+            (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                  :vartys gout-initdeclors.vartys))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5332,7 +5350,8 @@
                                          :thm-index gin.thm-index
                                          :thm-name gout-init.thm-name
                                          :vartys gout-init.vartys)
-                   (simpadd0-gout-no-thm gin))))
+                   (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                         :vartys gout-init.vartys))))
      :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
                        (simpadd0-statassert decl.unwrap gin))
                       (gin (simpadd0-gin-update gin gout-decl)))
@@ -5355,10 +5374,13 @@
           (simpadd0-decl (car decls) gin))
          (gin (simpadd0-gin-update gin gout-decl))
          ((mv new-decls (simpadd0-gout gout-decls))
-          (simpadd0-decl-list (cdr decls) gin))
+          (simpadd0-decl-list (cdr decls)
+                              (change-simpadd0-gin
+                               gin :vartys gout-decl.vartys)))
          (gin (simpadd0-gin-update gin gout-decls)))
       (mv (cons new-decl new-decls)
-          (simpadd0-gout-no-thm gin)))
+          (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                :vartys gout-decls.vartys)))
     :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5487,14 +5509,15 @@
        :for-decl (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-decl stmt.init gin))
                       (gin (simpadd0-gin-update gin gout-init))
+                      (gin1 (change-simpadd0-gin gin :vartys gout-init.vartys))
                       ((mv new-test (simpadd0-gout gout-test))
-                       (simpadd0-expr-option stmt.test gin))
+                       (simpadd0-expr-option stmt.test gin1))
                       (gin (simpadd0-gin-update gin gout-test))
                       ((mv new-next (simpadd0-gout gout-next))
-                       (simpadd0-expr-option stmt.next gin))
+                       (simpadd0-expr-option stmt.next gin1))
                       (gin (simpadd0-gin-update gin gout-next))
                       ((mv new-body (simpadd0-gout gout-body))
-                       (simpadd0-stmt stmt.body gin))
+                       (simpadd0-stmt stmt.body gin1))
                       (gin (simpadd0-gin-update gin gout-body)))
                    (mv (make-stmt-for-decl :init new-init
                                            :test new-test
@@ -5534,6 +5557,7 @@
                                          new-decl
                                          gout-decl.thm-name
                                          item.info
+                                         gout-decl.vartys
                                          gin))
        :stmt (b* (((mv new-stmt (simpadd0-gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
@@ -6042,12 +6066,14 @@
                    (simpadd0-fundef extdecl.unwrap gin))
                   (gin (simpadd0-gin-update gin gout-fundef)))
                (mv (extdecl-fundef new-fundef)
-                   (simpadd0-gout-no-thm gin)))
+                   (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                         :vartys gout-fundef.vartys)))
      :decl (b* (((mv new-decl (simpadd0-gout gout-decl))
                  (simpadd0-decl extdecl.unwrap gin))
                 (gin (simpadd0-gin-update gin gout-decl)))
              (mv (extdecl-decl new-decl)
-                 (simpadd0-gout-no-thm gin)))
+                 (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                       :vartys gout-decl.vartys)))
      :empty (mv (extdecl-empty) (simpadd0-gout-no-thm gin))
      :asm (mv (extdecl-fix extdecl) (simpadd0-gout-no-thm gin))))
   :hooks (:fix)
@@ -6072,10 +6098,13 @@
         (simpadd0-extdecl (car extdecls) gin))
        (gin (simpadd0-gin-update gin gout-edecl))
        ((mv new-edecls (simpadd0-gout gout-edecls))
-        (simpadd0-extdecl-list (cdr extdecls) gin))
+        (simpadd0-extdecl-list (cdr extdecls)
+                               (change-simpadd0-gin
+                                gin :vartys gout-edecl.vartys)))
        (gin (simpadd0-gin-update gin gout-edecls)))
     (mv (cons new-edecl new-edecls)
-        (simpadd0-gout-no-thm gin)))
+        (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                              :vartys gout-edecls.vartys)))
   :verify-guards :after-returns
   :hooks (:fix)
 

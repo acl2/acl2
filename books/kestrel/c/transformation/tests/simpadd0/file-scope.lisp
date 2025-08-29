@@ -17,11 +17,11 @@
 
 (include-book "../utilities")
 
-; (depends-on "old/noninteger.c")
+; (depends-on "old/file_scope.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("noninteger.c")
+(c$::input-files :files ("file_scope.c")
                  :path "old"
                  :const *old-code*)
 
@@ -31,11 +31,9 @@
                   :path "new")
 
 (assert-file-contents
- :file "new/noninteger.c"
- :content "int noninteger() {
-  float y = 5.0f;
-  return y + 0;
-}
+ :file "new/file_scope.c"
+ :content "int x;
+int y = x;
 ")
 
-; no assert-highest-thm-has-exec-fun here because the code involves float
+; no assert-highest-thm-has-exec-fun here because there is no function

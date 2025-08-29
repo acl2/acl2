@@ -825,6 +825,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-option-formalp ((type? type-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional type is supported in our formal semantics of C."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case if the type is absent or supported."))
+  (type-option-case type?
+                    :some (type-formalp type?.val)
+                    :none t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-set-formalp ((types type-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the types in a set
+          are supported in our formal semantics of C."
+  (or (set::emptyp (type-set-fix types))
+      (and (type-formalp (set::head types))
+           (type-set-formalp (set::tail types))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-option-set-formalp ((type?s type-option-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the optional types in a set
+          are supported in our formal semantics of C."
+  (or (set::emptyp (type-option-set-fix type?s))
+      (and (type-option-formalp (set::head type?s))
+           (type-option-set-formalp (set::tail type?s))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-type ((type typep))
   :returns (mv erp (type1 c::typep))
   :short "Map a type in @(tsee type) to a type in the language definition."
@@ -877,6 +915,70 @@
     :hints (("Goal" :in-theory (enable type-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-option ((type? type-optionp))
+  :returns (mv erp (type?1 c::type-optionp))
+  :short "Map an optional type in @(tsee type-option)
+          to an optional type in the language definition."
+  (type-option-case type?
+                    :some (ldm-type type?.val)
+                    :none (mv nil nil))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-option-when-type-option-formalp
+    (not erp)
+    :hyp (type-option-formalp type?)
+    :hints (("Goal" :in-theory (enable type-option-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-set ((types type-setp))
+  :returns (mv erp (types1 c::type-setp))
+  :short "Map a set of types in @(tsee type-set)
+          to a set of types in the language definition."
+  (b* (((when (set::emptyp (type-set-fix types))) (mv nil nil))
+       ((mv erp type) (ldm-type (set::head types)))
+       ((when erp) (mv erp nil))
+       ((mv erp types) (ldm-type-set (set::tail types)))
+       ((when erp) (mv erp nil)))
+    (mv nil (set::insert type types)))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-set-when-type-set-formalp
+    (not erp)
+    :hyp (type-set-formalp types)
+    :hints (("Goal" :induct t :in-theory (enable type-set-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-option-set ((type?s type-option-setp))
+  :returns (mv erp (type?s1 c::type-option-setp))
+  :short "Map a set of optional types in @(tsee type-option-set)
+          to a set of optional types in the language definition."
+  (b* (((when (set::emptyp (type-option-set-fix type?s))) (mv nil nil))
+       ((mv erp type?) (ldm-type-option (set::head type?s)))
+       ((when erp) (mv erp nil))
+       ((mv erp type?s) (ldm-type-option-set (set::tail type?s)))
+       ((when erp) (mv erp nil)))
+    (mv nil (set::insert type? type?s)))
+  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-option-set-when-type-option-set-formalp
+    (not erp)
+    :hyp (type-option-set-formalp type?s)
+    :hints (("Goal" :induct t :in-theory (enable type-option-set-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-to-value-kind ((type typep))
   :returns (kind keywordp
