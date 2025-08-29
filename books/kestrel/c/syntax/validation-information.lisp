@@ -93,7 +93,7 @@
      to aid subsequent analysis.
      By annotating identifiers with their unique alias,
      disambiguation of variables becomes trivial."))
-  ((ident nat))
+  ((uid nat))
   :pred uidp)
 
 (defirrelevant irr-uid
@@ -122,7 +122,7 @@
    (xdoc::p
     "This simply increments the numerical value of the unique identifier."))
   (b* (((uid uid) uid))
-    (uid (1+ uid.ident)))
+    (uid (1+ uid.uid)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
