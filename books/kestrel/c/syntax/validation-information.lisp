@@ -592,6 +592,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod param-declor-info
+  :short "Fixtype of validation information for parameter declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to non-abstract parameter declarators,
+     i.e. the @(tsee param-declon) fixtype with kind @(':nonabstract').
+     The information for an initializer declarator consists of a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((uid uid))
+  :pred param-declor-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-param-declor-info
+  :short "An irrelevant validation information for parameter declarator."
+  :type param-declor-infop
+  :body (make-param-declor-info :uid (irr-uid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-param-declor-info (x)
+  :returns (info param-declor-infop)
+  :short "Coerce a value to @(tsee param-declor-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (param-declor-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy PARAM-DECLOR-INFOP." x)
+            (irr-param-declor-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
@@ -829,6 +867,7 @@
    (dirabsdeclor :dummy-base (raise "Internal error: ~
                                      dummy base case of ~
                                      direct abstract declarator."))
+   (param-declor :nonabstract (param-declor-infop param-declor.info))
    (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                 (absdeclor-option-annop (tyname->declor? tyname))
                 (tyname-infop (tyname->info tyname))))

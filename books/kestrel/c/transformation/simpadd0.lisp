@@ -5017,7 +5017,9 @@
        :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
                           (simpadd0-declor paramdeclor.declor gin))
                          (gin (simpadd0-gin-update gin gout-declor)))
-                      (mv (param-declor-nonabstract new-declor)
+                      (mv (c$::make-param-declor-nonabstract
+                            :declor new-declor
+                            :info paramdeclor.info)
                           (simpadd0-gout-no-thm gin)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))

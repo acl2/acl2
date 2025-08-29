@@ -4417,7 +4417,7 @@
                     has storage class specifiers ~x1."
                    (param-declon-fix paramdecl)
                    (stor-spec-list-fix storspecs)))
-         ((erp new-decl type ident? more-types table)
+         ((erp new-decl type ident? more-types uid? table)
           (valid-param-declor paramdecl.declor type table ienv))
          ((when (and fundef-params-p
                      (not ident?)))
@@ -4434,12 +4434,11 @@
           (retok (make-param-declon :specs new-specs :declor new-decl)
                  (set::union types more-types)
                  table))
-         ((mv uid table) (valid-get-fresh-uid ident? (linkage-none) table))
          (ord-info (make-valid-ord-info-objfun
                     :type type
                     :linkage (linkage-none)
                     :defstatus (valid-defstatus-defined)
-                    :uid uid))
+                    :uid uid?))
          ((mv info? currentp) (valid-lookup-ord ident? table))
          ((when (and info? currentp))
           (retmsg$ "The parameter declared in ~x0 ~
@@ -4494,6 +4493,7 @@
                  (new-type typep)
                  (ident? ident-optionp)
                  (return-types type-setp)
+                 (uid? uid-optionp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a parameter declarator."
@@ -4508,22 +4508,26 @@
        and an optional identifier.")
      (xdoc::p
       "If the parameter declarator is a (non-abstract) declarator,
-       we return the possibly refined type and the identifier.
+       we return the possibly refined type, the identifier, and the @(see UID).
        If the parameter declarator is an abstract declarator,
-       we return the possibly refined type but no identifier.
+       we return the possibly refined type but no identifier nor @(see UID).
        If the parameter declarator is absent,
-       we return the type unchanged and no identifier."))
+       we return the type unchanged and no identifier nor @(see UID)."))
     (b* (((reterr)
-          (irr-param-declor) (irr-type) (irr-ident) nil (irr-valid-table)))
+          (irr-param-declor) (irr-type) (irr-ident) nil nil (irr-valid-table)))
       (param-declor-case
        paramdeclor
        :nonabstract
        (b* (((erp new-declor & type ident types table)
-             (valid-declor paramdeclor.declor nil type table ienv)))
-         (retok (param-declor-nonabstract new-declor)
+             (valid-declor paramdeclor.declor nil type table ienv))
+            ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
+            (anno-info (make-param-declor-info :uid uid)))
+         (retok (make-param-declor-nonabstract :declor new-declor
+                                               :info anno-info)
                 type
                 ident
                 types
+                uid
                 table))
        :abstract
        (b* (((erp new-absdeclor type types table)
@@ -4532,16 +4536,26 @@
                 type
                 nil
                 types
+                nil
                 table))
        :none
        (retok (param-declor-none)
               (type-fix type)
               nil
               nil
+              nil
               (valid-table-fix table))
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
-    :measure (param-declor-count paramdeclor))
+    :measure (param-declor-count paramdeclor)
+
+    ///
+
+    (defret valid-param-declor.uid?-under-iff
+      (implies (not erp)
+               (iff uid? ident?))
+      :hints
+      (("Goal" :expand (valid-param-declor paramdeclor type table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
