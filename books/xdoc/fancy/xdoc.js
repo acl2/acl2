@@ -211,7 +211,7 @@ function closeAllPowertips()
 
 function keyTitle(key)
 {
-    var prefix = XDOCTITLE;
+    let prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
     return (xindexObj.topicExists(key))
@@ -219,13 +219,21 @@ function keyTitle(key)
         : (prefix + " &mdash; " + key);
 }
 
+function searchTitle(query)
+{
+    let prefix = XDOCTITLE;
+    if (!prefix) { prefix = "XDOC"; }
+
+    return prefix + " Search &mdash; " + query;
+}
+
 
 function applySuborder(subkeys, keys) {
     var ret = [];
-    for(var i in subkeys) {
+    for (var i in subkeys) {
         ret.push(subkeys[i]);
     }
-    for(var i in keys) {
+    for (var i in keys) {
         var k = keys[i];
         var idx = ret.indexOf(k);
         if (idx == -1) { // new key, add it
@@ -240,7 +248,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     var children = xindexObj.topicChildKeys(key);
 
     var tmp = [];
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         var rawname = xindexObj.topicRawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
@@ -248,7 +256,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
-    for(var i in tmp) {
+    for (var i in tmp) {
         ret.push(tmp[i].key);
     }
 
@@ -271,7 +279,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
 function xdataLoadKeys(keys) {
     // Optimization, don't load keys we've already loaded
     const missing = [];
-    for(const key of keys) {
+    for (const key of keys) {
         if (!xdataObj.topicExists(key))
             missing.push(key);
     }
@@ -283,7 +291,7 @@ function xdataLoadKeys(keys) {
     if (!XDATAGET) {
         // We're running in local mode, so we can't load any more data from
         // the server.  Any missing keys are errors!
-        for(const missingKey of missing)
+        for (const missingKey of missing)
             xdataObj.addError(missingKey, "Error: no such topic.");
         return Promise.resolve();
     }
@@ -298,21 +306,28 @@ function xdataLoadKeys(keys) {
         if (results && results.length == missing.length) {
             // TODO: we need to assume that the order of the returned
             // data is the same as the order of the requested keys.
-            for(let i = 0; i < results.length; i++) {
-                xdataObj.add(missing[i], results[i]);
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].error !== undefined) {
+                    xdataObj.addError(missing[i], "Error: " + results[i].error);
+                } else {
+                    const xdata = [results[i].parents,
+                                   results[i].src,
+                                   results[i].pkg,
+                                   results[i].long];
+                    xdataObj.add(missing[i], xdata);
+                }
             }
         } else {
-            let val = "Error: malformed reply from " + url;
-            if ("error" in obj)
-                val = obj["error"];
-            for(const missingKey of missing) {
-                xdataObj.addError(missingKey, val);
+            if (obj.error !== undefined) {
+                console.error("Error: " + obj.error);
+            } else {
+                console.error("Error: malformed response " + obj);
             }
         }
     }).catch(err => {
         const val = `Error: AJAX query failed. ${err}`;
         console.error(err);
-        for(const missingKey of missing) {
+        for (const missingKey of missing) {
             xdataObj.addError(missingKey, val);
         }
     });
@@ -411,7 +426,7 @@ function navExpand(id) {
     $("#_nav_ilink" + id).attr("href", "javascript:navRetract(" + id + ")");
     var key = nav_id_table[id]["key"];
 
-    if(nav_id_table[id]["ever_expanded"]) {
+    if (nav_id_table[id]["ever_expanded"]) {
         $("#_navTree" + id).show();
         return;
     }
@@ -421,14 +436,14 @@ function navExpand(id) {
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
-    for(var i in children) {
+    for (var i in children) {
         exp += navMakeNode(children[i]);
     }
     $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
-    for(var i = start; i < nav_id_table.length; ++i) {
+    for (var i = start; i < nav_id_table.length; ++i) {
         navActivateTooltip(i);
     }
 }
@@ -484,7 +499,7 @@ function navFlat() {
 function navFlatSort(array)
 {
     var len = array.length;
-    if(len < 2) {
+    if (len < 2) {
         return array;
     }
     var pivot = Math.ceil(len/2);
@@ -494,7 +509,7 @@ function navFlatSort(array)
 function navFlatMerge(left, right)
 {
     var result = [];
-    while((left.length > 0) && (right.length > 0))
+    while ((left.length > 0) && (right.length > 0))
     {
         if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
             result.push(left.shift());
@@ -545,7 +560,7 @@ function navFlatReallyInstall()
     var keys = xindexObj.allKeys();
 
     // Preprocessing: upcase and chunkify everything
-    for(const key of keys) {
+    for (const key of keys) {
         var rawname = xindexObj.topicRawname(key).toUpperCase();
         myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
@@ -566,7 +581,7 @@ function navFlatReallyInstall()
     // alphabetic characters.  Now we inline this to gain some small
     // efficiency.
 
-    for(var i in myarr) {
+    for (var i in myarr) {
         var key = myarr[i].key;
         var name = xindexObj.topicName(key);
         var rawname = myarr[i].rawname;
@@ -649,7 +664,7 @@ function datLoadParents(key) {
         return;
     }
     acc += "<ul>";
-    for(var i in parent_keys) {
+    for (var i in parent_keys) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
@@ -675,7 +690,7 @@ function datShortSubtopics(key)
     var children = keySortedChildren(key);
 
     var dl = jQuery("<div></div>");
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
@@ -706,7 +721,7 @@ function datExpand(dat_id)
     var children = keySortedChildren(key);
     xdataLoadKeys(children).then(() => {
         var div = $("#_dat_long" + dat_id);
-        for(var i in children) {
+        for (var i in children) {
             var child_key = children[i];
             div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
@@ -863,7 +878,7 @@ function searchTokenize(plaintext) {
         // Correct for ridiculous behavior of string.split
         return [];
     }
-    for(var i in tokens) {
+    for (var i in tokens) {
         var orig = tokens[i];
         var trim = orig.replace(/^[()"'`.,;?!]*/, '')
             .replace(/[()"'`.,;?!]*$/, '');
@@ -882,7 +897,7 @@ function countOccurrences(haystack, needle) {
 
 // Check if all words in query appear in text (for multi-word queries)
 function allWordsMatch(text, query_words) {
-    for(let i = 0; i < query_words.length; i++) {
+    for (let i = 0; i < query_words.length; i++) {
         if (text.indexOf(query_words[i]) === -1) {
             return false;
         }
@@ -913,58 +928,139 @@ function searchGo(str) {
     $("#left").removeClass("active");
     closeAllPowertips();
 
+    $("title").html(searchTitle(str));
+
     ta_data_initialize();
 
-    searchGoMain(str);
+    // We have two different searching schemes: one for when running the webpage
+    // locally, and the other for the server-supported case. In the
+    // server-supported version, we do mostly server-side searching with sqlite
+    // FTS5.
+    if (!XDATAGET) {
+        searchGoLocal(str);
+    } else {
+        searchGoServer(str);
+    }
     return false;
 }
 
-function searchAddHit(matches, hits, key) {
-    if (key in matches) {
-        // already showed this result, don't show it again
-        return;
-    }
-    matches[key] = 1;
+function searchAddHit(hits, key, score = null) {
+    const scoreStr = score !== null
+          ? " <span class=\"search-score\">(" + score.toFixed(2) + ")</span>"
+          : ""
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
                 + " onclick=\"return dolink(event, '" + key + "');\">"
                 + xindexObj.topicName(key)
                 + "</a>"
+                + scoreStr
                 + "</dt>");
-    var dd = jQuery("<dd></dd>");
+    let dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
 }
 
-function searchGoMain(query_str) {
-    const query_str_low = query_str.toLowerCase();
-    const query_tokenized = searchTokenize(query_str_low);
+async function fetchSearch(url) {
+    let results = new Map();
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+        });
+        const obj = await response.json();
 
+        const results_obj = "results" in obj && obj["results"];
+        if (results_obj && 0 < results_obj.length) {
+            for (let i = 0; i < results_obj.length; i++) {
+                const score = -results_obj[i].score;
+                results.set(results_obj[i].xkey, score);
+            }
+        } else {
+            console.error("Error: malformed response " + obj);
+        }
+        return results;
+    } catch(err) {
+        const val = "Error: AJAX query failed. " + err;
+        console.error(err);
+        return results;
+    }
+}
+
+async function serverSupportedSearch(query_str) {
+    const max_display = 100;
+    const max_results = 1000;
+
+    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+    // In addition to the server-side searching, we also do some client-side
+    // searching on the topic names. We have more control over this client-side
+    // searching and so can check certain details (like whether the query is
+    // exactly a topic name or the prefix of a topic name) that sqlite FTS5
+    // doesn't provide.
+    // We take both results, and merge them together by calculating a composite
+    // score.
+    const [results, [client_results, _, query_tokenized]] = await Promise.all([
+        fetchSearch(url),
+        clientSideSearch(query_str, max_display, max_results, false)
+    ]);
+
+    // This is an ad-hoc calculation of result score which takes the rank
+    // provided by FTS5 (or 0, if the entry is not among the results) and
+    // adjusts it using values from the client-side search.
+    // The main goal is to ensure that topics whose names exactly match or
+    // are prefixed by the search query are ranked highly.
+    for (const [key, val] of client_results) {
+        // rank_weight ranges from 5 to 20.
+        const rank_weight = (2 - val.rank)*10;
+        // freq_weight ranges from 1 to 2.
+        const freq_weight = 1 + (val.freq / (val.freq + 1));
+        const weight = rank_weight * freq_weight;
+        if (results.has(key)) {
+            const old_score = results.get(key);
+            const new_score = (old_score + 1) * weight;
+            results.set(key, new_score);
+        } else {
+            results.set(key, weight);
+        }
+    }
+
+    const results_array = [...results]
+          .map(([key, score]) => ({
+              key: key,
+              score: score
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (let i = 0; i < results_array.length; i++) {
+        searchAddHit(hits, results_array[i].key, results_array[i].score);
+    }
+    $("#data").append(hits);
+}
+
+function searchGoServer(query_str) {
     $("#searching_message").hide();
-    if (query_tokenized.length === 0) {
+    if (query_str.length === 0) {
         $("#data").append("<h3>No results (empty search)</h3>");
         return;
     }
 
     $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    const max_display = 100;
-    // 10,000 is too much, visible stutter
-    const max_results = 1000;
-    let matches = {};
-    let results = [];
+    serverSupportedSearch(query_str);
+}
 
-    // Assumption: results.length < max_results
-    // Assumption: !(key in matches)
-    function addResult(key, rank) {
-        const rawname = xindexObj.topicRawname(key).toLowerCase();
-        const title = xindexObj.topicName(key).toLowerCase();
-        const short_plain = topicShortPlaintext(key).toLowerCase();
-        const freq = countOccurrences(rawname, query_str_low) +
-            countOccurrences(title, query_str_low) +
-            countOccurrences(short_plain, query_str_low);
-        matches[key] = true;
-        results.push({key, rank, freq});
-        return results.length >= max_results;
+function clientSideSearch(query_str, soft_max, hard_max, search_shorts) {
+    const query_str_low = query_str.toLowerCase();
+    const query_tokenized = searchTokenize(query_str_low);
+
+    let results = new Map();
+
+    if (query_tokenized.length === 0) {
+        return [results, query_str_low, query_tokenized];
     }
 
     // Search Ranking System:
@@ -976,28 +1072,43 @@ function searchGoMain(query_str) {
     // Rank 2.5: Individual word matches in short descriptions (multi-word queries)
     // Within each rank, results are sorted by ACL2 Sources priority, then frequency
 
-
     // We borrow the ta_data structure from the "jump to" feature.
 
-    // 0. Exact matches of topics
-    for(const key of ta_data) {
+    // Assumption: results.length < hard_max
+    // Assumption: !(key in matches)
+    function addResult(key, rank) {
+        const rawname = xindexObj.topicRawname(key).toLowerCase();
+        const title = xindexObj.topicName(key).toLowerCase();
+        let freq = countOccurrences(rawname, query_str_low) +
+            countOccurrences(title, query_str_low);
+        if (search_shorts) {
+            const short_plain = topicShortPlaintext(key).toLowerCase();
+            freq += countOccurrences(short_plain, query_str_low);
+        }
+        results.set(key, {rank: rank, freq: freq});
+        return results.size >= hard_max;
+    }
+
+    for (const key of ta_data) {
         if (key.rawlow === query_str_low) {
             if (addResult(key.value, 0)) break;
         }
     }
-    if (results.length < max_display) {
+    if (results.size < soft_max) {
         // 0.5. Prefix matches of topics
-        for(const key of ta_data) {
-            if (key.value in matches) continue;
+        for (const key of ta_data) {
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
             if (key.rawlow.startsWith(query_str_low)) {
                 if (addResult(key.value, 0.5)) break;
             }
         }
     }
-    if (results.length < max_display) {
+    if (results.size < soft_max) {
         // 1. Substring matches in topics
-        for(const key of ta_data) {
-            if (key.value in matches) continue;
+        for (const key of ta_data) {
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
             // Check for exact phrase first (higher priority)
             if (key.rawlow.indexOf(query_str_low) !== -1) {
                 if (addResult(key.value, 1)) break;
@@ -1008,73 +1119,96 @@ function searchGoMain(query_str) {
             }
         }
     }
-    if (results.length < max_display) {
-        // 2. Short description matches
-        for(const key of ta_data) {
-            if (key.value in matches) continue;
-            // Perhaps it would be better to use topicShortPlaintext,
-            // but this is *very* slow.
-            const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
-            // Check for exact phrase first (higher priority)
-            if (short_plain_low.indexOf(query_str_low) !== -1) {
-                if (addResult(key.value, 2)) break;
-            }
-            // Fall back to individual word matching (lower priority)
-            else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
-                if (addResult(key.value, 2.5)) break;
+    if (search_shorts) {
+        if (results.size < soft_max) {
+            // 2. Short description matches
+            for (const key of ta_data) {
+                // if (key.value in matches) continue;
+                if (results.has(key.value)) continue;
+                // Perhaps it would be better to use topicShortPlaintext,
+                // but this is *very* slow.
+                const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
+                // Check for exact phrase first (higher priority)
+                if (short_plain_low.indexOf(query_str_low) !== -1) {
+                    if (addResult(key.value, 2)) break;
+                }
+                // Fall back to individual word matching (lower priority)
+                else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
+                    if (addResult(key.value, 2.5)) break;
+                }
             }
         }
     }
+    return [results, query_str_low, query_tokenized];
+}
 
-    if (results.length != 0) {
-        // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
-        results.sort(function(a, b) {
-            if (a.rank !== b.rank) return a.rank - b.rank;
+function searchGoLocal(query_str) {
+    $("#data").append("<p><b style='color: red'>Note:</b> "
+                      + "Operating without a database; "
+                      + "no searching of <tt>:long</tt> sections.</p>");
 
-            // ACL2 Sources priority
-            // Note: on the server-supported flavor of the manual, topicFrom may
-            //   return undefined for keys which have not been loaded. We can't
-            //   load the data for every key, so for now we accept this
-            //   restriction. Eventually, we may address this by adding this
-            //   information to the always-available XDocIndex, instead of the
-            //   larger, on-demand XDocData object.
-            const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
-            const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
-            if (sysA && !sysB) return -1;
-            if (!sysA && sysB) return 1;
+    $("#searching_message").hide();
 
-            // Then by frequency
-            if (a.freq !== b.freq) {
-                return b.freq - a.freq;
-            }
+    const max_display = 100;
+    // 10,000 is too much, visible stutter
+    const max_results = 1000;
 
-            // Then by alphabetical order
-            const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
-            if (compareNice !== 0) {
-                return compareNice;
-            }
-            return a.key.localeCompare(b.key);
-        });
+    const [results, _, query_tokenized] =
+          clientSideSearch(query_str, max_display, max_results, true);
 
-        if (results.length > max_display) {
-            $("#data").append("<h3><b>Over " + max_display +
-                              "</b> Results (Showing the First "
-                              + max_display + ")</h3>");
-        } else {
-            $("#data").append("<h3><b>" + results.length + "</b> Results</h3>");
-        }
-        let hits = jQuery("<dl></dl>");
-        for (const result of results.slice(0, max_display)) {
-            // We don't display the frequency, because not all results have a
-            // frequency. Furthermore, some results ranked higher will have
-            // lower frequenccy, which may be confusing to the user.
-            // var extra = result.freq > 1 ? " <span style='color:#888'>(" + result.freq + ")</span>" : "";
-            searchAddHit({}, hits, result.key);
-        }
-        $("#data").append(hits);
-    } else {
+    if (query_tokenized.length === 0) {
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
+    }
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
+
+    let results_array = [...results]
+        .map(([key, val]) => ({
+            key: key,
+            rank: val.rank,
+            freq: val.freq
+        }));
+
+    if (results_array.length === 0) {
         $("#data").append("<h3>No results</h3>");
+        return;
     }
+
+    // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
+    results_array = results_array.sort(function(a, b) {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+
+        const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
+        const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
+        if (sysA && !sysB) return -1;
+        if (!sysA && sysB) return 1;
+
+        // Then by frequency
+        if (a.freq !== b.freq) {
+            return b.freq - a.freq;
+        }
+
+        // Then by alphabetical order
+        const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
+        if (compareNice !== 0) {
+            return compareNice;
+        }
+        return a.key.localeCompare(b.key);
+    }).slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (const result of results_array) {
+        // We don't display the frequency, because not all results have a
+        // frequency. Furthermore, some results ranked higher will have
+        // lower frequenccy, which may be confusing to the user.
+        searchAddHit(hits, result.key);
+    }
+    $("#data").append(hits);
 }
 
 
@@ -1116,7 +1250,7 @@ function ta_data_initialize() {
         return;
     }
     const keys = xindexObj.allKeys();
-    for(const key of keys) {
+    for (const key of keys) {
         ta_data.push({
             value: key,
             nicename: xindexObj.topicName(key),
@@ -1344,7 +1478,7 @@ function onIndexLoaded()
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for(var i in chars) {
+    for (var i in chars) {
         var c = chars.charAt(i);
         acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
         if (c == "M")
@@ -1410,7 +1544,7 @@ function getPageParameters ()
     }
     var param_strs = RegExp.$1.split("&");
     var param_arr = {};
-    for(var i in param_strs)
+    for (var i in param_strs)
     {
         var tmp = param_strs[i].split("=");
         var key = decodeURI(tmp[0]);
