@@ -123,7 +123,6 @@
                       (ec-call (bvar-db-boundedp bvar-db logicman))
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
                       (logicman-invar logicman)
-                      (bfr-listp (bvar-db-bfrlist bvar-db))
                       (ec-call (logicman-ipasirs-assumption-free logicman))
                       ;; (stobj-let ((ipasir (logicman->ipasir logicman)))
                       ;;            (ok)
@@ -235,5 +234,20 @@
     (implies (and (interp-st-bfrs-ok interp-st)
                   (interp-st-bfr-listp (fgl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar-unique x interp-st state))))
-    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique)))))
+    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique))))
+
+  (defthm interp-st-bfrs-ok-of-create-interp-st
+    (interp-st-bfrs-ok (create-interp-st))
+    :hints(("Goal" :in-theory (e/d* (interp-st-defs
+                                     bfr-pathcond-p
+                                     aignet::bounded-pathcond-p
+                                     logicman-ipasirs-assumption-free
+                                     bfr-nvars
+                                     logicman-invar
+                                     logicman-pathcond-p
+                                     aignet::nbalist-boundp
+                                     bvar-db-bfrlist
+                                     bvar-db-bfrlist-aux)
+                                    (interp-st-bfrs-ok-implies))))))
+
 

@@ -92,49 +92,55 @@
                           (bitarr)
                           (resize-bits 0 bitarr)
                           env$))))
-  
 
+(fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
 
-(make-event
- `(stobjs::defnicestobj interp-st
-    (stack :type stack)
-    (logicman :type logicman)
-    (bvar-db :type bvar-db)
-    (pathcond :type pathcond)
-    (constraint :type pathcond)
-    (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :pred constraint-db-p :initially ,(make-constraint-db))
-    (prof :type interp-profiler)
-    (backchain-limit :type integer :initially -1 :fix ifix)
-    ;; (bvar-mode :type t)
-    (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
+(with-output
+  :off (event)
+  :summary-off (acl2::rules)
+  (make-event
+   `(stobjs::defnicestobj interp-st
+      (stack :type stack)
+      (logicman :type logicman)
+      (bvar-db :type bvar-db)
+      (pathcond :type pathcond)
+      (constraint :type pathcond)
+      (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :pred constraint-db-p :initially ,(make-constraint-db))
+      (prof :type interp-profiler)
+      (backchain-limit :type integer :initially -1 :fix ifix)
+      ;; (bvar-mode :type t)
+      (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
 
-    (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (stacklimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (steplimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (stacklimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (steplimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
     
-    (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
-    (flags :type (and (unsigned-byte 60)
-                      (satisfies interp-flags-p))
-           :initially ,(make-interp-flags)
-           :fix interp-flags-fix :pred interp-flags-p)
+      (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
+      (flags :type (and (unsigned-byte 60)
+                        (satisfies interp-flags-p))
+             :initially ,(make-interp-flags)
+             :fix interp-flags-fix :pred interp-flags-p)
 
-    ;; backing arrays for fgarray primitives -- see fgarrays.lisp
-    (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
-    (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      ;; backing arrays for fgarray primitives -- see fgarrays.lisp
+      (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
+      (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
 
-    ;; no logical significance
-    (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
-    (cgraph-memo :type (satisfies cgraph-memo-p) :initially nil :fix cgraph-memo-fix)
-    (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (ctrex-env :type env$)
-    (sat-ctrex :type bitarr)
+      ;; no logical significance
+      (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
+      (cgraph-memo :type (satisfies cgraph-memo-p) :initially nil :fix cgraph-memo-fix)
+      (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (ctrex-env :type env$)
+      (sat-ctrex :type bitarr)
 
-    (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
-    (trace-scratch :type t :initially nil)
+      (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
+      (trace-scratch :type t :initially nil)
+      (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (trace-alist :type (satisfies trace-alist-p) :initially nil :fix trace-alist-fix)
+      (trace-stack :type (satisfies true-listp) :initially nil :fix true-list-fix)
 
-    (errmsg :type t :initially nil)
-    (debug-info :type t)
-    (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix)))
+      (errmsg :type t :initially nil)
+      (debug-info :type t)
+      (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix))))
 
 #!fgl
 (define interp-st-show-ctrex-env (interp-st)
@@ -206,7 +212,10 @@
                              (interp-st (update-interp-st->user-scratch nil interp-st))
                              (interp-st (update-interp-st->trace-scratch nil interp-st))
                              (interp-st (update-interp-st->errmsg nil interp-st))
-                             (interp-st (update-interp-st->debug-info nil interp-st)))
+                             (interp-st (update-interp-st->debug-info nil interp-st))
+                             (interp-st (update-interp-st->trace-alist nil interp-st))
+                             (interp-st (update-interp-st->trace-stack nil interp-st))
+                             (interp-st (update-interp-st->trace-depth 0 interp-st)))
                           (update-interp-st->debug-stack (list (make-major-frame)) interp-st)))))
 
 

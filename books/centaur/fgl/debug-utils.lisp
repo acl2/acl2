@@ -271,7 +271,6 @@
              interp-st))
 
 (define fgl-replay-top-rewrite-rule-core (&key
-                                          ((fn pseudo-fnsym-p) ''anonymous)
                                           ((equiv-contexts equiv-contextsp) 'nil)
                                           ((interp-st interp-st-bfrs-ok) 'interp-st)
                                           (state 'state))
@@ -297,7 +296,7 @@
                   (stack (stack-pop-frame stack)))
                (mv rule bindings hyps rhs stack))
              (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
-               (fgl-rewrite-apply-rule rule fn bindings hyps rhs equiv-contexts interp-st state))))
+               (fgl-rewrite-apply-rule rule bindings hyps rhs equiv-contexts interp-st state))))
 
 
 
@@ -400,12 +399,11 @@ required number of frames off the stack as follows, and then running
   (progn$ (cw "~%~%** WARNING: fgl-replay-top-rewrite-rule defined with unsound guard. **~%~%")
           '(skip-proofs
             (define fgl-replay-top-rewrite-rule (&key
-                                                 ((fn pseudo-fnsym-p) ''anonymous)
                                                  ((equiv-contexts equiv-contextsp) 'nil)
                                                  (interp-st 'interp-st)
                                                  (state 'state))
               :guard (and (< 1 (interp-st-stack-frames interp-st))
                           (interp-st-stack-rule interp-st)
                           (member (tag (interp-st-stack-rule interp-st)) '(:rewrite :brewrite)))
-              (fgl-replay-top-rewrite-rule-core :fn fn :equiv-contexts equiv-contexts)))))
+              (fgl-replay-top-rewrite-rule-core :equiv-contexts equiv-contexts)))))
 

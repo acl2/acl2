@@ -125,7 +125,15 @@
                    (!interp-flags->make-ites
                     config.make-ites
                     (!interp-flags->trace-rewrites config.trace-rewrites flags))
-                   interp-st)))
+                   interp-st))
+       (trace-alist (and config.trace-rewrites
+                         (boundp-global :fgl-trace-rule-alist state)
+                         (@ :fgl-trace-rule-alist)))
+       (trace-alist (if (trace-alist-p trace-alist)
+                        trace-alist
+                      (raise "State global ~x0 must contain an FGL trace alist, satisfying ~x1"
+                               '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
+       (interp-st (update-interp-st->trace-alist trace-alist interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman)
                (update-logicman->mode (bfrmode :aignet) logicman)

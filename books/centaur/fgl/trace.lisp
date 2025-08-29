@@ -32,11 +32,14 @@
 
 (include-book "interp-st")
 (include-book "binder-rules")
+(include-book "fancy-ev")
 
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable w)))
+
 (encapsulate
-  (((fgl-rewrite-traced-rule-p * interp-st state) => *
+  (((fgl-rewrite-rule-tracespec * interp-st state) => *
     :formals (rule interp-st state)
     :guard (fgl-generic-rule-p rule)))
 
@@ -45,400 +48,485 @@
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
 
-  (local (defun fgl-rewrite-traced-rule-p (rule interp-st state)
-           (declare (xargs :stobjs (interp-st state)
-                           :guard (and (fgl-generic-rule-p rule))))
-           nil))
+  (define fgl-rewrite-rule-tracespec ((rule fgl-generic-rule-p)
+                                      interp-st state)
+    :returns (tracespec true-listp :rule-classes :type-prescription)
+    :local-def t :progn t :hooks nil
+    nil
+    ///
+    (fty::deffixequiv fgl-rewrite-rule-tracespec :skip-cong-thm t)))
 
-  ;; (fty::deffixequiv fgl-rewrite-traced-rule-p :args ((rule fgl-generic-rule-p)))
-  )
+(fty::deffixequiv fgl-rewrite-rule-tracespec)
 
+(local (defthm true-listp-lookup-in-trace-alist
+         (implies (trace-alist-p x)
+                  (true-listp (assoc key x)))))
 
-(define fgl-rewrite-traced-rule-p-default ((rule fgl-generic-rule-p)
+(define fgl-rewrite-rule-tracespec-default ((rule fgl-generic-rule-p)
                                            interp-st state)
-  (declare (ignorable interp-st state))
-  (b* ((rule-alist (and (boundp-global :fgl-trace-rule-alist state)
-                        (@ :fgl-trace-rule-alist)))
-       ((unless (alistp rule-alist))
-        (er hard? 'fgl-rewrite-rule-try-trace-default "Bad :fgl-trace-rule-alist -- not an alist")
-        nil)
-       (rune (fgl-generic-rule->rune rule)))
-    (assoc-equal rune rule-alist)))
+  (declare (ignorable state))
+  :returns (tracespec true-listp :rule-classes :type-prescription)
+  (assoc-equal (fgl-generic-rule->rune rule)
+               (interp-st->trace-alist interp-st)))
 
-(defattach fgl-rewrite-traced-rule-p fgl-rewrite-traced-rule-p-default)
+(defattach fgl-rewrite-rule-tracespec fgl-rewrite-rule-tracespec-default)
 
 (encapsulate
-  (((fgl-rewrite-trace-cond * * * interp-st state) => *
-    :formals (rule fn args interp-st state)
-    :guard (and (pseudo-fnsym-p fn)
-                (fgl-objectlist-p args)
-                (fgl-generic-rule-p rule))))
+  (((fgl-rewrite-trace-cond * * * interp-st state) => (mv * interp-st state)
+    :formals (rule tracespec bindings interp-st state)
+    :guard (and (fgl-generic-rule-p rule)
+                (true-listp tracespec)
+                (fgl-object-bindings-p bindings)
+                (interp-st-bfrs-ok interp-st))))
 
   
   
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
 
-  (local (defun fgl-rewrite-trace-cond (rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)
-                           :guard (and (fgl-generic-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (fgl-objectlist-p args))))
-           nil))
+  (define fgl-rewrite-trace-cond ((rule fgl-generic-rule-p)
+                                  (tracespec true-listp)
+                                  (bindings fgl-object-bindings-p)
+                                  (interp-st interp-st-bfrs-ok)
+                                  state)
+    :returns (mv cond new-interp-st new-state)
+    :local-def t :progn t :hooks nil
+    (mv nil interp-st state)
+    ///
+    (make-event `(progn . ,*fancy-ev-primitive-thms*))
+    (fty::deffixequiv fgl-rewrite-trace-cond :skip-cong-thm t)))
 
-  ;; (fty::deffixequiv fgl-rewrite-trace-cond :args ((rule fgl-generic-rule-p)
-  ;;                                                 (fn pseudo-fnsym-p)
-  ;;                                                 (args fgl-objectlist-p)))
-  )
+(fty::deffixequiv fgl-rewrite-trace-cond)
+
+(local (defthm symbol-alistp-when-fgl-object-bindings-p
+         (implies (fgl-object-bindings-p x)
+                  (symbol-alistp x))))
 
 (define fgl-rewrite-trace-cond-default ((rule fgl-generic-rule-p)
-                                        (fn pseudo-fnsym-p)
-                                        (args fgl-objectlist-p)
-                                        interp-st state)
+                                        (tracespec true-listp)
+                                        (bindings fgl-object-bindings-p)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
   :ignore-ok t
-  t)
+  :returns (mv val new-interp-st new-state)
+  (b* ((tracespec (llist-fix tracespec))
+       (keyvals (cdr tracespec))
+       (tracecond-look (member :cond keyvals))
+       ((unless tracecond-look)
+        (mv t interp-st state))
+       (tracecond-expr (cadr tracecond-look))
+       ((unless (pseudo-termp tracecond-expr))
+        (raise "Error: trace condition ~x0 for rule ~x1 is not a pseudo-term" tracecond-expr (fgl-generic-rule->rune rule))
+        (mv nil interp-st state))
+       (bindings (fgl-object-bindings-fix bindings))
+       ((mv err val interp-st state) (fancy-ev tracecond-expr `((bindings . ,bindings) . ,bindings) 1000 interp-st state t t))
+       ((when err)
+        (raise "Error evaluating trace condition ~x0 for rule ~x1: ~@2" tracecond-expr (fgl-generic-rule->rune rule) err)
+        (mv nil interp-st state)))
+    (mv val interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 (defattach fgl-rewrite-trace-cond fgl-rewrite-trace-cond-default)
 
 (encapsulate
-  (((fgl-rewrite-trace-start-output * * * * interp-st state) => *
-    :formals (depth rule fn args interp-st state)
+  (((fgl-rewrite-trace-start-output * * * * interp-st state) => (mv interp-st state)
+    :formals (depth rule tracespec bindings interp-st state)
     :guard (and (natp depth)
                 (fgl-generic-rule-p rule)
-                (pseudo-fnsym-p fn)
-                (fgl-objectlist-p args))))
+                (true-listp tracespec)
+                (fgl-object-bindings-p bindings) 
+                (interp-st-bfrs-ok interp-st))))
   
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
-  (local (defun fgl-rewrite-trace-start-output (depth rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)
-                           :guard (and (natp depth)
-                                       (fgl-generic-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (fgl-objectlist-p args))))
-           nil))
+  (define fgl-rewrite-trace-start-output ((depth natp)
+                                          (rule fgl-generic-rule-p)
+                                          (tracespec true-listp)
+                                          (bindings fgl-object-bindings-p)
+                                          (interp-st interp-st-bfrs-ok)
+                                          state)
+    :returns (mv new-interp-st new-state)
+    :local-def t :progn t :hooks nil
+    (mv interp-st state)
+    ///
+    (make-event `(progn . ,*fancy-ev-primitive-thms*))
+    (fty::deffixequiv fgl-rewrite-trace-start-output :skip-cong-thm t)))
 
-  ;; (fty::deffixequiv fgl-rewrite-trace-start-output :args ((rule fgl-generic-rule-p)
-  ;;                                                         (fn pseudo-fnsym-p)
-  ;;                                                         (args fgl-objectlist-p)
-  ;;                                                         (depth natp)))
-  )
+(fty::deffixequiv fgl-rewrite-trace-start-output)
+  
+
+(local (defthm true-listp-of-member-equal
+         (implies (true-listp x)
+                  (true-listp (member-equal k x)))
+         :rule-classes :type-prescription))
+
+(define my-get-global ((name symbolp) state)
+  :hooks nil
+  (and (boundp-global name state)
+       (f-get-global name state)))
 
 (define fgl-rewrite-trace-start-output-default ((depth natp)
                                                 (rule fgl-generic-rule-p)
-                                                (fn pseudo-fnsym-p)
-                                                (args fgl-objectlist-p)
-                                                interp-st state)
-  (declare (ignorable interp-st state))
-  (b* ((rune (fgl-generic-rule->rune rule))
-       (evisc-tuple (and (boundp-global :fgl-trace-evisc-tuple state)
-                         (@ :fgl-trace-evisc-tuple))))
-    (fmt-to-comment-window
-     "~t0~x1> ~x2 ~x3~%"
-     (pairlis2 acl2::*base-10-chars* (list depth depth rune
-                                           (cons fn args)))
-     0 evisc-tuple nil)))
+                                                (tracespec true-listp)
+                                                (bindings fgl-object-bindings-p)
+                                                (interp-st interp-st-bfrs-ok)
+                                                state)
+  :returns (mv new-interp-st new-state)
+  (b* ((tracespec (llist-fix tracespec))
+       (keyvals (cdr tracespec))
+       (entry-look (member :entry keyvals))
+       ((unless entry-look)
+        (b* ((rune (fgl-generic-rule->rune rule))
+             (evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+          (fmt-to-comment-window
+           "~t0~x1> ~x2 ~x3~%"
+           (pairlis2 acl2::*base-10-chars* (list depth depth rune bindings))
+           0 evisc-tuple nil))
+        (mv interp-st state))
+       (entry-expr (cadr entry-look))
+       ((unless (pseudo-termp entry-expr))
+        (raise "Error: trace entry term ~x0 for rule ~x1 is not a pseudo-term" entry-expr (fgl-generic-rule->rune rule))
+        (mv interp-st state))
+       (bindings (fgl-object-bindings-fix bindings))
+       ((mv err val interp-st state) (fancy-ev entry-expr `((bindings . ,bindings) . ,bindings) 1000 interp-st state t t))
+       ((when err)
+        (raise "Error evaluating trace entry term ~x0 for rule ~x1: ~@2" entry-expr (fgl-generic-rule->rune rule) err)
+        (mv interp-st state)))
+    (and val
+         (b* ((evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+           (fmt-to-comment-window
+            "~t0~x1> ~x2~%"
+            (pairlis2 acl2::*base-10-chars* (list depth depth val))
+            0 evisc-tuple nil)))
+    (mv interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 (defattach fgl-rewrite-trace-start-output fgl-rewrite-trace-start-output-default)
 
 (encapsulate
-  (((fgl-rewrite-trace-success-output * * * * * interp-st state) => *
-    :formals (depth val rule fn args interp-st state)
+  (((fgl-rewrite-trace-success-output * * * * * interp-st state) => (mv interp-st state)
+    :formals (depth result rule tracespec bindings interp-st state)
     :guard (and (natp depth)
-                (fgl-object-p val)
+                (fgl-object-p result)
                 (fgl-generic-rule-p rule)
-                (pseudo-fnsym-p fn)
-                (fgl-objectlist-p args))))
+                (true-listp tracespec)
+                (fgl-object-bindings-p bindings)
+                (interp-st-bfrs-ok interp-st))))
   
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
-  (local (defun fgl-rewrite-trace-success-output (depth val rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)
-                           :guard (and (natp depth)
-                                       (fgl-object-p val)
-                                       (fgl-generic-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (fgl-objectlist-p args))))
-           nil))
+  (define fgl-rewrite-trace-success-output ((depth natp)
+                                            (result fgl-object-p)
+                                            (rule fgl-generic-rule-p)
+                                            (tracespec true-listp)
+                                            (bindings fgl-object-bindings-p)
+                                            (interp-st interp-st-bfrs-ok)
+                                            state)
+    :returns (mv new-interp-st new-state)
+    :local-def t :progn t :hooks nil
+    (mv interp-st state)
+    ///
+    (make-event `(progn . ,*fancy-ev-primitive-thms*))
+    (fty::deffixequiv fgl-rewrite-trace-success-output :skip-cong-thm t)))
 
-
-  ;; (fty::deffixequiv fgl-rewrite-trace-success-output :args ((rule fgl-generic-rule-p)
-  ;;                                                           (val fgl-object-p)
-  ;;                                                           (depth natp)))
-  )
+(fty::deffixequiv fgl-rewrite-trace-success-output)
 
 (define fgl-rewrite-trace-success-output-default ((depth natp)
-                                                  (val fgl-object-p)
+                                                  (result fgl-object-p)
                                                   (rule fgl-generic-rule-p)
-                                                  (fn pseudo-fnsym-p)
-                                                  (args fgl-objectlist-p)
-                                                  interp-st state)
-  (declare (ignore fn args interp-st))
-  (b* ((rune (fgl-generic-rule->rune rule))
-       (evisc-tuple (and (boundp-global :fgl-trace-evisc-tuple state)
-                         (@ :fgl-trace-evisc-tuple))))
-    (fmt-to-comment-window
-     "~t0<~x1 ~x2 success: ~x3~%"
-     (pairlis2 acl2::*base-10-chars* (list depth depth rune val))
-     0 evisc-tuple nil)))
+                                                  (tracespec true-listp)
+                                                  (bindings fgl-object-bindings-p)
+                                                  (interp-st interp-st-bfrs-ok)
+                                                  state)
+  :returns (mv new-interp-st new-state)
+  (b* ((tracespec (llist-fix tracespec))
+       (result (fgl-object-fix result))
+       (keyvals (cdr tracespec))
+       (success-look (member :on-success keyvals))
+       ((unless success-look)
+        (b* ((rune (fgl-generic-rule->rune rule))
+             (evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+          (fmt-to-comment-window
+           "~t0<~x1 ~x2 success: ~x3~%"
+           (pairlis2 acl2::*base-10-chars* (list depth depth rune result))
+           0 evisc-tuple nil))
+        (mv interp-st state))
+       (success-expr (cadr success-look))
+       ((unless (pseudo-termp success-expr))
+        (raise "Error: trace success term ~x0 for rule ~x1 is not a pseudo-term" success-expr (fgl-generic-rule->rune rule))
+        (mv interp-st state))
+       (bindings (fgl-object-bindings-fix bindings))
+       ((mv err val interp-st state) (fancy-ev success-expr `((result . ,result) (bindings . ,bindings) . ,bindings) 1000 interp-st state t t))
+       ((when err)
+        (raise "Error evaluating trace success term ~x0 for rule ~x1: ~@2" success-expr (fgl-generic-rule->rune rule) err)
+        (mv interp-st state)))
+    (and val
+         (b* ((evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+           (fmt-to-comment-window
+            "~t0~x1> ~x2~%"
+            (pairlis2 acl2::*base-10-chars* (list depth depth val))
+            0 evisc-tuple nil)))
+    (mv interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 (defattach fgl-rewrite-trace-success-output fgl-rewrite-trace-success-output-default)
   
 
 
 (encapsulate
-  (((fgl-rewrite-trace-failure-output * * * * * interp-st state) => *
-    :formals (depth failed-hyp rule fn args interp-st state)
+  (((fgl-rewrite-trace-failure-output * * * * * interp-st state) => (mv interp-st state)
+    :formals (depth failed-hyp rule tracespec bindings interp-st state)
     :guard (and (natp depth)
                 (acl2::maybe-natp failed-hyp)
                 (fgl-generic-rule-p rule)
-                (pseudo-fnsym-p fn)
-                (fgl-objectlist-p args))))
+                (true-listp tracespec)
+                (fgl-object-bindings-p bindings)
+                (interp-st-bfrs-ok interp-st))))
   
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
-  (local (defun fgl-rewrite-trace-failure-output (depth failed-hyp rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)
-                           :guard (and (natp depth)
-                                       (fgl-generic-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (fgl-objectlist-p args)
-                                       (acl2::maybe-natp failed-hyp))))
-           nil))
+  (define fgl-rewrite-trace-failure-output ((depth natp)
+                                            (failed-hyp acl2::maybe-natp)
+                                            (rule fgl-generic-rule-p)
+                                            (tracespec true-listp)
+                                            (bindings fgl-object-bindings-p)
+                                            (interp-st interp-st-bfrs-ok)
+                                            state)
+    :returns (mv new-interp-st new-state)
+    :local-def t :progn t :hooks nil
+    (mv interp-st state)
+    ///
+    (make-event `(progn . ,*fancy-ev-primitive-thms*))
+    (fty::deffixequiv fgl-rewrite-trace-failure-output :skip-cong-thm t)))
 
-
-  ;; (fty::deffixequiv fgl-rewrite-trace-failure-output :args ((rule fgl-generic-rule-p)
-  ;;                                                           (failed-hyp acl2::maybe-natp)
-  ;;                                                           (depth natp)))
-  )
+(fty::deffixequiv fgl-rewrite-trace-failure-output)
 
 (define fgl-rewrite-trace-failure-output-default ((depth natp)
                                                   (failed-hyp acl2::maybe-natp)
                                                   (rule fgl-generic-rule-p)
-                                                  (fn pseudo-fnsym-p)
-                                                  (args fgl-objectlist-p)
-                                                  interp-st state)
-  (declare (ignore fn args))
-  (b* ((rune (fgl-generic-rule->rune rule))
-       (evisc-tuple (and (boundp-global :fgl-trace-evisc-tuple state)
-                         (@ :fgl-trace-evisc-tuple)))
-       (errmsg (interp-st->errmsg interp-st)))
-    (fmt-to-comment-window
-     "~t0<~x1 ~x2 failed (~@3)~%"
-     (pairlis2 acl2::*base-10-chars*
-               (list depth depth rune
-                     (cond ((msgp errmsg) errmsg)
-                           (errmsg (msg "~x0" errmsg))
-                           (failed-hyp (msg "hyp ~x0 failed" failed-hyp))
-                           (t "aborted"))))
-     0 evisc-tuple nil)))
+                                                  (tracespec true-listp)
+                                                  (bindings fgl-object-bindings-p)
+                                                  (interp-st interp-st-bfrs-ok)
+                                                  state)
+  :returns (mv new-interp-st new-state)
+  (b* ((tracespec (llist-fix tracespec))
+       (failed-hyp (acl2::maybe-natp-fix failed-hyp))
+       (keyvals (cdr tracespec))
+       (failure-look (member :on-failure keyvals))
+       ((unless failure-look)
+        (b* ((rune (fgl-generic-rule->rune rule))
+             (evisc-tuple (my-get-global :fgl-trace-evisc-tuple state))
+             (errmsg (interp-st->errmsg interp-st)))
+          (fmt-to-comment-window
+           "~t0<~x1 ~x2 failed (~@3)~%"
+           (pairlis2 acl2::*base-10-chars*
+                     (list depth depth rune
+                           (cond ((msgp errmsg) errmsg)
+                                 (errmsg (msg "~x0" errmsg))
+                                 (failed-hyp (msg "hyp ~x0 failed" failed-hyp))
+                                 (t "aborted"))))
+           0 evisc-tuple nil))
+        (mv interp-st state))
+       (failure-expr (cadr failure-look))
+       ((unless (pseudo-termp failure-expr))
+        (raise "Error: trace failure term ~x0 for rule ~x1 is not a pseudo-term" failure-expr (fgl-generic-rule->rune rule))
+        (mv interp-st state))
+       (bindings (fgl-object-bindings-fix bindings))
+       ((mv err val interp-st state) (fancy-ev failure-expr `((failed-hyp . ,failed-hyp) (bindings . ,bindings) . ,bindings) 1000 interp-st state t t))
+       ((when err)
+        (raise "Error evaluating trace failure term ~x0 for rule ~x1: ~@2" failure-expr (fgl-generic-rule->rune rule) err)
+        (mv interp-st state)))
+    (and val
+         (b* ((evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+           (fmt-to-comment-window
+            "~t0~x1> ~x2~%"
+            (pairlis2 acl2::*base-10-chars* (list depth depth val))
+            0 evisc-tuple nil)))
+    (mv interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
+
 
 (defattach fgl-rewrite-trace-failure-output fgl-rewrite-trace-failure-output-default)
 
 
 
-(define fgl-rewrite-do-trace?! ((rule fgl-generic-rule-p)
-                                (fn pseudo-fnsym-p)
-                                (args fgl-objectlist-p)
-                                interp-st state)
-  :inline t
-  (b* ((rule (fgl-generic-rule-fix rule)))
-    (and (fgl-rewrite-traced-rule-p rule interp-st state)
-         (fgl-rewrite-trace-cond rule (pseudo-fnsym-fix fn)
-                                 (fgl-objectlist-fix args)
-                                 interp-st state))))
-
-(define fgl-rewrite-do-trace? ((rule fgl-generic-rule-p)
-                               (fn pseudo-fnsym-p)
-                               (args fgl-objectlist-p)
-                               interp-st state)
-  :inline t
-  (b* ((flags (interp-st->flags interp-st)))
-    (and (interp-flags->trace-rewrites flags)
-         (fgl-rewrite-do-trace?! rule fn args interp-st state))))
-       
-
-
+;; Interp-st-do-trace: two versions -- one for meta/primitive rules that takes
+;; the rule, fn, and args to which the rule is to be applied; these create the
+;; bindings as `((x . ,(g-apply fn args))). The one for rewrites extracts the
+;; rule and bindings from the top stack frame of the interp-st (using
+;; interp-st-trace-data).
+(define interp-st-do-trace-meta ((rule fgl-generic-rule-p)
+                                 (fn pseudo-fnsym-p)
+                                 (args fgl-objectlist-p)
+                                 (interp-st interp-st-bfrs-ok)
+                                 state)
+  :returns (mv (tracespec true-listp :rule-classes :type-prescription)
+               new-interp-st new-state)
+  (b* (((unless (interp-flags->trace-rewrites (interp-st->flags interp-st)))
+        (mv nil interp-st state))
+       (tracespec (fgl-rewrite-rule-tracespec rule interp-st state))
+       ((unless tracespec) (mv nil interp-st state))
+       (bindings `((x . ,(g-apply fn args))))
+       ((mv ok interp-st state)
+        (fgl-rewrite-trace-cond rule tracespec bindings interp-st state)))
+    (mv (and ok tracespec) interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 (define interp-st-trace-data (interp-st)
   :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
                                            stack$a-nth-scratch)))
   :returns (mv ok
                (rule (implies ok (fgl-generic-rule-p rule)))
-               (phase acl2::maybe-natp :rule-classes :type-prescription)
-               (args fgl-objectlist-p))
+               (bindings fgl-object-bindings-p))
   (stobj-let ((stack (interp-st->stack interp-st)))
-             (ok rule phase args)
+             (ok rule bindings)
              (b* ((rule (stack-rule stack))
-                  ((unless rule) (mv nil nil nil nil))
-                  ((unless (and (eql (stack-scratch-len stack) 0)
-                                (< 0 (stack-full-scratch-len stack))
-                                (eql (stack-nth-scratch-kind 0 stack) :fgl-objlist)))
-                   (mv nil nil nil nil))
-                  (args (stack-nth-scratch-fgl-objlist 0 stack))
-                  (phase (stack-phase stack)))
-               (mv t rule phase args))
-             (mv ok rule phase args)))
+                  ((unless rule) (mv nil nil nil))
+                  (bindings (stack-bindings stack)))
+               (mv t rule bindings))
+             (mv ok rule bindings)))
 
-(define interp-st-do-trace? ((fn pseudo-fnsym-p) interp-st state)
-  (b* ((flags (interp-st->flags interp-st))
-       ((unless (interp-flags->trace-rewrites flags)) nil)
-       ((mv ok rule ?phase args) (interp-st-trace-data interp-st)))
-    (and ok (fgl-rewrite-do-trace?! rule fn args interp-st state))))
+(define interp-st-do-trace-rewrite ((interp-st interp-st-bfrs-ok) state)
+  :returns (mv (tracespec true-listp :rule-classes :type-prescription)
+               new-interp-st new-state)
+  (b* (((unless (interp-flags->trace-rewrites (interp-st->flags interp-st)))
+        (mv nil interp-st state))
+       ((mv ok rule bindings) (interp-st-trace-data interp-st))
+       ((unless ok) (mv nil interp-st state))
+       (tracespec (fgl-rewrite-rule-tracespec rule interp-st state))
+       ((unless tracespec) (mv nil interp-st state))
+       ((mv ok interp-st state)
+        (fgl-rewrite-trace-cond rule tracespec bindings interp-st state)))
+    (mv (and ok tracespec) interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
-(define fgl-rewrite-trace-start! ((rule fgl-generic-rule-p)
-                                  (fn pseudo-fnsym-p)
-                                  (args fgl-objectlist-p)
-                                  interp-st state)
-  :returns (new-interp-st)
+(define fgl-rewrite-trace-start ((rule fgl-generic-rule-p)
+                                 (tracespec true-listp)
+                                 (bindings fgl-object-bindings-p)
+                                 (interp-st interp-st-bfrs-ok)
+                                 state)
+  :returns (mv new-interp-st new-state)
   (b* ((depth (+ 1 (nfix (interp-st->trace-scratch interp-st))))
        (interp-st (update-interp-st->trace-scratch depth interp-st)))
     (fgl-rewrite-trace-start-output
-     depth (fgl-generic-rule-fix rule) (pseudo-fnsym-fix fn)
-     (fgl-objectlist-fix args) interp-st state)
-    interp-st)
+     depth rule tracespec bindings interp-st state))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
-
-(define fgl-rewrite-trace-start (tracep
-                                 (rule fgl-generic-rule-p)
-                                 (fn pseudo-fnsym-p)
-                                 (args fgl-objectlist-p)
-                                 interp-st state)
-  :returns (new-interp-st)
-  :inline t
-  (if tracep
-      (fgl-rewrite-trace-start! rule fn args interp-st state)
-    interp-st)
-  ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
                                  
 
-(define interp-st-trace-start (tracep (fn pseudo-fnsym-p) interp-st state)
-  :returns (new-interp-st)
-  (b* (((unless tracep) interp-st)
-       ((mv ok rule ?phase args) (interp-st-trace-data interp-st))
-       ((unless ok) interp-st))
-    (fgl-rewrite-trace-start! rule fn args interp-st state))
+(define interp-st-trace-start-rewrite ((tracespec true-listp)
+                                       (interp-st interp-st-bfrs-ok)
+                                       state)
+  :returns (mv new-interp-st new-state)
+  (b* (((unless (llist-fix tracespec)) (mv interp-st state))
+       ((mv ok rule bindings) (interp-st-trace-data interp-st))
+       ((unless ok) (mv interp-st state)))
+    (fgl-rewrite-trace-start rule tracespec bindings interp-st state))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
-(define fgl-rewrite-trace-hyp-failure! ((failed-hyp acl2::maybe-natp)
+(define interp-st-trace-start-meta ((tracespec true-listp)
+                                    (rule fgl-generic-rule-p)
+                                    (fn pseudo-fnsym-p)
+                                    (args fgl-objectlist-p)
+                                    (interp-st interp-st-bfrs-ok)
+                                    state)
+  :returns (mv new-interp-st new-state)
+  (b* (((unless (llist-fix tracespec)) (mv interp-st state)))
+    (fgl-rewrite-trace-start
+     rule tracespec `((x . ,(g-apply fn args))) interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
+
+(define fgl-rewrite-trace-hyp-failure ((failed-hyp acl2::maybe-natp)
                                         (rule fgl-generic-rule-p)
-                                        (fn pseudo-fnsym-p)
-                                        (args fgl-objectlist-p)
-                                        interp-st state)
-  :returns (new-interp-st)
+                                        (tracespec true-listp)
+                                        (bindings fgl-object-bindings-p)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
+  :returns (mv new-interp-st new-state)
   (b* ((depth (pos-fix (interp-st->trace-scratch interp-st)))
        (interp-st (update-interp-st->trace-scratch (1- depth) interp-st)))
     (fgl-rewrite-trace-failure-output depth (acl2::maybe-natp-fix failed-hyp)
-                                      rule (pseudo-fnsym-fix fn) args
-                                      interp-st state)
-    interp-st)
+                                      rule tracespec bindings interp-st state))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
-
-(define fgl-rewrite-trace-hyp-failure (tracep
-                                       (failed-hyp acl2::maybe-natp)
-                                       (rule fgl-generic-rule-p)
-                                       (fn pseudo-fnsym-p)
-                                       (args fgl-objectlist-p)
-                                       interp-st state)
-  :returns (new-interp-st)
-  :inline t
-  (if tracep
-      (fgl-rewrite-trace-hyp-failure! failed-hyp rule fn args interp-st state)
-    interp-st)
-  ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 
-(define interp-st-trace-hyp-failure (tracep (failed-hyp acl2::maybe-natp) (fn pseudo-fnsym-p)
-                                            interp-st state)
-  :returns (new-interp-st)
-  (b* (((unless tracep) interp-st)
-       ((mv ok rule ?phase args) (interp-st-trace-data interp-st))
-       ((unless ok) interp-st))
-    (fgl-rewrite-trace-hyp-failure! failed-hyp rule fn args interp-st state))
+(define interp-st-trace-rewrite-hyp-failure ((tracespec true-listp)
+                                             (failed-hyp acl2::maybe-natp)
+                                             (interp-st interp-st-bfrs-ok)
+                                             state)
+  :returns (mv new-interp-st new-state)
+  (b* (((unless (llist-fix tracespec)) (mv interp-st state))
+       ((mv ok rule bindings) (interp-st-trace-data interp-st))
+       ((unless ok) (mv interp-st state)))
+    (fgl-rewrite-trace-hyp-failure failed-hyp rule tracespec bindings interp-st state))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
   
   
-(define fgl-rewrite-trace-finish! (successp
-                                   (val fgl-object-p)
-                                   (rule fgl-generic-rule-p)
-                                   (fn pseudo-fnsym-p)
-                                   (args fgl-objectlist-p)
-                                   interp-st state)
-  :returns (new-interp-st)
+(define fgl-rewrite-trace-finish (successp
+                                  (result fgl-object-p)
+                                  (rule fgl-generic-rule-p)
+                                  (tracespec true-listp)
+                                  (bindings fgl-object-bindings-p)
+                                  (interp-st interp-st-bfrs-ok)
+                                  state)
+  :returns (mv new-interp-st new-state)
   (b* ((depth (pos-fix (interp-st->trace-scratch interp-st)))
        (interp-st (update-interp-st->trace-scratch (1- depth) interp-st)))
     (if (and successp
              (not (interp-st->errmsg interp-st)))
         (fgl-rewrite-trace-success-output
-         depth (fgl-object-fix val) rule (pseudo-fnsym-fix fn)
-         args interp-st state)
+         depth result rule tracespec bindings interp-st state)
       (fgl-rewrite-trace-failure-output
-       depth nil rule (pseudo-fnsym-fix fn)
-       args interp-st state))
-    interp-st)
+       depth nil rule tracespec bindings interp-st state)))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
-
-(define fgl-rewrite-trace-finish (tracep successp
-                                         (val fgl-object-p)
-                                         (rule fgl-generic-rule-p)
-                                         (fn pseudo-fnsym-p)
-                                         (args fgl-objectlist-p)
-                                         interp-st state)
-  :returns (new-interp-st)
-  :inline t
-  (if tracep
-      (fgl-rewrite-trace-finish! successp val rule fn args interp-st state)
-    interp-st)
-  ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 
-(define interp-st-trace-finish (tracep successp (val fgl-object-p)
-                                       (fn pseudo-fnsym-p) interp-st state)
-  :returns (new-interp-st)
-  (b* (((unless tracep) interp-st)
-       ((mv ok rule ?phase args) (interp-st-trace-data interp-st))
-       ((unless ok) interp-st))
-    (fgl-rewrite-trace-finish! successp val rule fn args interp-st state))
+(define interp-st-trace-finish-rewrite ((tracespec true-listp)
+                                        successp
+                                        (result fgl-object-p)
+                                        (interp-st interp-st-bfrs-ok)
+                                        state)
+  :returns (mv new-interp-st new-state)
+  (b* (((unless (llist-fix tracespec)) (mv interp-st state))
+       ((mv ok rule bindings) (interp-st-trace-data interp-st))
+       ((unless ok) (mv interp-st state)))
+    (fgl-rewrite-trace-finish successp result rule tracespec bindings interp-st state))
   ///
-  (defret interp-st-get-of-<fn>
-    (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
+
+(define interp-st-trace-finish-meta ((tracespec true-listp)
+                                     successp
+                                     (result fgl-object-p)
+                                     (rule fgl-generic-rule-p)
+                                     (fn pseudo-fnsym-p)
+                                     (args fgl-objectlist-p)
+                                     (interp-st interp-st-bfrs-ok)
+                                     state)
+  :returns (mv new-interp-st new-state)
+  (b* (((unless (llist-fix tracespec)) (mv interp-st state)))
+    (fgl-rewrite-trace-finish successp result rule tracespec `((x . ,(g-apply fn args))) interp-st state))
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms*)))
 
 (defmacro fgl-rewrite-trace-defaults ()
-  '(progn (defattach fgl-rewrite-traced-rule-p fgl-rewrite-traced-rule-p-default)
+  '(progn (defattach fgl-rewrite-rule-tracespec fgl-rewrite-rule-tracespec-default)
           (defattach fgl-rewrite-trace-cond fgl-rewrite-trace-cond-default)
           (defattach fgl-rewrite-trace-start-output fgl-rewrite-trace-start-output-default)
           (defattach fgl-rewrite-trace-success-output fgl-rewrite-trace-success-output-default)
@@ -488,11 +576,11 @@ which append \"-default\" to the name of each function; i.e., the default implem
 <p>The tracing functions have the following signatures:</p>
 
 @({
-  (fgl-rewrite-traced-rule-p rule interp-st state)
-  (fgl-rewrite-trace-cond rule fn args interp-st state)
-  (fgl-rewrite-trace-start-output depth rule fn args interp-st state)
-  (fgl-rewrite-trace-success-output depth val rule fn args interp-st state)
-  (fgl-rewrite-trace-failure-output depth failed-hyp rule fn args interp-st state)
+  (fgl-rewrite-rule-tracespec rule interp-st state) => tracespec
+  (fgl-rewrite-trace-cond rule tracespec bindings interp-st state) => (mv cond interp-st state)
+  (fgl-rewrite-trace-start-output depth rule tracespec bindings interp-st state) => (mv interp-st state)
+  (fgl-rewrite-trace-success-output depth result rule tracespec bindings interp-st state) => (mv interp-st state)
+  (fgl-rewrite-trace-failure-output depth failed-hyp rule tracespec bindings interp-st state) => (mv interp-st state)
  })
 
 <p>where the inputs are as follows:</p>
@@ -501,8 +589,8 @@ which append \"-default\" to the name of each function; i.e., the default implem
 
 <li>@('rule'), the rule being attempted, satisfying @('(fgl-generic-rule-p rule)')</li>
 
-<li>@('fn') and @('args') of the object that the rule is being applied to,
-where @('args') satisfies @('fgl-objectlist-p')</li>
+<li>@('bindings') are the unifying substitution under which the rule is being applied,
+satistying @('fgl-object-bindings-p')</li>
 
 <li>@('depth'), the current stack depth of traced rule applications</li>
 

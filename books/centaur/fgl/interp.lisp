@@ -2835,11 +2835,14 @@
     :prepwork ((local (in-theory (enable bfr-listp-when-not-member-witness))))
     (b* ((interp-st (interp-st-prof-push (fgl-rule->rune rule) interp-st))
          (rule (fgl-rule-fix rule))
-         (tracep (fgl-rewrite-do-trace? rule fn args interp-st state))
-         (interp-st (fgl-rewrite-trace-start tracep rule fn args interp-st state))
+         ((mv tracespec interp-st state)
+          (interp-st-do-trace-meta rule fn args interp-st state))
+         ((mv interp-st state)
+          (interp-st-trace-start-meta tracespec rule fn args interp-st state))
          ((fgl-interp-value successp ans)
           (fgl-primitive-fncall-stub (fgl-rule-primitive->name rule) fn args interp-st state))
-         (interp-st (fgl-rewrite-trace-finish tracep successp ans rule fn args interp-st state))
+         ((mv interp-st state)
+          (interp-st-trace-finish-meta tracespec successp ans rule fn args interp-st state))
          (interp-st (interp-st-prof-pop-increment successp interp-st)))
       (fgl-interp-value successp ans))
     ///
@@ -4495,7 +4498,6 @@
 
 
       (define fgl-rewrite-apply-rule ((rule fgl-generic-rule-p)
-                                      (fn pseudo-fnsym-p)
                                       (bindings fgl-object-bindings-p)
                                       (hyps pseudo-term-listp)
                                       (rhs pseudo-termp)
@@ -4519,8 +4521,8 @@
              (rune (fgl-generic-rule->rune rule))
              (interp-st (interp-st-push-rule-frame rule bindings interp-st))
              (interp-st (interp-st-prof-push rune interp-st))
-             (tracep (interp-st-do-trace? fn interp-st state))
-             (interp-st (interp-st-trace-start tracep fn interp-st state))
+             ((mv tracespec interp-st state) (interp-st-do-trace-rewrite interp-st state))
+             ((mv interp-st state) (interp-st-trace-start-rewrite tracespec interp-st state))
 
              (backchain-limit (interp-st->backchain-limit interp-st))
              ;; (hyps-flags  (!interp-flags->intro-bvars nil flags))
@@ -4534,7 +4536,8 @@
                (fgl-rewrite-relieve-hyps hyps interp-st state)))
 
              ((when (or** failed-hyp (interp-st->errmsg interp-st)))
-              (b* ((interp-st (interp-st-trace-hyp-failure tracep failed-hyp fn interp-st state))
+              (b* (((mv interp-st state)
+                    (interp-st-trace-rewrite-hyp-failure tracespec failed-hyp interp-st state))
                    (interp-st (interp-st-prof-pop-increment nil interp-st))
                    (interp-st (interp-st-pop-frame interp-st))
                    (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st))
@@ -4563,7 +4566,7 @@
              (val (and (not err) val))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
              (interp-st (interp-st-prof-pop-increment (not err) interp-st))
-             (interp-st (interp-st-trace-finish tracep successp val fn interp-st state))
+             ((mv interp-st state) (interp-st-trace-finish-rewrite tracespec successp val interp-st state))
 
              (new-bindings (interp-st-bindings interp-st))
              (interp-st (interp-st-pop-frame interp-st)))
@@ -4598,7 +4601,7 @@
              ((unless unify-ok) (fgl-interp-value nil nil))
              ((fgl-interp-value successp ans ?bindings)
               (fgl-rewrite-apply-rule
-               (fgl-rule-fix rule) fn
+               (fgl-rule-fix rule)
                bindings
                rule.hyps
                rule.rhs
@@ -4620,14 +4623,17 @@
         (b* ((args (interp-st-top-scratch-fgl-objlist interp-st))
              (rule (fgl-rule-fix rule))
              (fn (pseudo-fnsym-fix fn))
-             (tracep (fgl-rewrite-do-trace? rule fn args interp-st state))
-             (interp-st (fgl-rewrite-trace-start tracep rule fn args interp-st state))
+             ((mv tracespec interp-st state)
+              (interp-st-do-trace-meta rule fn args interp-st state))
+             ((mv interp-st state)
+              (interp-st-trace-start-meta tracespec rule fn args interp-st state))
              (interp-st (interp-st-prof-push (fgl-rule->rune rule) interp-st))
              ((fgl-interp-value successp rhs bindings)
               (fgl-meta-fncall-stub (fgl-rule-meta->name rule) fn args interp-st state))
              ((when (or** (not successp) (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
-                   (interp-st (fgl-rewrite-trace-finish tracep successp nil rule fn args interp-st state)))
+                   ((mv interp-st state)
+                    (interp-st-trace-finish-meta tracespec successp nil rule fn args interp-st state)))
                 ;; See comments about successp in fgl-rewrite-apply-rule.
                 (fgl-interp-value (interp-st->errmsg interp-st) nil)))
 
@@ -4641,7 +4647,8 @@
              (val (and (not err) val))
              (interp-st (interp-st-prof-pop-increment (not err) interp-st))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
-             (interp-st (fgl-rewrite-trace-finish tracep successp val rule fn args interp-st state))
+             ((mv interp-st state)
+              (interp-st-trace-finish-meta tracespec successp val rule fn args interp-st state))
              (interp-st (interp-st-pop-frame interp-st)))
           (fgl-interp-value successp val)))
 
@@ -4919,7 +4926,7 @@
              ((unless unify-ok) (fgl-interp-value nil nil))
              ((fgl-interp-value successp ans ?bindings)
               (fgl-rewrite-apply-rule
-               (fgl-binder-rule-fix rule) fn bindings rule.hyps
+               (fgl-binder-rule-fix rule) bindings rule.hyps
                rule.rhs (list rule.r-equiv) interp-st state)))
           (fgl-interp-value successp ans)))
 
@@ -4937,14 +4944,17 @@
         (b* ((args (interp-st-top-scratch-fgl-objlist interp-st))
              (rule (fgl-binder-rule-fix rule))
              (fn (pseudo-fnsym-fix fn))
-             (tracep (fgl-rewrite-do-trace? rule fn args interp-st state))
-             (interp-st (fgl-rewrite-trace-start tracep rule fn args interp-st state))
+             ((mv tracespec interp-st state)
+              (interp-st-do-trace-meta rule fn args interp-st state))
+             ((mv interp-st state)
+              (interp-st-trace-start-meta tracespec rule fn args interp-st state))
              (interp-st (interp-st-prof-push (fgl-binder-rule->rune rule) interp-st))
              ((fgl-interp-value successp rhs bindings rhs-contexts)
               (fgl-binder-fncall-stub (fgl-binder-rule-bmeta->name rule) fn args interp-st state))
              ((when (or** (not successp) (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
-                   (interp-st (fgl-rewrite-trace-finish tracep successp nil rule fn args interp-st state)))
+                   ((mv interp-st state)
+                    (interp-st-trace-finish-meta tracespec successp nil rule fn args interp-st state)))
                 ;; See comments about successp in fgl-rewrite-apply-rule.
                 (fgl-interp-value (interp-st->errmsg interp-st) nil)))
 
@@ -4959,7 +4969,8 @@
              (val (and (not err) val))
              (interp-st (interp-st-prof-pop-increment (not err) interp-st))
              (interp-st (interp-st-cancel-error :abort-rewrite interp-st))
-             (interp-st (fgl-rewrite-trace-finish tracep successp val rule fn args interp-st state))
+             ((mv interp-st state)
+              (interp-st-trace-finish-meta tracespec successp val rule fn args interp-st state))
              (interp-st (interp-st-pop-frame interp-st)))
           (fgl-interp-value successp val)))
 
