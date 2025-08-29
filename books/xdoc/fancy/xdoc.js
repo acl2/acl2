@@ -989,13 +989,27 @@ async function serverSupportedSearch(query_str) {
     const max_results = 1000;
 
     const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+    // In addition to the server-side searching, we also do some client-side
+    // searching on the topic names. We have more control over this client-side
+    // searching and so can check certain details (like whether the query is
+    // exactly a topic name or the prefix of a topic name) that sqlite FTS5
+    // doesn't provide.
+    // We take both results, and merge them together by calculating a composite
+    // score.
     const [results, [client_results, _, query_tokenized]] = await Promise.all([
         fetchSearch(url),
         clientSideSearch(query_str, max_display, max_results, false)
     ]);
 
+    // This is an ad-hoc calculation of result score which takes the rank
+    // provided by FTS5 (or 0, if the entry is not among the results) and
+    // adjusts it using values from the client-side search.
+    // The main goal is to ensure that topics whose names exactly match or
+    // are prefixed by the search query are ranked highly.
     for (const [key, val] of client_results) {
+        // rank_weight ranges from 5 to 20.
         const rank_weight = (2 - val.rank)*10;
+        // freq_weight ranges from 1 to 2.
         const freq_weight = 1 + (val.freq / (val.freq + 1));
         const weight = rank_weight * freq_weight;
         if (results.has(key)) {
@@ -1164,13 +1178,6 @@ function searchGoLocal(query_str) {
     results_array = results_array.sort(function(a, b) {
         if (a.rank !== b.rank) return a.rank - b.rank;
 
-        // ACL2 Sources priority
-        // Note: on the server-supported flavor of the manual, topicFrom may
-        //   return undefined for keys which have not been loaded. We can't
-        //   load the data for every key, so for now we accept this
-        //   restriction. Eventually, we may address this by adding this
-        //   information to the always-available XDocIndex, instead of the
-        //   larger, on-demand XDocData object.
         const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
         const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
         if (sysA && !sysB) return -1;
