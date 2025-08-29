@@ -101,6 +101,19 @@
   :type uidp
   :body (uid 0))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption uid-option
+  uid
+  :short "Fixtype of optional unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unique identifiers are defined in @(tsee uid)."))
+  :pred uid-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uid-increment ((uid uidp))
   :returns (new-uid uidp)
   :short "Create a fresh unique identifier."
@@ -615,6 +628,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod initdeclor-info
+  :short "Fixtype of validation information for initializer declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to initializer declarators,
+     i.e. the @(tsee initdeclor) fixtype.")
+   (xdoc::p
+    "The information for an initializer declarator consists of an "
+    (xdoc::seetopic "uid-optional" "optional unique identifier")
+    ". Currently, we only assign unique identifiers to
+     ordinary identifiers representing an object or function.
+     Therefore, only initializer declarators corresponding
+     to those such identifiers are annotated with unique identifiers.
+     Initializer declarators which correspond to @('typedef') declarations
+     are not annotated with a unique identifier."))
+  ((uid? uid-option))
+  :pred initdeclor-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initdeclor-info
+  :short "An irrelevant validation information for initializer declarators."
+  :type initdeclor-infop
+  :body (make-initdeclor-info :uid? nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-initdeclor-info (x)
+  :returns (info initdeclor-infop)
+  :short "Coerce a value to @(tsee initdeclor-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (initdeclor-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy INITDECLOR-INFOP." x)
+            (irr-initdeclor-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod fundef-info
   :short "Fixtype of validation information for function definitions."
   :long
@@ -623,11 +680,15 @@
     "This is the type of the annotations that
      the validator adds to function definitions.
      The information consists of
-     the validation table at the start of the function definition
-     and the validation table at the start of the body
-     (i.e. just after the opening curly brace)."))
+     the validation table at the start of the function definition,
+     the validation table at the start of the body
+     (i.e. just after the opening curly brace),
+     and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((table-start valid-table)
-   (table-body-start valid-table))
+   (table-body-start valid-table)
+   (uid uid))
   :pred fundef-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -636,7 +697,8 @@
   :short "An irrelevant validation information for function definitions."
   :type fundef-infop
   :body (make-fundef-info :table-start (irr-valid-table)
-                          :table-body-start (irr-valid-table)))
+                          :table-body-start (irr-valid-table)
+                          :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -772,6 +834,7 @@
                 (tyname-infop (tyname->info tyname))))
    (attrib t)
    (attrib-spec t)
+   (initdeclor (initdeclor-infop (initdeclor->info initdeclor)))
    (asm-output t)
    (asm-input t)
    (asm-stmt t)

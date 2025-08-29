@@ -2763,11 +2763,18 @@
       "As GCC extensions, we allow
        an optional assembler name specifier
        and a possibly empty of attribute specifiers.
-       See the ABNF grammar."))
+       See the ABNF grammar.")
+     (xdoc::p
+      "Initializer declarators may be accompanied
+       by some additional information,
+       such as the "
+      (xdoc::seetopic "uid" "unique-identifier")
+      " calculated during validation."))
     ((declor declor)
      (asm? asm-name-spec-option)
      (attribs attrib-spec-list)
-     (init? initer-option))
+     (init? initer-option)
+     (info any))
     :pred initdeclorp
     :measure (two-nats-measure (acl2-count x) 3))
 

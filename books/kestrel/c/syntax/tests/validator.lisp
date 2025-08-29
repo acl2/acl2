@@ -832,3 +832,61 @@ void bar(void) {
 "
   "int foo;
 ")
+
+(test-valid
+  "int foo(void);
+
+  int bar(short x) {
+    int foo = x;
+    {
+      extern int foo(void);
+    }
+    return foo;
+  }
+"
+  "static int bar = 0;
+
+   extern int foo(void) {
+  return bar;
+}
+"
+  :cond (b* (;; (- (cw "AST: ~x0~%" ast))
+             (filepath-transunit-map (transunit-ensemble->unwrap ast))
+             (transunit1 (omap::head-val filepath-transunit-map))
+             (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
+             (edecls1 (transunit->decls transunit1))
+             (foo-init1 (first (decl-decl->init (extdecl-decl->unwrap (first edecls1)))))
+             (foo-init1-uid (initdeclor-info->uid? (initdeclor->info foo-init1)))
+             ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
+             (bar-fundef (extdecl-fundef->unwrap (second edecls1)))
+             (bar-fundef-uid (fundef-info->uid (fundef->info bar-fundef)))
+             ;; (- (cw "bar-fundef uid: ~x0~%" bar-fundef-uid))
+             (bar-body-decl1 (first (fundef->body bar-fundef)))
+             (foo-init2 (first (decl-decl->init (block-item-decl->decl bar-body-decl1))))
+             (foo-init2-uid (initdeclor-info->uid? (initdeclor->info foo-init2)))
+             ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
+             (bar-body-decl2 (first (stmt-compound->items (block-item-stmt->stmt (second (fundef->body bar-fundef))))))
+             (foo-init3 (first (decl-decl->init (block-item-decl->decl bar-body-decl2))))
+             (foo-init3-uid (initdeclor-info->uid? (initdeclor->info foo-init3)))
+             ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
+             (bar-return-stmt (block-item-stmt->stmt (third (fundef->body bar-fundef))))
+             (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
+             ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
+             (edecls2 (transunit->decls transunit2))
+             (bar-init (first (decl-decl->init (extdecl-decl->unwrap (first edecls2)))))
+             (bar-init-uid (initdeclor-info->uid? (initdeclor->info bar-init)))
+             ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
+             (foo-fundef (extdecl-fundef->unwrap (second edecls2)))
+             (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
+             ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
+             (foo-return-stmt (block-item-stmt->stmt (first (fundef->body foo-fundef))))
+             (bar-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
+             ;; (- (cw "bar-expr uid: ~x0~%" bar-expr-uid))
+             )
+          (and (equal foo-init1-uid foo-init3-uid)
+               (not (equal foo-init1-uid foo-init2-uid))
+               (equal foo-init2-uid foo-expr-uid)
+               (not (equal bar-init-uid foo-init1-uid))
+               (not (equal bar-init-uid bar-fundef-uid))
+               (equal foo-fundef-uid foo-init1-uid)
+               (equal bar-expr-uid bar-init-uid))))

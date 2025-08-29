@@ -68,11 +68,12 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :nonabstract (mv t
-                       (make-decl-decl
-                        :extension nil
-                        :specs paramdecl.specs
-                        :init (cons (initdeclor paramdecl.declor.declor nil nil init?) nil)))
+      :nonabstract
+      (mv t
+          (make-decl-decl
+            :extension nil
+            :specs paramdecl.specs
+            :init (list (initdeclor paramdecl.declor.declor nil nil init? nil))))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
