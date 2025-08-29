@@ -5014,13 +5014,20 @@
     (b* (((simpadd0-gin gin) gin))
       (param-declor-case
        paramdeclor
-       :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
-                          (simpadd0-declor paramdeclor.declor gin))
-                         (gin (simpadd0-gin-update gin gout-declor)))
-                      (mv (make-param-declor-nonabstract
-                           :declor new-declor
-                           :info paramdeclor.info)
-                          (simpadd0-gout-no-thm gin)))
+       :nonabstract
+       (b* (((mv new-declor (simpadd0-gout gout-declor))
+             (simpadd0-declor paramdeclor.declor gin))
+            (gin (simpadd0-gin-update gin gout-declor))
+            (info (coerce-param-declor-nonabstract-info paramdeclor.info))
+            (type (c$::param-declor-nonabstract-info->type info))
+            (post-vartys (omap::update (c$::declor->ident paramdeclor.declor)
+                                       type
+                                       gin.vartys)))
+         (mv (make-param-declor-nonabstract
+              :declor new-declor
+              :info paramdeclor.info)
+             (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                   :vartys post-vartys)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (simpadd0-gin-update gin gout-absdeclor)))
