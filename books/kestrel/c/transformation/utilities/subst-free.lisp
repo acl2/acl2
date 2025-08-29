@@ -876,9 +876,10 @@
      :nonabstract
      (b* (((mv declor bound-vars -)
            (declor-subst-free
-             (c$::param-declor-nonabstract->declor param-declor)
+             (param-declor-nonabstract->declor param-declor)
              subst bound-vars)))
-       (mv (param-declor-nonabstract declor)
+       (mv (make-param-declor-nonabstract :declor declor
+                                          :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
      (mv (param-declor-abstract

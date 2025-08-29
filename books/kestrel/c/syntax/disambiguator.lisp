@@ -2397,7 +2397,9 @@
        (b* (((erp new-declor & ident table)
              (dimb-declor paramdeclor.declor nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
-         (retok (param-declor-nonabstract new-declor) table))
+         (retok (make-param-declor-nonabstract :declor new-declor
+                                               :info paramdeclor.info)
+                table))
        :abstract
        (b* (((erp new-absdeclor table)
              (dimb-absdeclor paramdeclor.declor table)))
@@ -2414,7 +2416,10 @@
                 (raise "Internal error: declarator without identifier.")
                 (retmsg$ ""))
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
-            (retok (param-declor-nonabstract declor/absdeclor.unwrap) table))
+            (retok (make-param-declor-nonabstract
+                    :declor declor/absdeclor.unwrap
+                    :info nil)
+                   table))
           :absdeclor
           (retok (param-declor-abstract declor/absdeclor.unwrap)
                  (dimb-table-fix table))))))

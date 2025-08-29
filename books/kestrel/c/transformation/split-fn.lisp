@@ -162,7 +162,8 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (param-declor-nonabstract initdeclor.declor))
+           :declor (make-param-declor-nonabstract :declor initdeclor.declor
+                                                  :info nil))
          (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -236,8 +237,10 @@
       :specs param-declon.specs
       :declor (param-declor-case
                 param-declon.declor
-                :nonabstract (param-declor-nonabstract
-                               (add-pointer-declor param-declon.declor.declor))
+                :nonabstract (make-param-declor-nonabstract
+                              :declor (add-pointer-declor
+                                       param-declon.declor.declor)
+                              :info nil)
                 ;; TODO (not used here, but should be implemented for a general
                 ;; utility).
                 :abstract (param-declor-fix param-declon.declor)
