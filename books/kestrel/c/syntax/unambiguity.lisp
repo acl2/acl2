@@ -647,10 +647,10 @@
     :expand (statassert-unambp (statassert test message)))
 
   (defrule initdeclor-unambp-of-initdeclor
-    (equal (initdeclor-unambp (initdeclor declor asm? attribs init?))
+    (equal (initdeclor-unambp (initdeclor declor asm? attribs init? info))
            (and (declor-unambp declor)
                 (initer-option-unambp init?)))
-    :expand (initdeclor-unambp (initdeclor declor asm? attribs init?)))
+    :expand (initdeclor-unambp (initdeclor declor asm? attribs init? info)))
 
   (defrule decl-unambp-of-decl-decl
     (equal (decl-unambp (decl-decl extension specs init))

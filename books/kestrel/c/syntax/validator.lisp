@@ -5102,11 +5102,13 @@
                           is already declared in the current scope ~
                           with associated information ~x1."
                          ident info?))
-               (table (valid-add-ord ident (valid-ord-info-typedef type) table)))
+               (table (valid-add-ord ident (valid-ord-info-typedef type) table))
+               (anno-info (make-initdeclor-info :uid? nil)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
-                                    :init? nil)
+                                    :init? nil
+                                    :info anno-info)
                    types
                    table)))
          ((when (and initdeclor.init?
@@ -5165,11 +5167,13 @@
                           :linkage linkage
                           :defstatus defstatus
                           :uid uid))
-               (table (valid-add-ord ident new-info table)))
+               (table (valid-add-ord ident new-info table))
+               (anno-info (make-initdeclor-info :uid? uid)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
-                                    :init? new-init?)
+                                    :init? new-init?
+                                    :info anno-info)
                    (set::union types more-types)
                    table)))
          ((when (or (valid-ord-info-case info? :typedef)
@@ -5185,11 +5189,13 @@
                             :linkage linkage
                             :defstatus defstatus
                             :uid uid))
-                 (table (valid-add-ord ident new-info table)))
+                 (table (valid-add-ord ident new-info table))
+                 (anno-info (make-initdeclor-info :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
-                                      :init? new-init?)
+                                      :init? new-init?
+                                      :info anno-info)
                      (set::union types more-types)
                      table))))
          ((valid-ord-info-objfun info) info?)
@@ -5206,11 +5212,13 @@
                             :linkage linkage
                             :defstatus defstatus
                             :uid uid))
-                 (table (valid-add-ord ident new-info table)))
+                 (table (valid-add-ord ident new-info table))
+                 (anno-info (make-initdeclor-info :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
-                                      :init? new-init?)
+                                      :init? new-init?
+                                      :info anno-info)
                      (set::union types more-types)
                      table))))
          ((unless (or (equal type info.type)
@@ -5239,11 +5247,13 @@
                     :linkage linkage
                     :defstatus defstatus
                     :uid uid))
-         (table (valid-add-ord ident new-info table)))
+         (table (valid-add-ord ident new-info table))
+         (anno-info (make-initdeclor-info :uid? uid)))
       (retok (make-initdeclor :declor new-declor
                               :asm? initdeclor.asm?
                               :attribs initdeclor.attribs
-                              :init? new-init?)
+                              :init? new-init?
+                              :info anno-info)
              (set::union types more-types)
              table))
     :measure (initdeclor-count initdeclor))
@@ -6167,8 +6177,8 @@
                   in the same translation unit."
                  ident))
        (info? (valid-lookup-ord-file-scope ident table))
-       ((erp table)
-        (b* (((reterr) (irr-valid-table))
+       ((erp fundef-uid table)
+        (b* (((reterr) (irr-uid) (irr-valid-table))
              ((when (not info?))
               (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
                    (info (make-valid-ord-info-objfun
@@ -6176,7 +6186,7 @@
                            :linkage linkage
                            :defstatus (valid-defstatus-defined)
                            :uid uid)))
-                (retok (valid-add-ord-file-scope ident info table))))
+                (retok uid (valid-add-ord-file-scope ident info table))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -6212,7 +6222,7 @@
                      :linkage linkage
                      :defstatus (valid-defstatus-defined)
                      :uid uid)))
-          (retok (valid-add-ord-file-scope ident info table))))
+          (retok uid (valid-add-ord-file-scope ident info table))))
        ((erp new-decls types table) (valid-decl-list fundef.decls table ienv))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
@@ -6250,7 +6260,8 @@
        ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
-                               :table-body-start table-body-start)))
+                               :table-body-start table-body-start
+                               :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
