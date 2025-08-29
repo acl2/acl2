@@ -602,8 +602,8 @@
     tyname-infop
     coerce-tyname-info
 
-    block-item-infop
-    coerce-block-item-info
+    param-declor-nonabstract-info
+    coerce-param-declor-nonabstract-info
 
     fundef-info
     coerce-fundef-info

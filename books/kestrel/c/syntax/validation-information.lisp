@@ -558,6 +558,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod param-declor-nonabstract-info
+  :short "Fixtype of validation information for
+          non-abstract parameter declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to non-abstract parameter declarators,
+     i.e. the @(tsee param-declor-nonabstract) fixtype.
+     The information consists of the type of the declared identifier."))
+  ((type type))
+  :pred param-declor-nonabstract-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-param-declor-nonabstract-info
+  :short "An irrelevant validation information
+          for non-abstract parameter declarators."
+  :type param-declor-nonabstract-infop
+  :body (make-param-declor-nonabstract-info :type (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-param-declor-nonabstract-info (x)
+  :returns (info param-declor-nonabstract-infop)
+  :short "Coerce a value to @(tsee param-declor-nonabstract-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (param-declor-nonabstract-infop x)
+      x
+    (prog2$ (raise "Internal error: ~
+                    ~x0 does not satisfy PARAM-DECLOR-NONABSTRACT-INFOP." x)
+            (irr-param-declor-nonabstract-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod fundef-info
   :short "Fixtype of validation information for function definitions."
   :long
@@ -713,6 +752,12 @@
    (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                 (absdeclor-option-annop (tyname->declor? tyname))
                 (tyname-infop (tyname->info tyname))))
+   (param-declor :nonabstract (and (declor-annop
+                                    (param-declor-nonabstract->declor
+                                     param-declor))
+                                   (param-declor-nonabstract-infop
+                                    (param-declor-nonabstract->info
+                                     param-declor))))
    (attrib t)
    (attrib-spec t)
    (asm-output t)
