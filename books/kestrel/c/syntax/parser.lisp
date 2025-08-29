@@ -12493,7 +12493,9 @@
            :declor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-nonabstract declor/absdeclor.unwrap))
+                   :declor (make-param-declor-nonabstract
+                             :declor declor/absdeclor.unwrap
+                             :info nil))
                   (span-join span last-span)
                   parstate)
            ;; If we parsed an unambiguous abstract declarator,

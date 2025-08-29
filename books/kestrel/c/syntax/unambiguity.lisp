@@ -587,9 +587,9 @@
     :expand (param-declon-unambp (param-declon specs decl)))
 
   (defrule param-declor-unambp-of-param-declor-declor
-    (equal (param-declor-unambp (param-declor-nonabstract declor))
+    (equal (param-declor-unambp (param-declor-nonabstract declor info))
            (declor-unambp declor))
-    :expand (param-declor-unambp (param-declor-nonabstract declor)))
+    :expand (param-declor-unambp (param-declor-nonabstract declor info)))
 
   (defrule param-declor-unambp-of-param-declor-abstract
     (equal (param-declor-unambp (param-declor-abstract absdeclor))
