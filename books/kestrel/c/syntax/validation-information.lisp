@@ -676,7 +676,7 @@
      i.e. the @(tsee initdeclor) fixtype.")
    (xdoc::p
     "The information for an initializer declarator consists of an "
-    (xdoc::seetopic "uid-optional" "optional unique identifier")
+    (xdoc::seetopic "uid-option" "optional unique identifier")
     ". Currently, we only assign unique identifiers to
      ordinary identifiers representing an object or function.
      Therefore, only initializer declarators corresponding
