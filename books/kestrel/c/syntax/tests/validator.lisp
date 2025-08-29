@@ -247,9 +247,10 @@ void f() {
             (expr-xp (expr-unary->arg expr-sizeof))
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
-              (equal (expr-ident->info expr-x)
-                     (make-var-info :type (type-sint)
-                                    :linkage (linkage-external))))))
+              (equal (var-info->type (expr-ident->info expr-x))
+                     (type-sint))
+              (equal (var-info->linkage (expr-ident->info expr-x))
+                     (linkage-external)))))
 
 (test-valid
  "typedef char x;
