@@ -1070,7 +1070,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (table valid-tablep))
-  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep))
+  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep) (uid uidp))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -1087,7 +1087,7 @@
      recorded as denoting an object or function
      [C17:6.5.1/2].
      The type and the linkage are obtained from the table."))
-  (b* (((reterr) (irr-type) (irr-linkage))
+  (b* (((reterr) (irr-type) (irr-linkage) (irr-uid))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
@@ -1096,7 +1096,8 @@
                   but does not denote an object or function."
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
-           (valid-ord-info-objfun->linkage info)))
+           (valid-ord-info-objfun->linkage info)
+           (valid-ord-info-objfun->uid info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2306,9 +2307,10 @@
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type linkage) (valid-var expr.ident table))
+       :ident (b* (((erp type linkage uid) (valid-var expr.ident table))
                    (info (make-var-info :type type
-                                        :linkage linkage)))
+                                        :linkage linkage
+                                        :uid uid)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
                        type

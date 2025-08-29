@@ -450,7 +450,7 @@
 
 (define coerce-iconst-info (x)
   :returns (info iconst-infop)
-  :short "Coerce a valud to @(tsee iconst-info)."
+  :short "Coerce a value to @(tsee iconst-info)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -472,9 +472,13 @@
      i.e. identifiers used as expressions,
      i.e. the @(':ident') case of @(tsee expr).
      The information for a variable consists of
-     the type and linkage of the object denoted by the variable."))
+     the type and linkage of the object denoted by the variable,
+     as well as the variable's"
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((type type)
-   (linkage linkage))
+   (linkage linkage)
+   (uid uid))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -483,7 +487,8 @@
   :short "An irrelevant validation information for variables."
   :type var-infop
   :body (make-var-info :type (irr-type)
-                       :linkage (irr-linkage)))
+                       :linkage (irr-linkage)
+                       :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
