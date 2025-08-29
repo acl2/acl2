@@ -57,7 +57,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist flexprod-listp (x)
-  :short "Recognize lists of @('flexprod') values."
+  :short "Recognize lists of @('flexprod-p') values."
   (flexprod-p x)
   :true-listp t
   :elementp-of-nil nil)
