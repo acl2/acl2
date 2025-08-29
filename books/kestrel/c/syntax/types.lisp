@@ -839,6 +839,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-set-formalp ((types type-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the types in a set
+          are supported in our formal semantics of C."
+  (or (set::emptyp (type-set-fix types))
+      (and (type-formalp (set::head types))
+           (type-set-formalp (set::tail types))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-option-set-formalp ((type?s type-option-setp))
   :returns (yes/no booleanp)
   :short "Check if all the optional types in a set
@@ -919,6 +931,29 @@
     (not erp)
     :hyp (type-option-formalp type?)
     :hints (("Goal" :in-theory (enable type-option-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-set ((types type-setp))
+  :returns (mv erp (types1 c::type-setp))
+  :short "Map a set of types in @(tsee type-set)
+          to a set of types in the language definition."
+  (b* (((when (set::emptyp (type-set-fix types))) (mv nil nil))
+       ((mv erp type) (ldm-type (set::head types)))
+       ((when erp) (mv erp nil))
+       ((mv erp types) (ldm-type-set (set::tail types)))
+       ((when erp) (mv erp nil)))
+    (mv nil (set::insert type types)))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-set-when-type-set-formalp
+    (not erp)
+    :hyp (type-set-formalp types)
+    :hints (("Goal" :induct t :in-theory (enable type-set-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
