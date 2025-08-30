@@ -248,21 +248,21 @@
 
 ; Lists of Above Aggregates ---------------------------------------------------
 
-(defun flexprod-field-listp (x)
+(defund flexprod-field-listp (x)
   (declare (xargs :guard t))
   (if (consp x)
       (and (flexprod-field-p (car x))
            (flexprod-field-listp (cdr x)))
     (null x)))
 
-(defun flexprod-listp (x)
+(defund flexprod-listp (x)
   (declare (xargs :guard t))
   (if (consp x)
       (and (flexprod-p (car x))
            (flexprod-listp (cdr x)))
     (null x)))
 
-(defun flexsum-listp (x)
+(defund flexsum-listp (x)
   (declare (xargs :guard t))
   (if (consp x)
       (and (flexsum-p (car x))
