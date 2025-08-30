@@ -255,33 +255,41 @@
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 ;fixme can loop?
-(defthmd bv-array-write-of-bv-array-write-diff
+(defthmd bv-array-write-of-bv-array-write-diff-helper
   (implies (and ;this is implied by them being unequal nats both of which are in bounds:
-            (not (equal (bvchop (integer-length (+ -1 len)) index1)
-                        (bvchop (integer-length (+ -1 len)) index2)))
-;                (< index1 len)
-;                (< index2 len)
-            (natp index1)
-            (natp index2)
-;                (natp len)
-;                (natp element-size)
-            )
+             (not (equal (bvchop (integer-length (+ -1 len)) index1)
+                         (bvchop (integer-length (+ -1 len)) index2)))
+             (natp index1)
+             (natp index2))
            (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
                   (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
                   ))
   :hints (("Goal"
            :cases ((equal (bvchop (integer-length (+ -1 len))
-                                   index2)
+                                  index2)
                           (bvchop (integer-length (+ -1 len))
-                                   index1)))
+                                  index1)))
            :in-theory (enable update-nth2 ceiling-of-lg bv-array-write))))
+
+;; might loop?
+(defthmd bv-array-write-of-bv-array-write-diff
+  (implies (and (not (equal index1 index2))
+                (< index1 len)
+                (< index2 len)
+                (natp index1)
+                (natp index2))
+           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
+                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))))
+  :hints (("Goal" :use bv-array-write-of-bv-array-write-diff-helper
+           :cases ((not (natp len)))
+           :in-theory (disable bv-array-write-of-bv-array-write-diff-helper))))
 
 ;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
 ;; TODO: Maybe we prefer the other order since lower indices are usually done first.
 (defthmd bv-array-write-of-bv-array-write-diff-constant-indices
   (implies (and (syntaxp (and (quotep index1)
                               (quotep index2)))
-                (< index2 index1)
+                (< index2 index1) ; prevents loops
                 (< index1 len)
                 ;; (< index2 len)
                 (natp index1)
