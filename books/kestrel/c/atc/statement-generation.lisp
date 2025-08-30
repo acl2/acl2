@@ -1396,7 +1396,7 @@
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(binary-+ '1 ,initer-limit))
+       (item-limit `(binary-+ '2 ,initer-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1473,8 +1473,10 @@
        (item-hints
         `(("Goal"
            :in-theory '(exec-block-item-when-declon
+                        exec-obj-declon-open
                         (:e block-item-kind)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         (:e block-item-declon->get)
                         (:e obj-declon-to-ident+scspec+tyname+init)
                         mv-nth-of-cons
