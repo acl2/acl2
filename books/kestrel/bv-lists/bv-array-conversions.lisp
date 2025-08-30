@@ -23,6 +23,7 @@
 
 ;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
+;; helper function for list-to-bv-array
 (defund list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
                               (natp elements-left)
@@ -64,9 +65,11 @@
            (all-unsigned-byte-p width (list-to-bv-array-aux width elements-left total-len x)))
   :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;converts a list (e.g., a nest of conses) to an array (a nest of bv-array-write calls)
 ;often this will just be a no-op, but it helps us compare a spec expressed as a list with an implementation expressed as an array
-
+;; TODO: Add an MBE whose :exec just returns LST
 (defund list-to-bv-array (element-size lst)
   (declare (xargs :guard (and (natp element-size)
                               (true-listp lst))))
@@ -187,6 +190,8 @@
            (EQUAL (BV-ARRAY-TO-LIST-AUX WIDTH LEN I ARRAY)
                   (NTHCDR I (bvchop-list width ARRAY))))
   :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST-AUX bv-array-read cdr-of-nthcdr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;should we pass in the length too (can't really ask an array for its length)?
 (defund bv-array-to-list (size arr)
