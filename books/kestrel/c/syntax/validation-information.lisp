@@ -680,7 +680,8 @@
      the validator adds to initializer declarators,
      i.e. the @(tsee initdeclor) fixtype.")
    (xdoc::p
-    "The information for an initializer declarator consists of an "
+    "The information for an initializer declarator consists of
+     the type of the declared identifier and an "
     (xdoc::seetopic "uid-option" "optional unique identifier")
     ". Currently, we only assign unique identifiers to
      ordinary identifiers representing an object or function.
@@ -688,7 +689,8 @@
      to those such identifiers are annotated with unique identifiers.
      Initializer declarators which correspond to @('typedef') declarations
      are not annotated with a unique identifier."))
-  ((uid? uid-option))
+  ((type type)
+   (uid? uid-option))
   :pred initdeclor-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -696,7 +698,7 @@
 (defirrelevant irr-initdeclor-info
   :short "An irrelevant validation information for initializer declarators."
   :type initdeclor-infop
-  :body (make-initdeclor-info :uid? nil))
+  :body (make-initdeclor-info :type (irr-type) :uid? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
