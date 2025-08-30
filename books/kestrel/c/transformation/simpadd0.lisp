@@ -5915,8 +5915,17 @@
        ((mv new-declor (simpadd0-gout gout-declor))
         (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
+       (type (c$::fundef-info->type info))
+       (vartys-with-fun (if (and (type-formalp type)
+                                 (not (type-case type :void))
+                                 (not (type-case type :char)))
+                            (omap::update (c$::declor->ident fundef.declor)
+                                          type
+                                          gout-declor.vartys)
+                          gout-declor.vartys))
        ((mv new-decls (simpadd0-gout gout-decls))
-        (simpadd0-decl-list fundef.decls gin))
+        (simpadd0-decl-list fundef.decls (change-simpadd0-gin
+                                          gin :vartys vartys-with-fun)))
        (gin (simpadd0-gin-update gin gout-decls))
        (vartys (simpadd0-vartys-from-valid-table
                 (c$::fundef-info->table-body-start info)))
@@ -5932,7 +5941,8 @@
                                 :decls new-decls
                                 :body new-body
                                 :info fundef.info))
-       (gout-no-thm (simpadd0-gout-no-thm gin))
+       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                          :vartys vartys-with-fun))
        ((unless gout-body.thm-name) (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
        ((declor declor) fundef.declor)
@@ -6051,7 +6061,7 @@
         (make-simpadd0-gout :events (cons thm-event events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys nil)))
+                            :vartys vartys-with-fun)))
   :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   :hooks (:fix)
 
