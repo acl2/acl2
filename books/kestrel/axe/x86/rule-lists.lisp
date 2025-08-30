@@ -5831,11 +5831,11 @@
     ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
     acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
     acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
-    ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
-    booleanp-of-jp-condition
-    booleanp-of-jnp-condition
-    booleanp-of-jz-condition
-    booleanp-of-jnz-condition
+    ;; ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these): -- now we open these functions in the proof stage
+    ;; booleanp-of-jp-condition
+    ;; booleanp-of-jnp-condition
+    ;; booleanp-of-jz-condition
+    ;; booleanp-of-jnz-condition
     acl2::getbit-0-of-bool-to-bit
     acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
     acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
