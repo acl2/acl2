@@ -336,11 +336,6 @@
            (expr-unambp expr))
     :expand (expr-unambp (expr-extension expr)))
 
-  (defrule const-expr-unambp-of-const-expr
-    (equal (const-expr-unambp (const-expr expr))
-           (expr-unambp expr))
-    :expand (const-expr-unambp (const-expr expr)))
-
   (defrule genassoc-unambp-of-genassoc-type
     (equal (genassoc-unambp (genassoc-type type expr))
            (and (tyname-unambp type)
@@ -466,12 +461,6 @@
            (desiniter-list-unambp elems))
     :expand (initer-unambp (initer-list elems final-comma)))
 
-  (defrule desiniter-unambp-of-desiniter
-    (equal (desiniter-unambp (desiniter designors init))
-           (and (designor-list-unambp designors)
-                (initer-unambp init)))
-    :expand (desiniter-unambp (desiniter designors init)))
-
   (defrule designor-unambp-of-designor-sub
     (equal (designor-unambp (designor-sub index))
            (const-expr-unambp index))
@@ -481,11 +470,6 @@
     (implies (designor-case designor :dot)
              (designor-unambp designor))
     :enable designor-unambp)
-
-  (defrule declor-unambp-of-declor
-    (equal (declor-unambp (declor pointers decl))
-           (dirdeclor-unambp decl))
-    :expand (declor-unambp (declor pointers decl)))
 
   (defrule dirdeclor-unambp-when-ident
     (implies (dirdeclor-case dirdeclor :ident)
@@ -531,11 +515,6 @@
            (dirdeclor-unambp decl))
     :expand (dirdeclor-unambp (dirdeclor-function-names decl names)))
 
-  (defrule absdeclor-unambp-of-absdeclor
-    (equal (absdeclor-unambp (absdeclor pointers direct?))
-           (dirabsdeclor-option-unambp direct?))
-    :expand (absdeclor-unambp (absdeclor pointers direct?)))
-
   (defrule not-dirabsdeclor-unambp-when-dummy-base
     (implies (dirabsdeclor-case dirabsdeclor :dummy-base)
              (not (dirabsdeclor-unambp dirabsdeclor)))
@@ -580,12 +559,6 @@
                 (param-declon-list-unambp params)))
     :expand (dirabsdeclor-unambp (dirabsdeclor-function declor? params ellipses)))
 
-  (defrule param-declon-unambp-of-param-declon
-    (equal (param-declon-unambp (param-declon specs decl))
-           (and (decl-spec-list-unambp specs)
-                (param-declor-unambp decl)))
-    :expand (param-declon-unambp (param-declon specs decl)))
-
   (defrule param-declor-unambp-of-param-declor-declor
     (equal (param-declor-unambp (param-declor-nonabstract declor info))
            (declor-unambp declor))
@@ -595,17 +568,6 @@
     (equal (param-declor-unambp (param-declor-abstract absdeclor))
            (absdeclor-unambp absdeclor))
     :expand (param-declor-unambp (param-declor-abstract absdeclor)))
-
-  (defrule tyname-unambp-of-tyname
-    (equal (tyname-unambp (tyname specqual decl? info))
-           (and (spec/qual-list-unambp specqual)
-                (absdeclor-option-unambp decl?)))
-    :expand (tyname-unambp (tyname specqual decl? info)))
-
-  (defrule struni-spec-unambp-of-struni-spec
-    (equal (struni-spec-unambp (struni-spec name? members))
-           (structdecl-list-unambp members))
-    :expand (struni-spec-unambp (struni-spec name? members)))
 
   (defrule structdecl-unambp-of-structdecl-member
     (equal (structdecl-unambp
@@ -624,33 +586,6 @@
     (implies (structdecl-case sdecl :empty)
              (structdecl-unambp sdecl))
     :enable structdecl-unambp)
-
-  (defrule structdeclor-unambp-of-structdeclor
-    (equal (structdeclor-unambp (structdeclor declor? expr?))
-           (and (declor-option-unambp declor?)
-                (const-expr-option-unambp expr?)))
-    :expand (structdeclor-unambp (structdeclor declor? expr?)))
-
-  (defrule enumspec-unambp-of-enumspec
-    (equal (enumspec-unambp (enumspec name list final-comma))
-           (enumer-list-unambp list))
-    :expand (enumspec-unambp (enumspec name list final-comma)))
-
-  (defrule enumer-unambp-of-enumer
-    (equal (enumer-unambp (enumer name value))
-           (const-expr-option-unambp value))
-    :expand (enumer-unambp (enumer name value)))
-
-  (defrule statassert-unambp-of-statassert
-    (equal (statassert-unambp (statassert test message))
-           (const-expr-unambp test))
-    :expand (statassert-unambp (statassert test message)))
-
-  (defrule initdeclor-unambp-of-initdeclor
-    (equal (initdeclor-unambp (initdeclor declor asm? attribs init? info))
-           (and (declor-unambp declor)
-                (initer-option-unambp init?)))
-    :expand (initdeclor-unambp (initdeclor declor asm? attribs init? info)))
 
   (defrule decl-unambp-of-decl-decl
     (equal (decl-unambp (decl-decl extension specs init))
@@ -803,15 +738,6 @@
            (expr-unambp expr))
     :enable decl/stmt-unambp)
 
-  (defrule fundef-unambp-of-fundef
-    (equal (fundef-unambp
-            (fundef extension spec declor asm? attribs decls body info))
-           (and (decl-spec-list-unambp spec)
-                (declor-unambp declor)
-                (decl-list-unambp decls)
-                (block-item-list-unambp body)))
-    :enable fundef-unambp)
-
   (defrule extdecl-unambp-of-extdecl-fundef
     (equal (extdecl-unambp (extdecl-fundef fundef))
            (fundef-unambp fundef))
@@ -826,16 +752,6 @@
     (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
              (extdecl-unambp edecl))
     :enable extdecl-unambp)
-
-  (defrule transunit-unambp-of-transunit
-    (equal (transunit-unambp (transunit edecls info))
-           (extdecl-list-unambp edecls))
-    :enable transunit-unambp)
-
-  (defrule transunit-ensemble-unambp-of-transunit-ensemble
-    (equal (transunit-ensemble-unambp (transunit-ensemble tumap))
-           (filepath-transunit-map-unambp (filepath-transunit-map-fix tumap)))
-    :enable transunit-ensemble-unambp)
 
   ;; Theorems for deconstructors:
 
