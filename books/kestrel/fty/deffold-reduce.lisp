@@ -419,9 +419,15 @@
   :returns (mv fn-term
                thm-term
                (field-names symbol-listp))
-  :short "Generate the combination for the fields of a product type."
+  :short "Generate the combination for the fields of
+          a product type or a case of a sum type."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The @('type') input is the name of the product or sum type.
+     The @('fields') input consists of the fields of
+     the product type or the case of the sum type
+     (the latter is represented as a product type in the FTY table).")
    (xdoc::p
     "We generate two combination terms:
      one for the fold function, and one for an associated theorem.
@@ -503,6 +509,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deffoldred-gen-prod-combination+theorem ((type symbolp)
+                                                 (constr symbolp)
+                                                 (prod flexprod-p)
+                                                 (suffix symbolp)
+                                                 (targets symbol-listp)
+                                                 (extra-args true-listp)
+                                                 (default t)
+                                                 (combine symbolp)
+                                                 (fty-table alistp))
+  :returns (mv fn-term
+               (thm-events acl2::pseudo-event-form-listp))
+  :short "Generate the combination for the fields of
+          a product type or a case of a sum type,
+          as well as a theorem about
+          the predicate for the product or sum type
+          applied to the constructor of
+          the product type or the case of the sum type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('type') input is the name of the product type or sum type.
+     The @('constr') input is the name of the constructor of
+     the product type or the case of the sum type;
+     it is the same as @('type') in the case of a product type,
+     but in the case of a sum type it consists of @('type')
+     followed by the kind of the case of the sum.")
+   (xdoc::p
+    "The @('fn-term') result is from @(tsee deffoldred-gen-prod-combination):
+     see that function for details.
+     The theorem's formula involves
+     the @('thm-term') and @('field-names') results of that function:
+     this is the theorem @('<type>-<suffix>-of-<type>')
+     described in @(tsee deffold-reduce)."))
+  (b* ((fields (flexprod->fields prod))
+       ((unless (flexprod-field-listp fields))
+        (raise "Internal error: malformed fields ~x0." fields)
+        (mv nil nil))
+       ((mv fn-term thm-rhs field-names)
+        (deffoldred-gen-prod-combination
+          type fields suffix targets extra-args default combine fty-table))
+       (type-suffix (deffoldred-gen-fold-name type suffix))
+       (type-suffix-of-constr
+        (acl2::packn-pos (list type-suffix '-of- constr) type))
+       (extra-args-names (deffoldred-extra-args-to-names extra-args))
+       (thm-lhs `(,type-suffix (,constr ,@field-names) ,@extra-args-names))
+       (thm-events
+        `((defruled ,type-suffix-of-constr
+            (equal ,thm-lhs ,thm-rhs)
+            :expand ,thm-lhs)
+          (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                          '(,type-suffix-of-constr)))))
+    (mv fn-term thm-events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deffoldred-gen-sum-cases ((type symbolp)
                                   (prods flexprod-listp)
                                   (suffix symbolp)
@@ -526,7 +587,11 @@
    (xdoc::p
     "For each case, first we check whether there is an overriding term,
      in which case we use that as the term for the case.
-     Otherwise, we obtain the combination for the fields."))
+     Otherwise, we obtain the combination for the fields.")
+   (xdoc::p
+    "For now, we do not generate theorems via
+     @(tsee deffoldred-gen-prod-combination+theorem),
+     but we plan to do that soon."))
   (b* (((when (endp prods)) nil)
        (prod (car prods))
        (kind (flexprod->kind prod))
@@ -593,29 +658,21 @@
        (type-count (flexsum->count sum))
        (recog (flexsum->pred sum))
        (recp (flexsum->recp sum))
-       (extra-args-names (deffoldred-extra-args-to-names extra-args))
-       ((mv fn-body thm-lhs thm-rhs)
+       ((mv fn-body thm-events)
         (b* ((term-assoc (assoc-equal type overrides))
-             ((when term-assoc) (mv (cdr term-assoc) nil nil))
+             ((when term-assoc) (mv (cdr term-assoc) nil))
              (prods (flexsum->prods sum))
              ((unless (flexprod-listp prods))
               (raise "Internal error: malformed products ~x0." prods)
-              (mv nil nil nil))
+              (mv nil nil))
              ((unless (and (consp prods)
                            (endp (cdr prods))))
               (raise "Internal error: non-singleton product ~x0." prods)
-              (mv nil nil nil))
-             (prod (car prods))
-             (fields (flexprod->fields prod))
-             ((unless (flexprod-field-listp fields))
-              (raise "Internal error: malformed fields ~x0." fields)
-              (mv nil nil nil))
-             ((mv fn-body thm-rhs field-names)
-              (deffoldred-gen-prod-combination
-                type fields suffix targets extra-args
-                default combine fty-table))
-             (thm-lhs `(,type-suffix (,type ,@field-names) ,@extra-args-names)))
-          (mv fn-body thm-lhs thm-rhs)))
+              (mv nil nil))
+             (prod (car prods)))
+          (deffoldred-gen-prod-combination+theorem
+            type type prod
+            suffix targets extra-args default combine fty-table)))
        (fn-event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
            (declare (ignorable ,type))
@@ -624,16 +681,7 @@
            ,fn-body
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:verify-guards :after-returns))
-           ,@(and (not mutrecp) '(:hooks (:fix)))))
-       (type-suffix-of-type
-        (acl2::packn-pos (list type-suffix '-of- type) type))
-       (thm-events
-        (and thm-lhs
-             `((defruled ,type-suffix-of-type
-                 (equal ,thm-lhs ,thm-rhs)
-                 :expand ,thm-lhs)
-               (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
-                               '(,type-suffix-of-type))))))
+           ,@(and (not mutrecp) '(:hooks (:fix))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
