@@ -605,6 +605,9 @@
     param-declor-nonabstract-info
     coerce-param-declor-nonabstract-info
 
+    initdeclor-info
+    coerce-initdeclor-info
+
     fundef-info
     coerce-fundef-info
 
