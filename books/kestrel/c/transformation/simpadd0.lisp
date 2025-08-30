@@ -801,6 +801,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-decl-thm ((old declp)
+                               (new declp)
+                               (vartys-pre ident-type-mapp)
+                               (vartys-post ident-type-mapp)
+                               (const-new symbolp)
+                               (thm-index posp)
+                               (hints true-listp))
+  :guard (and (decl-unambp old)
+              (decl-unambp new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of a declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently only for declarations of objects in blocks,
+     satisfying @(tsee decl-block-formalp).
+     The theorem is in terms of @(tsee c::exec-obj-declon)."))
+  (b* ((old (decl-fix old))
+       (new (decl-fix new))
+       ((unless (decl-block-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (decl-block-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (vars-pre (simpadd0-gen-var-assertions vartys-pre 'compst))
+       (vars-post (simpadd0-gen-var-assertions vartys-post 'old-compst))
+       (formula
+        `(b* ((old-decl (mv-nth 1 (ldm-decl-obj ',old)))
+              (new-decl (mv-nth 1 (ldm-decl-obj ',new)))
+              (old-compst
+               (c::exec-obj-declon old-decl compst old-fenv limit))
+              (new-compst
+               (c::exec-obj-declon new-decl compst new-fenv limit)))
+           (implies (and ,@vars-pre
+                         (not (c::errorp old-compst)))
+                    (and (not (c::errorp new-compst))
+                         (equal old-compst new-compst)
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (simpadd0-gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-decl-thm
+    :args ((old declp) (new declp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-block-item-thm ((old block-itemp)
                                      (new block-itemp)
                                      (vartys-pre ident-type-mapp)
