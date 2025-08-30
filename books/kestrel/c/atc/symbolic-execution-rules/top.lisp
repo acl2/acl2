@@ -32,6 +32,7 @@
 (include-book "exec-fun")
 (include-book "exec-stmt")
 (include-book "exec-initer")
+(include-book "exec-obj-declon")
 (include-book "exec-block-item")
 (include-book "init-scope")
 (include-book "adjust-type")
@@ -168,6 +169,7 @@
           *atc-exec-stmt-rules*
           *atc-exec-initer-rules*
           *atc-init-value-to-value-rules*
+          *atc-exec-obj-declon-rules*
           *atc-exec-block-item-rules*
           *atc-exec-block-item-list-rules*
           *atc-init-scope-rules*

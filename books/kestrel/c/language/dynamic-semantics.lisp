@@ -1282,6 +1282,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-obj-declon ((declon obj-declonp)
+                           (compst compustatep)
+                           (fenv fun-envp)
+                           (limit natp))
+    :guard (and (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 0))
+    :returns (new-compst compustate-resultp)
+    :parents (dynamic-semantics exec)
+    :short "Execute an object declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now this is only for object declarations in blocks,
+       consistently with the guard of this function.")
+     (xdoc::p
+      "We ensure that the declaration
+       has no @('extern') storage class specifier
+       (we do not support that in blocks),
+       then we execute the initializer (which we require here),
+       then we add the variable to the top scope of the top frame.
+       The initializer value must have the same type as the variable,
+       which automatically excludes the case of the variable being @('void'),
+       since @(tsee type-of-value) never returns @('void')
+       (under its guard).
+       For now we disallow array objects;
+       these will be supported later."))
+    (b* (((when (zp limit)) (error :limit))
+         ((mv var scspec tyname init?)
+          (obj-declon-to-ident+scspec+tyname+init declon))
+         ((unless (scspecseq-case scspec :none))
+          (error :unsupported-storage-class-specifier))
+         (type (tyname-to-type tyname))
+         ((when (type-case type :array)) (error :unsupported-local-array))
+         ((when (not init?)) (error :unsupported-no-initializer))
+         (init init?)
+         ((mv ival compst) (exec-initer init compst fenv (1- limit)))
+         ((when (errorp ival)) ival)
+         (val (init-value-to-value type ival))
+         ((when (errorp val)) val))
+      (create-var var val compst))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-block-item ((item block-itemp)
                            (compst compustatep)
                            (fenv fun-envp)
@@ -1296,44 +1340,15 @@
     (xdoc::topstring
      (xdoc::p
       "Besides an optional value result,
-       we also return a possibly updated computation state.")
-     (xdoc::p
-      "If the block item is a declaration,
-       we ensure that it has no @('extern') storage class specifier
-       (we do not support it in blocks),
-       then we execute the initializer (which we require here),
-       then we add the variable to the top scope of the top frame.
-       The initializer value must have the same type as the variable,
-       which automatically excludes the case of the variable being @('void'),
-       since @(tsee type-of-value) never returns @('void')
-       (under the guard).
-       For now we disallow array objects;
-       these will be supported later.")
-     (xdoc::p
-      "If the block item is a statement,
-       we execute it like any other statement."))
+       we also return a possibly updated computation state."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :declon
-       (b* (((mv var scspec tyname init?)
-             (obj-declon-to-ident+scspec+tyname+init item.get))
-            ((unless (scspecseq-case scspec :none))
-             (mv (error :unsupported-storage-class-specifier)
-                 (compustate-fix compst)))
-            (type (tyname-to-type tyname))
-            ((when (type-case type :array))
-             (mv (error :unsupported-local-array) (compustate-fix compst)))
-            ((when (not init?))
-             (mv (error :unsupported-no-initializer) (compustate-fix compst)))
-            (init init?)
-            ((mv ival compst) (exec-initer init compst fenv (1- limit)))
-            ((when (errorp ival)) (mv ival compst))
-            (val (init-value-to-value type ival))
-            ((when (errorp val)) (mv val compst))
-            (new-compst (create-var var val compst))
-            ((when (errorp new-compst)) (mv new-compst compst)))
-         (mv (stmt-value-none) new-compst))
+       :declon (b* ((new-compst
+                     (exec-obj-declon item.get compst fenv (1- limit)))
+                    ((when (errorp new-compst))
+                     (mv new-compst (compustate-fix compst))))
+                 (mv (stmt-value-none) new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1424,6 +1439,12 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item)
+    (defret compustate-frames-number-of-exec-obj-declon
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-obj-declon)
     (defret compustate-frames-number-of-exec-block-item-list
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1438,6 +1459,7 @@
                       (exec-fun fun args compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
+                      (exec-obj-declon declon compst fenv limit)
                       (exec-block-item item compst fenv limit)
                       (exec-block-item-list items compst fenv limit)))))
 
@@ -1483,6 +1505,13 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 0))
       :fn exec-initer)
+    (defret compustate-scopes-numbers-of-exec-obj-declon
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :hyp (and (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 0))
+      :fn exec-obj-declon)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1505,6 +1534,7 @@
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
                       (exec-initer initer compst fenv limit)
+                      (exec-obj-declon declon compst fenv limit)
                       (exec-block-item item compst fenv limit)
                       (exec-block-item-list items compst fenv limit)))))
 
@@ -1578,6 +1608,12 @@
                       (exec-initer initer compst fenv1 limit)))
       :rule-classes nil
       :flag exec-initer)
+    (defthm exec-obj-declon-without-calls
+      (implies (obj-declon-nocallsp declon)
+               (equal (exec-obj-declon declon compst fenv limit)
+                      (exec-obj-declon declon compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-obj-declon)
     (defthm exec-block-item-without-calls
       (implies (block-item-nocallsp item)
                (equal (exec-block-item item compst fenv limit)
@@ -1598,6 +1634,7 @@
                                 exec-stmt
                                 exec-stmt-while
                                 exec-initer
+                                exec-obj-declon
                                 exec-block-item
                                 exec-block-item-list
                                 expr-nocallsp
@@ -1607,6 +1644,7 @@
                                 initer-option-nocallsp
                                 obj-declon-nocallsp
                                 stmt-nocallsp
+                                obj-declon-nocallsp
                                 block-item-nocallsp
                                 block-item-list-nocallsp
                                 expr-option-some->val
