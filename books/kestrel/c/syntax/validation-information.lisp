@@ -732,11 +732,13 @@
      the validation table at the start of the function definition,
      the validation table at the start of the body
      (i.e. just after the opening curly brace),
+     the type of the function (not just the result; the function type),
      and a "
     (xdoc::seetopic "uid" "unique identifier")
     "."))
   ((table-start valid-table)
    (table-body-start valid-table)
+   (type type)
    (uid uid))
   :pred fundef-infop)
 
@@ -747,6 +749,7 @@
   :type fundef-infop
   :body (make-fundef-info :table-start (irr-valid-table)
                           :table-body-start (irr-valid-table)
+                          :type (irr-type)
                           :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

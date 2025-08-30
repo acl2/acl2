@@ -6207,7 +6207,7 @@
              ((when (not info?))
               (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
                    (info (make-valid-ord-info-objfun
-                           :type (type-function)
+                           :type type
                            :linkage linkage
                            :defstatus (valid-defstatus-defined)
                            :uid uid)))
@@ -6243,7 +6243,7 @@
                        (fundef-fix fundef)))
              ((mv uid table) (valid-get-fresh-uid ident linkage table))
              (info (make-valid-ord-info-objfun
-                     :type (type-function)
+                     :type type
                      :linkage linkage
                      :defstatus (valid-defstatus-defined)
                      :uid uid)))
@@ -6286,6 +6286,7 @@
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
                                :table-body-start table-body-start
+                               :type type
                                :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
