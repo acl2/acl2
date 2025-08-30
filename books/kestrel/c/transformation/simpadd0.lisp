@@ -3394,7 +3394,7 @@
                               (:e c::tyspecseq-to-type)
                               (:e c::identp)
                               (:e c::block-item-declon))
-                 :use ((:instance ,decl-thm-name (limit (1- limit)))
+                 :use ((:instance ,decl-thm-name (limit (- limit 2)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
                         (var (mv-nth 1 (ldm-ident ',var)))
@@ -3474,9 +3474,9 @@
          (old (c::block-item-declon old-declon))
          (new (c::block-item-declon new-declon))
          ((mv old-init-value old-init-compst)
-          (c::exec-initer old-initer compst old-fenv (1- limit)))
+          (c::exec-initer old-initer compst old-fenv (- limit 2)))
          ((mv new-init-value new-init-compst)
-          (c::exec-initer new-initer compst new-fenv (1- limit)))
+          (c::exec-initer new-initer compst new-fenv (- limit 2)))
          ((mv old-result old-compst)
           (c::exec-block-item old compst old-fenv limit))
          ((mv new-result new-compst)
@@ -3500,7 +3500,15 @@
               (c::block-item-declon
                (c::obj-declon
                 '(:none) tyspec (c::obj-declor-ident var) new-initer))
-              compst new-fenv limit))
+              compst new-fenv limit)
+             (c::exec-obj-declon
+              (c::obj-declon
+               '(:none) tyspec (c::obj-declor-ident var) old-initer)
+              compst old-fenv (+ -1 limit))
+             (c::exec-obj-declon
+              (c::obj-declon
+               '(:none) tyspec (c::obj-declor-ident var) new-initer)
+              compst new-fenv (+ -1 limit)))
     :enable c::obj-declon-to-ident+scspec+tyname+init)
 
   (defruled simpadd0-block-item-decl-error-support-lemma
@@ -3509,21 +3517,26 @@
          (item (c::block-item-declon declon)))
       (implies (and initer
                     (c::errorp
-                     (mv-nth 0 (c::exec-initer initer compst fenv (1- limit)))))
+                     (mv-nth 0 (c::exec-initer
+                                initer compst fenv (- limit 2)))))
                (c::errorp
                 (mv-nth 0 (c::exec-block-item item compst fenv limit)))))
-    :expand (c::exec-block-item
-             (c::block-item-declon
+    :expand ((c::exec-block-item
+              (c::block-item-declon
+               (c::obj-declon
+                '(:none) tyspec (c::obj-declor-ident var) initer))
+              compst fenv limit)
+             (c::exec-obj-declon
               (c::obj-declon
-               '(:none) tyspec (c::obj-declor-ident var) initer))
-             compst fenv limit)
+               '(:none) tyspec (c::obj-declor-ident var) initer)
+              compst fenv (+ -1 limit)))
     :enable c::obj-declon-to-ident+scspec+tyname+init)
 
   (defruled simpadd0-block-item-decl-vartys-old-support-lemma
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
          (item (c::block-item-declon declon))
-         ((mv & compst0) (c::exec-initer initer compst fenv (1- limit)))
+         ((mv & compst0) (c::exec-initer initer compst fenv (- limit 2)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
       (implies (and (not (c::errorp result))
                     (c::identp var)
@@ -3531,11 +3544,15 @@
                     (not (equal var var1))
                     (c::compustate-has-var-with-type-p var1 type compst0))
                (c::compustate-has-var-with-type-p var1 type compst1)))
-    :expand (c::exec-block-item
-             (c::block-item-declon
+    :expand ((c::exec-block-item
+              (c::block-item-declon
+               (c::obj-declon
+                '(:none) tyspec (c::obj-declor-ident var) initer))
+              compst fenv limit)
+             (c::exec-obj-declon
               (c::obj-declon
-               '(:none) tyspec (c::obj-declor-ident var) initer))
-             compst fenv limit)
+               '(:none) tyspec (c::obj-declor-ident var) initer)
+              compst fenv (+ -1 limit)))
     :enable (c::obj-declon-to-ident+scspec+tyname+init
              c::tyspec+declor-to-ident+tyname
              c::obj-declor-to-ident+adeclor
@@ -3552,11 +3569,15 @@
       (implies (and (not (c::errorp result))
                     (c::identp var))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-block-item
-             (c::block-item-declon
+    :expand ((c::exec-block-item
+              (c::block-item-declon
+               (c::obj-declon
+                '(:none) tyspec (c::obj-declor-ident var) initer))
+              compst fenv limit)
+             (c::exec-obj-declon
               (c::obj-declon
-               '(:none) tyspec (c::obj-declor-ident var) initer))
-             compst fenv limit)
+               '(:none) tyspec (c::obj-declor-ident var) initer)
+              compst fenv (+ -1 limit)))
     :enable (c::compustate-has-var-with-type-p-of-create-same-var
              c::obj-declon-to-ident+scspec+tyname+init
              c::tyspec+declor-to-ident+tyname
