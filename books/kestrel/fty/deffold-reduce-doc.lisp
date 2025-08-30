@@ -333,6 +333,19 @@
           to the tail of the map.")))))
 
     (xdoc::desc
+     "Accompanying product theorems."
+     (xdoc::p
+      "For each @(tsee defprod) type @('<type>')
+       specified by the @(':types') input,
+       such that the @(':override') input
+       does not include an element @('(<type> ...)'),
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-<type>')")))
+
+    (xdoc::desc
      "Accompanying list theorems."
      (xdoc::p
       "For each @(tsee deflist) type @('<type>')

@@ -50,6 +50,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define flexprod-field-list->name-list ((fields flexprod-field-listp))
+  :returns (names symbol-listp)
+  :short "Lift @('flexprod-field->name') to lists."
+  (b* (((when (endp fields)) nil)
+       (name (flexprod-field->name (car fields)))
+       ((unless (symbolp name))
+        (raise "Internal error: malformed field name ~x0." name))
+       (names (flexprod-field-list->name-list (cdr fields))))
+    (cons name names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation
 
  deffold-reduce
@@ -404,15 +416,25 @@
                                          (default t)
                                          (combine symbolp)
                                          (fty-table alistp))
-  :returns term
+  :returns (mv fn-term
+               thm-term
+               (field-names symbol-listp))
   :short "Generate the combination for the fields of a product type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the term returned, in the absence of overriding,
+    "We generate two combination terms:
+     one for the fold function, and one for an associated theorem.
+     We also return the list of names of the fields, in order.")
+   (xdoc::p
+    "The @('fn-term') is the term returned, in the absence of overriding,
      by the fold function of a @(tsee defprod),
      or by a case of the fold function of a @(tsee deftagsum).
      See @(tsee deffold-reduce).")
+   (xdoc::p
+    "The @('thm-term') is the term used, in the absence of overriding,
+     as the right side of the theorem @('<type>-<suffix>-of-<type>')
+     described in the user documentation of @(tsee deffold-reduce).")
    (xdoc::p
     "We go through the fields,
      and we return a right-associated nest of the @(':combine') operator
@@ -427,35 +449,57 @@
      then we skip the field.
      If there is type information,
      we skip the field unless its type is in @('targets').
-     If a field is not skipped,
-     we apply the fold function for its type to
-     the accessor of the field
-     applied to a variable with the same name as
-     the product (not field) type;
-     this relies on the fact that the functions we generate
-     use the type names as their formals."))
-  (b* (((when (endp fields)) default)
+     If a field is not skipped:")
+   (xdoc::ul
+    (xdoc::li
+     "For @('fn-term'),
+      we apply the fold function for the field's type to
+      the accessor of the field
+      applied to a variable with the same name as
+      the product (not field) type.
+      This relies on the fact that the functions we generate
+      use the type names as their formals.")
+    (xdoc::li
+     "For @('thm-term'),
+      we apply the fold function for the field's type to
+      a variable with the same name as the field.
+      This relies on the fact that the left side of the theorem
+      includes a call of the product type constructor
+      applied to arguments with the same names as the the fields.")))
+  (b* (((when (endp fields)) (mv default default nil))
        (field (car fields))
+       (name (flexprod-field->name field))
+       ((unless (symbolp name))
+        (raise "Internal error: malformed field name ~x0." name)
+        (mv nil nil nil))
        (recog (flexprod-field->type field))
        ((unless (symbolp recog))
-        (raise "Internal error: malformed field recognizer ~x0." recog))
+        (raise "Internal error: malformed field recognizer ~x0." recog)
+        (mv nil nil nil))
        (info (flextype-with-recognizer recog fty-table))
        (field-type (and info
                         (flextype->name info)))
        ((unless (and field-type
                      (member-eq field-type targets)))
-        (deffoldred-gen-prod-combination
-          type (cdr fields) suffix
-          targets extra-args default combine fty-table))
+        (b* (((mv fn-term thm-term rest-names)
+              (deffoldred-gen-prod-combination
+                type (cdr fields) suffix
+                targets extra-args default combine fty-table)))
+          (mv fn-term thm-term (cons name rest-names))))
        (accessor (flexprod-field->acc-name field))
        (field-type-suffix (deffoldred-gen-fold-name field-type suffix))
        (extra-args-names (deffoldred-extra-args-to-names extra-args))
-       (fold `(,field-type-suffix (,accessor ,type) ,@extra-args-names))
-       (folds (deffoldred-gen-prod-combination
-                type (cdr fields) suffix
-                targets extra-args default combine fty-table))
-       ((when (equal folds default)) fold))
-    `(,combine ,fold ,folds)))
+       (fn-term `(,field-type-suffix (,accessor ,type) ,@extra-args-names))
+       (thm-term `(,field-type-suffix ,name ,@extra-args-names))
+       ((mv rest-fn-term rest-thm-term rest-names)
+        (deffoldred-gen-prod-combination
+          type (cdr fields) suffix
+          targets extra-args default combine fty-table))
+       (names (cons name rest-names))
+       ((when (equal rest-fn-term default)) (mv fn-term thm-term names)))
+    (mv `(,combine ,fn-term ,rest-fn-term)
+        `(,combine ,thm-term ,rest-thm-term)
+        names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -493,10 +537,11 @@
              ((when term-assoc) (cdr term-assoc))
              (fields (flexprod->fields prod))
              ((unless (flexprod-field-listp fields))
-              (raise "Internal error: malformed fields ~x0." fields)))
-          (deffoldred-gen-prod-combination
-            type fields suffix targets
-            extra-args default combine fty-table))))
+              (raise "Internal error: malformed fields ~x0." fields))
+             ((mv fn-term & &) (deffoldred-gen-prod-combination
+                                 type fields suffix targets
+                                 extra-args default combine fty-table)))
+          fn-term)))
     (list* kind
            term
            (deffoldred-gen-sum-cases
@@ -516,7 +561,8 @@
                                   (overrides alistp)
                                   (fty-table alistp))
   :guard (eq (flexsum->typemacro sum) 'defprod)
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the fold function for a product type."
   :long
   (xdoc::topstring
@@ -542,34 +588,53 @@
   (b* ((type (flexsum->name sum))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexsum->count sum))
        (recog (flexsum->pred sum))
        (recp (flexsum->recp sum))
-       (body
+       (extra-args-names (deffoldred-extra-args-to-names extra-args))
+       ((mv fn-body thm-lhs thm-rhs)
         (b* ((term-assoc (assoc-equal type overrides))
-             ((when term-assoc) (cdr term-assoc))
+             ((when term-assoc) (mv (cdr term-assoc) nil nil))
              (prods (flexsum->prods sum))
              ((unless (flexprod-listp prods))
-              (raise "Internal error: malformed products ~x0." prods))
+              (raise "Internal error: malformed products ~x0." prods)
+              (mv nil nil nil))
              ((unless (and (consp prods)
                            (endp (cdr prods))))
-              (raise "Internal error: non-singleton product ~x0." prods))
+              (raise "Internal error: non-singleton product ~x0." prods)
+              (mv nil nil nil))
              (prod (car prods))
              (fields (flexprod->fields prod))
              ((unless (flexprod-field-listp fields))
-              (raise "Internal error: malformed fields ~x0." fields)))
-          (deffoldred-gen-prod-combination
-            type fields suffix targets extra-args default combine fty-table))))
-    `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       (declare (ignorable ,type))
-       :returns (result ,result)
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+              (raise "Internal error: malformed fields ~x0." fields)
+              (mv nil nil nil))
+             ((mv fn-body thm-rhs field-names)
+              (deffoldred-gen-prod-combination
+                type fields suffix targets extra-args
+                default combine fty-table))
+             (thm-lhs `(,type-suffix (,type ,@field-names) ,@extra-args-names)))
+          (mv fn-body thm-lhs thm-rhs)))
+       (fn-event
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
+           (declare (ignorable ,type))
+           :returns (result ,result)
+           :parents (,(deffoldred-gen-topic-name suffix))
+           ,fn-body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:verify-guards :after-returns))
+           ,@(and (not mutrecp) '(:hooks (:fix)))))
+       (type-suffix-of-type
+        (acl2::packn-pos (list type-suffix '-of- type) type))
+       (thm-events
+        (and thm-lhs
+             `((defruled ,type-suffix-of-type
+                 (equal ,thm-lhs ,thm-rhs)
+                 :expand ,thm-lhs)
+               (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
+                               '(,type-suffix-of-type))))))
+    (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -719,10 +784,9 @@
   (b* ((typemacro (flexsum->typemacro sum)))
     (cond
      ((eq typemacro 'defprod)
-      (mv (deffoldred-gen-prod-fold
-            sum mutrecp suffix
-            targets extra-args result default combine overrides fty-table)
-          nil))
+      (deffoldred-gen-prod-fold
+        sum mutrecp suffix
+        targets extra-args result default combine overrides fty-table))
      ((eq typemacro 'deftagsum)
       (mv (deffoldred-gen-sum-fold
             sum mutrecp suffix
