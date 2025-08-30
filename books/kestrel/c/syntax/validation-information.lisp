@@ -681,7 +681,10 @@
      i.e. the @(tsee initdeclor) fixtype.")
    (xdoc::p
     "The information for an initializer declarator consists of
-     the type of the declared identifier and an "
+     the type of (or denoted by) the declared identifier,
+     a flag saying whether the identifier is a @('typdef') or not
+     (if the flag is @('t') the type is the one denoted by the identifier),
+     and an "
     (xdoc::seetopic "uid-option" "optional unique identifier")
     ". Currently, we only assign unique identifiers to
      ordinary identifiers representing an object or function.
@@ -690,6 +693,7 @@
      Initializer declarators which correspond to @('typedef') declarations
      are not annotated with a unique identifier."))
   ((type type)
+   (typedefp bool)
    (uid? uid-option))
   :pred initdeclor-infop)
 

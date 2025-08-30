@@ -5118,7 +5118,9 @@
                           with associated information ~x1."
                          ident info?))
                (table (valid-add-ord ident (valid-ord-info-typedef type) table))
-               (anno-info (make-initdeclor-info :type type :uid? nil)))
+               (anno-info (make-initdeclor-info :type type
+                                                :typedefp t
+                                                :uid? nil)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
@@ -5183,7 +5185,9 @@
                           :defstatus defstatus
                           :uid uid))
                (table (valid-add-ord ident new-info table))
-               (anno-info (make-initdeclor-info :type type :uid? uid)))
+               (anno-info (make-initdeclor-info :type type
+                                                :typedefp nil
+                                                :uid? uid)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
@@ -5205,7 +5209,9 @@
                             :defstatus defstatus
                             :uid uid))
                  (table (valid-add-ord ident new-info table))
-                 (anno-info (make-initdeclor-info :type type :uid? uid)))
+                 (anno-info (make-initdeclor-info :type type
+                                                  :typedefp nil
+                                                  :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
@@ -5228,7 +5234,9 @@
                             :defstatus defstatus
                             :uid uid))
                  (table (valid-add-ord ident new-info table))
-                 (anno-info (make-initdeclor-info :type type :uid? uid)))
+                 (anno-info (make-initdeclor-info :type type
+                                                  :typedefp nil
+                                                  :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
@@ -5263,7 +5271,9 @@
                     :defstatus defstatus
                     :uid uid))
          (table (valid-add-ord ident new-info table))
-         (anno-info (make-initdeclor-info :type type :uid? uid)))
+         (anno-info (make-initdeclor-info :type type
+                                          :typedefp nil
+                                          :uid? uid)))
       (retok (make-initdeclor :declor new-declor
                               :asm? initdeclor.asm?
                               :attribs initdeclor.attribs
