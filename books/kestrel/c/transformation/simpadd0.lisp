@@ -5268,7 +5268,10 @@
      (xdoc::p
       "If a theorem was generated for the initializer,
        it is regarded as the theorem for the initializer declarator.
-       This is so that the theorem can surface up to block item declarations."))
+       This is so that the theorem can surface up to block item declarations.")
+     (xdoc::p
+      "If the type of the declared identifier is supported for proof generation,
+       we update the variable-type map."))
     (b* (((initdeclor initdeclor) initdeclor)
          ((mv new-declor (simpadd0-gout gout-declor))
           (simpadd0-declor initdeclor.declor gin))
@@ -5277,18 +5280,28 @@
           (simpadd0-initer-option initdeclor.init?
                                   (change-simpadd0-gin
                                    gin :vartys gout-declor.vartys)))
-         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?)))
+         ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?))
+         (info (coerce-initdeclor-info initdeclor.info))
+         (type (c$::initdeclor-info->type info))
+         (post-vartys (if (and (type-formalp type)
+                               (not (type-case type :void))
+                               (not (type-case type :char)))
+                          (omap::update (c$::declor->ident initdeclor.declor)
+                                        type
+                                        gout-init?.vartys)
+                        gout-init?.vartys)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
-                           :init? new-init?)
+                           :init? new-init?
+                           :info info)
           (if gout-init?.thm-name
               (make-simpadd0-gout :events gin.events
                                   :thm-index gin.thm-index
                                   :thm-name gout-init?.thm-name
-                                  :vartys gout-init?.vartys)
+                                  :vartys post-vartys)
             (change-simpadd0-gout (simpadd0-gout-no-thm gin)
-                                  :vartys gout-init?.vartys))))
+                                  :vartys post-vartys))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
