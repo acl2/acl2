@@ -13337,7 +13337,8 @@
           (retok (make-initdeclor :declor declor
                                   :asm? asmspec?
                                   :attribs attrspecs
-                                  :init? initer)
+                                  :init? initer
+                                  :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, there is no initializer.
@@ -13347,7 +13348,8 @@
           (retok (make-initdeclor :declor declor
                                   :asm? asmspec?
                                   :attribs attrspecs
-                                  :init? nil)
+                                  :init? nil
+                                  :info nil)
                  (cond (attrspecs (span-join span attrspecs-span))
                        (asmspec? (span-join span asmspec?-span))
                        (t span))
@@ -16655,7 +16657,8 @@
                                                  :declor declor
                                                  :asm? asmspec?
                                                  :attribs attrspecs
-                                                 :init? nil))))
+                                                 :init? nil
+                                                 :info nil))))
                      (span-join span span3)
                      parstate))
              ;; If token3 is an equal sign,
@@ -16670,7 +16673,8 @@
                    (initdeclor (make-initdeclor :declor declor
                                                 :asm? asmspec?
                                                 :attribs attrspecs
-                                                :init? initer))
+                                                :init? initer
+                                                :info nil))
                    ((erp token4 span4 parstate) (read-token parstate)))
                 (cond
                  ;; If token4 is a semicolon,
@@ -16718,7 +16722,8 @@
               (b* ((initdeclor (make-initdeclor :declor declor
                                                 :asm? asmspec?
                                                 :attribs attrspecs
-                                                :init? nil))
+                                                :init? nil
+                                                :info nil))
                    ((erp initdeclors & parstate)
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
                     ;;   initdeclors

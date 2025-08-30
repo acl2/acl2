@@ -99,7 +99,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-init-table ((filepath filepathp)
-                          &optional (externals valid-externalsp))
+                          &optional
+                          (externals valid-externalsp)
+                          ((next-uid uidp) '(uid 0)))
   :returns (table valid-tablep)
   :short "Initial validation table."
   :long
@@ -108,7 +110,8 @@
     "This contains one empty scope (the initial file scope)."))
   (make-valid-table :filepath filepath
                     :scopes (list (valid-empty-scope))
-                    :externals externals)
+                    :externals externals
+                    :next-uid next-uid)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,7 +243,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-update-ext ((ident identp) (type typep) (table valid-tablep))
+(define valid-get-fresh-uid ((ident identp)
+                             (linkage linkagep)
+                             (table valid-tablep))
+  :returns (mv (uid uidp)
+               (new-table valid-tablep))
+  :short "Get a fresh @(tsee UID) and update the table accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('next-uid') field of the @(see valid-table) is incremented to record
+     that the returned @(tsee UID) is now taken."))
+  (b* (((valid-table table) table))
+    (linkage-case
+      linkage
+      :external (b* ((info? (valid-lookup-ext ident table)))
+                  (valid-ext-info-option-case
+                    info?
+                    :some (mv (valid-ext-info->uid info?.val)
+                              (valid-table-fix table))
+                    :none (mv table.next-uid
+                              (change-valid-table
+                                table
+                                :next-uid (uid-increment table.next-uid)))))
+      :otherwise (mv table.next-uid
+                     (change-valid-table
+                       table
+                       :next-uid (uid-increment table.next-uid)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-update-ext ((ident identp)
+                          (type typep)
+                          (uid uidp)
+                          (table valid-tablep))
   :returns (new-table valid-tablep)
   :short "Update the @('externals') map with an identifier."
   :long
@@ -251,8 +288,10 @@
      If an entry does exist, update the @('declared-in') field to include
      the name of the current translation unit.")
    (xdoc::p
-    "When an existing entry already exists, type compatibility is not checked.
-     Instead, the caller should check compatibility before updating."))
+    "When an existing entry already exists,
+     type compatibility is not checked, nor is the UID.
+     Instead, the caller should check compatibility and ensure a proper UID
+     before updating."))
   (b* (((valid-table table) table)
        (info? (valid-lookup-ext ident table))
        (new-info
@@ -265,7 +304,8 @@
                                           info?.val)))
            :none (make-valid-ext-info
                    :type type
-                   :declared-in (insert table.filepath nil))))
+                   :declared-in (insert table.filepath nil)
+                   :uid uid)))
        (new-externals
          (omap::update (ident-fix ident) new-info table.externals)))
     (change-valid-table table :externals new-externals))
@@ -315,7 +355,8 @@
            info
            :objfun (linkage-case
                      info.linkage
-                     :external (valid-update-ext ident info.type table)
+                     :external
+                     (valid-update-ext ident info.type info.uid table)
                      :otherwise table)
            :otherwise table)))
     table)
@@ -335,7 +376,10 @@
    (xdoc::p
     "Unlike @(tsee valid-add-ord), this skips any block scopes,
      and directly updates the file scope at the bottom of the stack.
-     It is used in some situations."))
+     It is used in some situations.")
+   (xdoc::p
+    "As in @(tsee valid-add-ord), we update the @('externals') map
+     if @('info') indicates external linkage."))
   (b* ((scopes (valid-table->scopes table))
        ((when (endp scopes))
         (raise "Internal error: no scopes.")
@@ -346,29 +390,51 @@
                              (valid-ord-info-fix info)
                              ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
-       (new-scopes (append (butlast scopes 1) (list new-scope))))
-    (change-valid-table table :scopes new-scopes))
+       (new-scopes (append (butlast scopes 1) (list new-scope)))
+       (table (change-valid-table table :scopes new-scopes))
+       (table
+         (valid-ord-info-case
+           info
+           :objfun (linkage-case
+                     info.linkage
+                     :external
+                     (valid-update-ext ident info.type info.uid table)
+                     :otherwise table)
+           :otherwise table)))
+    table)
   :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define valid-add-ords-file-scope ((idents ident-listp)
-                                   (info valid-ord-infop)
-                                   (table valid-tablep))
+(define valid-add-ord-objfuns-file-scope ((idents ident-listp)
+                                          (type typep)
+                                          (linkage linkagep)
+                                          (defstatus valid-defstatusp)
+                                          (table valid-tablep))
   :returns (new-table valid-tablep)
-  :short "Add a list of ordinary identifier
+  :short "Add a list of ordinary identifiers
+          corresponding to objects or functions
           to the file scope of a validation table."
   :long
   (xdoc::topstring
    (xdoc::p
     "See @(tsee valid-add-ord-file-scope)."))
-  (cond ((endp idents) (valid-table-fix table))
-        (t (valid-add-ords-file-scope (cdr idents)
-                                      info
-                                      (valid-add-ord-file-scope (car idents)
-                                                                info
-                                                                table))))
+  (b* (((when (endp idents))
+        (valid-table-fix table))
+       ((mv uid table) (valid-get-fresh-uid (first idents) linkage table)))
+    (valid-add-ord-objfuns-file-scope
+      (rest idents)
+      type
+      linkage
+      defstatus
+      (valid-add-ord-file-scope (first idents)
+                                (make-valid-ord-info-objfun
+                                  :type type
+                                  :linkage linkage
+                                  :defstatus defstatus
+                                  :uid uid)
+                                table)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1004,7 +1070,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (table valid-tablep))
-  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep))
+  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep) (uid uidp))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -1021,7 +1087,7 @@
      recorded as denoting an object or function
      [C17:6.5.1/2].
      The type and the linkage are obtained from the table."))
-  (b* (((reterr) (irr-type) (irr-linkage))
+  (b* (((reterr) (irr-type) (irr-linkage) (irr-uid))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
@@ -1030,7 +1096,8 @@
                   but does not denote an object or function."
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
-           (valid-ord-info-objfun->linkage info)))
+           (valid-ord-info-objfun->linkage info)
+           (valid-ord-info-objfun->uid info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2240,9 +2307,10 @@
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type linkage) (valid-var expr.ident table))
+       :ident (b* (((erp type linkage uid) (valid-var expr.ident table))
                    (info (make-var-info :type type
-                                        :linkage linkage)))
+                                        :linkage linkage
+                                        :uid uid)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
                        type
@@ -4349,7 +4417,7 @@
                     has storage class specifiers ~x1."
                    (param-declon-fix paramdecl)
                    (stor-spec-list-fix storspecs)))
-         ((erp new-decl type ident? more-types table)
+         ((erp new-decl type ident? more-types uid? table)
           (valid-param-declor paramdecl.declor type table ienv))
          ((when (and fundef-params-p
                      (not ident?)))
@@ -4369,7 +4437,8 @@
          (ord-info (make-valid-ord-info-objfun
                     :type type
                     :linkage (linkage-none)
-                    :defstatus (valid-defstatus-defined)))
+                    :defstatus (valid-defstatus-defined)
+                    :uid uid?))
          ((mv info? currentp) (valid-lookup-ord ident? table))
          ((when (and info? currentp))
           (retmsg$ "The parameter declared in ~x0 ~
@@ -4424,6 +4493,7 @@
                  (new-type typep)
                  (ident? ident-optionp)
                  (return-types type-setp)
+                 (uid? uid-optionp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a parameter declarator."
@@ -4438,24 +4508,27 @@
        and an optional identifier.")
      (xdoc::p
       "If the parameter declarator is a (non-abstract) declarator,
-       we return the possibly refined type and the identifier.
+       we return the possibly refined type, the identifier, and the @(see UID).
        If the parameter declarator is an abstract declarator,
-       we return the possibly refined type but no identifier.
+       we return the possibly refined type but no identifier nor @(see UID).
        If the parameter declarator is absent,
-       we return the type unchanged and no identifier."))
+       we return the type unchanged and no identifier nor @(see UID)."))
     (b* (((reterr)
-          (irr-param-declor) (irr-type) (irr-ident) nil (irr-valid-table)))
+          (irr-param-declor) (irr-type) (irr-ident) nil nil (irr-valid-table)))
       (param-declor-case
        paramdeclor
        :nonabstract
        (b* (((erp new-declor & type ident types table)
              (valid-declor paramdeclor.declor nil type table ienv))
-            (info (param-declor-nonabstract-info type)))
+            ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
+            (info
+             (make-param-declor-nonabstract-info :type type :uid uid)))
          (retok (make-param-declor-nonabstract :declor new-declor
                                                :info info)
                 type
                 ident
                 types
+                uid
                 table))
        :abstract
        (b* (((erp new-absdeclor type types table)
@@ -4464,16 +4537,26 @@
                 type
                 nil
                 types
+                nil
                 table))
        :none
        (retok (param-declor-none)
               (type-fix type)
               nil
               nil
+              nil
               (valid-table-fix table))
        :ambig
        (prog2$ (impossible) (retmsg$ ""))))
-    :measure (param-declor-count paramdeclor))
+    :measure (param-declor-count paramdeclor)
+
+    ///
+
+    (defret valid-param-declor.uid?-under-iff
+      (implies (not erp)
+               (iff uid? ident?))
+      :hints
+      (("Goal" :expand (valid-param-declor paramdeclor type table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5034,11 +5117,13 @@
                           is already declared in the current scope ~
                           with associated information ~x1."
                          ident info?))
-               (table (valid-add-ord ident (valid-ord-info-typedef type) table)))
+               (table (valid-add-ord ident (valid-ord-info-typedef type) table))
+               (anno-info (make-initdeclor-info :uid? nil)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
-                                    :init? nil)
+                                    :init? nil
+                                    :info anno-info)
                    types
                    table)))
          ((when (and initdeclor.init?
@@ -5064,10 +5149,10 @@
                             (valid-defstatus-tentative))))))
          ((mv info? currentp) (valid-lookup-ord ident table))
          ((when (and (linkage-case linkage :external)
-                     (let ((external-info? (valid-lookup-ext ident table)))
-                       (and external-info?
+                     (let ((ext-info? (valid-lookup-ext ident table)))
+                       (and ext-info?
                             (not (type-compatiblep
-                                   (valid-ext-info->type external-info?)
+                                   (valid-ext-info->type ext-info?)
                                    type))))))
           (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
                     was previously declared with incompatible type ~x2."
@@ -5082,24 +5167,28 @@
                     in the same translation unit."
                    ident))
          ((when (and (linkage-case linkage :internal)
-                     (let ((external-info? (valid-lookup-ext ident table)))
-                       (and external-info?
+                     (let ((ext-info? (valid-lookup-ext ident table)))
+                       (and ext-info?
                             (in table.filepath
-                                (valid-ext-info->declared-in external-info?))))))
+                                (valid-ext-info->declared-in ext-info?))))))
           (retmsg$ "The identifier ~x0 with internal linkage ~
                     was previously declared with external linkage ~
                     in the same translation unit."
                    ident))
          ((when (not info?))
-          (b* ((new-info (make-valid-ord-info-objfun
+          (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
+               (new-info (make-valid-ord-info-objfun
                           :type type
                           :linkage linkage
-                          :defstatus defstatus))
-               (table (valid-add-ord ident new-info table)))
+                          :defstatus defstatus
+                          :uid uid))
+               (table (valid-add-ord ident new-info table))
+               (anno-info (make-initdeclor-info :uid? uid)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
-                                    :init? new-init?)
+                                    :init? new-init?
+                                    :info anno-info)
                    (set::union types more-types)
                    table)))
          ((when (or (valid-ord-info-case info? :typedef)
@@ -5109,15 +5198,19 @@
                         is already declared in the current scope ~
                         with associated information ~x1."
                        ident info?)
-            (b* ((new-info (make-valid-ord-info-objfun
+            (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
+                 (new-info (make-valid-ord-info-objfun
                             :type type
                             :linkage linkage
-                            :defstatus defstatus))
-                 (table (valid-add-ord ident new-info table)))
+                            :defstatus defstatus
+                            :uid uid))
+                 (table (valid-add-ord ident new-info table))
+                 (anno-info (make-initdeclor-info :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
-                                      :init? new-init?)
+                                      :init? new-init?
+                                      :info anno-info)
                      (set::union types more-types)
                      table))))
          ((valid-ord-info-objfun info) info?)
@@ -5128,15 +5221,19 @@
                         is already declared in the current scope ~
                         with associated information ~x1."
                        ident info?)
-            (b* ((new-info (make-valid-ord-info-objfun
+            (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
+                 (new-info (make-valid-ord-info-objfun
                             :type type
                             :linkage linkage
-                            :defstatus defstatus))
-                 (table (valid-add-ord ident new-info table)))
+                            :defstatus defstatus
+                            :uid uid))
+                 (table (valid-add-ord ident new-info table))
+                 (anno-info (make-initdeclor-info :uid? uid)))
               (retok (make-initdeclor :declor new-declor
                                       :asm? initdeclor.asm?
                                       :attribs initdeclor.attribs
-                                      :init? new-init?)
+                                      :init? new-init?
+                                      :info anno-info)
                      (set::union types more-types)
                      table))))
          ((unless (or (equal type info.type)
@@ -5159,15 +5256,19 @@
                   after being declared with internal linkage."
                  ident)
           (retmsg$ ""))
+         ((mv uid table) (valid-get-fresh-uid ident linkage table))
          (new-info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage
-                    :defstatus defstatus))
-         (table (valid-add-ord ident new-info table)))
+                    :defstatus defstatus
+                    :uid uid))
+         (table (valid-add-ord ident new-info table))
+         (anno-info (make-initdeclor-info :uid? uid)))
       (retok (make-initdeclor :declor new-declor
                               :asm? initdeclor.asm?
                               :attribs initdeclor.attribs
-                              :init? new-init?)
+                              :init? new-init?
+                              :info anno-info)
              (set::union types more-types)
              table))
     :measure (initdeclor-count initdeclor))
@@ -6043,6 +6144,7 @@
      because we have added it to the file scope."))
   (b* (((reterr) (irr-fundef) (irr-valid-table))
        ((fundef fundef) fundef)
+       ((valid-table table) table)
        (table-start table)
        ((erp new-spec type storspecs types table)
         (valid-decl-spec-list fundef.spec nil nil nil table ienv))
@@ -6062,17 +6164,44 @@
        ((unless (type-case type :function))
         (retmsg$ "The function definition ~x0 has type ~x1."
                  (fundef-fix fundef) type))
+       ((when (and (linkage-case linkage :external)
+                   (let ((ext-info? (valid-lookup-ext ident table)))
+                     (and ext-info?
+                          (not (type-compatiblep
+                                 (valid-ext-info->type ext-info?)
+                                 (type-function)))))))
+        (retmsg$ "The function definition ~x0 with external linkage ~
+                  was previously declared with incompatible type ~x2."
+                 ident
+                 type
+                 (valid-ext-info->type
+                   (valid-lookup-ext ident table))))
+       ((when (and (linkage-case linkage :external)
+                   (valid-has-internalp ident table)))
+        (retmsg$ "The function definition ~x0 with external linkage ~
+                  was previously declared with internal linkage ~
+                  in the same translation unit."
+                 ident))
+       ((when (and (linkage-case linkage :internal)
+                   (let ((ext-info? (valid-lookup-ext ident table)))
+                     (and ext-info?
+                          (in table.filepath
+                              (valid-ext-info->declared-in ext-info?))))))
+        (retmsg$ "The function definition ~x0 with internal linkage ~
+                  was previously declared with external linkage ~
+                  in the same translation unit."
+                 ident))
        (info? (valid-lookup-ord-file-scope ident table))
-       ((erp table)
-        (b* (((reterr) (irr-valid-table))
+       ((erp fundef-uid table)
+        (b* (((reterr) (irr-uid) (irr-valid-table))
              ((when (not info?))
-              (retok
-               (valid-add-ord-file-scope ident
-                                         (make-valid-ord-info-objfun
-                                          :type (type-function)
-                                          :linkage linkage
-                                          :defstatus (valid-defstatus-defined))
-                                         table)))
+              (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
+                   (info (make-valid-ord-info-objfun
+                           :type (type-function)
+                           :linkage linkage
+                           :defstatus (valid-defstatus-defined)
+                           :uid uid)))
+                (retok uid (valid-add-ord-file-scope ident info table))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -6101,36 +6230,53 @@
              ((when (valid-defstatus-case info.defstatus :defined))
               (retmsg$ "The function definition ~x0 ~
                         is a redefinition of the function."
-                       (fundef-fix fundef))))
-          (retok
-           (valid-add-ord-file-scope ident
-                                     (make-valid-ord-info-objfun
-                                      :type (type-function)
-                                      :linkage linkage
-                                      :defstatus (valid-defstatus-defined))
-                                     table))))
+                       (fundef-fix fundef)))
+             ((mv uid table) (valid-get-fresh-uid ident linkage table))
+             (info (make-valid-ord-info-objfun
+                     :type (type-function)
+                     :linkage linkage
+                     :defstatus (valid-defstatus-defined)
+                     :uid uid)))
+          (retok uid (valid-add-ord-file-scope ident info table))))
        ((erp new-decls types table) (valid-decl-list fundef.decls table ienv))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
                  (fundef-fix fundef)))
-       (ainfo (make-valid-ord-info-objfun
-                :type (type-array)
-                :linkage (linkage-none)
-                :defstatus (valid-defstatus-defined)))
-       (table (valid-add-ord (ident "__func__") ainfo table))
+       ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
+       (table (valid-add-ord (ident "__func__")
+                             (make-valid-ord-info-objfun
+                               :type (type-array)
+                               :linkage (linkage-none)
+                               :defstatus (valid-defstatus-defined)
+                               :uid uid)
+                             table))
+       ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
        (table (if (ienv->gcc ienv)
                   (valid-add-ord (ident "__FUNCTION__")
-                                 ainfo
-                                 (valid-add-ord (ident "__PRETTY_FUNCTION__")
-                                                ainfo
-                                                table))
+                                 (make-valid-ord-info-objfun
+                                   :type (type-array)
+                                   :linkage (linkage-none)
+                                   :defstatus (valid-defstatus-defined)
+                                   :uid uid)
+                                 table)
+                table))
+       ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
+       (table (if (ienv->gcc ienv)
+                  (valid-add-ord (ident "__PRETTY_FUNCTION__")
+                                 (make-valid-ord-info-objfun
+                                   :type (type-array)
+                                   :linkage (linkage-none)
+                                   :defstatus (valid-defstatus-defined)
+                                   :uid uid)
+                                 table)
                 table))
        (table-body-start table)
        ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
-                               :table-body-start table-body-start)))
+                               :table-body-start table-body-start
+                               :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
@@ -6222,6 +6368,7 @@
 (define valid-transunit ((filepath filepathp)
                          (tunit transunitp)
                          (externals valid-externalsp)
+                         (next-uid uidp)
                          (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv (erp maybe-msgp) (new-tunit transunitp) (table valid-tablep))
@@ -6258,23 +6405,21 @@
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
        (gcc (ienv->gcc ienv))
-       (table (valid-init-table filepath externals))
+       (table (valid-init-table filepath externals next-uid))
        (table
          (if gcc
-             (b* ((finfo (make-valid-ord-info-objfun
-                          :type (type-function)
-                          :linkage (linkage-external)
-                          :defstatus (valid-defstatus-defined)))
-                  (oinfo (make-valid-ord-info-objfun
-                          :type (type-unknown)
-                          :linkage (linkage-external)
-                          :defstatus (valid-defstatus-defined)))
+             (b* ((table
+                    (valid-add-ord-objfuns-file-scope *gcc-builtin-functions*
+                                                      (type-function)
+                                                      (linkage-external)
+                                                      (valid-defstatus-defined)
+                                                      table))
                   (table
-                    (valid-add-ords-file-scope
-                      *gcc-builtin-functions* finfo table))
-                  (table
-                    (valid-add-ords-file-scope
-                      *gcc-builtin-vars* oinfo table)))
+                    (valid-add-ord-objfuns-file-scope *gcc-builtin-vars*
+                                                      (type-unknown)
+                                                      (linkage-external)
+                                                      (valid-defstatus-defined)
+                                                      table)))
                table)
            table))
        ((erp new-edecls table)
@@ -6310,12 +6455,13 @@
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) nil ienv)))
+         (transunit-ensemble->unwrap tunits) nil (uid 0) ienv)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (externals valid-externalsp)
+                                          (next-uid uidp)
                                           (ienv ienvp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
@@ -6326,10 +6472,12 @@
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
           ((erp new-tunit table)
-           (valid-transunit path (omap::head-val map) externals ienv))
-          (externals (valid-table->externals (valid-pop-scope table)))
-          ((erp new-map)
-           (valid-transunit-ensemble-loop (omap::tail map) externals ienv)))
+           (valid-transunit path (omap::head-val map) externals next-uid ienv))
+          ((valid-table table) table)
+          ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
+                                                        table.externals
+                                                        table.next-uid
+                                                        ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
 

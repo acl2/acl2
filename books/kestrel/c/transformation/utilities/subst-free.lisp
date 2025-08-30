@@ -1108,7 +1108,8 @@
       (mv (initdeclor declor
                       (c$::initdeclor->asm? initdeclor)
                       attribs
-                      init?)
+                      init?
+                      (c$::initdeclor->info initdeclor))
           (ident-set-fix bound-vars)))
     :measure (initdeclor-count initdeclor))
 

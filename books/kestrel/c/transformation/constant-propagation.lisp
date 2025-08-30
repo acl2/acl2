@@ -1434,8 +1434,9 @@
         paramdeclor
         :nonabstract (b* (((mv declor env)
                            (const-prop-declor paramdeclor.declor env)))
-                       (mv (make-param-declor-nonabstract :declor declor
-                                                          :info nil)
+                       (mv (c$::make-param-declor-nonabstract
+                             :declor declor
+                             :info paramdeclor.info)
                            env))
         :abstract (b* (((mv unwrap env)
                         (const-prop-absdeclor paramdeclor.declor env)))

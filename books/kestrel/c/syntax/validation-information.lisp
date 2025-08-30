@@ -78,6 +78,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uid
+  :short "Fixtype of unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are numerical identifiers which are intended
+     to be unique to a given variable, function, type name, etc.
+     E.g., there may be many variables throughout a program
+     with the name @('x'), but all such distinct variables
+     will have distinct unique identifiers.")
+   (xdoc::p
+    "Unique identifiers are assigned during validation
+     to aid subsequent analysis.
+     By annotating identifiers with their unique alias,
+     disambiguation of variables becomes trivial."))
+  ((uid nat))
+  :pred uidp)
+
+(defirrelevant irr-uid
+  :short "An irrelevant unique identifier."
+  :type uidp
+  :body (uid 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption uid-option
+  uid
+  :short "Fixtype of optional unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unique identifiers are defined in @(tsee uid)."))
+  :pred uid-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uid-increment ((uid uidp))
+  :returns (new-uid uidp)
+  :short "Create a fresh unique identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This simply increments the numerical value of the unique identifier."))
+  (b* (((uid uid) uid))
+    (uid (1+ uid.uid)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum linkage
   :short "Fixtype of linkages."
   :long
@@ -184,7 +233,9 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants names,
+     We also assign a "
+    (xdoc::seetopic "uid" "unique identifier")
+    ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
      definition.")
@@ -192,7 +243,8 @@
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
-            (defstatus valid-defstatus)))
+            (defstatus valid-defstatus)
+            (uid uid)))
   (:enumconst ())
   (:typedef ((def type)))
   :pred valid-ord-infop)
@@ -289,6 +341,13 @@
      with both internal and external linkage in the same translation unit
      [C17:6.2.2/7].")
    (xdoc::p
+     "Finally, we store a "
+     (xdoc::seetopic "uid" "unique identifier")
+     " for the object.
+      All identifiers of the same name with external linkage
+      refer to the same object and therefore possess
+      the same unique identifier.")
+   (xdoc::p
     "Eventually, we may wish to store a boolean flag indicating
      whether the identifier has been externally defined.
      This would be used to ensure
@@ -296,7 +355,8 @@
      (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
      For now, we conservatively allow any number of definitions."))
   ((type type)
-   (declared-in filepath-set))
+   (declared-in filepath-set)
+   (uid uid))
   :pred valid-ext-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -349,10 +409,15 @@
      which we use for cross-checking across disjoint scopes
      and different translation units.
      This information accumulates
-     as we validate each translation unit in the ensemble."))
+     as we validate each translation unit in the ensemble.")
+   (xdoc::p
+    "The @('next-uid') field stores the next unused "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((filepath filepath)
    (scopes valid-scope-list)
-   (externals valid-externals))
+   (externals valid-externals)
+   (next-uid uidp))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -360,7 +425,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil))
+  :body (valid-table (irr-filepath) nil nil (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,7 +463,7 @@
 
 (define coerce-iconst-info (x)
   :returns (info iconst-infop)
-  :short "Coerce a valud to @(tsee iconst-info)."
+  :short "Coerce a value to @(tsee iconst-info)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -420,9 +485,13 @@
      i.e. identifiers used as expressions,
      i.e. the @(':ident') case of @(tsee expr).
      The information for a variable consists of
-     the type and linkage of the object denoted by the variable."))
+     the type and linkage of the object denoted by the variable,
+     as well as the variable's"
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((type type)
-   (linkage linkage))
+   (linkage linkage)
+   (uid uid))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -431,7 +500,8 @@
   :short "An irrelevant validation information for variables."
   :type var-infop
   :body (make-var-info :type (irr-type)
-                       :linkage (irr-linkage)))
+                       :linkage (irr-linkage)
+                       :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,6 +592,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod param-declor-nonabstract-info
+  :short "Fixtype of validation information for
+          non-abstract parameter declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to non-abstract parameter declarators,
+     i.e. the @(tsee param-declor) fixtype with kind @(':nonabstract').
+     The information consists of the type of the declared identifier and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((type type)
+   (uid uid))
+  :pred param-declor-nonabstract-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-param-declor-nonabstract-info
+  :short "An irrelevant validation information
+          for non-abstract parameter declarators."
+  :type param-declor-nonabstract-infop
+  :body (make-param-declor-nonabstract-info :type (irr-type)
+                                            :uid (irr-uid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-param-declor-nonabstract-info (x)
+  :returns (info param-declor-nonabstract-infop)
+  :short "Coerce a value to @(tsee param-declor-nonabstract-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (param-declor-nonabstract-infop x)
+      x
+    (prog2$ (raise "Internal error: ~
+                    ~x0 does not satisfy PARAM-DECLOR-NONABSTRACT-INFOP." x)
+            (irr-param-declor-nonabstract-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod tyname-info
   :short "Fixtype of validation information for type names."
   :long
@@ -558,42 +671,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param-declor-nonabstract-info
-  :short "Fixtype of validation information for
-          non-abstract parameter declarators."
+(fty::defprod initdeclor-info
+  :short "Fixtype of validation information for initializer declarators."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
-     the validator adds to non-abstract parameter declarators,
-     i.e. the @(tsee param-declor-nonabstract) fixtype.
-     The information consists of the type of the declared identifier."))
-  ((type type))
-  :pred param-declor-nonabstract-infop)
+     the validator adds to initializer declarators,
+     i.e. the @(tsee initdeclor) fixtype.")
+   (xdoc::p
+    "The information for an initializer declarator consists of an "
+    (xdoc::seetopic "uid-option" "optional unique identifier")
+    ". Currently, we only assign unique identifiers to
+     ordinary identifiers representing an object or function.
+     Therefore, only initializer declarators corresponding
+     to those such identifiers are annotated with unique identifiers.
+     Initializer declarators which correspond to @('typedef') declarations
+     are not annotated with a unique identifier."))
+  ((uid? uid-option))
+  :pred initdeclor-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-param-declor-nonabstract-info
-  :short "An irrelevant validation information
-          for non-abstract parameter declarators."
-  :type param-declor-nonabstract-infop
-  :body (make-param-declor-nonabstract-info :type (irr-type)))
+(defirrelevant irr-initdeclor-info
+  :short "An irrelevant validation information for initializer declarators."
+  :type initdeclor-infop
+  :body (make-initdeclor-info :uid? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define coerce-param-declor-nonabstract-info (x)
-  :returns (info param-declor-nonabstract-infop)
-  :short "Coerce a value to @(tsee param-declor-nonabstract-info)."
+(define coerce-initdeclor-info (x)
+  :returns (info initdeclor-infop)
+  :short "Coerce a value to @(tsee initdeclor-info)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This must be used when the value is expected to have that type.
      We raise a hard error if that is not the case."))
-  (if (param-declor-nonabstract-infop x)
+  (if (initdeclor-infop x)
       x
-    (prog2$ (raise "Internal error: ~
-                    ~x0 does not satisfy PARAM-DECLOR-NONABSTRACT-INFOP." x)
-            (irr-param-declor-nonabstract-info))))
+    (prog2$ (raise "Internal error: ~x0 does not satisfy INITDECLOR-INFOP." x)
+            (irr-initdeclor-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,11 +723,15 @@
     "This is the type of the annotations that
      the validator adds to function definitions.
      The information consists of
-     the validation table at the start of the function definition
-     and the validation table at the start of the body
-     (i.e. just after the opening curly brace)."))
+     the validation table at the start of the function definition,
+     the validation table at the start of the body
+     (i.e. just after the opening curly brace),
+     and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((table-start valid-table)
-   (table-body-start valid-table))
+   (table-body-start valid-table)
+   (uid uid))
   :pred fundef-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -618,7 +740,8 @@
   :short "An irrelevant validation information for function definitions."
   :type fundef-infop
   :body (make-fundef-info :table-start (irr-valid-table)
-                          :table-body-start (irr-valid-table)))
+                          :table-body-start (irr-valid-table)
+                          :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -760,6 +883,9 @@
                                      param-declor))))
    (attrib t)
    (attrib-spec t)
+   (initdeclor (and (declor-unambp (initdeclor->declor initdeclor))
+                    (initer-option-unambp (initdeclor->init? initdeclor))
+                    (initdeclor-infop (initdeclor->info initdeclor))))
    (asm-output t)
    (asm-input t)
    (asm-stmt t)
