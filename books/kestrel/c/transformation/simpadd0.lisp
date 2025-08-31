@@ -3180,6 +3180,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-decl-decl ((extension booleanp)
+                            (specs decl-spec-listp)
+                            (specs-new decl-spec-listp)
+                            (specs-thm-name symbolp)
+                            (init initdeclor-listp)
+                            (init-new initdeclor-listp)
+                            (init-thm-name symbolp)
+                            (vartys-post ident-type-mapp)
+                            (gin simpadd0-ginp))
+  :guard (and (decl-spec-list-unambp specs)
+              (decl-spec-list-unambp specs-new)
+              (initdeclor-list-unambp init)
+              (initdeclor-list-unambp init-new))
+  :returns (mv (decl declp) (gout simpadd0-goutp))
+  :short "Transform a non-static-assert declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We combine the (untransformed) extension flag
+     with the possibly transformed
+     declaration specifiers and initializer declarators.")
+   (xdoc::p
+    "Currently we do not generate theorems for lists of declaration specifiers.
+     We double-check that here.")
+   (xdoc::p
+    "If a theorem was generated for the list of initializer declarators,
+     it is regarded as the theorem for the declaration.
+     This is so that the theorem can surface up to block item declarations."))
+  (declare (ignore specs init))
+  (b* (((simpadd0-gin gin) gin)
+       (decl-new (make-decl-decl :extension extension
+                                 :specs specs-new
+                                 :init init-new))
+       ((when specs-thm-name)
+        (raise "Internal error: ~
+                unexpected declaration specifiers transformation theorem ~x0."
+               specs-thm-name)
+        (mv (irr-decl) (irr-simpadd0-gout)))
+       (gout (if init-thm-name
+                 (make-simpadd0-gout :events gin.events
+                                     :thm-index gin.thm-index
+                                     :thm-name init-thm-name
+                                     :vartys vartys-post)
+               (change-simpadd0-gout (simpadd0-gout-no-thm gin)
+                                     :vartys vartys-post))))
+    (mv decl-new gout))
+
+  ///
+
+  (defret decl-unambp-of-simpadd0-decl-decl
+    (decl-unambp decl)
+    :hyp (and (decl-spec-list-unambp specs-new)
+              (initdeclor-list-unambp init-new))
+    :hints (("Goal" :in-theory (enable irr-decl)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-block-item-stmt ((stmt stmtp)
                                   (stmt-new stmtp)
                                   (stmt-thm-name symbolp)
@@ -5440,16 +5497,15 @@
                 ((mv new-init (simpadd0-gout gout-init))
                  (simpadd0-initdeclor-list decl.init gin))
                 ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init)))
-             (mv (make-decl-decl :extension decl.extension
-                                 :specs new-specs
-                                 :init new-init)
-                 (if gout-init.thm-name
-                     (make-simpadd0-gout :events gin.events
-                                         :thm-index gin.thm-index
-                                         :thm-name gout-init.thm-name
-                                         :vartys gout-init.vartys)
-                   (change-simpadd0-gout (simpadd0-gout-no-thm gin)
-                                         :vartys gout-init.vartys))))
+             (simpadd0-decl-decl decl.extension
+                                 decl.specs
+                                 new-specs
+                                 gout-specs.thm-name
+                                 decl.init
+                                 new-init
+                                 gout-init.thm-name
+                                 gout-init.vartys
+                                 gin))
      :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
                        (simpadd0-statassert decl.unwrap gin))
                       (gin (simpadd0-gin-update gin gout-decl)))
