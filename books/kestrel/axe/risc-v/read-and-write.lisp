@@ -44,9 +44,13 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 ;(local (include-book "kestrel/bv/top" :dir :system)) ; reduce
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;; Disable bad rules that come in via fty via risc-v:
 (in-theory (disable acl2::reverse-removal acl2::revappend-removal))
+
+;; For speed:
+(local (in-theory (disable acl2::bvchop-plus-1-split)))
 
 ;move
 (local
@@ -526,9 +530,8 @@
                                      (logtail 8 val)
                                      stat))))
 
-;rename
 (local
-  (defthmd read-when-bvchops-agree-helper
+  (defthmd equal-of-read-and-read-when-bvchops-agree-helper
     (implies (and (equal (bvchop 32 addr)
                          (bvchop 32 addr2))
                   (integerp addr)
@@ -543,23 +546,23 @@
                                 ;bvplus
                                 )))))
 
-(defthmd read-when-bvchops-agree
+(defthmd equal-of-read-and-read-when-bvchops-agree
   (implies (equal (bvchop 32 addr)
                   (bvchop 32 addr2))
            (equal (equal (read n addr stat)
                          (read n addr2 stat))
                   t))
   :hints (("Goal" :in-theory (enable ifix)
-           :use (:instance read-when-bvchops-agree-helper
+           :use (:instance equal-of-read-and-read-when-bvchops-agree-helper
                            (addr (ifix addr))
                            (addr2 (ifix addr2))))))
 
 (defthm read-of-bvchop-32
   (equal (read n (bvchop 32 addr) stat)
          (read n addr stat))
-  :hints (("Goal" :in-theory (enable read-when-bvchops-agree))))
+  :hints (("Goal" :in-theory (enable equal-of-read-and-read-when-bvchops-agree))))
 
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; todo, for acl2::integerp-squeeze
 
 ;for whole bytes
 ;move up
@@ -614,6 +617,31 @@
                                    in-region32p-of-+-arg3)))))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+
+;(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system)
+
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+
+;; The next rules get information from hyps of the for (equal (read-bytes ...) XXX).
+;; The XXX may be a constant list of bytes (e.g., from a section/segment of the executable)
+;; We might also have an append or a repeat if there are zeros?  Perhaps just split off the trailing zeros of a segment.
+;; Or it might be a term that introduces variables for the bytes (a cons nest)
+
+;; Which variant of the rule do we want?
+;; Assume we have a constant list of bytes.  Then if the index into this list
+;; (cyclic difference between ad1 and ad2) is a constant, we can use either
+;; form and expect the read to resolve to a constant.  If the index is not a
+;; constant, we probably want the variant of the rule that introduces bv-array-read-chunk-little.
+
+;; However, if the XXX is a cons nest, we probably want the variant of the rule
+;; that introduces bv-list-read-chunk-little.
+
+;; Alternatively, we could create a version of read-bytes that returns an array
+;; and always use that.
+
+;; todo: think about whether the BYTES term will be a cons nest or bv-array-write nest
 (defthm read-when-equal-of-read-bytes-and-subregion32p
   (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (subregion32p n1 ad1 n2 ad2)
@@ -629,14 +657,20 @@
                 (unsigned-byte-p 32 ad2) ; drop?
                 )
            (equal (read n1 ad1 stat)
-                  (bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)))
+                  (bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)
+                  ;; btw, the call of list-to-bv-array on a bit array is slow..
+                  ;; (acl2::bv-list-read-chunk-little 8 n1 (bvminus 32 ad1 ad2) bytes)
+                  ))
   :hints (("Goal"
            :do-not '(generalize eliminate-destructors)
 ;           :expand (read n1 ad1 stat)
            :expand ((read n1 ad1 stat)
                     (bv-array-read-chunk-little n1 8 n2 ad1 (read-bytes 0 n2 stat))
                     (bv-array-read-chunk-little n1 8 n2 (+ (bvchop 32 ad1) (bvuminus 32 ad2)) (read-bytes ad2 n2 stat))
-                    (bv-array-read-chunk-little n1 8 n2 (bvchop 32 (+ ad1 (- ad2))) (read-bytes ad2 n2 stat)))
+                    (bv-array-read-chunk-little n1 8 n2 (bvchop 32 (+ ad1 (- ad2))) (read-bytes ad2 n2 stat))
+;                    (bv-array-read-chunk-little n1 8 ad1 (list-to-bv-array 8 (read-bytes 0 n2 stat)))
+ ;                   (bv-array-read-chunk-little n1 8 (bvchop 32 (+ ad1 (- ad2))) (list-to-bv-array 8 (read-bytes ad2 n2 stat)))
+                    )
            :induct (read n1 ad1 stat)
            :in-theory (e/d ((:i read)
                             bvplus
@@ -654,6 +688,10 @@
                             bvplus-helper
                             zp
                             unsigned-byte-p
+                            ;acl2::packbv-little
+                            ;; acl2::cdr-of-nthcdr
+                            ;;acl2::packbv-little-opener
+                            acl2::bvchop-plus-1-split
                             )
                            (;distributivity
                             acl2::+-of-minus-constant-version ; fixme disable
@@ -671,6 +709,110 @@
                             acl2::<-of-*-same-linear-special
                             acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
+
+(defthm read-when-equal-of-read-bytes-and-subregion32p-alt
+  (implies (and (equal (read-bytes ad2 n2 stat) bytes) ; ad2 and n2 and bytes are free vars
+                (subregion32p n1 ad1 n2 ad2)
+                ;; (unsigned-byte-p 32 n1)
+                (natp n1)
+                (< n1 (expt 2 32)) ; allow equal?
+                (unsigned-byte-p 32 n2) ; allow 2^32?
+                (unsigned-byte-p 32 n1) ; todo
+                (integerp ad1) ; todo
+                (integerp ad2) ; todo
+                (unsigned-byte-p 32 ad1) ; drop?
+                (unsigned-byte-p 32 ad2) ; drop?
+                )
+           (equal (read n1 ad1 stat)
+                  ;;(acl2::bv-list-read-chunk-little 8 n1 (bvminus 32 ad1 ad2) bytes)
+                  (bv-array-read-chunk-little n1 8 (len bytes) (bvminus 32 ad1 ad2) bytes)
+                  ))
+  :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion32p
+           :in-theory (disable read-when-equal-of-read-bytes-and-subregion32p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this version treats BYTES as a list and goes to bv-list-read-chunk-little
+
+(defthm read-when-equal-of-read-bytes
+  (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (subregion32p n1 ad1 n2 ad2)
+                ;; (syntaxp (quotep bytes)) ; maybe uncomment
+                ;; (unsigned-byte-p 32 n1)
+                (natp n1)
+                (< n1 (expt 2 32)) ; allow equal?
+                (unsigned-byte-p 32 n2) ; allow 2^32?
+                (unsigned-byte-p 32 n1) ; todo
+                (integerp ad1) ; todo
+                (integerp ad2) ; todo
+                (unsigned-byte-p 32 ad1) ; drop?
+                (unsigned-byte-p 32 ad2) ; drop?
+                )
+           (equal (read n1 ad1 stat)
+                  (bv-list-read-chunk-little 8 n1 (bvminus 32 ad1 ad2) bytes)))
+  :hints (("Goal" :induct (read n1 ad1 stat)
+           :in-theory (e/d ((:i read)
+                            read-bytes
+                            bvplus
+                            ;bvuminus
+                            bvuminus
+                            ;acl2::bvchop-of-sum-cases
+                            subregion32p
+                            bvlt
+                            in-region32p
+                            read-becomes-read-byte
+                            ifix
+                            ;read-byte-of-+
+                            ;read-of-+ ; loops with bvplus
+                            acl2::expt-becomes-expt-limited
+                            bvplus-helper
+                            zp
+                            unsigned-byte-p
+                            ;acl2::packbv-little
+                            acl2::packbv-little-opener
+                            ;; acl2::cdr-of-nthcdr
+                            ;;acl2::packbv-little-opener
+                            acl2::nthcdr-of-cdr-combine ; todo this name and cdr-of-nthcdr are not parallel
+                            acl2::cdr-of-nthcdr
+                            acl2::bvchop-plus-1-split
+                            bv-list-read-chunk-little
+                            )
+                           (;distributivity
+                            acl2::+-of-minus-constant-version ; fixme disable
+                            (:e expt)
+                            acl2::bvplus-of-+-arg3
+                            disjoint-regions32p-of-+-arg4
+                            in-region32p-of-+-arg3
+                            ;bvchop-of-read ;looped, but we need it
+                            ;acl2::bvcat-equal-rewrite acl2::bvcat-equal-rewrite-alt ; looped
+                            ;; for speed:
+                            ;;acl2::usb-when-usb8
+                            ;;acl2::bvchop-identity
+                            in-region32p-when-in-region32p-and-subregion32p
+                            ;acl2::bound-lemma-for-adder
+                            acl2::<-of-*-same-linear-special
+                            acl2::bv-array-read-chunk-little-unroll ; looped
+                            )))))
+
+;; flips the equality in hyp 1
+(defthm read-when-equal-of-read-bytes-alt
+  (implies (and (equal (read-bytes ad2 n2 stat) bytes) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (subregion32p n1 ad1 n2 ad2)
+                ;; (syntaxp (quotep bytes)) ; maybe uncomment
+                ;; (unsigned-byte-p 32 n1)
+                (natp n1)
+                (< n1 (expt 2 32)) ; allow equal?
+                (unsigned-byte-p 32 n2) ; allow 2^32?
+                (unsigned-byte-p 32 n1) ; todo
+                (integerp ad1) ; todo
+                (integerp ad2) ; todo
+                (unsigned-byte-p 32 ad1) ; drop?
+                (unsigned-byte-p 32 ad2) ; drop?
+                )
+           (equal (read n1 ad1 stat)
+                  (bv-list-read-chunk-little 8 n1 (bvminus 32 ad1 ad2) bytes)))
+  :hints (("Goal" :use read-when-equal-of-read-bytes
+           :in-theory (disable read-when-equal-of-read-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1083,7 +1225,7 @@
   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 stat)
-           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases  bvuminus bvminus read-when-bvchops-agree ifix)
+           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases  bvuminus bvminus equal-of-read-and-read-when-bvchops-agree ifix)
                            (acl2::bvminus-becomes-bvplus-of-bvuminus ACL2::BVCAT-OF-+-HIGH)))))
 
 (include-book "kestrel/bv/putbits" :dir :system)
@@ -1107,7 +1249,7 @@
                             acl2::bvchop-of-sum-cases
                             bvlt
                             acl2::expt-becomes-expt-limited
-                            read-when-bvchops-agree ifix)
+                            equal-of-read-and-read-when-bvchops-agree ifix)
                            ((:e expt)
                             ;;ACL2::BVCAT-EQUAL-REWRITE
                             ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
