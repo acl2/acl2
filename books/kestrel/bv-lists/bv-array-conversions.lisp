@@ -280,11 +280,12 @@
            :in-theory (enable bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux))))
 
 (defthm bv-array-read-of-list-to-bv-array
-  (implies (and (natp n)
-                (natp width)
-                (< n (len x)))
-           (equal (bv-array-read width (len x) n (list-to-bv-array width x))
-                  (bv-array-read width (len x) n x)))
+  (implies (and (equal len (len x))
+                (< n len)
+                (natp n)
+                (natp width))
+           (equal (bv-array-read width len n (list-to-bv-array width x))
+                  (bv-array-read width len n x)))
   :hints (("Goal"
            :in-theory (e/d (list-to-bv-array) (list-to-bv-array-aux-unroll)))))
 
