@@ -13,7 +13,7 @@
 
 (include-book "bvcat-def")
 (include-book "getbit-def")
-(include-book "repeatbit")
+(include-book "repeatbit-def")
 
 ;we expect old-size <= new-size
 (defund bvsx (new-size old-size val)

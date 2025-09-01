@@ -1,6 +1,6 @@
 ; BV Library: rules about unsigned-byte-p-forced
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,6 +30,7 @@
 (include-book "leftrotate32") ; pull out the def?
 (include-book "rightrotate32") ; pull out the def?
 (local (include-book "bvsx"))
+(local (include-book "repeatbit"))
 (local (include-book "unsigned-byte-p"))
 
 (local (in-theory (disable unsigned-byte-p)))
