@@ -1029,7 +1029,7 @@
                 (natp n)
                 (integerp addr))
            (equal (slice high low (read n addr x86))
-                  (read (/ (+ 1 high (- low)) 8) ; number if bytes to read
+                  (read (/ (+ 1 high (- low)) 8) ; number of bytes to read
                         (+ (/ low 8) ; number of bytes we skip
                            addr)
                         x86)))
