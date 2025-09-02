@@ -618,6 +618,7 @@
     stmt-types
     block-item-types
     block-item-list-types
+    fundef-types
 
     transunit-ensemble-annop
     code-ensemble-annop

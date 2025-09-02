@@ -1111,3 +1111,47 @@
       item-types))
   :verify-guards :after-returns
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef-types ((fundef fundefp))
+  :guard (fundef-unambp fundef)
+  :returns (types type-setp
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (enable
+                     type-setp-when-type-option-setp-and-nil-not-member))))
+  :short "Types of the values returned by a function,
+          from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The set of possible types returned by the function is
+     the set of possible types returned by the body,
+     roughly speaking.
+     More precisely, the latter is a set of optional types
+     (see @(tsee block-item-list-types)),
+     where @('nil') means that the list of block items
+     terminates without a @('return').
+     For a function, this is equivalent to a @('return') without expression.
+     Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
+     obtaining the set of types (not optional types) of the function's result.
+     We use that in the theorem about the function,
+     which says that the result,
+     which is an optional value in our formal semantics,
+     has a type in the set;
+     we use @(tsee c::type-of-value-option) to map values to their types,
+     and @('nil') to @('void').")
+   (xdoc::p
+    "Although a function definition has one return type (possibly @('void')),
+     its body may return values of slightly different types,
+     possibly subject to conversions.
+     However, our formal semantics of C does not cover those conversions yet,
+     so we adopt the more general view here."))
+  (b* ((types (block-item-list-types (fundef->body fundef)))
+       (types (if (set::in nil types)
+                  (set::insert (type-void) (set::delete nil types))
+                types)))
+    types)
+  :hooks (:fix))
