@@ -1162,6 +1162,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; rules about read/read-byte and write/write-byte
+
 (defthm read-byte-of-write-irrel-gen
   (implies (and (<= n (bvminus 32 addr1 addr2)) ; use bvle?
                 )
