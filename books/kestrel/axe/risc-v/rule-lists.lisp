@@ -410,39 +410,60 @@
      riscv::instr-lui->imm$inline
 
      exec32-instr-base
-     exec32-store
-     exec32-load
-     exec32-lw
-     riscv::exec32-lb
-     riscv::exec32-lbu
-     exec32-sw
-     exec32-op
-     exec32-add
-     exec32-jalr
-     riscv::exec32-jal
-     riscv::exec32-sb
-     riscv::exec32-branch
-     riscv::exec32-bgeu
-     riscv::exec32-blt
-     riscv::exec32-bltu
-     riscv::exec32-bne
-     riscv::exec32-beq
-     riscv::exec32-bge
-     riscv::exec32-auipc
-     riscv::exec32-lui
-     riscv::exec32-op-imms
-     riscv::exec32-srli
-     riscv::exec32-slli
-     riscv::exec32-andi
-     riscv::exec32-xor
-     riscv::exec32-srai
-     riscv::exec32-sub
-     riscv::exec32-sltiu
-     riscv::exec32-sltu
-     riscv::exec32-or
-     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
 
+     exec32-add
      exec32-addi
+     exec32-and
+     exec32-andi
+     exec32-auipc
+     exec32-beq
+     exec32-bge
+     exec32-bgeu
+     exec32-blt
+     exec32-bltu
+     exec32-bne
+     exec32-branch
+     exec32-div
+     exec32-divu
+     exec32-instr
+     exec32-jal
+     exec32-jalr
+     exec32-lb
+     exec32-lbu
+     exec32-lh
+     exec32-lhu
+     exec32-load
+     exec32-lui
+     exec32-lw
+     exec32-mul
+     exec32-mulh
+     exec32-mulhsu
+     exec32-mulhu
+     exec32-op
+     ;; exec32-op-imm
+     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+     exec32-op-imms ;; todo: restrict
+     exec32-or
+     exec32-ori
+     exec32-rem
+     exec32-remu
+     exec32-sb
+     exec32-sh
+     exec32-sll
+     exec32-slli
+     exec32-slt
+     exec32-slti
+     exec32-sltiu
+     exec32-sltu
+     exec32-sra
+     exec32-srai
+     exec32-srl
+     exec32-srli
+     exec32-store
+     exec32-sub
+     exec32-sw
+     exec32-xor
+     exec32-xori
 
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
