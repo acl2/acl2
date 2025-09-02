@@ -270,7 +270,7 @@
 ;;           (BV-ARRAY-CLEAR
 ;;            ELEMENT-SIZE2 LEN INDEX2
 ;;            (BV-ARRAY-CLEAR ELEMENT-SIZE2 LEN INDEX1 LST))))
-;;   :hints (("Goal" :use (:instance BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF)
+;;   :hints (("Goal" :use BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF
 ;;            :in-theory (e/d (BV-ARRAY-CLEAR)
 ;;                            ( BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF)))))
 
