@@ -54,6 +54,7 @@
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
+(include-book "kestrel/axe/util2" :dir :system) ; for the user's convenience
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

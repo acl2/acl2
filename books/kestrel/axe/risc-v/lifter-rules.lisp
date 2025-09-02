@@ -68,6 +68,14 @@
 (def-constant-opener riscv::instr-load)
 (def-constant-opener riscv::instr-op)
 
+;; (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+;; (def-constant-opener list-to-bv-array)
+;; (def-constant-opener list-to-bv-array-aux) ; too slow?
+
+(def-constant-opener bv-list-read-chunk-little)
+(def-constant-opener packbv-little)
+
+(def-constant-opener unsigned-byte-listp)
 
 ;todo: more
 (defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv::funct))))

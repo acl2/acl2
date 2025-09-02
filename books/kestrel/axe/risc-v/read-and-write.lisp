@@ -644,6 +644,7 @@
 ;; todo: think about whether the BYTES term will be a cons nest or bv-array-write nest
 (defthm read-when-equal-of-read-bytes-and-subregion32p
   (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (syntaxp (quotep bytes))
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
                 ;; (unsigned-byte-p 32 n1)
@@ -712,6 +713,7 @@
 
 (defthm read-when-equal-of-read-bytes-and-subregion32p-alt
   (implies (and (equal (read-bytes ad2 n2 stat) bytes) ; ad2 and n2 and bytes are free vars
+                (syntaxp (quotep bytes))
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (unsigned-byte-p 32 n1)
                 (natp n1)
