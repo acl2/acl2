@@ -32,6 +32,7 @@
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/ash" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
+(include-book "rewriter")
 (include-book "../step-increments")
 (include-book "../rule-limits")
 (include-book "../rewriter-basic")
@@ -312,24 +313,23 @@
                                             limits)) ; don't recompute for each small run?
          ;; Do the run:
          ((mv erp dag-or-constant limits
-              ;;state
+              state
               )
-          (simplify-dag-basic ; acl2::simplify-dag-risc-v
-                                  dag
-                                  assumptions
-                                  rule-alist
-                                  nil ; interpreted-function-alist
-                                  (known-booleans (w state))
-                                  normalize-xors
-                                  limits
-                                  memoizep
-                                  count-hits
-                                  print
-                                  rules-to-monitor
-                                  nil ; *no-warn-ground-functions*
-                                  '(program-at) ; fns-to-elide ; todo: this is old
-                                  ;; state
-                                  ))
+          (acl2::simplify-dag-risc-v dag
+                                     assumptions
+                                     rule-alist
+                                     nil ; interpreted-function-alist
+                                     (known-booleans (w state))
+                                     normalize-xors
+                                     limits
+                                     memoizep
+                                     count-hits
+                                     print
+                                     rules-to-monitor
+                                     nil ; *no-warn-ground-functions*
+                                     '(program-at) ; fns-to-elide ; todo: this is old
+                                     state
+                                     ))
          ((when erp) (mv erp nil state))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
@@ -421,24 +421,22 @@
                     (cw " The run completed abnormally (nothing changed).~%")))
                (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
-                (mv-let (erp result limits ;state
-                             )
-                  (simplify-dag-basic ; simplify-dag-risc-v
-                    dag
-                                          assumptions
-                                          rule-alist
-                                          nil ; interpreted-function-alist
-                                          (known-booleans (w state))
-                                          normalize-xors
-                                          limits
-                                          memoizep
-                                          count-hits
-                                          print
-                                          rules-to-monitor
-                                          nil ; *no-warn-ground-functions*
-                                          '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                          ;; state
-                                          )
+                (mv-let (erp result limits state)
+                  (acl2::simplify-dag-risc-v dag
+                                             assumptions
+                                             rule-alist
+                                             nil ; interpreted-function-alist
+                                             (known-booleans (w state))
+                                             normalize-xors
+                                             limits
+                                             memoizep
+                                             count-hits
+                                             print
+                                             rules-to-monitor
+                                             nil ; *no-warn-ground-functions*
+                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
+                                             state
+                                             )
                   (declare (ignore limits)) ; todo: use the limits?
                   (mv erp result state)))
                ((when erp) (mv erp nil state))
