@@ -198,19 +198,62 @@
             riscv::write32-pc
 
             riscv::exec32-instr
+            riscv::exec32-instr-base ; bad name
 
-            riscv::exec32-op-imm
-            riscv::exec32-op
             riscv::exec32-add
             riscv::exec32-addi
-            riscv::exec32-store
-            riscv::exec32-sw
-            riscv::exec32-load
-            riscv::exec32-lw
+            riscv::exec32-and
+            riscv::exec32-andi
+            riscv::exec32-auipc
+            riscv::exec32-beq
+            riscv::exec32-bge
+            riscv::exec32-bgeu
+            riscv::exec32-blt
+            riscv::exec32-bltu
+            riscv::exec32-bne
+            riscv::exec32-branch
+            riscv::exec32-div
+            riscv::exec32-divu
+            riscv::exec32-instr
+            riscv::exec32-jal
             riscv::exec32-jalr
-            riscv::inc32-pc
+            riscv::exec32-lb
+            riscv::exec32-lbu
+            riscv::exec32-lh
+            riscv::exec32-lhu
+            riscv::exec32-load
+            riscv::exec32-lui
+            riscv::exec32-lw
+            riscv::exec32-mul
+            riscv::exec32-mulh
+            riscv::exec32-mulhsu
+            riscv::exec32-mulhu
+            riscv::exec32-op
+            riscv::exec32-op-imm
+            riscv::exec32-op-imms
+            riscv::exec32-or
+            riscv::exec32-ori
+            riscv::exec32-rem
+            riscv::exec32-remu
+            riscv::exec32-sb
+            riscv::exec32-sh
+            riscv::exec32-sll
+            riscv::exec32-slli
+            riscv::exec32-slt
+            riscv::exec32-slti
+            riscv::exec32-sltiu
+            riscv::exec32-sltu
+            riscv::exec32-sra
+            riscv::exec32-srai
+            riscv::exec32-srl
+            riscv::exec32-srli
+            riscv::exec32-store
+            riscv::exec32-sub
+            riscv::exec32-sw
+            riscv::exec32-xor
+            riscv::exec32-xori
 
-            riscv::exec32-instr-base ; bad name
+            riscv::inc32-pc
 
             riscv::eff32-addr
             riscv::equal-of-stat32i
