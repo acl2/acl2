@@ -5032,7 +5032,9 @@
        because the type must be complete [C17:6.7.9/3].
        We validate the initializer if present;
        we pass the type of the identifier,
-       so the initializer is checked against that.")
+       so the initializer is checked against that.
+       The initializer is validated after
+       the declared identifier is added to the table [C17:6.2.1/7].")
      (xdoc::p
       "We calculate the definition status for the declaration.
        If we are declaring a function, the status is undefined,
@@ -5135,8 +5137,7 @@
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
                    ident type initdeclor.init?))
-         ((erp new-init? more-types table)
-          (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         ((mv info? currentp) (valid-lookup-ord ident table))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
                       (if (> (valid-table-num-scopes table) 1)
@@ -5149,7 +5150,18 @@
                                             (stor-spec-list-fix storspecs))
                               (valid-defstatus-undefined)
                             (valid-defstatus-tentative))))))
-         ((mv info? currentp) (valid-lookup-ord ident table))
+         ((mv uid table) (valid-get-fresh-uid ident linkage table))
+         (new-info (make-valid-ord-info-objfun
+                     :type type
+                     :linkage linkage
+                     :defstatus defstatus
+                     :uid uid))
+         (table (valid-add-ord ident new-info table))
+         (anno-info (make-initdeclor-info :type type
+                                          :typedefp nil
+                                          :uid? uid))
+         ((erp new-init? more-types table)
+          (valid-initer-option initdeclor.init? type lifetime? table ienv))
          ((when (and (linkage-case linkage :external)
                      (let ((ext-info? (valid-lookup-ext ident table)))
                        (and ext-info?
@@ -5178,23 +5190,13 @@
                     in the same translation unit."
                    ident))
          ((when (not info?))
-          (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
-               (new-info (make-valid-ord-info-objfun
-                          :type type
-                          :linkage linkage
-                          :defstatus defstatus
-                          :uid uid))
-               (table (valid-add-ord ident new-info table))
-               (anno-info (make-initdeclor-info :type type
-                                                :typedefp nil
-                                                :uid? uid)))
-            (retok (make-initdeclor :declor new-declor
-                                    :asm? initdeclor.asm?
-                                    :attribs initdeclor.attribs
-                                    :init? new-init?
-                                    :info anno-info)
-                   (set::union types more-types)
-                   table)))
+          (retok (make-initdeclor :declor new-declor
+                                  :asm? initdeclor.asm?
+                                  :attribs initdeclor.attribs
+                                  :init? new-init?
+                                  :info anno-info)
+                 (set::union types more-types)
+                 table))
          ((when (or (valid-ord-info-case info? :typedef)
                     (valid-ord-info-case info? :enumconst)))
           (if currentp
@@ -5202,23 +5204,13 @@
                         is already declared in the current scope ~
                         with associated information ~x1."
                        ident info?)
-            (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
-                 (new-info (make-valid-ord-info-objfun
-                            :type type
-                            :linkage linkage
-                            :defstatus defstatus
-                            :uid uid))
-                 (table (valid-add-ord ident new-info table))
-                 (anno-info (make-initdeclor-info :type type
-                                                  :typedefp nil
-                                                  :uid? uid)))
-              (retok (make-initdeclor :declor new-declor
-                                      :asm? initdeclor.asm?
-                                      :attribs initdeclor.attribs
-                                      :init? new-init?
-                                      :info anno-info)
-                     (set::union types more-types)
-                     table))))
+            (retok (make-initdeclor :declor new-declor
+                                    :asm? initdeclor.asm?
+                                    :attribs initdeclor.attribs
+                                    :init? new-init?
+                                    :info anno-info)
+                   (set::union types more-types)
+                   table)))
          ((valid-ord-info-objfun info) info?)
          ((when (or (linkage-case linkage :none)
                     (linkage-case info.linkage :none)))
@@ -5227,23 +5219,13 @@
                         is already declared in the current scope ~
                         with associated information ~x1."
                        ident info?)
-            (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
-                 (new-info (make-valid-ord-info-objfun
-                            :type type
-                            :linkage linkage
-                            :defstatus defstatus
-                            :uid uid))
-                 (table (valid-add-ord ident new-info table))
-                 (anno-info (make-initdeclor-info :type type
-                                                  :typedefp nil
-                                                  :uid? uid)))
-              (retok (make-initdeclor :declor new-declor
-                                      :asm? initdeclor.asm?
-                                      :attribs initdeclor.attribs
-                                      :init? new-init?
-                                      :info anno-info)
-                     (set::union types more-types)
-                     table))))
+            (retok (make-initdeclor :declor new-declor
+                                    :asm? initdeclor.asm?
+                                    :attribs initdeclor.attribs
+                                    :init? new-init?
+                                    :info anno-info)
+                   (set::union types more-types)
+                   table)))
          ((unless (or (equal type info.type)
                       (equal type (type-unknown))
                       (equal info.type (type-unknown))))
@@ -5263,17 +5245,7 @@
                   is declared with external linkage ~
                   after being declared with internal linkage."
                  ident)
-          (retmsg$ ""))
-         ((mv uid table) (valid-get-fresh-uid ident linkage table))
-         (new-info (make-valid-ord-info-objfun
-                    :type type
-                    :linkage linkage
-                    :defstatus defstatus
-                    :uid uid))
-         (table (valid-add-ord ident new-info table))
-         (anno-info (make-initdeclor-info :type type
-                                          :typedefp nil
-                                          :uid? uid)))
+          (retmsg$ "")))
       (retok (make-initdeclor :declor new-declor
                               :asm? initdeclor.asm?
                               :attribs initdeclor.attribs
@@ -6024,7 +5996,8 @@
       (implies (not erp)
                (initdeclor-unambp new-initdeclor))
       :hyp (initdeclor-unambp initdeclor)
-      :fn valid-initdeclor)
+      :fn valid-initdeclor
+      :hints ('(:expand ((valid-initdeclor initdeclor type storspecs table ienv)))))
     (defret initdeclor-list-unambp-of-valid-initdeclor-list
       (implies (not erp)
                (initdeclor-list-unambp new-initdeclors))
