@@ -103,6 +103,12 @@
                   (+ (bvcat high highval low x) rest)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
 
+;todo: build in to tool
+(defthm subregion32p-of-+-of--1-same
+  (implies (posp n)
+           (subregion32p (+ -1 n) 1 n 0))
+  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Reads the byte at address ADDR.
@@ -593,7 +599,9 @@
            :in-theory (disable unsigned-byte-p-of-read))))
 
 (local (include-book "kestrel/bv/ash" :dir :system))
-(defthm read32-mem-ubyte32-lendian-redef
+
+; see read32-mem-ubyte32-lendian-becomes-read below
+(defthmd read32-mem-ubyte32-lendian-redef
   (implies (integerp addr)
            (equal (read32-mem-ubyte32-lendian addr stat)
                   (bvcat2 8 (read-byte (bvplus 32 3 addr) stat)
@@ -618,7 +626,8 @@
            (equal (read32-mem-ubyte32-lendian addr stat)
                   (read 4 addr stat)))
   :hints (("Goal" :expand ((:free (n addr) (read n addr stat)))
-           :in-theory (enable read))))
+           :in-theory (enable read32-mem-ubyte32-lendian-redef
+                              read))))
 
 (defthmd read-of-+
   (implies (and (integerp x)
@@ -638,8 +647,6 @@
   (equal (read-byte addr stat)
          (read 1 addr stat))
   :hints (("Goal" :in-theory (enable read))))
-
-
 
 (local
   (defun bvchop-of-read-induct (numbits numbytes addr)
@@ -661,12 +668,6 @@
   :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
            :expand (read numbytes addr stat)
            :in-theory (enable READ read-of-+))))
-
-(local
-  (defun read-high-low-induct (n addr stat high low)
-    (if (zp n)
-        (mv n addr stat high low)
-      (read-high-low-induct (- n 1) (+ 1 addr) stat (+ -8 high) (+ -8 low)))))
 
 ;rename since used for a read proof as well
 ;add -alt to name?
@@ -711,6 +712,25 @@
          (read n addr stat))
   :hints (("Goal" :in-theory (enable equal-of-read-and-read-when-bvchops-agree))))
 
+(defthm read-of-+-bvchop-arg2
+  (implies (and (integerp k)
+                (integerp ad))
+           (equal (read n (+ k (bvchop 32 ad)) stat)
+                  (read n (+ k ad) stat)))
+  :hints (("Goal" :use ((:instance read-of-bvchop-32 (addr (+ k (bvchop 32 ad))))
+                        (:instance read-of-bvchop-32 (addr (+ k ad))))
+           :in-theory (disable read-of-bvchop-32
+                               ;acl2::bvchop-sum-drop-bvchop-alt
+                               ))))
+
+(defthm read-of-+-subst-arg2
+  (implies (and (equal (bvchop 32 ad) free)
+                (syntaxp (smaller-termp free ad))
+                (integerp k)
+                (integerp ad))
+           (equal (read n (+ k ad) stat)
+                  (read n (+ k free) stat))))
+
 (defthm read-normalize-constant-arg2
   (implies (and (syntaxp (quotep addr))
                 (not (unsigned-byte-p 32 addr)))
@@ -719,8 +739,13 @@
 
 (local (include-book "kestrel/bv/arith" :dir :system)) ; todo, for acl2::integerp-squeeze
 
+(local
+  (defun read-high-low-induct (n addr high low)
+    (if (zp n)
+        (mv n addr high low)
+      (read-high-low-induct (- n 1) (+ 1 addr) (+ -8 high) (+ -8 low)))))
+
 ;for whole bytes
-;move up
 (defthm slice-of-read
   (implies (and ;; (syntaxp (and (quotep low)
                 ;;               (quotep high)))
@@ -739,7 +764,7 @@
                            addr)
                         stat)))
   :hints (("subgoal *1/2" :cases ((< high 7)))
-          ("Goal" :induct (read-high-low-induct n addr stat high low)
+          ("Goal" :induct (read-high-low-induct n addr high low)
            :do-not '(generalize eliminate-destructors)
            :expand ((read n addr stat)
                     (read (+ 1/8 (* 1/8 high)) addr stat))
@@ -753,22 +778,24 @@
                             acl2::<-of-*-and-*-same-forward-4)))))
 
 
+
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
 
-(defthmd bvplus-helper
-  (implies (and (< x n2)
-                (unsigned-byte-p 32 n2) ; gen?
-                (unsigned-byte-p 32 x) ; if we keep this, simplify the rhs
-                ;(integerp x)
-                (natp n2))
-           (equal (< (bvplus 32 1 x) n2)
-                  (not (and ;(unsigned-byte-p 32 n2)
-                         (equal (bvchop 32 x) (bvminus 32 n2 1))
-                         (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
-  :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-of-+-arg3
-                                   disjoint-regions32p-of-+-arg4
-                                   in-region32p-of-+-arg3)))))
+(local
+  (defthmd bvplus-helper
+    (implies (and (< x n2)
+                  (unsigned-byte-p 32 n2) ; gen?
+                  (unsigned-byte-p 32 x) ; if we keep this, simplify the rhs
+                  ;(integerp x)
+                  (natp n2))
+             (equal (< (bvplus 32 1 x) n2)
+                    (not (and ;(unsigned-byte-p 32 n2)
+                           (equal (bvchop 32 x) (bvminus 32 n2 1))
+                           (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
+    :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
+                                    (acl2::bvplus-of-+-arg3
+                                     disjoint-regions32p-of-+-arg4
+                                     in-region32p-of-+-arg3))))))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
@@ -1136,9 +1163,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-byte-of-write-irrel-gen
-  (implies (and (<= n (bvminus 32 addr1 addr2))
-        ;        (integerp addr1)
-         ;       (integerp addr2)
+  (implies (and (<= n (bvminus 32 addr1 addr2)) ; use bvle?
                 )
            (equal (read-byte addr1 (write n addr2 val stat))
                   (read-byte addr1 stat)))
@@ -1159,12 +1184,9 @@
                             )))))
 
 (defthm read-byte-of-write-within
-  (implies (and (< (bvminus 32 ad1 ad2) n)
+  (implies (and (< (bvminus 32 ad1 ad2) n) ; use bvlt?
                 (<= n (expt 2 32))
-                (integerp n)
-;                (integerp ad1) ;needed?
-                ;(integerp ad2)
-                )
+                (integerp n))
            (equal (read-byte ad1 (write n ad2 val stat))
                   (slice (+ 7 (* 8 (bvminus 32 ad1 ad2)))
                          (* 8 (bvminus 32 ad1 ad2))
@@ -1187,12 +1209,9 @@
 
 (defthm read-byte-of-write-both
   (implies (and (<= n (expt 2 32))
-                (integerp n)
-                ;; (integerp ad1)
-                ;; (integerp ad2)
-                )
+                (integerp n))
            (equal (read-byte ad1 (write n ad2 val stat))
-                  (if (< (bvminus 32 ad1 ad2) n)
+                  (if (< (bvminus 32 ad1 ad2) n) ; use bvlt?
                       (slice (+ 7 (* 8 (bvminus 32 ad1 ad2)))
                              (* 8 (bvminus 32 ad1 ad2))
                              val)
@@ -1201,10 +1220,7 @@
 (DEFTHM READ-BYTE-OF-WRITE-BOTH-new
   (IMPLIES (AND ;(<= N (EXPT 2 32))
              (unsigned-byte-p 32 n)
-             (INTEGERP N)
-             ;; (INTEGERP AD1)
-             ;; (INTEGERP AD2)
-             )
+             (INTEGERP N))
            (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL STAT))
                   (IF (in-region32p ad1 n ad2)
                       (SLICE (+ 7 (* 8 (BVMINUS 32 AD1 AD2)))
@@ -1212,12 +1228,6 @@
                              VAL)
                     (READ-BYTE AD1 STAT))))
   :hints (("Goal" :in-theory (enable in-region32p bvlt))))
-
-;build in to tool
-(defthm subregion32p-of-+-of--1-same
-  (implies (posp n)
-           (subregion32p (+ -1 n) 1 n 0))
-  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt))))
 
 (defthm read-of-write-when-disjoint-regions32p
   (implies (and (disjoint-regions32p n1 ad1 n2 ad2)
@@ -1284,24 +1294,8 @@
 ;           :in-theory '(disjoint-regions32p-symmetric)
            )))
 
-(defthm read-of-+-bvchop-arg2
-  (implies (and (integerp k)
-                (integerp ad))
-           (equal (read n (+ k (bvchop 32 ad)) stat)
-                  (read n (+ k ad) stat)))
-  :hints (("Goal" :use ((:instance read-of-bvchop-32 (addr (+ k (bvchop 32 ad))))
-                        (:instance read-of-bvchop-32 (addr (+ k ad))))
-           :in-theory (disable read-of-bvchop-32
-                               ;acl2::bvchop-sum-drop-bvchop-alt
-                               ))))
 
-(defthm read-of-+-subst-arg2
-  (implies (and (equal (bvchop 32 ad) free)
-                (syntaxp (smaller-termp free ad))
-                (integerp k)
-                (integerp ad))
-           (equal (read n (+ k ad) stat)
-                  (read n (+ k free) stat))))
+
 
 (defthm read-of-write-byte-irrel
   (implies (and (<= 1 (bvminus 32 addr1 addr2)) ; todo: use bv or region phrasing?
