@@ -73,6 +73,12 @@
     parse-elf-file-bytes
 
     _ ;; used to print non-pure patterns
+
+    symbolic-array
+    ;; symbolic-list
+    symbolic-byte-list
+    byte-types-for-vars
+    make-var-names
     ))
 
 (defpkg "R"
@@ -121,9 +127,17 @@
             axe-bind-free
             term-should-be-converted-to-bvp
 
+            packbv-little
+
+            list-to-bv-array
+            list-to-bv-array-aux
+            bv-arrayp
             bv-array-read
             bv-array-read-chunk-little
             bv-array-write
+            array-of-zeros
+
+            bv-list-read-chunk-little
 
             repeat
 

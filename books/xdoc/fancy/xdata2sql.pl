@@ -79,36 +79,59 @@ if (! -f "xdata.js") {
     exit(1);
 }
 
+if (! -f "xindex.js") {
+    print "Error: xindex.js not found.\n";
+    exit(1);
+}
+
 
 print "; Reading file\n";
 
-my $javascript = read_whole_file("xdata.js");
+my $xdata_javascript = read_whole_file("xdata.js");
+my $xindex_javascript = read_whole_file("xindex.js");
 
 
-print "; Checking file\n";
+print "; Checking files\n";
 
-my $json;
+my $xdata_json;
 my $start = "var xdata = ";
-if (length($start) < length($javascript)
-    && substr($javascript, 0, length($start)) eq $start
-    && substr($javascript, length($javascript)-1, 1) eq ";")
+if (length($start) < length($xdata_javascript)
+    && substr($xdata_javascript, 0, length($start)) eq $start
+    && substr($xdata_javascript, length($xdata_javascript)-1, 1) eq ";")
 {
-    my $stop = length($javascript) - length($start) - length(";");
-    $json = substr($javascript, length($start), $stop);
+    my $stop = length($xdata_javascript) - length($start) - length(";");
+    $xdata_json = substr($xdata_javascript, length($start), $stop);
 }
 else {
     print "Error: xdata.js does not have the expected format\n";
     exit(1);
 }
 
+my $xindex_json;
+my $start = "var xindex = ";
+if (length($start) < length($xindex_javascript)
+    && substr($xindex_javascript, 0, length($start)) eq $start
+    && substr($xindex_javascript, length($xindex_javascript)-1, 1) eq ";")
+{
+    my $stop = length($xindex_javascript) - length($start) - length(";");
+    $xindex_json = substr($xindex_javascript, length($start), $stop);
+}
+else {
+    print "Error: xindex.js does not have the expected format\n";
+    exit(1);
+}
+
 
 print "; Parsing JSON data.\n";
 my $xs = new JSON::XS;
-my $xdata = $xs->decode($json);
+my $xdata = $xs->decode($xdata_json);
 if (!(ref($xdata) eq "HASH")) {
     print "Error: JSON object within xdata.js not a hash?\n";
     exit(1);
 }
+
+my $xs = new JSON::XS;
+my $xindex = $xs->decode($xindex_json);
 
 if (-f "xdata.db") {
     print "; Deleting old xdata.db.\n";
@@ -128,23 +151,69 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
                        {RaiseError=>1, AutoCommit=>0})
     or die $DBI::errstr;
 
-print "; Creating xdoc_data table.\n";
+print "; Creating xtable.\n";
 
-$dbh->do("CREATE TABLE XTABLE ("
-         . "XKEY TEXT PRIMARY KEY NOT NULL,"
-         . "XDATA TEXT)");
+$dbh->do(q{
+    CREATE TABLE xtable (
+        xkey TEXT PRIMARY KEY NOT NULL,
+        xtopic TEXT,
+        xparents TEXT,
+        xsrc TEXT,
+        xpkg TEXT,
+        xshort TEXT,
+        xlong TEXT)
+});
 
 
-print "; Populating xdoc_data table.\n";
-my $query = $dbh->prepare("INSERT INTO XTABLE (XKEY, XDATA) VALUES (?, ?)");
+print "; Populating xtable.\n";
 
+my $xdata_query = $dbh->prepare(q{
+    INSERT INTO xtable (xkey, xparents, xsrc, xpkg, xlong)
+    VALUES (?, ?, ?, ?, ?)
+});
 while(my ($key,$val) = each %$xdata)
 {
-    my $enc = $xs->encode($val);
-    $query->bind_param(1, $key);
-    $query->bind_param(2, $enc);
-    $query->execute();
+    $xdata_query->bind_param(1, $key);
+    $xdata_query->bind_param(2, $xs->encode($val->[0]));
+    $xdata_query->bind_param(3, $xs->encode($val->[1]));
+    $xdata_query->bind_param(4, $xs->encode($val->[2]));
+    $xdata_query->bind_param(5, $xs->encode($val->[3]));
+
+    $xdata_query->execute();
 }
+
+my $xindex_query = $dbh->prepare(q{
+    UPDATE xtable
+    SET xtopic=?, xshort=?
+    WHERE xkey=?;
+});
+foreach my $val (@$xindex)
+{
+    $xindex_query->bind_param(1, $xs->encode($val->[2]));
+    $xindex_query->bind_param(2, $xs->encode($val->[4]));
+    $xindex_query->bind_param(3, $val->[0]);
+
+    $xindex_query->execute();
+}
+
+print "; Creating xtable_fts.\n";
+
+$dbh->do(q{
+    CREATE VIRTUAL TABLE xtable_fts
+    USING fts5(
+        xkey,
+        xtopic,
+        xshort,
+        xlong,
+        content='xtable',
+        content_rowid='rowid')
+});
+
+print "; Populating xtable_fts.\n";
+$dbh->do(q{
+    INSERT INTO xtable_fts(xkey, xtopic, xshort, xlong)
+    SELECT xkey, xtopic, xshort, xlong FROM xtable
+});
 
 $dbh->commit();
 $dbh->disconnect();

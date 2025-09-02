@@ -1,3 +1,13 @@
+; Tests of the range-check gadget
+;
+; Copyright (C) 2021-2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "R1CS")
 
 (include-book "range-check")
@@ -5,6 +15,7 @@
 ;; Test/proof (for one input):
 
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-lst" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system)

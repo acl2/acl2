@@ -129,6 +129,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm read32-mem-ubyte8-when-not-integerp-arg1
+  (implies (not (integerp addr))
+           (equal (read32-mem-ubyte8 addr stat)
+                  (read32-mem-ubyte8 0 stat)))
+  :hints (("Goal" :in-theory (enable read32-mem-ubyte8))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm read32-mem-ubyte8-of-write32-pc
   (equal (read32-mem-ubyte8 addr (write32-pc pc stat))
          (read32-mem-ubyte8 addr stat))

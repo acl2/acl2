@@ -31,7 +31,7 @@
 ;; Returns (mv assumptions input-assumption-vars-rev) where the input-assumption-vars-rev are in reverse order.
 ;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
 ;; TODO: Support expressing bytes in terms of single bit-vars
-;; TODO: Support expressing the whole array as a single value (a byte-list)
+;; TODO: Support expressing the whole array as a single value (a bv-array, in case the index is not a constant)
 ;; todo: rename because this now also puts in non-null assumptions
 (defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (natp index)
@@ -270,6 +270,7 @@
                      (bytes-per-element (bytes-in-scalar-type base-type))
                      (numbytes (* element-count bytes-per-element))
                      (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+                     ;; Make assumptions to introduce the input vars:
                      ((mv assumptions input-assumption-vars-rev)
                       (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name type-assumptions-for-array-varsp nil nil)))
                   (mv ;;todo: think about the order here (it will be reversed!):

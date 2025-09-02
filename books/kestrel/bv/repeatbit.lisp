@@ -1,7 +1,7 @@
 ; Creating BVs of all ones or all zeros
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,25 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop-def")
+;; See also repeatbit2.lisp
+
+(include-book "repeatbit-def") ; brings in repeatbit
 (local (include-book "bvchop"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-
-;we expect bit to be 0 or 1
-(defund repeatbit (n bit)
-  (declare (xargs :guard (and (natp n)
-                              (bitp bit))
-                  :split-types t)
-           (type (integer 0 *) n)
-           (type (integer 0 1) bit))
-  (if (not (natp n))
-      0
-    ;; chop BIT down to 1 bit if needed:
-    (let ((bit (mbe :logic (bvchop 1 bit)
-                    :exec bit)))
-      (if (= 0 bit)
-          0
-        (+ -1 (expt 2 n))))))
 
 (defthm repeatbit-of-0
   (equal (repeatbit n 0)
