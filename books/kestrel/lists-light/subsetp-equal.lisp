@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function subsetp-equal.
 ;
-; Copyright (C) 2016-2024 Kestrel Institute
+; Copyright (C) 2016-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -188,7 +188,7 @@
            (equal (subsetp-equal x (remove-equal a y))
                   (subsetp-equal x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :use (:instance subsetp-equal-of-remove-equal-arg2-irrel))))
+  :hints (("Goal" :use subsetp-equal-of-remove-equal-arg2-irrel)))
 
 (defthm subsetp-equal-of-remove1-equal-arg1
   (implies (subsetp-equal x y)

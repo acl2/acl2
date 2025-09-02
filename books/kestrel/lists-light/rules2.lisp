@@ -655,7 +655,7 @@
                 (natp end))
            (equal (SUBRANGE start end L)
                   (repeat (+ 1 end (- start)) nil)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE take nthcdr-of-cdr-combine) ()))))
+  :hints (("Goal" :in-theory (enable subrange take nthcdr-of-cdr-combine))))
 
 ;seems expensive
 (defthmd nth-non-nil-rule
