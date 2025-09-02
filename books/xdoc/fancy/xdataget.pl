@@ -31,7 +31,8 @@
 # Original author: Jared Davis <jared@centtech.com>
 
 
-# xdataget.pl: look up a key (or several keys) from the XDATA SQL database.
+# xdataget.pl: Interact with the XDATA SQL database, by either looking up some
+# key(s) or searching a query with FTS5.
 #
 # This is a companion script for xdata2sql.pl.
 # Typically the flow is:
@@ -49,46 +50,113 @@ use warnings;
 use strict;
 use DBI;
 use CGI;
+use JSON;
+use HTML::Entities;
 
 my $cgi = CGI->new;
 print $cgi->header("application/json");
 
-my $arg = $cgi->param("keys") || "";
+my $arg_keys = $cgi->param("keys") || "";
+my $arg_search = $cgi->param("search") || "";
 
-if (!($arg =~ /^[A-Za-z0-9:._\-]*$/))
-{
-    print "{\"error\":\"keys contain illegal characters, rejecting to prevent xss attacks.\"}\n";
+my $json = JSON->new;
+
+sub lookup_keys {
+    if (!($arg_keys =~ /^[A-Za-z0-9:._\-]*$/)) {
+        print $json->encode(
+            { error => "Keys contain illegal characters, rejecting to prevent xss attacks." });
+        exit;
+    }
+
+    my @keys = split(':', $arg_keys);
+
+    if (! -f "xdata.db") {
+        print $json->encode({ error => "xdata.db not found" });
+        exit;
+    }
+
+    my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
+    my $query = $dbh->prepare("SELECT * FROM xtable WHERE xkey=?");
+
+    my @results;
+    for my $key (@keys) {
+        $query->execute($key);
+        my $ret = $query->fetchrow_hashref();
+
+        if (!$ret) {
+            push @results, { error => "no such topic." };
+        }
+        else {
+            my $xparents = $json->decode($ret->{"xparents"});
+            my $xsrc = $json->decode($ret->{"xsrc"});
+            my $xpkg = $json->decode($ret->{"xpkg"});
+            my $xlong = $json->decode($ret->{"xlong"});
+            push @results, {
+                parents => $xparents,
+                src => $xsrc,
+                pkg => $xpkg,
+                long => $xlong
+            };
+        }
+    }
+    my $output = { results => \@results };
+    print $json->encode($output);
+
+    $query->finish();
+    $dbh->disconnect();
+}
+
+sub escape_fts5_query {
+    my ($query) = @_;
+
+    # Add quotes around characters that would otherwise be interpreted specially
+    # by FTS5.
+    $query =~ s/-/"-"/g;
+    $query =~ s/\*/"\*"/g;
+    $query =~ s/\^/"\^"/g;
+    $query =~ s/\+/"\+"/g;
+
+    return $query;
+}
+
+sub search {
+    if (!($arg_search =~ /^[A-Za-z0-9:._\- \"\^\*\+]*$/)) {
+        print $json->encode(
+            { error => "Search contains illegal characters, rejecting to prevent xss attacks." });
+        exit;
+    }
+
+    if (! -f "xdata.db") {
+        print $json->encode({ error => "xdata.db not found" });
+        exit;
+    }
+
+    my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
+    my $query = $dbh->prepare(q{
+        SELECT xkey,
+               bm25(xtable_fts, 0.0, 100.0, 5.0, 1.0) as score
+        FROM xtable_fts
+        WHERE xtable_fts MATCH ?
+        ORDER BY score
+        LIMIT 100
+    });
+    $query->execute(escape_fts5_query($arg_search));
+
+    my $rows = $query->fetchall_arrayref({});
+    my $json = JSON->new;
+    my $json_output = $json->encode({results => \@$rows});
+    print $json_output;
+
+    $query->finish();
+    $dbh->disconnect();
+}
+
+if ($arg_keys ne "") {
+    lookup_keys();
+} elsif ($arg_search ne "") {
+    search();
+} else {
+    print $json->encode(
+        { error => "No query string parameter provided." });
     exit;
 }
-
-my @keys = split(':', $arg);
-
-if (! -f "xdata.db") {
-    print "{\"error\":\"xdata.db not found\"}\n";
-    exit;
-}
-
-my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "", {RaiseError=>1});
-my $query = $dbh->prepare("SELECT * FROM XTABLE WHERE XKEY=?");
-
-print "{\"results\":[\n";
-for(my $i = 0; $i < @keys; ++$i)
-{
-    my $key = $keys[$i];
-    $query->execute($key);
-    my $ret = $query->fetchrow_hashref();
-    if (!$ret) {
-        print "  \"Error: no such topic.\"";
-    }
-    else {
-        my $val = $ret->{"XDATA"};
-        print "  $val";
-    }
-    if ($i != @keys-1) {
-        print ",\n";
-    }
-}
-print "\n]}\n";
-
-$query->finish();
-$dbh->disconnect();
