@@ -565,6 +565,9 @@
     ldm-block-item-list
     ldm-param-declon-list
     ldm-fundef
+    ldm-type
+    ldm-type-set
+    ldm-type-option-set
 
     ildm-type
 
@@ -580,7 +583,6 @@
     ident-type-map-fix
 
     type-formalp
-    ldm-type
     type-to-value-kind
     type-integerp
 
