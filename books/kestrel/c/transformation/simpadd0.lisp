@@ -6067,23 +6067,7 @@
      but for now proof generation does not handle global variables,
      so we generate proofs for the body only if
      the theorems about the initial scope and the parameters
-     suffice to establish the variable-type hypotheses of the body.")
-   (xdoc::p
-    "The set of possible types returned by the function is
-     the set of possible types returned by the body.
-     More precisely, the latter is a set of optional types
-     (see @(tsee block-item-list-types)),
-     where @('nil') means that the list of block items
-     terminates without a @('return').
-     For a function, this is equivalent to a @('return') without expression.
-     Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
-     obtaining the set of types (not optional types) of the function's result.
-     We use that in the theorem about the function,
-     which says that the result,
-     which is an optional value in our formal semantics,
-     has a type in the set;
-     we use @(tsee c::type-of-value-option) to map values to their types,
-     and @('nil') to @('void')."))
+     suffice to establish the variable-type hypotheses of the body."))
   (b* (((fundef fundef) fundef)
        (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
@@ -6143,10 +6127,7 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       (types (block-item-list-types fundef.body))
-       (types (if (set::in nil types)
-                  (set::insert (type-void) (set::delete nil types))
-                types))
+       (types (fundef-types fundef))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
