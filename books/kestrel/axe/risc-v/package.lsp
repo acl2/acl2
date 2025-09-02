@@ -77,6 +77,8 @@
     symbolic-array
     ;; symbolic-list
     symbolic-byte-list
+    byte-types-for-vars
+    make-var-names
     ))
 
 (defpkg "R"
