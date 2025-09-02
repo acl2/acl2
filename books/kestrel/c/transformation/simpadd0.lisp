@@ -6021,26 +6021,22 @@
    (xdoc::p
     "We generate a theorem for the function
      only under certain conditions,
-     including the fact that a theorem for the body was generated.")
-   (xdoc::p
-    "Currently the incoming @(tsee simpadd0-gin) has @('vatys') set to @('nil'),
-     so in general the theorems generated for
-     the portion of the function definition before the body
-     (declaration specifiers, declarator, etc.)
-     may not have enough context,
-     but for now we are using this transformation on limited examples
-     where that is not an issue;
-     we plan to make this part more robust soon, though.")
+     including the fact that a theorem for the body gets generated.")
    (xdoc::p
     "For the body of the function,
-     we obtain the variable-type map from
+     currently we obtain the variable-type map from
      the validation table that annotates the function definition
      (the validation table at the start of the body,
      not at the start of the function definition;
-     the latter will be used to fix
-     the issue descrubed in the previous paragraph).
-     This gets put into the @(tsee simpadd0-gin)
-     passed to @(tsee simpadd0-block-item-list).")
+     we plan to avoid this, and use instead the variable-type map
+     coming from the transformation of the constructs preceding the body,
+     since now we may have sufficient propagation of variable-type maps,
+     which was not the case some time ago
+     (which motivated the use of
+     the validation table at the start of the body).
+     The validation table at the start of the body
+     is put into the @(tsee simpadd0-gin)
+     and passed to @(tsee simpadd0-block-item-list).")
    (xdoc::p
     "We generate the folllowing theorems:")
    (xdoc::ul
@@ -6071,7 +6067,23 @@
      but for now proof generation does not handle global variables,
      so we generate proofs for the body only if
      the theorems about the initial scope and the parameters
-     suffice to establish the variable-type hypotheses of the body."))
+     suffice to establish the variable-type hypotheses of the body.")
+   (xdoc::p
+    "The set of possible types returned by the function is
+     the set of possible types returned by the body.
+     More precisely, the latter is a set of optional types
+     (see @(tsee block-item-list-types)),
+     where @('nil') means that the list of block items
+     terminates without a @('return').
+     For a function, this is equivalent to a @('return') without expression.
+     Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
+     obtaining the set of types (not optional types) of the function's result.
+     We use that in the theorem about the function,
+     which says that the result,
+     which is an optional value in our formal semantics,
+     has a type in the set;
+     we use @(tsee c::type-of-value-option) to map values to their types,
+     and @('nil') to @('void')."))
   (b* (((fundef fundef) fundef)
        (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
@@ -6132,14 +6144,9 @@
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
        (types (block-item-list-types fundef.body))
-       ((unless (= (set::cardinality types) 1)) (mv new-fundef gout-no-thm))
-       (type (set::head types))
-       (type (or type (type-void)))
-       ((unless (type-formalp type))
-        (raise "Internal error: function ~x0 returns ~x1."
-               (fundef-fix fundef) type)
-        (mv (irr-fundef) (irr-simpadd0-gout)))
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
+       (types (if (set::in nil types)
+                  (set::insert (type-void) (set::delete nil types))
+                types))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
@@ -6181,11 +6188,8 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         ,@(if (type-case type :void)
-                               '((not old-result))
-                             `(old-result
-                               (equal (c::type-of-value old-result)
-                                      ',ctype)))))))
+                         (set::in (c::type-of-value-option old-result)
+                                  (mv-nth 1 (ldm-type-set ',types)))))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
@@ -6213,10 +6217,11 @@
                         (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
-                        (:e ldm-type)
+                        (:e ldm-type-set)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
+                        (:e set::in)
                         c::errorp-of-error))))
        (thm-event `(defrule ,thm-name
                      ,formula
@@ -6227,11 +6232,11 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys vartys-with-fun)))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   :hooks (:fix)
 
   :prepwork
-  ((define simpadd0-fundef-loop ((thms symbol-listp) (fun stringp))
+  ((local (in-theory (disable (:e tau-system)))) ; for speed
+   (define simpadd0-fundef-loop ((thms symbol-listp) (fun stringp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (endp thms)) nil)
