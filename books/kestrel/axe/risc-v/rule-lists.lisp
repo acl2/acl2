@@ -70,41 +70,52 @@
      error32p-of-write
      error32p-of-set-pc
 
-     read32-mem-ubyte32-lendian-becomes-read
-     read32-mem-ubyte8-becomes-read-byte
-     read-byte-becomes-read
-     read-of-bvchop-32 ; todo: say which arg
-     write-of-bvchop-32-arg2
-     write-of-bvchop-arg3
-     write-of-logext-arg3
-     write32-mem-ubyte8-becomes-write-byte
-     write32-mem-ubyte32-lendian-becomes-write
-     read-of-+
+     ;; Rules about read:
      integerp-of-read
      natp-of-read
      unsigned-byte-p-of-read
+     read-of-bvchop-32 ; todo: say which arg
+     read-of-+
+     bvchop-of-read
+     <-of-read ; for an array pattern rule
+     not-equal-of-read-and-constant
+     not-equal-of-constant-and-read
+
+     ;; Rules to introduce READ:
+     read-byte-becomes-read ; we use READ as the normal form, even when writing just one byte
+     read32-mem-ubyte32-lendian-becomes-read
+     read32-mem-ubyte8-becomes-read-byte ; todo: go directly to read
+
+     ;; Rules about write:
+     write-of-bvchop-32-arg2
+     write-of-bvchop-arg3
+     write-of-logext-arg3
+     write32-mem-ubyte8-becomes-write-byte ; todo: go directly to write
+     write32-mem-ubyte32-lendian-becomes-write
      write-of-+
+
+     ;; Rules about reading and writing:
      read-of-write-same
      read-of-write-1-within
      read-1-of-write-within
+     read-of-write-when-disjoint-regions32p
+     read-of-write-when-disjoint-regions32p-gen
+     read-of-write-when-disjoint-regions32p-gen-alt
+
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
+
      read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
      ;read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
      read-when-equal-of-read-bytes ; note rule priority
      read-when-equal-of-read-bytes-alt
      acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest
-     read-of-write-when-disjoint-regions32p
-     read-of-write-when-disjoint-regions32p-gen
-     read-of-write-when-disjoint-regions32p-gen-alt
-     bvchop-of-read
-     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
-     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
 
      subregion32p-of-1-arg1     ;; trying
      disjoint-regions32p-of-1-and-1 ; trying
+
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::equal-of-bvplus-constant-and-constant
-     not-equal-of-read-and-constant
-     not-equal-of-constant-and-read
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -118,7 +129,6 @@
      acl2::unsigned-byte-listp-of-cons
      acl2::unsigned-byte-listp-constant-opener
 
-     <-of-read ; for an array pattern rule
      bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
@@ -430,6 +440,9 @@
      riscv::exec32-sltiu
      riscv::exec32-sltu
      riscv::exec32-or
+     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+
+     exec32-addi
 
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
@@ -468,10 +481,6 @@
 
      riscv::branch-funct-bgeu
 
-     riscv::exec32-op-imm-base
-
-     exec32-addi
-
      inc32-pc ; increments by 4
 
      acl2::bvchop-of-+-becomes-bvplus
@@ -494,8 +503,6 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
 
-     eq
-     eql
      )))
 
 
