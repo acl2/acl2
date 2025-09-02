@@ -6003,8 +6003,8 @@
                           (BVPLUS SIZE (- (EXPT 2 N) (EXPT 2 XSIZE))
                                   K)
                           (BVUMINUS XSIZE X))))
-  :hints (("Goal" :use (:instance BVPLUS-OF-BVUMINUS-TIGHTEN-GEN)
-           :in-theory (disable BVPLUS-OF-BVUMINUS-TIGHTEN-GEN))))
+  :hints (("Goal" :use bvplus-of-bvuminus-tighten-gen
+           :in-theory (disable bvplus-of-bvuminus-tighten-gen))))
 
 ;-alt?
 (defthm bvlt-tighten
