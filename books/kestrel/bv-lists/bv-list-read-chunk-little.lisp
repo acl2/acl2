@@ -69,10 +69,9 @@
 ;; only do when index is 0?
 (defthm bv-list-read-chunk-little-opener
   (implies (and (posp element-count) ; this rule
+                (<= (+ index element-count) (len list))
                 (posp element-size)
-                (unsigned-byte-listp element-size list)
-                (natp index)
-                (<= (+ index element-count) (len list)))
+                (natp index))
            (equal (bv-list-read-chunk-little element-size element-count index list)
                   (bvcat (* element-size (+ -1 element-count))
                          (bv-list-read-chunk-little element-size (+ -1 element-count) (+ 1 index) list)
