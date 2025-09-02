@@ -900,3 +900,8 @@ void bar(void) {
                (not (equal bar-init-uid bar-fundef-uid))
                (equal foo-fundef-uid foo-init1-uid)
                (equal bar-expr-uid bar-init-uid))))
+
+(test-valid
+  "void * x = &x;
+"
+)

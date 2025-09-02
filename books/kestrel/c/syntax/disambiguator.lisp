@@ -2648,10 +2648,11 @@
     (xdoc::topstring
      (xdoc::p
       "An initializer declarator is part of a declaration.
-       At the end of the initializer declarator,
-       the declared identifier is added to the disambiguation table,
+       The declared identifier is added to the disambiguation table,
        with the appropriate kind,
-       which comes from the preceding declaration specifiers,
+       after the declarator and before disambiguation of the initializer
+       [C17:6.2.1/7].
+       The kind comes from the preceding declaration specifiers,
        and is passed to this function.")
      (xdoc::p
       "We pass @('nil') as the @('fundef-params-p') flag
@@ -2661,8 +2662,8 @@
     (b* (((reterr) (irr-initdeclor) (irr-dimb-table))
          ((initdeclor ideclor) ideclor)
          ((erp new-declor & ident table) (dimb-declor ideclor.declor nil table))
-         ((erp new-init? table) (dimb-initer-option ideclor.init? table))
-         (table (dimb-add-ident ident kind table)))
+         (table (dimb-add-ident ident kind table))
+         ((erp new-init? table) (dimb-initer-option ideclor.init? table)))
       (retok (make-initdeclor :declor new-declor
                               :asm? ideclor.asm?
                               :attribs ideclor.attribs
