@@ -1,7 +1,7 @@
 ; DAG exprs that mention only nodes below some bound
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -181,7 +181,7 @@
                 (not (equal 'quote (car expr)))
                 (not (consp (nth n (dargs expr)))))
            (not (< bound (nth n (dargs expr)))))
-  :hints (("Goal" :use (:instance <-of-nth-of-dargs)
+  :hints (("Goal" :use <-of-nth-of-dargs
            :in-theory (disable <-of-nth-of-dargs))))
 
 (defthm symbolp-of-car-when-bounded-dag-exprp
