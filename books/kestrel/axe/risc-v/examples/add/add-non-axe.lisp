@@ -13,7 +13,8 @@
 ;; STATUS: COMPLETE
 
 ;; This example is simple enough that we can use the ACL2 rewriter rather than
-;; the normal Axe Rewriter.
+;; the normal Axe Rewriter.  However, this is not typical!  See add.lisp for a
+;; more typical example.
 
 (include-book "kestrel/axe/risc-v/support-non-axe" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
