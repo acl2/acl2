@@ -195,7 +195,21 @@
   :short "Fixtype of sets of optional types."
   :elt-type type-option
   :elementp-of-nil t
-  :pred type-option-setp)
+  :pred type-option-setp
+
+  ///
+
+  (defruled type-setp-when-type-option-setp-and-nil-not-member
+    (implies (and (type-option-setp types)
+                  (not (set::in nil types)))
+             (type-setp types))
+    :induct t
+    :enable (type-setp
+             type-option-setp
+             set::in
+             set::head
+             set::tail
+             set::emptyp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
