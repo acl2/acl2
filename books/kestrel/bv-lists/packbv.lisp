@@ -11,9 +11,11 @@
 
 (in-package "ACL2")
 
+;; See packbv-def.lisp for the definition of packbv.
+
 (include-book "packbv-def")
-(include-book "all-unsigned-byte-p")
-(include-book "../bv/bvcat-def")
+;(include-book "all-unsigned-byte-p")
+;(include-book "../bv/bvcat-def")
 (include-book "../bv/getbit")
 (include-book "../lists-light/repeat")
 (local (include-book "../bv/bvcat"))
@@ -44,6 +46,7 @@
                   0))
   :hints (("Goal" :in-theory (enable packbv))))
 
+;; Splits off the first item, which becomes the most significant part of the result
 (defthmd packbv-opener
   (implies (not (zp itemcount))
            (equal (packbv itemcount itemsize items)
@@ -132,30 +135,73 @@
          0)
   :hints (("Goal" :in-theory (enable packbv))))
 
-(defthm logtail-of-packbv-gen2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this version throws away the unneeded items with take
+;; may not match very nicely because of the * in the LHS
+(defthm logtail-of-packbv-with-take
   (implies (and (natp n)
-                (equal len (len vals)))
-           (equal (logtail (* 8 n) (packbv len 8 vals))
-                  (packbv (- len n) 8 (butlast vals n))))
-  :hints (("Goal" :induct (packbv len 8 vals)
-           :in-theory (e/d (packbv bvchop-of-logtail-becomes-slice)
-                           (;bvcat-of-if-arg2
-                            )))))
+                (natp itemsize))
+           (equal (logtail (* itemsize n) (packbv itemcount itemsize items))
+                  (packbv (- itemcount n) itemsize (take (- itemcount n) items))))
+  :hints (("Goal" :in-theory (enable packbv zp))))
 
-(defthm logtail-8-of-packbv
-  (implies (equal len (len vals))
-           (equal (logtail 8 (packbv len 8 vals))
-                  (packbv (- len 1) 8 (butlast vals 1))))
-  :hints (("Goal" :use (:instance logtail-of-packbv-gen2 (n 1))
-           :in-theory (disable logtail-of-packbv-gen2))))
+;drop this version?
+;; this version throws away the unneeded items with butlast
+;; may not match very nicely because of the * in the LHS
+(defthm logtail-of-packbv
+  (implies (and (equal itemcount (len items)) ; (natp itemcount)
+                (natp n)
+                (natp itemsize))
+           (equal (logtail (* itemsize n) (packbv itemcount itemsize items))
+                  (packbv (- itemcount n) itemsize (butlast items n))))
+  :hints (("Goal" :in-theory (enable packbv
+                               bvchop-of-logtail-becomes-slice))))
 
-(defthm logtail-of-packbv-simple
-  (implies (and (equal len (len vals))
-                (posp itemsize))
-           (equal (logtail itemsize (packbv len itemsize vals))
-                  (packbv (- len 1) itemsize (butlast vals 1))))
-  :hints (("Goal" :induct (packbv len itemsize vals)
-           :in-theory (enable packbv))))
+;; this version doesn't throw away the unneeded items
+;; may not match very nicely because of the * in the LHS
+(defthmd logtail-of-packbv-no-discard
+  (implies (and (natp n)
+                (natp itemsize))
+           (equal (logtail (* itemsize n) (packbv itemcount itemsize items))
+                  (packbv (- itemcount n) itemsize items)))
+  :hints (("Goal" :in-theory (e/d (packbv bvchop-of-logtail-becomes-slice zp)
+                                  (logtail-of-packbv-with-take)))))
+
+;drop this version or adapt to use take?
+;; special case for n-1; throws away the first item
+(defthm logtail-of-packbv-special
+  (implies (and (equal itemcount (len items))
+                (natp itemsize))
+           (equal (logtail itemsize (packbv itemcount itemsize items))
+                  (packbv (- itemcount 1) itemsize (butlast items 1))))
+  :hints (("Goal" :use (:instance logtail-of-packbv (n 1))
+           :in-theory (disable logtail-of-packbv))))
+
+;; uses take to discard values
+;;special case for itemsize=1
+(defthm logtail-of-packbv-with-take-size-1
+  (implies (and (natp itemcount)
+                (natp n))
+           (equal (logtail n (packbv itemcount 1 items))
+                  (packbv (- itemcount n) 1 (take (- itemcount n) items))))
+  :hints (("Goal" :use (:instance logtail-of-packbv-with-take
+                                  (itemsize 1))
+           :in-theory (disable logtail-of-packbv-with-take))))
+
+(local
+  (defthm +-of---and-*-of-2-same
+    (implies (acl2-numberp x)
+             (equal (+ (- x) (* 2 x))
+                    x))))
+
+;; no need to do discard items at the end
+(defthmd logtail-of-packbv-new-no-discard-special
+  (implies (posp itemsize)
+           (equal (logtail itemsize (packbv itemcount itemsize items))
+                  (packbv (- itemcount 1) itemsize items)))
+  :hints (("Goal" :use (:instance logtail-of-packbv-no-discard (n 1))
+           :in-theory (disable logtail-of-packbv-no-discard))))
 
 (defthm packbv-of-1
   (equal (packbv 1 size items)
@@ -179,17 +225,35 @@
          (packbv count size items))
   :hints (("Goal" :in-theory (enable packbv))))
 
-;; This version splits off the least significant piece
+;; This version splits off the last item, which becomes the least significant part
+;; of the result.
+;; todo: make a version that uses take?
 (defthmd packbv-opener-alt
   (implies (and (not (zp itemcount))
                 (posp itemsize)
-                (equal itemcount (len items)))
+                (equal itemcount (len items)) ; but see just below
+                )
            (equal (packbv itemcount itemsize items)
                   (bvcat (* itemsize (+ -1 itemcount))
                          (packbv (+ -1 itemcount) itemsize (butlast items 1))
                          itemsize
                          (nth (+ -1 itemcount) items))))
   :hints (("Goal" :in-theory (e/d (slice) (len BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+;; This one splits off the last item, which becomes the least significant part
+;; of the result.
+(defthmd packbv-opener-alt-no-discard
+  (implies (and (not (zp itemcount))
+                (posp itemsize)
+                ;; (equal itemcount (len items))
+                )
+           (equal (packbv itemcount itemsize items)
+                  (bvcat (* itemsize (+ -1 itemcount))
+                         (packbv (+ -1 itemcount) itemsize items)
+                         itemsize
+                         (nth (+ -1 itemcount) items))))
+  :hints (("Goal" :in-theory (e/d (slice logtail-of-packbv-new-no-discard-special)
+                                  (len bvchop-of-logtail-becomes-slice)))))
 
 (defthm packbv-of-1-linear
   (implies (natp i)

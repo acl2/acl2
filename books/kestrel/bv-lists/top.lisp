@@ -93,6 +93,7 @@
 (include-book "bv-array-conversions2")
 (include-book "bv-array-conversions-gen")
 
+(include-book "bv-list-read-chunk-little")
 (include-book "bv-array-read-chunk-little")
 
 (include-book "bvnth")

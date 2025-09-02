@@ -40,18 +40,31 @@
   '(step32-opener
     run-until-return-aux-opener
     ;;run-until-sp-is-above-opener
-    read-when-equal-of-read-bytes-and-subregion32p))
+    read-when-equal-of-read-bytes-and-subregion32p
+    read-when-equal-of-read-bytes-and-subregion32p-alt
+    read-when-equal-of-read-bytes
+    read-when-equal-of-read-bytes-alt
+    ))
 
 (defun lifter-rules ()
   (declare (xargs :guard t))
   (append
+   (acl2::base-rules) ; gets us if-same-branches, for example
+   '(/= ;; !!
+     = ; todo: try base-rules
+     )
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
    (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
    (acl2::boolean-rules-safe)
-   (acl2::list-to-bv-array-rules)
+   (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
+   '(;acl2::list-to-bv-array-constant-opener
+     ;acl2::list-to-bv-array-aux-constant-opener ; slow?!
+     acl2::bv-list-read-chunk-little-constant-opener
+     acl2::packbv-little-constant-opener
+     )
    '(len-of-read-bytes nth-of-read-bytes) ; for output-indicator handling
    '(error32p-of-set-reg
      error32p-of-write
@@ -74,7 +87,11 @@
      read-of-write-same
      read-of-write-1-within
      read-1-of-write-within
-     read-when-equal-of-read-bytes-and-subregion32p
+     read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
+     ;read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
+     read-when-equal-of-read-bytes ; note rule priority
+     read-when-equal-of-read-bytes-alt
+     acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest
      read-of-write-when-disjoint-regions32p
      read-of-write-when-disjoint-regions32p-gen
      read-of-write-when-disjoint-regions32p-gen-alt
@@ -91,7 +108,16 @@
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
+     acl2::bv-array-read-chunk-little-unroll
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
+
+     acl2::bv-list-read-chunk-little-of-cons-irrel
+     acl2::bv-list-read-chunk-little-of-bvplus-of-constant
+     acl2::bv-list-read-chunk-little-opener
+     acl2::nth-of-cons-constant-version ; for handling (equal (read-bytes ..) <cons-nest>)
+     acl2::unsigned-byte-listp-of-cons
+     acl2::unsigned-byte-listp-constant-opener
+
      <-of-read ; for an array pattern rule
      bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
@@ -198,6 +224,7 @@
      read32-xreg-signed ; open to the unsigned one
 
      integerp-of-reg
+     unsigned-byte-p-of-reg
      reg-of-set-reg
      set-reg-of-set-reg-same
      set-reg-of-set-reg-diff
@@ -236,6 +263,8 @@
      acl2::subregion32p-constant-opener
      acl2::in-region32p-constant-opener
      acl2::disjoint-regions32p-constant-opener
+
+     acl2::bv-array-write-of-if-arg4 ; introduces bvif
 
      acl2::bv-array-read-chunk-little-constant-opener
      riscv::feat-rv32im-le ; todo: use constant-openers more for these?
@@ -402,11 +431,6 @@
      riscv::exec32-sltu
      riscv::exec32-or
 
-
-     /= ;; !!
-     = ; todo: try base-rules
-
-
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
      riscv::op-imm-funct-kind$inline-constant-opener
@@ -478,3 +502,9 @@
 
 ;; try late
 (acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)
+
+;; try after the one for constant bytes:
+(acl2::set-axe-rule-priority read-when-equal-of-read-bytes 1)
+
+;; split before trying to open if the state is an IF:
+(acl2::set-axe-rule-priority run-until-return-aux-of-if-arg2 -1)
