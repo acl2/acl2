@@ -1613,6 +1613,18 @@
  "__extension__ (x + y)"
  :gcc t)
 
+(test-parse
+ parse-unary-expression
+ "sizeof(x).m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :member)))
+
+(test-parse
+ parse-unary-expression
+ "sizeof(x)->m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :memberp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-struct-or-union-specifier
