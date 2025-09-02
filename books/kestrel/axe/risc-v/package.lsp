@@ -131,9 +131,11 @@
 
             list-to-bv-array
             list-to-bv-array-aux
+            bv-arrayp
             bv-array-read
             bv-array-read-chunk-little
             bv-array-write
+            array-of-zeros
 
             bv-list-read-chunk-little
 
