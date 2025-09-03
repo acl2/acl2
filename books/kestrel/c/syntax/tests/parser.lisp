@@ -1538,6 +1538,18 @@
  "sizeof(also(ambig))"
  :cond (expr-case ast :sizeof-ambig))
 
+(test-parse
+ parse-unary-expression
+ "sizeof(x).m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :member)))
+
+(test-parse
+ parse-unary-expression
+ "sizeof(x)->m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :memberp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-postfix-expression
@@ -1612,18 +1624,6 @@
  parse-expression
  "__extension__ (x + y)"
  :gcc t)
-
-(test-parse
- parse-unary-expression
- "sizeof(x).m"
- :cond (and (expr-case ast :unary)
-            (expr-case (expr-unary->arg ast) :member)))
-
-(test-parse
- parse-unary-expression
- "sizeof(x)->m"
- :cond (and (expr-case ast :unary)
-            (expr-case (expr-unary->arg ast) :memberp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
