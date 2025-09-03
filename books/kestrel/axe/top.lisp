@@ -226,7 +226,7 @@
 (include-book "unify-term-and-dag")
 (include-book "unify-term-and-dag-with-name")
 (include-book "unify-tree-and-dag")
-(include-book "util2")
+(include-book "utilities")
 (include-book "wf-dagp")
 (include-book "worklist-array")
 (include-book "worklists")

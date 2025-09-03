@@ -15,7 +15,7 @@
 (include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm")
-(include-book "../util2") ;; for symbolic-array and bit-blasted-symbolic-array
+(include-book "../utilities") ;; for symbolic-array and bit-blasted-symbolic-array
 (include-book "../math-rules")
 (include-book "lifter-utilities") ; for field-pair-okayp, etc
 (include-book "../step-increments")
