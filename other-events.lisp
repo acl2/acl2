@@ -22336,11 +22336,12 @@
          (keyword-lst (cdr field)))
     (cond
      ((not (and (symbolp name)
-                (keyword-value-listp keyword-lst)))
+                (keyword-value-listp keyword-lst)
+                (symbol-listp (odds keyword-lst))))
       (er-cmp ctx
               "Each field of a DEFABSSTOBJ event must be a symbol or a list ~
-               of the form (symbol :KWD1 val1 :KWD2 val2 ...), but the field ~
-               ~x0 is not of this form.  ~@1"
+               of the form (symbol :KWD1 val1 :KWD2 val2 ...) where each vali ~
+               is a symbol, but the field ~x0 is not of this form.  ~@1"
               field0 see-doc))
      (t
       (mv-let
@@ -22390,8 +22391,7 @@
                 (er-cmp ctx
                         "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
                         (duplicates (evens keyword-lst)) field0 see-doc))
-               ((not (and (symbolp exec)
-                          (function-symbolp exec wrld)))
+               ((not (function-symbolp exec wrld))
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
                          for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
@@ -22489,8 +22489,7 @@
                                          ":EXEC field is required"))
                                   type
                                   see-doc))
-                         ((not (and (symbolp logic)
-                                    (function-symbolp logic wrld)))
+                         ((not (function-symbolp logic wrld))
                           (er-cmp ctx
                                   "The :LOGIC field ~x0, specified~#1~[~/ ~
                                    (implicitly)~] for ~#2~[defabsstobj ~
@@ -22736,7 +22735,7 @@
 
 (defun one-way-unify-p (pat term)
 
-; Returns true when term2 is an instance of term1.
+; Returns true when term is an instance of pat.
 
   (or (equal pat term) ; optimization
       (mv-let (ans unify-subst)

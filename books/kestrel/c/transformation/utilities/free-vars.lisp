@@ -363,7 +363,8 @@
     :returns (free-vars ident-setp)
     (designor-case
      designor
-     :sub (free-vars-const-expr designor.index bound-vars)
+     :sub (set::union (free-vars-const-expr designor.index bound-vars)
+                      (free-vars-const-expr-option designor.range? bound-vars))
      :dot nil)
     :measure (designor-count designor))
 

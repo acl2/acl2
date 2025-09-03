@@ -1538,6 +1538,18 @@
  "sizeof(also(ambig))"
  :cond (expr-case ast :sizeof-ambig))
 
+(test-parse
+ parse-unary-expression
+ "sizeof(x).m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :member)))
+
+(test-parse
+ parse-unary-expression
+ "sizeof(x)->m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :memberp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-postfix-expression
@@ -1612,6 +1624,27 @@
  parse-expression
  "__extension__ (x + y)"
  :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-designator
+
+(test-parse
+ parse-designator
+ "[18]")
+
+(test-parse
+ parse-designator
+ "[0 ... 9]"
+ :gcc t)
+
+(test-parse-fail
+ parse-designator
+ "[0 ... 9]")
+
+(test-parse
+ parse-designator
+ ".m")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1952,6 +1985,16 @@
  parse-declaration
  "extern int remove (const char *__filename)
     __attribute__ ((__nothrow__ , __leaf__));"
+ :gcc t)
+
+(test-parse
+ parse-declaration
+ "int __seg_fs *x;"
+ :gcc t)
+
+(test-parse
+ parse-declaration
+ "int __seg_gs *x;"
  :gcc t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

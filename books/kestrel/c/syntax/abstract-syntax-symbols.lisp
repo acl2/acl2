@@ -203,7 +203,7 @@
     designor-fix
     designor-count
     designor-case
-    designor-sub
+    make-designor-sub
 
     designor-listp
     designor-list-fix
@@ -565,6 +565,9 @@
     ldm-block-item-list
     ldm-param-declon-list
     ldm-fundef
+    ldm-type
+    ldm-type-set
+    ldm-type-option-set
 
     ildm-type
 
@@ -580,7 +583,6 @@
     ident-type-map-fix
 
     type-formalp
-    ldm-type
     type-to-value-kind
     type-integerp
 
@@ -616,6 +618,7 @@
     stmt-types
     block-item-types
     block-item-list-types
+    fundef-types
 
     transunit-ensemble-annop
     code-ensemble-annop

@@ -5190,7 +5190,17 @@
                        ((eq (car val) 'macro)
                         (setf (macro-function k) (cdr val)))
                        (t ; (eq (car val) 'function)
-                        (fmakunbound! k) ; remove potential macro-function
+                        (when (macro-function k) ; then remove macro-function
+
+; Do not call fmakunbound (or fmakunbound!) here when k is a function!  In some
+; Lisps -- including SBCL, CMUCL, and Allegro CL -- this can remove inlining
+; information and cause functions that should be inlined (see inline-namep) not
+; to be inlined.  Perhaps even this code could defeat inlining if somehow an
+; inline function is changed to a macro and then, here, is in process to be
+; changed back to a function.  But maybe that's impossible, and anyhow, it
+; would be rare and with only a performance penalty, not a functional error.
+
+                          (fmakunbound! k))
                         (setf (symbol-function k) (cdr val)))))
                fn-macro-restore-ht))
     (when const-restore-ht
@@ -6047,17 +6057,11 @@
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*)))
                 (oneify-p nil)
-                ((terminal-substringp *inline-suffix*
-                                      sname
-                                      *inline-suffix-len-minus-1*
-                                      (1- (length sname)))
+                ((inline-namep sname)
                  (let ((form (list 'inline name)))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*)))
-                ((terminal-substringp *notinline-suffix*
-                                      sname
-                                      *notinline-suffix-len-minus-1*
-                                      (1- (length sname)))
+                ((notinline-namep sname)
                  (let ((form (list 'notinline name)))
                    (proclaim form)
                    (push (list 'declaim form) *declaim-list*))))))
@@ -6081,23 +6085,20 @@
                                nil
                                reclassifying-p
                                wrld)))
-                       #+sbcl
+                       #+(or sbcl cmucl allegro)
                        ((and (not (member-eq (car def)
                                              '(defmacro defabbrev)))
-                             (let ((sname (symbol-name name)))
-                               (terminal-substringp *inline-suffix*
-                                                    sname
-                                                    *inline-suffix-len-minus-1*
-                                                    (1- (length sname)))))
+                             (inline-namep (symbol-name name)))
 
 ; We are including a book (and not merely on behalf of certify-book).
-; Apparently SBCL needs the source code for a function in order for it to be
-; inlined.  (This isn't surprising, perhaps; perhaps more surprising is that
-; CCL does not seem to have this requirement.)  See for example community book
+; Apparently SBCL (also probably CMUCL and Allegro CL) needs the source code
+; for a function in order for it to be inlined.  (This isn't surprising,
+; perhaps; perhaps more surprising is that CCL does not seem to have this
+; requirement.)  See for example community book
 ; books/system/optimize-check.lisp, where the form (disassemble 'g4) fails to
 ; exhibit inlined code without the special treatment we provide here.  This
 ; special treatment avoids obtaining the definition from the hash table,
-; instead letting SBCL fall through to the (eval (car tail)) below.
+; instead letting Lisp fall through to the (eval (car tail)) below.
 
 ; Note that we aren't bothering with this special treatment for inlined
 ; functions if we are simply certifying a book.  That's both because we don't

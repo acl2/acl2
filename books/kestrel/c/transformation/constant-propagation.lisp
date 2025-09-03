@@ -1169,8 +1169,10 @@
       (designor-case
         designor
         :sub (b* (((mv index env)
-                   (const-prop-const-expr designor.index env)))
-               (mv (designor-sub index) env))
+                   (const-prop-const-expr designor.index env))
+                  ((mv range? env)
+                   (const-prop-const-expr-option designor.range? env)))
+               (mv (make-designor-sub :index index :range? range?) env))
         :dot (mv (designor-fix designor) env)))
     :measure (designor-count designor))
 
