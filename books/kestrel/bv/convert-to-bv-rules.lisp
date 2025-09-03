@@ -23,10 +23,13 @@
 (include-book "bvcat-def")
 (include-book "bvsx-def")
 (include-book "logext-def")
+(include-book "bvlt-def")
+(include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvcat"))
 (local (include-book "slice"))
 (local (include-book "bvshr"))
 (local (include-book "bvsx"))
+(local (include-book "bvlt"))
 
 ;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
 ;; its own version of such rules, since they use complex syntaxp hyps.  See
@@ -92,3 +95,17 @@
 ;; TODO: Add more of these, baseed on axe/bv-rules-axe.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvlt-convert-arg2-to-bv
+  (implies (syntaxp (and (consp x)
+                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+           (equal (bvlt size x y)
+                  (bvlt size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvlt-convert-arg3-to-bv
+  (implies (syntaxp (and (consp y)
+                         (member-eq (ffn-symb y) *functions-convertible-to-bv*)))
+           (equal (bvlt size x y)
+                  (bvlt size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))

@@ -37,6 +37,8 @@
   (pseudo-termp (symbolic-list base-name len))
   :hints (("Goal" :in-theory (enable symbolic-list))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A version of symbolic-list that makes clear by its name that the vars are
 ;; intended to be bytes (that fact should actually get enforced by additional
 ;; assumptions).
@@ -51,7 +53,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
+(defund symbolic-array-aux (current-index len element-size var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
@@ -65,28 +67,31 @@
                      ',len
                      ',current-index
                      ,(pack$ var-name (nat-to-string current-index))
-                     ,(bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
+                     ,(symbolic-array-aux (+ 1 current-index) len element-size var-name))))
 
-(defthm pseudo-termp-of-bv-array-write-nest-for-vars-aux
-  (implies (and (natp current-index)
-                (natp len)
-                (posp element-size)
-                (symbolp var-name))
-           (pseudo-termp (bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
-  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars-aux))))
+(local
+  (defthm pseudo-termp-of-symbolic-array-aux
+    (implies (and (natp current-index)
+                  (natp len)
+                  (posp element-size)
+                  (symbolp var-name))
+             (pseudo-termp (symbolic-array-aux current-index len element-size var-name)))
+    :hints (("Goal" :in-theory (enable symbolic-array-aux)))))
 
-(defund bv-array-write-nest-for-vars (var-name var-count element-size)
-  (declare (xargs :guard (and (symbolp var-name)
-                              (natp var-count)
-                              (posp element-size))))
-  (bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
+;; Makes a term representing a symbolic array of bit vector variables, named
+;; BASE-NAME0 through BASE-NAME(length-1), each of ELEMENT-WIDTH bits.
+(defund symbolic-array (base-name length element-width)
+  (declare (xargs :guard (and (symbolp base-name)
+                              (natp length)
+                              (posp element-width))))
+  (symbolic-array-aux 0 length element-width base-name))
 
-(defthm pseudo-termp-of-bv-array-write-nest-for-vars
-  (implies (and (symbolp var-name)
-                (natp var-count)
-                (posp element-size))
-           (pseudo-termp (bv-array-write-nest-for-vars var-name var-count element-size)))
-  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars))))
+(defthm pseudo-term-listp-of-symbolic-array
+  (implies (and (symbolp base-name)
+                (natp length)
+                (posp element-width))
+           (pseudo-termp (symbolic-array base-name length element-width)))
+  :hints (("Goal" :in-theory (enable symbolic-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,15 +131,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bit-blasted-bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
+(defund bit-blasted-symbolic-array-aux (current-index len element-size var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
                               (integerp element-size)
                               (<= 2 element-size) ; or else we don't need a bvcat for each element
-                              (symbolp var-name))
-;                  :guard-hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp)))
-                  ))
+                              (symbolp var-name))))
   (if (or (<= len current-index)
           (not (natp len))
           (not (natp current-index)))
@@ -143,50 +146,50 @@
                      ',len
                      ',current-index
                      ,(bvcat-nest-for-items (reverse (make-var-names (pack$ var-name "_" current-index "_") element-size)) 1)
-                     ,(bit-blasted-bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
+                     ,(bit-blasted-symbolic-array-aux (+ 1 current-index) len element-size var-name))))
 
-(defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars-aux
+(defthm pseudo-termp-of-bit-blasted-symbolic-array-aux
   (implies (and (natp current-index)
                 (natp len)
                 (posp element-size)
                 (symbolp var-name))
-           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
-  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux
+           (pseudo-termp (bit-blasted-symbolic-array-aux current-index len element-size var-name)))
+  :hints (("Goal" :in-theory (enable bit-blasted-symbolic-array-aux
                                      pseudo-term-listp-when-symbol-listp))))
 
-(defund bit-blasted-bv-array-write-nest-for-vars (var-name len element-size)
-  (declare (xargs :guard (and (symbolp var-name)
-                              (natp len)
-                              (integerp element-size)
-                              (<= 2 element-size) ; or else we don't need a bvcat for each element
-                              )))
-  (bit-blasted-bv-array-write-nest-for-vars-aux 0 len element-size var-name))
+(defund bit-blasted-symbolic-array (base-name length element-width)
+  (declare (xargs :guard (and (symbolp base-name)
+                              (natp length)
+                              (integerp element-width)
+                              (<= 2 element-width))))
+  (bit-blasted-symbolic-array-aux 0 length element-width base-name))
 
-(defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars
-  (implies (and (symbolp var-name)
-                (natp len)
-                (posp element-size))
-           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name len element-size)))
-  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars))))
+(defthm pseudo-termp-of-bit-blasted-symbolic-array
+  (implies (and (symbolp base-name)
+                (natp length)
+                (posp element-width))
+           (pseudo-termp (bit-blasted-symbolic-array base-name length element-width)))
+  :hints (("Goal" :in-theory (enable bit-blasted-symbolic-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun bv-array-write-nest-for-bit-vars-aux (current-index len element-size base-var-name)
-  (declare (xargs :measure (nfix (+ 1 (- len current-index)))))
-  (if (or (<= len current-index)
-          (not (natp len))
-          (not (natp current-index)))
-      (list 'quote (repeat len '0))
-    `(bv-array-write ',element-size
-                     ',len
-                     ',current-index
-                     ,(bvcat-nest-for-items (make-var-names-aux base-var-name (* 8 current-index) (+ 7 (* 8 current-index))) 1)
-                     ,(bv-array-write-nest-for-bit-vars-aux (+ 1 current-index) len element-size base-var-name))))
+;; ;drop?
+;; (defun bv-array-write-nest-for-bit-vars-aux (current-index len element-size base-var-name)
+;;   (declare (xargs :measure (nfix (+ 1 (- len current-index)))))
+;;   (if (or (<= len current-index)
+;;           (not (natp len))
+;;           (not (natp current-index)))
+;;       (list 'quote (repeat len '0))
+;;     `(bv-array-write ',element-size
+;;                      ',len
+;;                      ',current-index
+;;                      ,(bvcat-nest-for-items (make-var-names-aux base-var-name (* 8 current-index) (+ 7 (* 8 current-index))) 1)
+;;                      ,(bv-array-write-nest-for-bit-vars-aux (+ 1 current-index) len element-size base-var-name))))
 
-;the 0th element of the array will contain (bvcat in0 1 (bvcat in1 1 ...))
-;swap the params?
-(defun bv-array-write-nest-for-bit-vars (base-name element-count element-size)
-  (bv-array-write-nest-for-bit-vars-aux 0 element-count element-size base-name))
+;; ;the 0th element of the array will contain (bvcat in0 1 (bvcat in1 1 ...))
+;; ;swap the params?
+;; (defun bv-array-write-nest-for-bit-vars (base-name element-count element-size)
+;;   (bv-array-write-nest-for-bit-vars-aux 0 element-count element-size base-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,8 +210,10 @@
   ;; todo: omit the _, making names like in0_0 ?
   (let* ((byte-var-names (make-var-names (pack$ base-name '_) num-vars))
          ;; this is a list of bvcat terms:
-         (bit-blasted-byte-var-names (bit-blast-byte-names byte-var-names)))
-    (make-cons-nest bit-blasted-byte-var-names)))
+         (bit-blasted-bytes (bit-blast-byte-names byte-var-names)))
+    (make-cons-nest bit-blasted-bytes)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun append-numbers (n name)
   (declare (xargs :measure (nfix (+ 1 n))))
@@ -266,28 +271,6 @@
 ;;   (declare (xargs :guard (and (symbolp name)
 ;;                               (natp length))))
   (make-bit-var-list-for-bytes-aux 0 length name))
-
-;; Make a term representing a symbolic array of bit vectors variables NAME0,
-;; ...,  NAME(length-1), each of ELEMENT-WIDTH bits.
-(defun symbolic-array (name length element-width)
-  (declare (xargs :guard (and (symbolp name)
-                              (natp length)
-                              (posp element-width))))
-  (bv-array-write-nest-for-vars name length element-width))
-
-(defund bit-blasted-symbolic-array (name length element-width)
-  (declare (xargs :guard (and (symbolp name)
-                              (natp length)
-                              (integerp element-width)
-                              (<= 2 element-width))))
-  (bit-blasted-bv-array-write-nest-for-vars name length element-width))
-
-(defthm pseudo-termp-of-bit-blasted-symbolic-array
-  (implies (and (symbolp name)
-                (natp length)
-                (posp element-width))
-           (pseudo-termp (bit-blasted-symbolic-array name length element-width)))
-  :hints (("Goal" :in-theory (enable bit-blasted-symbolic-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

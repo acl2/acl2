@@ -50,6 +50,7 @@
 (include-book "rule-lists")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
+(include-book "clear-writes")
 (include-book "lifter-rules")
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
