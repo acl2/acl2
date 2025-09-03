@@ -20106,9 +20106,9 @@
 ;;                               local-2-name
 ;;                               local-2-array-size heap)
 ;;   (declare (xargs :mode :program))
-;;   `((equal (get-field (jvm::nth-local '0 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-0-name local-0-array-size 8))
-;;     (equal (get-field (jvm::nth-local '1 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-1-name local-1-array-size 8))
-;;     (equal (get-field (jvm::nth-local '2 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-2-name local-2-array-size 8))
+;;   `((equal (get-field (jvm::nth-local '0 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-0-name local-0-array-size 8))
+;;     (equal (get-field (jvm::nth-local '1 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-1-name local-1-array-size 8))
+;;     (equal (get-field (jvm::nth-local '2 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-2-name local-2-array-size 8))
 ;;     (array-refp-aux (jvm::nth-local '0 locals) (cons ',local-0-array-size 'nil) ':byte ,heap 'nil)
 ;;     (array-refp-aux (jvm::nth-local '1 locals) (cons ',local-1-array-size 'nil) ':byte ,heap 'nil)
 ;;     (array-refp-aux (jvm::nth-local '2 locals) (cons ',local-2-array-size 'nil) ':byte ,heap 'nil)))
