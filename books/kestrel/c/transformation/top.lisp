@@ -10,6 +10,7 @@
 
 (in-package "C2C")
 
+(include-book "proof-generation")
 (include-book "constant-propagation")
 (include-book "copy-fn")
 (include-book "rename")
