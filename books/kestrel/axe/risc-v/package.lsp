@@ -263,6 +263,13 @@
 
             ;; var names:
             riscv::stat
+            riscv::instr
+            riscv::instr.kind
+            riscv::instr.funct
+            riscv::instr.rd
+            riscv::instr.rs1
+            riscv::instr.rs2
+            riscv::instr.imm
             )
           *axe-implementation-functions*
           (set-difference-eq *acl2-exports*
