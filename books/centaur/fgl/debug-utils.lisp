@@ -296,7 +296,8 @@
                   (stack (stack-pop-frame stack)))
                (mv rule bindings hyps rhs stack))
              (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
-               (fgl-rewrite-apply-rule rule bindings hyps rhs equiv-contexts interp-st state))))
+               (fgl-rewrite-apply-rule
+                rule 'anonymous bindings hyps rhs equiv-contexts interp-st state))))
 
 
 

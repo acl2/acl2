@@ -94,6 +94,7 @@
                           env$))))
 
 (fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
+(fty::deflist trace-alistlist :elt-type trace-alist :true-listp t :elementp-of-nil t)
 
 (with-output
   :off (event)
@@ -136,7 +137,7 @@
       (trace-scratch :type t :initially nil)
       (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
       (trace-alist :type (satisfies trace-alist-p) :initially nil :fix trace-alist-fix)
-      (trace-stack :type (satisfies true-listp) :initially nil :fix true-list-fix)
+      (trace-stack :type (satisfies trace-alistlist-p) :initially nil :fix trace-alistlist-fix)
 
       (errmsg :type t :initially nil)
       (debug-info :type t)

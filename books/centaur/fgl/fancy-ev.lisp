@@ -923,7 +923,7 @@ any).  This allows all functions that were added using
                  (:trace-scratch  . t)
                  (:trace-depth    . (natp trace-depth))
                  (:trace-alist    . (trace-alist-p trace-alist))
-                 (:trace-stack    . (true-listp trace-stack))
+                 (:trace-stack    . (trace-alistlist-p trace-stack))
                  (:errmsg         . (not (eq errmsg :unreachable)))
                  (:debug-info     . t)
                  (:debug-stack    . (major-stack-p debug-stack))))))
