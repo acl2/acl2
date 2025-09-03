@@ -2247,7 +2247,7 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
-          (separate-rules) ; todo: don't always use these
+          ;; (separate-rules) ; todo: don't always use these
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
@@ -6125,7 +6125,7 @@
           (logops-to-bv-rules)
 
           (x86-type-rules) ; since some of these functions may survive to the proof stage
-          (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
+          ;; (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
           (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
