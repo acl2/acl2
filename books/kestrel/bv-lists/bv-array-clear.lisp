@@ -191,7 +191,7 @@
            (equal (bv-array-clear element-size1 len index1 (bv-array-clear element-size2 len index2 lst))
                   (bv-array-clear element-size2 len index2 (bv-array-clear element-size2 len index1 lst))))
 
-  :hints (("Goal" :use (:instance bv-array-clear-of-bv-array-clear-diff)
+  :hints (("Goal" :use bv-array-clear-of-bv-array-clear-diff
            :in-theory (disable bv-array-clear-of-bv-array-clear-diff))))
 
 
@@ -259,8 +259,7 @@
            (equal (bv-array-clear esize len key1 (bv-array-write esize len key2 val lst))
                   (bv-array-write esize len key2 val (bv-array-clear esize len key1 lst))))
   :hints (("Goal" :use (:instance bv-array-clear-of-bv-array-write (lst (firstn len lst)))
-           :in-theory (disable bv-array-clear-of-bv-array-write
-                               ))))
+           :in-theory (disable bv-array-clear-of-bv-array-write))))
 
 (defthm bv-array-clear-of-bv-array-clear-same
   (implies (and (natp index)

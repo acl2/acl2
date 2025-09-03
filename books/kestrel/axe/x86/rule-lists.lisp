@@ -337,7 +337,7 @@
     read-of-set-undef
     read-of-set-mxcsr
 
-    read-when-program-at ; trying just this one
+    ;; read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
     ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
@@ -2247,7 +2247,7 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
-          (separate-rules) ; todo: don't always use these
+          ;; (separate-rules) ; todo: don't always use these
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
@@ -2395,7 +2395,7 @@
             ;;x86isa::xr-xw-intra-array-field
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
-            x86isa::program-at-xw-in-app-view
+            ;; x86isa::program-at-xw-in-app-view
             ;x86isa::xr-wb
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             ;x86isa::program-at-wb-disjoint ;drop?
@@ -5548,7 +5548,7 @@
 (set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
-(set-axe-rule-priority read-when-program-at 1)
+;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
 ;; (set-axe-rule-priority read-when-program-at-1-byte-simple 1)
 ;; (set-axe-rule-priority read-when-program-at-1-byte 1)
@@ -6125,7 +6125,7 @@
           (logops-to-bv-rules)
 
           (x86-type-rules) ; since some of these functions may survive to the proof stage
-          (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
+          ;; (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
           (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
@@ -6143,15 +6143,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
-(defund program-at-rules ()
-  (declare (xargs :guard t))
-  '(program-at-of-write
-    x86isa::program-at-of-if
-    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
-    program-at-of-set-undef ; do we not need something like this?
-    program-at-of-set-mxcsr
-    ))
+;; ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+;; (defund program-at-rules ()
+;;   (declare (xargs :guard t))
+;;   '(;program-at-of-write
+;;     x86isa::program-at-of-if
+;;     program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+;;     program-at-of-set-undef ; do we not need something like this?
+;;     program-at-of-set-mxcsr
+;;     ))
 
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
@@ -6225,7 +6225,7 @@
 
      acl2::bvminus-of-bvplus-same-arg2 ; todo: more like this (factor out of symbolic-execution-rules64)
      )
-   (program-at-rules) ; to show that program-at assumptions still hold after the loop body
+   ;; (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))
@@ -6407,9 +6407,9 @@
 (set-axe-rule-priority rgfi-becomes-rax -1)
 (set-axe-rule-priority rgfi-becomes-rbx -1)
 
-;; Based on how commonly these rules were used in an example:
-(set-axe-rule-priority program-at-of-write -4)
-(set-axe-rule-priority program-at-of-set-flag -3)
+;; ;; Based on how commonly these rules were used in an example:
+;; (set-axe-rule-priority program-at-of-write -4)
+;; (set-axe-rule-priority program-at-of-set-flag -3)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority xw-becomes-set-rip -4)
