@@ -1943,50 +1943,50 @@
     run-until-exit-segment-or-hit-loop-header-of-if-split))
 
 ;; todo: deprecate?
-(defund separate-rules ()
-  (declare (xargs :guard t))
-  '(x86isa::separate-normalize-r-w-x-1
-    x86isa::separate-normalize-r-w-x-2
-    x86isa::not-separate-self
-    x86isa::separate-of-plus
-    x86isa::separate-of-plus-alt
-    x86isa::separate-below-and-above
-    x86isa::separate-below-and-above-alt
-    x86isa::separate-lemma-1
-    x86isa::separate-lemma-1-alt
-    x86isa::separate-lemma-1b
-    x86isa::separate-lemma-1b-alt
-    x86isa::separate-lemma-2b
-    x86isa::separate-lemma-2b-alt
-    x86isa::separate-lemma-3
-    x86isa::separate-lemma-3-alt
-    x86isa::separate-of-if-arg3
-    x86isa::separate-of-if-arg6
-    x86isa::separate-below-and-above-offset
-    x86isa::separate-below-and-above-offset-alt
-    x86isa::separate-same-lemma-1
-    x86isa::separate-same-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1
-    x86isa::separate-from-separate-lemma-1b
-    x86isa::separate-from-separate-lemma-1c
-    x86isa::separate-from-separate-lemma-1d
-    x86isa::separate-from-separate-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1b-alt
-    x86isa::separate-from-separate-lemma-1c-alt
-    x86isa::separate-from-separate-lemma-1d-alt
-    ;; these 2 may subsume much of the stuff above:
-    x86isa::separate-when-separate
-    x86isa::separate-when-separate-alt
-    ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
-    ;;x86isa::not-equal-when-separate
-    ;;x86isa::not-equal-when-separate-alt
-    x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
-    x86isa::not-equal-constant-when-separate-of-constants-alt
-    acl2::equal-of-+-combine-constants
-    acl2::equal-of-+-combine-constants-alt
-    acl2::equal-of-+-and-+-cancel-constants
-    ))
+;; (defund separate-rules ()
+;;   (declare (xargs :guard t))
+;;   '(x86isa::separate-normalize-r-w-x-1
+;;     x86isa::separate-normalize-r-w-x-2
+;;     x86isa::not-separate-self
+;;     x86isa::separate-of-plus
+;;     x86isa::separate-of-plus-alt
+;;     x86isa::separate-below-and-above
+;;     x86isa::separate-below-and-above-alt
+;;     x86isa::separate-lemma-1
+;;     x86isa::separate-lemma-1-alt
+;;     x86isa::separate-lemma-1b
+;;     x86isa::separate-lemma-1b-alt
+;;     x86isa::separate-lemma-2b
+;;     x86isa::separate-lemma-2b-alt
+;;     x86isa::separate-lemma-3
+;;     x86isa::separate-lemma-3-alt
+;;     x86isa::separate-of-if-arg3
+;;     x86isa::separate-of-if-arg6
+;;     x86isa::separate-below-and-above-offset
+;;     x86isa::separate-below-and-above-offset-alt
+;;     x86isa::separate-same-lemma-1
+;;     x86isa::separate-same-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1
+;;     x86isa::separate-from-separate-lemma-1b
+;;     x86isa::separate-from-separate-lemma-1c
+;;     x86isa::separate-from-separate-lemma-1d
+;;     x86isa::separate-from-separate-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1b-alt
+;;     x86isa::separate-from-separate-lemma-1c-alt
+;;     x86isa::separate-from-separate-lemma-1d-alt
+;;     ;; these 2 may subsume much of the stuff above:
+;;     x86isa::separate-when-separate
+;;     x86isa::separate-when-separate-alt
+;;     ;; these may be expensive but seem necessary in some cases
+;;     ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
+;;     ;;x86isa::not-equal-when-separate
+;;     ;;x86isa::not-equal-when-separate-alt
+;;     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
+;;     x86isa::not-equal-constant-when-separate-of-constants-alt
+;;     acl2::equal-of-+-combine-constants
+;;     acl2::equal-of-+-combine-constants-alt
+;;     acl2::equal-of-+-and-+-cancel-constants
+;;     ))
 
 (defund canonical-rules-non-bv ()
   (declare (xargs :guard t))
@@ -5752,7 +5752,7 @@
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
     acl2::not-bvlt-of-max-arg2
     acl2::<-of-*-when-constant-integers
-            ;separate-when-separate-2 ; todo: drop? but that caused problems
+    ;;separate-when-separate-2 ; todo: drop? but that caused problems
     acl2::collect-constants-over-<-2
     acl2::commutativity-of-*-when-constant
     acl2::<-of-*-of-constant-and-constant
@@ -5805,9 +5805,9 @@
     acl2::nth-becomes-bv-array-read-strong2
     acl2::bvplus-of-*-arg1 ; introduces bvmult
     acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
-    not-equal-of-+-and-+-when-separate
-    not-equal-of-+-of-+-and-+-when-separate
-    not-equal-of-+-of-+-and-+-when-separate-gen
+    ;; not-equal-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate-gen
     acl2::<-of-negative-constant-and-bv
     ;;read-1-of-write-1-both
     acl2::not-bvlt-of-constant-when-usb-dag ; rename
@@ -5960,8 +5960,8 @@
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             ;read-1-of-write-within-new
-            not-equal-of-+-when-separate
-            not-equal-of-+-when-separate-alt
+            ;; not-equal-of-+-when-separate
+            ;; not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             )))
 
