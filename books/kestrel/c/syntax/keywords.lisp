@@ -72,6 +72,7 @@
     "__signed"
     "__signed__"
     "__stdcall"
+    "__thread"
     "typeof"
     "__typeof"
     "__typeof__"
