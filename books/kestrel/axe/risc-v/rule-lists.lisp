@@ -46,13 +46,20 @@
     read-when-equal-of-read-bytes-alt
     ))
 
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
 (defun lifter-rules ()
   (declare (xargs :guard t))
   (append
+   (shadowed-write-rules)
    (acl2::base-rules) ; gets us if-same-branches, for example
-   '(/= ;; !!
-     = ; todo: try base-rules
-     )
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
@@ -70,41 +77,54 @@
      error32p-of-write
      error32p-of-set-pc
 
-     read32-mem-ubyte32-lendian-becomes-read
-     read32-mem-ubyte8-becomes-read-byte
-     read-byte-becomes-read
-     read-of-bvchop-32 ; todo: say which arg
-     write-of-bvchop-32-arg2
-     write-of-bvchop-arg3
-     write-of-logext-arg3
-     write32-mem-ubyte8-becomes-write-byte
-     write32-mem-ubyte32-lendian-becomes-write
-     read-of-+
+     ;; Rules about read:
      integerp-of-read
      natp-of-read
      unsigned-byte-p-of-read
+     read-of-bvchop-32 ; todo: say which arg
+     read-of-+
+     bvchop-of-read
+     <-of-read ; for an array pattern rule
+     not-equal-of-read-and-constant
+     not-equal-of-constant-and-read
+
+     ;; Rules to introduce READ:
+     read-byte-becomes-read ; we use READ as the normal form, even when writing just one byte
+     read32-mem-ubyte32-lendian-becomes-read
+     read32-mem-ubyte8-becomes-read-byte ; todo: go directly to read
+
+     ;; Rules about write:
+     write-of-bvchop-32-arg2
+     write-of-bvchop-arg3
+     write-of-logext-arg3
+     write32-mem-ubyte8-becomes-write-byte ; todo: go directly to write
+     write32-mem-ubyte32-lendian-becomes-write
      write-of-+
+
+     write-of-write-same
+
+     ;; Rules about reading and writing:
      read-of-write-same
      read-of-write-1-within
      read-1-of-write-within
+     read-of-write-when-disjoint-regions32p
+     read-of-write-when-disjoint-regions32p-gen
+     read-of-write-when-disjoint-regions32p-gen-alt
+
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
+
      read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
      ;read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
      read-when-equal-of-read-bytes ; note rule priority
      read-when-equal-of-read-bytes-alt
      acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest
-     read-of-write-when-disjoint-regions32p
-     read-of-write-when-disjoint-regions32p-gen
-     read-of-write-when-disjoint-regions32p-gen-alt
-     bvchop-of-read
-     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
-     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
 
      subregion32p-of-1-arg1     ;; trying
      disjoint-regions32p-of-1-and-1 ; trying
+
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::equal-of-bvplus-constant-and-constant
-     not-equal-of-read-and-constant
-     not-equal-of-constant-and-read
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -118,7 +138,6 @@
      acl2::unsigned-byte-listp-of-cons
      acl2::unsigned-byte-listp-constant-opener
 
-     <-of-read ; for an array pattern rule
      bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
@@ -216,10 +235,10 @@
      acl2::<-becomes-bvlt-axe-bind-free-arg1 ; or use stronger rules?
      acl2::<-becomes-bvlt-axe-bind-free-arg2
 
-     read32-pc-becomes-pc
-     write32-pc-becomes-set-pc
-     read32-xreg-unsigned-becomes-reg
-     write32-xreg-becomes-set-reg
+     read32-pc-becomes-pc ; introduces PC, our normal form
+     write32-pc-becomes-set-pc ; introduces SET-PC, our normal form
+     read32-xreg-unsigned-becomes-reg ; introduces REG, our normal form
+     write32-xreg-becomes-set-reg ; introduces SET-REG, our normal form
 
      read32-xreg-signed ; open to the unsigned one
 
@@ -235,9 +254,6 @@
 
      set-reg-of-bvchop
      set-reg-does-nothing
-
-     acl2::equal-same ; !!
-
      set-reg-of-0 ; setting register 0 has no effect!
 
      pc-of-set-pc
@@ -249,12 +265,15 @@
      read-of-set-pc
      read-of-set-reg
 
+     ;; normalizing nests of writes:
      set-reg-of-set-pc
      write-of-set-pc
 
      stat32ip-of-set-reg
      stat32ip-of-write
+     ;; stat32ip-of-set-pc ; uncomment?
 
+     ;; regiseter names (we expand these to REG):
      x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
      ;; register aliases:
      ;; zero
@@ -267,17 +286,24 @@
      acl2::bv-array-write-of-if-arg4 ; introduces bvif
 
      acl2::bv-array-read-chunk-little-constant-opener
-     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
-     riscv::feat-endian-little
-     riscv::feat-base-rv32i
+
      riscv::feat
+     riscv::feat->base$inline
+     riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
+
+
+     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
+
+     riscv::feat-endian-little
      riscv::feat-endian-fix$inline
      riscv::feat-endian-kind$inline
+
+     riscv::feat-base-rv32i
+
      riscv::feat-base-fix$inline
      riscv::feat-base-kind$inline
      riscv::feat-mp
      riscv::feat-embedp
-     riscv::feat->base$inline
 
      riscv::branch-funct-fix$inline
      riscv::branch-funct-kind$inline
@@ -285,7 +311,7 @@
      riscv::op-imms-funct-fix$inline
      riscv::op-imms-funct-kind$inline
 
-     riscv::decodex-constant-opener
+     ;; riscv::decodex-constant-opener ; not needed since the evaluator knows about this function
      acl2::ubyte32-fix-constant-opener
      acl2::ubyte32p-constant-opener
      riscv::get-fields-itype-constant-opener
@@ -309,7 +335,6 @@
      riscv::get-fields-rtype-constant-opener
      riscv::get-fields-utype-constant-opener
      riscv::get-fields-stype-constant-opener
-     riscv::feat->m$inline-constant-opener
 
      riscv::instr-op-imm-constant-opener
 
@@ -400,36 +425,60 @@
      riscv::instr-lui->imm$inline
 
      exec32-instr-base
-     exec32-store
-     exec32-load
-     exec32-lw
-     riscv::exec32-lb
-     riscv::exec32-lbu
-     exec32-sw
-     exec32-op
+
      exec32-add
+     exec32-addi
+     exec32-and
+     exec32-andi
+     exec32-auipc
+     exec32-beq
+     exec32-bge
+     exec32-bgeu
+     exec32-blt
+     exec32-bltu
+     exec32-bne
+     exec32-branch
+     exec32-div
+     exec32-divu
+     exec32-instr
+     exec32-jal
      exec32-jalr
-     riscv::exec32-jal
-     riscv::exec32-sb
-     riscv::exec32-branch
-     riscv::exec32-bgeu
-     riscv::exec32-blt
-     riscv::exec32-bltu
-     riscv::exec32-bne
-     riscv::exec32-beq
-     riscv::exec32-bge
-     riscv::exec32-auipc
-     riscv::exec32-lui
-     riscv::exec32-op-imms
-     riscv::exec32-srli
-     riscv::exec32-slli
-     riscv::exec32-andi
-     riscv::exec32-xor
-     riscv::exec32-srai
-     riscv::exec32-sub
-     riscv::exec32-sltiu
-     riscv::exec32-sltu
-     riscv::exec32-or
+     exec32-lb
+     exec32-lbu
+     exec32-lh
+     exec32-lhu
+     exec32-load
+     exec32-lui
+     exec32-lw
+     exec32-mul
+     exec32-mulh
+     exec32-mulhsu
+     exec32-mulhu
+     exec32-op
+     ;; exec32-op-imm
+     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+     exec32-op-imms ;; todo: restrict
+     exec32-or
+     exec32-ori
+     exec32-rem
+     exec32-remu
+     exec32-sb
+     exec32-sh
+     exec32-sll
+     exec32-slli
+     exec32-slt
+     exec32-slti
+     exec32-sltiu
+     exec32-sltu
+     exec32-sra
+     exec32-srai
+     exec32-srl
+     exec32-srli
+     exec32-store
+     exec32-sub
+     exec32-sw
+     exec32-xor
+     exec32-xori
 
      ;; these should be 0-ary and thus safe to open:
      riscv::op-imm-funct-addi
@@ -468,10 +517,6 @@
 
      riscv::branch-funct-bgeu
 
-     riscv::exec32-op-imm-base
-
-     exec32-addi
-
      inc32-pc ; increments by 4
 
      acl2::bvchop-of-+-becomes-bvplus
@@ -494,8 +539,6 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
 
-     eq
-     eql
      )))
 
 
