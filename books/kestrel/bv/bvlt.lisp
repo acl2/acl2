@@ -457,7 +457,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;disabled during library proofs

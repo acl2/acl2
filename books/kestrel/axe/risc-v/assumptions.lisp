@@ -20,7 +20,7 @@
 (defconst *stack-slot-size* 4) ; since 32-bit
 
 ;todo: dup!
-;; Result is untranslated
+;; Result is untranslated?
 (defund symbolic-bvplus-constant (size constant term)
   (declare (xargs :guard (and (natp size)
                               (integerp constant))))
@@ -34,6 +34,8 @@
                 (pseudo-termp term))
            (pseudo-termp (symbolic-bvplus-constant size constant term)))
   :hints (("Goal" :in-theory (enable symbolic-bvplus-constant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Creates assumptions about STATE-VAR and BASE-VAR.
 ;; Returns (mv erp assumptions).
@@ -137,6 +139,8 @@
            (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-regions32 regions base-var state-var stack-pointer-expression stack-slots-needed existing-stack-slots position-independentp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-memory-regions32 memory-regionsp memory-regionp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp assumptions).
 (defun assumptions-elf32 (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
@@ -164,7 +168,6 @@
                 memory-region-assumptions))))
 
 ;; does not return an error
-
 (defund assumptions-elf32! (parsed-elf stack-slots existing-stack-slots position-independentp)
   (declare (xargs :guard (and (acl2::parsed-elfp parsed-elf)
                               (natp stack-slots)

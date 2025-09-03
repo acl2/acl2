@@ -1349,7 +1349,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MUL') instruction [ISA:12.1]."
+  :short "Semantics of the @('MUL') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1386,7 +1386,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULH') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1426,7 +1426,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHU') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULHU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1466,7 +1466,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHSU') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1507,7 +1507,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIV') instruction [ISA:12.2]."
+  :short "Semantics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1549,7 +1549,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIVU') instruction [ISA:12.2]."
+  :short "Semantics of the @('DIVU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1591,7 +1591,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REM') instruction [ISA:12.2]."
+  :short "Semantics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1634,7 +1634,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REMU') instruction [ISA:12.2]."
+  :short "Semantics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p

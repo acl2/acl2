@@ -285,7 +285,7 @@
   (implies (not (integerp arg3))
            (equal (bv-array-read arg1 arg2 arg3 arg4)
                   (bv-array-read arg1 arg2 0 arg4)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthmd bv-array-read-shorten-when-<
   (implies (and (syntaxp (quotep data))
