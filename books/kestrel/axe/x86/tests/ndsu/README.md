@@ -70,6 +70,7 @@ gcc -o pand.macho64 pand.c
 gcc -o por.macho64 por.c
 gcc -o pxor.macho64 pxor.c
 gcc -o mul.macho64 mul.c
+gcc -o vpadd128.macho64 vpadd128.c
 
 ;; Done on Dell Latitude 5480, Intel Core i5 64-bit Windows
 
@@ -96,4 +97,4 @@ gcc -o pand.c pand.elf64
 gcc -o por.c por.elf64
 gcc -o pxor.c pxor.elf64
 gcc -o mul.c mul.elf64
-
+gcc -o vpadd128.c vpadd128.elf64
