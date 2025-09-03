@@ -1896,8 +1896,12 @@
     (b* (((reterr) (irr-designor) (irr-dimb-table)))
       (designor-case
        design
-       :sub (b* (((erp new-index table) (dimb-const-expr design.index table)))
-              (retok (designor-sub new-index) table))
+       :sub (b* (((erp new-index table)
+                  (dimb-const-expr design.index table))
+                 ((erp new-range? table)
+                  (dimb-const-expr-option design.range? table)))
+              (retok (make-designor-sub :index new-index :range? new-range?)
+                     table))
        :dot (retok (designor-dot design.name) (dimb-table-fix table))))
     :measure (designor-count design))
 

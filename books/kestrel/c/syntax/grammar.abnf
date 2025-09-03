@@ -1187,6 +1187,11 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; As a GCC extension,
 ; we allow the '__declspec' attribute syntax as a declaration specifier.
 
+; As a GCC extension,
+; we include type qualifiers for x86 named address spaces
+; (see https://gcc.gnu.org/onlinedocs/gcc/Named-Address-Spaces.html,
+; which says that they are used like type qualifiers).
+
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
@@ -1243,6 +1248,13 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; nonetheless, we encountered it in practical code.
 ; Presumably, it may make it easier to write certain macros.
 ; Semantically, it amounts to nothing, i.e. it is ignored.
+
+; As a GCC extension, we allow range designators
+; (see https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
+; Since they extend standard single-element designators,
+; which are constant expressions,
+; it seems reasonable that the two expressions of the range are also constant,
+; although the GCC documentation is not explicit about this.
 
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
@@ -1350,6 +1362,8 @@ type-qualifier = %s"const"
                / restrict-keyword
                / volatile-keyword
                / %s"_Atomic"
+               / %s"__seg_fs" ; GCC extension
+               / %s"__seg_gs" ; GCC extension
 
 function-specifier = inline-keyword
                    / %s"_Noreturn"
@@ -1431,7 +1445,9 @@ designation = designator-list "="
 designator-list = designator
                 / designator-list designator
 
-designator = "[" constant-expression "]"
+designator = "[" constant-expression
+                 [ "..." constant-expression ] ; GCC extension
+             "]"
            / "." identifier
 
 static-assert-declaration =

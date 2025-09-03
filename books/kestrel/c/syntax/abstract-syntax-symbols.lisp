@@ -203,7 +203,7 @@
     designor-fix
     designor-count
     designor-case
-    designor-sub
+    make-designor-sub
 
     designor-listp
     designor-list-fix

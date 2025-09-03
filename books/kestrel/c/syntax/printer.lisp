@@ -1428,7 +1428,9 @@
               :none (print-astring "volatile" pstate)
               :start (print-astring "__volatile" pstate)
               :both (print-astring "__volatile__" pstate))
-   :atomic (print-astring "_Atomic" pstate))
+   :atomic (print-astring "_Atomic" pstate)
+   :seg-fs (print-astring "__seg_fs" pstate)
+   :seg-gs (print-astring "__seg_gs" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2388,6 +2390,14 @@
      designor
      :sub (b* ((pstate (print-astring "[" pstate))
                (pstate (print-const-expr designor.index pstate))
+               (pstate
+                (const-expr-option-case
+                 designor.range?
+                 :some (b* ((pstate (print-astring "..." pstate))
+                            (pstate (print-const-expr designor.range?.val
+                                                      pstate)))
+                         pstate)
+                 :none pstate))
                (pstate (print-astring "]" pstate)))
             pstate)
      :dot (b* ((pstate (print-astring "." pstate))

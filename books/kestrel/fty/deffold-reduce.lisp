@@ -557,7 +557,9 @@
        (thm-events
         `((defruled ,type-suffix-of-constr
             (equal ,thm-lhs ,thm-rhs)
-            :expand ,thm-lhs)
+            ,@(if fields
+                  `(:expand ,thm-lhs)
+                `(:enable ,type-suffix)))
           (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
                           '(,type-suffix-of-constr)))))
     (mv fn-term thm-events)))
@@ -573,7 +575,8 @@
                                   (combine symbolp)
                                   (overrides alistp)
                                   (fty-table alistp))
-  :returns (keyword+term-list true-listp)
+  :returns (mv (keyword+term-list true-listp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the code for the cases of a sum type."
   :long
   (xdoc::topstring
@@ -592,26 +595,28 @@
     "For now, we do not generate theorems via
      @(tsee deffoldred-gen-prod-combination+theorem),
      but we plan to do that soon."))
-  (b* (((when (endp prods)) nil)
+  (b* (((when (endp prods)) (mv nil nil))
        (prod (car prods))
        (kind (flexprod->kind prod))
        ((unless (keywordp kind))
-        (raise "Internal error: kind ~x0 is not a keyword." kind))
-       (term
+        (raise "Internal error: kind ~x0 is not a keyword." kind)
+        (mv nil nil))
+       ((mv term thm-events)
         (b* ((term-assoc (assoc-equal (cons type kind) overrides))
-             ((when term-assoc) (cdr term-assoc))
-             (fields (flexprod->fields prod))
-             ((unless (flexprod-field-listp fields))
-              (raise "Internal error: malformed fields ~x0." fields))
-             ((mv fn-term & &) (deffoldred-gen-prod-combination
-                                 type fields suffix targets
-                                 extra-args default combine fty-table)))
-          fn-term)))
-    (list* kind
-           term
-           (deffoldred-gen-sum-cases
-             type (cdr prods) suffix
-             targets extra-args default combine overrides fty-table))))
+             ((when term-assoc) (mv (cdr term-assoc) nil))
+             (constr (flexprod->ctor-name prod))
+             ((unless (symbolp constr))
+              (raise "Internal error: malformed constructor ~x0." constr)
+              (mv nil nil)))
+          (deffoldred-gen-prod-combination+theorem
+            type constr prod
+            suffix targets extra-args default combine fty-table)))
+       ((mv more-keywords+terms more-thm-events)
+        (deffoldred-gen-sum-cases
+          type (cdr prods)
+          suffix targets extra-args default combine overrides fty-table)))
+    (mv (list* kind term more-keywords+terms)
+        (append thm-events more-thm-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -697,7 +702,8 @@
                                  (overrides alistp)
                                  (fty-table alistp))
   :guard (eq (flexsum->typemacro sum) 'deftagsum)
-  :returns (event acl2::pseudo-event-formp)
+  :returns (mv (fn-event acl2::pseudo-event-formp)
+               (thm-events acl2::pseudo-event-form-listp))
   :short "Generate the fold function for a sum type."
   :long
   (xdoc::topstring
@@ -721,30 +727,35 @@
   (b* ((type (flexsum->name sum))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (deffoldred-gen-fold-name type suffix))
        (type-count (flexsum->count sum))
        (recog (flexsum->pred sum))
        (recp (flexsum->recp sum))
-       (body
+       ((mv body thm-events)
         (b* ((term-assoc (assoc-equal type overrides))
-             ((when term-assoc) (cdr term-assoc))
+             ((when term-assoc) (mv (cdr term-assoc) nil))
              (type-case (flexsum->case sum))
              (prods (flexsum->prods sum))
              ((unless (flexprod-listp prods))
-              (raise "Internal error: products ~x0 have the wrong type." prods))
-             (cases (deffoldred-gen-sum-cases
-                      type prods suffix
-                      targets extra-args default combine overrides fty-table)))
-          `(,type-case ,type ,@cases))))
-    `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       (declare (ignorable ,type))
-       :returns (result ,result)
-       :parents (,(deffoldred-gen-topic-name suffix))
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+              (raise "Internal error: products ~x0 have the wrong type." prods)
+              (mv nil nil))
+             ((mv cases thm-events)
+              (deffoldred-gen-sum-cases
+                type prods suffix
+                targets extra-args default combine overrides fty-table)))
+          (mv `(,type-case ,type ,@cases)
+              thm-events)))
+       (fn-event
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
+           (declare (ignorable ,type))
+           :returns (result ,result)
+           :parents (,(deffoldred-gen-topic-name suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:verify-guards :after-returns))
+           ,@(and (not mutrecp) '(:hooks (:fix))))))
+    (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -836,10 +847,9 @@
         sum mutrecp suffix
         targets extra-args result default combine overrides fty-table))
      ((eq typemacro 'deftagsum)
-      (mv (deffoldred-gen-sum-fold
-            sum mutrecp suffix
-            targets extra-args result default combine overrides fty-table)
-          nil))
+      (deffoldred-gen-sum-fold
+        sum mutrecp suffix
+        targets extra-args result default combine overrides fty-table))
      ((eq typemacro 'defoption)
       (deffoldred-gen-option-fold
         sum mutrecp suffix extra-args result default combine fty-table))

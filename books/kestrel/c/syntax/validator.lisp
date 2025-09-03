@@ -3673,19 +3673,29 @@
        designor
        :sub (b* (((erp new-index index-type index-types table)
                   (valid-const-expr designor.index table ienv))
+                 ((erp new-range? range?-type? range?-types table)
+                  (valid-const-expr-option designor.range? table ienv))
                  ((unless (or (type-integerp index-type)
                               (type-case index-type :unknown)))
-                  (retmsg$ "The index of the designator ~x0 has type ~x1."
+                  (retmsg$ "The first or only index of the designator ~x0 ~
+                            has type ~x1."
                             (designor-fix designor)
                             index-type))
+                 ((unless (or (not range?-type?)
+                              (type-integerp range?-type?)
+                              (type-case range?-type? :unknown)))
+                  (retmsg$ "The second index of the designator ~x0 ~
+                            has type ~x1."
+                           (designor-fix designor)
+                           range?-type?))
                  ((unless (or (type-case target-type :array)
                               (type-case target-type :unknown)))
                   (retmsg$ "The target type of the designator ~x0 is ~x1."
                            (designor-fix designor)
                            (type-fix target-type))))
-              (retok (designor-sub new-index)
+              (retok (make-designor-sub :index new-index :range? new-range?)
                      (type-unknown)
-                     index-types
+                     (set::union index-types range?-types)
                      table))
        :dot (b* (((unless (or (type-case target-type :struct)
                               (type-case target-type :union)
