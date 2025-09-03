@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "files")
+(include-book "keywords")
 (include-book "abstract-syntax-operations")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
@@ -2142,88 +2143,9 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (or (member-equal string '("auto"
-                                   "break"
-                                   "case"
-                                   "char"
-                                   "const"
-                                   "continue"
-                                   "default"
-                                   "do"
-                                   "double"
-                                   "else"
-                                   "enum"
-                                   "extern"
-                                   "float"
-                                   "for"
-                                   "goto"
-                                   "if"
-                                   "inline"
-                                   "int"
-                                   "long"
-                                   "register"
-                                   "restrict"
-                                   "return"
-                                   "short"
-                                   "signed"
-                                   "sizeof"
-                                   "static"
-                                   "struct"
-                                   "switch"
-                                   "typedef"
-                                   "union"
-                                   "unsigned"
-                                   "void"
-                                   "volatile"
-                                   "while"
-                                   "_Alignas"
-                                   "_Alignof"
-                                   "_Atomic"
-                                   "_Bool"
-                                   "_Complex"
-                                   "_Generic"
-                                   "_Imaginary"
-                                   "_Noreturn"
-                                   "_Static_assert"
-                                   "_Thread_local"))
+    (if (or (member-equal string c::*keywords*)
             (and (parstate->gcc parstate)
-                 (member-equal string '("__alignof"
-                                        "__alignof__"
-                                        "asm"
-                                        "__asm"
-                                        "__asm__"
-                                        "__attribute"
-                                        "__attribute__"
-                                        "__auto_type"
-                                        "__builtin_offsetof"
-                                        "__builtin_types_compatible_p"
-                                        "__builtin_va_arg"
-                                        "__builtin_va_list"
-                                        "__declspec"
-                                        "__extension__"
-                                        "_Float32"
-                                        "_Float32x"
-                                        "_Float64"
-                                        "_Float64x"
-                                        "_Float128"
-                                        "_Float128x"
-                                        "__inline"
-                                        "__inline__"
-                                        "__int128"
-                                        "__int128_t"
-                                        "__restrict"
-                                        "__restrict__"
-                                        "__seg_fs"
-                                        "__seg_gs"
-                                        "__signed"
-                                        "__signed__"
-                                        "__stdcall"
-                                        "__thread"
-                                        "typeof"
-                                        "__typeof"
-                                        "__typeof__"
-                                        "__volatile"
-                                        "__volatile__"))))
+                 (member-equal string *gcc-keywords*)))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
