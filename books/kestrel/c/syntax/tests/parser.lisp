@@ -1575,6 +1575,12 @@
  parse-postfix-expression
  "(int[]) { 1, 2, 3, }")
 
+(test-parse
+ parse-postfix-expression
+ "(int) {}.x"
+ :gcc t
+ :cond (expr-case ast :member))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-expression
