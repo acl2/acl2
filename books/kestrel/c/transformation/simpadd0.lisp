@@ -38,6 +38,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled simpadd0-set-lemma
+  (implies (equal (set::cardinality set) 1)
+           (equal (set::in x set)
+                  (equal x (set::head set))))
+  :do-not-induct t
+  :expand (set::in x set)
+  :enable (set::cardinality
+           set::in
+           set::emptyp
+           set::head
+           set::tail
+           set::setp))
+
+(defruled simpadd0-type-of-value-not-void-lemma
+  (not (equal (c::type-of-value val) '(:void)))
+  :enable c::type-of-value)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation
 
  simpadd0
@@ -2082,7 +2101,10 @@
                             (:e ldm-type)
                             (:e ident)
                             (:e c::expr-kind)
-                            (:e c::stmt-expr))
+                            (:e c::stmt-expr)
+                            (:e ldm-type-option-set)
+                            c::type-option-of-stmt-value
+                            (:e set::in))
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -2100,7 +2122,10 @@
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
                           (:e ldm-type)
-                          (:e c::stmt-null))
+                          (:e c::stmt-null)
+                          (:e ldm-type-option-set)
+                          c::type-option-of-stmt-value
+                          (:e set::in))
              :use (simpadd0-stmt-null-support-lemma
                    ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
        ((mv thm-event thm-name thm-index)
@@ -2268,6 +2293,14 @@
                                   (:e ldm-expr)
                                   (:e ldm-ident)
                                   (:e ldm-type)
+                                  (:e ldm-type-option-set)
+                                  c::type-option-of-stmt-value
+                                  c::type-of-value-option
+                                  c::value-option-some->val
+                                  c::value-fix-when-valuep
+                                  c::valuep-when-value-optionp
+                                  c::value-optionp-of-stmt-value-return->value?
+                                  (:e set::in)
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
@@ -2286,7 +2319,11 @@
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
                                 (:e ldm-type)
-                                (:e c::stmt-return))
+                                (:e c::stmt-return)
+                                (:e ldm-type-option-set)
+                                c::type-option-of-stmt-value
+                                (:e c::type-of-value-option)
+                                (:e set::in))
                    :use (simpadd0-stmt-return-novalue-support-lemma
                          ,@lemma-instances)))))
        ((mv thm-event thm-name thm-index)
@@ -2676,9 +2713,24 @@
                               (:e ldm-stmt)
                               (:e ldm-ident)
                               (:e ldm-type)
+                              (:e ldm-type-option-set)
+                              c::type-option-of-stmt-value
+                              c::type-of-value-option
+                              (:e set::in)
+                              c::value-option-some->val
+                              c::value-fix-when-valuep
+                              c::valuep-when-value-optionp
+                              c::value-optionp-of-stmt-value-return->value?
+                              simpadd0-set-lemma
+                              (:e set::cardinality)
+                              (:e set::head)
+                              (:e c::type-void)
+                              c::stmt-value-kind-possibilities
                               (:e ident)
                               (:e c::block-item-stmt)
-                              (:e c::type-nonchar-integerp))
+                              (:e c::type-nonchar-integerp)
+                              (:t c::type-of-value)
+                              simpadd0-type-of-value-not-void-lemma)
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         ,support-lemma
@@ -2855,8 +2907,11 @@
                               (:e ldm-decl-obj)
                               (:e ldm-ident)
                               (:e ldm-type)
+                              (:e ldm-type-option-set)
                               (:e ident)
-                              (:e c::block-item-declon))
+                              (:e c::block-item-declon)
+                              c::type-option-of-stmt-value
+                              (:e set::in))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
@@ -2968,7 +3023,10 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item-list)
                               (:e ldm-type)
-                              (:e ldm-ident))
+                              (:e ldm-type-option-set)
+                              (:e ldm-ident)
+                              (:e set::in)
+                              c::type-option-of-stmt-value)
                  :use (simpadd0-block-item-list-empty-support-lemma
                        ,@vartys-lemma-instances))))
        ((mv thm-event thm-name thm-index)
@@ -3103,9 +3161,24 @@
            :in-theory '((:e ldm-block-item)
                         (:e ldm-block-item-list)
                         (:e ldm-ident)
+                        (:e ldm-type-option-set)
                         (:e ldm-type)
                         (:e ident)
-                        (:e c::type-nonchar-integerp))
+                        (:e c::type-nonchar-integerp)
+                        (:e set::in)
+                        c::type-option-of-stmt-value
+                        c::type-of-value-option
+                        c::value-option-some->val
+                        c::value-fix-when-valuep
+                        c::valuep-when-value-optionp
+                        c::value-optionp-of-stmt-value-return->value?
+                        simpadd0-set-lemma
+                        (:e set::cardinality)
+                        (:e set::head)
+                        (:e c::type-void)
+                        c::stmt-value-kind-possibilities
+                        (:t c::type-of-value)
+                        simpadd0-type-of-value-not-void-lemma)
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))

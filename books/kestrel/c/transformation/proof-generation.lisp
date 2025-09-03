@@ -484,9 +484,6 @@
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (types (stmt-types old))
-       ((unless (= (set::cardinality types) 1))
-        (raise "Internal error: non-singleton type set ~x0." types)
-        (mv '(_) nil 1))
        ((unless (equal (stmt-types new)
                        types))
         (raise "Internal error: ~
@@ -494,16 +491,6 @@
                 the types ~x2 of the old statement ~x3."
                (stmt-types new) new types old)
         (mv '(_) nil 1))
-       (type (set::head types))
-       ((unless (or (not type)
-                    (type-formalp type)))
-        (raise "Internal error: statement ~x0 has type ~x1." old type)
-        (mv '(_) nil 1))
-       (ctype (if type
-                  (b* (((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
-                        (ldm-type type)))
-                    ctype)
-                nil))
        (vars-pre (gen-var-assertions vartys 'compst))
        (vars-post (gen-var-assertions vartys 'old-compst))
        (formula
@@ -518,23 +505,8 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         ,@(cond
-                            ((not type)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :none)))
-                            ((type-case type :void)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (not (c::stmt-value-return->value?
-                                     old-result))))
-                            (t
-                             `((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (c::stmt-value-return->value? old-result)
-                               (equal (c::type-of-value
-                                       (c::stmt-value-return->value?
-                                        old-result))
-                                      ',ctype))))
+                         (set::in (c::type-option-of-stmt-value old-result)
+                                  (mv-nth 1 (ldm-type-option-set ',types)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -543,7 +515,6 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv gen-stmt-thm
     :args ((old stmtp) (new stmtp))))
@@ -631,9 +602,6 @@
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (types (block-item-types old))
-       ((unless (= (set::cardinality types) 1))
-        (raise "Internal error: non-singleton type set ~x0." types)
-        (mv '(_) nil 1))
        ((unless (equal (block-item-types new)
                        types))
         (raise "Internal error: ~
@@ -641,16 +609,6 @@
                 the types ~x2 of the old block item ~x3."
                (block-item-types new) new types old)
         (mv '(_) nil 1))
-       (type (set::head types))
-       ((unless (or (not type)
-                    (type-formalp type)))
-        (raise "Internal error: statement ~x0 has type ~x1." old type)
-        (mv '(_) nil 1))
-       (ctype (if type
-                  (b* (((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
-                        (ldm-type type)))
-                    ctype)
-                nil))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
        (vars-post (gen-var-assertions vartys-post 'old-compst))
        (formula
@@ -665,23 +623,8 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         ,@(cond
-                            ((not type)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :none)))
-                            ((type-case type :void)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (not (c::stmt-value-return->value?
-                                     old-result))))
-                            (t
-                             `((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (c::stmt-value-return->value? old-result)
-                               (equal (c::type-of-value
-                                       (c::stmt-value-return->value?
-                                        old-result))
-                                      ',ctype))))
+                         (set::in (c::type-option-of-stmt-value old-result)
+                                  (mv-nth 1 (ldm-type-option-set ',types)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -690,7 +633,6 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv gen-block-item-thm
     :args ((old block-itemp) (new block-itemp))))
@@ -713,8 +655,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee gen-block-item-thm),
-     but for lists of block items instead of single block items."))
+    "The theorem says that:")
+   (xdoc::ul
+    (xdoc::li
+     "If the execution of the old list of block items does not error,
+      neither does the execution of the new list of block items,
+      and the two executions yield
+      the same statement value and computation state.")
+    (xdoc::li
+     "The optional type of the statement value
+      is in the set of possible optional types of the list of block items.
+      A @('nil') corresponds to
+      termination without @('return'),
+      a @('void') corresponds to
+      termination with a @('return') without value,
+      and a non-@('void') corresponds to
+      termination with a @('return') with a value of that type.")
+    (xdoc::li
+     "If the variables in @('vartys-pre') are
+      in the computation state before executing the list of block items,
+      the variables in @('vartys-post') are
+      in the computation state after executing the list of block items.")))
   (b* ((old (block-item-list-fix old))
        (new (block-item-list-fix new))
        ((unless (block-item-list-formalp old))
@@ -724,9 +685,6 @@
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (types (block-item-list-types old))
-       ((unless (= (set::cardinality types) 1))
-        (raise "Internal error: non-singleton type set ~x0." types)
-        (mv '(_) nil 1))
        ((unless (equal (block-item-list-types new)
                        types))
         (raise "Internal error: ~
@@ -734,16 +692,6 @@
                 the types ~x2 of the old block item list ~x3."
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
-       (type (set::head types))
-       ((unless (or (not type)
-                    (type-formalp type)))
-        (raise "Internal error: statement ~x0 has type ~x1." old type)
-        (mv '(_) nil 1))
-       (ctype (if type
-                  (b* (((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
-                        (ldm-type type)))
-                    ctype)
-                nil))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
        (vars-post (gen-var-assertions vartys-post 'old-compst))
        (formula
@@ -758,23 +706,8 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         ,@(cond
-                            ((not type)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :none)))
-                            ((type-case type :void)
-                             '((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (not (c::stmt-value-return->value?
-                                     old-result))))
-                            (t
-                             `((equal (c::stmt-value-kind old-result)
-                                      :return)
-                               (c::stmt-value-return->value? old-result)
-                               (equal (c::type-of-value
-                                       (c::stmt-value-return->value?
-                                        old-result))
-                                      ',ctype))))
+                         (set::in (c::type-option-of-stmt-value old-result)
+                                  (mv-nth 1 (ldm-type-option-set ',types)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -783,7 +716,6 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   ///
   (fty::deffixequiv gen-block-item-list-thm
     :args ((old block-item-listp) (new block-item-listp))))
