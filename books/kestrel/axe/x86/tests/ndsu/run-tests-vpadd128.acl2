@@ -1,0 +1,12 @@
+; Certification options for run-tests-vpadd128.lisp
+;
+; Copyright (C) 2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Authors: Sudarshan Srinivasan (sudarshan.srinivasan@ndsu.edu)
+;          Yusuf Moshood (yusuf.moshood@ndus.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; cert-flags: ? T :SKIP-PROOFS-OKP T :TTAGS :ALL
