@@ -28119,7 +28119,7 @@ Lisp definition."
 
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
-               ACL2 developers if you would like to help add such support.")
+               ACL2 developers if you would like to help add such support.~&")
     nil))
 
 #+acl2-loop-only

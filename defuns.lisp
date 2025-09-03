@@ -11254,15 +11254,31 @@
                        wrld)))
      (t wrld))))
 
+(defun inline-namep (sname)
+  (declare (xargs :guard ; typically a symbol name
+                  (stringp sname)))
+  (let ((len (length sname)))
+    (and (not (int= len 0))
+         (terminal-substringp *inline-suffix*
+                              sname
+                              *inline-suffix-len-minus-1*
+                              (1- len)))))
+
+(defun notinline-namep (sname)
+  (declare (xargs :guard ; typically a symbol name
+                  (stringp sname)))
+  (let ((len (length sname)))
+    (and (not (int= len 0))
+         (terminal-substringp *notinline-suffix*
+                              sname
+                              *notinline-suffix-len-minus-1*
+                              (1- len)))))
+
 (defun split-inlines (names inlines not-inlines)
   (declare (xargs :guard (symbol-listp names)))
   (cond ((endp names)
          (mv inlines not-inlines))
-        ((let ((sname (symbol-name (car names))))
-           (terminal-substringp *inline-suffix*
-                                sname
-                                *inline-suffix-len-minus-1*
-                                (1- (length sname))))
+        ((inline-namep (symbol-name (car names)))
          (split-inlines (cdr names)
                         (cons (car names) inlines)
                         not-inlines))
