@@ -2213,6 +2213,8 @@
                                         "__int128_t"
                                         "__restrict"
                                         "__restrict__"
+                                        "__seg_fs"
+                                        "__seg_gs"
                                         "__signed"
                                         "__signed__"
                                         "__stdcall"
@@ -6577,7 +6579,9 @@
       (token-keywordp token? "volatile")
       (token-keywordp token? "__volatile")
       (token-keywordp token? "__volatile__")
-      (token-keywordp token? "_Atomic"))
+      (token-keywordp token? "_Atomic")
+      (token-keywordp token? "__seg_fs")
+      (token-keywordp token? "__seg_gs"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -6606,6 +6610,8 @@
         ((token-keywordp token "__volatile__")
          (type-qual-volatile (keyword-uscores-both)))
         ((token-keywordp token "_Atomic") (type-qual-atomic))
+        ((token-keywordp token "__seg_fs") (type-qual-seg-fs))
+        ((token-keywordp token "__seg_gs") (type-qual-seg-gs))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 

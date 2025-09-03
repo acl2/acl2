@@ -1987,6 +1987,16 @@
     __attribute__ ((__nothrow__ , __leaf__));"
  :gcc t)
 
+(test-parse
+ parse-declaration
+ "int __seg_fs *x;"
+ :gcc t)
+
+(test-parse
+ parse-declaration
+ "int __seg_gs *x;"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-statement

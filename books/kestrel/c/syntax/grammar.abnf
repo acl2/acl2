@@ -1187,6 +1187,11 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; As a GCC extension,
 ; we allow the '__declspec' attribute syntax as a declaration specifier.
 
+; As a GCC extension,
+; we include type qualifiers for x86 named address spaces
+; (see https://gcc.gnu.org/onlinedocs/gcc/Named-Address-Spaces.html,
+; which says that they are used like type qualifiers).
+
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
@@ -1357,6 +1362,8 @@ type-qualifier = %s"const"
                / restrict-keyword
                / volatile-keyword
                / %s"_Atomic"
+               / %s"__seg_fs" ; GCC extension
+               / %s"__seg_gs" ; GCC extension
 
 function-specifier = inline-keyword
                    / %s"_Noreturn"

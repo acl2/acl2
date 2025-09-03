@@ -1214,11 +1214,16 @@
      @('__volatile') and @('__volatile__') of @('volatile'),
      only used if GCC extensions are supported.
      These are captured by adding underscore information
-     to the @(':volatile') case."))
+     to the @(':volatile') case.")
+   (xdoc::p
+    "we also include the GCC extensions for x86 named address spaces.
+     See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
   (:volatile ((uscores keyword-uscores)))
   (:atomic ())
+  (:seg-fs ())
+  (:seg-gs ())
   :pred type-qualp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

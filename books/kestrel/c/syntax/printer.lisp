@@ -1428,7 +1428,9 @@
               :none (print-astring "volatile" pstate)
               :start (print-astring "__volatile" pstate)
               :both (print-astring "__volatile__" pstate))
-   :atomic (print-astring "_Atomic" pstate))
+   :atomic (print-astring "_Atomic" pstate)
+   :seg-fs (print-astring "__seg_fs" pstate)
+   :seg-gs (print-astring "__seg_gs" pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
