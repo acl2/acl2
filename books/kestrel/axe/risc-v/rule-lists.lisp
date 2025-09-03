@@ -50,9 +50,6 @@
   (declare (xargs :guard t))
   (append
    (acl2::base-rules) ; gets us if-same-branches, for example
-   '(/= ;; !!
-     = ; todo: try base-rules
-     )
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
@@ -226,10 +223,10 @@
      acl2::<-becomes-bvlt-axe-bind-free-arg1 ; or use stronger rules?
      acl2::<-becomes-bvlt-axe-bind-free-arg2
 
-     read32-pc-becomes-pc
-     write32-pc-becomes-set-pc
-     read32-xreg-unsigned-becomes-reg
-     write32-xreg-becomes-set-reg
+     read32-pc-becomes-pc ; introduces PC, our normal form
+     write32-pc-becomes-set-pc ; introduces SET-PC, our normal form
+     read32-xreg-unsigned-becomes-reg ; introduces REG, our normal form
+     write32-xreg-becomes-set-reg ; introduces SET-REG, our normal form
 
      read32-xreg-signed ; open to the unsigned one
 
@@ -245,9 +242,6 @@
 
      set-reg-of-bvchop
      set-reg-does-nothing
-
-     acl2::equal-same ; !!
-
      set-reg-of-0 ; setting register 0 has no effect!
 
      pc-of-set-pc
@@ -259,12 +253,15 @@
      read-of-set-pc
      read-of-set-reg
 
+     ;; normalizing nests of writes:
      set-reg-of-set-pc
      write-of-set-pc
 
      stat32ip-of-set-reg
      stat32ip-of-write
+     ;; stat32ip-of-set-pc ; uncomment?
 
+     ;; regiseter names (we expand these to REG):
      x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
      ;; register aliases:
      ;; zero
@@ -277,17 +274,24 @@
      acl2::bv-array-write-of-if-arg4 ; introduces bvif
 
      acl2::bv-array-read-chunk-little-constant-opener
-     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
-     riscv::feat-endian-little
-     riscv::feat-base-rv32i
+
      riscv::feat
+     riscv::feat->base$inline
+     riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
+
+
+     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
+
+     riscv::feat-endian-little
      riscv::feat-endian-fix$inline
      riscv::feat-endian-kind$inline
+
+     riscv::feat-base-rv32i
+
      riscv::feat-base-fix$inline
      riscv::feat-base-kind$inline
      riscv::feat-mp
      riscv::feat-embedp
-     riscv::feat->base$inline
 
      riscv::branch-funct-fix$inline
      riscv::branch-funct-kind$inline
@@ -295,7 +299,7 @@
      riscv::op-imms-funct-fix$inline
      riscv::op-imms-funct-kind$inline
 
-     riscv::decodex-constant-opener
+     ;; riscv::decodex-constant-opener ; not needed since the evaluator knows about this function
      acl2::ubyte32-fix-constant-opener
      acl2::ubyte32p-constant-opener
      riscv::get-fields-itype-constant-opener
@@ -319,7 +323,6 @@
      riscv::get-fields-rtype-constant-opener
      riscv::get-fields-utype-constant-opener
      riscv::get-fields-stype-constant-opener
-     riscv::feat->m$inline-constant-opener
 
      riscv::instr-op-imm-constant-opener
 
