@@ -229,122 +229,10 @@
              (expr-unambp expr))
     :enable expr-unambp)
 
-  (defrule expr-unambp-of-expr-arrsub
-    (equal (expr-unambp (expr-arrsub arg1 arg2))
-           (and (expr-unambp arg1)
-                (expr-unambp arg2)))
-    :expand (expr-unambp (expr-arrsub arg1 arg2)))
-
-  (defrule expr-unambp-of-expr-funcall
-    (equal (expr-unambp (expr-funcall fun args))
-           (and (expr-unambp fun)
-                (expr-list-unambp args)))
-    :expand (expr-unambp (expr-funcall fun args)))
-
-  (defrule expr-unambp-of-expr-member
-    (equal (expr-unambp (expr-member arg name))
-           (expr-unambp arg))
-    :expand (expr-unambp (expr-member arg name)))
-
-  (defrule expr-unambp-of-expr-memberp
-    (equal (expr-unambp (expr-memberp arg name))
-           (expr-unambp arg))
-    :expand (expr-unambp (expr-memberp arg name)))
-
-  (defrule expr-unambp-of-complit
-    (equal (expr-unambp (expr-complit type elems final-comma))
-           (and (tyname-unambp type)
-                (desiniter-list-unambp elems)))
-    :expand (expr-unambp (expr-complit type elems final-comma)))
-
-  (defrule expr-unambp-of-expr-unary
-    (equal (expr-unambp (expr-unary op arg info))
-           (expr-unambp arg))
-    :expand (expr-unambp (expr-unary op arg info)))
-
-  (defrule expr-unambp-of-expr-sizeof
-    (equal (expr-unambp (expr-sizeof type))
-           (tyname-unambp type))
-    :expand (expr-unambp (expr-sizeof type)))
-
-  (defrule expr-unambp-of-expr-alignof
-    (equal (expr-unambp (expr-alignof type uscores))
-           (tyname-unambp type))
-    :expand (expr-unambp (expr-alignof type uscores)))
-
-  (defrule expr-unambp-of-expr-cast
-    (equal (expr-unambp (expr-cast type arg))
-           (and (tyname-unambp type)
-                (expr-unambp arg)))
-    :expand (expr-unambp (expr-cast type arg)))
-
-  (defrule expr-unambp-of-expr-binary
-    (equal (expr-unambp (expr-binary op arg1 arg2 info))
-           (and (expr-unambp arg1)
-                (expr-unambp arg2)))
-    :expand (expr-unambp (expr-binary op arg1 arg2 info)))
-
-  (defrule expr-unambp-of-expr-cond
-    (equal (expr-unambp (expr-cond test then else))
-           (and (expr-unambp test)
-                (expr-option-unambp then)
-                (expr-unambp else)))
-    :expand (expr-unambp (expr-cond test then else)))
-
-  (defrule expr-unambp-of-expr-comma
-    (equal (expr-unambp (expr-comma first next))
-           (and (expr-unambp first)
-                (expr-unambp next)))
-    :expand (expr-unambp (expr-comma first next)))
-
-  (defrule expr-unambp-of-expr-stmt
-    (equal (expr-unambp (expr-stmt items))
-           (block-item-list-unambp items))
-    :expand (expr-unambp (expr-stmt items)))
-
-  (defrule expr-unambp-of-expr-tycompat
-    (equal (expr-unambp (expr-tycompat type1 type2))
-           (and (tyname-unambp type1)
-                (tyname-unambp type2)))
-    :expand (expr-unambp (expr-tycompat type1 type2)))
-
-  (defrule expr-unambp-of-expr-va-arg
-    (equal (expr-unambp (expr-va-arg list type))
-           (and (expr-unambp list)
-                (tyname-unambp type)))
-    :expand (expr-unambp (expr-va-arg list type)))
-
-  (defrule expr-unambp-of-expr-extension
-    (equal (expr-unambp (expr-extension expr))
-           (expr-unambp expr))
-    :expand (expr-unambp (expr-extension expr)))
-
-  (defrule genassoc-unambp-of-genassoc-type
-    (equal (genassoc-unambp (genassoc-type type expr))
-           (and (tyname-unambp type)
-                (expr-unambp expr)))
-    :expand (genassoc-unambp (genassoc-type type expr)))
-
-  (defrule genassoc-unambp-of-genassoc-default
-    (equal (genassoc-unambp (genassoc-default expr))
-           (expr-unambp expr))
-    :expand (genassoc-unambp (genassoc-default expr)))
-
   (defrule member-designor-unambp-when-ident
     (implies (member-designor-case memdes :ident)
              (member-designor-unambp memdes))
     :enable member-designor-unambp)
-
-  (defrule member-designor-unambp-of-member-designor-dot
-    (equal (member-designor-unambp (member-designor-dot member name))
-           (member-designor-unambp member))
-    :expand (member-designor-unambp (member-designor-dot member name)))
-
-  (defrule member-designor-unambp-of-member-designor-sub
-    (equal (member-designor-unambp (member-designor-sub member index))
-           (and (member-designor-unambp member)
-                (expr-unambp index)))
-    :expand (member-designor-unambp (member-designor-sub member index)))
 
   (defrule type-spec-unambp-when-not-atomic/struct/union/enum/typeof
     (implies (not (member-eq (type-spec-kind tyspec)
@@ -352,11 +240,6 @@
                                :typeof-expr :typeof-type :typeof-ambig)))
              (type-spec-unambp tyspec))
     :enable type-spec-unambp)
-
-  (defrule type-spec-unambp-of-type-spec-typeof-expr
-    (equal (type-spec-unambp (type-spec-typeof-expr expr uscores))
-           (expr-unambp expr))
-    :expand (type-spec-unambp (type-spec-typeof-expr expr uscores)))
 
   (defrule spec/qual-unambp-when-typequal
     (implies (eq (spec/qual-kind spec/qual) :typequal)
@@ -374,21 +257,6 @@
              (decl-spec-unambp declspec))
     :expand (decl-spec-unambp declspec))
 
-  (defrule initer-unambp-of-initer-single
-    (equal (initer-unambp (initer-single expr))
-           (expr-unambp expr))
-    :expand (initer-unambp (initer-single expr)))
-
-  (defrule initer-unambp-of-initer-list
-    (equal (initer-unambp (initer-list elems final-comma))
-           (desiniter-list-unambp elems))
-    :expand (initer-unambp (initer-list elems final-comma)))
-
-  (defrule designor-unambp-of-designor-sub
-    (equal (designor-unambp (designor-sub index))
-           (const-expr-unambp index))
-    :expand (designor-unambp (designor-sub index)))
-
   (defrule designor-unambp-when-dot
     (implies (designor-case designor :dot)
              (designor-unambp designor))
@@ -404,126 +272,25 @@
              (not (dirabsdeclor-unambp dirabsdeclor)))
     :enable dirabsdeclor-unambp)
 
-  (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-star
-    (equal (dirabsdeclor-unambp (dirabsdeclor-array-star declor?))
-           (dirabsdeclor-option-unambp declor?))
-    :expand (dirabsdeclor-unambp
-             (dirabsdeclor-array-star declor?)))
-
-  (defrule param-declor-unambp-of-param-declor-declor
-    (equal (param-declor-unambp (param-declor-nonabstract declor info))
-           (declor-unambp declor))
-    :expand (param-declor-unambp (param-declor-nonabstract declor info)))
-
   (defrule structdecl-unambp-when-empty
     (implies (structdecl-case sdecl :empty)
              (structdecl-unambp sdecl))
     :enable structdecl-unambp)
-
-  (defrule decl-unambp-of-decl-decl
-    (equal (decl-unambp (decl-decl extension specs init))
-           (and (decl-spec-list-unambp specs)
-                (initdeclor-list-unambp init)))
-    :expand (decl-unambp (decl-decl extension specs init)))
-
-  (defrule label-unambp-of-label-casexpr
-    (equal (label-unambp (label-casexpr expr range?))
-           (and (const-expr-unambp expr)
-                (const-expr-option-unambp range?)))
-    :expand (label-unambp (label-casexpr expr range?)))
 
   (defrule label-unambp-when-not-casexpr
     (implies (not (label-case label :casexpr))
              (label-unambp label))
     :enable label-unambp)
 
-  (defrule stmt-unambp-of-stmt-labeled
-    (equal (stmt-unambp (stmt-labeled label stmt))
-           (and (label-unambp label)
-                (stmt-unambp stmt)))
-    :expand (stmt-unambp (stmt-labeled label stmt)))
-
-  (defrule stmt-unambp-of-stmt-compound
-    (equal (stmt-unambp (stmt-compound items))
-           (block-item-list-unambp items))
-    :expand (stmt-unambp (stmt-compound items)))
-
-  (defrule stmt-unambp-of-stmt-expr
-    (equal (stmt-unambp (stmt-expr expr? info))
-           (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-expr expr? info)))
-
-  (defrule stmt-unambp-of-stmt-if
-    (equal (stmt-unambp (stmt-if test then))
-           (and (expr-unambp test)
-                (stmt-unambp then)))
-    :expand (stmt-unambp (stmt-if test then)))
-
-  (defrule stmt-unambp-of-stmt-ifelse
-    (equal (stmt-unambp (stmt-ifelse test then else))
-           (and (expr-unambp test)
-                (stmt-unambp then)
-                (stmt-unambp else)))
-    :expand (stmt-unambp (stmt-ifelse test then else)))
-
-  (defrule stmt-unambp-of-stmt-switch
-    (equal (stmt-unambp (stmt-switch target body))
-           (and (expr-unambp target)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-switch target body)))
-
-  (defrule stmt-unambp-of-stmt-while
-    (equal (stmt-unambp (stmt-while test body))
-           (and (expr-unambp test)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-while test body)))
-
-  (defrule stmt-unambp-of-stmt-dowhile
-    (equal (stmt-unambp (stmt-dowhile body test))
-           (and (stmt-unambp body)
-                (expr-unambp test)))
-    :expand (stmt-unambp (stmt-dowhile body test)))
-
-  (defrule stmt-unambp-of-stmt-for-expr
-    (equal (stmt-unambp (stmt-for-expr init test next body))
-           (and (expr-option-unambp init)
-                (expr-option-unambp test)
-                (expr-option-unambp next)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-for-expr init test next body)))
-
-  (defrule stmt-unambp-of-stmt-for-decl
-    (equal (stmt-unambp (stmt-for-decl init test next body))
-           (and (decl-unambp init)
-                (expr-option-unambp test)
-                (expr-option-unambp next)
-                (stmt-unambp body)))
-    :expand (stmt-unambp (stmt-for-decl init test next body)))
-
   (defrule stmt-unambp-when-goto
     (implies (stmt-case stmt :goto)
              (stmt-unambp stmt))
     :enable stmt-unambp)
 
-  (defrule stmt-unambp-of-stmt-return
-    (equal (stmt-unambp (stmt-return expr? info))
-           (expr-option-unambp expr?))
-    :expand (stmt-unambp (stmt-return expr? info)))
-
   (defrule stmt-unambp-of-when-asm
     (implies (stmt-case stmt :asm)
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
-
-  (defrule block-item-unambp-of-block-item-decl
-    (equal (block-item-unambp (block-item-decl decl info))
-           (decl-unambp decl))
-    :expand (block-item-unambp (block-item-decl decl info)))
-
-  (defrule block-item-unambp-of-block-item-stmt
-    (equal (block-item-unambp (block-item-stmt stmt info))
-           (stmt-unambp stmt))
-    :expand (block-item-unambp (block-item-stmt stmt info)))
 
   (defrule extdecl-unambp-when-not-fundef/decl
     (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
