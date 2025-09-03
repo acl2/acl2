@@ -905,3 +905,17 @@ void bar(void) {
   "void * x = &x;
 "
 )
+
+(test-valid
+  "void f() {
+  (void)0;
+}
+")
+
+(test-valid
+  "void f();
+
+void g() {
+  (void)(f());
+}
+")

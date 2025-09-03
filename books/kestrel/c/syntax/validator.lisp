@@ -1677,7 +1677,8 @@
   (xdoc::topstring
    (xdoc::p
     "The type name must denote the void type or a scalar type [C17:6.5.4/2].
-     The expression must have scalar type [C17:6.5.4/2].
+     If the type name denotes a scalar type,
+     the expression must also have scalar type [C17:6.5.4/2].
      Since scalar types involve pointers,
      we perform array-to-pointer and function-to-pointer conversions.
      The result is the type denoted by the type name."))
@@ -1685,12 +1686,13 @@
        ((when (or (type-case type-cast :unknown)
                   (type-case type-arg :unknown)))
         (retok (type-unknown)))
-       (type1-arg (type-fpconvert (type-apconvert type-cast)))
+       (type1-arg (type-fpconvert (type-apconvert type-arg)))
        ((unless (or (type-case type-cast :void)
                     (type-scalarp type-cast)))
         (retmsg$ "In the cast expression ~x0, the cast type is ~x1."
                  (expr-fix expr) (type-fix type-cast)))
-       ((unless (type-scalarp type1-arg))
+       ((unless (or (type-case type-cast :void)
+                    (type-scalarp type1-arg)))
         (retmsg$ "In the cast expression ~x0, ~
                   the argument expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
