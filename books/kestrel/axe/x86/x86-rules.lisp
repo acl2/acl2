@@ -843,6 +843,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; WARNING: Keep in sync with the analogous scheme for RISC-V:
+
 ;; An alias of clear
 (defund clear-extend (n addr x86)
   (declare (xargs :guard (and (natp n)

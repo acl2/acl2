@@ -18,7 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (disable floor ash logand)))
+(local (in-theory (e/d (ubyte8p) (floor ash logand))))
 
 ;; Non-local because this prevents out-of-memory errors
 (in-theory (disable (:e repeat)))
@@ -82,6 +82,30 @@
                (loghead 32 val))
            ;; different registers:
            (read32-xreg-unsigned reg1 stat))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write32-mem-ubyte8-when-not-integerp
+  (implies (not (integerp ad))
+           (equal (write32-mem-ubyte8 ad byte stat)
+                  (write32-mem-ubyte8 0 byte stat)))
+  :hints (("Goal" :in-theory (enable write32-mem-ubyte8))))
+
+(defthm write32-mem-ubyte8-of-write32-mem-ubyte8-same
+  (equal (write32-mem-ubyte8 ad byte1 (write32-mem-ubyte8 ad byte2 stat))
+         (write32-mem-ubyte8 ad byte1 stat))
+  :hints (("Goal" :in-theory (enable write32-mem-ubyte8
+                                     memory32ip))))
+
+(defthm write32-mem-ubyte8-of-write32-mem-ubyte8-same-diff
+  (implies (and (not (equal (mod ad1 4294967296)
+                            (mod ad2 4294967296)))
+                (integerp ad1)
+                (integerp ad2))
+           (equal (write32-mem-ubyte8 ad1 byte1 (write32-mem-ubyte8 ad2 byte2 stat))
+                  (write32-mem-ubyte8 ad2 byte2 (write32-mem-ubyte8 ad1 byte1 stat))))
+  :hints (("Goal" :in-theory (enable write32-mem-ubyte8
+                                     memory32ip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

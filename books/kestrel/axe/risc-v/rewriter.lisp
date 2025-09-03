@@ -14,6 +14,7 @@
 
 (include-book "../make-rewriter-simple")
 (include-book "evaluator")
+(include-book "syntax-evaluator")
 (include-book "../axe-syntaxp-evaluator-basic") ;; (include-book "syntaxp-evaluator-risc-v")
 (include-book "../axe-bind-free-evaluator-basic") ;; (include-book "bind-free-evaluator-risc-v")
 
@@ -57,7 +58,7 @@
 ;; and def-simplified-risc-v.
 (make-rewriter-simple risc-v
                       axe-evaluator-risc-v
-                      basic ; risc-v
+                      risc-v
                       basic ; risc-v
                       :smt t ; do use SMT
                       )
