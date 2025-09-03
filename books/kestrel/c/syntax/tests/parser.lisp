@@ -1627,6 +1627,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-designator
+
+(test-parse
+ parse-designator
+ "[18]")
+
+(test-parse
+ parse-designator
+ "[0 ... 9]"
+ :gcc t)
+
+(test-parse-fail
+ parse-designator
+ "[0 ... 9]")
+
+(test-parse
+ parse-designator
+ ".m")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-struct-or-union-specifier
 
 (test-parse

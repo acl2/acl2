@@ -2183,8 +2183,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>designator</i> in the grammar in [C17]."))
-    (:sub ((index const-expr)))
+      "This corresponds to <i>designator</i> in the grammar in [C17].")
+     (xdoc::p
+      "We include the GCC extension for ranges."))
+    (:sub ((index const-expr)
+           (range? const-expr-option)))
     (:dot ((name ident)))
     :pred designorp
     :measure (two-nats-measure (acl2-count x) 0))

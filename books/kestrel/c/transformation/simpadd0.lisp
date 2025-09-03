@@ -4854,8 +4854,11 @@
        designor
        :sub (b* (((mv new-index (simpadd0-gout gout-index))
                   (simpadd0-const-expr designor.index gin))
-                 (gin (simpadd0-gin-update gin gout-index)))
-              (mv (designor-sub new-index)
+                 (gin (simpadd0-gin-update gin gout-index))
+                 ((mv new-range? (simpadd0-gout gout-range?))
+                  (simpadd0-const-expr-option designor.range? gin))
+                 (gin (simpadd0-gin-update gin gout-range?)))
+              (mv (make-designor-sub :index new-index :range? new-range?)
                   (simpadd0-gout-no-thm gin)))
        :dot (mv (designor-fix designor) (simpadd0-gout-no-thm gin))))
     :measure (designor-count designor))

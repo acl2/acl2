@@ -580,9 +580,11 @@
     (designor-case
      designor
      :sub
-     (designor-sub
-       (const-expr-subst-free (c$::designor-sub->index designor)
-                              subst bound-vars))
+     (make-designor-sub
+      :index (const-expr-subst-free (c$::designor-sub->index designor)
+                                    subst bound-vars)
+      :range? (const-expr-option-subst-free (c$::designor-sub->range? designor)
+                                            subst bound-vars))
      :dot (designor-fix designor))
     :measure (designor-count designor))
 

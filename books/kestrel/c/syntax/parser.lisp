@@ -9821,16 +9821,44 @@
     (xdoc::topstring
      (xdoc::p
       "There are two kinds of designators,
-       easily distinguished by their first token."))
+       easily distinguished by their first token.")
+     (xdoc::p
+      "If GCC extensions are enabled, we also allow for range designators.
+       See the ABNF grammar."))
     (b* (((reterr) (irr-designor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-punctuatorp token "[") ; [
-        (b* (((erp cexpr & parstate) (parse-constant-expression parstate)) ; [ cexpr
-             ((erp last-span parstate) (read-punctuator "]" parstate))) ; [ cexpr ]
-          (retok (designor-sub cexpr) (span-join span last-span) parstate)))
+        (b* ((psize (parsize parstate))
+             ((erp cexpr & parstate) ; [ cexpr
+              (parse-constant-expression parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 next-span parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token2 "]") ; [ cexpr ]
+            (retok (make-designor-sub :index cexpr :range? nil)
+                   (span-join span next-span)
+                   parstate))
+           ((and (token-punctuatorp token2 "...") ; [ cexpr ...
+                 (parstate->gcc parstate))
+            (b* (((erp cexpr2 & parstate) ; [ cexpr ... cexpr
+                  (parse-constant-expression parstate))
+                 ((erp last-span parstate) ; [ cexpr ... cexpr ]
+                  (read-punctuator "]" parstate)))
+              (retok (make-designor-sub :index cexpr :range? cexpr2)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; [ cexpr other
+            (reterr-msg :where (position-to-msg (span->start next-span))
+                        :expected (if (parstate->gcc parstate)
+                                      "an ellipsis ~
+                                       or a closing square bracket"
+                                    "a closing square bracket")
+                        :found (token-to-msg token2))))))
        ((token-punctuatorp token ".") ; .
-        (b* (((erp ident last-span parstate) (read-identifier parstate))) ; . ident
+        (b* (((erp ident last-span parstate) ; . ident
+              (read-identifier parstate)))
           (retok (designor-dot ident) (span-join span last-span) parstate)))
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))

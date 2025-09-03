@@ -2388,6 +2388,14 @@
      designor
      :sub (b* ((pstate (print-astring "[" pstate))
                (pstate (print-const-expr designor.index pstate))
+               (pstate
+                (const-expr-option-case
+                 designor.range?
+                 :some (b* ((pstate (print-astring "..." pstate))
+                            (pstate (print-const-expr designor.range?.val
+                                                      pstate)))
+                         pstate)
+                 :none pstate))
                (pstate (print-astring "]" pstate)))
             pstate)
      :dot (b* ((pstate (print-astring "." pstate))

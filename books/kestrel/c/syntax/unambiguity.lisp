@@ -462,9 +462,10 @@
     :expand (initer-unambp (initer-list elems final-comma)))
 
   (defrule designor-unambp-of-designor-sub
-    (equal (designor-unambp (designor-sub index))
-           (const-expr-unambp index))
-    :expand (designor-unambp (designor-sub index)))
+    (equal (designor-unambp (designor-sub index range?))
+           (and (const-expr-unambp index)
+                (const-expr-option-unambp range?)))
+    :expand (designor-unambp (designor-sub index range?)))
 
   (defrule designor-unambp-of-designor-dot
     (implies (designor-case designor :dot)
@@ -1068,6 +1069,12 @@
     (implies (and (designor-unambp designor)
                   (designor-case designor :sub))
              (const-expr-unambp (designor-sub->index designor)))
+    :expand (designor-unambp designor))
+
+  (defrule const-expr-unambp-of-designor-sub->range?
+    (implies (and (designor-unambp designor)
+                  (designor-case designor :sub))
+             (const-expr-option-unambp (designor-sub->range? designor)))
     :expand (designor-unambp designor))
 
   (defrule dirdeclor-unambp-of-declor->direct

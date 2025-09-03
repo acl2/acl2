@@ -1244,6 +1244,13 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; Presumably, it may make it easier to write certain macros.
 ; Semantically, it amounts to nothing, i.e. it is ignored.
 
+; As a GCC extension, we allow range designators
+; (see https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
+; Since they extend standard single-element designators,
+; which are constant expressions,
+; it seems reasonable that the two expressions of the range are also constant,
+; although the GCC documentation is not explicit about this.
+
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
@@ -1431,7 +1438,9 @@ designation = designator-list "="
 designator-list = designator
                 / designator-list designator
 
-designator = "[" constant-expression "]"
+designator = "[" constant-expression
+                 [ "..." constant-expression ] ; GCC extension
+             "]"
            / "." identifier
 
 static-assert-declaration =
