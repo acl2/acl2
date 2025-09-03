@@ -40,6 +40,7 @@
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
+(local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
@@ -349,31 +350,20 @@
   :hints (("Goal" :in-theory (enable))))
 
 (defthm write-byte-of-write-byte-same
-  (implies (integerp ad)
-           (equal (write-byte ad byte1 (write-byte ad byte2 stat))
-                  (write-byte ad byte1 stat)))
-  :hints (("Goal" :in-theory (enable write-byte
-                                     write32-mem-ubyte8 ; todo
-                                     memory32ip
-                                     ))))
+  (equal (write-byte ad byte1 (write-byte ad byte2 stat))
+         (write-byte ad byte1 stat))
+  :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthm write-byte-of-write-byte-diff
   (implies (and (syntaxp (smaller-termp ad2 ad1))
                 (not (equal (bvchop 32 ad1)
-                            (bvchop 32 ad2)))
-                (integerp ad1)
-                (integerp ad2))
+                            (bvchop 32 ad2))))
            (equal (write-byte ad1 byte1 (write-byte ad2 byte2 stat))
                   (write-byte ad2 byte2 (write-byte ad1 byte1 stat))))
-  :hints (("Goal" :in-theory (enable write-byte
-                                     write32-mem-ubyte8 ; todo
-                                     memory32ip
-                                     ))))
+  :hints (("Goal" :in-theory (enable write-byte bvchop))))
 
 (defthm write-byte-of-write-byte-gen
-  (implies (and (syntaxp (smaller-termp ad2 ad1))
-                (integerp ad1)
-                (integerp ad2))
+  (implies (syntaxp (smaller-termp ad2 ad1))
            (equal (write-byte ad1 byte1 (write-byte ad2 byte2 stat))
                   (if (equal (bvchop 32 ad1)
                              (bvchop 32 ad2))
@@ -381,6 +371,14 @@
                     (write-byte ad2 byte2 (write-byte ad1 byte1 stat)))))
   :hints (("Goal" :use write-byte-of-write-byte-diff
            :in-theory (disable write-byte-of-write-byte-diff))))
+
+(local
+  (defun double-write-induct (n addr val val2)
+    (if (zp n)
+        (list n addr val val2)
+      (double-write-induct (+ -1 n) (+ 1 addr)
+                           (logtail 8 val)
+                           (logtail 8 val2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,6 +1158,168 @@
            (equal (write n addr k stat)
                   (write n addr (bvchop (* n 8) k) stat))))
 
+(defthm write-of-write-byte-within-bv
+  (implies (and (bvlt 32 (bvminus 32 ad2 ad1) n) ;; ad2 is in the interval [ad1,ad1+n):
+                (natp n))
+           (equal (write n ad1 val (write-byte ad2 byte stat))
+                  (write n ad1 val stat)))
+  :hints (("Goal" :induct t
+           :in-theory (enable write
+                              acl2::bvchop-of-sum-cases
+                              bvminus
+                              ifix
+                              zp
+                              acl2::bvlt-convert-arg2-to-bv
+                              acl2::trim-of-+-becomes-bvplus ; enable by default?
+                              acl2::trim-of-unary---becomes-bvuminus ; enable by default?
+                              acl2::bvplus-convert-arg3-to-bv))))
+
+;drop?
+(defthm write-of-write-byte-within
+  (implies (and (< (bvminus 32 ad2 ad1) n) ;; ad2 is in the interval [ad1,ad1+n):
+                (integerp n))
+           (equal (write n ad1 val (write-byte ad2 byte stat))
+                  (write n ad1 val stat)))
+  :hints (("Goal" :induct t
+           :in-theory (enable write
+                              acl2::bvchop-of-sum-cases
+                              bvminus
+                              bvplus
+                              ifix))))
+
+(defthm write-of-write-byte-disjoint-bv
+  (implies (and (not (bvlt 32 (bvminus 32 ad2 ad1) n)) ;; ad2 is NOT in the interval [ad1,ad1+n):
+                (unsigned-byte-p 32 n) ;; allow 2^32?
+                )
+           (equal (write n ad1 val (write-byte ad2 byte stat))
+                  (write-byte ad2 byte (write n ad1 val stat))))
+  :hints (("Goal" :induct t
+           :in-theory (enable write
+                              ifix
+                              zp
+                              acl2::bvlt-convert-arg2-to-bv
+                              acl2::bvlt-convert-arg3-to-bv
+                              acl2::trim-of-+-becomes-bvplus
+                              acl2::trim-of-unary---becomes-bvuminus
+                              acl2::bvplus-convert-arg3-to-bv))))
+
+(defthm write-of-write-byte-huge
+  (implies (and (<= (expt 2 32) n) ; every address gets written!
+                (integerp n)
+                (integerp addr)
+                (integerp addr2))
+           (equal (write n addr val1 (write-byte addr2 val2 stat))
+                  (write n addr val1 stat)))
+  :hints (("Goal"
+           :in-theory (enable write))))
+
+;; both cases
+(defthm write-of-write-byte
+  (implies (unsigned-byte-p 32 n)
+           (equal (write n ad1 val (write-byte ad2 byte stat))
+                  (if (bvlt 32 (bvminus 32 ad2 ad1) n)
+                      ;; ad2 is in the interval [ad1,ad1+n).
+                      (write n ad1 val stat)
+                    (write-byte ad2 byte (write n ad1 val stat)))))
+  :hints (("Goal" :cases ((unsigned-byte-p 32 n))
+           :in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus))))
+
+
+;gen the n's?
+(defthm write-of-write-same-helper
+  (implies (and (unsigned-byte-p 32 n)
+                (integerp addr))
+           (equal (write n addr val1 (write n addr val2 stat))
+                  (write n addr val1 stat)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (double-write-induct n addr val1 val2)
+           :expand ((:free (addr val stat) (WRITE 1 ADDR VAL STAT))
+                    (:free (addr val stat) (WRITE n ADDR Val STAT)))
+           :in-theory (enable write
+                              write-of-+
+                            ;write-of-xw-mem
+                              ACL2::BVPLUS-OF-+-ARG3
+                              ifix))))
+
+(defthm write-of-write-same
+  (implies (and (unsigned-byte-p 32 n) ; drop, using write-of-write-huge?
+                )
+           (equal (write n addr val1 (write n addr val2 stat))
+                  (write n addr val1 stat)))
+  :hints (("Goal" :use (:instance write-of-write-same-helper (addr (ifix addr)))
+           :in-theory (e/d (ifix) (write-of-write-same-helper)))))
+
+;move
+(defthm bvlt-of-bvplus-1-when-not-bvlt
+  (implies (not (bvlt 32 x y))
+           (equal (bvlt 32 (bvplus 32 1 x) y)
+                  (and (equal (+ -1 (expt 2 32)) (bvchop 32 x))
+                       (bvlt 32 0 y)
+                       )))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvlt bvplus acl2::bvchop-of-sum-cases))))
+
+;move
+(defthmd bvlt-of-1-arg2
+  (equal (bvlt 32 1 x)
+         (and (not (equal 0 (bvchop 32 x)))
+              (not (equal 1 (bvchop 32 x)))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm write-of-write-diff-bv-helper
+  (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
+                (bvle 32 n2 (bvminus 32 ad1 ad2))
+                (bvle 32 n1 (bvminus 32 ad2 ad1))
+                ;;(natp n1)
+                (unsigned-byte-p 32 ad2) ;; for this helper
+                (unsigned-byte-p 32 n2) ;; (natp n2)
+                (unsigned-byte-p 32 n1) ;; (natp n1)
+                )
+           (equal (write n1 ad1 val1 (write n2 ad2 val2 stat))
+                  (write n2 ad2 val2 (write n1 ad1 val1 stat))))
+  :hints (("subgoal *1/2" :cases ((equal n2 1)))
+          ("Goal" :induct t
+           :in-theory (enable write ;acl2::bvuminus-of-+
+                                     ;bvlt bvplus bvuminus bvminus
+                                     ;acl2::bvchop-of-sum-cases
+                              acl2::bvlt-convert-arg2-to-bv
+                              acl2::trim-of-+-becomes-bvplus ; enable by default?
+                              acl2::trim-of-unary---becomes-bvuminus ; enable by default?
+                              zp
+                              write-of-1-becomes-write-byte
+                              bvlt-of-1-arg2))))
+
+(defthm write-of-write-diff-bv
+  (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
+                (bvle 32 n2 (bvminus 32 ad1 ad2))
+                (bvle 32 n1 (bvminus 32 ad2 ad1))
+                (unsigned-byte-p 32 n2) ;; (natp n2)
+                (unsigned-byte-p 32 n1) ;; (natp n1)
+                )
+           (equal (write n1 ad1 val1 (write n2 ad2 val2 stat))
+                  (write n2 ad2 val2 (write n1 ad1 val1 stat))))
+  :hints (("Goal" :use (:instance write-of-write-diff-bv-helper
+                                  (ad2 (bvchop 32 ad2))))))
+
+;todo: gen
+(defthm write-of-write-of-write-same
+  (implies (and (integerp addr)
+;                (integerp addr2)
+                (natp n)
+                ;(natp n2)
+                (unsigned-byte-p 32 n) ; drop? but first change the write-of-write-same
+                (unsigned-byte-p 32 n2)
+                )
+           (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 stat)))
+                  (write n addr val3 (write n2 addr2 val2 stat))))
+  :hints (("Goal" :expand ((write n2 addr2 val2 (write n addr val1 stat))
+                           (write n2 0 val2 (write n addr val1 stat))
+                           (write n2 addr2 val2 (write n 0 val1 stat))
+                           (write n2 0 val2 (write n 0 val1 stat)))
+           :in-theory (enable write ifix)
+           :do-not '(generalize eliminate-destructors)
+           :induct (write n2 addr2 val2 stat))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; rules about read/read-byte and write/write-byte
@@ -1338,20 +1498,7 @@
                             ;;ACL2::BVCAT-EQUAL-REWRITE
                             ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
-(defthm write-of-write-byte-within
-  (implies (and ;; ad2 is in the interval [ad1,ad1+n):
-            (< (bvminus 32 ad2 ad1) n)
-            ;; (integerp ad1)
-            ;; (integerp ad2)
-            (integerp n))
-           (equal (write n ad1 val (write-byte ad2 byte stat))
-                  (write n ad1 val stat)))
-  :hints (("Goal" :induct t
-           :in-theory (enable write
-                              acl2::bvchop-of-sum-cases
-                              bvminus
-                              bvplus
-                              ifix))))
+
 
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
 (local (acl2::limit-expt))
@@ -1407,3 +1554,28 @@
     (read-array-aux bytes-per-element len 0 addr stat array)))
 
 ;; todo: read-when-equal-of-read-array
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund clear (n addr stat)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p 32 addr)
+                              (stat32ip stat))))
+  (write n addr 0 stat))
+
+;drop hyps?
+(defthm write-of-clear
+  (implies (and ;(integerp ad)
+                (unsigned-byte-p 32 n))
+           (equal (write n ad val (clear n ad stat))
+                  (write n ad val stat)))
+  :hints (("Goal" :in-theory (enable clear))))
+
+(defthm clear-of-write-of-clear
+  (implies (and (integerp ad1)
+                (unsigned-byte-p 32 n1)
+                ;(integerp ad2)
+                (unsigned-byte-p 32 n2))
+           (equal (clear n1 ad1 (write n2 ad2 val (clear n1 ad1 stat)))
+                  (clear n1 ad1 (write n2 ad2 val stat))))
+  :hints (("Goal" :in-theory (enable clear))))

@@ -46,9 +46,19 @@
     read-when-equal-of-read-bytes-alt
     ))
 
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
 (defun lifter-rules ()
   (declare (xargs :guard t))
   (append
+   (shadowed-write-rules)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
@@ -90,6 +100,8 @@
      write32-mem-ubyte8-becomes-write-byte ; todo: go directly to write
      write32-mem-ubyte32-lendian-becomes-write
      write-of-+
+
+     write-of-write-same
 
      ;; Rules about reading and writing:
      read-of-write-same

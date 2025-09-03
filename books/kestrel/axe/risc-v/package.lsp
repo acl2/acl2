@@ -53,6 +53,15 @@
     dag-or-quotep-to-term
     defmacrodoc
 
+    dargs
+    darg1
+    darg2
+    darg3
+    darg4
+    pseudo-dag-arrayp
+    syntactic-call-of
+
+    dag-array ; for axe-syntaxp rules
 
     ;; todo: organize
 
