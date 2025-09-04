@@ -127,50 +127,6 @@
      We plan to extend @(tsee fty::deffold-reduce)
      to generate at least some of these."))
 
-  ;; Theorems for option types (option implies base if not nil):
-
-  (defrule expr-unambp-when-expr-option-unambp-and-not-nil
-    (implies (and (expr-option-unambp expr?)
-                  expr?)
-             (expr-unambp expr?))
-    :expand (expr-option-unambp expr?)
-    :enable expr-option-some->val)
-
-  (defrule const-expr-unambp-when-const-expr-option-unambp-and-not-nil
-    (implies (and (const-expr-option-unambp cexpr?)
-                  cexpr?)
-             (const-expr-unambp cexpr?))
-    :expand (const-expr-option-unambp cexpr?)
-    :enable const-expr-option-some->val)
-
-  (defrule initer-unambp-when-initer-option-unambp-and-not-nil
-    (implies (and (initer-option-unambp initer?)
-                  initer?)
-             (initer-unambp initer?))
-    :expand (initer-option-unambp initer?)
-    :enable initer-option-some->val)
-
-  (defrule declor-unambp-when-declor-option-unambp-and-not-nil
-    (implies (and (declor-option-unambp declor?)
-                  declor?)
-             (declor-unambp declor?))
-    :expand (declor-option-unambp declor?)
-    :enable declor-option-some->val)
-
-  (defrule absdeclor-unambp-when-absdeclor-option-unambp-and-not-nil
-    (implies (and (absdeclor-option-unambp absdeclor?)
-                  absdeclor?)
-             (absdeclor-unambp absdeclor?))
-    :expand (absdeclor-option-unambp absdeclor?)
-    :enable absdeclor-option-some->val)
-
-  (defrule dirabsdeclor-unambp-when-dirabsdeclor-option-unambp-and-not-nil
-    (implies (and (dirabsdeclor-option-unambp dirabsdeclor?)
-                  dirabsdeclor?)
-             (dirabsdeclor-unambp dirabsdeclor?))
-    :expand (dirabsdeclor-option-unambp dirabsdeclor?)
-    :enable dirabsdeclor-option-some->val)
-
   ;; Theorems for option types (unwrapper of base):
 
   (defrule expr-unambp-of-expr-option-some->val

@@ -81,7 +81,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
-  :parents (syntax-for-tools)
+  :parents (parsing)
   :short "A parser of C into our abstract syntax."
   :long
   (xdoc::topstring
@@ -8976,10 +8976,17 @@
                expr/tyname
                ;; If we just parsed a parenthesized type name,
                ;; the only possibility is to have a compound literal.
+               ;; We parse it, and we continue to parse
+               ;; the rest of the postfix expression, if any.
                :tyname
-               (parse-compound-literal expr/tyname.unwrap
-                                       (span-join span close-paren-span)
-                                       parstate)
+               (b* ((psize (parsize parstate))
+                    ((erp prev-expr prev-span parstate)
+                     (parse-compound-literal expr/tyname.unwrap
+                                             (span-join span close-paren-span)
+                                             parstate))
+                    ((unless (mbt (<= (parsize parstate) (1- psize))))
+                     (reterr :impossible)))
+                 (parse-postfix-expression-rest prev-expr prev-span parstate))
                ;; If we just parsed a parenthesized expression,
                ;; we cannot have a compound literal,
                ;; and instead we have just parsed the primary expression
