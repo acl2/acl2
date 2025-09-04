@@ -1631,6 +1631,26 @@
  "__extension__ (x + y)"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "((int) {}.x)"
+ :gcc t
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->inner ast) :member)))
+
+(test-parse
+ parse-expression
+ "sizeof ((struct s) {}.x)"
+ :gcc t
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-expression
+ "((struct s) {}.x)"
+ :gcc t
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->inner ast) :member)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator
