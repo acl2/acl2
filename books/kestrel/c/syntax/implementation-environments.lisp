@@ -47,7 +47,9 @@
      according to the aforementioned mapping.")
    (xdoc::p
     "The implementation environments we define here
-     parameterize some aspects of our C syntax for use by tools."))
+     parameterize some aspects of our "
+    (xdoc::seetopic "syntax-for-tools" "C syntax for use by tools")
+    "."))
   :order-subtopics t
   :default-parent t)
 
