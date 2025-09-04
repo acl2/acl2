@@ -44,7 +44,10 @@
      the operations on implementation environments defined here
      are consistent with
      the corresponding operations in the language formalization,
-     according to the aforementioned mapping."))
+     according to the aforementioned mapping.")
+   (xdoc::p
+    "The implementation environments we define here
+     parameterize some aspects of our C syntax for use by tools."))
   :order-subtopics t
   :default-parent t)
 
