@@ -2689,43 +2689,16 @@
        ((unless stmt-thm-name)
         (mv item-new (simpadd0-gout-no-thm gin)))
        (types (stmt-types stmt))
-       ((unless (= (set::cardinality types) 1))
-        (mv item-new (simpadd0-gout-no-thm gin)))
-       (type (set::head types))
-       (support-lemma
-        (cond ((not type)
-               'simpadd0-block-item-stmt-none-support-lemma)
-              ((type-case type :void)
-               'simpadd0-block-item-stmt-novalue-support-lemma)
-              (t 'simpadd0-block-item-stmt-value-support-lemma)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-stmt)
-                              (:e ldm-ident)
-                              (:e ldm-type)
-                              (:e ldm-type-option-set)
-                              c::type-option-of-stmt-value
-                              c::type-of-value-option
-                              (:e set::in)
-                              c::value-option-some->val
-                              c::value-fix-when-valuep
-                              c::valuep-when-value-optionp
-                              c::value-optionp-of-stmt-value-return->value?
-                              simpadd0-set-lemma
-                              (:e set::cardinality)
-                              (:e set::head)
-                              (:e c::type-void)
-                              c::stmt-value-kind-possibilities
-                              (:e ident)
-                              (:e c::block-item-stmt)
-                              (:e c::type-nonchar-integerp)
-                              (:t c::type-of-value)
-                              simpadd0-type-of-value-not-void-lemma)
+                              (:e c::block-item-stmt))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
-                        ,support-lemma
+                        simpadd0-block-item-stmt-support-lemma
                         (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new))))
+                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                        (types (mv-nth 1 (ldm-type-option-set ',types))))
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
@@ -2745,7 +2718,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
@@ -2770,39 +2742,7 @@
     (block-item-unambp item)
     :hyp (stmt-unambp stmt-new))
 
-  (defruled simpadd0-block-item-stmt-value-support-lemma
-    (b* ((old (c::block-item-stmt old-stmt))
-         (new (c::block-item-stmt new-stmt))
-         ((mv old-stmt-result old-stmt-compst)
-          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
-         ((mv new-stmt-result new-stmt-compst)
-          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit))
-         (type (c::type-of-value
-                (c::stmt-value-return->value? old-stmt-result))))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-stmt-result))
-                    (equal old-stmt-result new-stmt-result)
-                    (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :return)
-                    (c::stmt-value-return->value? old-stmt-result)
-                    (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (c::stmt-value-return->value? old-result)
-                    (equal (c::type-of-value
-                            (c::stmt-value-return->value? old-result))
-                           type))))
-    :expand
-    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-stmt-novalue-support-lemma
+  (defruled simpadd0-block-item-stmt-support-lemma
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -2817,37 +2757,13 @@
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :return)
-                    (not (c::stmt-value-return->value? old-stmt-result)))
+                    (set::in (c::type-option-of-stmt-value old-stmt-result)
+                             types))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (not (c::stmt-value-return->value? old-result)))))
-    :expand
-    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-stmt-none-support-lemma
-    (b* ((old (c::block-item-stmt old-stmt))
-         (new (c::block-item-stmt new-stmt))
-         ((mv old-stmt-result old-stmt-compst)
-          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
-         ((mv new-stmt-result new-stmt-compst)
-          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-stmt-result))
-                    (equal old-stmt-result new-stmt-result)
-                    (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :none))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             types))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
