@@ -127,44 +127,6 @@
      We plan to extend @(tsee fty::deffold-reduce)
      to generate at least some of these."))
 
-  ;; Theorems for option types (unwrapper of base):
-
-  (defrule expr-unambp-of-expr-option-some->val
-    (implies (and (expr-option-unambp expr?)
-                  (expr-option-case expr? :some))
-             (expr-unambp (expr-option-some->val expr?)))
-    :expand (expr-option-unambp expr?))
-
-  (defrule const-expr-unambp-of-const-expr-option-some->val
-    (implies (and (const-expr-option-unambp cexpr?)
-                  (const-expr-option-case cexpr? :some))
-             (const-expr-unambp (const-expr-option-some->val cexpr?)))
-    :expand (const-expr-option-unambp cexpr?))
-
-  (defrule initer-unambp-of-initer-option-some->val
-    (implies (and (initer-option-unambp initer?)
-                  (initer-option-case initer? :some))
-             (initer-unambp (initer-option-some->val initer?)))
-    :expand (initer-option-unambp initer?))
-
-  (defrule declor-unambp-of-declor-option-some->val
-    (implies (and (declor-option-unambp declor?)
-                  (declor-option-case declor? :some))
-             (declor-unambp (declor-option-some->val declor?)))
-    :expand (declor-option-unambp declor?))
-
-  (defrule absdeclor-unambp-of-absdeclor-option-some->val
-    (implies (and (absdeclor-option-unambp absdeclor?)
-                  (absdeclor-option-case absdeclor? :some))
-             (absdeclor-unambp (absdeclor-option-some->val absdeclor?)))
-    :expand (absdeclor-option-unambp absdeclor?))
-
-  (defrule dirabsdeclor-unambp-of-dirabsdeclor-option-some->val
-    (implies (and (dirabsdeclor-option-unambp dirabsdeclor?)
-                  (dirabsdeclor-option-case dirabsdeclor? :some))
-             (dirabsdeclor-unambp (dirabsdeclor-option-some->val dirabsdeclor?)))
-    :expand (dirabsdeclor-option-unambp dirabsdeclor?))
-
   ;; Theorems for constructors:
 
   ;; The formulation of rules for
