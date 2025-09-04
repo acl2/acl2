@@ -193,7 +193,9 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension."))
-  ((const-new symbolp
+  ((ienv c$::ienvp
+         "The implementation environment from the code ensemble.")
+   (const-new symbolp
               "The @(':const-new') input of the transformation.")
    (vartys ident-type-mapp
            "Variables in scope at the beginning of the construct.
@@ -5708,7 +5710,8 @@
      is just initialized to @('nil') here;
      its actual initialization for theorem generation is done elsewhere."))
   (b* (((reterr) '(_))
-       (gin (make-simpadd0-gin :const-new const-new
+       (gin (make-simpadd0-gin :ienv (code-ensemble->ienv code-old)
+                               :const-new const-new
                                :vartys nil
                                :events nil
                                :thm-index 1))
