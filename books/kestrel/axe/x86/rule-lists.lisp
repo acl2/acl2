@@ -5745,7 +5745,7 @@
     ;; x86isa::canonical-address-p-between-special5-alt
     ;; x86isa::canonical-address-p-between-special6
     ;; x86isa::canonical-address-p-between-special7
-    bitops::ash-is-expt-*-x
+    acl2::ash-when-non-negative-becomes-*-of-expt
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
     acl2::<-of-15-and-*-of-4
@@ -5761,7 +5761,7 @@
     acl2::<-of-minus-and-constant ; ensure needed
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
-    bitops::ash-of-0-c ; at least for now
+    acl2::ash-of-0-arg1 ; bitops::ash-of-0-c ; at least for now
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
