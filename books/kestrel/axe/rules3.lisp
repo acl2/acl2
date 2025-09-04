@@ -9967,7 +9967,8 @@
                 33554431))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthm bvplus-and-bvcat-hack
+;; disabled because it caused problems
+(defthmd bvplus-and-bvcat-hack
   (implies (and (syntaxp (quotep k))
                 (equal 0 (bvchop free x))
                 (unsigned-byte-p free k)
