@@ -9017,12 +9017,22 @@
                   ;; we must have a compound literal,
                   ;; and the ambiguous expression or type name
                   ;; must be a type name.
+                  ;; But the compound literal
+                  ;; could start a longer postfix expression,
+                  ;; so we also attempt to parser that.
                   ((token-punctuatorp token2 "{") ; ( expr/tyname ) {
                    (b* ((parstate (unread-token parstate)) ; ( expr/tyname )
-                        (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
-                     (parse-compound-literal tyname
-                                             (span-join span close-paren-span)
-                                             parstate)))
+                        (tyname (amb-expr/tyname->tyname expr/tyname.unwrap))
+                        (psize (parsize parstate))
+                        ((erp prev-expr prev-span parstate)
+                         (parse-compound-literal tyname
+                                                 (span-join span
+                                                            close-paren-span)
+                                                 parstate))
+                        ((unless (mbt (<= (parsize parstate) (1- psize))))
+                         (reterr :impossible)))
+                     (parse-postfix-expression-rest
+                      prev-expr prev-span parstate)))
                   ;; If token2 is not an open curly brace,
                   ;; we cannot have a compound literal,
                   ;; and thus we must have just parsed a parenthesized expression,
