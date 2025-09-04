@@ -14,6 +14,8 @@
 (include-book "abstract-syntax-irrelevants")
 (include-book "abstract-syntax-operations")
 (include-book "abstraction-mapping")
+(include-book "code-ensembles")
+(include-book "abstract-syntax-make-self")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,8 +28,24 @@
     "See @(see syntax-for-tools) for background.")
    (xdoc::p
     "We define abstract syntax trees (ASTs),
-     and operations on them."))
+     and operations on them.")
+   (xdoc::p
+    "We have also started defining a syntax abstraction mapping
+     from the "
+    (xdoc::seetopic "concrete-syntax" "concrete syntax")
+    " to this abstract syntax.
+     This is work in progress.")
+   (xdoc::p
+    "We define code ensembles as consisting of
+     top-level ASTs and "
+    (xdoc::seetopic "implementation-environments" "implementation environments")
+    ", which are the entities manipulated by some of our tools.")
+   (xdoc::p
+    "We also provide make-self functions (via @(tsee fty::defmake-self))
+     for code ensembles and contained ASTs."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
                     abstract-syntax-operations
-                    abstraction-mapping))
+                    abstraction-mapping
+                    code-ensembles
+                    make-self-code-ensemble))

@@ -1,17 +1,18 @@
 ; Matt K. addition: Exclude from GCL runs because of the mem field of the rv32
 ; stobj, which has size 2^32, which exceeds the array-dimension-limit of
-; 268435456 in GCL 2.7.2pre.
-; cert_param: (non-gcl)
+; 268435456 in GCL 2.7.2pre.  Similarly exclude LispWorks, where ACL2 complains
+; that 4294967296 exceeds the array-dimension-limit of 536870911.
+; cert_param: (non-gcl , non-lispworks)
 
 (in-package "ACL2")
 (include-book "misc-events")
 (include-book "operations")
 (include-book "constants")
 
-(defconst *rv32-reg-names* 
+(defconst *rv32-reg-names*
   `(:x0  :x1  :x2  :x3  :x4  :x5  :x6  :x7
-    :x8  :x9  :x10 :x11 :x12 :x13 :x14 :x15 
-    :x16 :x17 :x18 :x19 :x20 :x21 :x22 :x23 
+    :x8  :x9  :x10 :x11 :x12 :x13 :x14 :x15
+    :x16 :x17 :x18 :x19 :x20 :x21 :x22 :x23
     :x24 :x25 :x26 :x27 :x28 :x29 :x30 :x31))
 
 (defconst *rv32-reg-names-len* (len *rv32-reg-names*))
@@ -19,7 +20,7 @@
 ;; RISC-V machine state object
 (defstobj rv32
   ;; register file
-  (rgf :type (array (unsigned-byte 32)      
+  (rgf :type (array (unsigned-byte 32)
 		    (*rv32-reg-names-len*))
        :initially 0
        :resizable nil)
@@ -49,7 +50,7 @@
 (in-theory (disable nth))  ; Because NTH used to select object from
                            ; the rv32 state.
 
-;; Standard Theorems 
+;; Standard Theorems
 
 (defthm natp-nth-of-rgf
   ;; Read the register file.
@@ -158,7 +159,7 @@
 
 (defthm rgfp-update-nth
   ;; Update to a register with a 32-bit nat is still a register.
-  ;; Note: allows update to x0. 
+  ;; Note: allows update to x0.
   (implies (and (rgfp x)
                 (integerp i)
                 (<= 0 i)
@@ -168,7 +169,7 @@
 
 (defthm rv32p-update-rgfi-n05p
   ;; Update to a register from state with a 32-bit nat is still a register.
-  ;; Note: allows update to x0. 
+  ;; Note: allows update to x0.
   (implies (and (rv32p rv32)
                 (n05p i)
                 (n32p v))
@@ -260,7 +261,7 @@
 
 (defun wm08 (addr v rv32)
   ;; Write an 8-bit nat
-  ;; to state's memory. 
+  ;; to state's memory.
   (declare (xargs :guard (and (n32p addr)
                               (n08p v))
                   :stobjs (rv32)))
@@ -277,7 +278,7 @@
 
 ;; Adding rm32
 (defun rm32 (addr rv32)
-  ;; Truncate address to 32 bits and access 4 consecutive bytes 
+  ;; Truncate address to 32 bits and access 4 consecutive bytes
   ;; from state's memory. Assemble into 32-bit quantity in little
   ;; endian fashion.
   (declare (xargs :guard (n32p addr)
@@ -321,7 +322,7 @@
 ;; No hypotheses needed
 (defthmd rm32-from-successive-bytes
  (equal (rm32 addr rv32)
-        (n32 (logior      (rm08      addr   rv32)			       
+        (n32 (logior      (rm08      addr   rv32)
 	             (ash (rm08 (+ 1 addr)  rv32)  8)
 	             (ash (rm08 (+ 2 addr)  rv32) 16)
 	             (ash (rm08 (+ 3 addr)  rv32) 24))))
@@ -386,7 +387,7 @@
 
 ; Update lemmas
 (defthm rgfi-!rgfi
-  ;; Accessing a register after writing it returns the 
+  ;; Accessing a register after writing it returns the
   ;; value written.
   (equal (rgfi i (!rgfi i v rv32))
          v)
@@ -659,9 +660,9 @@
 
 
 (defun wm32 (addr v rv32)
-  ;; Given a 32-bit address, 32-bit value, and legal state,  extract 
+  ;; Given a 32-bit address, 32-bit value, and legal state,  extract
   ;; the bytes from the value, write them
-  ;; into memory at the next 8 addresses in little endian fashion. 
+  ;; into memory at the next 8 addresses in little endian fashion.
   (declare (xargs :guard (and (n32p addr)
                               (n32p v))
                   :stobjs (rv32)))

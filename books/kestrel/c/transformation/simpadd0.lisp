@@ -38,6 +38,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled simpadd0-set-lemma
+  (implies (equal (set::cardinality set) 1)
+           (equal (set::in x set)
+                  (equal x (set::head set))))
+  :do-not-induct t
+  :expand (set::in x set)
+  :enable (set::cardinality
+           set::in
+           set::emptyp
+           set::head
+           set::tail
+           set::setp))
+
+(defruled simpadd0-type-of-value-not-void-lemma
+  (not (equal (c::type-of-value val) '(:void)))
+  :enable c::type-of-value)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation
 
  simpadd0
@@ -174,7 +193,9 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension."))
-  ((const-new symbolp
+  ((ienv c$::ienvp
+         "The implementation environment from the code ensemble.")
+   (const-new symbolp
               "The @(':const-new') input of the transformation.")
    (vartys ident-type-mapp
            "Variables in scope at the beginning of the construct.
@@ -621,13 +642,10 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has a type supported in our C formalization
+    "We generate a theorem
+     of the variable has a type supported in our C formalization
      (which we check in the validation information),
-     and if the variable is in the variable-type map,
-     then we generate a theorem saying that the expression,
-     when executed, yields a value of the appropriate type.
-     The generated theorem is proved via a general supporting lemma,
-     which is proved below."))
+     and if the variable is in the variable-type map."))
   (b* ((ident (ident-fix ident))
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
@@ -637,16 +655,13 @@
                      (not (type-case info.type :char))
                      (omap::assoc ident gin.vartys)))
         (mv expr (simpadd0-gout-no-thm gin)))
-       ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
-        (ldm-type info.type))
        (hints `(("Goal"
-                 :in-theory '((:e expr-ident)
-                              (:e expr-pure-formalp)
-                              (:e ldm-ident))
+                 :in-theory '((:e ldm-ident)
+                              (:e ldm-expr)
+                              (:e c::expr-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
-                                 (ident ',ident)
-                                 (info ',info)
-                                 (type ',ctype)))))
+                                 (var (mv-nth 1 (ldm-ident ',ident)))
+                                 (type (mv-nth 1 (ldm-type ',info.type)))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr
@@ -671,17 +686,13 @@
     :hyp (c$::ident-aidentp ident gcc))
 
   (defruled simpadd0-expr-ident-support-lemma
-    (b* ((expr (mv-nth 1 (ldm-expr (expr-ident ident info))))
+    (b* ((expr (c::expr-ident var))
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
-      (implies (and (expr-pure-formalp (expr-ident ident info))
-                    (b* ((var (mv-nth 1 (ldm-ident ident))))
-                      (c::compustate-has-var-with-type-p var type compst)))
+      (implies (c::compustate-has-var-with-type-p var type compst)
                (equal (c::type-of-value value) type)))
     :enable (c::exec-expr-pure
              c::exec-ident
-             ldm-expr
-             expr-pure-formalp
              c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -698,11 +709,9 @@
      into a much more general transformation.
      Thus, the output expression consists of the constant passed as input.")
    (xdoc::p
-    "If the constant is an integer one,
-     and under the additional conditions described shortly,
-     we generate a theorem saying that the exprssion,
-     when executed, yields a value of the appropriate integer type.
-     The additional conditions are that:")
+    "We generate a theorem
+     if the constant is an integer one,
+     and under the following additional conditions:")
    (xdoc::ul
     (xdoc::li
      "If the constant has type (@('signed') or @('unsigned')) @('int'),
@@ -714,12 +723,12 @@
      "If the constant has type (@('signed') or @('unsigned')) @('long long'),
       it fits in 64 bits."))
    (xdoc::p
-    "The reason is that
+    "The reason for these additional conditions is that
      our current dynamic semantics assumes that
      those types have those sizes,
      while our validator is more general
      (@(tsee c$::valid-iconst) takes an implementation environment as input,
-     which specifies, among other things, the size of those types).
+     which specifies the size of those types).
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
@@ -741,9 +750,9 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr no-thm-gout))
-       (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
                                      (:e ldm-expr)
+                                     (:e ldm-type)
                                      (:e c::expr-const)
                                      (:e c::expr-fix)
                                      (:e c::expr-kind)
@@ -858,6 +867,7 @@
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
+                              (:e ldm-type)
                               (:e c::unop-nonpointerp)
                               (:e c::unop-kind)
                               (:e c::expr-unary)
@@ -1020,6 +1030,7 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-tyname)
+                              (:e ldm-type)
                               (:e c::expr-cast)
                               (:e c::tyname-to-type)
                               (:e c::type-nonchar-integerp))
@@ -1151,6 +1162,7 @@
                    :bitand :bitxor :bitior))
       (b* ((hints `(("Goal"
                      :in-theory '((:e ldm-expr)
+                                  (:e ldm-type)
                                   (:e c::iconst-length-none)
                                   (:e c::iconst-base-oct)
                                   (:e c::iconst)
@@ -1202,7 +1214,7 @@
             `(("Goal"
                :in-theory '((:e ldm-expr)
                             (:e ldm-ident)
-                            (:e ident)
+                            (:e ldm-type)
                             (:e c::expr-binary)
                             (:e c::binop-logand)
                             (:e c::binop-logor)
@@ -1275,7 +1287,6 @@
                '((:e ldm-expr)
                  (:e ldm-ident)
                  (:e ldm-type)
-                 (:e ident)
                  (:e c::expr-kind)
                  (:e c::expr-ident)
                  (:e c::expr-binary)
@@ -1744,7 +1755,7 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-ident)
-                              (:e ident)
+                              (:e ldm-type)
                               (:e c::expr-cond)
                               (:e c::type-nonchar-integerp))
                  :use (,test-thm-name
@@ -2079,10 +2090,10 @@
                :in-theory '((:e ldm-stmt)
                             (:e ldm-expr)
                             (:e ldm-ident)
-                            (:e ldm-type)
-                            (:e ident)
+                            (:e ldm-type-option-set)
                             (:e c::expr-kind)
-                            (:e c::stmt-expr))
+                            (:e c::stmt-expr)
+                            (:e set::insert))
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -2100,7 +2111,11 @@
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
                           (:e ldm-type)
-                          (:e c::stmt-null))
+                          (:e c::stmt-null)
+                          (:e ldm-type-option-set)
+                          c::type-option-of-stmt-value
+                          (:e set::in)
+                          (:e set::insert))
              :use (simpadd0-stmt-null-support-lemma
                    ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
        ((mv thm-event thm-name thm-index)
@@ -2164,7 +2179,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-null-vartys-support-lemma
@@ -2193,7 +2209,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-asg))
@@ -2268,9 +2285,10 @@
                                   (:e ldm-expr)
                                   (:e ldm-ident)
                                   (:e ldm-type)
-                                  (:e ident)
-                                  (:e c::expr-kind)
+                                  (:e ldm-type-option-set)
+                                  (:e set::insert)
                                   (:e c::stmt-return)
+                                  (:e c::expr-kind)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2285,8 +2303,10 @@
                 `(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
-                                (:e ldm-type)
-                                (:e c::stmt-return))
+                                (:e ldm-type-option-set)
+                                (:e c::stmt-return)
+                                (:e c::type-void)
+                                (:e set::insert))
                    :use (simpadd0-stmt-return-novalue-support-lemma
                          ,@lemma-instances)))))
        ((mv thm-event thm-name thm-index)
@@ -2349,15 +2369,17 @@
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :return)
                     (c::stmt-value-return->value? old-result)
-                    (equal (c::type-of-value
-                            (c::stmt-value-return->value? old-result))
-                           type))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert type nil)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::type-of-value
              c::apconvert-expr-value-when-not-array
-             c::type-nonchar-integerp))
+             c::type-nonchar-integerp
+             c::type-option-of-stmt-value
+             c::type-of-value-option
+             c::value-option-some->val))
 
   (defruled simpadd0-stmt-return-novalue-support-lemma
     (b* ((old (c::stmt-return nil))
@@ -2369,7 +2391,8 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :return)
-                    (not (c::stmt-value-return->value? old-result)))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert (c::type-void) nil)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-return-error-support-lemma
@@ -2485,7 +2508,6 @@
                               (:e ldm-type-spec-list)
                               (:e ldm-ident)
                               (:e ldm-type)
-                              (:e ident)
                               (:e c::obj-declor-ident)
                               (:e c::scspecseq-none)
                               (:e c::obj-declon)
@@ -2662,28 +2684,16 @@
        ((unless stmt-thm-name)
         (mv item-new (simpadd0-gout-no-thm gin)))
        (types (stmt-types stmt))
-       ((unless (= (set::cardinality types) 1))
-        (mv item-new (simpadd0-gout-no-thm gin)))
-       (type (set::head types))
-       (support-lemma
-        (cond ((not type)
-               'simpadd0-block-item-stmt-none-support-lemma)
-              ((type-case type :void)
-               'simpadd0-block-item-stmt-novalue-support-lemma)
-              (t 'simpadd0-block-item-stmt-value-support-lemma)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-stmt)
-                              (:e ldm-ident)
-                              (:e ldm-type)
-                              (:e ident)
-                              (:e c::block-item-stmt)
-                              (:e c::type-nonchar-integerp))
+                              (:e c::block-item-stmt))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
-                        ,support-lemma
+                        simpadd0-block-item-stmt-support-lemma
                         (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new))))
+                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                        (types (mv-nth 1 (ldm-type-option-set ',types))))
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
@@ -2703,7 +2713,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
 
   :prepwork
   ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
@@ -2728,39 +2737,7 @@
     (block-item-unambp item)
     :hyp (stmt-unambp stmt-new))
 
-  (defruled simpadd0-block-item-stmt-value-support-lemma
-    (b* ((old (c::block-item-stmt old-stmt))
-         (new (c::block-item-stmt new-stmt))
-         ((mv old-stmt-result old-stmt-compst)
-          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
-         ((mv new-stmt-result new-stmt-compst)
-          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit))
-         (type (c::type-of-value
-                (c::stmt-value-return->value? old-stmt-result))))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-stmt-result))
-                    (equal old-stmt-result new-stmt-result)
-                    (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :return)
-                    (c::stmt-value-return->value? old-stmt-result)
-                    (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (c::stmt-value-return->value? old-result)
-                    (equal (c::type-of-value
-                            (c::stmt-value-return->value? old-result))
-                           type))))
-    :expand
-    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-stmt-novalue-support-lemma
+  (defruled simpadd0-block-item-stmt-support-lemma
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -2775,37 +2752,13 @@
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :return)
-                    (not (c::stmt-value-return->value? old-stmt-result)))
+                    (set::in (c::type-option-of-stmt-value old-stmt-result)
+                             types))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (not (c::stmt-value-return->value? old-result)))))
-    :expand
-    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-stmt-none-support-lemma
-    (b* ((old (c::block-item-stmt old-stmt))
-         (new (c::block-item-stmt new-stmt))
-         ((mv old-stmt-result old-stmt-compst)
-          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
-         ((mv new-stmt-result new-stmt-compst)
-          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-stmt-result))
-                    (equal old-stmt-result new-stmt-result)
-                    (equal old-stmt-compst new-stmt-compst)
-                    (equal (c::stmt-value-kind old-stmt-result) :none))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             types))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
@@ -2853,10 +2806,9 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-decl-obj)
-                              (:e ldm-ident)
-                              (:e ldm-type)
-                              (:e ident)
-                              (:e c::block-item-declon))
+                              (:e ldm-type-option-set)
+                              (:e c::block-item-declon)
+                              (:e set::insert))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
@@ -2926,7 +2878,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :expand ((c::exec-block-item
               (c::block-item-declon old-declon) compst old-fenv limit)
              (c::exec-block-item
@@ -2968,7 +2921,10 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item-list)
                               (:e ldm-type)
-                              (:e ldm-ident))
+                              (:e ldm-type-option-set)
+                              (:e ldm-ident)
+                              (:e set::in)
+                              c::type-option-of-stmt-value)
                  :use (simpadd0-block-item-list-empty-support-lemma
                        ,@vartys-lemma-instances))))
        ((mv thm-event thm-name thm-index)
@@ -3103,9 +3059,23 @@
            :in-theory '((:e ldm-block-item)
                         (:e ldm-block-item-list)
                         (:e ldm-ident)
+                        (:e ldm-type-option-set)
                         (:e ldm-type)
-                        (:e ident)
-                        (:e c::type-nonchar-integerp))
+                        (:e c::type-nonchar-integerp)
+                        (:e set::in)
+                        c::type-option-of-stmt-value
+                        c::type-of-value-option
+                        c::value-option-some->val
+                        c::value-fix-when-valuep
+                        c::valuep-when-value-optionp
+                        c::value-optionp-of-stmt-value-return->value?
+                        simpadd0-set-lemma
+                        (:e set::cardinality)
+                        (:e set::head)
+                        (:e c::type-void)
+                        c::stmt-value-kind-possibilities
+                        (:t c::type-of-value)
+                        simpadd0-type-of-value-not-void-lemma)
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))
@@ -5420,6 +5390,7 @@
                         (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
+                        (:e ldm-type)
                         (:e ldm-type-set)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
@@ -5636,7 +5607,8 @@
      is just initialized to @('nil') here;
      its actual initialization for theorem generation is done elsewhere."))
   (b* (((reterr) '(_))
-       (gin (make-simpadd0-gin :const-new const-new
+       (gin (make-simpadd0-gin :ienv (code-ensemble->ienv code-old)
+                               :const-new const-new
                                :vartys nil
                                :events nil
                                :thm-index 1))
