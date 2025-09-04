@@ -753,7 +753,6 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr no-thm-gout))
-       (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
                                      (:e ldm-expr)
                                      (:e ldm-type)
