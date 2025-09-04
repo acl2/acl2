@@ -295,7 +295,15 @@ function, it checks the given guard form and then executes the function on the
 input arguments, returning its return value list and modified interp-st (if
 any).  This allows all functions that were added using
 @('fancy-ev-add-primitive') to be executed by @('fancy-ev').</li>
-</ul>"
+</ul>
+
+<p>Note that fancy-ev primitives cannot invoke fancy-ev. However, a term
+evaluated in fancy-ev can invoke fancy-ev (though the recursive call limit and
+hard-errp/aokp flags from the term are ignored).</p>
+
+<p>See also @(see fancy-translate).</p>
+
+"
       (pseudo-term-case x
         :const (mv nil x.val interp-st state)
         :var (mv nil (cdr (hons-assoc-equal x.name alist)) interp-st state)
@@ -358,7 +366,8 @@ any).  This allows all functions that were added using
            ((unless ev-err) (mv nil val interp-st state))
            ((mv def-ok formals body) (fancy-ev-definition fn state))
            ((unless def-ok)
-            (mv (msg "No definition for ~x0" (pseudo-fnsym-fix fn)) nil interp-st state))
+            (mv (msg "No definition for ~x0 (and error while evaluating)" (pseudo-fnsym-fix fn))
+                nil interp-st state))
            ((unless (eql (len formals) (len args)))
             (mv (msg "Wrong arity for ~x0 call" (pseudo-fnsym-fix fn)) nil interp-st state))
            ((when (zp reclimit))
@@ -377,42 +386,44 @@ any).  This allows all functions that were added using
       :measure (list reclimit 100 0)
       :returns (mv errmsg val new-interp-st new-state)
       (b* ((fn (pseudo-fnsym-fix fn))
-           (args (llist-fix args)))
-        (case fn
-          (fancy-ev
-           (cond ((< (len args) 2)
-                  (mv (msg "Not enough args in meta-call of fancy-ev with args: ~x0" args)
-                      nil interp-st state))
-                 ((not (and (pseudo-termp (car args))
-                            (symbol-alistp (cadr args))))
-                  (mv (msg "Guard violation on meta-call of fancy-ev with args: ~x0" args)
-                      nil interp-st state))
-                 (t (fancy-ev (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
-          (fancy-ev-fncall
-           (cond ((< (len args) 2)
-                  (mv (msg "Not enough args in meta-call of fancy-ev-fncall with args: ~x0" args)
-                      nil interp-st state))
-                 ((not (and (pseudo-fnsym-p (car args))
-                            (true-listp (cadr args))))
-                  (mv (msg "Guard violation on meta-call of fancy-ev-fncall with args: ~x0" args)
-                      nil interp-st state))
-                 (t (fancy-ev-fncall (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
-          (fancy-ev-list
-           (cond ((< (len args) 2)
-                  (mv (msg "Not enough args in meta-call of fancy-ev-list with args: ~x0" args)
-                      nil interp-st state))
-                 ((not (and (pseudo-term-listp (car args))
-                            (symbol-alistp (cadr args))))
-                  (mv (msg "Guard violation on meta-call of fancy-ev-list with args: ~x0" args)
-                      nil interp-st state))
-                 (t (fancy-ev-list (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
-          (fancy-translate
-           (cond ((< (len args) 1)
-                  (mv (msg "Not enough args in meta-call of fancy-translate: ~x0" args)
-                      nil interp-st state))
-                 (t (fancy-translate-top (car args) reclimit interp-st state hard-errp aokp))))
-          (t
-           (mv "impossible" nil interp-st state)))))
+           (args (llist-fix args))
+           ((mv errmsg val interp-st state)
+            (case fn
+              (fancy-ev
+               (cond ((< (len args) 2)
+                      (mv (msg "Not enough args in meta-call of fancy-ev with args: ~x0" args)
+                          nil interp-st state))
+                     ((not (and (pseudo-termp (car args))
+                                (symbol-alistp (cadr args))))
+                      (mv (msg "Guard violation on meta-call of fancy-ev with args: ~x0" args)
+                          nil interp-st state))
+                     (t (fancy-ev (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
+              (fancy-ev-fncall
+               (cond ((< (len args) 2)
+                      (mv (msg "Not enough args in meta-call of fancy-ev-fncall with args: ~x0" args)
+                          nil interp-st state))
+                     ((not (and (pseudo-fnsym-p (car args))
+                                (true-listp (cadr args))))
+                      (mv (msg "Guard violation on meta-call of fancy-ev-fncall with args: ~x0" args)
+                          nil interp-st state))
+                     (t (fancy-ev-fncall (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
+              (fancy-ev-list
+               (cond ((< (len args) 2)
+                      (mv (msg "Not enough args in meta-call of fancy-ev-list with args: ~x0" args)
+                          nil interp-st state))
+                     ((not (and (pseudo-term-listp (car args))
+                                (symbol-alistp (cadr args))))
+                      (mv (msg "Guard violation on meta-call of fancy-ev-list with args: ~x0" args)
+                          nil interp-st state))
+                     (t (fancy-ev-list (car args) (cadr args) reclimit interp-st state hard-errp aokp))))
+              (fancy-translate
+               (cond ((< (len args) 1)
+                      (mv (msg "Not enough args in meta-call of fancy-translate: ~x0" args)
+                          nil interp-st state))
+                     (t (fancy-translate (car args) reclimit interp-st state hard-errp aokp))))
+              (t
+               (mv "impossible" nil interp-st state)))))
+        (mv nil (list errmsg val 'interp-st 'state) interp-st state)))
                 
 
     (define fancy-ev-list ((x pseudo-term-listp)
@@ -430,18 +441,30 @@ any).  This allows all functions that were added using
            ((when err) (mv err nil interp-st state)))
         (mv nil (cons first rest) interp-st state)))
 
-    (define fancy-translate-top (x
+    (define fancy-translate (x
                                  (reclimit natp)
                                  (interp-st interp-st-bfrs-ok)
                                  state hard-errp aokp)
       :measure (list reclimit 11 (acl2-count x))
       :returns (mv errmsg (val pseudo-termp) new-interp-st new-state)
+      :parents (fancy-ev)
+      :short "Pseudo-translate an ACL2 form into a term using @(see fancy-ev) to evaluate macros."
+      :long "
+<p>Fancy-translate allows translation of untranslated terms into translated
+form, much like ACL2's @('translate') family of functions, but without many
+complicated features.</p>
+
+<p>Fancy-translate is highly simplified relative to ACL2's translate. It
+doesn't check executability constraints, stobj discipline, or even arity of
+function calls. It supports @('let'), @('mv-let'), and macroexpansion, but not
+@('flet'), @('macrolet'), @('loop$'), @('df') values, translation of lambda$
+objects, and many other complications.</p>"
       (if (fancy-translate-wrld-okp (w state))
-          (fancy-translate x reclimit interp-st state hard-errp aokp)
+          (fancy-translate1 x reclimit interp-st state hard-errp aokp)
         (mv (msg "Programming error: world didn't satisfy ~x0" 'fancy-translate-wrld-okp)
             nil interp-st state)))
           
-    (define fancy-translate (x
+    (define fancy-translate1 (x
                              (reclimit natp)
                              (interp-st interp-st-bfrs-ok)
                              state hard-errp aokp)
@@ -473,7 +496,7 @@ any).  This allows all functions that were added using
                         ((when (zp reclimit))
                          (mv (msg "Recursion limit ran out translating ~x0" x)
                              nil interp-st state)))
-                     (fancy-translate let (1- reclimit) interp-st state hard-errp aokp)))
+                     (fancy-translate1 let (1- reclimit) interp-st state hard-errp aokp)))
                   (macro-body (getpropc fnsym 'acl2::macro-body nil wrld))
                   ((unless macro-body)
                    (b* (((mv err args interp-st state)
@@ -505,7 +528,7 @@ any).  This allows all functions that were added using
                    (fancy-ev macro-body alist (1- reclimit) interp-st state hard-errp aokp))
                   ((when err)
                    (mv err nil interp-st state)))
-               (fancy-translate expansion (1- reclimit) interp-st state hard-errp aokp))))))
+               (fancy-translate1 expansion (1- reclimit) interp-st state hard-errp aokp))))))
 
     (define fancy-translate-args ((x true-listp)
                                   (reclimit natp)
@@ -521,7 +544,7 @@ any).  This allows all functions that were added using
       (if (atom x)
           (mv nil nil interp-st state)
         (b* (((mv err first interp-st state)
-              (fancy-translate (car x) reclimit interp-st state hard-errp aokp))
+              (fancy-translate1 (car x) reclimit interp-st state hard-errp aokp))
              ((when err)
               (mv err nil interp-st state))
              ((mv err rest interp-st state)
@@ -554,7 +577,7 @@ any).  This allows all functions that were added using
            ;; ignoring declarations for now
            (body (car (last x)))
            ((mv err trans-body interp-st state)
-            (fancy-translate body reclimit interp-st state hard-errp aokp))
+            (fancy-translate1 body reclimit interp-st state hard-errp aokp))
            ((when err) (mv err nil interp-st state)))
         (mv nil (acl2::make-lambda-term vars trans-args trans-body) interp-st state)))
 
@@ -578,12 +601,12 @@ any).  This allows all functions that were added using
                 nil interp-st state))
            (bound-expr (cadr x))
            ((mv err trans-bound interp-st state)
-            (fancy-translate bound-expr reclimit interp-st state hard-errp aokp))
+            (fancy-translate1 bound-expr reclimit interp-st state hard-errp aokp))
            ((when err)
             (mv err nil interp-st state))
            (body (car (last x)))
            ((mv err trans-body interp-st state)
-            (fancy-translate body reclimit interp-st state hard-errp aokp))
+            (fancy-translate1 body reclimit interp-st state hard-errp aokp))
            ((when err)
             (mv err nil interp-st state))
            (body-vars (acl2::all-vars trans-body))
@@ -603,7 +626,7 @@ any).  This allows all functions that were added using
     ///
     (local (in-theory (disable acl2::member-of-cons member (tau-system) pseudo-termp pseudo-term-listp
                                fancy-ev fancy-ev-fncall fancy-ev-list
-                               fancy-translate fancy-translate-args fancy-translate-let fancy-translate-mv-let)))
+                               fancy-translate fancy-translate1 fancy-translate-args fancy-translate-let fancy-translate-mv-let)))
     (std::defret-mutual-generate interp-st-get-of-<fn>
       :rules ((t (:add-concl (implies (member (interp-st-field-fix key) *logically-relevant-interp-st-fields*)
                                       (equal (interp-st-get key new-interp-st)
@@ -798,37 +821,6 @@ any).  This allows all functions that were added using
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 
-(encapsulate nil
-  (local
-   (progn
-     (defthm w-of-put-global
-       (implies (not (equal sym 'current-acl2-world))
-                (equal (w (put-global sym val state))
-                       (w state)))
-       :hints(("Goal" :in-theory (enable put-global w))))
-     (defthm w-of-read-acl2-oracle
-       (equal (w (mv-nth 2 (read-acl2-oracle state)))
-              (w state))
-       :hints(("Goal" :in-theory (enable read-acl2-oracle update-acl2-oracle w))))
-     (defthm w-of-iprint-oracle-upddes
-       (equal (w (acl2::iprint-oracle-updates state))
-              (w state))
-       :hints(("Goal" :in-theory (e/d (acl2::iprint-oracle-updates)
-                                      (put-global)))))
-     (defthm w-of-update-open-input-channels
-       (equal (w (update-open-input-channels x state))
-              (w state))
-       :hints(("Goal" :in-theory (enable w update-open-input-channels))))))
-   
-  (defthm w-of-read-object
-    (equal (w (mv-nth 2 (read-object channel statE)))
-           (w state))
-    :hints(("Goal" :in-theory (disable nth update-open-input-channels))))
-  (in-theory (disable read-object)))
-
-(fancy-ev-add-primitive read-object (and (symbolp acl2::channel)
-                                         (open-input-channel-p acl2::channel :object state)))
-
 (local
  (progn
 
@@ -851,7 +843,7 @@ any).  This allows all functions that were added using
                     :do-not '(preprocess)))
      (with-local-stobj interp-st
        (mv-let (err val interp-st state)
-         (fancy-translate-top x reclimit interp-st state hard-errp aokp)
+         (fancy-translate x reclimit interp-st state hard-errp aokp)
          (mv err val state))))
    
    ;; Test
@@ -891,7 +883,7 @@ any).  This allows all functions that were added using
      (let ((key (caar keys))
            (guard (cdar keys)))
        (cons `(fancy-ev-add-primitive ,(intern-in-package-of-symbol
-                                        (if (or (eq guard t) (eq key :errmsg))
+                                        (if (eq guard t)
                                             (concatenate 'string "INTERP-ST->" (symbol-name key))
                                           (concatenate 'string "INTERP-ST->" (symbol-name key) "$INLINE"))
                                         'fgl-fgl)
@@ -924,10 +916,10 @@ any).  This allows all functions that were added using
                  (:trace-depth    . (natp trace-depth))
                  (:trace-alist    . (trace-alist-p trace-alist))
                  (:trace-stack    . (trace-alistlist-p trace-stack))
-                 (:errmsg         . (not (eq errmsg :unreachable)))
+                 (:tracespecs     . (true-list-listp tracespecs))
+                 (:errmsg         . t)
                  (:debug-info     . t)
                  (:debug-stack    . (major-stack-p debug-stack))))))
-
 
 
 

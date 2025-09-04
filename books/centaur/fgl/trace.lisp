@@ -33,6 +33,7 @@
 (include-book "interp-st")
 (include-book "binder-rules")
 (include-book "fancy-ev")
+(local (include-book "tools/trivial-ancestors-check" :dir :System))
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -90,6 +91,14 @@
                           (w state)))
                 *fancy-ev-primitive-thms*))
 
+(define interp-st-push-trace-alist ((trace-alist trace-alist-p) interp-st)
+  :returns new-interp-st
+  (update-interp-st->trace-stack (cons (trace-alist-fix trace-alist)
+                                       (interp-st->trace-stack interp-st))
+                                 interp-st)
+  ///
+  (make-event `(progn . ,*fancy-ev-primitive-thms-no-state*)))
+
 (define interp-st-maybe-push-trace-alist (restore-cond trace-cond (trace-alist trace-alist-p) interp-st)
   :returns new-interp-st
   (if (and restore-cond trace-cond)
@@ -101,12 +110,14 @@
   (make-event `(progn . ,*fancy-ev-primitive-thms-no-state*)))
 
 
-(define interp-st-maybe-pop-trace-alist (restore-cond interp-st)
+(define interp-st-maybe-pop-trace-alist (pushed-cond restore-cond interp-st)
   :returns new-interp-st
-  (if restore-cond
+  (if pushed-cond
       (b* ((stack (interp-st->trace-stack interp-st))
            (interp-st (update-interp-st->trace-stack (cdr stack) interp-st)))
-        (update-interp-st->trace-alist (car stack) interp-st))
+        (if restore-cond
+            (update-interp-st->trace-alist (car stack) interp-st)
+          interp-st))
     interp-st)
   ///
   (make-event `(progn . ,*fancy-ev-primitive-thms-no-state*)))
@@ -120,9 +131,9 @@
   '((rule fgl-generic-rule-p)
     (fn pseudo-fnsym-p)
     (bindings fgl-object-bindings-p)
-    (tracespec true-listp)
+    (tracep)
     (interp-st interp-st-bfrs-ok)
-    state))
+    (state)))
 
 (defconst *traceeval-common-bindings*
   '`((depth . ,(lnfix depth))
@@ -142,9 +153,11 @@
         ((unless (pseudo-termp expr))
          (raise "Error: ~s0 ~x1 for rule ~x2 is not a pseudo-term" ,description expr rune)
          (mv nil interp-st state))
-        ((mv err val interp-st state) (fancy-ev expr (list* ,@ev-bindings
-                                                            ,*traceeval-common-bindings*)
-                                                1000 interp-st state t t))
+        (bindings (list* ,@ev-bindings
+                         ,*traceeval-common-bindings*))
+        (bindings (cons (cons 'trace-meta-bindings bindings) bindings))
+        ((mv err val interp-st state) (fancy-ev expr bindings
+                                                10000 interp-st state t t))
         ((when err)
          (raise "Error evaluating ~s0 ~x1 for rule ~x2: ~@3" ,description expr rune err)
          (mv nil interp-st state)))
@@ -176,7 +189,15 @@
 ;;        (make-event `(progn . ,*fancy-ev-primitive-thms*)))))
 
 
-(local (in-theory (disable pseudo-termp pseudo-term-listp acl2::pseudo-termp-opener member-equal)))
+(local (in-theory (disable pseudo-termp pseudo-term-listp
+                           acl2::pseudo-termp-opener
+                           member-equal
+                           acl2::pseudo-termp-car-when-pseudo-term-listp
+                           cmr::pseudo-term-list-p-when-pseudo-var-list-p)))
+
+(local (defthm true-listp-car-of-interp-st->tracespecs
+         (true-listp (car (interp-st->tracespecs interp-st)))
+         :rule-classes :type-prescription))
 
 ;; (def-trace-eval fgl-rewrite-trace-cond ()
 ;;   :key :cond
@@ -190,9 +211,11 @@
        (let ((scratch (interp-st-top-scratch interp-st)))
          (scratchobj-case scratch :fgl-objlist scratch.val :otherwise nil))))
 
+(local (acl2::use-trivial-ancestors-check))
+
 (make-event
- `(define fgl-trace-cond ,(remove-equal '(tracespec true-listp) *traceeval-common-inputs*)
-    :returns (mv (val true-listp) new-interp-st new-state)
+ `(define fgl-trace-cond ,(remove-equal '(tracep) *traceeval-common-inputs*)
+    :returns (mv tracep new-interp-st new-state)
     (b* (((unless (interp-flags->trace-rewrites (interp-st->flags interp-st)))
           (mv nil interp-st state))
          (tracespec (fgl-rule-tracespec rule interp-st state))
@@ -201,15 +224,21 @@
          (depth (+ 1 (interp-st->trace-depth interp-st)))
          (rune (fgl-generic-rule->rune rule))
          (args (interp-st-rewrite-args interp-st))
+         (interp-st (update-interp-st->tracespecs
+                     (cons tracespec (interp-st->tracespecs interp-st))
+                     interp-st))
          ((mv val interp-st state)
           ,(def-trace-eval-body :cond t nil "trace condition"))
-         (interp-st (interp-st-maybe-push-trace-alist
-                     (cadr (member :restore-rules (llist-fix tracespec)))
-                     val trace-alist interp-st))
-         (interp-st (if val
-                        (update-interp-st->trace-depth depth interp-st)
-                      interp-st)))
-      (mv (and val tracespec) interp-st state))
+         (tracespecs (interp-st->tracespecs interp-st))
+         (tracespec (car tracespecs))
+         ((unless (and val tracespec))
+          (b* ((interp-st (update-interp-st->tracespecs (cdr tracespecs) interp-st)))
+            (mv nil interp-st state)))
+         (interp-st (update-interp-st->trace-depth depth interp-st))
+         ((unless (cadr (member :restore-rules (llist-fix tracespec))))
+          (mv t interp-st state))
+         (interp-st (interp-st-push-trace-alist trace-alist interp-st)))
+      (mv :restore interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
 
@@ -226,39 +255,50 @@
                             ev-bindings
                             description
                             default
-                            direction
-                            pop)
+                            direction)
   `(define ,name (,@formals
                   . ,*traceeval-common-inputs*)
      :returns (mv new-interp-st new-state)
-     (b* ((tracespec (llist-fix tracespec))
-          ((unless tracespec) (mv interp-st state))
+     (b* (((unless tracep) (mv interp-st state))
+          (tracespec (car (interp-st->tracespecs interp-st)))
           (depth (interp-st->trace-depth interp-st))
-          (rune (fgl-generic-rule->rune rule))
-          (args (interp-st-rewrite-args interp-st))
-          ((mv val interp-st state)
-           ,(def-trace-eval-body key :default ev-bindings description))
-          ,@(and pop
-                 `((interp-st (interp-st-maybe-pop-trace-alist
-                               (cadr (member :restore-rules (llist-fix tracespec)))
+          ((mv interp-st state)
+           (b* (((unless tracespec)
+                 (mv interp-st state))
+                (rune (fgl-generic-rule->rune rule))
+                ((unless (equal (car tracespec) rune))
+                 (raise "Unexpected tracespec ~x0 for rule ~x1~%" tracespec rune)
+                 (mv interp-st state))
+                (args (interp-st-rewrite-args interp-st))
+                ((mv val interp-st state)
+                 ,(def-trace-eval-body key :default ev-bindings description)))
+             (and ,@(if default '(val) '(val (not (eq val :default))))
+                  (b* ((evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
+                    (fmt-to-comment-window
+                     ,(case direction
+                        (:entry "~t0~x1> ~@2~%")
+                        (:exit  "~t0<~x1 ~@2~%")
+                        (otherwise "~t0<~x1> ~@2~%"))
+                     (pairlis2 acl2::*base-10-chars* (list depth depth
+                                                           ,(if default
+                                                                `(if (eq val :default)
+                                                                     ,default
+                                                                   val)
+                                                              'val)))
+                     0 evisc-tuple nil)))
+             (mv interp-st state)))
+          ;; Need to pop the the stacks if we started tracing even if the tracespec was cancelled (or changed to delete the restore)
+          ,@(and (eq direction :exit)
+                 `((tracespec (car (interp-st->tracespecs interp-st)))
+                   (interp-st (update-interp-st->tracespecs
+                               (cdr (interp-st->tracespecs interp-st)) interp-st))
+                   (interp-st (interp-st-maybe-pop-trace-alist
+                               (eq tracep :restore)
+                               (cadr (member :restore-rules tracespec))
                                interp-st))
                    (interp-st (update-interp-st->trace-depth
                                (nfix (1- depth))
                                interp-st)))))
-       (and ,@(if default '(val) '(val (not (eq val :default))))
-            (b* ((evisc-tuple (my-get-global :fgl-trace-evisc-tuple state)))
-              (fmt-to-comment-window
-               ,(case direction
-                  (:entry "~t0~x1> ~@2~%")
-                  (:exit  "~t0<~x1 ~@2~%")
-                  (otherwise "~t0<~x1> ~@2~%"))
-               (pairlis2 acl2::*base-10-chars* (list depth depth
-                                                     ,(if default
-                                                          `(if (eq val :default)
-                                                               ,default
-                                                             val)
-                                                        'val)))
-               0 evisc-tuple nil)))
        (mv interp-st state))
      ///
      (make-event `(progn . ,*fancy-ev-primitive-thms*))))
@@ -272,6 +312,20 @@
   :direction :entry)
 
 
+(make-event
+ `(define fgl-trace-start ,(remove-equal '(tracep) *traceeval-common-inputs*)
+    :returns (mv tracep new-interp-st new-state)
+    (b* (((mv tracep interp-st state)
+          (fgl-trace-cond . ,(strip-cars (remove-equal '(tracep) *traceeval-common-inputs*))))
+         ((mv interp-st state)
+          (fgl-trace-entry-output . ,(strip-cars *traceeval-common-inputs*))))
+      (mv tracep interp-st state))
+    ///
+    (make-event `(progn . ,*fancy-ev-primitive-thms*))))
+      
+
+
+
 (def-trace-output fgl-trace-relieve-hyp-output ((hyp natp))
   :key :on-relieve-hyp
   :ev-bindings (`(hyp . ,(lnfix hyp)))
@@ -283,8 +337,7 @@
   :ev-bindings (`(result . ,(fgl-object-fix result)))
   :description "trace success term"
   :default (msg "~x0 success: ~x1~%" rune result)
-  :direction :exit
-  :pop t)
+  :direction :exit)
 
 (def-trace-output fgl-trace-failure-output ((failed-hyp acl2::maybe-natp))
   :key :on-failure
@@ -298,16 +351,15 @@
                         (errmsg (msg "~x0" errmsg))
                         (failed-hyp (msg "hyp ~x0 failed" failed-hyp))
                         (t "aborted"))))
-  :direction :exit
-  :pop t)
+  :direction :exit)
 
 (make-event
  `(define fgl-trace-finish-rewrite ((result fgl-object-p)
                                     . ,*traceeval-common-inputs*)
     :returns (mv new-interp-st new-state)
     (if (not (interp-st->errmsg interp-st))
-        (fgl-trace-success-output result rule fn bindings tracespec interp-st state)
-      (fgl-trace-failure-output nil rule fn bindings tracespec interp-st state))
+        (fgl-trace-success-output result rule fn bindings tracep interp-st state)
+      (fgl-trace-failure-output nil rule fn bindings tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
 
@@ -331,8 +383,7 @@
                   (cond ((msgp errmsg) (msg " with error ~@0" errmsg))
                         (errmsg (msg " with error ~x0" errmsg))
                         (t ""))))
-  :direction :exit
-  :pop t)
+  :direction :exit)
 
 (def-trace-output fgl-trace-meta-success-output ((result fgl-object-p)
                                                  (rhs pseudo-termp))
@@ -341,8 +392,7 @@
                 `(rhs . ,(pseudo-term-fix rhs)))
   :description "trace success term"
   :default (msg "~x0 success: ~x1~%" rune result)
-  :direction :exit
-  :pop t)
+  :direction :exit)
 
 (def-trace-output fgl-trace-meta-failure-output ((rhs pseudo-termp))
   :key :on-failure
@@ -355,8 +405,7 @@
                   (cond ((msgp errmsg) errmsg)
                         (errmsg (msg "~x0" errmsg))
                         (t "aborted"))))
-  :direction :exit
-  :pop t)
+  :direction :exit)
 
 
 (make-event
@@ -366,8 +415,8 @@
                                  . ,*traceeval-common-inputs*)
     :returns (mv new-interp-st new-state)
     (if (and successp (not (interp-st->errmsg interp-st)))
-        (fgl-trace-meta-success-output result rhs rule fn bindings tracespec interp-st state)
-      (fgl-trace-meta-failure-output rhs rule fn bindings tracespec interp-st state))
+        (fgl-trace-meta-success-output result rhs rule fn bindings tracep interp-st state)
+      (fgl-trace-meta-failure-output rhs rule fn bindings tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
  
@@ -401,62 +450,38 @@ state globals:</p>
 
 <h3>Advanced Tracing</h3>
 
-<p>More specific tracing behavior can be specified for each rule via the trace-rule-alist. The @(see fgl-trace)
-macro offers a more user-friendly interface for this than direct manipulation of the trace-rule-alist; see
-that topic for options.</p>
+<p>More specific tracing behavior can be specified for each rule via the
+trace-rule-alist. The @(see fgl-trace) macro offers a more user-friendly
+interface for this than direct manipulation of the trace-rule-alist; see that
+topic for options, as well as @(see fgl-advanced-tracing).</p>
 
 ")
 
 
+(define set-fgl-trace-rule-alist (new-alist state)
+  (f-put-global ':fgl-trace-rule-alist new-alist state))
+
+
+
+(define fgl-trace-translate-keyvals (rune keyvals state)
+  :mode :program
+  (if (or (atom keyvals)
+          (atom (cdr keyvals)))
+      (value nil)
+    (er-let* ((trans-val (acl2::translate (cadr keyvals) t nil nil `(fgl-trace ,rune) (w state) state))
+              (rest (fgl-trace-translate-keyvals rune (cddr keyvals) state)))
+      (value (cons (car keyvals) (cons trans-val rest))))))
+
 (define fgl-trace-fn (rune
-                      cond cond-p
-                      on-entry on-entry-p
-                      on-relieve-hyp on-relieve-hyp-p
-                      on-eval-success on-eval-success-p
-                      on-eval-failure on-eval-failure-p
-                      on-success on-success-p
-                      on-failure on-failure-p
+                      keyvals
                       restore-rules
                       state)
   :mode :program
   (b* (((unless (fgl-generic-rune-p rune))
         (er soft 'fgl-trace "Rune must satisfy ~x0" 'fgl-generic-rune-p))
-       ((er trans-cond)
-        (if cond-p
-            (acl2::translate cond t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-entry)
-        (if on-entry-p
-            (acl2::translate on-entry t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-relieve-hyp)
-        (if on-relieve-hyp-p
-            (acl2::translate on-relieve-hyp t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-eval-success)
-        (if on-eval-success-p
-            (acl2::translate on-eval-success t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-eval-failure)
-        (if on-eval-failure-p
-            (acl2::translate on-eval-failure t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-success)
-        (if on-success-p
-            (acl2::translate on-success t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
-       ((er trans-on-failure)
-        (if on-failure-p
-            (acl2::translate on-failure t nil nil `(fgl-trace ,rune) (w state) state)
-          (value nil)))
+       ((er trans-keyvals) (fgl-trace-translate-keyvals rune keyvals state))
        (entry (cons rune
-                    (append (and cond-p `(:cond ,trans-cond))
-                            (and on-entry-p `(:on-entry ,trans-on-entry))
-                            (and on-relieve-hyp-p `(:on-relieve-hyp ,trans-on-relieve-hyp))
-                            (and on-eval-success-p `(:on-eval-success ,trans-on-eval-success))
-                            (and on-eval-failure-p `(:on-eval-failure ,trans-on-eval-failure))
-                            (and on-success-p `(:on-success ,trans-on-success))
-                            (and on-failure-p `(:on-failure ,trans-on-failure))
+                    (append trans-keyvals
                             (and restore-rules `(:restore-rules ,restore-rules)))))
        (old-alist (my-get-global :fgl-trace-rule-alist state))
        (state (f-put-global ':fgl-trace-rule-alist
@@ -470,19 +495,22 @@ that topic for options.</p>
                      (cond 'nil cond-p)
                      (on-entry 'nil on-entry-p)
                      (on-relieve-hyp 'nil on-relieve-hyp-p)
+                     (on-eval-success 'nil on-eval-success-p)
+                     (on-eval-failure 'nil on-eval-failure-p)
                      (on-success 'nil on-success-p)
                      (on-failure 'nil on-failure-p)
                      (restore-rules 'nil))
-  `(make-event
-    (er-let* ((entry (fgl-trace-fn ',rune ',cond ,cond-p
-                                   ',on-entry ,on-entry-p
-                                   ',on-relieve-hyp ,on-relieve-hyp-p
-                                   ',on-success ,on-success-p
-                                   ',on-failure ,on-failure-p
-                                   ,restore-rules
-                                   state)))
-      (value `(value-triple ',entry)))))
-
+  `(fgl-trace-fn ',rune
+                 (list . ,(append (and cond-p `(:cond ',cond))
+                                  (and on-entry-p `(:on-entry ',on-entry))
+                                  (and on-relieve-hyp-p `(:on-relieve-hyp ',on-relieve-hyp))
+                                  (and on-eval-success-p `(:on-eval-success ',on-eval-success))
+                                  (and on-eval-failure-p `(:on-eval-failure ',on-eval-failure))
+                                  (and on-success-p `(:on-success ',on-success))
+                                  (and on-failure-p `(:on-failure ',on-failure))))
+                 ,restore-rules
+                 state))
+        
 
 
 (defxdoc fgl-trace
@@ -499,7 +527,21 @@ traced and what output will be printed.</p>
    :on-entry (list 'logext-to-logapp n x)
    :on-success (msg \"~x0 success: n=~x1 x=~x2 result=~x3\" 'logext-to-logapp n x result)
    :on-failure (msg \"~x0 failure: hyp ~x1 errmsg ~x2\" 'logext-to-logapp failed-hyp errmsg)
-   :restore-rules t)
+   :restore-rules t
+   :location state)
+ })
+
+<p>See @(see fgl-untrace) and @(see fgl-untrace-all) to remove traces from rules.</p>
+
+<p>Note that the @('trace-rewrites') flag of the @(see fgl-config) object must
+be set to T for tracing to work at all. This can be set in either of the
+following ways:</p>
+@({
+ ;; Table setting overrides default
+ (table fgl::fgl-config-table :trace-rewrites t)
+
+ ;; State global overrides table setting
+ (assign :fgl-trace-rewrites t)
  })
 
 <h3>Arguments</h3>
@@ -573,6 +615,7 @@ backed up at the start and restored at the end of tracing (albeit before
 evaluating the success or failure expressions). This is useful if you want a
 trace of one rule to cause tracing of another rule; see @(see
 fgl-advanced-tracing).</li>
+
 </ul>
 
 <h3>Variables usable in tracing expressions</h3>
@@ -622,5 +665,53 @@ the @(':on-eval-success') and metafunctions' @(':on-success') and
 @(':on-failure') cases.</li>
 
 
+<h3>Tracing rules during FGL processing</h3>
 
+<p>The @('fgl-trace') macro installs an updated set of traced rules in the
+@(':fgl-trace-rule-alist') state global variable. When starting a symbolic
+execution, the value of that state global is copied into the FGL interpreter
+state's @('trace-alist') field.  Therefore, running @('fgl-trace') during
+symbolic simulation (e.g. during evaluation of a trace expression) won't affect
+the rules traced during the current symbolic execution. Instead, you can use
+@(see fgl-trace*) (with much the same interface) to add a traced rule, @(see
+fgl-untrace*) to untrace a rule, and @(see fgl-untrace-all*) to untrace all
+rules. Note that if a traced rule has the @(':restore-rules') flag set, then
+any modifications to the traced rules will be undone (set back to the state
+upon beginning application of the rule) after the rule is finished.</p>
 ")
+
+
+(define fgl-untrace-fn (rune state)
+  (b* (((unless (fgl-generic-rune-p rune))
+        (mv (msg "Rune must satisfy ~x0" 'fgl-generic-rune-p) nil state))
+       (old-alist (my-get-global :fgl-trace-rule-alist state))
+       (state (f-put-global ':fgl-trace-rule-alist
+                            (acl2::hons-remove-assoc rune old-alist)
+                            state)))
+    (value rune)))
+
+(defmacro fgl-untrace (rune)
+  `(fgl-untrace-fn ',rune state))
+
+(defxdoc fgl-untrace
+  :parents (fgl-rewrite-tracing)
+  :short "Untrace an FGL rule"
+  :long "<p>Removes the trace entry, if any, for the given FGL rune. Usage:</p>
+@({
+ (fgl-untrace (:formula my-rule))
+ })
+
+<p>See @(see fgl-trace) for details about tracing rules.</p>
+")
+
+(define fgl-untrace-all (&key (state 'state))
+  (b* ((old-alist (my-get-global :fgl-trace-rule-alist state))
+       (state (f-put-global ':fgl-trace-rule-alist nil state)))
+    (value (alist-keys old-alist))))
+
+(defxdoc fgl-untrace-all
+  :parents (fgl-rewrite-tracing)
+  :short "Remove all trace settings for FGL rules"
+  :long "<p>See @(see fgl-trace) for details about tracing rules.</p>")
+  
+

@@ -48,6 +48,7 @@
 (include-book "fty")
 (include-book "annotation")
 (include-book "backtrace")
+(include-book "supertrace")
 
 (local (in-theory (disable w)))
 

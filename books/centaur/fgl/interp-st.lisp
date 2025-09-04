@@ -138,6 +138,7 @@
       (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
       (trace-alist :type (satisfies trace-alist-p) :initially nil :fix trace-alist-fix)
       (trace-stack :type (satisfies trace-alistlist-p) :initially nil :fix trace-alistlist-fix)
+      (tracespecs :type (satisfies true-list-listp) :initially nil :fix acl2::true-list-list-fix)
 
       (errmsg :type t :initially nil)
       (debug-info :type t)
@@ -216,7 +217,8 @@
                              (interp-st (update-interp-st->debug-info nil interp-st))
                              (interp-st (update-interp-st->trace-alist nil interp-st))
                              (interp-st (update-interp-st->trace-stack nil interp-st))
-                             (interp-st (update-interp-st->trace-depth 0 interp-st)))
+                             (interp-st (update-interp-st->trace-depth 0 interp-st))
+                             (interp-st (update-interp-st->tracespecs nil interp-st)))
                           (update-interp-st->debug-stack (list (make-major-frame)) interp-st)))))
 
 
