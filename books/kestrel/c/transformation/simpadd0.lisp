@@ -709,11 +709,9 @@
      into a much more general transformation.
      Thus, the output expression consists of the constant passed as input.")
    (xdoc::p
-    "If the constant is an integer one,
-     and under the additional conditions described shortly,
-     we generate a theorem saying that the exprssion,
-     when executed, yields a value of the appropriate integer type.
-     The additional conditions are that:")
+    "We generate a theorem
+     if the constant is an integer one,
+     and under the following additional conditions:")
    (xdoc::ul
     (xdoc::li
      "If the constant has type (@('signed') or @('unsigned')) @('int'),
@@ -725,12 +723,12 @@
      "If the constant has type (@('signed') or @('unsigned')) @('long long'),
       it fits in 64 bits."))
    (xdoc::p
-    "The reason is that
+    "The reason for these additional conditions is that
      our current dynamic semantics assumes that
      those types have those sizes,
      while our validator is more general
      (@(tsee c$::valid-iconst) takes an implementation environment as input,
-     which specifies, among other things, the size of those types).
+     which specifies the size of those types).
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
