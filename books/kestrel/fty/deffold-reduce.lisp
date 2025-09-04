@@ -799,6 +799,8 @@
        (base-suffix-when-type-suffix-and-not-nil
         (acl2::packn-pos
          (list base-type-suffix '-when- type-suffix '-and-not-nil) suffix))
+       (base-suffix-of-type-some->val
+        (acl2::packn-pos (list base-type-suffix '-of- type '-some->val) suffix))
        (thm-events
         (and (eq combine 'and)
              (eq default t)
@@ -813,9 +815,16 @@
                           (,base-type-suffix ,type ,@extra-args-names))
                  :expand (,type-suffix ,type ,@extra-args-names)
                  :enable ,accessor)
+               (defruled ,base-suffix-of-type-some->val
+                 (implies (and (,type-suffix ,type ,@extra-args-names)
+                               (,type-case ,type :some))
+                          (,base-type-suffix (,accessor ,type)
+                                             ,@extra-args-names))
+                 :expand (,type-suffix ,type ,@extra-args-names))
                (add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
                                '(,type-suffix-when-base-type-suffix
-                                 ,base-suffix-when-type-suffix-and-not-nil))))))
+                                 ,base-suffix-when-type-suffix-and-not-nil
+                                 ,base-suffix-of-type-some->val))))))
     (mv fn-event thm-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

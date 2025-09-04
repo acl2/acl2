@@ -406,7 +406,9 @@
       (xdoc::li
        "@('<type>-<suffix>-when-<base>-<suffix>')")
       (xdoc::li
-       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')"))
+       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')")
+      (xdoc::li
+       "@('<base>-<suffix>-of-<type>-some->val')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
