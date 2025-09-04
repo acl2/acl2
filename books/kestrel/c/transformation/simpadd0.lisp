@@ -656,17 +656,13 @@
                      (not (type-case info.type :char))
                      (omap::assoc ident gin.vartys)))
         (mv expr (simpadd0-gout-no-thm gin)))
-       ((mv & ctype) ; ERP is NIL because TYPE-FORMALP holds
-        (ldm-type info.type))
        (hints `(("Goal"
-                 :in-theory '((:e expr-ident)
-                              (:e expr-pure-formalp)
-                              (:e ldm-ident)
-                              (:e ldm-type))
+                 :in-theory '((:e ldm-ident)
+                              (:e ldm-expr)
+                              (:e c::expr-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
-                                 (ident ',ident)
-                                 (info ',info)
-                                 (type ',ctype)))))
+                                 (var (mv-nth 1 (ldm-ident ',ident)))
+                                 (type (mv-nth 1 (ldm-type ',info.type)))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr
@@ -691,17 +687,13 @@
     :hyp (c$::ident-aidentp ident gcc))
 
   (defruled simpadd0-expr-ident-support-lemma
-    (b* ((expr (mv-nth 1 (ldm-expr (expr-ident ident info))))
+    (b* ((expr (c::expr-ident var))
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
-      (implies (and (expr-pure-formalp (expr-ident ident info))
-                    (b* ((var (mv-nth 1 (ldm-ident ident))))
-                      (c::compustate-has-var-with-type-p var type compst)))
+      (implies (c::compustate-has-var-with-type-p var type compst)
                (equal (c::type-of-value value) type)))
     :enable (c::exec-expr-pure
              c::exec-ident
-             ldm-expr
-             expr-pure-formalp
              c::compustate-has-var-with-type-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
