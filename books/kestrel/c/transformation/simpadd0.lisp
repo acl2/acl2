@@ -2093,13 +2093,11 @@
                :in-theory '((:e ldm-stmt)
                             (:e ldm-expr)
                             (:e ldm-ident)
-                            (:e ldm-type)
+                            (:e ldm-type-option-set)
                             (:e ident)
                             (:e c::expr-kind)
                             (:e c::stmt-expr)
-                            (:e ldm-type-option-set)
-                            c::type-option-of-stmt-value
-                            (:e set::in))
+                            (:e set::insert))
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -2120,7 +2118,8 @@
                           (:e c::stmt-null)
                           (:e ldm-type-option-set)
                           c::type-option-of-stmt-value
-                          (:e set::in))
+                          (:e set::in)
+                          (:e set::insert))
              :use (simpadd0-stmt-null-support-lemma
                    ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
        ((mv thm-event thm-name thm-index)
@@ -2184,7 +2183,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-null-vartys-support-lemma
@@ -2213,7 +2213,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-asg))
