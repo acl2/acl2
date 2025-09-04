@@ -2916,17 +2916,14 @@
      because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (vartys-lemma-instances
+       (lemma-instances
         (simpadd0-block-item-list-empty-lemma-instances gin.vartys))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-type)
                               (:e ldm-type-option-set)
-                              (:e ldm-ident)
-                              (:e set::in)
-                              c::type-option-of-stmt-value)
+                              (:e set::insert))
                  :use (simpadd0-block-item-list-empty-support-lemma
-                       ,@vartys-lemma-instances))))
+                       ,@lemma-instances))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
@@ -2970,7 +2967,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :enable c::exec-block-item-list)
 
   (defruled simpadd0-block-item-list-empty-vartys-support-lemma
