@@ -8433,9 +8433,17 @@
               ;; we must have a compound literal.
               ;; We put back the open curly brace,
               ;; and we call the function to parse compound literals.
+              ;; The compound literal may be
+              ;; the start of a longer postfix expression
+              ;; so we also attempt to parse that.
               ((token-punctuatorp token2 "{") ; ( tyname ) {
-               (b* ((parstate (unread-token parstate)))
-                 (parse-compound-literal expr/tyname.unwrap span parstate)))
+               (b* ((parstate (unread-token parstate))
+                    (psize (parsize parstate))
+                    ((erp prev-expr prev-span parstate)
+                     (parse-compound-literal expr/tyname.unwrap span parstate))
+                    ((unless (mbt (<= (parsize parstate) (1- psize))))
+                     (reterr :impossible)))
+                 (parse-postfix-expression-rest prev-expr prev-span parstate)))
               ;; If token2 is not an open curly brace,
               ;; we must be parsing a cast expression proper,
               ;; so we put back the token (if any)
