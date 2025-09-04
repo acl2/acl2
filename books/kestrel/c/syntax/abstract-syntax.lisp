@@ -15,6 +15,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "abstraction-mapping")
 (include-book "code-ensembles")
+(include-book "abstract-syntax-make-self")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,9 +39,13 @@
     "We define code ensembles as consisting of
      top-level ASTs and "
     (xdoc::seetopic "implementation-environments" "implementation environments")
-    ", which are the entities manipulated by some of our tools."))
+    ", which are the entities manipulated by some of our tools.")
+   (xdoc::p
+    "We also provide make-self functions (via @(tsee fty::defmake-self))
+     for code ensembles and contained ASTs."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
                     abstract-syntax-operations
                     abstraction-mapping
-                    code-ensembles))
+                    code-ensembles
+                    make-self-code-ensemble))
