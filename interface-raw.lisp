@@ -6085,20 +6085,31 @@
                                nil
                                reclassifying-p
                                wrld)))
-                       #+(or sbcl cmucl allegro)
+                       #+sbcl
                        ((and (not (member-eq (car def)
                                              '(defmacro defabbrev)))
                              (inline-namep (symbol-name name)))
 
 ; We are including a book (and not merely on behalf of certify-book).
-; Apparently SBCL (also probably CMUCL and Allegro CL) needs the source code
-; for a function in order for it to be inlined.  (This isn't surprising,
-; perhaps; perhaps more surprising is that CCL does not seem to have this
-; requirement.)  See for example community book
-; books/system/optimize-check.lisp, where the form (disassemble 'g4) fails to
-; exhibit inlined code without the special treatment we provide here.  This
-; special treatment avoids obtaining the definition from the hash table,
-; instead letting Lisp fall through to the (eval (car tail)) below.
+; Apparently SBCL needs the source code for a function in order for it to be
+; inlined.  (This isn't surprising, perhaps; perhaps more surprising is that
+; CCL, LispWorks, and GCL do not seem to have this requirement.)  See for
+; example community book books/system/optimize-check.lisp, where the form
+; (disassemble 'g4) fails to exhibit inlined code without the special treatment
+; we provide here.  This special treatment avoids obtaining the definition from
+; the hash table, instead letting Lisp fall through to the (eval (car tail))
+; below.
+
+; The inlining issue discussed above seems to apply to CMUCL and Allegro CL as
+; well.  Unlike SBCL, those Lisps do not compile by default.  So some work
+; would be required if we want to treat them like SBCL here, lest the inlined
+; functions be run interpreted.  Since CMUCL and Allegro CL rarely host ACL2 of
+; this writing (September 2025), we will avoid dealing with them here as we do
+; with SBCL -- so for those two Lisps, some functions won't be inlined that
+; ideally should be, but at least they'll run compiled.  We could even consider
+; treating other Lisps as we treat SBCL, just in case down the road they have
+; such an inlining issue (apprently CCL, LispWorks, and GCL do not have that
+; issue now), but for now we are content to handle just SBCL here.
 
 ; Note that we aren't bothering with this special treatment for inlined
 ; functions if we are simply certifying a book.  That's both because we don't
