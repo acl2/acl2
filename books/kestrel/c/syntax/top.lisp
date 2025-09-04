@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "implementation-environments")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-make-self")
@@ -188,7 +189,8 @@
      where the @('$') conveys the idea of `syntax'.
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
-  :order-subtopics (concrete-syntax
+  :order-subtopics (implementation-environments
+                    concrete-syntax
                     abstract-syntax
                     code-ensembles
                     parsing
@@ -204,5 +206,4 @@
                     input-files
                     output-files
                     mapping-to-language-definition
-                    formalized-subset
-                    implementation-environments))
+                    formalized-subset))
