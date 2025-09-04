@@ -14,13 +14,13 @@
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-make-self")
 (include-book "code-ensembles")
+(include-book "parsing")
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
 (include-book "preprocess-file")
-(include-book "parser")
 (include-book "builtin")
 (include-book "disambiguator")
 (include-book "validator")
@@ -94,7 +94,7 @@
      and is not needed to run the tools described below
      (parser, printer, etc.).")
    (xdoc::p
-    "We provide a @(see parser) that produces abstract syntax,
+    "We provide a parser that produces abstract syntax,
      which covers all of the C constructs after preprocessing.
      The syntax of C is notoriously ambiguous,
      requiring some semantic analysis to disambiguate it.
@@ -191,13 +191,13 @@
   :order-subtopics (concrete-syntax
                     abstract-syntax
                     code-ensembles
+                    parsing
                     unambiguity
                     validation-information
                     ascii-identifiers
                     standard
                     purity
                     preprocessing
-                    parser
                     disambiguator
                     validator
                     printer
