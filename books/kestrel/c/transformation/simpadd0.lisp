@@ -2290,16 +2290,9 @@
                                   (:e ldm-ident)
                                   (:e ldm-type)
                                   (:e ldm-type-option-set)
-                                  c::type-option-of-stmt-value
-                                  c::type-of-value-option
-                                  c::value-option-some->val
-                                  c::value-fix-when-valuep
-                                  c::valuep-when-value-optionp
-                                  c::value-optionp-of-stmt-value-return->value?
-                                  (:e set::in)
-                                  (:e ident)
-                                  (:e c::expr-kind)
+                                  (:e set::insert)
                                   (:e c::stmt-return)
+                                  (:e c::expr-kind)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2314,10 +2307,9 @@
                 `(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
-                                (:e ldm-type)
-                                (:e c::stmt-return)
                                 (:e ldm-type-option-set)
                                 c::type-option-of-stmt-value
+                                (:e c::stmt-return)
                                 (:e c::type-of-value-option)
                                 (:e set::in))
                    :use (simpadd0-stmt-return-novalue-support-lemma
@@ -2382,15 +2374,17 @@
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :return)
                     (c::stmt-value-return->value? old-result)
-                    (equal (c::type-of-value
-                            (c::stmt-value-return->value? old-result))
-                           type))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert type nil)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::type-of-value
              c::apconvert-expr-value-when-not-array
-             c::type-nonchar-integerp))
+             c::type-nonchar-integerp
+             c::type-option-of-stmt-value
+             c::type-of-value-option
+             c::value-option-some->val))
 
   (defruled simpadd0-stmt-return-novalue-support-lemma
     (b* ((old (c::stmt-return nil))
