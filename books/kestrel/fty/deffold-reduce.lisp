@@ -50,18 +50,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flexprod-field-list->name-list ((fields flexprod-field-listp))
-  :returns (names symbol-listp)
-  :short "Lift @('flexprod-field->name') to lists."
-  (b* (((when (endp fields)) nil)
-       (name (flexprod-field->name (car fields)))
-       ((unless (symbolp name))
-        (raise "Internal error: malformed field name ~x0." name))
-       (names (flexprod-field-list->name-list (cdr fields))))
-    (cons name names)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-implementation
 
  deffold-reduce
