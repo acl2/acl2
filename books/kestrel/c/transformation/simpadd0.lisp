@@ -2806,12 +2806,9 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-decl-obj)
-                              (:e ldm-ident)
-                              (:e ldm-type)
                               (:e ldm-type-option-set)
                               (:e c::block-item-declon)
-                              c::type-option-of-stmt-value
-                              (:e set::in))
+                              (:e set::insert))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
@@ -2881,7 +2878,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :expand ((c::exec-block-item
               (c::block-item-declon old-declon) compst old-fenv limit)
              (c::exec-block-item
