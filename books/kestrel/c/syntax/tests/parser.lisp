@@ -1652,17 +1652,30 @@
             (expr-case (expr-paren->inner ast) :member)))
 
 (test-parse
-  parse-expression
-  "(struct s) {}.x"
-  :gcc t
-  :cond (expr-case ast :member))
+ parse-expression
+ "(struct s) {}.x"
+ :gcc t
+ :cond (expr-case ast :member))
 
 (test-parse
-  parse-expression
-  "((struct s) {})"
-  :gcc t
-  :cond (and (expr-case ast :paren)
-             (expr-case (expr-paren->inner ast) :complit)))
+ parse-expression
+ "((struct s) {})"
+ :gcc t
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->inner ast) :complit)))
+
+(test-parse
+ parse-expression
+ "(id) {}.x)"
+ :gcc t
+ :cond (expr-case ast :member))
+
+(test-parse
+ parse-expression
+ "((id) {}.x))"
+ :gcc t
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->inner ast) :member)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
