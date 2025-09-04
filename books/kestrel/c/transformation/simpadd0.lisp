@@ -2308,10 +2308,9 @@
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
                                 (:e ldm-type-option-set)
-                                c::type-option-of-stmt-value
                                 (:e c::stmt-return)
-                                (:e c::type-of-value-option)
-                                (:e set::in))
+                                (:e c::type-void)
+                                (:e set::insert))
                    :use (simpadd0-stmt-return-novalue-support-lemma
                          ,@lemma-instances)))))
        ((mv thm-event thm-name thm-index)
@@ -2396,7 +2395,8 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     (equal (c::stmt-value-kind old-result) :return)
-                    (not (c::stmt-value-return->value? old-result)))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert (c::type-void) nil)))))
     :enable c::exec-stmt)
 
   (defruled simpadd0-stmt-return-error-support-lemma
