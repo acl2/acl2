@@ -26,7 +26,13 @@
     "See @(see syntax-for-tools) for background.")
    (xdoc::p
     "We define abstract syntax trees (ASTs),
-     and operations on them."))
+     and operations on them.")
+   (xdoc::p
+    "We have also started defining a syntax abstraction mapping
+     from the "
+    (xdoc::seetopic "concrete-syntax" "concrete syntax")
+    " to this abstract syntax.
+     This is work in progress."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
                     abstract-syntax-operations
