@@ -14,7 +14,6 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-make-self")
-(include-book "code-ensembles")
 (include-book "parsing")
 (include-book "unambiguity")
 (include-book "validation-information")
@@ -192,7 +191,6 @@
   :order-subtopics (implementation-environments
                     concrete-syntax
                     abstract-syntax
-                    code-ensembles
                     parsing
                     unambiguity
                     validation-information

@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-irrelevants")
 (include-book "abstract-syntax-operations")
 (include-book "abstraction-mapping")
+(include-book "code-ensembles")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,8 +33,14 @@
      from the "
     (xdoc::seetopic "concrete-syntax" "concrete syntax")
     " to this abstract syntax.
-     This is work in progress."))
+     This is work in progress.")
+   (xdoc::p
+    "We define code ensembles as consisting of
+     top-level ASTs and "
+    (xdoc::seetopic "implementation-environments" "implementation environments")
+    ", which are the entities manipulated by some of our tools."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
                     abstract-syntax-operations
-                    abstraction-mapping))
+                    abstraction-mapping
+                    code-ensembles))

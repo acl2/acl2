@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ code-ensembles
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Code ensembles."
   :long
   (xdoc::topstring
