@@ -13,13 +13,13 @@
 (include-book "implementation-environments")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "preprocess-file")
 (include-book "parsing")
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
-(include-book "preprocess-file")
 (include-book "builtin")
 (include-book "disambiguator")
 (include-book "validator")
@@ -190,13 +190,13 @@
   :order-subtopics (implementation-environments
                     concrete-syntax
                     abstract-syntax
+                    preprocessing
                     parsing
                     unambiguity
                     validation-information
                     ascii-identifiers
                     standard
                     purity
-                    preprocessing
                     disambiguator
                     validator
                     printer
