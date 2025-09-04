@@ -1986,7 +1986,7 @@
   (defthm state-p-of-mv-nth-1-of-write-stp-query-to-file
     (implies (state-p state)
              (state-p (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state))))
-    :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) ())))))
+    :hints (("Goal" :in-theory (enable write-stp-query-to-file)))))
 
 ;; We use these constants instead of their corresponding keywords, so that we
 ;; don't accidentally mis-type the keywords:
@@ -2101,13 +2101,13 @@
     (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
              (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
                     2))
-    :hints (("Goal" :in-theory (e/d (call-stp-on-file) ())))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
 (local
   (defthm consp-of-mv-nth-0-of-call-stp-on-file
     (implies (not (member-equal (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)) (list *error* *valid* *invalid* *timedout*)))
              (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
-    :hints (("Goal" :in-theory (e/d (call-stp-on-file) ())))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
 (local
   (defthm w-of-mv-nth-1-of-call-stp-on-file
