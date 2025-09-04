@@ -81,7 +81,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
-  :parents (syntax-for-tools)
+  :parents (parsing)
   :short "A parser of C into our abstract syntax."
   :long
   (xdoc::topstring
