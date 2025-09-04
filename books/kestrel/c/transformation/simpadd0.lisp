@@ -661,7 +661,8 @@
        (hints `(("Goal"
                  :in-theory '((:e expr-ident)
                               (:e expr-pure-formalp)
-                              (:e ldm-ident))
+                              (:e ldm-ident)
+                              (:e ldm-type))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)
@@ -763,6 +764,7 @@
        (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
                                      (:e ldm-expr)
+                                     (:e ldm-type)
                                      (:e c::expr-const)
                                      (:e c::expr-fix)
                                      (:e c::expr-kind)
@@ -877,6 +879,7 @@
         (mv expr-new (simpadd0-gout-no-thm gin)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
+                              (:e ldm-type)
                               (:e c::unop-nonpointerp)
                               (:e c::unop-kind)
                               (:e c::expr-unary)
@@ -1039,6 +1042,7 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-tyname)
+                              (:e ldm-type)
                               (:e c::expr-cast)
                               (:e c::tyname-to-type)
                               (:e c::type-nonchar-integerp))
@@ -1170,6 +1174,7 @@
                    :bitand :bitxor :bitior))
       (b* ((hints `(("Goal"
                      :in-theory '((:e ldm-expr)
+                                  (:e ldm-type)
                                   (:e c::iconst-length-none)
                                   (:e c::iconst-base-oct)
                                   (:e c::iconst)
@@ -1221,6 +1226,7 @@
             `(("Goal"
                :in-theory '((:e ldm-expr)
                             (:e ldm-ident)
+                            (:e ldm-type)
                             (:e ident)
                             (:e c::expr-binary)
                             (:e c::binop-logand)
@@ -1763,6 +1769,7 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e ldm-ident)
+                              (:e ldm-type)
                               (:e ident)
                               (:e c::expr-cond)
                               (:e c::type-nonchar-integerp))
@@ -5493,6 +5500,7 @@
                         (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
+                        (:e ldm-type)
                         (:e ldm-type-set)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)

@@ -125,9 +125,9 @@
         (raise "Internal error: variable ~x0 has type ~x1, ~
                 which cannot be mapped to formal model."
                var type))
-       ((mv & cvar) (ldm-ident var)) ; ERP is NIL because IDENT-FORMALP holds
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (asrt `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
+       (asrt `(c::compustate-has-var-with-type-p (mv-nth 1 (ldm-ident ',var))
+                                                 (mv-nth 1 (ldm-type ',type))
+                                                 ,compst))
        (asrts (gen-var-assertions (omap::tail vartys) compst)))
     (cons asrt asrts))
   ///
@@ -271,7 +271,6 @@
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        (formula
         `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
               (new-expr (mv-nth 1 (ldm-expr ',new)))
@@ -283,7 +282,8 @@
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-value new-value)
-                         (equal (c::type-of-value old-value) ',ctype)))))
+                         (equal (c::type-of-value old-value)
+                                (mv-nth 1 (ldm-type ',type)))))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -340,7 +340,6 @@
        ((unless (type-formalp type))
         (raise "Internal error: initializer ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        (formula
         `(b* ((old-initer (mv-nth 1 (ldm-initer ',old)))
               (new-initer (mv-nth 1 (ldm-initer ',new)))
@@ -354,7 +353,8 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (equal (c::init-type-of-init-value old-result)
-                                (c::init-type-single ',ctype))
+                                (c::init-type-single
+                                 (mv-nth 1 (ldm-type ',type))))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
