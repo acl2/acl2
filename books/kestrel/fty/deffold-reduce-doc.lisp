@@ -404,7 +404,9 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-when-<base>-<suffix>')"))
+       "@('<type>-<suffix>-when-<base>-<suffix>')")
+      (xdoc::li
+       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
