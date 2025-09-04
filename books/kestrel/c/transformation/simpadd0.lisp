@@ -642,13 +642,10 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has a type supported in our C formalization
+    "We generate a theorem
+     of the variable has a type supported in our C formalization
      (which we check in the validation information),
-     and if the variable is in the variable-type map,
-     then we generate a theorem saying that the expression,
-     when executed, yields a value of the appropriate type.
-     The generated theorem is proved via a general supporting lemma,
-     which is proved below."))
+     and if the variable is in the variable-type map."))
   (b* ((ident (ident-fix ident))
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
