@@ -174,11 +174,11 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension."))
-  ((ienv c$::ienvp
+  ((ienv c$::ienv
          "The implementation environment from the code ensemble.")
-   (const-new symbolp
+   (const-new symbol
               "The @(':const-new') input of the transformation.")
-   (vartys ident-type-mapp
+   (vartys c::ident-type-map
            "Some variables in scope at the beginning of the construct.
             The generated theorem (if any)
             includes hypotheses about their presence in the computation state
@@ -217,7 +217,7 @@
               The theorem concerns the transformation of the C construct
               that the transformation function operates on.
               This is @('nil') if no theorem is generated.")
-   (vartys ident-type-map
+   (vartys c::ident-type-map
            "Some variables in scope at the end of the construct.
             The generated theorem (if any)
             includes conclusions about their presence in the computation state
@@ -296,7 +296,7 @@
                (parargs "A term.")
                (arg-types true-listp)
                (arg-types-compst true-listp)
-               (vartys ident-type-mapp))
+               (vartys c::ident-type-mapp))
   :short "Generate certain pieces of information
           from the formal parameters of a function."
   :long
@@ -343,9 +343,8 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
-       ((mv & cvar) (ldm-ident (ident par))) ; ERP must be NIL
        (arg-type-compst
-        `(c::compustate-has-var-with-type-p ',cvar ',type compst))
+        `(c::compustate-has-var-with-type-p ',ident ',type compst))
        ((mv okp
             more-args
             parargs
@@ -355,7 +354,7 @@
         (simpadd0-gen-from-params (cdr params) gin))
        ((unless okp) (mv nil nil nil nil nil nil))
        (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
-       (vartys (omap::update (ident par) (ildm-type type) more-vartys)))
+       (vartys (omap::update ident type more-vartys)))
     (mv t
         (cons arg more-args)
         parargs
@@ -632,14 +631,16 @@
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
+       (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and (ident-formalp ident)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
-                     (not (type-case info.type :char))
-                     (omap::assoc ident gin.vartys)))
-        (mv expr (simpadd0-gout-no-thm gin)))
+                     (not (type-case info.type :char))))
+        (mv expr gout-no-thm))
        ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because FORMALP
        ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
+       ((unless (omap::assoc cvar gin.vartys))
+        (mv expr gout-no-thm))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
@@ -1301,22 +1302,20 @@
      (t (mv expr-new gout-no-thm))))
 
   :prepwork
-  ((define simpadd0-expr-asg-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
                                               (asg-var c::identp)
                                               (asg-expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-expr-binary-asg-vartys-support-lemma
                        (var ',asg-var)
                        (expr ',asg-expr)
                        (fenv old-fenv)
-                       (var1 ',cvar)
-                       (type ',ctype)))
+                       (var1 ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-expr-asg-lemma-instances (omap::tail vartys)
                                               asg-var
@@ -1943,20 +1942,18 @@
                             :vartys gin.vartys)))
 
   :prepwork
-  ((define simpadd0-initer-single-pure-lemma-instances ((vartys ident-type-mapp)
-                                                        (expr c::exprp))
+  ((define simpadd0-initer-single-pure-lemma-instances
+     ((vartys c::ident-type-mapp) (expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-initer-single-pure-vartys-support-lemma
                        (expr ',expr)
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
                                                         expr)))
@@ -2106,36 +2103,32 @@
 
   :prepwork
 
-  ((define simpadd0-stmt-null-lemma-instances ((vartys ident-type-mapp))
+  ((define simpadd0-stmt-null-lemma-instances ((vartys c::ident-type-mapp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-null-vartys-support-lemma
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
        (cons lemma-instance lemma-instances)))
 
-   (define simpadd0-stmt-expr-asg-lemma-instances ((vartys ident-type-mapp)
+   (define simpadd0-stmt-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
                                                    (expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-expr-asg-vartys-support-lemma
                        (expr ',expr)
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-stmt-expr-asg-lemma-instances (omap::tail vartys) expr)))
        (cons lemma-instance lemma-instances))))
@@ -2294,20 +2287,18 @@
                             :vartys gin.vartys)))
 
   :prepwork
-  ((define simpadd0-stmt-return-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-stmt-return-lemma-instances ((vartys c::ident-type-mapp)
                                                  (expr? c::expr-optionp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-return-vartys-support-lemma
                        (expr? ',expr?)
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-stmt-return-lemma-instances (omap::tail vartys) expr?)))
        (cons lemma-instance lemma-instances))))
@@ -2402,7 +2393,7 @@
                             (init initdeclor-listp)
                             (init-new initdeclor-listp)
                             (init-thm-name symbolp)
-                            (vartys-post ident-type-mapp)
+                            (vartys-post c::ident-type-mapp)
                             (gin simpadd0-ginp))
   :guard (and (decl-spec-list-unambp specs)
               (decl-spec-list-unambp specs-new)
@@ -2471,11 +2462,10 @@
        (ctype (c::tyspecseq-to-type ctyspecs))
        ((unless (c::type-nonchar-integerp ctype))
         (mv decl-new gout-no-thm))
-       (type (ildm-type ctype))
        ((mv & cvar) (ldm-ident var))
        ((mv & old-initer) (ldm-initer initer))
        ((mv & new-initer) (ldm-initer initer-new))
-       (vartys-post (omap::update var type gin.vartys))
+       (vartys-post (omap::update cvar ctype gin.vartys))
        (hints `(("Goal"
                  :in-theory '((:e c::obj-declor-ident)
                               (:e c::scspecseq-none)
@@ -2522,7 +2512,7 @@
                                            dirdeclor-block-formalp)))
 
   :prepwork
-  ((define simpadd0-decl-decl-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-decl-decl-lemma-instances ((vartys c::ident-type-mapp)
                                                (var c::identp)
                                                (tyspecs c::tyspecseqp)
                                                (initer c::initerp))
@@ -2530,13 +2520,11 @@
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var1 type) (omap::head vartys))
-          ((mv & cvar1) (ldm-ident var1))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-decl-decl-vartys-old-support-lemma
-                       (var1 ',cvar1)
+                       (var1 ',var1)
                        (var ',var)
-                       (type ',ctype)
+                       (type ',type)
                        (tyspecs ',tyspecs)
                        (initer ',initer)
                        (fenv old-fenv)))
@@ -2688,20 +2676,18 @@
                             :vartys gin.vartys)))
 
   :prepwork
-  ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-block-item-stmt-lemma-instances ((vartys c::ident-type-mapp)
                                                      (stmt c::stmtp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-stmt-vartys-support-lemma
                        (stmt ',stmt)
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
        (cons lemma-instance lemma-instances))))
@@ -2760,7 +2746,7 @@
                                   (decl-new declp)
                                   (decl-thm-name symbolp)
                                   info
-                                  (vartys-post ident-type-mapp)
+                                  (vartys-post c::ident-type-mapp)
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
               (decl-unambp decl-new))
@@ -2811,18 +2797,16 @@
                                            dirdeclor-block-formalp)))
 
   :prepwork
-  ((define simpadd0-block-item-decl-lemma-instances ((vartys ident-type-mapp)
+  ((define simpadd0-block-item-decl-lemma-instances ((vartys c::ident-type-mapp)
                                                      (decl c::obj-declonp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-decl-vartys-support-lemma
-                       (var ',cvar)
-                       (type ',ctype)
+                       (var ',var)
+                       (type ',type)
                        (declon ',decl)
                        (fenv old-fenv)))
           (lemma-instances
@@ -2911,18 +2895,16 @@
 
   :prepwork
   ((define simpadd0-block-item-list-empty-lemma-instances
-     ((vartys ident-type-mapp))
+     ((vartys c::ident-type-mapp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-list-empty-vartys-support-lemma
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
        (cons lemma-instance lemma-instances))))
@@ -3054,22 +3036,20 @@
 
   :prepwork
   ((define simpadd0-block-item-list-cons-lemma-instances
-     ((vartys ident-type-mapp)
+     ((vartys c::ident-type-mapp)
       (item c::block-itemp)
       (items c::block-item-listp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
-          ((mv & cvar) (ldm-ident var))
-          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-list-cons-vartys-support-lemma
                        (item ',item)
                        (items ',items)
                        (fenv old-fenv)
-                       (var ',cvar)
-                       (type ',ctype)))
+                       (var ',var)
+                       (type ',type)))
           (lemma-instances
            (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
                                                           item
@@ -4197,9 +4177,14 @@
             (gin (simpadd0-gin-update gin gout-declor))
             (info (coerce-param-declor-nonabstract-info paramdeclor.info))
             (type (c$::param-declor-nonabstract-info->type info))
-            (post-vartys (omap::update (c$::declor->ident paramdeclor.declor)
-                                       type
-                                       gin.vartys)))
+            (ident (c$::declor->ident paramdeclor.declor))
+            (post-vartys
+             (if (and (ident-formalp ident)
+                      (type-formalp type))
+                 (b* (((mv & cvar) (ldm-ident ident))
+                      ((mv & ctype) (ldm-type type)))
+                   (omap::update cvar ctype gin.vartys))
+               gin.vartys)))
          (mv (make-param-declor-nonabstract
               :declor new-declor
               :info paramdeclor.info)
@@ -4460,14 +4445,17 @@
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?))
          (info (coerce-initdeclor-info initdeclor.info))
          (type (c$::initdeclor-info->type info))
-         (post-vartys (if (and (not (c$::initdeclor-info->typedefp info))
-                               (type-formalp type)
-                               (not (type-case type :void))
-                               (not (type-case type :char)))
-                          (omap::update (c$::declor->ident initdeclor.declor)
-                                        type
-                                        gout-init?.vartys)
-                        gout-init?.vartys)))
+         (ident (c$::declor->ident initdeclor.declor))
+         (post-vartys
+          (if (and (not (c$::initdeclor-info->typedefp info))
+                   (ident-formalp ident)
+                   (type-formalp type)
+                   (not (type-case type :void))
+                   (not (type-case type :char)))
+              (b* (((mv & cvar) (ldm-ident ident))
+                   ((mv & ctype) (ldm-type type)))
+                (omap::update cvar ctype gout-init?.vartys))
+            gout-init?.vartys)))
       (mv (make-initdeclor :declor new-declor
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
@@ -5087,12 +5075,14 @@
         (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
        (type (c$::fundef-info->type info))
-       (vartys-with-fun (if (and (type-formalp type)
+       (ident (c$::declor->ident fundef.declor))
+       (vartys-with-fun (if (and (ident-formalp ident)
+                                 (type-formalp type)
                                  (not (type-case type :void))
                                  (not (type-case type :char)))
-                            (omap::update (c$::declor->ident fundef.declor)
-                                          type
-                                          gout-declor.vartys)
+                            (b* (((mv & cvar) (ldm-ident ident))
+                                 ((mv & ctype) (ldm-type type)))
+                              (omap::update cvar ctype gout-declor.vartys))
                           gout-declor.vartys))
        ((mv new-decls (simpadd0-gout gout-decls))
         (simpadd0-decl-list fundef.decls (change-simpadd0-gin

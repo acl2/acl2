@@ -135,7 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-var-assertions ((vartys ident-type-mapp) (compst symbolp))
+(define gen-var-assertions ((vartys c::ident-type-mapp) (compst symbolp))
   :returns (assertions true-listp)
   :short "Generate assertions about certain variables
           having values of certain types in a computation state."
@@ -150,28 +150,19 @@
    (xdoc::p
     "The symbol @('compst') is the ACL2 variable name
      to use for the computation state."))
-  (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
+  (b* (((when (omap::emptyp (c::ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
-       ((unless (ident-formalp var))
-        (raise "Internal error: variable ~x0 cannot be mapped to formal model."
-               var))
-       ((unless (type-formalp type))
-        (raise "Internal error: variable ~x0 has type ~x1, ~
-                which cannot be mapped to formal model."
-               var type))
-       ((mv & cvar) (ldm-ident var)) ; ERP is NIL because FORMALP
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
-       (asrt `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
+       (asrt `(c::compustate-has-var-with-type-p ',var ',type ,compst))
        (asrts (gen-var-assertions (omap::tail vartys) compst)))
     (cons asrt asrts))
   ///
   (fty::deffixequiv gen-var-assertions
-    :args ((vartys ident-type-mapp))))
+    :args ((vartys c::ident-type-mapp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define vartys-from-valid-table ((table c$::valid-tablep))
-  :returns (vatys ident-type-mapp)
+  :returns (vatys c::ident-type-mapp)
   :short "Generate, from a validation table,
           a map from identifiers to types."
   :long
@@ -179,8 +170,9 @@
    (xdoc::p
     "The validation table is from validation annotations.
      The resulting map contains all the variables in scope
-     whose types satisfy @(tsee type-formalp);
-     variables of other types are skipped.
+     whose names satisfy @(tsee ident-formalp)
+     and whose types satisfy @(tsee type-formalp);
+     variables not satisfying these requirements are skipped.
      Given that later scopes may contain variables that shadow earlier scopes,
      we process the scopes in the validation table
      from oldest to newest, overriding map entries as applicable."))
@@ -189,7 +181,7 @@
   :prepwork
   ((define vartys-from-valid-scope-list ((scopes
                                           c$::valid-scope-listp))
-     :returns (vartys ident-type-mapp :hyp :guard)
+     :returns (vartys c::ident-type-mapp :hyp :guard)
      :parents nil
      (cond ((endp scopes) nil)
            (t (omap::update*
@@ -199,22 +191,25 @@
 
      :prepwork
      ((define vartys-from-valid-scope ((scope c$::valid-scopep))
-        :returns (vartys ident-type-mapp)
+        :returns (vartys c::ident-type-mapp)
         :parents nil
         (vartys-from-valid-ord-scope (c$::valid-scope->ord scope))
 
         :prepwork
         ((define vartys-from-valid-ord-scope ((oscope
                                                c$::valid-ord-scopep))
-           :returns (vartys ident-type-mapp :hyp :guard)
+           :returns (vartys c::ident-type-mapp :hyp :guard)
            :parents nil
            (b* (((when (endp oscope)) nil)
                 ((cons ident info) (car oscope))
                 (vartys (vartys-from-valid-ord-scope (cdr oscope)))
+                ((unless (ident-formalp ident)) vartys)
                 ((unless (c$::valid-ord-info-case info :objfun)) vartys)
                 (type (c$::valid-ord-info-objfun->type info))
-                ((unless (type-formalp type)) vartys))
-             (omap::update ident type vartys))
+                ((unless (type-formalp type)) vartys)
+                ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because of FORMALP
+                ((mv & ctype) (ldm-type type))) ; ERP is NIL because of FORMALP
+             (omap::update cvar ctype vartys))
            :verify-guards :after-returns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,7 +246,7 @@
 
 (define gen-expr-pure-thm ((old exprp)
                            (new exprp)
-                           (vartys ident-type-mapp)
+                           (vartys c::ident-type-mapp)
                            (const-new symbolp)
                            (thm-index posp)
                            (hints true-listp))
@@ -311,7 +306,7 @@
 
 (define gen-initer-single-thm ((old initerp)
                                (new initerp)
-                               (vartys ident-type-mapp)
+                               (vartys c::ident-type-mapp)
                                (const-new symbolp)
                                (thm-index posp)
                                (hints true-listp))
@@ -377,7 +372,7 @@
 
 (define gen-expr-asg-thm ((old exprp)
                           (new exprp)
-                          (vartys ident-type-mapp)
+                          (vartys c::ident-type-mapp)
                           (const-new symbolp)
                           (thm-index posp)
                           (hints true-listp))
@@ -447,7 +442,7 @@
 
 (define gen-stmt-thm ((old stmtp)
                       (new stmtp)
-                      (vartys ident-type-mapp)
+                      (vartys c::ident-type-mapp)
                       (const-new symbolp)
                       (thm-index posp)
                       (hints true-listp))
@@ -508,8 +503,8 @@
 
 (define gen-decl-thm ((old declp)
                       (new declp)
-                      (vartys-pre ident-type-mapp)
-                      (vartys-post ident-type-mapp)
+                      (vartys-pre c::ident-type-mapp)
+                      (vartys-post c::ident-type-mapp)
                       (const-new symbolp)
                       (thm-index posp)
                       (hints true-listp))
@@ -562,8 +557,8 @@
 
 (define gen-block-item-thm ((old block-itemp)
                             (new block-itemp)
-                            (vartys-pre ident-type-mapp)
-                            (vartys-post ident-type-mapp)
+                            (vartys-pre c::ident-type-mapp)
+                            (vartys-post c::ident-type-mapp)
                             (const-new symbolp)
                             (thm-index posp)
                             (hints true-listp))
@@ -624,7 +619,7 @@
 
 (define gen-block-item-list-thm ((old block-item-listp)
                                  (new block-item-listp)
-                                 (vartys ident-type-mapp)
+                                 (vartys c::ident-type-mapp)
                                  (const-new symbolp)
                                  (thm-index posp)
                                  (hints true-listp))
