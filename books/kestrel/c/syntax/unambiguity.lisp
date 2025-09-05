@@ -117,6 +117,125 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection abstract-syntax-unambp-additional-theorems
+  :extension abstract-syntax-unambp
+
+  (defruled expr-unambp-when-ident
+    (implies (expr-case expr :ident)
+             (expr-unambp expr))
+    :enable expr-unambp)
+
+  (defruled expr-unambp-when-const
+    (implies (expr-case expr :const)
+             (expr-unambp expr))
+    :enable expr-unambp)
+
+  (defruled expr-unambp-when-string
+    (implies (expr-case expr :string)
+             (expr-unambp expr))
+    :enable expr-unambp)
+
+  (defruled member-designor-unambp-when-ident
+    (implies (member-designor-case memdes :ident)
+             (member-designor-unambp memdes))
+    :enable member-designor-unambp)
+
+  (defruled type-spec-unambp-when-signed
+    (implies (type-spec-case type-spec :signed)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
+  (defruled type-spec-unambp-when-typedef
+    (implies (type-spec-case type-spec :typedef)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
+  (defruled type-spec-unambp-when-int128
+    (implies (type-spec-case type-spec :int128)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
+  (defruled type-spec-unambp-when-struct-empty
+    (implies (type-spec-case type-spec :struct-empty)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
+  (defruled spec/qual-unambp-when-typequal
+    (implies (spec/qual-case spec/qual :typequal)
+             (spec/qual-unambp spec/qual))
+    :enable spec/qual-unambp)
+
+  (defruled spec/qual-unambp-when-attrib
+    (implies (spec/qual-case spec/qual :attrib)
+             (spec/qual-unambp spec/qual))
+    :expand (spec/qual-unambp spec/qual))
+
+  (defruled decl-spec-unambp-when-not-tyspec/align
+    (implies (and (not (decl-spec-case decl-spec :typespec))
+                  (not (decl-spec-case decl-spec :align)))
+             (decl-spec-unambp decl-spec))
+    :expand (decl-spec-unambp decl-spec))
+
+  (defruled designor-unambp-when-dot
+    (implies (designor-case designor :dot)
+             (designor-unambp designor))
+    :enable designor-unambp)
+
+  (defruled dirdeclor-unambp-when-ident
+    (implies (dirdeclor-case dirdeclor :ident)
+             (dirdeclor-unambp dirdeclor))
+    :enable dirdeclor-unambp)
+
+  (defruled label-unambp-when-name
+    (implies (label-case label :name)
+             (label-unambp label))
+    :enable label-unambp)
+
+  (defruled stmt-unambp-of-when-goto
+    (implies (stmt-case stmt :goto)
+             (stmt-unambp stmt))
+    :enable stmt-unambp)
+
+  (defruled stmt-unambp-of-when-asm
+    (implies (stmt-case stmt :asm)
+             (stmt-unambp stmt))
+    :expand (stmt-unambp stmt))
+
+  (defruled extdecl-unambp-when-not-fundef/decl
+    (implies (and (not (extdecl-case extdecl :fundef))
+                  (not (extdecl-case extdecl :decl)))
+             (extdecl-unambp extdecl))
+    :enable extdecl-unambp)
+
+  (defruled dirabsdeclor-not-dummy-base-when-unambp
+    (implies (dirabsdeclor-unambp dirabsdeclor)
+             (not (equal (dirabsdeclor-kind dirabsdeclor)
+                         :dummy-base)))
+    :rule-classes :forward-chaining
+    :enable dirabsdeclor-unambp)
+
+  (add-to-ruleset abstract-syntax-unambp-rules
+                  '(expr-unambp-when-ident
+                    expr-unambp-when-const
+                    expr-unambp-when-string
+                    member-designor-unambp-when-ident
+                    type-spec-unambp-when-signed
+                    type-spec-unambp-when-typedef
+                    type-spec-unambp-when-int128
+                    type-spec-unambp-when-struct-empty
+                    spec/qual-unambp-when-typequal
+                    spec/qual-unambp-when-attrib
+                    decl-spec-unambp-when-not-tyspec/align
+                    designor-unambp-when-dot
+                    dirdeclor-unambp-when-ident
+                    label-unambp-when-name
+                    stmt-unambp-of-when-goto
+                    stmt-unambp-of-when-asm
+                    extdecl-unambp-when-not-fundef/decl
+                    dirabsdeclor-not-dummy-base-when-unambp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection unambiguity-predicate-theorems
   :short "Theorems about the unambiguity predicates."
   :long
@@ -126,94 +245,6 @@
      they support guard and return proofs.
      We plan to extend @(tsee fty::deffold-reduce)
      to generate at least some of these."))
-
-  ;; Theorems for constructors:
-
-  ;; The formulation of rules for
-  ;; constructors that are always unambiguous,
-  ;; e.g. the rule for constructor EXPR-IDENT,
-  ;; are formulated differently from other rules.
-  ;; For uniformity with other rules, they should have
-  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT INFO)).
-  ;; But that fails to apply in proofs,
-  ;; such as the ones for the disambiguator.
-  ;; Thus, we formulate those rules with conclusion (EXPR-UNAMBP EXPR)
-  ;; and hypothesis like (EXPR-CASE EXPR :IDENT),
-  ;; which is not ideal because the conclusion is very generic.
-  ;; Perhaps there are better ways to do this.
-
-  (defrule expr-unambp-when-ident/const/string
-    (implies (member-eq (expr-kind expr) '(:ident :const :string))
-             (expr-unambp expr))
-    :enable expr-unambp)
-
-  (defrule member-designor-unambp-when-ident
-    (implies (member-designor-case memdes :ident)
-             (member-designor-unambp memdes))
-    :enable member-designor-unambp)
-
-  (defrule type-spec-unambp-when-not-atomic/struct/union/enum/typeof
-    (implies (not (member-eq (type-spec-kind tyspec)
-                             '(:atomic :struct :union :enum
-                               :typeof-expr :typeof-type :typeof-ambig)))
-             (type-spec-unambp tyspec))
-    :enable type-spec-unambp)
-
-  (defrule spec/qual-unambp-when-typequal
-    (implies (eq (spec/qual-kind spec/qual) :typequal)
-             (spec/qual-unambp spec/qual))
-    :enable spec/qual-unambp)
-
-  (defrule spec/qual-unambp-when-attrib
-    (implies (eq (spec/qual-kind spec/qual) :attrib)
-             (spec/qual-unambp spec/qual))
-    :expand (spec/qual-unambp spec/qual))
-
-  (defrule decl-spec-unambp-when-not-typespec/align
-    (implies (and (not (decl-spec-case declspec :typespec))
-                  (not (decl-spec-case declspec :align)))
-             (decl-spec-unambp declspec))
-    :expand (decl-spec-unambp declspec))
-
-  (defrule designor-unambp-when-dot
-    (implies (designor-case designor :dot)
-             (designor-unambp designor))
-    :enable designor-unambp)
-
-  (defrule dirdeclor-unambp-when-ident
-    (implies (dirdeclor-case dirdeclor :ident)
-             (dirdeclor-unambp dirdeclor))
-    :enable dirdeclor-unambp)
-
-  (defrule not-dirabsdeclor-unambp-when-dummy-base
-    (implies (dirabsdeclor-case dirabsdeclor :dummy-base)
-             (not (dirabsdeclor-unambp dirabsdeclor)))
-    :enable dirabsdeclor-unambp)
-
-  (defrule structdecl-unambp-when-empty
-    (implies (structdecl-case sdecl :empty)
-             (structdecl-unambp sdecl))
-    :enable structdecl-unambp)
-
-  (defrule label-unambp-when-not-casexpr
-    (implies (not (label-case label :casexpr))
-             (label-unambp label))
-    :enable label-unambp)
-
-  (defrule stmt-unambp-when-goto
-    (implies (stmt-case stmt :goto)
-             (stmt-unambp stmt))
-    :enable stmt-unambp)
-
-  (defrule stmt-unambp-of-when-asm
-    (implies (stmt-case stmt :asm)
-             (stmt-unambp stmt))
-    :expand (stmt-unambp stmt))
-
-  (defrule extdecl-unambp-when-not-fundef/decl
-    (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
-             (extdecl-unambp edecl))
-    :enable extdecl-unambp)
 
   ;; Theorems for deconstructors:
 
