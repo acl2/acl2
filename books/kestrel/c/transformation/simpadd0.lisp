@@ -3088,24 +3088,18 @@
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-block-item-list-cons-vartys-support-lemma
+                       (item (mv-nth 1 (ldm-block-item ',item)))
+                       (items (mv-nth 1 (ldm-block-item-list ',items)))
+                       (fenv old-fenv)
+                       (var (mv-nth 1 (ldm-ident ',var)))
+                       (type (mv-nth 1 (ldm-type ',type)))))
           (lemma-instances
-           `((:instance simpadd0-block-item-list-cons-first-vartys-support-lemma
-                        (item (mv-nth 1 (ldm-block-item ',item)))
-                        (items (mv-nth 1 (ldm-block-item-list ',items)))
-                        (fenv old-fenv)
-                        (var (mv-nth 1 (ldm-ident ',var)))
-                        (type (mv-nth 1 (ldm-type ',type))))
-             (:instance simpadd0-block-item-list-cons-rest-vartys-support-lemma
-                        (item (mv-nth 1 (ldm-block-item ',item)))
-                        (items (mv-nth 1 (ldm-block-item-list ',items)))
-                        (fenv old-fenv)
-                        (var (mv-nth 1 (ldm-ident ',var)))
-                        (type (mv-nth 1 (ldm-type ',type))))))
-          (more-lemma-instances
            (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
                                                           item
                                                           items)))
-       (append lemma-instances more-lemma-instances))))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3209,19 +3203,7 @@
                            (cons item items) compst fenv limit)))))
     :expand (c::exec-block-item-list (cons item items) compst fenv limit))
 
-  (defruled simpadd0-block-item-list-cons-first-vartys-support-lemma
-    (b* ((item+items (cons item items))
-         ((mv result0 compst0)
-          (c::exec-block-item item compst fenv (1- limit)))
-         ((mv result2 compst2)
-          (c::exec-block-item-list item+items compst fenv limit)))
-      (implies (and (not (c::errorp result2))
-                    (equal (c::stmt-value-kind result0) :return)
-                    (c::compustate-has-var-with-type-p var type compst0))
-               (c::compustate-has-var-with-type-p var type compst2)))
-    :enable c::exec-block-item-list)
-
-  (defruled simpadd0-block-item-list-cons-rest-vartys-support-lemma
+  (defruled simpadd0-block-item-list-cons-vartys-support-lemma
     (b* ((item+items (cons item items))
          ((mv result0 compst0)
           (c::exec-block-item item compst fenv (1- limit)))
@@ -3230,8 +3212,10 @@
          ((mv result2 compst2)
           (c::exec-block-item-list item+items compst fenv limit)))
       (implies (and (not (c::errorp result2))
-                    (equal (c::stmt-value-kind result0) :none)
-                    (c::compustate-has-var-with-type-p var type compst1))
+                    (or (and (equal (c::stmt-value-kind result0) :return)
+                             (c::compustate-has-var-with-type-p var type compst0))
+                        (and (equal (c::stmt-value-kind result0) :none)
+                             (c::compustate-has-var-with-type-p var type compst1))))
                (c::compustate-has-var-with-type-p var type compst2)))
     :enable c::exec-block-item-list))
 
