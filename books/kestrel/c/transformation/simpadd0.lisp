@@ -1917,8 +1917,6 @@
        ((unless (and expr-thm-name
                      (expr-purep expr)))
         (mv initer-new (simpadd0-gout-no-thm gin)))
-       (lemma-instances
-        (simpadd0-initer-single-pure-lemma-instances gin.vartys expr))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-initer)
@@ -1935,7 +1933,8 @@
                  (:instance simpadd0-initer-single-pure-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr)))
                             (fenv old-fenv))
-                 ,@lemma-instances))))
+                 ,@(simpadd0-initer-single-pure-lemma-instances
+                    gin.vartys expr)))))
        ((mv thm-event thm-name thm-index)
         (gen-initer-single-thm initer
                                initer-new
@@ -2088,8 +2087,8 @@
                       simpadd0-stmt-expr-asg-error-support-lemma
                       (expr (mv-nth 1 (ldm-expr ',expr?)))
                       (fenv old-fenv))
-                     ,@(simpadd0-stmt-expr-asg-lemma-instances gin.vartys
-                                                               expr?))))
+                     ,@(simpadd0-stmt-expr-asg-lemma-instances
+                        gin.vartys expr?))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
@@ -2259,8 +2258,8 @@
                     (and expr?-thm-name
                          (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
-       (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
-                                                              expr?))
+       (vartys-lemma-instances
+        (simpadd0-stmt-return-lemma-instances gin.vartys expr?))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
@@ -2282,7 +2281,7 @@
                             simpadd0-stmt-return-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr?)))
                             (fenv old-fenv))
-                           ,@lemma-instances)))
+                           ,@vartys-lemma-instances)))
                 `(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
@@ -2291,7 +2290,7 @@
                                 (:e c::type-void)
                                 (:e set::insert))
                    :use (simpadd0-stmt-return-novalue-support-lemma
-                         ,@lemma-instances)))))
+                         ,@vartys-lemma-instances)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2483,8 +2482,6 @@
         (mv decl-new gout-no-thm))
        (type (ildm-type ctype))
        (vartys-post (omap::update var type gin.vartys))
-       (lemma-instances (simpadd0-decl-decl-lemma-instances
-                         gin.vartys var tyspecs initer))
        (hints `(("Goal"
                  :in-theory '((:e ldm-decl-obj)
                               (:e ldm-initer)
@@ -2509,7 +2506,8 @@
                         (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
                         (initer (mv-nth 1 (ldm-initer ',initer)))
                         (fenv old-fenv))
-                       ,@lemma-instances
+                       ,@(simpadd0-decl-decl-lemma-instances
+                          gin.vartys var tyspecs initer)
                        (:instance
                         simpadd0-decl-decl-vartys-new-support-lemma
                         (var (mv-nth 1 (ldm-ident ',var)))
@@ -2681,8 +2679,8 @@
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
                         (fenv old-fenv))
-                       ,@(simpadd0-block-item-stmt-lemma-instances gin.vartys
-                                                                   stmt)))))
+                       ,@(simpadd0-block-item-stmt-lemma-instances
+                          gin.vartys stmt)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2784,8 +2782,6 @@
        (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
                                           :vartys vartys-post))
        ((unless decl-thm-name) (mv item-new gout-no-thm))
-       (lemma-instances
-        (simpadd0-block-item-decl-lemma-instances vartys-post decl))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-decl-obj)
@@ -2801,7 +2797,8 @@
                         simpadd0-block-item-decl-error-support-lemma
                         (declon (mv-nth 1 (ldm-decl-obj ',decl)))
                         (fenv old-fenv))
-                       ,@lemma-instances))))
+                       ,@(simpadd0-block-item-decl-lemma-instances
+                          vartys-post decl)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2899,14 +2896,13 @@
      because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (lemma-instances
-        (simpadd0-block-item-list-empty-lemma-instances gin.vartys))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item-list)
                               (:e ldm-type-option-set)
                               (:e set::insert))
                  :use (simpadd0-block-item-list-empty-support-lemma
-                       ,@lemma-instances))))
+                       ,@(simpadd0-block-item-list-empty-lemma-instances
+                          gin.vartys)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
@@ -3000,8 +2996,6 @@
         (mv item+items-new gout-no-thm))
        (first-types (block-item-types item))
        (rest-types (block-item-list-types items))
-       (lemma-instances
-        (simpadd0-block-item-list-cons-lemma-instances gin.vartys item items))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-block-item)
@@ -3046,7 +3040,8 @@
                   (item (mv-nth 1 (ldm-block-item ',item)))
                   (items (mv-nth 1 (ldm-block-item-list ',items)))
                   (fenv old-fenv))
-                 ,@lemma-instances))))
+                 ,@(simpadd0-block-item-list-cons-lemma-instances
+                    gin.vartys item items)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm item+items
                                  item+items-new
