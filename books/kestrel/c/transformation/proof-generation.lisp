@@ -31,7 +31,41 @@
   (xdoc::topstring
    (xdoc::p
     "We collect some proof generation utilities
-     that should be of general use."))
+     that should be of general use.")
+   (xdoc::p
+    "The functions to generate theorems for expression, statements, etc.
+     take the old and new constructs as inputs,
+     which must be in the formalized subset,
+     and in some cases must satisfy additional restrictions.
+     The callers check these conditions,
+     but they are double-checked here,
+     throwing hard errors if not satisfied, which should never happen.")
+   (xdoc::p
+    "The theorems for the various constructs say that:")
+   (xdoc::ul
+    (xdoc::li
+     "If the execution of the old construct does not yield an error,
+      neither does the execution of the new construct,
+      and the two executions return the same results.")
+    (xdoc::li
+     "If applicable to the construct,
+      the type of the result is consistent with the type, or set of types,
+      statically determined by the validator for the construct.
+      For statements and some other constructs,
+      the sets of types are actually sets of optional types,
+      where @('nil') indicates termination without a @('return').
+      A @('void') type indicates termination with a @('return') without value.
+      Any other type indicates termination with a @('return')
+      with a value of that type.")
+    (xdoc::li
+     "If applicable to the construct,
+      if the computation state before the construct
+      includes certain variables with values of certain types,
+      the computation state after the construct
+      includes certain variables with values of certain types.
+      These are sometimes the same variables (e.g. for assignments),
+      but other times there are more variables at the end
+      (e.g. for declarations).")))
   :order-subtopics t
   :default-parent t)
 
@@ -227,30 +261,6 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the transformation of a pure expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function takes the old and new expressions as inputs,
-     which must satisfy @(tsee expr-pure-formalp).")
-   (xdoc::p
-    "The theorem says that
-     if the execution of the old expression does not yield an error,
-     neither does the execution of the new expression,
-     and that the two executions give the same result;
-     the theorem also says that the result has the type of the expressions.")
-   (xdoc::p
-    "Note that the calls of @(tsee ldm-expr) in the theorem
-     are known to succeed (i.e. not return any error),
-     given that @(tsee expr-pure-formalp) is checked to hold.")
-   (xdoc::p
-    "This function also takes as input a map from identifiers to types,
-     which are the variables in scope with their types.
-     The theorem includes a hypothesis for each of these variables,
-     saying that they are in the computation state
-     and that they contain values of the appropriate types.")
-   (xdoc::p
-    "The hints to prove the theorem are passed as input too,
-     since the proof varies depending on the kind of expression."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-pure-formalp old))
@@ -311,14 +321,6 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the transformation of a single initializer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorem says that
-     if the execution of the old initializer does not yield an error,
-     neither does the execution of the new initializer,
-     and that the two executions give the same result;
-     the theorem also says that the result has the type of the initializer."))
   (b* ((old (initer-fix old))
        (new (initer-fix new))
        ((unless (initer-formalp old))
@@ -385,22 +387,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This only applies to simple assignments
+    "The expressions must be simple assignments
      whose left side is a variable expression @('var')
      (which is not changed by the transformation)
-     and whose old and new right sides are pure expressions.
-     The caller of this function checks that that is the case;
-     here we double-check these conditions,
-     and throw a hard error if they are not satisfied,
-     because that should never happen.")
-   (xdoc::p
-    "The theorem says that
-     if the execution of the old expression does not yield an error,
-     neither does the execution of the new expression,
-     and that the two executions give the same results;
-     it also says that
-     the variables in the computation state (passed as the @('vartys') input)
-     are preserved."))
+     and whose old and new right sides are pure expressions."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-asg-formalp old))
@@ -461,20 +451,6 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the transformation of a statement."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorem says that
-     if the execution of the old statement does not yield an error,
-     neither does the execution of the new statement,
-     and that the two executions give the same results.
-     The theorem says whether the statement value is a return or not;
-     if it is a return with a value,
-     the theorem also says what the type of the value is.
-     The theorem also says
-     which variables in the comuptation state are present after the statement,
-     which are the same present before the statement,
-     indicated by the @('vartys') input."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
@@ -537,9 +513,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently only for declarations of objects in blocks,
-     satisfying @(tsee decl-block-formalp).
-     The theorem is in terms of @(tsee c::exec-obj-declon)."))
+    "The declarations must be of objects in blocks."))
   (b* ((old (decl-fix old))
        (new (decl-fix new))
        ((unless (decl-block-formalp old))
@@ -588,11 +562,6 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the transformation of a block item."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous to @(tsee gen-stmt-thm),
-     but for block items instead of statements."))
   (b* ((old (block-item-fix old))
        (new (block-item-fix new))
        ((unless (block-item-formalp old))
@@ -653,28 +622,6 @@
   :short "Generate a theorem for the transformation of a list of block items."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "The theorem says that:")
-   (xdoc::ul
-    (xdoc::li
-     "If the execution of the old list of block items does not error,
-      neither does the execution of the new list of block items,
-      and the two executions yield
-      the same statement value and computation state.")
-    (xdoc::li
-     "The optional type of the statement value
-      is in the set of possible optional types of the list of block items.
-      A @('nil') corresponds to
-      termination without @('return'),
-      a @('void') corresponds to
-      termination with a @('return') without value,
-      and a non-@('void') corresponds to
-      termination with a @('return') with a value of that type.")
-    (xdoc::li
-     "If the variables in @('vartys') are
-      in the computation state before executing the list of block items,
-      those variables are also
-      in the computation state after executing the list of block items."))
    (xdoc::p
     "Unlike @(tsee gen-block-item-thm),
      here we have a single @('vartys')
