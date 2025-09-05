@@ -8,6 +8,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, due to regression failure 9/4/2025 using Allegro CL 10.1:
+; cert_param: (non-allegro)
+
 (in-package "R1CS")
 
 ;; STATUS: Complete but needs cleanup
