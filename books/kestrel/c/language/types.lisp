@@ -138,6 +138,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap ident-type-map
+  :short "Fixtype of maps from identifiers to types."
+  :key-type ident
+  :val-type type
+  :pred ident-type-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of errors and types."
   :ok type
