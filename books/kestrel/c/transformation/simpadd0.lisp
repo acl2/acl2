@@ -38,25 +38,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled simpadd0-set-lemma
-  (implies (equal (set::cardinality set) 1)
-           (equal (set::in x set)
-                  (equal x (set::head set))))
-  :do-not-induct t
-  :expand (set::in x set)
-  :enable (set::cardinality
-           set::in
-           set::emptyp
-           set::head
-           set::tail
-           set::setp))
-
-(defruled simpadd0-type-of-value-not-void-lemma
-  (not (equal (c::type-of-value val) '(:void)))
-  :enable c::type-of-value)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-implementation
 
  simpadd0
