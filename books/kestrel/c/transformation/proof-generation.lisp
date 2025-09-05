@@ -641,8 +641,7 @@
 
 (define gen-block-item-list-thm ((old block-item-listp)
                                  (new block-item-listp)
-                                 (vartys-pre ident-type-mapp)
-                                 (vartys-post ident-type-mapp)
+                                 (vartys ident-type-mapp)
                                  (const-new symbolp)
                                  (thm-index posp)
                                  (hints true-listp))
@@ -672,10 +671,17 @@
       and a non-@('void') corresponds to
       termination with a @('return') with a value of that type.")
     (xdoc::li
-     "If the variables in @('vartys-pre') are
+     "If the variables in @('vartys') are
       in the computation state before executing the list of block items,
-      the variables in @('vartys-post') are
-      in the computation state after executing the list of block items.")))
+      those variables are also
+      in the computation state after executing the list of block items."))
+   (xdoc::p
+    "Unlike @(tsee gen-block-item-thm),
+     here we have a single @('vartys')
+     instead of a @('vartys-pre') and a @('vartys-post').
+     This is intentional, because we are only interested in
+     variables that will survive the scope of the list of block items,
+     which are the variables in scope at the start of the list."))
   (b* ((old (block-item-list-fix old))
        (new (block-item-list-fix new))
        ((unless (block-item-list-formalp old))
@@ -692,8 +698,8 @@
                 the types ~x2 of the old block item list ~x3."
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys-pre 'compst))
-       (vars-post (gen-var-assertions vartys-post 'old-compst))
+       (vars-pre (gen-var-assertions vartys 'compst))
+       (vars-post (gen-var-assertions vartys 'old-compst))
        (formula
         `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
               (new-items (mv-nth 1 (ldm-block-item-list ',new)))
