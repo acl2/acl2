@@ -359,7 +359,11 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-of-<type>-<kind>')"))
+       "@('<type>-<suffix>-of-<type>-<kind>'),
+        if the summand with kind @('<kind>') has one or more fields.")
+      (xdoc::li
+       "@('<type>-<suffix>-when-<kind>'),
+        if the summand with kind @('<kind>') has no fields."))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
