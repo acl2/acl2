@@ -343,9 +343,9 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
+       ((mv & cvar) (ldm-ident (ident par))) ; ERP must be NIL
        (arg-type-compst
-        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par)))))
-           (c::compustate-has-var-with-type-p var ',type compst)))
+        `(c::compustate-has-var-with-type-p ',cvar ',type compst))
        ((mv okp
             more-args
             parargs
@@ -530,7 +530,6 @@
        (hints
         `(("Goal" :in-theory '(,init-scope-thm
                                (:e ident)
-                               (:e ldm-ident)
                                c::push-frame
                                c::compustate-has-var-with-type-p
                                c::objdesign-of-var
@@ -633,18 +632,19 @@
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
-       ((unless (and (type-formalp info.type)
+       ((unless (and (ident-formalp ident)
+                     (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))
                      (omap::assoc ident gin.vartys)))
         (mv expr (simpadd0-gout-no-thm gin)))
+       ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
        (hints `(("Goal"
-                 :in-theory '((:e ldm-ident)
-                              (:e ldm-expr)
-                              (:e c::expr-ident))
+                 :in-theory '((:e c::expr-ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
-                                 (var (mv-nth 1 (ldm-ident ',ident)))
-                                 (type (mv-nth 1 (ldm-type ',info.type)))))))
+                                 (var ',cvar)
+                                 (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr
@@ -734,8 +734,6 @@
                          (<= info.value (c::ullong-max)))))
         (mv expr no-thm-gout))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
-                                     (:e ldm-expr)
-                                     (:e ldm-type)
                                      (:e c::expr-const)
                                      (:e c::expr-fix)
                                      (:e c::expr-kind)
@@ -848,10 +846,10 @@
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
+       ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e ldm-type)
-                              (:e c::unop-nonpointerp)
+                 :in-theory '((:e c::unop-nonpointerp)
                               (:e c::unop-kind)
                               (:e c::expr-unary)
                               (:e c::type-kind)
@@ -869,8 +867,8 @@
                                :bitnot (c::unop-bitnot)
                                :lognot (c::unop-lognot)
                                :otherwise (impossible)))
-                        (old-arg (mv-nth 1 (ldm-expr ',arg)))
-                        (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
+                        (old-arg ',old-arg)
+                        (new-arg ',new-arg))
                        (:instance
                         simpadd0-expr-unary-error-support-lemma
                         (op ',(unop-case
@@ -880,7 +878,7 @@
                                :bitnot (c::unop-bitnot)
                                :lognot (c::unop-lognot)
                                :otherwise (impossible)))
-                        (arg (mv-nth 1 (ldm-expr ',arg))))))))
+                        (arg ',old-arg))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr-new
@@ -1010,23 +1008,23 @@
                 type names ~x0 and ~x1 differ."
                type type-new)
         (mv (irr-expr) (irr-simpadd0-gout)))
+       ((mv & ctyname) (ldm-tyname type)) ; ERP must be NIL
+       ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
+       ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e ldm-tyname)
-                              (:e ldm-type)
-                              (:e c::expr-cast)
+                 :in-theory '((:e c::expr-cast)
                               (:e c::tyname-to-type)
                               (:e c::type-nonchar-integerp))
                  :use (,arg-thm-name
                        (:instance
                         simpadd0-expr-cast-support-lemma
-                        (tyname (mv-nth 1 (ldm-tyname ',type)))
-                        (old-arg (mv-nth 1 (ldm-expr ',arg)))
-                        (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
+                        (tyname ',ctyname)
+                        (old-arg ',old-arg)
+                        (new-arg ',new-arg))
                        (:instance
                         simpadd0-expr-cast-error-support-lemma
-                        (tyname (mv-nth 1 (ldm-tyname ',type)))
-                        (arg (mv-nth 1 (ldm-expr ',arg))))))))
+                        (tyname ',ctyname)
+                        (arg ',old-arg))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr-new
@@ -1137,16 +1135,19 @@
                      arg2-thm-name
                      (expr-purep arg1)
                      (expr-purep arg2)))
-        (mv expr-new gout-no-thm)))
+        (mv expr-new gout-no-thm))
+       (cop (ldm-binop op)) ; ERP must be NIL
+       ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+       ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+       ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
+       ((mv & new-arg2) (ldm-expr arg2-new))) ; ERP must be NIL
     (cond
      ((member-eq (binop-kind op)
                  '(:mul :div :rem :add :sub :shl :shr
                    :lt :gt :le :ge :eq :ne
                    :bitand :bitxor :bitior))
       (b* ((hints `(("Goal"
-                     :in-theory '((:e ldm-expr)
-                                  (:e ldm-type)
-                                  (:e c::iconst-length-none)
+                     :in-theory '((:e c::iconst-length-none)
                                   (:e c::iconst-base-oct)
                                   (:e c::iconst)
                                   (:e c::const-int)
@@ -1165,21 +1166,20 @@
                            ,arg2-thm-name
                            (:instance
                             simpadd0-expr-binary-pure-strict-support-lemma
-                            (op ',(ldm-binop op))
-                            (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                            (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                            (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                            (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                            (op ',cop)
+                            (old-arg1 ',old-arg1)
+                            (old-arg2 ',old-arg2)
+                            (new-arg1 ',new-arg1)
+                            (new-arg2 ',new-arg2))
                            (:instance
                             simpadd0-expr-binary-pure-strict-error-support-lemma
-                            (op ',(ldm-binop op))
-                            (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                            (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                            (op ',cop)
+                            (arg1 ',old-arg1)
+                            (arg2 ',old-arg2))
                            ,@(and simpp
                                   `((:instance
                                      simpadd0-expr-binary-simp-support-lemma
-                                     (expr (mv-nth 1 (ldm-expr
-                                                      ',arg1-new))))))))))
+                                     (expr ',new-arg1))))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-pure-thm expr
                                expr-new
@@ -1195,10 +1195,7 @@
      ((member-eq (binop-kind op) '(:logand :logor))
       (b* ((hints
             `(("Goal"
-               :in-theory '((:e ldm-expr)
-                            (:e ldm-ident)
-                            (:e ldm-type)
-                            (:e c::expr-binary)
+               :in-theory '((:e c::expr-binary)
                             (:e c::binop-logand)
                             (:e c::binop-logor)
                             (:e c::type-sint)
@@ -1212,36 +1209,36 @@
                      'simpadd0-expr-binary-logand-first-support-lemma)
                     (:logor
                      'simpadd0-expr-binary-logor-first-support-lemma))
-                 (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                 (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                 (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                 (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                 (old-arg1 ',old-arg1)
+                 (old-arg2 ',old-arg2)
+                 (new-arg1 ',new-arg1)
+                 (new-arg2 ',new-arg2))
                 (:instance
                  ,(case (binop-kind op)
                     (:logand
                      'simpadd0-expr-binary-logand-second-support-lemma)
                     (:logor
                      'simpadd0-expr-binary-logor-second-support-lemma))
-                 (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                 (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                 (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                 (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                 (old-arg1 ',old-arg1)
+                 (old-arg2 ',old-arg2)
+                 (new-arg1 ',new-arg1)
+                 (new-arg2 ',new-arg2))
                 (:instance
                  ,(case (binop-kind op)
                     (:logand
                      'simpadd0-expr-binary-logand-first-error-support-lemma)
                     (:logor
                      'simpadd0-expr-binary-logor-first-error-support-lemma))
-                 (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                 (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                 (arg1 ',old-arg1)
+                 (arg2 ',old-arg2))
                 (:instance
                  ,(case (binop-kind op)
                     (:logand
                      'simpadd0-expr-binary-logand-second-error-support-lemma)
                     (:logor
                      'simpadd0-expr-binary-logor-second-error-support-lemma))
-                 (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                 (arg2 (mv-nth 1 (ldm-expr ',arg2))))))))
+                 (arg1 ',old-arg1)
+                 (arg2 ',old-arg2))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-pure-thm expr
                                expr-new
@@ -1260,17 +1257,13 @@
                                 (expr-type arg2))
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
+           ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            (vartys-lemma-instances
-            (simpadd0-expr-asg-lemma-instances gin.vartys
-                                               (expr-ident->ident arg1)
-                                               arg2))
+            (simpadd0-expr-asg-lemma-instances gin.vartys cvar old-arg2))
            (hints
             `(("Goal"
                :in-theory
-               '((:e ldm-expr)
-                 (:e ldm-ident)
-                 (:e ldm-type)
-                 (:e c::expr-kind)
+               '((:e c::expr-kind)
                  (:e c::expr-ident)
                  (:e c::expr-binary)
                  (:e c::binop-asg)
@@ -1284,15 +1277,13 @@
                      ,arg2-thm-name
                      (:instance
                       simpadd0-expr-binary-asg-support-lemma
-                      (old-arg (mv-nth 1 (ldm-expr ',arg2)))
-                      (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
-                      (var (mv-nth 1 (ldm-ident
-                                      ',(expr-ident->ident arg1)))))
+                      (old-arg ',old-arg2)
+                      (new-arg ',new-arg2)
+                      (var ',cvar))
                      (:instance
                       simpadd0-expr-binary-asg-error-support-lemma
-                      (var (mv-nth 1 (ldm-ident
-                                      ',(expr-ident->ident arg1))))
-                      (expr (mv-nth 1 (ldm-expr ',arg2)))
+                      (var ',cvar)
+                      (expr ',old-arg2)
                       (fenv old-fenv))
                      ,@vartys-lemma-instances))))
            ((mv thm-event thm-name thm-index)
@@ -1311,19 +1302,21 @@
 
   :prepwork
   ((define simpadd0-expr-asg-lemma-instances ((vartys ident-type-mapp)
-                                              (asg-var identp)
-                                              (asg-expr exprp))
+                                              (asg-var c::identp)
+                                              (asg-expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-expr-binary-asg-vartys-support-lemma
-                       (var (mv-nth 1 (ldm-ident ',asg-var)))
-                       (expr (mv-nth 1 (ldm-expr ',asg-expr)))
+                       (var ',asg-var)
+                       (expr ',asg-expr)
                        (fenv old-fenv)
-                       (var1 (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var1 ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-expr-asg-lemma-instances (omap::tail vartys)
                                               asg-var
@@ -1735,46 +1728,49 @@
                      (expr-option-purep then)
                      (expr-purep else)))
         (mv expr-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
+       ((mv & old-then) (ldm-expr-option then)) ; ERP must be NIL
+       ((mv & old-else) (ldm-expr else)) ; ERP must be NIL
+       ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
+       ((mv & new-then) (ldm-expr-option then-new)) ; ERP must be NIL
+       ((mv & new-else) (ldm-expr else-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e ldm-ident)
-                              (:e ldm-type)
-                              (:e c::expr-cond)
+                 :in-theory '((:e c::expr-cond)
                               (:e c::type-nonchar-integerp))
                  :use (,test-thm-name
                        ,then-thm-name
                        ,else-thm-name
                        (:instance
                         simpadd0-expr-cond-true-support-lemma
-                        (old-test (mv-nth 1 (ldm-expr ',test)))
-                        (old-then (mv-nth 1 (ldm-expr ',then)))
-                        (old-else (mv-nth 1 (ldm-expr ',else)))
-                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
-                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
-                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                        (old-test ',old-test)
+                        (old-then ',old-then)
+                        (old-else ',old-else)
+                        (new-test ',new-test)
+                        (new-then ',new-then)
+                        (new-else ',new-else))
                        (:instance
                         simpadd0-expr-cond-false-support-lemma
-                        (old-test (mv-nth 1 (ldm-expr ',test)))
-                        (old-then (mv-nth 1 (ldm-expr ',then)))
-                        (old-else (mv-nth 1 (ldm-expr ',else)))
-                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
-                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
-                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                        (old-test ',old-test)
+                        (old-then ',old-then)
+                        (old-else ',old-else)
+                        (new-test ',new-test)
+                        (new-then ',new-then)
+                        (new-else ',new-else))
                        (:instance
                         simpadd0-expr-cond-test-error-support-lemma
-                        (test (mv-nth 1 (ldm-expr ',test)))
-                        (then (mv-nth 1 (ldm-expr ',then)))
-                        (else (mv-nth 1 (ldm-expr ',else))))
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else))
                        (:instance
                         simpadd0-expr-cond-then-error-support-lemma
-                        (test (mv-nth 1 (ldm-expr ',test)))
-                        (then (mv-nth 1 (ldm-expr ',then)))
-                        (else (mv-nth 1 (ldm-expr ',else))))
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else))
                        (:instance
                         simpadd0-expr-cond-else-error-support-lemma
-                        (test (mv-nth 1 (ldm-expr ',test)))
-                        (then (mv-nth 1 (ldm-expr ',then)))
-                        (else (mv-nth 1 (ldm-expr ',else))))))))
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-pure-thm expr
                            expr-new
@@ -1917,24 +1913,22 @@
        ((unless (and expr-thm-name
                      (expr-purep expr)))
         (mv initer-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
+       ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '((:e ldm-initer)
-                        (:e ldm-expr)
-                        (:e ldm-ident)
-                        (:e ldm-type)
-                        (:e c::expr-kind)
+           :in-theory '((:e c::expr-kind)
                         (:e c::initer-single)
                         (:e c::type-nonchar-integerp))
            :use ((:instance ,expr-thm-name)
                  (:instance simpadd0-initer-single-pure-support-lemma
-                            (old-expr (mv-nth 1 (ldm-expr ',expr)))
-                            (new-expr (mv-nth 1 (ldm-expr ',expr-new))))
+                            (old-expr ',old-expr)
+                            (new-expr ',new-expr))
                  (:instance simpadd0-initer-single-pure-error-support-lemma
-                            (expr (mv-nth 1 (ldm-expr ',expr)))
+                            (expr ',old-expr)
                             (fenv old-fenv))
                  ,@(simpadd0-initer-single-pure-lemma-instances
-                    gin.vartys expr)))))
+                    gin.vartys old-expr)))))
        ((mv thm-event thm-name thm-index)
         (gen-initer-single-thm initer
                                initer-new
@@ -1950,17 +1944,19 @@
 
   :prepwork
   ((define simpadd0-initer-single-pure-lemma-instances ((vartys ident-type-mapp)
-                                                        (expr exprp))
+                                                        (expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-initer-single-pure-vartys-support-lemma
-                       (expr (mv-nth 1 (ldm-expr ',expr)))
+                       (expr ',expr)
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
                                                         expr)))
@@ -2066,14 +2062,12 @@
                     (and expr?-thm-name
                          (not (expr-purep expr?)))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
+       ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
        (hints
         (if expr?
             `(("Goal"
-               :in-theory '((:e ldm-stmt)
-                            (:e ldm-expr)
-                            (:e ldm-ident)
-                            (:e ldm-type-option-set)
-                            (:e c::expr-kind)
+               :in-theory '((:e c::expr-kind)
                             (:e c::stmt-expr)
                             (:e set::insert))
                :use ((:instance
@@ -2081,20 +2075,16 @@
                       (limit (- limit 2)))
                      (:instance
                       simpadd0-stmt-expr-asg-support-lemma
-                      (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                      (new-expr (mv-nth 1 (ldm-expr ',expr?-new))))
+                      (old-expr ',old-expr?)
+                      (new-expr ',new-expr?))
                      (:instance
                       simpadd0-stmt-expr-asg-error-support-lemma
-                      (expr (mv-nth 1 (ldm-expr ',expr?)))
+                      (expr ',old-expr?)
                       (fenv old-fenv))
                      ,@(simpadd0-stmt-expr-asg-lemma-instances
-                        gin.vartys expr?))))
+                        gin.vartys old-expr?))))
           `(("Goal"
-             :in-theory '((:e ldm-stmt)
-                          (:e ldm-ident)
-                          (:e ldm-type)
-                          (:e c::stmt-null)
-                          (:e ldm-type-option-set)
+             :in-theory '((:e c::stmt-null)
                           c::type-option-of-stmt-value
                           (:e set::in)
                           (:e set::insert))
@@ -2112,6 +2102,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
   :prepwork
 
@@ -2120,27 +2111,31 @@
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-null-vartys-support-lemma
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
        (cons lemma-instance lemma-instances)))
 
    (define simpadd0-stmt-expr-asg-lemma-instances ((vartys ident-type-mapp)
-                                                   (expr exprp))
+                                                   (expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-expr-asg-vartys-support-lemma
-                       (expr (mv-nth 1 (ldm-expr ',expr)))
+                       (expr ',expr)
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-stmt-expr-asg-lemma-instances (omap::tail vartys) expr)))
        (cons lemma-instance lemma-instances))))
@@ -2258,39 +2253,33 @@
                     (and expr?-thm-name
                          (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
+       ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
        (vartys-lemma-instances
-        (simpadd0-stmt-return-lemma-instances gin.vartys expr?))
-       (hints (if expr?
-                  `(("Goal"
-                     :in-theory '((:e ldm-stmt)
-                                  (:e ldm-expr-option)
-                                  (:e ldm-expr)
-                                  (:e ldm-ident)
-                                  (:e ldm-type)
-                                  (:e ldm-type-option-set)
-                                  (:e set::insert)
-                                  (:e c::stmt-return)
-                                  (:e c::expr-kind)
-                                  (:e c::type-nonchar-integerp))
-                     :use (,expr?-thm-name
-                           (:instance
-                            simpadd0-stmt-return-value-support-lemma
-                            (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                            (new-expr (mv-nth 1 (ldm-expr ',expr?-new))))
-                           (:instance
-                            simpadd0-stmt-return-error-support-lemma
-                            (expr (mv-nth 1 (ldm-expr ',expr?)))
-                            (fenv old-fenv))
-                           ,@vartys-lemma-instances)))
-                `(("Goal"
-                   :in-theory '((:e ldm-stmt)
-                                (:e ldm-expr-option)
-                                (:e ldm-type-option-set)
-                                (:e c::stmt-return)
-                                (:e c::type-void)
-                                (:e set::insert))
-                   :use (simpadd0-stmt-return-novalue-support-lemma
-                         ,@vartys-lemma-instances)))))
+        (simpadd0-stmt-return-lemma-instances gin.vartys old-expr?))
+       (hints
+        (if expr?
+            `(("Goal"
+               :in-theory '((:e set::insert)
+                            (:e c::stmt-return)
+                            (:e c::expr-kind)
+                            (:e c::type-nonchar-integerp))
+               :use (,expr?-thm-name
+                     (:instance
+                      simpadd0-stmt-return-value-support-lemma
+                      (old-expr ',old-expr?)
+                      (new-expr ',new-expr?))
+                     (:instance
+                      simpadd0-stmt-return-error-support-lemma
+                      (expr ',old-expr?)
+                      (fenv old-fenv))
+                     ,@vartys-lemma-instances)))
+          `(("Goal"
+             :in-theory '((:e c::stmt-return)
+                          (:e c::type-void)
+                          (:e set::insert))
+             :use (simpadd0-stmt-return-novalue-support-lemma
+                   ,@vartys-lemma-instances)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2306,17 +2295,19 @@
 
   :prepwork
   ((define simpadd0-stmt-return-lemma-instances ((vartys ident-type-mapp)
-                                                 (expr? expr-optionp))
+                                                 (expr? c::expr-optionp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-stmt-return-vartys-support-lemma
-                       (expr? (mv-nth 1 (ldm-expr-option ',expr?)))
+                       (expr? ',expr?)
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-stmt-return-lemma-instances (omap::tail vartys) expr?)))
        (cons lemma-instance lemma-instances))))
@@ -2476,19 +2467,17 @@
                specs-new specs)
         (mv (irr-decl) (irr-simpadd0-gout)))
        ((mv & tyspecs) (check-decl-spec-list-all-typespec specs))
-       ((mv & tyspecseq) (ldm-type-spec-list tyspecs))
-       (ctype (c::tyspecseq-to-type tyspecseq))
+       ((mv & ctyspecs) (ldm-type-spec-list tyspecs))
+       (ctype (c::tyspecseq-to-type ctyspecs))
        ((unless (c::type-nonchar-integerp ctype))
         (mv decl-new gout-no-thm))
        (type (ildm-type ctype))
+       ((mv & cvar) (ldm-ident var))
+       ((mv & old-initer) (ldm-initer initer))
+       ((mv & new-initer) (ldm-initer initer-new))
        (vartys-post (omap::update var type gin.vartys))
        (hints `(("Goal"
-                 :in-theory '((:e ldm-decl-obj)
-                              (:e ldm-initer)
-                              (:e ldm-type-spec-list)
-                              (:e ldm-ident)
-                              (:e ldm-type)
-                              (:e c::obj-declor-ident)
+                 :in-theory '((:e c::obj-declor-ident)
                               (:e c::scspecseq-none)
                               (:e c::obj-declon)
                               (:e c::tyspecseq-to-type)
@@ -2496,23 +2485,23 @@
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-decl-decl-support-lemma
-                        (var (mv-nth 1 (ldm-ident ',var)))
-                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
-                        (old-initer (mv-nth 1 (ldm-initer ',initer)))
-                        (new-initer (mv-nth 1 (ldm-initer ',initer-new))))
+                        (var ',cvar)
+                        (tyspecs ',ctyspecs)
+                        (old-initer ',old-initer)
+                        (new-initer ',new-initer))
                        (:instance
                         simpadd0-decl-decl-error-support-lemma
-                        (var (mv-nth 1 (ldm-ident ',var)))
-                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
-                        (initer (mv-nth 1 (ldm-initer ',initer)))
+                        (var ',cvar)
+                        (tyspecs ',ctyspecs)
+                        (initer ',old-initer)
                         (fenv old-fenv))
                        ,@(simpadd0-decl-decl-lemma-instances
-                          gin.vartys var tyspecs initer)
+                          gin.vartys cvar ctyspecs old-initer)
                        (:instance
                         simpadd0-decl-decl-vartys-new-support-lemma
-                        (var (mv-nth 1 (ldm-ident ',var)))
-                        (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
-                        (initer (mv-nth 1 (ldm-initer ',initer)))
+                        (var ',cvar)
+                        (tyspecs ',ctyspecs)
+                        (initer ',old-initer)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-decl-thm decl
@@ -2534,20 +2523,22 @@
 
   :prepwork
   ((define simpadd0-decl-decl-lemma-instances ((vartys ident-type-mapp)
-                                               (var identp)
-                                               (tyspecs type-spec-listp)
-                                               (initer initerp))
+                                               (var c::identp)
+                                               (tyspecs c::tyspecseqp)
+                                               (initer c::initerp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var1 type) (omap::head vartys))
+          ((mv & cvar1) (ldm-ident var1))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-decl-decl-vartys-old-support-lemma
-                       (var1 (mv-nth 1 (ldm-ident ',var1)))
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))
-                       (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
-                       (initer (mv-nth 1 (ldm-initer ',initer)))
+                       (var1 ',cvar1)
+                       (var ',var)
+                       (type ',ctype)
+                       (tyspecs ',tyspecs)
+                       (initer ',initer)
                        (fenv old-fenv)))
           (lemma-instances
            (simpadd0-decl-decl-lemma-instances
@@ -2564,8 +2555,8 @@
 
   (defruled simpadd0-decl-decl-support-lemma
     (b* ((declor (c::obj-declor-ident var))
-         (old (c::obj-declon (c::scspecseq-none) tyspec declor old-initer))
-         (new (c::obj-declon (c::scspecseq-none) tyspec declor new-initer))
+         (old (c::obj-declon (c::scspecseq-none) tyspecs declor old-initer))
+         (new (c::obj-declon (c::scspecseq-none) tyspecs declor new-initer))
          ((mv old-init-value old-init-compst)
           (c::exec-initer old-initer compst old-fenv (1- limit)))
          ((mv new-init-value new-init-compst)
@@ -2582,17 +2573,17 @@
                     (equal old-compst new-compst))))
     :expand ((c::exec-obj-declon
               (c::obj-declon
-               '(:none) tyspec (c::obj-declor-ident var) old-initer)
+               '(:none) tyspecs (c::obj-declor-ident var) old-initer)
               compst old-fenv limit)
              (c::exec-obj-declon
               (c::obj-declon
-               '(:none) tyspec (c::obj-declor-ident var) new-initer)
+               '(:none) tyspecs (c::obj-declor-ident var) new-initer)
               compst new-fenv limit))
     :enable (c::obj-declon-to-ident+scspec+tyname+init))
 
   (defruled simpadd0-decl-decl-error-support-lemma
     (b* ((declor (c::obj-declor-ident var))
-         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer)))
+         (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer)))
       (implies (and initer
                     (c::errorp
                      (mv-nth 0 (c::exec-initer
@@ -2600,13 +2591,13 @@
                (c::errorp (c::exec-obj-declon declon compst fenv limit))))
     :expand (c::exec-obj-declon
              (c::obj-declon
-              '(:none) tyspec (c::obj-declor-ident var) initer)
+              '(:none) tyspecs (c::obj-declor-ident var) initer)
              compst fenv limit)
     :enable c::obj-declon-to-ident+scspec+tyname+init)
 
   (defruled simpadd0-decl-decl-vartys-old-support-lemma
     (b* ((declor (c::obj-declor-ident var))
-         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
+         (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
          ((mv & compst0) (c::exec-initer initer compst fenv (1- limit)))
          (compst1 (c::exec-obj-declon declon compst fenv limit)))
       (implies (and (not (c::errorp compst1))
@@ -2617,7 +2608,7 @@
                (c::compustate-has-var-with-type-p var1 type compst1)))
     :expand (c::exec-obj-declon
              (c::obj-declon
-              '(:none) tyspec (c::obj-declor-ident var) initer)
+              '(:none) tyspecs (c::obj-declor-ident var) initer)
              compst fenv limit)
     :enable (c::obj-declon-to-ident+scspec+tyname+init
              c::tyspec+declor-to-ident+tyname
@@ -2626,15 +2617,15 @@
 
   (defruled simpadd0-decl-decl-vartys-new-support-lemma
     (b* ((declor (c::obj-declor-ident var))
-         (declon (c::obj-declon (c::scspecseq-none) tyspec declor initer))
+         (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
          (compst1 (c::exec-obj-declon declon compst fenv limit))
-         (type (c::tyspecseq-to-type tyspec)))
+         (type (c::tyspecseq-to-type tyspecs)))
       (implies (and (not (c::errorp compst1))
                     (c::identp var))
                (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-obj-declon
              (c::obj-declon
-              '(:none) tyspec (c::obj-declor-ident var) initer)
+              '(:none) tyspecs (c::obj-declor-ident var) initer)
              compst fenv limit)
     :enable (c::compustate-has-var-with-type-p-of-create-same-var
              c::obj-declon-to-ident+scspec+tyname+init
@@ -2665,22 +2656,23 @@
        ((unless stmt-thm-name)
         (mv item-new (simpadd0-gout-no-thm gin)))
        (types (stmt-types stmt))
+       ((mv & old-stmt) (ldm-stmt stmt)) ; ERP must be NIL
+       ((mv & new-stmt) (ldm-stmt stmt-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item)
-                              (:e ldm-stmt)
-                              (:e c::block-item-stmt))
+                 :in-theory '((:e c::block-item-stmt))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma
-                        (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
-                        (types (mv-nth 1 (ldm-type-option-set ',types))))
+                        (old-stmt ',old-stmt)
+                        (new-stmt ',new-stmt)
+                        (types ',ctypes))
                        (:instance
                         simpadd0-block-item-stmt-error-support-lemma
-                        (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                        (stmt ',old-stmt)
                         (fenv old-fenv))
                        ,@(simpadd0-block-item-stmt-lemma-instances
-                          gin.vartys stmt)))))
+                          gin.vartys old-stmt)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2697,17 +2689,19 @@
 
   :prepwork
   ((define simpadd0-block-item-stmt-lemma-instances ((vartys ident-type-mapp)
-                                                     (stmt stmtp))
+                                                     (stmt c::stmtp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-stmt-vartys-support-lemma
-                       (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                       (stmt ',stmt)
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
        (cons lemma-instance lemma-instances))))
@@ -2782,23 +2776,22 @@
        (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
                                           :vartys vartys-post))
        ((unless decl-thm-name) (mv item-new gout-no-thm))
+       ((mv & old-declon) (ldm-decl-obj decl)) ; ERP must be NIL
+       ((mv & new-declon) (ldm-decl-obj decl-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item)
-                              (:e ldm-decl-obj)
-                              (:e ldm-type-option-set)
-                              (:e c::block-item-declon)
+                 :in-theory '((:e c::block-item-declon)
                               (:e set::insert))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-decl-support-lemma
-                        (old-declon (mv-nth 1 (ldm-decl-obj ',decl)))
-                        (new-declon (mv-nth 1 (ldm-decl-obj ',decl-new))))
+                        (old-declon ',old-declon)
+                        (new-declon ',new-declon))
                        (:instance
                         simpadd0-block-item-decl-error-support-lemma
-                        (declon (mv-nth 1 (ldm-decl-obj ',decl)))
+                        (declon ',old-declon)
                         (fenv old-fenv))
                        ,@(simpadd0-block-item-decl-lemma-instances
-                          vartys-post decl)))))
+                          vartys-post old-declon)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2819,16 +2812,18 @@
 
   :prepwork
   ((define simpadd0-block-item-decl-lemma-instances ((vartys ident-type-mapp)
-                                                     (decl declp))
+                                                     (decl c::obj-declonp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-decl-vartys-support-lemma
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))
-                       (declon (mv-nth 1 (ldm-decl-obj ',decl)))
+                       (var ',cvar)
+                       (type ',ctype)
+                       (declon ',decl)
                        (fenv old-fenv)))
           (lemma-instances
            (simpadd0-block-item-decl-lemma-instances (omap::tail vartys) decl)))
@@ -2897,9 +2892,7 @@
   (b* (((simpadd0-gin gin) gin)
        (items nil)
        (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-type-option-set)
-                              (:e set::insert))
+                 :in-theory '((:e set::insert))
                  :use (simpadd0-block-item-list-empty-support-lemma
                        ,@(simpadd0-block-item-list-empty-lemma-instances
                           gin.vartys)))))
@@ -2923,11 +2916,13 @@
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-list-empty-vartys-support-lemma
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
        (cons lemma-instance lemma-instances))))
@@ -2996,12 +2991,15 @@
         (mv item+items-new gout-no-thm))
        (first-types (block-item-types item))
        (rest-types (block-item-list-types items))
+       ((mv & old-item) (ldm-block-item item)) ; ERP must be NIL
+       ((mv & new-item) (ldm-block-item item-new)) ; ERP must be NIL
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & first-ctypes) (ldm-type-option-set first-types)) ; ERP must be NIL
+       ((mv & rest-ctypes) (ldm-type-option-set rest-types)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '((:e ldm-block-item)
-                        (:e ldm-block-item-list)
-                        (:e ldm-type-option-set)
-                        c::stmt-value-kind-possibilities
+           :in-theory '(c::stmt-value-kind-possibilities
                         (:e set::delete)
                         (:e set::union))
            :use ((:instance
@@ -3011,37 +3009,36 @@
                   ,items-thm-name
                   (compst
                    (mv-nth 1 (c::exec-block-item
-                              (mv-nth 1 (ldm-block-item ',item))
-                              compst old-fenv (1- limit))))
+                              ',old-item compst old-fenv (1- limit))))
                   (limit (1- limit)))
                  (:instance
                   simpadd0-block-item-list-cons-first-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  (first-types (mv-nth 1 (ldm-type-option-set ',first-types)))
-                  (rest-types (mv-nth 1 (ldm-type-option-set ',rest-types))))
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
                  (:instance
                   simpadd0-block-item-list-cons-rest-support-lemma
-                  (old-item (mv-nth 1 (ldm-block-item ',item)))
-                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
-                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
-                  (first-types (mv-nth 1 (ldm-type-option-set ',first-types)))
-                  (rest-types (mv-nth 1 (ldm-type-option-set ',rest-types))))
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
                  (:instance
                   simpadd0-block-item-list-cons-first-error-support-lemma
-                  (item (mv-nth 1 (ldm-block-item ',item)))
-                  (items (mv-nth 1 (ldm-block-item-list ',items)))
+                  (item ',old-item)
+                  (items ',old-items)
                   (fenv old-fenv))
                  (:instance
                   simpadd0-block-item-list-cons-rest-error-support-lemma
-                  (item (mv-nth 1 (ldm-block-item ',item)))
-                  (items (mv-nth 1 (ldm-block-item-list ',items)))
+                  (item ',old-item)
+                  (items ',old-items)
                   (fenv old-fenv))
                  ,@(simpadd0-block-item-list-cons-lemma-instances
-                    gin.vartys item items)))))
+                    gin.vartys old-item old-items)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm item+items
                                  item+items-new
@@ -3058,19 +3055,21 @@
   :prepwork
   ((define simpadd0-block-item-list-cons-lemma-instances
      ((vartys ident-type-mapp)
-      (item block-itemp)
-      (items block-item-listp))
+      (item c::block-itemp)
+      (items c::block-item-listp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
+          ((mv & cvar) (ldm-ident var))
+          ((mv & ctype) (ldm-type type))
           (lemma-instance
            `(:instance simpadd0-block-item-list-cons-vartys-support-lemma
-                       (item (mv-nth 1 (ldm-block-item ',item)))
-                       (items (mv-nth 1 (ldm-block-item-list ',items)))
+                       (item ',item)
+                       (items ',items)
                        (fenv old-fenv)
-                       (var (mv-nth 1 (ldm-ident ',var)))
-                       (type (mv-nth 1 (ldm-type ',type)))))
+                       (var ',cvar)
+                       (type ',ctype)))
           (lemma-instances
            (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
                                                           item

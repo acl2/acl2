@@ -159,9 +159,9 @@
         (raise "Internal error: variable ~x0 has type ~x1, ~
                 which cannot be mapped to formal model."
                var type))
-       (asrt `(c::compustate-has-var-with-type-p (mv-nth 1 (ldm-ident ',var))
-                                                 (mv-nth 1 (ldm-type ',type))
-                                                 ,compst))
+       ((mv & cvar) (ldm-ident var)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (asrt `(c::compustate-has-var-with-type-p ',cvar ',ctype ,compst))
        (asrts (gen-var-assertions (omap::tail vartys) compst)))
     (cons asrt asrts))
   ///
@@ -281,9 +281,12 @@
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
-              (new-expr (mv-nth 1 (ldm-expr ',new)))
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
               (old-result (c::exec-expr-pure old-expr compst))
               (new-result (c::exec-expr-pure new-expr compst))
               (old-value (c::expr-value->value old-result))
@@ -292,8 +295,7 @@
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-value new-value)
-                         (equal (c::type-of-value old-value)
-                                (mv-nth 1 (ldm-type ',type)))))))
+                         (equal (c::type-of-value old-value) ',ctype)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -342,9 +344,12 @@
        ((unless (type-formalp type))
         (raise "Internal error: initializer ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
+       ((mv & old-initer) (ldm-initer old)) ; ERP is NIL because FORMALP
+       ((mv & new-initer) (ldm-initer new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-initer (mv-nth 1 (ldm-initer ',old)))
-              (new-initer (mv-nth 1 (ldm-initer ',new)))
+        `(b* ((old-initer ',old-initer)
+              (new-initer ',new-initer)
               ((mv old-result old-compst)
                (c::exec-initer old-initer compst old-fenv limit))
               ((mv new-result new-compst)
@@ -355,8 +360,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (equal (c::init-type-of-init-value old-result)
-                                (c::init-type-single
-                                 (mv-nth 1 (ldm-type ',type))))
+                                (c::init-type-single ',ctype))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -418,9 +422,11 @@
        (vars-pre (gen-var-assertions vartys 'compst))
        (vars-post (gen-var-assertions vartys 'old-compst))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
-              (new-expr (mv-nth 1 (ldm-expr ',new)))
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
               (old-compst (c::exec-expr-asg old-expr compst old-fenv limit))
               (new-compst (c::exec-expr-asg new-expr compst new-fenv limit)))
            (implies (and ,@vars-pre
@@ -469,9 +475,12 @@
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys 'compst))
        (vars-post (gen-var-assertions vartys 'old-compst))
+       ((mv & old-stmt) (ldm-stmt old)) ; ERP is NIL because FORMALP
+       ((mv & new-stmt) (ldm-stmt new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
-              (new-stmt (mv-nth 1 (ldm-stmt ',new)))
+        `(b* ((old-stmt ',old-stmt)
+              (new-stmt ',new-stmt)
               ((mv old-result old-compst)
                (c::exec-stmt old-stmt compst old-fenv limit))
               ((mv new-result new-compst)
@@ -482,7 +491,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-result)
-                                  (mv-nth 1 (ldm-type-option-set ',types)))
+                                  ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -524,9 +533,11 @@
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
        (vars-post (gen-var-assertions vartys-post 'old-compst))
+       ((mv & old-decl) (ldm-decl-obj old)) ; ERP is NIL because FORMALP
+       ((mv & new-decl) (ldm-decl-obj new)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-decl (mv-nth 1 (ldm-decl-obj ',old)))
-              (new-decl (mv-nth 1 (ldm-decl-obj ',new)))
+        `(b* ((old-decl ',old-decl)
+              (new-decl ',new-decl)
               (old-compst
                (c::exec-obj-declon old-decl compst old-fenv limit))
               (new-compst
@@ -580,9 +591,12 @@
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
        (vars-post (gen-var-assertions vartys-post 'old-compst))
+       ((mv & old-item) (ldm-block-item old)) ; ERP is NIL because FORMALP
+       ((mv & new-item) (ldm-block-item new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
-              (new-item (mv-nth 1 (ldm-block-item ',new)))
+        `(b* ((old-item ',old-item)
+              (new-item ',new-item)
               ((mv old-result old-compst)
                (c::exec-block-item old-item compst old-fenv limit))
               ((mv new-result new-compst)
@@ -593,7 +607,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-result)
-                                  (mv-nth 1 (ldm-type-option-set ',types)))
+                                  ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -647,9 +661,12 @@
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys 'compst))
        (vars-post (gen-var-assertions vartys 'old-compst))
+       ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
+       ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
-              (new-items (mv-nth 1 (ldm-block-item-list ',new)))
+        `(b* ((old-items ',old-items)
+              (new-items ',new-items)
               ((mv old-result old-compst)
                (c::exec-block-item-list old-items compst old-fenv limit))
               ((mv new-result new-compst)
@@ -660,7 +677,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-result)
-                                  (mv-nth 1 (ldm-type-option-set ',types)))
+                                  ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
