@@ -38,25 +38,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled simpadd0-set-lemma
-  (implies (equal (set::cardinality set) 1)
-           (equal (set::in x set)
-                  (equal x (set::head set))))
-  :do-not-induct t
-  :expand (set::in x set)
-  :enable (set::cardinality
-           set::in
-           set::emptyp
-           set::head
-           set::tail
-           set::setp))
-
-(defruled simpadd0-type-of-value-not-void-lemma
-  (not (equal (c::type-of-value val) '(:void)))
-  :enable c::type-of-value)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-implementation
 
  simpadd0
@@ -198,7 +179,7 @@
    (const-new symbolp
               "The @(':const-new') input of the transformation.")
    (vartys ident-type-mapp
-           "Variables in scope at the beginning of the construct.
+           "Some variables in scope at the beginning of the construct.
             The generated theorem (if any)
             includes hypotheses about their presence in the computation state
             before the execution of the C construct.
@@ -237,13 +218,15 @@
               that the transformation function operates on.
               This is @('nil') if no theorem is generated.")
    (vartys ident-type-map
-           "Variables in scope at the end of the construct.
+           "Some variables in scope at the end of the construct.
             The generated theorem (if any)
             includes conclusions about their presence in the computation state
             after the execution of the construct.
-            Currently this could be actually a subset of the variables in scope,
-            but it is adequate to the current proof generation,
-            and we are working on extending this."))
+            This does not necessarily include all the variables in scope,
+            because for certain constructs (e.g. lists of block items)
+            we only consider variables that are also in scope
+            at the beginning of the construct, i.e. that occur in
+            the @('vartys') component of @(tsee simpadd0-gin)."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -1934,8 +1917,6 @@
        ((unless (and expr-thm-name
                      (expr-purep expr)))
         (mv initer-new (simpadd0-gout-no-thm gin)))
-       (lemma-instances
-        (simpadd0-initer-single-pure-lemma-instances gin.vartys expr))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-initer)
@@ -1952,7 +1933,8 @@
                  (:instance simpadd0-initer-single-pure-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr)))
                             (fenv old-fenv))
-                 ,@lemma-instances))))
+                 ,@(simpadd0-initer-single-pure-lemma-instances
+                    gin.vartys expr)))))
        ((mv thm-event thm-name thm-index)
         (gen-initer-single-thm initer
                                initer-new
@@ -2105,8 +2087,8 @@
                       simpadd0-stmt-expr-asg-error-support-lemma
                       (expr (mv-nth 1 (ldm-expr ',expr?)))
                       (fenv old-fenv))
-                     ,@(simpadd0-stmt-expr-asg-lemma-instances gin.vartys
-                                                               expr?))))
+                     ,@(simpadd0-stmt-expr-asg-lemma-instances
+                        gin.vartys expr?))))
           `(("Goal"
              :in-theory '((:e ldm-stmt)
                           (:e ldm-ident)
@@ -2276,8 +2258,8 @@
                     (and expr?-thm-name
                          (expr-purep expr?))))
         (mv stmt-new (simpadd0-gout-no-thm gin)))
-       (lemma-instances (simpadd0-stmt-return-lemma-instances gin.vartys
-                                                              expr?))
+       (vartys-lemma-instances
+        (simpadd0-stmt-return-lemma-instances gin.vartys expr?))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e ldm-stmt)
@@ -2299,7 +2281,7 @@
                             simpadd0-stmt-return-error-support-lemma
                             (expr (mv-nth 1 (ldm-expr ',expr?)))
                             (fenv old-fenv))
-                           ,@lemma-instances)))
+                           ,@vartys-lemma-instances)))
                 `(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e ldm-expr-option)
@@ -2308,7 +2290,7 @@
                                 (:e c::type-void)
                                 (:e set::insert))
                    :use (simpadd0-stmt-return-novalue-support-lemma
-                         ,@lemma-instances)))))
+                         ,@vartys-lemma-instances)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2500,8 +2482,6 @@
         (mv decl-new gout-no-thm))
        (type (ildm-type ctype))
        (vartys-post (omap::update var type gin.vartys))
-       (lemma-instances (simpadd0-decl-decl-lemma-instances
-                         gin.vartys var tyspecs initer))
        (hints `(("Goal"
                  :in-theory '((:e ldm-decl-obj)
                               (:e ldm-initer)
@@ -2526,7 +2506,8 @@
                         (tyspec (mv-nth 1 (ldm-type-spec-list ',tyspecs)))
                         (initer (mv-nth 1 (ldm-initer ',initer)))
                         (fenv old-fenv))
-                       ,@lemma-instances
+                       ,@(simpadd0-decl-decl-lemma-instances
+                          gin.vartys var tyspecs initer)
                        (:instance
                         simpadd0-decl-decl-vartys-new-support-lemma
                         (var (mv-nth 1 (ldm-ident ',var)))
@@ -2698,8 +2679,8 @@
                         simpadd0-block-item-stmt-error-support-lemma
                         (stmt (mv-nth 1 (ldm-stmt ',stmt)))
                         (fenv old-fenv))
-                       ,@(simpadd0-block-item-stmt-lemma-instances gin.vartys
-                                                                   stmt)))))
+                       ,@(simpadd0-block-item-stmt-lemma-instances
+                          gin.vartys stmt)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2801,8 +2782,6 @@
        (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
                                           :vartys vartys-post))
        ((unless decl-thm-name) (mv item-new gout-no-thm))
-       (lemma-instances
-        (simpadd0-block-item-decl-lemma-instances vartys-post decl))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item)
                               (:e ldm-decl-obj)
@@ -2818,7 +2797,8 @@
                         simpadd0-block-item-decl-error-support-lemma
                         (declon (mv-nth 1 (ldm-decl-obj ',decl)))
                         (fenv old-fenv))
-                       ,@lemma-instances))))
+                       ,@(simpadd0-block-item-decl-lemma-instances
+                          vartys-post decl)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2916,21 +2896,16 @@
      because there is only one empty block item list."))
   (b* (((simpadd0-gin gin) gin)
        (items nil)
-       (vartys-lemma-instances
-        (simpadd0-block-item-list-empty-lemma-instances gin.vartys))
        (hints `(("Goal"
                  :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-type)
                               (:e ldm-type-option-set)
-                              (:e ldm-ident)
-                              (:e set::in)
-                              c::type-option-of-stmt-value)
+                              (:e set::insert))
                  :use (simpadd0-block-item-list-empty-support-lemma
-                       ,@vartys-lemma-instances))))
+                       ,@(simpadd0-block-item-list-empty-lemma-instances
+                          gin.vartys)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
-                                 gin.vartys
                                  gin.vartys
                                  gin.const-new
                                  gin.thm-index
@@ -2970,7 +2945,8 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil nil)))))
     :enable c::exec-block-item-list)
 
   (defruled simpadd0-block-item-list-empty-vartys-support-lemma
@@ -2991,7 +2967,6 @@
                                        (items block-item-listp)
                                        (items-new block-item-listp)
                                        (items-thm-name symbolp)
-                                       (vartys-post ident-type-mapp)
                                        (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new)
@@ -3007,11 +2982,7 @@
      and the possibly transformed rest of the items.")
    (xdoc::p
     "We generate a theorem iff theorems were generated for
-     both the first item and (the list of) the rest of the items.")
-   (xdoc::p
-    "The @('vartys-post') variable-type map passed as input
-     is the one at the end of the execution of
-     the @(tsee cons) list of block items."))
+     both the first item and (the list of) the rest of the items."))
   (b* (((simpadd0-gin gin) gin)
        (item (block-item-fix item))
        (items (block-item-list-fix items))
@@ -3019,63 +2990,20 @@
        (items-new (block-item-list-fix items-new))
        (item+items (cons item items))
        (item+items-new (cons item-new items-new))
-       (gout-no-thm (change-simpadd0-gout (simpadd0-gout-no-thm gin)
-                                          :vartys vartys-post))
+       (gout-no-thm (simpadd0-gout-no-thm gin))
        ((unless (and item-thm-name
                      items-thm-name))
         (mv item+items-new gout-no-thm))
        (first-types (block-item-types item))
-       ((unless (= (set::cardinality first-types) 1))
-        (mv item+items-new gout-no-thm))
-       (first-type (set::head first-types))
        (rest-types (block-item-list-types items))
-       ((unless (= (set::cardinality rest-types) 1))
-        (mv item+items-new gout-no-thm))
-       (rest-type (set::head rest-types))
-       ((mv support-lemma support-lemma-vartys)
-        (cond
-         ((not first-type)
-          (cond
-           ((not rest-type)
-            (mv 'simpadd0-block-item-list-cons-rest-none-support-lemma
-                'simpadd0-block-item-list-cons-rest-vartys-support-lemma))
-           ((type-case rest-type :void)
-            (mv 'simpadd0-block-item-list-cons-rest-novalue-support-lemma
-                'simpadd0-block-item-list-cons-rest-vartys-support-lemma))
-           (t (mv 'simpadd0-block-item-list-cons-rest-value-support-lemma
-                  'simpadd0-block-item-list-cons-rest-vartys-support-lemma))))
-         ((type-case first-type :void)
-          (mv 'simpadd0-block-item-list-cons-first-novalue-support-lemma
-              'simpadd0-block-item-list-cons-first-vartys-support-lemma))
-         (t (mv 'simpadd0-block-item-list-cons-first-value-support-lemma
-                'simpadd0-block-item-list-cons-first-vartys-support-lemma))))
-       (lemma-instances
-        (simpadd0-block-item-list-cons-lemma-instances vartys-post
-                                                       support-lemma-vartys
-                                                       item
-                                                       items))
        (hints
         `(("Goal"
            :in-theory '((:e ldm-block-item)
                         (:e ldm-block-item-list)
-                        (:e ldm-ident)
                         (:e ldm-type-option-set)
-                        (:e ldm-type)
-                        (:e c::type-nonchar-integerp)
-                        (:e set::in)
-                        c::type-option-of-stmt-value
-                        c::type-of-value-option
-                        c::value-option-some->val
-                        c::value-fix-when-valuep
-                        c::valuep-when-value-optionp
-                        c::value-optionp-of-stmt-value-return->value?
-                        simpadd0-set-lemma
-                        (:e set::cardinality)
-                        (:e set::head)
-                        (:e c::type-void)
                         c::stmt-value-kind-possibilities
-                        (:t c::type-of-value)
-                        simpadd0-type-of-value-not-void-lemma)
+                        (:e set::delete)
+                        (:e set::union))
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))
@@ -3087,11 +3015,21 @@
                               compst old-fenv (1- limit))))
                   (limit (1- limit)))
                  (:instance
-                  ,support-lemma
+                  simpadd0-block-item-list-cons-first-support-lemma
                   (old-item (mv-nth 1 (ldm-block-item ',item)))
                   (old-items (mv-nth 1 (ldm-block-item-list ',items)))
                   (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new))))
+                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
+                  (first-types (mv-nth 1 (ldm-type-option-set ',first-types)))
+                  (rest-types (mv-nth 1 (ldm-type-option-set ',rest-types))))
+                 (:instance
+                  simpadd0-block-item-list-cons-rest-support-lemma
+                  (old-item (mv-nth 1 (ldm-block-item ',item)))
+                  (old-items (mv-nth 1 (ldm-block-item-list ',items)))
+                  (new-item (mv-nth 1 (ldm-block-item ',item-new)))
+                  (new-items (mv-nth 1 (ldm-block-item-list ',items-new)))
+                  (first-types (mv-nth 1 (ldm-type-option-set ',first-types)))
+                  (rest-types (mv-nth 1 (ldm-type-option-set ',rest-types))))
                  (:instance
                   simpadd0-block-item-list-cons-first-error-support-lemma
                   (item (mv-nth 1 (ldm-block-item ',item)))
@@ -3102,12 +3040,12 @@
                   (item (mv-nth 1 (ldm-block-item ',item)))
                   (items (mv-nth 1 (ldm-block-item-list ',items)))
                   (fenv old-fenv))
-                 ,@lemma-instances))))
+                 ,@(simpadd0-block-item-list-cons-lemma-instances
+                    gin.vartys item items)))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm item+items
                                  item+items-new
                                  gin.vartys
-                                 vartys-post
                                  gin.const-new
                                  gin.thm-index
                                  hints)))
@@ -3115,13 +3053,11 @@
         (make-simpadd0-gout :events (cons thm-event gin.events)
                             :thm-index thm-index
                             :thm-name thm-name
-                            :vartys vartys-post)))
-  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
+                            :vartys gin.vartys)))
 
   :prepwork
   ((define simpadd0-block-item-list-cons-lemma-instances
      ((vartys ident-type-mapp)
-      (lemma symbolp)
       (item block-itemp)
       (items block-item-listp))
      :returns (lemma-instances true-listp)
@@ -3129,7 +3065,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance ,lemma
+           `(:instance simpadd0-block-item-list-cons-vartys-support-lemma
                        (item (mv-nth 1 (ldm-block-item ',item)))
                        (items (mv-nth 1 (ldm-block-item-list ',items)))
                        (fenv old-fenv)
@@ -3137,7 +3073,6 @@
                        (type (mv-nth 1 (ldm-type ',type)))))
           (lemma-instances
            (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
-                                                          lemma
                                                           item
                                                           items)))
        (cons lemma-instance lemma-instances))))
@@ -3155,7 +3090,7 @@
     :hyp (and (block-item-unambp item-new)
               (block-item-list-unambp items-new)))
 
-  (defruled simpadd0-block-item-list-cons-first-value-support-lemma
+  (defruled simpadd0-block-item-list-cons-first-support-lemma
     (b* ((old (cons old-item old-items))
          (new (cons new-item new-items))
          ((mv old-item-result old-item-compst)
@@ -3165,137 +3100,27 @@
          ((mv old-result old-compst)
           (c::exec-block-item-list old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit))
-         (val-item (c::stmt-value-return->value? old-item-result))
-         (val (c::stmt-value-return->value? old-result))
-         (type (c::type-of-value val-item)))
+          (c::exec-block-item-list new compst new-fenv limit)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-item-result))
                     (equal old-item-result new-item-result)
                     (equal old-item-compst new-item-compst)
                     (equal (c::stmt-value-kind old-item-result) :return)
-                    val-item
-                    (c::type-nonchar-integerp type))
+                    (set::in (c::type-option-of-stmt-value old-item-result)
+                             first-types))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    val
-                    (equal (c::type-of-value val) type))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::union (set::delete nil first-types)
+                                         rest-types)))))
     :expand ((c::exec-block-item-list
               (cons old-item old-items) compst old-fenv limit)
              (c::exec-block-item-list
-              (cons new-item new-items) compst new-fenv limit)))
+              (cons new-item new-items) compst new-fenv limit))
+    :enable c::type-option-of-stmt-value)
 
-  (defruled simpadd0-block-item-list-cons-first-novalue-support-lemma
-    (b* ((old (cons old-item old-items))
-         (new (cons new-item new-items))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit))
-         (val-item (c::stmt-value-return->value? old-item-result))
-         (val (c::stmt-value-return->value? old-result)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal (c::stmt-value-kind old-item-result) :return)
-                    (not val-item))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (not val))))
-    :expand ((c::exec-block-item-list
-              (cons old-item old-items) compst old-fenv limit)
-             (c::exec-block-item-list
-              (cons new-item new-items) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-list-cons-rest-value-support-lemma
-    (b* ((old (cons old-item old-items))
-         (new (cons new-item new-items))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-items-result old-items-compst)
-          (c::exec-block-item-list
-           old-items old-item-compst old-fenv (1- limit)))
-         ((mv new-items-result new-items-compst)
-          (c::exec-block-item-list
-           new-items new-item-compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit))
-         (val-items (c::stmt-value-return->value? old-items-result))
-         (val (c::stmt-value-return->value? old-result))
-         (type (c::type-of-value val-items)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (not (c::errorp new-items-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-items-result new-items-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal old-items-compst new-items-compst)
-                    (equal (c::stmt-value-kind old-item-result) :none)
-                    (equal (c::stmt-value-kind old-items-result) :return)
-                    val-items
-                    (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    val
-                    (equal (c::type-of-value val) type))))
-    :expand ((c::exec-block-item-list
-              (cons old-item old-items) compst old-fenv limit)
-             (c::exec-block-item-list
-              (cons new-item new-items) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-list-cons-rest-novalue-support-lemma
-    (b* ((old (cons old-item old-items))
-         (new (cons new-item new-items))
-         ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst old-fenv (1- limit)))
-         ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst new-fenv (1- limit)))
-         ((mv old-items-result old-items-compst)
-          (c::exec-block-item-list old-items old-item-compst old-fenv (1- limit)))
-         ((mv new-items-result new-items-compst)
-          (c::exec-block-item-list new-items new-item-compst new-fenv (1- limit)))
-         ((mv old-result old-compst)
-          (c::exec-block-item-list old compst old-fenv limit))
-         ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit))
-         (val-items (c::stmt-value-return->value? old-items-result))
-         (val (c::stmt-value-return->value? old-result)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-item-result))
-                    (not (c::errorp new-items-result))
-                    (equal old-item-result new-item-result)
-                    (equal old-items-result new-items-result)
-                    (equal old-item-compst new-item-compst)
-                    (equal old-items-compst new-items-compst)
-                    (equal (c::stmt-value-kind old-item-result) :none)
-                    (equal (c::stmt-value-kind old-items-result) :return)
-                    (not val-items))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
-                    (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (not val))))
-    :expand ((c::exec-block-item-list
-              (cons old-item old-items) compst old-fenv limit)
-             (c::exec-block-item-list
-              (cons new-item new-items) compst new-fenv limit)))
-
-  (defruled simpadd0-block-item-list-cons-rest-none-support-lemma
+  (defruled simpadd0-block-item-list-cons-rest-support-lemma
     (b* ((old (cons old-item old-items))
          (new (cons new-item new-items))
          ((mv old-item-result old-item-compst)
@@ -3320,11 +3145,16 @@
                     (equal old-item-compst new-item-compst)
                     (equal old-items-compst new-items-compst)
                     (equal (c::stmt-value-kind old-item-result) :none)
-                    (equal (c::stmt-value-kind old-items-result) :none))
+                    (set::in (c::type-option-of-stmt-value old-item-result)
+                             first-types)
+                    (set::in (c::type-option-of-stmt-value old-items-result)
+                             rest-types))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :none))))
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::union (set::delete nil first-types)
+                                         rest-types)))))
     :expand ((c::exec-block-item-list
               (cons old-item old-items) compst old-fenv limit)
              (c::exec-block-item-list
@@ -3349,19 +3179,7 @@
                            (cons item items) compst fenv limit)))))
     :expand (c::exec-block-item-list (cons item items) compst fenv limit))
 
-  (defruled simpadd0-block-item-list-cons-first-vartys-support-lemma
-    (b* ((item+items (cons item items))
-         ((mv result0 compst0)
-          (c::exec-block-item item compst fenv (1- limit)))
-         ((mv result2 compst2)
-          (c::exec-block-item-list item+items compst fenv limit)))
-      (implies (and (not (c::errorp result2))
-                    (equal (c::stmt-value-kind result0) :return)
-                    (c::compustate-has-var-with-type-p var type compst0))
-               (c::compustate-has-var-with-type-p var type compst2)))
-    :enable c::exec-block-item-list)
-
-  (defruled simpadd0-block-item-list-cons-rest-vartys-support-lemma
+  (defruled simpadd0-block-item-list-cons-vartys-support-lemma
     (b* ((item+items (cons item items))
          ((mv result0 compst0)
           (c::exec-block-item item compst fenv (1- limit)))
@@ -3370,8 +3188,10 @@
          ((mv result2 compst2)
           (c::exec-block-item-list item+items compst fenv limit)))
       (implies (and (not (c::errorp result2))
-                    (equal (c::stmt-value-kind result0) :none)
-                    (c::compustate-has-var-with-type-p var type compst1))
+                    (or (and (equal (c::stmt-value-kind result0) :return)
+                             (c::compustate-has-var-with-type-p var type compst0))
+                        (and (equal (c::stmt-value-kind result0) :none)
+                             (c::compustate-has-var-with-type-p var type compst1))))
                (c::compustate-has-var-with-type-p var type compst2)))
     :enable c::exec-block-item-list))
 
@@ -4977,7 +4797,6 @@
                                      (cdr items)
                                      new-items
                                      gout-items.thm-name
-                                     gout-items.vartys
                                      gin))
     :measure (block-item-list-count items))
 

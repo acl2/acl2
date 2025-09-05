@@ -1100,15 +1100,20 @@
     "We return a set of optional types, as in @(tsee stmt-types):
      see the documentation of that function for a rationale.")
    (xdoc::p
-    "If @('nil') is among the set of optional types for the first block item,
-     then we remove it
-     and we add the set of optional types for the rest of the block items."))
+    "If the list is empty, we return the singleton set with @('nil').
+     If the list is not empty,
+     we take the union of the types of the first and remaining block items,
+     but first we remove @('nil') from the first set (if present).
+     The removal is because,
+     if the first block item terminates without @('return'),
+     the whole list of block items does not necessarily do so;
+     it happens only if the rest of the block items in the list does,
+     which is accounted for in the set of optional types
+     for the rest of the list."))
   (b* (((when (endp items)) (set::insert nil nil))
        (item-types (block-item-types (car items)))
        (items-types (block-item-list-types (cdr items))))
-    (if (set::in nil item-types)
-        (set::union (set::delete nil item-types) items-types)
-      item-types))
+    (set::union (set::delete nil item-types) items-types))
   :verify-guards :after-returns
   :hooks (:fix))
 
