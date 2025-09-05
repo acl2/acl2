@@ -1557,7 +1557,6 @@
     x86isa::sub-sf-spec64-constant-opener
     x86isa::sub-zf-spec64-constant-opener
 
-    ;; acl2::bool->bit$inline-constant-opener
     ;; byte-ify-base
     ;; x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
     ;; x86isa::byte-listp-base-1
@@ -2502,7 +2501,6 @@
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
-            x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
             x86isa::undef-flg$notinline
@@ -5837,14 +5835,17 @@
     ;; booleanp-of-jz-condition
     ;; booleanp-of-jnz-condition
     acl2::getbit-0-of-bool-to-bit
-    acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
-    acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
+    acl2::equal-of-0-and-bool-to-bit ; alt version needed, or do equals get turned around?
+    acl2::equal-of-1-and-bool-to-bit ; alt version needed, or do equals get turned around?
     acl2::equal-of-1-and-bitnot ; todo: add 0 version
     ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
     ;; todo: just include boolean-rules?:
     ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
-    acl2::bvchop-of-bool-to-bit ;todo: drop
+    ;; acl2::bvchop-of-bool-to-bit ;todo: drop
     acl2::logext-of-bool-to-bit
+    acl2::bool-to-bit-of-not
+    acl2::bool-to-bit-of-equal-of-0-when-unsigned-byte-p ; todo: alt versions
+    acl2::bool-to-bit-of-equal-of-1-when-unsigned-byte-p
     acl2::<-of-if-arg1-safe
     ;; acl2::<-of-if-arg2-safe
     acl2::equal-of-bvif-safe2
@@ -5997,7 +5998,7 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
-            bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
+            acl2::bool-to-bit-becomes-bvif ; in case bool-to-bit remains
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
