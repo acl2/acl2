@@ -1562,8 +1562,6 @@
   :hints (("Goal" :in-theory (enable ;bvcat bvxor
                                    ))))
 
-;fixme what does repeatbit do if not given a bit??
-
 ;; (DEFTHM SLICE-WHEN-high-IS-NEGATIVE
 ;;   (IMPLIES (AND (< high 0)
 ;; ;                (natp LOW)
