@@ -982,3 +982,13 @@ void foo () {
   struct s *sp = *p;
 }
 ")
+
+(test-valid
+  "int a[10];
+
+int foo () {
+   int x = a[3];
+   int y = 3[a];
+   return x+y;
+}
+")

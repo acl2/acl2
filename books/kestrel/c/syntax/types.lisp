@@ -41,111 +41,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::deftagsum type
-    :short "Fixtype of C types [C17:6.2.5]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Currently we do not model all the C types in detail,
-       but only an approximate version of them,
-       which still lets us perform some validation.
-       We plan to refine the types, and the rest of the validator,
-       to cover exactly all the validity checks prescribed by [C17]
-       (as well as applicable GCC extensions).")
-     (xdoc::p
-      "We capture the following types:")
-     (xdoc::ul
-      (xdoc::li
-       "The @('void') type [C17:6.2.5/19].")
-      (xdoc::li
-       "The plain @('char') type [C17:6.2.5/3].")
-      (xdoc::li
-       "The five standard signed integer types [C17:6.2.5/4]
-        and the corresponding unsigned integer types [C17:6.2.5/6].")
-      (xdoc::li
-       "The three real floating point types [C17:6.2.5/10].")
-      (xdoc::li
-       "The three complex types [C17:6.2.5/11].
-        These are a conditional feature,
-        but they must be included in this fixtype
-        because this fixtype consists of all the possible types.")
-      (xdoc::li
-       "The @('_Bool') type [C17:6.2.5/2].")
-      (xdoc::li
-       "A family of structure types [C17:6.2.5/20].
-        Structure types are characterized by an optional tag.
-        This is an approximation,
-        because there may be different structure types of a given tag,
-        or different tagless structure types.")
-      (xdoc::li
-       "A collective type for all union types [C17:6.2.5/20].
-        This is an approximation,
-        because there are different union types.")
-      (xdoc::li
-       "A collective type for all enumeration types [C17:6.2.5/20].
-        This is an approximation,
-        because there are different enumeration types.")
-      (xdoc::li
-       "A collective type for all array types [C17:6.2.5/20].
-        This is an approximation,
-        because there are different array types.")
-      (xdoc::li
-       "A parameterized pointer type [C17:6.2.5/20].
-        A pointer type is derived from the so-called ``referenced type.''")
-      (xdoc::li
-       "A collective type for all function types [C17:6.2.5/20].
-        This is an approximation,
-        because there are different function types.")
-      (xdoc::li
-       "An ``unknown'' type that we need due to our current approximation.
-        Our validator must not reject valid code.
-        But due to our approximate treatment of types,
-        we cannot always calculate a type,
-        e.g. for a member expression of the form @('s.m')
-        where @('s') is an expression with structure type.
-        Since our approximate type for all structure types
-        has no information about the members,
-        we cannot calculate any actual type for @('s.m');
-        but if the expression is used elsewhere,
-        we need to accept it, because it could have the right type.
-        We use this unknown type for this purpose:
-        the expression @('s.m') has unknown type,
-        and unknown types are always acceptable."))
-     (xdoc::p
-      "Besides the approximations noted above,
-       currently we do not capture atomic types [C17:6.2.5/20],
-       which we approximate as the underlying (argument) type.
-       Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
-    (:void ())
-    (:char ())
-    (:schar ())
-    (:uchar ())
-    (:sshort ())
-    (:ushort ())
-    (:sint ())
-    (:uint ())
-    (:slong ())
-    (:ulong ())
-    (:sllong ())
-    (:ullong ())
-    (:float ())
-    (:double ())
-    (:ldouble ())
-    (:floatc ())
-    (:doublec ())
-    (:ldoublec ())
-    (:bool ())
-    (:struct ((tag? ident-optionp)))
-    (:union ())
-    (:enum ())
-    (:array ())
-    (:pointer ((to type)))
-    (:function ())
-    (:unknown ())
-    :pred typep))
+(fty::deftagsum type
+  :short "Fixtype of C types [C17:6.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we do not model all the C types in detail,
+     but only an approximate version of them,
+     which still lets us perform some validation.
+     We plan to refine the types, and the rest of the validator,
+     to cover exactly all the validity checks prescribed by [C17]
+     (as well as applicable GCC extensions).")
+   (xdoc::p
+    "We capture the following types:")
+   (xdoc::ul
+    (xdoc::li
+     "The @('void') type [C17:6.2.5/19].")
+    (xdoc::li
+     "The plain @('char') type [C17:6.2.5/3].")
+    (xdoc::li
+     "The five standard signed integer types [C17:6.2.5/4]
+      and the corresponding unsigned integer types [C17:6.2.5/6].")
+    (xdoc::li
+     "The three real floating point types [C17:6.2.5/10].")
+    (xdoc::li
+     "The three complex types [C17:6.2.5/11].
+      These are a conditional feature,
+      but they must be included in this fixtype
+      because this fixtype consists of all the possible types.")
+    (xdoc::li
+     "The @('_Bool') type [C17:6.2.5/2].")
+    (xdoc::li
+     "A family of structure types [C17:6.2.5/20].
+      Structure types are characterized by an optional tag.
+      This is an approximation,
+      because there may be different structure types of a given tag,
+      or different tagless structure types.")
+    (xdoc::li
+     "A collective type for all union types [C17:6.2.5/20].
+      This is an approximation,
+      because there are different union types.")
+    (xdoc::li
+     "A collective type for all enumeration types [C17:6.2.5/20].
+      This is an approximation,
+      because there are different enumeration types.")
+    (xdoc::li
+     "A collective type for all array types [C17:6.2.5/20].
+      This is an approximation,
+      because there are different array types.")
+    (xdoc::li
+     "A pointer type [C17:6.2.5/20].
+      derived from the so-called ``referenced type.''")
+    (xdoc::li
+     "A collective type for all function types [C17:6.2.5/20].
+      This is an approximation,
+      because there are different function types.")
+    (xdoc::li
+     "An ``unknown'' type that we need due to our current approximation.
+      Our validator must not reject valid code.
+      But due to our approximate treatment of types,
+      we cannot always calculate a type,
+      e.g. for a member expression of the form @('s.m')
+      where @('s') is an expression with structure type.
+      Since our approximate type for all structure types
+      has no information about the members,
+      we cannot calculate any actual type for @('s.m');
+      but if the expression is used elsewhere,
+      we need to accept it, because it could have the right type.
+      We use this unknown type for this purpose:
+      the expression @('s.m') has unknown type,
+      and unknown types are always acceptable."))
+   (xdoc::p
+    "Besides the approximations noted above,
+     currently we do not capture atomic types [C17:6.2.5/20],
+     which we approximate as the underlying (argument) type.
+     We also do not capture @('typedef') names,
+     which are instead expanded to their normal form.
+     Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
+  (:void ())
+  (:char ())
+  (:schar ())
+  (:uchar ())
+  (:sshort ())
+  (:ushort ())
+  (:sint ())
+  (:uint ())
+  (:slong ())
+  (:ulong ())
+  (:sllong ())
+  (:ullong ())
+  (:float ())
+  (:double ())
+  (:ldouble ())
+  (:floatc ())
+  (:doublec ())
+  (:ldoublec ())
+  (:bool ())
+  (:struct ((tag? ident-optionp)))
+  (:union ())
+  (:enum ())
+  (:array ())
+  (:pointer ((to type)))
+  (:function ())
+  (:unknown ())
+  :pred typep
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -943,10 +943,10 @@
   (xdoc::topstring
    (xdoc::p
     "In our current approximate type system, the composite type is
-     the type of @('x') if the type of @('y') is unknown,
-     the type of @('y') if the type of @('x') is unknown,
-     and either type if neither are derived types.
-     For derived types, this is applied recursively on parameter types."))
+     @('x') if @('y') is unknown,
+     @('y') if @('x') is unknown,
+     and an arbitrary choice between the two if neither are derived types.
+     For derived types, this is applied recursively."))
   (type-case
     x
     :pointer (type-case
