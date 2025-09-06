@@ -2386,6 +2386,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-compound ((items block-item-listp)
+                                (items-new block-item-listp)
+                                (items-thm-name symbolp)
+                                (gin simpadd0-ginp))
+  :guard (and (block-item-list-unambp items)
+              (block-item-list-unambp items-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform a compound statement."
+  (declare (ignore items items-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (stmt-new (stmt-compound items-new)))
+    (mv stmt-new (simpadd0-gout-no-thm gin)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-compound
+    (stmt-unambp stmt)
+    :hyp (block-item-list-unambp items-new)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-if ((test exprp)
                           (test-new exprp)
                           (test-thm-name symbolp)
@@ -4678,8 +4699,10 @@
        :compound (b* (((mv new-items (simpadd0-gout gout-items))
                        (simpadd0-block-item-list stmt.items gin))
                       (gin (simpadd0-gin-update gin gout-items)))
-                   (mv (stmt-compound new-items)
-                       (simpadd0-gout-no-thm gin)))
+                   (simpadd0-stmt-compound stmt.items
+                                           new-items
+                                           gout-items.thm-name
+                                           gin))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                    (simpadd0-expr-option stmt.expr? gin))
                   (gin (simpadd0-gin-update gin gout-expr?)))
