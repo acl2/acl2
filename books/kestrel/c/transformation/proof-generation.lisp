@@ -89,9 +89,10 @@
   (b* ((objdes (c::objdesign-of-var var compst)))
     (and objdes
          (b* ((val (c::read-object objdes compst)))
-           (equal (c::type-of-value val) type))))
+           (equal (c::type-of-value val) (c::type-fix type)))))
   :guard-hints
   (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var)))
+  :hooks (:fix)
 
   ///
 
@@ -108,7 +109,7 @@
              (equal (c::type-of-value
                      (c::read-object (c::objdesign-of-var var compst)
                                      compst))
-                    type)))
+                    (c::type-fix type))))
 
   (defruled c::compustate-has-var-with-type-p-of-create-other-var
     (b* ((compst1 (c::create-var var1 val compst)))
