@@ -919,3 +919,66 @@ void g() {
   (void)(f());
 }
 ")
+
+(test-valid-fail
+  "int f;
+
+void g() {
+   f();
+}
+")
+
+(test-valid
+  "void foo() {
+  int *a = 0;
+  int **x = &a;
+  unsigned int *y = *x;
+  short z = *y;
+}
+")
+
+(test-valid-fail
+  "struct s { int a; };
+
+void foo(struct my_struct * x) {
+  int * y = *x;
+}
+")
+
+(test-valid
+  "struct s { int a; };
+struct my_struct x;
+struct my_struct *y = &x;
+")
+
+(test-valid-fail
+  "struct s { int a; };
+struct t { int b; };
+
+void foo(struct my_struct * x) {
+  struct t * y = *x;
+}
+")
+
+(test-valid
+  "void foo (int **p) {
+  int *sp = *p;
+}
+")
+
+(test-valid
+  "struct s { int a; };
+
+void foo (struct s **p) {
+  struct s *sp = *p;
+}
+")
+
+(test-valid
+  "struct s { int a; };
+
+void foo () {
+  struct s **p;
+  struct s *sp = *p;
+}
+")
