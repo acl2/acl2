@@ -2251,29 +2251,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define make-pointers-to ((pointers typequal/attribspec-list-listp)
-                          (type typep))
-  :returns (new-type typep)
-  :short "Derive a pointer type for each type qualifier and attribute specifier
-          list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This takes the list of lists of type qualifiers and attribute specifiers
-     from a declarator or abstract declarator,
-     and creates the corresponding (possibly pointer) type.")
-   (xdoc::p
-    "Since our approximate type system does not incorporate type qualifiers,
-     each cons of the @('pointers') list
-     is used only to derive a pointer from the type."))
-  (if (endp pointers)
-      (type-fix type)
-    (make-type-pointer :to (make-pointers-to (rest pointers) type)))
-  :verify-guards :after-returns
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
