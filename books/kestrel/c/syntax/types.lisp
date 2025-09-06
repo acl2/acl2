@@ -24,6 +24,8 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types
@@ -39,111 +41,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum type
-  :short "Fixtype of C types [C17:6.2.5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Currently we do not model all the C types in detail,
-     but only an approximate version of them,
-     which still lets us perform some validation.
-     We plan to refine the types, and the rest of the validator,
-     to cover exactly all the validity checks prescribed by [C17]
-     (as well as applicable GCC extensions).")
-   (xdoc::p
-    "We capture the following types:")
-   (xdoc::ul
-    (xdoc::li
-     "The @('void') type [C17:6.2.5/19].")
-    (xdoc::li
-     "The plain @('char') type [C17:6.2.5/3].")
-    (xdoc::li
-     "The five standard signed integer types [C17:6.2.5/4]
-      and the corresponding unsigned integer types [C17:6.2.5/6].")
-    (xdoc::li
-     "The three real floating point types [C17:6.2.5/10].")
-    (xdoc::li
-     "The three complex types [C17:6.2.5/11].
-      These are a conditional feature,
-      but they must be included in this fixtype
-      because this fixtype consists of all the possible types.")
-    (xdoc::li
-     "The @('_Bool') type [C17:6.2.5/2].")
-    (xdoc::li
-     "A family of structure types [C17:6.2.5/20].
-      Structure types are characterized by an optional tag.
-      This is an approximation,
-      because there may be different structure types of a given tag,
-      or different tagless structure types.")
-    (xdoc::li
-     "A collective type for all union types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different union types.")
-    (xdoc::li
-     "A collective type for all enumeration types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different enumeration types.")
-    (xdoc::li
-     "A collective type for all array types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different array types.")
-    (xdoc::li
-     "A collective type for all pointer types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different pointer types.")
-    (xdoc::li
-     "A collective type for all function types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different function types.")
-    (xdoc::li
-     "An ``unknown'' type that we need due to our current approximation.
-      Our validator must not reject valid code.
-      But due to our approximate treatment of types,
-      we cannot always calculate a type,
-      e.g. for a member expression of the form @('s.m')
-      where @('s') is an expression with structure type.
-      Since our approximate type for all structure types
-      has no information about the members,
-      we cannot calculate any actual type for @('s.m');
-      but if the expression is used elsewhere,
-      we need to accept it, because it could have the right type.
-      We use this unknown type for this purpose:
-      the expression @('s.m') has unknown type,
-      and unknown types are always acceptable."))
-   (xdoc::p
-    "Besides the approximations noted above,
-     currently we do not capture atomic types [C17:6.2.5/20],
-     which we approximate as the underlying (argument) type.
-     We also do not capture @('typedef') names,
-     which we approximate as unknown types.
-     Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
-  (:void ())
-  (:char ())
-  (:schar ())
-  (:uchar ())
-  (:sshort ())
-  (:ushort ())
-  (:sint ())
-  (:uint ())
-  (:slong ())
-  (:ulong ())
-  (:sllong ())
-  (:ullong ())
-  (:float ())
-  (:double ())
-  (:ldouble ())
-  (:floatc ())
-  (:doublec ())
-  (:ldoublec ())
-  (:bool ())
-  (:struct ((tag? ident-optionp)))
-  (:union ())
-  (:enum ())
-  (:array ())
-  (:pointer ())
-  (:function ())
-  (:unknown ())
-  :pred typep)
+(encapsulate ()
+  (set-induction-depth-limit 1)
+
+  (fty::deftagsum type
+    :short "Fixtype of C types [C17:6.2.5]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Currently we do not model all the C types in detail,
+       but only an approximate version of them,
+       which still lets us perform some validation.
+       We plan to refine the types, and the rest of the validator,
+       to cover exactly all the validity checks prescribed by [C17]
+       (as well as applicable GCC extensions).")
+     (xdoc::p
+      "We capture the following types:")
+     (xdoc::ul
+      (xdoc::li
+       "The @('void') type [C17:6.2.5/19].")
+      (xdoc::li
+       "The plain @('char') type [C17:6.2.5/3].")
+      (xdoc::li
+       "The five standard signed integer types [C17:6.2.5/4]
+        and the corresponding unsigned integer types [C17:6.2.5/6].")
+      (xdoc::li
+       "The three real floating point types [C17:6.2.5/10].")
+      (xdoc::li
+       "The three complex types [C17:6.2.5/11].
+        These are a conditional feature,
+        but they must be included in this fixtype
+        because this fixtype consists of all the possible types.")
+      (xdoc::li
+       "The @('_Bool') type [C17:6.2.5/2].")
+      (xdoc::li
+       "A family of structure types [C17:6.2.5/20].
+        Structure types are characterized by an optional tag.
+        This is an approximation,
+        because there may be different structure types of a given tag,
+        or different tagless structure types.")
+      (xdoc::li
+       "A collective type for all union types [C17:6.2.5/20].
+        This is an approximation,
+        because there are different union types.")
+      (xdoc::li
+       "A collective type for all enumeration types [C17:6.2.5/20].
+        This is an approximation,
+        because there are different enumeration types.")
+      (xdoc::li
+       "A collective type for all array types [C17:6.2.5/20].
+        This is an approximation,
+        because there are different array types.")
+      (xdoc::li
+       "A parameterized pointer type [C17:6.2.5/20].
+        A pointer type is derived from the so-called ``referenced type.''")
+      (xdoc::li
+       "A collective type for all function types [C17:6.2.5/20].
+        This is an approximation,
+        because there are different function types.")
+      (xdoc::li
+       "An ``unknown'' type that we need due to our current approximation.
+        Our validator must not reject valid code.
+        But due to our approximate treatment of types,
+        we cannot always calculate a type,
+        e.g. for a member expression of the form @('s.m')
+        where @('s') is an expression with structure type.
+        Since our approximate type for all structure types
+        has no information about the members,
+        we cannot calculate any actual type for @('s.m');
+        but if the expression is used elsewhere,
+        we need to accept it, because it could have the right type.
+        We use this unknown type for this purpose:
+        the expression @('s.m') has unknown type,
+        and unknown types are always acceptable."))
+     (xdoc::p
+      "Besides the approximations noted above,
+       currently we do not capture atomic types [C17:6.2.5/20],
+       which we approximate as the underlying (argument) type.
+       Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
+    (:void ())
+    (:char ())
+    (:schar ())
+    (:uchar ())
+    (:sshort ())
+    (:ushort ())
+    (:sint ())
+    (:uint ())
+    (:slong ())
+    (:ulong ())
+    (:sllong ())
+    (:ullong ())
+    (:float ())
+    (:double ())
+    (:ldouble ())
+    (:floatc ())
+    (:doublec ())
+    (:ldoublec ())
+    (:bool ())
+    (:struct ((tag? ident-optionp)))
+    (:union ())
+    (:enum ())
+    (:array ())
+    (:pointer ((to type)))
+    (:function ())
+    (:unknown ())
+    :pred typep))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +236,17 @@
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-signed-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-signed-integerp type)
+                    (and (member-equal kind
+                                       '(:schar :sshort :sint :slong :sllong))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +260,15 @@
      so the signed integer types coincide with
      the standard signed integer types."))
   (type-standard-signed-integerp type)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-signed-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-signed-integerp type)
+                    (type-standard-signed-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +277,18 @@
   :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-unsigned-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-unsigned-integerp type)
+                    (and (member-equal
+                           kind
+                           '(:bool :uchar :ushort :uint :ulong :ullong))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,7 +302,15 @@
      so the unsigned integer types coincide with
      the standard unsigned integer types."))
   (type-standard-unsigned-integerp type)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-unsigned-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-unsigned-integerp type)
+                    (type-standard-unsigned-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -280,7 +319,16 @@
   :short "Check if a type is a standard integer type [C17:6.2.5/7]."
   (or (type-standard-signed-integerp type)
       (type-standard-unsigned-integerp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-integerp type)
+                    (or (type-standard-signed-integerp type)
+                        (type-standard-unsigned-integerp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,7 +337,16 @@
   :short "Check if a type is a real floating type [C17:6.2.5/10]."
   (and (member-eq (type-kind type) '(:float :double :ldouble))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-real-floatingp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-real-floatingp type)
+                    (and (member-equal kind '(:float :double :ldouble))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +355,16 @@
   :short "Check if a type is a complex type [C17:6.2.5/11]."
   (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-complexp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-complexp type)
+                    (and (member-equal kind '(:floatc :doublec :ldoublec))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,7 +373,16 @@
   :short "Check if a type is a floating type [C17:6.2.5/11]."
   (or (type-real-floatingp type)
       (type-complexp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-floatingp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-floatingp type)
+                    (or (type-real-floatingp type)
+                        (type-complexp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +393,18 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-floatingp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-basicp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-basicp type)
+                    (or (equal kind :char)
+                        (type-signed-integerp type)
+                        (type-unsigned-integerp type)
+                        (type-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,7 +413,16 @@
   :short "Check if a type is a character type [C17:6.2.5/15]."
   (and (member-eq (type-kind type) '(:char :schar :uchar))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-characterp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-characterp type)
+                    (and (member-equal kind '(:char :schar :uchar))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,7 +433,18 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-case type :enum))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-integerp type)
+                    (or (equal kind :char)
+                        (type-signed-integerp type)
+                        (type-unsigned-integerp type)
+                        (type-case type :enum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,7 +453,16 @@
   :short "Check if a type is a real type [C17:6.2.5/17]."
   (or (type-integerp type)
       (type-real-floatingp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-realp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-realp type)
+                    (or (type-integerp type)
+                        (type-real-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,16 +475,16 @@
 
   ///
 
+  (defrule type-arithmeticp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-arithmeticp type)
+                    (or (type-integerp type)
+                        (type-floatingp type)))))
+
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
-             (type-arithmeticp type)))
-
-  (defrule type-arithmeticp-when-bool
-    (implies (type-case type :bool)
-             (type-arithmeticp type))
-    :enable (type-integerp
-             type-unsigned-integerp
-             type-standard-unsigned-integerp)))
+             (type-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +493,16 @@
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
       (type-case type :pointer))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-scalarp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-scalarp type)
+                    (or (type-arithmeticp type)
+                        (type-case type :pointer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,13 +515,12 @@
 
   ///
 
-  (defrule type-aggregatep-when-array
-    (implies (type-case type :array)
-             (type-aggregatep type)))
-
-  (defrule type-aggregatep-when-struct
-    (implies (type-case type :struct)
-             (type-aggregatep type))))
+  (defrule type-aggregatep-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-aggregatep type)
+                    (or (type-case type :array)
+                        (type-case type :struct))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,7 +536,17 @@
      the integer ones with rank below @('int')."))
   (not (member-eq (type-kind type)
                   '(:bool :char :schar :uchar :sshort :ushort :enum)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-promotedp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-promotedp type)
+                    (not (member-equal kind
+                                       '(:bool :char :schar :uchar :sshort
+                                         :ushort :enum)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,9 +560,11 @@
      It leaves non-array types unchanged.")
    (xdoc::p
     "In our currently approximate type system,
-     there is just one type for arrays and one type for pointers."))
+     there is just one type for array.
+     Therefore, the sole array type is converted to
+     a pointer type derived from the unknown type."))
   (if (type-case type :array)
-      (type-pointer)
+      (make-type-pointer :to (type-unknown))
     (type-fix type))
   :hooks (:fix))
 
@@ -445,9 +580,11 @@
      It leaves non-function types unchanged.")
    (xdoc::p
     "In our currently approximate type system,
-     there is just one type for functions and one type for pointers."))
+     there is just one type for functions.
+     Therefore, the sole function type is converted to
+     a pointer type derived from the function type."))
   (if (type-case type :function)
-      (type-pointer)
+      (make-type-pointer :to (type-function))
     (type-fix type))
   :hooks (:fix))
 
@@ -727,7 +864,7 @@
    (xdoc::p
     "Type compatibility affects whether a redeclaration is permissible,
      whether one type may be used when another is expected,
-     and whether two declarations referring to the same object are
+     and whether two declarations referring to the same object or function are
      well-defined.
      This is a little weaker than type equality.
      For instance,
@@ -747,7 +884,7 @@
      "All structure types are currently considered compatible,
       due to their approximate representations.
       The same applies to
-      union, enumeration, array, pointer, and function types.")
+      union, enumeration, array, and function types.")
     (xdoc::li
      "Type qualifiers are ignored.")
     (xdoc::li
@@ -771,24 +908,71 @@
      @(':void') is compatible with @(':unknown'),
      as is @(':bool'),
      but @(':void') is <i>not</i> compatible with @(':bool')."))
-  (b* ((x (type-fix x))
-       (y (type-fix y)))
-    (or (equal x y)
-        (type-case x :unknown)
-        (type-case y :unknown)
-        (and (type-integerp x) (type-case y :enum))
-        (and (type-case x :enum) (type-integerp y))))
+  (or (type-case y :unknown)
+      (type-case
+        x
+        :unknown t
+        :pointer (type-case
+                   y
+                   :pointer (type-compatiblep x.to y.to)
+                   :otherwise nil)
+        :otherwise (or (equal (type-fix x) (type-fix y))
+                       (and (type-integerp x) (type-case y :enum))
+                       (and (type-case x :enum) (type-integerp y)))))
+  :measure (type-count x)
   :hooks (:fix)
 
   ///
 
   (defrule type-compatiblep-reflexive
     (type-compatiblep x x)
-    :enable type-compatiblep)
+    :induct t)
 
   (defrule type-compatiblep-symmetric
     (equal (type-compatiblep y x)
            (type-compatiblep x y))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-composite ((x typep) (y typep))
+  :guard (type-compatiblep x y)
+  :returns (composite typep)
+  :short "Construct a composite @(see type) [C17:6.2.7/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our current approximate type system, the composite type is
+     the type of @('x') if the type of @('y') is unknown,
+     the type of @('y') if the type of @('x') is unknown,
+     and either type if neither are derived types.
+     For derived types, this is applied recursively on parameter types."))
+  (type-case
+    x
+    :pointer (type-case
+               y
+               :pointer (make-type-pointer :to (type-composite x.to y.to))
+               :unknown (type-fix x)
+               :otherwise (prog2$ (impossible) (irr-type)))
+    :unknown (type-fix y)
+    :otherwise (type-fix x))
+  :measure (type-count x)
+  :guard-hints (("Goal" :in-theory (enable type-compatiblep)))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-compatiblep-of-arg1-and-type-composite
+    (implies (type-compatiblep x y)
+             (type-compatiblep x (type-composite x y)))
+    :induct t
+    :enable type-compatiblep)
+
+  (defrule type-compatiblep-of-arg2-and-type-composite
+    (implies (type-compatiblep x y)
+             (type-compatiblep y (type-composite x y)))
+    :induct t
     :enable type-compatiblep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1039,6 +1223,8 @@
    :sllong (type-sllong)
    :ullong (type-ullong)
    :struct (type-struct (ident (c::ident->name ctype.tag)))
-   :pointer (type-pointer)
+   :pointer (make-type-pointer :to (ildm-type ctype.to))
    :array (type-array))
+  :measure (c::type-count ctype)
+  :verify-guards :after-returns
   :hooks (:fix))
