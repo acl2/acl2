@@ -82,7 +82,8 @@
           extdecl-list
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          transunit-ensemble
+          code-ensemble)
   :result booleanp
   :default t
   :combine and
@@ -421,28 +422,3 @@
                (and (expr-unambp arg1)
                     (expr-unambp arg2))))
     :enable check-expr-binary))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define code-ensemble-unambp ((code code-ensemblep))
-  :returns (yes/no booleanp)
-  :short "Check if a code ensemble is unambiguous."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check whether the translation unit ensemble is unambiguous.
-     The implementation environment is ignored for this,
-     but it is convenient to lift the unambiguity predicate
-     from translation unit ensembles to code ensembles."))
-  (transunit-ensemble-unambp (code-ensemble->transunits code))
-  :hooks (:fix)
-
-  ///
-
-  (defruled code-ensemble-unambp-of-code-ensemble
-    (equal (code-ensemble-unambp (code-ensemble tunits ienv))
-           (transunit-ensemble-unambp tunits)))
-
-  (defruled transunit-ensemble-unambp-of-code-ensemble->transunits
-    (implies (code-ensemble-unambp code)
-             (transunit-ensemble-unambp (code-ensemble->transunits code)))))
