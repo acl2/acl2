@@ -1454,8 +1454,9 @@
      to be used as an operand while the other operand has pointer type.
      But we found it accepted by practical compilers,
      so it is probably a GCC extension.
-     We therefore accept this when the GCC flag of the
-     @(see implementation-environment) is enabled.
+     We therefore accept this when the GCC flag of the "
+    (xdoc::seetopic "implementation-environments" "implementation-environment")
+     " is enabled.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -2268,7 +2269,8 @@
   (if (endp pointers)
       (type-fix type)
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
