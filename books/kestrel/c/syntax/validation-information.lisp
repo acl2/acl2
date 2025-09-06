@@ -850,7 +850,8 @@
           extdecl-list
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          transunit-ensemble
+          code-ensemble)
   :result booleanp
   :default t
   :combine and
@@ -916,14 +917,6 @@
                 (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define code-ensemble-annop ((code code-ensemblep))
-  :returns (yes/no booleanp)
-  :short "Check if a code ensemble is annotated with validation information."
-  (transunit-ensemble-annop (code-ensemble->transunits code))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
