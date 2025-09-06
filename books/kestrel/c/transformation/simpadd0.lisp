@@ -2386,6 +2386,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-if ((test exprp)
+                          (test-new exprp)
+                          (then stmtp)
+                          (then-new stmtp)
+                          (gin simpadd0-ginp))
+  :guard (and (expr-unambp test)
+              (expr-unambp test-new)
+              (stmt-unambp then)
+              (stmt-unambp then-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform an @('if') statement (without @('else'))."
+  (declare (ignore test then))
+  (b* (((simpadd0-gin gin) gin)
+       (stmt-new (make-stmt-if :test test-new :then then-new)))
+    (mv stmt-new (simpadd0-gout-no-thm gin)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-if
+    (stmt-unambp stmt)
+    :hyp (and (expr-unambp test-new)
+              (stmt-unambp then-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-decl-decl ((extension booleanp)
                             (specs decl-spec-listp)
                             (specs-new decl-spec-listp)
@@ -4633,9 +4658,7 @@
                 ((mv new-then (simpadd0-gout gout-then))
                  (simpadd0-stmt stmt.then gin))
                 (gin (simpadd0-gin-update gin gout-then)))
-             (mv (make-stmt-if :test new-test
-                               :then new-then)
-                 (simpadd0-gout-no-thm gin)))
+             (simpadd0-stmt-if stmt.test new-test stmt.then new-then gin))
        :ifelse (b* (((mv new-test (simpadd0-gout gout-test))
                      (simpadd0-expr stmt.test gin))
                     (gin (simpadd0-gin-update gin gout-test))
