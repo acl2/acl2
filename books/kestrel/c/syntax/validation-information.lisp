@@ -850,7 +850,8 @@
           extdecl-list
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          transunit-ensemble
+          code-ensemble)
   :result booleanp
   :default t
   :combine and
@@ -916,27 +917,6 @@
                 (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled filepath-transunit-map-annop-when-not-emptyp
-  (implies (and (filepath-transunit-mapp map)
-                (not (omap::emptyp map)))
-           (equal (filepath-transunit-map-annop map)
-                  (and (transunit-annop (omap::head-val map))
-                       (filepath-transunit-map-annop (omap::tail map)))))
-  :enable filepath-transunit-map-annop)
-
-(add-to-ruleset abstract-syntax-annop-rules
-                '(filepath-transunit-map-annop-when-not-emptyp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define code-ensemble-annop ((code code-ensemblep))
-  :returns (yes/no booleanp)
-  :short "Check if a code ensemble is annotated with validation information."
-  (transunit-ensemble-annop (code-ensemble->transunits code))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
