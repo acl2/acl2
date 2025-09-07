@@ -646,7 +646,7 @@
        (hints `(("Goal"
                  :in-theory '((:e c::expr-ident)
                               (:e c::type-fix))
-                 :use (:instance expr-ident-support-lemma
+                 :use (:instance expr-ident-vartys-support-lemma
                                  (var ',cvar)
                                  (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
