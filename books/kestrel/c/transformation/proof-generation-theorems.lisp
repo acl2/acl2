@@ -44,25 +44,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl c::lognot-value-lemma
-  (implies (and (c::valuep val)
-                (member-equal (c::value-kind val)
-                              '(:uchar :schar
-                                :ushort :sshort
-                                :uint :sint
-                                :ulong :slong
-                                :ullong :sllong)))
-           (equal (c::value-kind (c::lognot-value val)) :sint))
-  :enable (c::lognot-value
-           c::lognot-scalar-value
-           c::lognot-integer-value
-           c::value-scalarp
-           c::value-arithmeticp
-           c::value-realp
-           c::value-integerp
-           c::value-signed-integerp
-           c::value-unsigned-integerp))
-
 (defruled expr-unary-support-lemma
   (b* ((old (c::expr-unary op old-arg))
        (new (c::expr-unary op new-arg))
@@ -98,8 +79,26 @@
            c::value-integerp
            c::value-signed-integerp
            c::value-unsigned-integerp
-           c::lognot-value-lemma
-           c::value-kind-not-array-when-value-integerp))
+           c::value-kind-not-array-when-value-integerp)
+  :prep-lemmas
+  ((defrule c::lognot-value-lemma
+     (implies (and (c::valuep val)
+                   (member-equal (c::value-kind val)
+                                 '(:uchar :schar
+                                   :ushort :sshort
+                                   :uint :sint
+                                   :ulong :slong
+                                   :ullong :sllong)))
+              (equal (c::value-kind (c::lognot-value val)) :sint))
+     :enable (c::lognot-value
+              c::lognot-scalar-value
+              c::lognot-integer-value
+              c::value-scalarp
+              c::value-arithmeticp
+              c::value-realp
+              c::value-integerp
+              c::value-signed-integerp
+              c::value-unsigned-integerp))))
 
 (defruled expr-unary-error-support-lemma
   (implies (c::errorp (c::exec-expr-pure arg compst))
