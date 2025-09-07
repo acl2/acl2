@@ -192,11 +192,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Macros to concisely express theorems saying that
+; the printing functions do not modify the GCC component of the printer state.
+
+(local ; for non-recursive FN
+ (defmacro defret-same-gcc (fn)
+   `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+      (equal (pristate->gcc new-pstate)
+             (pristate->gcc pstate)))))
+
+(local ; for singly recursive FN
+ (defmacro defret-rec-same-gcc (fn)
+   `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+      (equal (pristate->gcc new-pstate)
+             (pristate->gcc pstate))
+      :hints (("Goal" :induct t)))))
+
+(local
+ (defun defret-mut-same-gcc-fn (fns)
+   (b* (((when (endp fns)) nil)
+        (fn (car fns))
+        (event `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+                  (equal (pristate->gcc new-pstate)
+                         (pristate->gcc pstate))
+                  :fn ,fn))
+        (events (defret-mut-same-gcc-fn (cdr fns))))
+     (cons event events))))
+
+(local
+ (defmacro defret-mut-same-gcc (name fns &key hints)
+   `(defret-mutual ,name
+      ,@(defret-mut-same-gcc-fn fns)
+      ,@(and hints (list :hints hints)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define inc-pristate-indent ((pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Increase the printer state's indentation level by one."
   (change-pristate pstate :indent-level (1+ (pristate->indent-level pstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc inc-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +256,11 @@
                 attempting to decrease a zero indentation level.")
         (pristate-fix pstate)))
     (change-pristate pstate :indent-level (1- indent-level)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc dec-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +313,9 @@
   ///
 
   (fty::deffixequiv print-char
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +335,9 @@
   ///
 
   (fty::deffixequiv print-chars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,7 +355,11 @@
      (ii) carriage returns, and
      (iii) line feeds immediately followed by carriage returns."))
   (print-char 10 pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-new-line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,7 +381,11 @@
        (spaces-to-print (* pstate.indent-level
                            (priopt->indent-size pstate.options))))
     (print-chars (repeat spaces-to-print 32) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-indent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,7 +411,9 @@
   ///
 
   (fty::deffixequiv print-astring
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-atring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +438,9 @@
   ///
 
   (fty::deffixequiv print-dec-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-dec-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,7 +455,9 @@
   ///
 
   (fty::deffixequiv print-dec-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-dec-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,7 +482,9 @@
   ///
 
   (fty::deffixequiv print-oct-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-oct-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,7 +499,9 @@
   ///
 
   (fty::deffixequiv print-oct-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-oct-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +526,9 @@
   ///
 
   (fty::deffixequiv print-hex-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-hex-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -476,7 +543,9 @@
   ///
 
   (fty::deffixequiv print-hex-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-hex-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,7 +580,11 @@
                chars)
         (pristate-fix pstate)))
     (print-chars chars pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -531,7 +604,11 @@
        ((when (endp (cdr idents))) pstate)
        (pstate (print-astring ", " pstate)))
     (print-ident-list (cdr idents) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-ident-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,7 +621,11 @@
    :upcase-l (print-astring "L" pstate)
    :locase-ll (print-astring "ll" pstate)
    :upcase-ll (print-astring "LL" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-lsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,7 +636,11 @@
    usuffix
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-usuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,7 +657,11 @@
    :lu (b* ((pstate (print-lsuffix isuffix.length pstate))
             (pstate (print-usuffix isuffix.unsigned pstate)))
          pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-isuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -587,7 +676,11 @@
    isuffix?
    :some (print-isuffix isuffix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-isuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,7 +691,11 @@
    hprefix
    :locase-0x (print-astring "0x" pstate)
    :upcase-0x (print-astring "0X" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -644,7 +741,11 @@
              (pstate (print-hprefix dohconst.prefix pstate))
              (pstate (print-hex-digit-achars dohconst.digits pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec/oct/hex-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -655,7 +756,11 @@
        (pstate (print-dec/oct/hex-const iconst.core pstate))
        (pstate (print-isuffix-option iconst.suffix? pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-iconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,7 +773,11 @@
    :upcase-f (print-astring "F" pstate)
    :locase-l (print-astring "l" pstate)
    :upcase-l (print-astring "L" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -683,7 +792,11 @@
    fsuffix?
    :some (print-fsuffix fsuffix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fsuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -694,7 +807,11 @@
    sign
    :plus (print-astring "+" pstate)
    :minus (print-astring "-" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-sign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,7 +826,11 @@
    sign?
    :some (print-sign sign?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-sign-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -720,7 +841,11 @@
    prefix
    :locase-e (print-astring "e" pstate)
    :upcase-e (print-astring "E" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo-prefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,7 +856,11 @@
    prefix
    :locase-p (print-astring "p" pstate)
    :upcase-p (print-astring "P" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-bin-expo-prefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -751,7 +880,11 @@
         pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -766,7 +899,11 @@
    expo?
    :some (print-dec-expo expo?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -786,7 +923,11 @@
         pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-bin-expo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -808,7 +949,11 @@
        (pstate (print-astring "." pstate))
        (pstate (print-dec-digit-achars dfconst.after pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -830,7 +975,11 @@
        (pstate (print-astring "." pstate))
        (pstate (print-hex-digit-achars hfconst.after pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -856,7 +1005,11 @@
              (pstate (print-dec-digit-achars fconst.significand pstate))
              (pstate (print-dec-expo fconst.expo pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,7 +1035,11 @@
              (pstate (print-hex-digit-achars fconst.significand pstate))
              (pstate (print-bin-expo fconst.expo pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -898,7 +1055,11 @@
              (pstate (print-hex-core-fconst fconst.core pstate))
              (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -919,7 +1080,11 @@
    :t (print-astring "\\t" pstate)        ; \t
    :v (print-astring "\\v" pstate)        ; \v
    :percent (print-astring "\\%" pstate)) ; \%
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-simple-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -939,7 +1104,11 @@
                      (pstate (print-oct-digit-achar esc.digit3 pstate)))
                   pstate))))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-oct-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -952,7 +1121,11 @@
        (pstate (print-hex-digit-achar quad.3rd pstate))
        (pstate (print-hex-digit-achar quad.4th pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-quad))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -968,7 +1141,11 @@
                   (pstate (print-hex-quad ucname.quad1 pstate))
                   (pstate (print-hex-quad ucname.quad2 pstate)))
                pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-univ-char-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,7 +1169,11 @@
              (pstate (print-hex-digit-achars esc.unwrap pstate)))
           pstate)
    :univ (print-univ-char-name esc.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1028,7 +1209,11 @@
                (pristate-fix pstate)))
            (print-char cchar.unwrap pstate))
    :escape (print-escape cchar.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-c-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1039,7 +1224,11 @@
   (b* (((when (endp cchars)) (pristate-fix pstate))
        (pstate (print-c-char (car cchars) pstate)))
     (print-c-char-list (cdr cchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-c-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1051,7 +1240,11 @@
    :upcase-l (print-astring "L" pstate)
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1066,7 +1259,11 @@
    cprefix?
    :some (print-cprefix cprefix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,7 +1284,11 @@
        (pstate (print-c-char-list cconst.cchars pstate))
        (pstate (print-astring "'" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1100,7 +1301,11 @@
    :float (print-fconst const.unwrap pstate)
    :enum (print-ident const.unwrap pstate)
    :char (print-cconst const.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1136,7 +1341,11 @@
                (pristate-fix pstate)))
            (print-char schar.unwrap pstate))
    :escape (print-escape schar.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-s-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1147,7 +1356,11 @@
   (b* (((when (endp schars)) (pristate-fix pstate))
        (pstate (print-s-char (car schars) pstate)))
     (print-s-char-list (cdr schars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-s-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,7 +1373,11 @@
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate)
    :upcase-l (print-astring "L" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-eprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1175,7 +1392,11 @@
    eprefix?
    :some (print-eprefix eprefix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-eprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1188,7 +1409,11 @@
        (pstate (print-s-char-list stringlit.schars pstate))
        (pstate (print-astring "\"" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-stringlit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1201,7 +1426,11 @@
        ((when (endp (cdr strings))) pstate)
        (pstate (print-astring " " pstate)))
     (print-stringlit-list (cdr strings) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-stringlit-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1234,7 +1463,11 @@
                code)
         (pristate-fix pstate)))
     (print-char code pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-h-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1245,7 +1478,11 @@
   (b* (((when (endp hchars)) (pristate-fix pstate))
        (pstate (print-h-char (car hchars) pstate)))
     (print-h-char-list (cdr hchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-h-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1278,7 +1515,11 @@
                code)
         (pristate-fix pstate)))
     (print-char code pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-q-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1289,7 +1530,11 @@
   (b* (((when (endp qchars)) (pristate-fix pstate))
        (pstate (print-q-char (car qchars) pstate)))
     (print-q-char-list (cdr qchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-q-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1306,7 +1551,11 @@
                 (pstate (print-q-char-list hname.chars pstate))
                 (pstate (print-astring "\"" pstate)))
              pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-header-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1326,7 +1575,11 @@
    :postinc (print-astring "++" pstate)
    :postdec (print-astring "--" pstate)
    :sizeof (print-astring "sizeof" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1364,7 +1617,11 @@
    :asg-and (print-astring "&=" pstate)
    :asg-xor (print-astring "^=" pstate)
    :asg-ior (print-astring "|=" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1375,7 +1632,11 @@
    op
    :inc (print-astring "++" pstate)
    :dec (print-astring "--" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-inc/dec-op))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1391,7 +1652,11 @@
        ((when (endp (cdr ops))) pstate)
        (pstate (print-astring " " pstate)))
     (print-inc/dec-op-list (cdr ops) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-inc/dec-op-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1408,7 +1673,11 @@
              (print-astring "__thread" pstate))
    :auto (print-astring "auto" pstate)
    :register (print-astring "register" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-stor-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1431,7 +1700,11 @@
    :atomic (print-astring "_Atomic" pstate)
    :seg-fs (print-astring "__seg_fs" pstate)
    :seg-gs (print-astring "__seg_gs" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-type-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1446,7 +1719,11 @@
             :start (print-astring "__inline" pstate)
             :both (print-astring "__inline__" pstate))
    :noreturn (print-astring "_Noreturn" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fun-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1470,7 +1747,11 @@
        (pstate (print-stringlit-list asmspec.strings pstate))
        (pstate (print-astring ")" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-name-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1490,7 +1771,11 @@
             :start (print-astring "__inline" pstate)
             :both (print-astring "__inline__" pstate))
    :goto (print-astring "goto" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1503,7 +1788,11 @@
        ((when (endp (cdr quals))) pstate)
        (pstate (print-astring " " pstate)))
     (print-asm-qual-list (cdr quals) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-asm-qual-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1516,7 +1805,11 @@
                 no string literals in assembler clobber.")
         (pristate-fix pstate)))
     (print-stringlit-list strings pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-clobber))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1529,7 +1822,11 @@
        ((when (endp (cdr clobbers))) pstate)
        (pstate (print-astring ", " pstate)))
     (print-asm-clobber-list (cdr clobbers) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-asm-clobber-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1548,7 +1845,11 @@
                          chars)
                   (pristate-fix pstate)))
               (print-astring attrname.unwrap pstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-attrib-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3721,7 +4022,69 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual print-exprs/decls/stmts))
+  (fty::deffixequiv-mutual print-exprs/decls/stmts)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mut-same-gcc pristate->gcc-of-print-exprs/decls/stmts
+    (print-expr
+     print-expr-list
+     print-const-expr
+     print-genassoc
+     print-genassoc-list
+     print-member-designor
+     print-type-spec
+     print-spec/qual
+     print-spec/qual-list
+     print-align-spec
+     print-decl-spec
+     print-decl-spec-list
+     print-typequal/attribspec
+     print-typequal/attribspec-list
+     print-typequal/attribspec-list-list
+     print-initer
+     print-desiniter
+     print-desiniter-list
+     print-designor
+     print-designor-list
+     print-declor
+     print-dirdeclor
+     print-absdeclor
+     print-dirabsdeclor
+     print-param-declon
+     print-param-declon-list
+     print-param-declor
+     print-tyname
+     print-struni-spec
+     print-structdecl
+     print-structdecl-list
+     print-structdeclor
+     print-structdeclor-list
+     print-enumspec
+     print-enumer
+     print-enumer-list
+     print-statassert
+     print-attrib
+     print-attrib-list
+     print-attrib-spec
+     print-attrib-spec-list
+     print-initdeclor
+     print-initdeclor-list
+     print-decl-inline
+     print-decl
+     print-decl-list
+     print-label
+     print-asm-output
+     print-asm-output-list
+     print-asm-input
+     print-asm-input-list
+     print-asm-stmt
+     print-stmt
+     print-block-item
+     print-block-item-list
+     print-block)
+    :hints (("Goal" :expand ((print-decl-inline decl pstate)
+                             (print-structdecl structdecl pstate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3773,7 +4136,11 @@
        (pstate (print-block fundef.body pstate))
        (pstate (print-new-line pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fundef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3789,7 +4156,11 @@
                (pstate (print-new-line pstate)))
             pstate)
    :asm (print-asm-stmt extdecl.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-extdecl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3804,7 +4175,11 @@
   (b* (((when (endp extdecls)) (pristate-fix pstate))
        (pstate (print-extdecl (car extdecls) pstate)))
     (print-extdecl-list (cdr extdecls) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-extdecl-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3822,7 +4197,11 @@
         (raise "Misusage error: empty translation unit.")
         (pristate-fix pstate)))
     (print-extdecl-list tunit.decls pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-transunit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
