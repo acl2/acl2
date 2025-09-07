@@ -86,12 +86,13 @@
       This is an approximation,
       because there are different enumeration types.")
     (xdoc::li
-     "A collective type for all array types [C17:6.2.5/20].
+     "An array types [C17:6.2.5/20],
+      derived from the ``element type.''
       This is an approximation,
-      because there are different array types.")
+      because we do not track the size of the array type.")
     (xdoc::li
-     "A pointer type [C17:6.2.5/20].
-      derived from the so-called ``referenced type.''")
+     "A pointer type [C17:6.2.5/20],
+      derived from the ``referenced type.''")
     (xdoc::li
      "A collective type for all function types [C17:6.2.5/20].
       This is an approximation,
@@ -140,7 +141,7 @@
   (:struct ((tag? ident-optionp)))
   (:union ())
   (:enum ())
-  (:array ())
+  (:array ((of type)))
   (:pointer ((to type)))
   (:function ())
   (:unknown ())
@@ -557,15 +558,11 @@
   (xdoc::topstring
    (xdoc::p
     "This performs the conversion in [C17:6.3.2.1/3].
-     It leaves non-array types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for array.
-     Therefore, the sole array type is converted to
-     a pointer type derived from the unknown type."))
-  (if (type-case type :array)
-      (make-type-pointer :to (type-unknown))
-    (type-fix type))
+     It leaves non-array types unchanged."))
+  (type-case
+    type
+    :array (make-type-pointer :to type.of)
+    :otherwise (type-fix type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -878,20 +875,36 @@
      Compatible types should always be recognized as such,
      but incompatible types may also be recognized.")
    (xdoc::p
-    "In particular:")
+    "Our approximate notion of type compatibility
+     is established by the following cases:")
    (xdoc::ul
     (xdoc::li
-     "All structure types are currently considered compatible,
-      due to their approximate representations.
-      The same applies to
-      union, enumeration, array, and function types.")
+     "If either type is unknown, the types are compatible.")
     (xdoc::li
-     "Type qualifiers are ignored.")
+     "Structure types are compatible if they share the same tag;
+      For now we do not consider members [6.2.7/1].")
     (xdoc::li
-     "All types are compatible with the abstract @(':unknown') type.")
+     "Due to their approximate representations,
+      all union types are considered compatible [6.2.7/1].
+      The same applies to enumeration types [[C17:6.7.2.2/4]]
+      and function types [C17:6.7.6.3/15].")
     (xdoc::li
-     "Enumeration types are compatible with
-      <i>all</i> integer types (not just one particular type)."))
+     "Pointer types are compatible if they are derived from compatible types;
+      we do not currently consider whether the types are qualified
+      [C17:6.7.6.1/2].")
+    (xdoc::li
+     "Array types are considered compatible
+      if their element types are compatible;
+      their size is not currently considered [C17:6.7.6.2/6].")
+    (xdoc::li
+     "Enumeration types are considered compatible
+      with <i>all</i> integer types.
+      This is an approximation because the standard says each enumeration type
+      must be compatible with <i>some</i> integer type.
+      However, the particular type is implementation-defined,
+      may vary for different enumeration types [C17:6.7.2.2/4].")
+    (xdoc::li
+     "For any other case, the types are compatible only if they are equal."))
    (xdoc::p
     "Eventually, we shall refine the notion of compatibility,
      alongside our representation of types,
@@ -912,6 +925,10 @@
       (type-case
         x
         :unknown t
+        :array (type-case
+                 y
+                 :array (type-compatiblep x.of y.of)
+                 :otherwise nil)
         :pointer (type-case
                    y
                    :pointer (type-compatiblep x.to y.to)
@@ -949,6 +966,11 @@
      For derived types, this is applied recursively."))
   (type-case
     x
+    :array (type-case
+             y
+             :array (make-type-array :of (type-composite x.of y.of))
+             :unknown (type-fix x)
+             :otherwise (prog2$ (impossible) (irr-type)))
     :pointer (type-case
                y
                :pointer (make-type-pointer :to (type-composite x.to y.to))
@@ -1247,7 +1269,7 @@
    :ullong (type-ullong)
    :struct (type-struct (ident (c::ident->name ctype.tag)))
    :pointer (make-type-pointer :to (ildm-type ctype.to))
-   :array (type-array))
+   :array (make-type-array :of (ildm-type ctype.of)))
   :measure (c::type-count ctype)
   :verify-guards :after-returns
   :hooks (:fix))
