@@ -1028,7 +1028,7 @@
    :labeled (stmt-types stmt.stmt)
    :compound nil
    :expr (set::insert nil nil)
-   :if (stmt-types stmt.then)
+   :if (set::insert nil (stmt-types stmt.then))
    :ifelse (set::union (stmt-types stmt.then)
                        (stmt-types stmt.else))
    :switch nil
