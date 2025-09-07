@@ -3492,6 +3492,7 @@
                          (pstate (print-stmt stmt.then pstate))
                          (pstate (dec-pristate-indent pstate)))
                       pstate)))
+          (pstate (print-indent pstate))
           (pstate (print-astring "else" pstate))
           (pstate (if (stmt-case stmt.else :compound)
                       (b* ((pstate (print-astring " " pstate))
