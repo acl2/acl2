@@ -33,6 +33,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled grammar-character-p-when-letter/digit/uscore-char-p
+  (implies (str::letter/digit/uscore-char-p char)
+           (grammar-character-p (char-code char)))
+  :enable (str::letter/digit/uscore-char-p
+           grammar-character-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled grammar-character-listp-when-letter/digit/uscore-charlist-p
+  (implies (str::letter/digit/uscore-charlist-p chars)
+           (grammar-character-listp (acl2::chars=>nats chars)))
+  :induct t
+  :enable (str::letter/digit/uscore-charlist-p
+           acl2::chars=>nats))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ printer
   :parents (syntax-for-tools)
   :short "A printer of C from the abstract syntax."
@@ -562,31 +579,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the identifier is a non-empty ACL2 string
-     whose character codes are all valid in our C grammar.
-     This way we can call @(tsee print-chars).")
-   (xdoc::p
-    "This is a weaker check than ensuring that the string
-     is in fact a valid C identifier in our concrete syntax.
-     We plan to strengthen this in the future."))
-  (b* ((string? (ident->unwrap ident))
-       ((unless (stringp string?))
-        (raise "Misusage error: ~
-                the identifier contains ~x0 instead of an ACL2 string."
-               string?)
-        (pristate-fix pstate))
-       (chars (acl2::string=>nats string?))
-       ((unless chars)
-        (raise "Misusage error; ~
-                the identifier is empty.")
-        (pristate-fix pstate))
-       ((unless (grammar-character-listp chars))
-        (raise "Misusage error: ~
-                the identifier consists of the character codes ~x0, ~
-                not all of which are allowed by the ABNF grammar."
-               chars)
-        (pristate-fix pstate)))
+    "The @(tsee ident-aidentp) guard ensures that
+     the identifier contains an ACL2 string consisting of
+     one or more characters satisfying @(tsee grammar-character-p)."))
+  (b* ((string (ident->unwrap ident))
+       (chars (acl2::string=>nats string)))
     (print-chars chars pstate))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable ident-aidentp
+            ascii-ident-stringp
+            grammar-character-listp-when-letter/digit/uscore-charlist-p
+            acl2::string=>nats
+            c::paident-char-listp)))
   :hooks (:fix)
 
   ///
