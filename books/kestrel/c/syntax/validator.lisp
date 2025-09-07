@@ -1136,9 +1136,10 @@
      one sub-expression must have pointer type,
      and the other sub-expression must have integer type
      [C17:6.5.2.1/1].
-     The expression should have the type referenced by the pointer type,
-     but since for now we model just one pointer type,
-     the type of the expression is unknown.")
+     The expression has the type referenced by the pointer type.
+     However, since we currently model just one array type,
+     all array types are converted to pointers to the unknown type
+     and the type of the expression is therefore unknown.")
    (xdoc::p
     "There is no need to perform function-to-pointer conversion,
      because that would result in a pointer to function,
@@ -1151,22 +1152,24 @@
         (retok (type-unknown)))
        (type1 (type-apconvert type-arg1))
        (type2 (type-apconvert type-arg2))
-       ((unless (or (and (type-case type1 :pointer)
-                         (type-integerp type2))
-                    (and (type-integerp type1)
-                         (type-case type2 :pointer))))
+       ((when (and (type-case type1 :pointer)
+                   (type-integerp type2)))
+        (retok (type-pointer->to type1)))
+       ((unless (and (type-integerp type1)
+                     (type-case type2 :pointer)))
         (retmsg$ "In the array subscripting expression ~x0, ~
                   the first sub-expression has type ~x1, ~
                   and the second sub-expression has type ~x2."
                  (expr-fix expr)
                  (type-fix type-arg1)
                  (type-fix type-arg2))))
-    (retok (type-unknown)))
+    (retok (type-pointer->to type2)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-funcall ((expr exprp) (type-fun typep) (types-arg type-listp))
+  (declare (ignore types-arg))
   :guard (expr-case expr :funcall)
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a function call expression,
@@ -1176,11 +1179,10 @@
    (xdoc::p
     "After converting function types to pointer types,
      the first sub-expression must have pointer type [C17:6.5.2.2/1];
-     since we currently have just one pointer type,
-     we cannot check that it is a pointer to a function.
-     For the same reason,
+     Furthermore, it must be a pointer to a function type.
+     Since we currently have just one function type,
      we do not check the argument types against the function type [C17:6.5.2.2/2].
-     Also for the same reason,
+     For the same reason,
      we return the unknown type,
      because we do not have information about the result type.")
    (xdoc::p
@@ -1189,11 +1191,12 @@
      but only (complete) object element types [C17:6.2.5/20].
      Thus, the conversion could never result into a pointer to a function."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-fun :unknown)
-                  (member-equal (type-unknown) (type-list-fix types-arg))))
+       ((when (type-case type-fun :unknown))
         (retok (type-unknown)))
        (type (type-fpconvert type-fun))
-       ((unless (type-case type :pointer))
+       ((unless (and (type-case type :pointer)
+                     (or (type-case (type-pointer->to type) :unknown)
+                         (type-case (type-pointer->to type) :function))))
         (retmsg$ "In the function call expression ~x0, ~
                   the first sub-expression has type ~x1."
                  (expr-fix expr)
@@ -1243,9 +1246,11 @@
    (xdoc::p
     "The argument type must be a pointer to a structure or union type
      [C17:6.5.2.3/2].
-     We need to convert arrays to pointers,
-     and then we just check that we have the (one) pointer type;
-     we will refine this when we refine our type system.
+     We perform array-to-pointer conversion,
+     then check that the type is a pointer to a struct type.
+     As we refine our type system,
+     we will eventually check that the struct type
+     has a member of the name being accessed.
      We do not conver functions to pointers,
      because that would result into a pointer to function,
      which is not a pointer to structure or union as required;
@@ -1257,7 +1262,9 @@
        ((when (type-case type-arg :unknown))
         (retok (type-unknown)))
        (type (type-apconvert type-arg))
-       ((unless (type-case type :pointer))
+       ((unless (and (type-case type :pointer)
+                     (or (type-case (type-pointer->to type) :unknown)
+                         (type-case (type-pointer->to type) :struct))))
         (retmsg$ "In the member pointer expression ~x0, ~
                   the sub-expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
@@ -1277,14 +1284,14 @@
     "The @('&') operator requires an lvalue of any type as operand
      [C17:6.5.3.2/1] [C17:6.5.3.2/3],
      but we are not yet distinguishing lvalues from non-lvalues,
-     so we allow any type of operand, and we return the (one) pointer type.")
+     so we allow any type of operand,
+     and we return the pointer type derived from the operand type.")
    (xdoc::p
     "The @('*') unary operator requires an operand of a pointer type
      [C17:6.5.3.2/2],
      after array-to-pointer and function-to-pointer conversions;
      as always, we also need to allow the unknown type.
-     Since we only have one type for pointers for now,
-     the resulting type is unknown.")
+     The result is the referenced type.")
    (xdoc::p
     "The @('+') and @('-') unary operators
      require an operand of an arithmetic type [C17:6.5.3.3/1],
@@ -1328,29 +1335,38 @@
      We do not perform array-to-pointer or function-to-pointer conversions,
      because those result in pointers, not lvalues as required [C17:6.5.2.4/1]."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type-arg :unknown))
-        (retok (type-unknown)))
        (msg (msg$ "In the unary expression ~x0, ~
                    the sub-expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
     (case (unop-kind op)
-      (:address (retok (type-pointer)))
-      (:indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
-                   ((unless (type-case type :pointer))
-                    (reterr msg)))
-                (retok (type-unknown))))
-      ((:plus :minus) (b* (((unless (type-arithmeticp type-arg))
+      (:address (retok (make-type-pointer :to type-arg)))
+      (:indir (b* (((when (type-case type-arg :unknown))
+                    (retok (type-unknown)))
+                   (type (type-fpconvert (type-apconvert type-arg))))
+                (type-case
+                  type
+                  :pointer (retok type.to)
+                  :otherwise (reterr msg))))
+      ((:plus :minus) (b* (((when (type-case type-arg :unknown))
+                            (retok (type-unknown)))
+                           ((unless (type-arithmeticp type-arg))
                             (reterr msg)))
                         (retok (type-promote type-arg ienv))))
-      (:bitnot (b* (((unless (type-integerp type-arg))
+      (:bitnot (b* (((when (type-case type-arg :unknown))
+                     (retok (type-unknown)))
+                    ((unless (type-integerp type-arg))
                      (reterr msg)))
                  (retok (type-promote type-arg ienv))))
-      (:lognot (b* ((type (type-fpconvert (type-apconvert type-arg)))
+      (:lognot (b* (((when (type-case type-arg :unknown))
+                     (retok (type-unknown)))
+                    (type (type-fpconvert (type-apconvert type-arg)))
                     ((unless (type-scalarp type))
                      (reterr msg)))
                  (retok (type-sint))))
       ((:preinc :predec :postinc :postdec)
-       (b* (((unless (or (type-realp type-arg)
+       (b* (((when (type-case type-arg :unknown))
+             (retok (type-unknown)))
+            ((unless (or (type-realp type-arg)
                          (type-case type-arg :pointer)))
              (reterr msg)))
          (retok (type-fix type-arg))))
@@ -1391,7 +1407,8 @@
      [C17:6.5.6/2].
      In the first case, the result is from the usual arithmetic conversions
      [C17:6.5.6/4].
-     In the second case, the result is the pointer type [C17:6.5.6/8].
+     In the second case,
+     the result is the type of the pointer operand [C17:6.5.6/8].
      Because of that second case, which involves pointers,
      we perform array-to-pointer conversion.
      We do not perform function-to-pointer conversion,
@@ -1408,7 +1425,8 @@
      In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
      and so we return the unknown type in this case.
-     In the third case, the result has the pointer type [C17:6.5.6/8].
+     In the third case,
+     the result has the type of the pointer operand [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
      we perform array-to-pointer conversion.
      We do not perform function-to-pointer conversion,
@@ -1429,24 +1447,25 @@
      We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to object type is required.
+     When the converted types are pointer types,
+     we check that they point to compatible object types.
      The standard does not allow
-     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast
+     a null pointer constant [C17:6.3.2.3/3] without the @('void *') cast
      to be used as an operand while the other operand has pointer type.
      But we found it accepted by practical compilers,
-     so it is probably a GCC extensions,
-     and for this reason we accept it for now;
-     we should extend our implementation environments with
-     information about whether GCC extensions are allowed,
-     and condition acceptance under that flag.
+     so it is probably a GCC extension.
+     We therefore accept this when the GCC flag of the "
+    (xdoc::seetopic "implementation-environments" "implementation-environment")
+     " is enabled.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
-     Distinctions betwen qualified and unqualified pointer types,
-     as well as @('void') or non-@('void') pointers types are ignored
-     since we currently approximate all of these as a single pointer type.
+     When the converted types are pointer types,
+     we check that they point to compatible object types,
+     or that one of them points to @('void').
      Since we do not yet implement evaluation of constant expressions,
      all integer expressions are considered potential null pointer constants:
      so we allow an operand to be a pointer and the other to be an integer,
@@ -1472,7 +1491,8 @@
      an lvalue as left operand [C17:6.5.16/2],
      but currently we do not check that.
      In our currently approximate type system,
-     the requirements in [C17:6.5.16.1/1] reduce to the following four cases.")
+     the requirements in [C17:6.5.16.1/1] reduce
+     to the following simplified cases.")
    (xdoc::ol
     (xdoc::li
      "Both operands have arithmetic types.")
@@ -1480,9 +1500,14 @@
      "The left operand has a structure or union type, and the two operand types
       are compatible.")
     (xdoc::li
-     "The left operand has the pointer type and the right operand is either a
-      pointer or a null pointer constant (approximated as anything of an
-      integer type).")
+     "Both operands have compatible pointer types.")
+    (xdoc::li
+     "One operand is a pointer to an object type
+      and the other is a pointer to the @('void') type.")
+    (xdoc::li
+     "The left operand is a pointer type
+      and the right operand is a null pointer constant
+      (approximated as anything of an integer type).")
     (xdoc::li
      "The left operand has the boolean type and the right operand has the
       pointer type."))
@@ -1534,11 +1559,12 @@
                ((and (type-arithmeticp type1)
                      (type-arithmeticp type2))
                 (retok (type-uaconvert type1 type2 ienv)))
-               ((or (and (type-integerp type1)
-                         (type-case type2 :pointer))
-                    (and (type-case type1 :pointer)
-                         (type-integerp type2)))
-                (retok (type-pointer)))
+               ((and (type-integerp type1)
+                     (type-case type2 :pointer))
+                (retok type2))
+               ((and (type-case type1 :pointer)
+                     (type-integerp type2))
+                (retok type1))
                (t (reterr msg)))))
       (:sub (b* ((type1 (type-apconvert type-arg1))
                  (type2 (type-apconvert type-arg2)))
@@ -1548,7 +1574,7 @@
                 (retok (type-uaconvert type1 type2 ienv)))
                ((and (type-case type1 :pointer)
                      (type-integerp type2))
-                (retok (type-pointer)))
+                (retok type1))
                ((and (type-case type1 :pointer)
                      (type-case type2 :pointer))
                 (retok (type-unknown)))
@@ -1563,23 +1589,36 @@
             ((unless (or (and (type-realp type1)
                               (type-realp type2))
                          (if (type-case type1 :pointer)
-                             (or (type-case type2 :pointer)
+                             (and (type-case type2 :pointer)
+                                  (let ((type-to1 (type-pointer->to type1))
+                                        (type-to2 (type-pointer->to type2)))
+                                    (and (not (type-case type-to1 :function))
+                                         (not (type-case type-to2 :function))
+                                         (type-compatiblep type-to1 type-to2))))
+                           (and (ienv->gcc ienv)
+                                (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                (type-case type2 :pointer)))))
+             (reterr msg)))
+         (retok (type-sint))))
+      ((:eq :ne)
+       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (or (and (type-arithmeticp type1)
+                              (type-arithmeticp type2))
+                         (if (type-case type1 :pointer)
+                             (or (type-compatiblep type1 type2)
+                                 (and (type-case type2 :pointer)
+                                      (let ((type-to1 (type-pointer->to type1))
+                                            (type-to2 (type-pointer->to type2)))
+                                        (or (and (type-case type-to1 :void)
+                                                 (not (type-case type-to2 :function)))
+                                            (and (type-case type-to2 :void)
+                                                 (not (type-case type-to1 :function))))))
                                  (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
                            (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
-      ((:eq :ne) (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
-                      (type2 (type-fpconvert (type-apconvert type-arg2)))
-                      ((unless (or (and (type-arithmeticp type1)
-                                        (type-arithmeticp type2))
-                                   (if (type-case type1 :pointer)
-                                       (or (type-case type2 :pointer)
-                                           (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
-                                     (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
-                                          (type-case type2 :pointer)))))
-                       (reterr msg)))
-                   (retok (type-sint))))
       ((:bitand :bitxor :bitior)
        (b* (((unless (and (type-integerp type-arg1)
                           (type-integerp type-arg2)))
@@ -1592,20 +1631,28 @@
                           (type-scalarp type2)))
              (reterr msg)))
          (retok (type-sint))))
-      (:asg (b* ((type1 type-arg1)
-                 (type2 (type-fpconvert (type-apconvert type-arg2)))
-                 ((unless (or (and (type-arithmeticp type1)
-                                   (type-arithmeticp type2))
-                              (and (or (type-case type1 :struct)
-                                       (type-case type1 :union))
-                                   (type-compatiblep type1 type2))
-                              (and (type-case type1 :pointer)
-                                   (or (type-case type2 :pointer)
-                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
-                              (and (type-case type1 :bool)
-                                   (type-case type2 :pointer))))
-                  (reterr msg)))
-              (retok (type-fix type-arg1))))
+      (:asg
+       (b* ((type1 type-arg1)
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (or (and (type-arithmeticp type1)
+                              (type-arithmeticp type2))
+                         (and (or (type-case type1 :struct)
+                                  (type-case type1 :union))
+                              (type-compatiblep type1 type2))
+                         (and (type-case type1 :pointer)
+                              (or (and (type-case type2 :pointer)
+                                       (let ((type-to1 (type-pointer->to type1))
+                                             (type-to2 (type-pointer->to type2)))
+                                         (or (type-compatiblep type-to1 type-to2)
+                                             (and (type-case type-to1 :void)
+                                                  (not (type-case type-to2 :function)))
+                                             (and (type-case type-to2 :void)
+                                                  (not (type-case type-to1 :function))))))
+                                  (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
+                         (and (type-case type1 :bool)
+                              (type-case type2 :pointer))))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
        (b* (((unless (and (type-arithmeticp type-arg1)
                           (type-arithmeticp type-arg2)))
@@ -1723,8 +1770,9 @@
      or both the same structure type,
      or both the union type,
      or both the void type,
-     or both the pointer type,
-     or one pointer type and the other operand a null pointer constant
+     or compatible pointer types,
+     or one pointer type and the other operand a null pointer constant,
+     or one pointer to an object type and one pointer to @('void')
      [C17:6.5.15/3].
      Currently, null pointer constants [C17:6.3.2.3/3] are approximated as any
      expression with an integer type.
@@ -1760,14 +1808,25 @@
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
         (retok (type-union)))
-       ((when (if (type-case type2 :pointer)
-                  (or (type-case type3 :pointer)
-                      (expr-null-pointer-constp (expr-cond->else expr) type3))
-                (and (if (expr-cond->then expr)
-                         (expr-null-pointer-constp (expr-cond->then expr) type2)
-                       (expr-null-pointer-constp (expr-cond->test expr) type2))
-                     (type-case type3 :pointer))))
-        (retok (type-pointer))))
+       ((when (and (type-case type2 :pointer)
+                   (type-compatiblep type2 type3)))
+        (retok (type-composite type2 type3)))
+       ((when (and (type-case type2 :pointer)
+                   (expr-null-pointer-constp (expr-cond->else expr) type3)))
+        (retok (type-fix type2)))
+       ((when (and (type-case type3 :pointer)
+                   (expr-cond->then expr)
+                   (expr-null-pointer-constp (expr-cond->then expr) type2)))
+        (retok (type-fix type3)))
+       ((when (and (type-case type2 :pointer)
+                   (type-case type3 :pointer)
+                   (let ((type-to2 (type-pointer->to type2))
+                         (type-to3 (type-pointer->to type3)))
+                     (or (and (type-case type-to2 :void)
+                              (not (type-case type-to3 :function)))
+                         (and (type-case type-to3 :void)
+                              (not (type-case type-to2 :function)))))))
+        (retok (make-type-pointer :to (type-void)))))
     (retmsg$ "In the conditional expression ~x0, ~
               the second operand has type ~x1 ~
               and the third operand has type ~x2."
@@ -3474,7 +3533,14 @@
                                (or (type-case type :pointer)
                                    (type-case type :unknown)))
                           (and (type-case target-type :pointer)
-                               (or (type-case type :pointer)
+                               (or (and (type-case type :pointer)
+                                        (let ((target-type-to (type-pointer->to target-type))
+                                              (type-to (type-pointer->to type)))
+                                          (or (type-compatiblep target-type-to type-to)
+                                              (and (type-case target-type-to :void)
+                                                   (not (type-case type-to :function)))
+                                              (and (type-case type-to :void)
+                                                   (not (type-case target-type-to :function))))))
                                    (type-case type :unknown)
                                    (expr-null-pointer-constp expr type)))))
               (retmsg$ "The initializer ~x0 for the target type ~x1 ~
@@ -3813,7 +3879,7 @@
       "In our currently approximate type system,
        we do not validate type qualifiers, or attributes.
        So the only role of the @('pointers') component of @(tsee declor)
-       is to refine the type passed as input into the pointer type
+       is to refine the type passed as input into the derived pointer type
        [C17:6.7.6.1/1].
        This resulting type is then passed to
        the function to validate the direct declarator that follows.")
@@ -3826,9 +3892,7 @@
        and we have not validated the parameters yet."))
     (b* (((reterr) (irr-declor) nil (irr-type) (irr-ident) nil (irr-valid-table))
          ((declor declor) declor)
-         (type (if (consp declor.pointers)
-                   (type-pointer)
-                 type))
+         (type (make-pointers-to declor.pointers type))
          ((erp new-dirdeclor fundef-params-p type ident types table)
           (valid-dirdeclor declor.direct fundef-params-p type table ienv)))
       (retok (make-declor :pointers declor.pointers :direct new-dirdeclor)
@@ -4184,9 +4248,7 @@
        not an abstract declarator."))
     (b* (((reterr) (irr-absdeclor) (irr-type) nil (irr-valid-table))
          ((absdeclor absdeclor) absdeclor)
-         (type (if (consp absdeclor.pointers)
-                   (type-pointer)
-                 type))
+         (type (make-pointers-to absdeclor.pointers type))
          ((erp new-direct? type types table)
           (valid-dirabsdeclor-option absdeclor.direct? type table ienv)))
       (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-direct?)
@@ -4440,10 +4502,10 @@
                     is for a function definition but has no identifier."
                    (param-declon-fix paramdecl)))
          (type (if (type-case type :array)
-                   (type-pointer)
+                   (make-type-pointer :to (type-unknown))
                  type))
          (type (if (type-case type :function)
-                   (type-pointer)
+                   (make-type-pointer :to type)
                  type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs :declor new-decl)
