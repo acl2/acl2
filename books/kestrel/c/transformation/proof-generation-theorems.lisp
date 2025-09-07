@@ -80,7 +80,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-unary-support-lemma
+  (defruled expr-unary-congruence
     (b* ((old (c::expr-unary op old-arg))
          (new (c::expr-unary op new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -138,7 +138,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cast-support-lemma
+  (defruled expr-cast-congruence
     (b* ((old (c::expr-cast tyname old-arg))
          (new (c::expr-cast tyname new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -169,7 +169,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-pure-strict-support-lemma
+  (defruled expr-binary-pure-strict-congruence
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -218,7 +218,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logand-first-support-lemma
+  (defruled expr-binary-logand-first-congruence
     (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -247,7 +247,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logand-second-support-lemma
+  (defruled expr-binary-logand-second-congruence
     (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -284,7 +284,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logor-first-support-lemma
+  (defruled expr-binary-logor-first-congruence
     (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -313,7 +313,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logor-second-support-lemma
+  (defruled expr-binary-logor-second-congruence
     (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -350,7 +350,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-asg-support-lemma
+  (defruled expr-binary-asg-congruence
     (b* ((old (c::expr-binary (c::binop-asg) (c::expr-ident var) old-arg))
          (new (c::expr-binary (c::binop-asg) (c::expr-ident var) new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -397,7 +397,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cond-true-support-lemma
+  (defruled expr-cond-true-congruence
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -434,7 +434,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cond-false-support-lemma
+  (defruled expr-cond-false-congruence
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -471,7 +471,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled initer-single-pure-support-lemma
+  (defruled initer-single-pure-congruence
     (b* ((old (c::initer-single old-expr))
          (new (c::initer-single new-expr))
          (old-expr-result (c::exec-expr-pure old-expr compst))
@@ -503,7 +503,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-null-support-lemma
+  (defruled stmt-null-congruence
     (b* ((old (c::stmt-null))
          (new (c::stmt-null))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
@@ -518,7 +518,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-support-lemma
+  (defruled stmt-expr-asg-congruence
     (b* ((old (c::stmt-expr old-expr))
          (new (c::stmt-expr new-expr))
          (old-expr-compst (c::exec-expr-asg
@@ -543,7 +543,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-return-value-support-lemma
+  (defruled stmt-return-value-congruence
     (b* ((old (c::stmt-return old-expr))
          (new (c::stmt-return new-expr))
          (old-expr-result (c::exec-expr-pure old-expr compst))
@@ -580,7 +580,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-return-novalue-support-lemma
+  (defruled stmt-return-novalue-congruence
     (b* ((old (c::stmt-return nil))
          (new (c::stmt-return nil))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
@@ -596,7 +596,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-if-true-support-lemma
+  (defruled stmt-if-true-congruence
     (b* ((old (c::stmt-if old-test old-then))
          (new (c::stmt-if new-test new-then))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -634,7 +634,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-if-false-support-lemma
+  (defruled stmt-if-false-congruence
     (b* ((old (c::stmt-if old-test old-then))
          (new (c::stmt-if new-test new-then))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -663,7 +663,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-true-support-lemma
+  (defruled stmt-ifelse-true-congruence
     (b* ((old (c::stmt-ifelse old-test old-then old-else))
          (new (c::stmt-ifelse new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -701,7 +701,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-false-support-lemma
+  (defruled stmt-ifelse-false-congruence
     (b* ((old (c::stmt-ifelse old-test old-then old-else))
          (new (c::stmt-ifelse new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -739,7 +739,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-support-lemma
+  (defruled decl-decl-congruence
     (b* ((declor (c::obj-declor-ident var))
          (old (c::obj-declon (c::scspecseq-none) tyspecs declor old-initer))
          (new (c::obj-declon (c::scspecseq-none) tyspecs declor new-initer))
@@ -769,7 +769,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-stmt-support-lemma
+  (defruled block-item-stmt-congruence
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -797,7 +797,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-support-lemma
+  (defruled block-item-decl-congruence
     (b* ((old (c::block-item-declon old-declon))
          (new (c::block-item-declon new-declon))
          (old-declon-compst
@@ -823,7 +823,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-empty-support-lemma
+  (defruled block-item-list-empty-congruence
     (b* ((old nil)
          (new nil)
          ((mv old-result old-compst)
@@ -840,7 +840,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-cons-first-support-lemma
+  (defruled block-item-list-cons-first-congruence
     (b* ((old (cons old-item old-items))
          (new (cons new-item new-items))
          ((mv old-item-result old-item-compst)
@@ -872,7 +872,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-cons-rest-support-lemma
+  (defruled block-item-list-cons-rest-congruence
     (b* ((old (cons old-item old-items))
          (new (cons new-item new-items))
          ((mv old-item-result old-item-compst)
@@ -929,21 +929,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-unary-error-support-lemma
+  (defruled expr-unary-errors
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
     :expand (c::exec-expr-pure (c::expr-unary op arg) compst))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cast-error-support-lemma
+  (defruled expr-cast-errors
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-cast tyname arg) compst)))
     :expand ((c::exec-expr-pure (c::expr-cast tyname arg) compst)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-pure-strict-error-support-lemma
+  (defruled expr-binary-pure-strict-errors
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))
@@ -954,7 +954,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logand-first-error-support-lemma
+  (defruled expr-binary-logand-first-errors
     (implies (c::errorp (c::exec-expr-pure arg1 compst))
              (c::errorp
               (c::exec-expr-pure (c::expr-binary (c::binop-logand) arg1 arg2)
@@ -963,7 +963,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logand-second-error-support-lemma
+  (defruled expr-binary-logand-second-errors
     (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -980,7 +980,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logor-first-error-support-lemma
+  (defruled expr-binary-logor-first-errors
     (implies (c::errorp (c::exec-expr-pure arg1 compst))
              (c::errorp
               (c::exec-expr-pure (c::expr-binary (c::binop-logor) arg1 arg2)
@@ -989,7 +989,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-logor-second-error-support-lemma
+  (defruled expr-binary-logor-second-errors
     (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1006,7 +1006,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-asg-error-support-lemma
+  (defruled expr-binary-asg-errors
     (implies (and (not (equal (c::expr-kind expr) :call))
                   (or (c::errorp (c::exec-expr-pure (c::expr-ident var) compst))
                       (c::errorp (c::exec-expr-pure expr compst))))
@@ -1021,7 +1021,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cond-test-error-support-lemma
+  (defruled expr-cond-test-errors
     (implies (c::errorp (c::exec-expr-pure test compst))
              (c::errorp
               (c::exec-expr-pure (c::expr-cond test then else) compst)))
@@ -1029,7 +1029,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cond-then-error-support-lemma
+  (defruled expr-cond-then-errors
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1045,7 +1045,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-cond-else-error-support-lemma
+  (defruled expr-cond-else-errors
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1061,7 +1061,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled initer-single-pure-error-support-lemma
+  (defruled initer-single-pure-errors
     (implies (and (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp
@@ -1072,7 +1072,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-error-support-lemma
+  (defruled stmt-expr-asg-errors
     (implies (and (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-asg expr compst fenv (- limit 2))))
              (c::errorp
@@ -1082,7 +1082,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-return-error-support-lemma
+  (defruled stmt-return-errors
     (implies (and expr
                   (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-pure expr compst)))
@@ -1096,7 +1096,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-if-test-error-support-lemma
+  (defruled stmt-if-test-errors
     (implies (c::errorp (c::exec-expr-pure test compst))
              (c::errorp
               (mv-nth 0 (c::exec-stmt
@@ -1105,7 +1105,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-if-then-error-support-lemma
+  (defruled stmt-if-then-errors
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1123,7 +1123,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-test-error-support-lemma
+  (defruled stmt-ifelse-test-errors
     (implies (c::errorp (c::exec-expr-pure test compst))
              (c::errorp
               (mv-nth 0 (c::exec-stmt
@@ -1132,7 +1132,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-then-error-support-lemma
+  (defruled stmt-ifelse-then-errors
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1150,7 +1150,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-else-error-support-lemma
+  (defruled stmt-ifelse-else-errors
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1169,7 +1169,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-error-support-lemma
+  (defruled decl-decl-errors
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer)))
       (implies (and initer
@@ -1185,7 +1185,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-stmt-error-support-lemma
+  (defruled block-item-stmt-errors
     (implies (c::errorp (mv-nth 0 (c::exec-stmt stmt compst fenv (1- limit))))
              (c::errorp
               (mv-nth 0 (c::exec-block-item
@@ -1194,7 +1194,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-error-support-lemma
+  (defruled block-item-decl-errors
     (implies (c::errorp (c::exec-obj-declon declon compst fenv (1- limit)))
              (c::errorp (mv-nth 0 (c::exec-block-item
                                    (c::block-item-declon declon)
@@ -1204,7 +1204,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-cons-first-error-support-lemma
+  (defruled block-item-list-cons-first-errors
     (implies (c::errorp
               (mv-nth 0 (c::exec-block-item item compst fenv (1- limit))))
              (c::errorp
@@ -1214,7 +1214,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-cons-rest-error-support-lemma
+  (defruled block-item-list-cons-rest-errors
     (b* (((mv result compst1) (c::exec-block-item item compst fenv (1- limit))))
       (implies (and (not (c::errorp result))
                     (equal (c::stmt-value-kind result) :none)
@@ -1237,7 +1237,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-ident-vartys-support-lemma
+  (defruled expr-ident-compustate-vars
     (b* ((expr (c::expr-ident var))
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
@@ -1249,7 +1249,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-asg-vartys-support-lemma
+  (defruled expr-binary-asg-compustate-vars
     (implies (not (equal (c::expr-kind expr) :call))
              (b* ((asg (c::expr-binary (c::binop-asg) (c::expr-ident var) expr))
                   (compst1 (c::exec-expr-asg asg compst fenv limit)))
@@ -1280,7 +1280,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled initer-single-pure-vartys-support-lemma
+  (defruled initer-single-pure-compustate-vars
     (implies (not (equal (c::expr-kind expr) :call))
              (b* ((initer (c::initer-single expr))
                   ((mv result compst1)
@@ -1298,7 +1298,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-null-vartys-support-lemma
+  (defruled stmt-null-compustate-vars
     (b* ((stmt (c::stmt-null))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (not (c::errorp result))
@@ -1309,7 +1309,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-vartys-support-lemma
+  (defruled stmt-expr-asg-compustate-vars
     (b* ((stmt (c::stmt-expr expr))
          (expr-compst1 (c::exec-expr-asg expr compst fenv (- limit 2)))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
@@ -1322,7 +1322,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-return-vartys-support-lemma
+  (defruled stmt-return-compustate-vars
     (implies (or (not expr?)
                  (not (equal (c::expr-kind expr?) :call)))
              (b* ((stmt (c::stmt-return expr?))
@@ -1337,7 +1337,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-if-vartys-support-lemma
+  (defruled stmt-if-compustate-vars
     (b* ((stmt (c::stmt-if test then))
          (test-result (c::exec-expr-pure test compst))
          (test-value (c::expr-value->value test-result))
@@ -1360,7 +1360,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-vartys-support-lemma
+  (defruled stmt-ifelse-compustate-vars
     (b* ((stmt (c::stmt-ifelse test then else))
          (test-result (c::exec-expr-pure test compst))
          (test-value (c::expr-value->value test-result))
@@ -1384,7 +1384,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-vartys-old-support-lemma
+  (defruled decl-decl-compustate-vars-old
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
          ((mv & compst0) (c::exec-initer initer compst fenv (1- limit)))
@@ -1406,7 +1406,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-vartys-new-support-lemma
+  (defruled decl-decl-compustate-vars-new
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
          (compst1 (c::exec-obj-declon declon compst fenv limit))
@@ -1428,7 +1428,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-stmt-vartys-support-lemma
+  (defruled block-item-stmt-compustate-vars
     (b* ((item (c::block-item-stmt stmt))
          ((mv & stmt-compst1) (c::exec-stmt stmt compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
@@ -1439,7 +1439,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-vartys-support-lemma
+  (defruled block-item-decl-compustate-vars
     (b* ((item (c::block-item-declon declon))
          (declon-compst (c::exec-obj-declon declon compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
@@ -1451,7 +1451,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-empty-vartys-support-lemma
+  (defruled block-item-list-empty-compustate-vars
     (b* ((items nil)
          ((mv result compst1)
           (c::exec-block-item-list items compst fenv limit)))
@@ -1463,7 +1463,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-list-cons-vartys-support-lemma
+  (defruled block-item-list-cons-compustate-vars
     (b* ((item+items (cons item items))
          ((mv result0 compst0)
           (c::exec-block-item item compst fenv (1- limit)))

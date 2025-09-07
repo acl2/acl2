@@ -646,7 +646,7 @@
        (hints `(("Goal"
                  :in-theory '((:e c::expr-ident)
                               (:e c::type-fix))
-                 :use (:instance expr-ident-vartys-support-lemma
+                 :use (:instance expr-ident-compustate-vars
                                  (var ',cvar)
                                  (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
@@ -853,7 +853,7 @@
                               (:e member-equal))
                  :use (,arg-thm-name
                        (:instance
-                        expr-unary-support-lemma
+                        expr-unary-congruence
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -864,7 +864,7 @@
                         (old-arg ',old-arg)
                         (new-arg ',new-arg))
                        (:instance
-                        expr-unary-error-support-lemma
+                        expr-unary-errors
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -949,12 +949,12 @@
                               (:e c::type-nonchar-integerp))
                  :use (,arg-thm-name
                        (:instance
-                        expr-cast-support-lemma
+                        expr-cast-congruence
                         (tyname ',ctyname)
                         (old-arg ',old-arg)
                         (new-arg ',new-arg))
                        (:instance
-                        expr-cast-error-support-lemma
+                        expr-cast-errors
                         (tyname ',ctyname)
                         (arg ',old-arg))))))
        ((mv thm-event thm-name thm-index)
@@ -1063,20 +1063,20 @@
                      :use (,arg1-thm-name
                            ,arg2-thm-name
                            (:instance
-                            expr-binary-pure-strict-support-lemma
+                            expr-binary-pure-strict-congruence
                             (op ',cop)
                             (old-arg1 ',old-arg1)
                             (old-arg2 ',old-arg2)
                             (new-arg1 ',new-arg1)
                             (new-arg2 ',new-arg2))
                            (:instance
-                            expr-binary-pure-strict-error-support-lemma
+                            expr-binary-pure-strict-errors
                             (op ',cop)
                             (arg1 ',old-arg1)
                             (arg2 ',old-arg2))
                            ,@(and simpp
                                   `((:instance
-                                     simpadd0-expr-binary-simp-support-lemma
+                                     simpadd0-expr-binary-simp-congruence
                                      (expr ',new-arg1))))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-pure-thm expr
@@ -1103,30 +1103,30 @@
                 ,arg2-thm-name
                 (:instance
                  ,(case (binop-kind op)
-                    (:logand 'expr-binary-logand-first-support-lemma)
-                    (:logor 'expr-binary-logor-first-support-lemma))
+                    (:logand 'expr-binary-logand-first-congruence)
+                    (:logor 'expr-binary-logor-first-congruence))
                  (old-arg1 ',old-arg1)
                  (old-arg2 ',old-arg2)
                  (new-arg1 ',new-arg1)
                  (new-arg2 ',new-arg2))
                 (:instance
                  ,(case (binop-kind op)
-                    (:logand 'expr-binary-logand-second-support-lemma)
-                    (:logor 'expr-binary-logor-second-support-lemma))
+                    (:logand 'expr-binary-logand-second-congruence)
+                    (:logor 'expr-binary-logor-second-congruence))
                  (old-arg1 ',old-arg1)
                  (old-arg2 ',old-arg2)
                  (new-arg1 ',new-arg1)
                  (new-arg2 ',new-arg2))
                 (:instance
                  ,(case (binop-kind op)
-                    (:logand 'expr-binary-logand-first-error-support-lemma)
-                    (:logor 'expr-binary-logor-first-error-support-lemma))
+                    (:logand 'expr-binary-logand-first-errors)
+                    (:logor 'expr-binary-logor-first-errors))
                  (arg1 ',old-arg1)
                  (arg2 ',old-arg2))
                 (:instance
                  ,(case (binop-kind op)
-                    (:logand 'expr-binary-logand-second-error-support-lemma)
-                    (:logor 'expr-binary-logor-second-error-support-lemma))
+                    (:logand 'expr-binary-logand-second-errors)
+                    (:logor 'expr-binary-logor-second-errors))
                  (arg1 ',old-arg1)
                  (arg2 ',old-arg2))))))
            ((mv thm-event thm-name thm-index)
@@ -1167,12 +1167,12 @@
                :use (,arg1-thm-name
                      ,arg2-thm-name
                      (:instance
-                      expr-binary-asg-support-lemma
+                      expr-binary-asg-congruence
                       (old-arg ',old-arg2)
                       (new-arg ',new-arg2)
                       (var ',cvar))
                      (:instance
-                      expr-binary-asg-error-support-lemma
+                      expr-binary-asg-errors
                       (var ',cvar)
                       (expr ',old-arg2)
                       (fenv old-fenv))
@@ -1200,7 +1200,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance expr-binary-asg-vartys-support-lemma
+           `(:instance expr-binary-asg-compustate-vars
                        (var ',asg-var)
                        (expr ',asg-expr)
                        (fenv old-fenv)
@@ -1239,7 +1239,7 @@
              fix
              ifix))
 
-  (defruled simpadd0-expr-binary-simp-support-lemma
+  (defruled simpadd0-expr-binary-simp-congruence
     (b* ((zero (c::expr-const
                 (c::const-int
                  (c::make-iconst
@@ -1319,7 +1319,7 @@
                        ,then-thm-name
                        ,else-thm-name
                        (:instance
-                        expr-cond-true-support-lemma
+                        expr-cond-true-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (old-else ',old-else)
@@ -1327,7 +1327,7 @@
                         (new-then ',new-then)
                         (new-else ',new-else))
                        (:instance
-                        expr-cond-false-support-lemma
+                        expr-cond-false-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (old-else ',old-else)
@@ -1335,17 +1335,17 @@
                         (new-then ',new-then)
                         (new-else ',new-else))
                        (:instance
-                        expr-cond-test-error-support-lemma
+                        expr-cond-test-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else))
                        (:instance
-                        expr-cond-then-error-support-lemma
+                        expr-cond-then-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else))
                        (:instance
-                        expr-cond-else-error-support-lemma
+                        expr-cond-else-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else))))))
@@ -1395,10 +1395,10 @@
                         (:e c::initer-single)
                         (:e c::type-nonchar-integerp))
            :use ((:instance ,expr-thm-name)
-                 (:instance initer-single-pure-support-lemma
+                 (:instance initer-single-pure-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
-                 (:instance initer-single-pure-error-support-lemma
+                 (:instance initer-single-pure-errors
                             (expr ',old-expr)
                             (fenv old-fenv))
                  ,@(simpadd0-initer-single-pure-lemma-instances
@@ -1424,7 +1424,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance initer-single-pure-vartys-support-lemma
+           `(:instance initer-single-pure-compustate-vars
                        (expr ',expr)
                        (fenv old-fenv)
                        (var ',var)
@@ -1491,11 +1491,11 @@
                       ,expr?-thm-name
                       (limit (- limit 2)))
                      (:instance
-                      stmt-expr-asg-support-lemma
+                      stmt-expr-asg-congruence
                       (old-expr ',old-expr?)
                       (new-expr ',new-expr?))
                      (:instance
-                      stmt-expr-asg-error-support-lemma
+                      stmt-expr-asg-errors
                       (expr ',old-expr?)
                       (fenv old-fenv))
                      ,@(simpadd0-stmt-expr-asg-lemma-instances
@@ -1505,7 +1505,7 @@
                           c::type-option-of-stmt-value
                           (:e set::in)
                           (:e set::insert))
-             :use (stmt-null-support-lemma
+             :use (stmt-null-congruence
                    ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
@@ -1529,7 +1529,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance stmt-null-vartys-support-lemma
+           `(:instance stmt-null-compustate-vars
                        (fenv old-fenv)
                        (var ',var)
                        (type ',type)))
@@ -1544,7 +1544,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance stmt-expr-asg-vartys-support-lemma
+           `(:instance stmt-expr-asg-compustate-vars
                        (expr ',expr)
                        (fenv old-fenv)
                        (var ',var)
@@ -1615,11 +1615,11 @@
                             (:e c::type-nonchar-integerp))
                :use (,expr?-thm-name
                      (:instance
-                      stmt-return-value-support-lemma
+                      stmt-return-value-congruence
                       (old-expr ',old-expr?)
                       (new-expr ',new-expr?))
                      (:instance
-                      stmt-return-error-support-lemma
+                      stmt-return-errors
                       (expr ',old-expr?)
                       (fenv old-fenv))
                      ,@vartys-lemma-instances)))
@@ -1627,7 +1627,7 @@
              :in-theory '((:e c::stmt-return)
                           (:e c::type-void)
                           (:e set::insert))
-             :use (stmt-return-novalue-support-lemma
+             :use (stmt-return-novalue-congruence
                    ,@vartys-lemma-instances)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
@@ -1650,7 +1650,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance stmt-return-vartys-support-lemma
+           `(:instance stmt-return-compustate-vars
                        (expr? ',expr?)
                        (fenv old-fenv)
                        (var ',var)
@@ -1724,25 +1724,25 @@
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance
-                        stmt-if-true-support-lemma
+                        stmt-if-true-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (new-test ',new-test)
                         (new-then ',new-then)
                         (types ',then-ctypes))
                        (:instance
-                        stmt-if-false-support-lemma
+                        stmt-if-false-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (new-test ',new-test)
                         (new-then ',new-then))
                        (:instance
-                        stmt-if-test-error-support-lemma
+                        stmt-if-test-errors
                         (test ',old-test)
                         (then ',old-then)
                         (fenv old-fenv))
                        (:instance
-                        stmt-if-then-error-support-lemma
+                        stmt-if-then-errors
                         (test ',old-test)
                         (then ',old-then)
                         (fenv old-fenv))
@@ -1770,7 +1770,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance stmt-if-vartys-support-lemma
+           `(:instance stmt-if-compustate-vars
                        (test ',test)
                        (then ',then)
                        (fenv old-fenv)
@@ -1836,7 +1836,7 @@
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance ,else-thm-name (limit (1- limit)))
                        (:instance
-                        stmt-ifelse-true-support-lemma
+                        stmt-ifelse-true-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (old-else ',old-else)
@@ -1845,7 +1845,7 @@
                         (new-else ',new-else)
                         (types ',then-ctypes))
                        (:instance
-                        stmt-ifelse-false-support-lemma
+                        stmt-ifelse-false-congruence
                         (old-test ',old-test)
                         (old-then ',old-then)
                         (old-else ',old-else)
@@ -1854,19 +1854,19 @@
                         (new-else ',new-else)
                         (types ',else-ctypes))
                        (:instance
-                        stmt-ifelse-test-error-support-lemma
+                        stmt-ifelse-test-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else)
                         (fenv old-fenv))
                        (:instance
-                        stmt-ifelse-then-error-support-lemma
+                        stmt-ifelse-then-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else)
                         (fenv old-fenv))
                        (:instance
-                        stmt-ifelse-else-error-support-lemma
+                        stmt-ifelse-else-errors
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else)
@@ -1896,7 +1896,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance stmt-ifelse-vartys-support-lemma
+           `(:instance stmt-ifelse-compustate-vars
                        (test ',test)
                        (then ',then)
                        (else ',else)
@@ -2006,13 +2006,13 @@
                               (:e c::identp))
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
-                        decl-decl-support-lemma
+                        decl-decl-congruence
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (old-initer ',old-initer)
                         (new-initer ',new-initer))
                        (:instance
-                        decl-decl-error-support-lemma
+                        decl-decl-errors
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
@@ -2020,7 +2020,7 @@
                        ,@(simpadd0-decl-decl-lemma-instances
                           gin.vartys cvar ctyspecs old-initer)
                        (:instance
-                        decl-decl-vartys-new-support-lemma
+                        decl-decl-compustate-vars-new
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
@@ -2053,7 +2053,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var1 type) (omap::head vartys))
           (lemma-instance
-           `(:instance decl-decl-vartys-old-support-lemma
+           `(:instance decl-decl-compustate-vars-old
                        (var1 ',var1)
                        (var ',var)
                        (type ',type)
@@ -2101,12 +2101,12 @@
                  :in-theory '((:e c::block-item-stmt))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
-                        block-item-stmt-support-lemma
+                        block-item-stmt-congruence
                         (old-stmt ',old-stmt)
                         (new-stmt ',new-stmt)
                         (types ',ctypes))
                        (:instance
-                        block-item-stmt-error-support-lemma
+                        block-item-stmt-errors
                         (stmt ',old-stmt)
                         (fenv old-fenv))
                        ,@(simpadd0-block-item-stmt-lemma-instances
@@ -2133,7 +2133,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance block-item-stmt-vartys-support-lemma
+           `(:instance block-item-stmt-compustate-vars
                        (stmt ',stmt)
                        (fenv old-fenv)
                        (var ',var)
@@ -2177,11 +2177,11 @@
                               (:e set::insert))
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
-                        block-item-decl-support-lemma
+                        block-item-decl-congruence
                         (old-declon ',old-declon)
                         (new-declon ',new-declon))
                        (:instance
-                        block-item-decl-error-support-lemma
+                        block-item-decl-errors
                         (declon ',old-declon)
                         (fenv old-fenv))
                        ,@(simpadd0-block-item-decl-lemma-instances
@@ -2212,7 +2212,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance block-item-decl-vartys-support-lemma
+           `(:instance block-item-decl-compustate-vars
                        (var ',var)
                        (type ',type)
                        (declon ',decl)
@@ -2243,7 +2243,7 @@
        (items nil)
        (hints `(("Goal"
                  :in-theory '((:e set::insert))
-                 :use (block-item-list-empty-support-lemma
+                 :use (block-item-list-empty-congruence
                        ,@(simpadd0-block-item-list-empty-lemma-instances
                           gin.vartys)))))
        ((mv thm-event thm-name thm-index)
@@ -2267,7 +2267,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance block-item-list-empty-vartys-support-lemma
+           `(:instance block-item-list-empty-compustate-vars
                        (fenv old-fenv)
                        (var ',var)
                        (type ',type)))
@@ -2333,7 +2333,7 @@
                               ',old-item compst old-fenv (1- limit))))
                   (limit (1- limit)))
                  (:instance
-                  block-item-list-cons-first-support-lemma
+                  block-item-list-cons-first-congruence
                   (old-item ',old-item)
                   (old-items ',old-items)
                   (new-item ',new-item)
@@ -2341,7 +2341,7 @@
                   (first-types ',first-ctypes)
                   (rest-types ',rest-ctypes))
                  (:instance
-                  block-item-list-cons-rest-support-lemma
+                  block-item-list-cons-rest-congruence
                   (old-item ',old-item)
                   (old-items ',old-items)
                   (new-item ',new-item)
@@ -2349,12 +2349,12 @@
                   (first-types ',first-ctypes)
                   (rest-types ',rest-ctypes))
                  (:instance
-                  block-item-list-cons-first-error-support-lemma
+                  block-item-list-cons-first-errors
                   (item ',old-item)
                   (items ',old-items)
                   (fenv old-fenv))
                  (:instance
-                  block-item-list-cons-rest-error-support-lemma
+                  block-item-list-cons-rest-errors
                   (item ',old-item)
                   (items ',old-items)
                   (fenv old-fenv))
@@ -2383,7 +2383,7 @@
      (b* (((when (omap::emptyp vartys)) nil)
           ((mv var type) (omap::head vartys))
           (lemma-instance
-           `(:instance block-item-list-cons-vartys-support-lemma
+           `(:instance block-item-list-cons-compustate-vars
                        (item ',item)
                        (items ',items)
                        (fenv old-fenv)
