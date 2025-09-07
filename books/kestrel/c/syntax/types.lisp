@@ -1041,13 +1041,12 @@
      This consists of @('void'),
      plain @('char'),
      the standard integer types except @('_Bool'),
+     pointer types,
      and struct types with tags.")
    (xdoc::p
-    "The pointer and array types are not supported because
+    "The array types are not supported because
      they are too coarse compared to their @(tsee c::type) counterparts:
-     they currently include no information other than being pointer or array,
-     while the ones in @(tsee c::type) include information about
-     the referenced type and element type.
+     they do not include size information.
      Struct types without tag are not supported,
      because they always have a tag in @(tsee c::type).")
    (xdoc::p
@@ -1061,9 +1060,12 @@
                         :ulong :slong
                         :ullong :sllong))
            t)
+      (and (type-case type :pointer)
+           (type-formalp (type-pointer->to type)))
       (and (type-case type :struct)
            (type-struct->tag? type)
            (ident-formalp (type-struct->tag? type))))
+  :measure (type-count type)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1145,9 +1147,12 @@
      :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :array (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :pointer (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :pointer (b* (((erp refd-type) (ldm-type type.to)))
+                (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
+  :measure (type-count type)
+  :verify-guards :after-returns
   :hooks (:fix)
 
   ///
@@ -1155,7 +1160,8 @@
   (defret ldm-type-when-type-formalp
     (not erp)
     :hyp (type-formalp type)
-    :hints (("Goal" :in-theory (enable type-formalp)))))
+    :hints (("Goal" :induct t
+                    :in-theory (enable type-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
