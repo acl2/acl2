@@ -2635,11 +2635,106 @@
               (stmt-unambp else-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform an @('if')-@('else') statement."
-  (declare (ignore test test-thm-name then then-thm-name else else-thm-name))
   (b* (((simpadd0-gin gin) gin)
+       (stmt (make-stmt-ifelse :test test :then then :else else))
        (stmt-new
-        (make-stmt-ifelse :test test-new :then then-new :else else-new)))
-    (mv stmt-new (simpadd0-gout-no-thm gin)))
+        (make-stmt-ifelse :test test-new :then then-new :else else-new))
+       ((unless (and test-thm-name
+                     then-thm-name
+                     else-thm-name
+                     (expr-purep test)))
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
+       (then-types (stmt-types then))
+       (else-types (stmt-types else))
+       ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
+       ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
+       ((mv & old-then) (ldm-stmt then)) ; ERP must be NIL
+       ((mv & new-then) (ldm-stmt then-new)) ; ERP must be NIL
+       ((mv & old-else) (ldm-stmt else)) ; ERP must be NIL
+       ((mv & new-else) (ldm-stmt else-new)) ; ERP must be NIL
+       ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
+       ((mv & else-ctypes) (ldm-type-option-set else-types)) ; ERP must be NIL
+       (hints `(("Goal"
+                 :in-theory '((:e c::stmt-ifelse)
+                              (:e c::type-nonchar-integerp)
+                              (:e set::insert)
+                              (:e set::subset)
+                              set::subset-in)
+                 :use (,test-thm-name
+                       (:instance ,then-thm-name (limit (1- limit)))
+                       (:instance ,else-thm-name (limit (1- limit)))
+                       (:instance
+                        simpadd0-stmt-ifelse-true-support-lemma
+                        (old-test ',old-test)
+                        (old-then ',old-then)
+                        (old-else ',old-else)
+                        (new-test ',new-test)
+                        (new-then ',new-then)
+                        (new-else ',new-else)
+                        (types ',then-ctypes))
+                       (:instance
+                        simpadd0-stmt-ifelse-false-support-lemma
+                        (old-test ',old-test)
+                        (old-then ',old-then)
+                        (old-else ',old-else)
+                        (new-test ',new-test)
+                        (new-then ',new-then)
+                        (new-else ',new-else)
+                        (types ',else-ctypes))
+                       (:instance
+                        simpadd0-stmt-ifelse-test-error-support-lemma
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else)
+                        (fenv old-fenv))
+                       (:instance
+                        simpadd0-stmt-ifelse-then-error-support-lemma
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else)
+                        (fenv old-fenv))
+                       (:instance
+                        simpadd0-stmt-ifelse-else-error-support-lemma
+                        (test ',old-test)
+                        (then ',old-then)
+                        (else ',old-else)
+                        (fenv old-fenv))
+                       ,@(simpadd0-stmt-ifelse-lemma-instances
+                          gin.vartys old-test old-then old-else)))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-stmt-ifelse-lemma-instances ((vartys c::ident-type-mapp)
+                                                 (test c::exprp)
+                                                 (then c::stmtp)
+                                                 (else c::stmtp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance simpadd0-stmt-ifelse-vartys-support-lemma
+                       (test ',test)
+                       (then ',then)
+                       (else ',else)
+                       (fenv old-fenv)
+                       (var ',var)
+                       (type ',type)))
+          (lemma-instances
+           (simpadd0-stmt-ifelse-lemma-instances
+            (omap::tail vartys) test then else)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2647,7 +2742,141 @@
     (stmt-unambp stmt)
     :hyp (and (expr-unambp test-new)
               (stmt-unambp then-new)
-              (stmt-unambp else-new))))
+              (stmt-unambp else-new)))
+
+  (defruled simpadd0-stmt-ifelse-true-support-lemma
+    (b* ((old (c::stmt-ifelse old-test old-then old-else))
+         (new (c::stmt-ifelse new-test new-then new-else))
+         (old-test-result (c::exec-expr-pure old-test compst))
+         (new-test-result (c::exec-expr-pure new-test compst))
+         (old-test-value (c::expr-value->value old-test-result))
+         (new-test-value (c::expr-value->value new-test-result))
+         ((mv old-then-result old-then-compst)
+          (c::exec-stmt old-then compst old-fenv (1- limit)))
+         ((mv new-then-result new-then-compst)
+          (c::exec-stmt new-then compst new-fenv (1- limit)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit))
+         (type (c::type-of-value old-test-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-test-result))
+                    (not (c::errorp new-then-result))
+                    (equal old-test-value new-test-value)
+                    (equal old-then-result new-then-result)
+                    (equal old-then-compst new-then-compst)
+                    (c::test-value old-test-value)
+                    (c::type-nonchar-integerp type)
+                    (set::in (c::type-option-of-stmt-value old-then-result)
+                             types))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             types))))
+    :expand ((c::exec-stmt
+              (c::stmt-ifelse old-test old-then old-else) compst old-fenv limit)
+             (c::exec-stmt
+              (c::stmt-ifelse new-test new-then new-else) compst new-fenv limit))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-stmt-ifelse-false-support-lemma
+    (b* ((old (c::stmt-ifelse old-test old-then old-else))
+         (new (c::stmt-ifelse new-test new-then new-else))
+         (old-test-result (c::exec-expr-pure old-test compst))
+         (new-test-result (c::exec-expr-pure new-test compst))
+         (old-test-value (c::expr-value->value old-test-result))
+         (new-test-value (c::expr-value->value new-test-result))
+         ((mv old-else-result old-else-compst)
+          (c::exec-stmt old-else compst old-fenv (1- limit)))
+         ((mv new-else-result new-else-compst)
+          (c::exec-stmt new-else compst new-fenv (1- limit)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit))
+         (type (c::type-of-value old-test-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-test-result))
+                    (not (c::errorp new-else-result))
+                    (equal old-test-value new-test-value)
+                    (equal old-else-result new-else-result)
+                    (equal old-else-compst new-else-compst)
+                    (not (c::test-value old-test-value))
+                    (c::type-nonchar-integerp type)
+                    (set::in (c::type-option-of-stmt-value old-else-result)
+                             types))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             types))))
+    :expand ((c::exec-stmt
+              (c::stmt-ifelse old-test old-then old-else) compst old-fenv limit)
+             (c::exec-stmt
+              (c::stmt-ifelse new-test new-then new-else) compst new-fenv limit))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-stmt-ifelse-test-error-support-lemma
+    (implies (c::errorp (c::exec-expr-pure test compst))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt
+                         (c::stmt-ifelse test then else) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-ifelse test then else) compst fenv limit))
+
+  (defruled simpadd0-stmt-ifelse-then-error-support-lemma
+    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure test compst))))
+                  (c::test-value
+                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (c::errorp
+                   (mv-nth 0 (c::exec-stmt then compst fenv (1- limit)))))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt
+                         (c::stmt-ifelse test then else) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-ifelse test then else) compst fenv limit)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-stmt-ifelse-else-error-support-lemma
+    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure test compst))))
+                  (not
+                   (c::test-value
+                    (c::expr-value->value (c::exec-expr-pure test compst))))
+                  (c::errorp
+                   (mv-nth 0 (c::exec-stmt else compst fenv (1- limit)))))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt
+                         (c::stmt-ifelse test then else) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-ifelse test then else) compst fenv limit)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-stmt-ifelse-vartys-support-lemma
+    (b* ((stmt (c::stmt-ifelse test then else))
+         (test-result (c::exec-expr-pure test compst))
+         (test-value (c::expr-value->value test-result))
+         ((mv & then-compst) (c::exec-stmt then compst fenv (1- limit)))
+         ((mv & else-compst) (c::exec-stmt else compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::type-nonchar-integerp (c::type-of-value test-value))
+                    (or (and (c::test-value test-value)
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                then-compst))
+                        (and (not (c::test-value test-value))
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                else-compst))))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :expand (c::exec-stmt (c::stmt-ifelse test then else) compst fenv limit)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
