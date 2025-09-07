@@ -932,7 +932,7 @@ void g() {
   "void foo() {
   int *a = 0;
   int **x = &a;
-  unsigned int *y = *x;
+  unsigned int *y = (unsigned int *) *x;
   short z = *y;
 }
 ")
@@ -991,4 +991,38 @@ int foo () {
    int y = 3[a];
    return x+y;
 }
+")
+
+(test-valid
+  "int a[10] = {[0] = 1, [1] = 2};
+")
+
+(test-valid
+  "struct s { int a; };
+
+void foo () {
+  struct s p[][];
+  struct s *sp = *p;
+}
+")
+
+(test-valid-fail
+  "struct s { int a; };
+
+void foo () {
+  struct s p[][];
+  int *sp = *p;
+}
+")
+
+(test-valid
+  "char hello_world[] = \"Hello\" \" \" \"World!\";
+")
+
+(test-valid
+  "char *hello_world = \"Hello\" \" \" \"World!\";
+")
+
+(test-valid
+  "char hello_world[] = \"Hello\" u8\" \" \"World!\";
 ")
