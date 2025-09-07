@@ -33,6 +33,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled grammar-character-p-when-letter/digit/uscore-char-p
+  (implies (str::letter/digit/uscore-char-p char)
+           (grammar-character-p (char-code char)))
+  :enable (str::letter/digit/uscore-char-p
+           grammar-character-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled grammar-character-listp-when-letter/digit/uscore-charlist-p
+  (implies (str::letter/digit/uscore-charlist-p chars)
+           (grammar-character-listp (acl2::chars=>nats chars)))
+  :induct t
+  :enable (str::letter/digit/uscore-charlist-p
+           acl2::chars=>nats))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ printer
   :parents (syntax-for-tools)
   :short "A printer of C from the abstract syntax."
@@ -188,7 +205,13 @@
                  :indent-level 0
                  :options options
                  :gcc gcc)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret pristate->gcc-of-init-pristate
+    (equal (pristate->gcc pstate)
+           (bool-fix gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,36 +573,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident ((ident identp) (pstate pristatep))
+  :guard (ident-aidentp ident (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print an identifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the identifier is a non-empty ACL2 string
-     whose character codes are all valid in our C grammar.
-     This way we can call @(tsee print-chars).")
-   (xdoc::p
-    "This is a weaker check than ensuring that the string
-     is in fact a valid C identifier in our concrete syntax.
-     We plan to strengthen this in the future."))
-  (b* ((string? (ident->unwrap ident))
-       ((unless (stringp string?))
-        (raise "Misusage error: ~
-                the identifier contains ~x0 instead of an ACL2 string."
-               string?)
-        (pristate-fix pstate))
-       (chars (acl2::string=>nats string?))
-       ((unless chars)
-        (raise "Misusage error; ~
-                the identifier is empty.")
-        (pristate-fix pstate))
-       ((unless (grammar-character-listp chars))
-        (raise "Misusage error: ~
-                the identifier consists of the character codes ~x0, ~
-                not all of which are allowed by the ABNF grammar."
-               chars)
-        (pristate-fix pstate)))
+    "The @(tsee ident-aidentp) guard ensures that
+     the identifier contains an ACL2 string consisting of
+     one or more characters satisfying @(tsee grammar-character-p)."))
+  (b* ((string (ident->unwrap ident))
+       (chars (acl2::string=>nats string)))
     (print-chars chars pstate))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable ident-aidentp
+            ascii-ident-stringp
+            grammar-character-listp-when-letter/digit/uscore-charlist-p
+            acl2::string=>nats
+            c::paident-char-listp)))
   :hooks (:fix)
 
   ///
@@ -589,7 +602,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident-list ((idents ident-listp) (pstate pristatep))
-  :guard (consp idents)
+  :guard (and (consp idents)
+              (ident-list-aidentp idents (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of one or more identifiers, separated by commas."
   :long
@@ -1293,6 +1307,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-const ((const constp) (pstate pristatep))
+  :guard (const-aidentp const (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print a constant."
   (const-case
@@ -1831,6 +1846,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-attrib-name ((attrname attrib-namep) (pstate pristatep))
+  :guard (attrib-name-aidentp attrname (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print an attribute name."
   (attrib-name-case
@@ -1861,7 +1877,8 @@
   (define print-expr ((expr exprp)
                       (expected-prio expr-priorityp)
                       (pstate pristatep))
-    :guard (expr-unambp expr)
+    :guard (and (expr-unambp expr)
+                (expr-aidentp expr (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an expression."
@@ -2262,7 +2279,8 @@
 
   (define print-expr-list ((exprs expr-listp) (pstate pristatep))
     :guard (and (consp exprs)
-                (expr-list-unambp exprs))
+                (expr-list-unambp exprs)
+                (expr-list-aidentp exprs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more expressions, separated by commas."
@@ -2291,7 +2309,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-const-expr ((cexpr const-exprp) (pstate pristatep))
-    :guard (const-expr-unambp cexpr)
+    :guard (and (const-expr-unambp cexpr)
+                (const-expr-aidentp cexpr (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a constant expression."
@@ -2307,7 +2326,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-genassoc ((genassoc genassocp) (pstate pristatep))
-    :guard (genassoc-unambp genassoc)
+    :guard (and (genassoc-unambp genassoc)
+                (genassoc-aidentp genassoc (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a generic association."
@@ -2328,7 +2348,8 @@
 
   (define print-genassoc-list ((genassocs genassoc-listp) (pstate pristatep))
     :guard (and (consp genassocs)
-                (genassoc-list-unambp genassocs))
+                (genassoc-list-unambp genassocs)
+                (genassoc-list-aidentp genassocs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more generic associations,
@@ -2348,7 +2369,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-member-designor ((memdes member-designorp) (pstate pristatep))
-    :guard (member-designor-unambp memdes)
+    :guard (and (member-designor-unambp memdes)
+                (member-designor-aidentp memdes (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a member designator."
@@ -2368,7 +2390,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-type-spec ((tyspec type-specp) (pstate pristatep))
-    :guard (type-spec-unambp tyspec)
+    :guard (and (type-spec-unambp tyspec)
+                (type-spec-aidentp tyspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
@@ -2447,7 +2470,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
-    :guard (spec/qual-unambp specqual)
+    :guard (and (spec/qual-unambp specqual)
+                (spec/qual-aidentp specqual (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a specifier or qualifier."
@@ -2463,7 +2487,8 @@
 
   (define print-spec/qual-list ((specquals spec/qual-listp) (pstate pristatep))
     :guard (and (consp specquals)
-                (spec/qual-list-unambp specquals))
+                (spec/qual-list-unambp specquals)
+                (spec/qual-list-aidentp specquals (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more specifiers and qualifiers,
@@ -2478,7 +2503,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-align-spec ((alignspec align-specp) (pstate pristatep))
-    :guard (align-spec-unambp alignspec)
+    :guard (and (align-spec-unambp alignspec)
+                (align-spec-aidentp alignspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
@@ -2496,7 +2522,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
-    :guard (decl-spec-unambp declspec)
+    :guard (and (decl-spec-unambp declspec)
+                (decl-spec-aidentp declspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
@@ -2519,7 +2546,8 @@
 
   (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
     :guard (and (consp declspecs)
-                (decl-spec-list-unambp declspecs))
+                (decl-spec-list-unambp declspecs)
+                (decl-spec-list-aidentp declspecs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
@@ -2535,6 +2563,7 @@
 
   (define print-typequal/attribspec ((tyqualattrib typequal/attribspec-p)
                                      (pstate pristatep))
+    :guard (typequal/attribspec-aidentp tyqualattrib (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type qualifier or attribute specifier."
@@ -2549,7 +2578,9 @@
   (define print-typequal/attribspec-list
     ((tyqualattribs typequal/attribspec-listp)
      (pstate pristatep))
-    :guard (consp tyqualattribs)
+    :guard (and (consp tyqualattribs)
+                (typequal/attribspec-list-aidentp tyqualattribs
+                                                  (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more
@@ -2567,7 +2598,9 @@
   (define print-typequal/attribspec-list-list
     ((tyqualattribss typequal/attribspec-list-listp)
      (pstate pristatep))
-    :guard (consp tyqualattribss)
+    :guard (and (consp tyqualattribss)
+                (typequal/attribspec-list-list-aidentp tyqualattribss
+                                                       (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list or one or more lists of
@@ -2618,7 +2651,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initer ((initer initerp) (pstate pristatep))
-    :guard (initer-unambp initer)
+    :guard (and (initer-unambp initer)
+                (initer-aidentp initer (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer."
@@ -2648,7 +2682,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-desiniter ((desiniter desiniterp) (pstate pristatep))
-    :guard (desiniter-unambp desiniter)
+    :guard (and (desiniter-unambp desiniter)
+                (desiniter-aidentp desiniter (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
@@ -2668,7 +2703,8 @@
   (define print-desiniter-list ((desiniters desiniter-listp)
                                 (pstate pristatep))
     :guard (and (consp desiniters)
-                (desiniter-list-unambp desiniters))
+                (desiniter-list-unambp desiniters)
+                (desiniter-list-aidentp desiniters (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializers with optional designations,
@@ -2683,7 +2719,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-designor ((designor designorp) (pstate pristatep))
-    :guard (designor-unambp designor)
+    :guard (and (designor-unambp designor)
+                (designor-aidentp designor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a designator."
@@ -2711,7 +2748,8 @@
   (define print-designor-list ((designors designor-listp)
                                (pstate pristatep))
     :guard (and (consp designors)
-                (designor-list-unambp designors))
+                (designor-list-unambp designors)
+                (designor-list-aidentp designors (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more designators."
@@ -2728,7 +2766,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declor ((declor declorp) (pstate pristatep))
-    :guard (declor-unambp declor)
+    :guard (and (declor-unambp declor)
+                (declor-aidentp declor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declarator."
@@ -2744,7 +2783,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirdeclor ((dirdeclor dirdeclorp) (pstate pristatep))
-    :guard (dirdeclor-unambp dirdeclor)
+    :guard (and (dirdeclor-unambp dirdeclor)
+                (dirdeclor-aidentp dirdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct declarator."
@@ -2850,7 +2890,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-absdeclor ((absdeclor absdeclorp) (pstate pristatep))
-    :guard (absdeclor-unambp absdeclor)
+    :guard (and (absdeclor-unambp absdeclor)
+                (absdeclor-aidentp absdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an abstract declarator."
@@ -2881,7 +2922,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (pstate pristatep))
-    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :guard (and (dirabsdeclor-unambp dirabsdeclor)
+                (dirabsdeclor-aidentp dirabsdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct abstract declarator."
@@ -2980,7 +3022,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-param-declon ((param param-declonp) (pstate pristatep))
-    :guard (param-declon-unambp param)
+    :guard (and (param-declon-unambp param)
+                (param-declon-aidentp param (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declaration."
@@ -3002,7 +3045,8 @@
   (define print-param-declon-list ((params param-declon-listp)
                                    (pstate pristatep))
     :guard (and (consp params)
-                (param-declon-list-unambp params))
+                (param-declon-list-unambp params)
+                (param-declon-list-aidentp params (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more parameter declarations,
@@ -3017,7 +3061,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-param-declor ((paramdeclor param-declorp) (pstate pristatep))
-    :guard (param-declor-unambp paramdeclor)
+    :guard (and (param-declor-unambp paramdeclor)
+                (param-declor-aidentp paramdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
@@ -3044,7 +3089,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-tyname ((tyname tynamep) (pstate pristatep))
-    :guard (tyname-unambp tyname)
+    :guard (and (tyname-unambp tyname)
+                (tyname-aidentp tyname (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type name."
@@ -3067,7 +3113,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
-    :guard (struni-spec-unambp struni-spec)
+    :guard (and (struni-spec-unambp struni-spec)
+                (struni-spec-aidentp struni-spec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -3115,7 +3162,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdecl ((structdecl structdeclp) (pstate pristatep))
-    :guard (structdecl-unambp structdecl)
+    :guard (and (structdecl-unambp structdecl)
+                (structdecl-aidentp structdecl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declaration."
@@ -3158,7 +3206,8 @@
   (define print-structdecl-list ((structdecls structdecl-listp)
                                  (pstate pristatep))
     :guard (and (consp structdecls)
-                (structdecl-list-unambp structdecls))
+                (structdecl-list-unambp structdecls)
+                (structdecl-list-aidentp structdecls (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarations,
@@ -3183,7 +3232,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdeclor ((structdeclor structdeclorp) (pstate pristatep))
-    :guard (structdeclor-unambp structdeclor)
+    :guard (and (structdeclor-unambp structdeclor)
+                (structdeclor-aidentp structdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declarator."
@@ -3221,7 +3271,9 @@
   (define print-structdeclor-list ((structdeclors structdeclor-listp)
                                    (pstate pristatep))
     :guard (and (consp structdeclors)
-                (structdeclor-list-unambp structdeclors))
+                (structdeclor-list-unambp structdeclors)
+                (structdeclor-list-aidentp structdeclors
+                                           (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarators,
@@ -3236,7 +3288,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumspec ((enumspec enumspecp) (pstate pristatep))
-    :guard (enumspec-unambp enumspec)
+    :guard (and (enumspec-unambp enumspec)
+                (enumspec-aidentp enumspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enueration specifier."
@@ -3270,7 +3323,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumer ((enumer enumerp) (pstate pristatep))
-    :guard (enumer-unambp enumer)
+    :guard (and (enumer-unambp enumer)
+                (enumer-aidentp enumer (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enumerator."
@@ -3287,7 +3341,8 @@
 
   (define print-enumer-list ((enumers enumer-listp) (pstate pristatep))
     :guard (and (consp enumers)
-                (enumer-list-unambp enumers))
+                (enumer-list-unambp enumers)
+                (enumer-list-aidentp enumers (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more enumerators, separated by commas."
@@ -3301,7 +3356,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-statassert ((statassert statassertp) (pstate pristatep))
-    :guard (statassert-unambp statassert)
+    :guard (and (statassert-unambp statassert)
+                (statassert-aidentp statassert (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
@@ -3321,6 +3377,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib ((attr attribp) (pstate pristatep))
+    :guard (attrib-aidentp attr (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a GCC attribute."
@@ -3349,7 +3406,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
-    :guard (consp attrs)
+    :guard (and (consp attrs)
+                (attrib-list-aidentp attrs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more GCC attributes, comma-separated."
@@ -3363,6 +3421,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
+    :guard (attrib-spec-aidentp attrspec (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an attribute specifier."
@@ -3381,7 +3440,8 @@
 
   (define print-attrib-spec-list ((attrspecs attrib-spec-listp)
                                   (pstate pristatep))
-    :guard (consp attrspecs)
+    :guard (and (consp attrspecs)
+                (attrib-spec-list-aidentp attrspecs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more attribute specifiers,
@@ -3396,7 +3456,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
-    :guard (initdeclor-unambp initdeclor)
+    :guard (and (initdeclor-unambp initdeclor)
+                (initdeclor-aidentp initdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer declarator."
@@ -3425,7 +3486,8 @@
   (define print-initdeclor-list ((initdeclors initdeclor-listp)
                                  (pstate pristatep))
     :guard (and (consp initdeclors)
-                (initdeclor-list-unambp initdeclors))
+                (initdeclor-list-unambp initdeclors)
+                (initdeclor-list-aidentp initdeclors (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializer declarators,
@@ -3440,7 +3502,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl-inline ((decl declp) (pstate pristatep))
-    :guard (decl-unambp decl)
+    :guard (and (decl-unambp decl)
+                (decl-aidentp decl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, inline."
@@ -3479,7 +3542,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl ((decl declp) (pstate pristatep))
-    :guard (decl-unambp decl)
+    :guard (and (decl-unambp decl)
+                (decl-aidentp decl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, in its own indented line."
@@ -3493,7 +3557,8 @@
 
   (define print-decl-list ((decls decl-listp) (pstate pristatep))
     :guard (and (consp decls)
-                (decl-list-unambp decls))
+                (decl-list-unambp decls)
+                (decl-list-aidentp decls (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
@@ -3507,7 +3572,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-label ((label labelp) (pstate pristatep))
-    :guard (label-unambp label)
+    :guard (and (label-unambp label)
+                (label-aidentp label (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a label."
@@ -3528,6 +3594,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-output ((output asm-outputp) (pstate pristatep))
+    :guard (asm-output-aidentp output (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler output operand."
@@ -3559,7 +3626,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-output-list ((outputs asm-output-listp) (pstate pristatep))
-    :guard (consp outputs)
+    :guard (and (consp outputs)
+                (asm-output-list-aidentp outputs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler output operands,
@@ -3574,6 +3642,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-input ((input asm-inputp) (pstate pristatep))
+    :guard (asm-input-aidentp input (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler input operand."
@@ -3605,7 +3674,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-input-list ((inputs asm-input-listp) (pstate pristatep))
-    :guard (consp inputs)
+    :guard (and (consp inputs)
+                (asm-input-list-aidentp inputs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler input operands,
@@ -3620,6 +3690,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-stmt ((asm asm-stmtp) (pstate pristatep))
+    :guard (asm-stmt-aidentp asm (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler statement."
@@ -3714,7 +3785,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-stmt ((stmt stmtp) (pstate pristatep))
-    :guard (stmt-unambp stmt)
+    :guard (and (stmt-unambp stmt)
+                (stmt-aidentp stmt (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a statement, in one or more lines, with proper indentation."
@@ -3951,7 +4023,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item ((item block-itemp) (pstate pristatep))
-    :guard (block-item-unambp item)
+    :guard (and (block-item-unambp item)
+                (block-item-aidentp item (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block item."
@@ -3965,7 +4038,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item-list ((items block-item-listp) (pstate pristatep))
-    :guard (block-item-list-unambp items)
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-aidentp items (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of zero or more block items."
@@ -3977,7 +4051,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block ((items block-item-listp) (pstate pristatep))
-    :guard (block-item-list-unambp items)
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-aidentp items (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block."
@@ -4016,12 +4091,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
-
-  (verify-guards print-expr
-    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4087,12 +4161,18 @@
      print-block-item-list
      print-block)
     :hints (("Goal" :expand ((print-decl-inline decl pstate)
-                             (print-structdecl structdecl pstate))))))
+                             (print-structdecl structdecl pstate)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards print-expr
+    :hints (("Goal" :in-theory (disable (:e tau-system)))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fundef ((fundef fundefp) (pstate pristatep))
-  :guard (fundef-unambp fundef)
+  :guard (and (fundef-unambp fundef)
+              (fundef-aidentp fundef (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a function definition."
   :long
@@ -4148,7 +4228,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl ((extdecl extdeclp) (pstate pristatep))
-  :guard (extdecl-unambp extdecl)
+  :guard (and (extdecl-unambp extdecl)
+              (extdecl-aidentp extdecl (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print an external declaration."
   (extdecl-case
@@ -4168,7 +4249,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl-list ((extdecls extdecl-listp) (pstate pristatep))
-  :guard (extdecl-list-unambp extdecls)
+  :guard (and (extdecl-list-unambp extdecls)
+              (extdecl-list-aidentp extdecls (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of zero or more external declarations."
   :long
@@ -4187,7 +4269,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-transunit ((tunit transunitp) (pstate pristatep))
-  :guard (transunit-unambp tunit)
+  :guard (and (transunit-unambp tunit)
+              (transunit-aidentp tunit (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   :long
