@@ -3759,8 +3759,7 @@
        the one that results from applying the designator to it.
        The target type is the type of the current object [C17:6.7.9/17].
        A subscript designator requires an array target type,
-       and must have an integer expression [C17:6.7.9/6];
-       the result is the element type of the array type.
+       and must have an integer expression [C17:6.7.9/6].
        A dotted designator requires a struct or union type [C17:6.7.9/7];
        the result is the unknown type,
        because currently we do not have information about the members."))
