@@ -86,7 +86,7 @@
       This is an approximation,
       because there are different enumeration types.")
     (xdoc::li
-     "An array types [C17:6.2.5/20],
+     "An array type [C17:6.2.5/20],
       derived from the ``element type.''
       This is an approximation,
       because we do not track the size of the array type.")
