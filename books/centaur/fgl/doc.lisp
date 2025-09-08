@@ -1246,15 +1246,46 @@ how to do that follow.</p>
 
 <h3>Merge Rules</h3>
 
-<p>FGL uses a function @('gl-object-basic-merge') to merge certain combinations
-of objects: it can merge two symbolic or concrete integers into a symbolic
-integer, or merge two symbolic or concrete Boolean values into a symbolic
-Boolean.  It also comes with some merging rules that allow a couple of common
-idioms: the use of @('nil') as a \"bottom\" element for various types, and the
-use of symbols as enum types.</p>
+<p>When FGL encounters an IF, it first rewrites the test term. It reduces that
+term to a Boolean formula and checks against the path condition and constraint
+whether that formula is obviously true or false. If so, then it rewrites only
+the relevant branch and doesn't have to merge anything. Otherwise, it rewrites
+both branches and then tries a series of methods to merge the IF into some
+other kind of object:</p>
 
-<p>To force the creation of an if-then-else, overriding the setting of
-@(':fgl-make-ites'), use the function @('if!') instead of @('if') in the
+<ol>
+
+<li>Branch-merge rules: These are a special category of rewrite rules for the
+purpose of rewriting IFs into other forms. A branch merge rules should have as
+its left-hand side an IF term with a variable for the test and a function call
+as the THEN branch.  These rules function exactly like regular rewrite rules
+but (an implementation detail) they are organized by the leading function
+symbol of the THEN branch instead of the leading function symbol of the whole
+LHS. Such rules can also be applied when that leading function symbol occurs on
+the target term's ELSE branch, by negating the IF test.</li>
+
+<li>Rewrite rules on IF: If no branch merge rule succeeds, FGL also applies
+regular rewrite rules that have IF terms as left-hand sides. This allows rules
+to target IFs that don't have function calls for either branch.</p>
+
+<li>Recursive merging of function arguments: If both branches are calls of the
+same function (or can be viewed as calls of the same function -- e.g. one is a
+call of CONS and one is a concrete CONS object), then FGL attempts to merge all
+the function arguments.</li>
+
+<li>Atomic merges: certain combinations of symbolic objects can be merged
+automatically; e.g., if the branches are two symbolic or concrete integers they
+can be merged into a symbolic integer, or if the branches are two symbolic or
+concrete Boolean values then they can be merged into a symbolic Boolean.</li>
+
+<li>Last-chance merging: If none of these methods succeed, then the first two
+steps (branch merge and rewrite rules) are tried again with the interpreter state flag
+@('if-merge-last-chance') set.  This allows for branch merge/rewrite rules that only can be applied when nothing else has worked, e.g. by including a syntaxp hyp: @('(syntaxp (fgl::interp-flags->if-merge-last-chance (fgl::interp-st->flags fgl::interp-st)))').</li>
+
+</ol>
+
+<p>Branch-merge and rewrite rules can force the creation of an if-then-else, overriding the setting of
+@(':fgl-make-ites'), by using the function @('fgl::if!') instead of @('if') in the
 right-hand side.  For example, one of the rules that allows the use of @('nil')
 as bottom follows:</p>
 
@@ -1337,6 +1368,11 @@ same type.</li>
 including checks for equality.</li>
 
 </ul>
+
+<p>The @(see def-fgl-fty-sum-splitter) utility defines a representation and
+suitable rules for an FTY sum-of-products type, so as to be able to
+symbolically represent an object of that type which may be any of several kinds
+of products.</p>
 
 <h4>Example 1: Enumeration Type</h4>
 

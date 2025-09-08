@@ -919,7 +919,11 @@ objects, and many other complications.</p>"
                  (:tracespecs     . (true-list-listp tracespecs))
                  (:errmsg         . t)
                  (:debug-info     . t)
-                 (:debug-stack    . (major-stack-p debug-stack))))))
+                 (:debug-stack    . (major-stack-p debug-stack))
+                 (:rewrite-rules  . (alistp rewrite-rules))
+                 (:binder-rules   . (alistp binder-rules))
+                 (:branch-merge-rules . (alistp branch-merge-rules))
+                 (:congruence-rules . (true-listp congruence-rules))))))
 
 
 

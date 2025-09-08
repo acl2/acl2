@@ -94,6 +94,16 @@
 
 (local (in-theory (disable w)))
 
+(define redundant-alist-fix (x)
+  :enabled t
+  (mbe :logic (acl2::alist-fix x)
+       :exec (if (alistp x) x (acl2::alist-fix x))))
+
+(define redundant-list-fix (x)
+  :enabled t
+  (mbe :logic (list-fix x)
+       :exec (if (true-listp x) x (list-fix x))))
+
 (define initialize-interp-st ((config fgl-config-p)
                               (interp-st)
                               state)
@@ -133,7 +143,11 @@
                         trace-alist
                       (raise "State global ~x0 must contain an FGL trace alist, satisfying ~x1"
                                '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
-       (interp-st (update-interp-st->trace-alist trace-alist interp-st)))
+       (interp-st (update-interp-st->trace-alist trace-alist interp-st))
+       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix (table-alist 'fgl-rewrite-rules (w state))) interp-st))
+       (interp-st (update-interp-st->binder-rules (redundant-alist-fix (table-alist 'fgl-binder-rules (w state))) interp-st))
+       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix (table-alist 'fgl-branch-merge-rules (w state))) interp-st))
+       (interp-st (update-interp-st->congruence-rules (redundant-list-fix (fgl-congruence-runes (w state))) interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman)
                (update-logicman->mode (bfrmode :aignet) logicman)
@@ -632,7 +646,15 @@
        (- (cw "FGL interpreter step count: ~x0~%" (- (fgl-config->steplimit config)
                                                      (interp-st->steplimit interp-st))))
        (- ;; Clear memoization tables that depend on e.g. the current world
-        (clear-memoize-table 'fgl-equivp))
+        (clear-memoize-table 'fgl-equivp)
+        (clear-memoize-table 'fgl-function-binder-rules)
+        (clear-memoize-table 'fgl-function-binder-rules-from-lookup)
+        (clear-memoize-table 'fgl-function-rules)
+        (clear-memoize-table 'fgl-function-rules-from-lookup)
+        (clear-memoize-table 'fgl-branch-merge-rules)
+        (clear-memoize-table 'fgl-branch-merge-rules-from-lookup)
+        (clear-memoize-table 'fgl-congruence-rules)
+        (clear-memoize-table 'map-rewrite-rules-memo))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)
@@ -857,7 +879,6 @@
 
        ((mv err interp-st state)
         (fgl-clause-proc-core disj config interp-st state))
-
        (state (save-interp-st-info-into-state interp-st state)))
     (mv err nil interp-st state))
   ///

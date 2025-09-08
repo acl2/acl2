@@ -304,11 +304,13 @@ of a list of rule specifications"
 
 (define function-rules-to-backtrace-spec ((fn pseudo-fnsym-p)
                                           (vars pseudo-var-list-p)
+                                          interp-st
                                           state)
   :parents (backtraces)
   :short "Get a set of FGL backtrace specifiers for all FGL rules targeting a function symbol"
   (b* ((wrld (w state))
-       ((mv ?err rules) (fgl-function-rules fn wrld))
+       (table (interp-st->rewrite-rules interp-st))
+       ((mv ?err rules) (fgl-function-rules fn table wrld))
        (formals (getpropc fn 'formals t wrld))
        ((unless (pseudo-var-list-p formals))
         (raise "Bad formals for ~x0: ~x1" fn formals)

@@ -381,31 +381,49 @@
              (rules-ev-good-fgl-rules-p new-x))
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
-(define fgl-rewrite-rules-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
-  (b* ((look (hons-get (pseudo-fnsym-fix fn) alist)))
-    (if look
-        (cdr look)
-      (if (eq (fgetprop (pseudo-fnsym-fix fn) 'acl2::unnormalized-body :none world) :none)
-          nil
-        (list (fgl-rune-formula fn))))))
+(define fgl-rewrite-runes-from-lookup ((fn pseudo-fnsym-p)
+                                       (look) ;; the pair resulting from looking up the function
+                                       (world plist-worldp))
+  (if (consp look)
+      (cdr look)
+    (if (eq (fgetprop (pseudo-fnsym-fix fn) 'acl2::unnormalized-body :none world) :none)
+        nil
+      (list (fgl-rune-formula fn)))))
+
+(define fgl-rewrite-runes-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
+  (fgl-rewrite-runes-from-lookup fn (hons-get (pseudo-fnsym-fix fn) alist) world))
        
 
-
-(define fgl-function-rules ((fn pseudo-fnsym-p) (world plist-worldp))
+(define fgl-function-rules-from-lookup ((fn pseudo-fnsym-p)
+                                        (look) ;; pair resulting from looking up the function in the table
+                                        (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* ((table (make-fast-alist (table-alist 'fgl-rewrite-rules world)))
-       (fn (pseudo-fnsym-fix fn))
-       (runes (fgl-rewrite-rules-lookup fn table world))
+  (b* ((runes (fgl-rewrite-runes-from-lookup fn look world))
        ((unless (fgl-runelist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 fn 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
             nil))
-       (lemmas (fgetprop fn 'acl2::lemmas nil world))
+       (lemmas (fgetprop (pseudo-fnsym-fix fn) 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))
        ((mv err rules1)
         (fgl-rules-from-runes runes map world)))
     (mv err (fgl-rules-filter-leading-fnsym fn rules1)))
+  ///
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (equal world (w state)))
+             (rules-ev-good-fgl-rules-p rules)))
+
+  (memoize 'fgl-function-rules-from-lookup))
+  
+(define fgl-function-rules ((fn pseudo-fnsym-p)
+                            (table)
+                            (world plist-worldp))
+  :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
+               (rules fgl-rulelist-p))
+  (fgl-function-rules-from-lookup fn (hons-get (pseudo-fnsym-fix fn)
+                                               (make-fast-alist table)) world)
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
     (implies (and (rules-ev-meta-extract-global-facts)
@@ -447,24 +465,39 @@
              (rules-ev-good-fgl-rules-p new-x))
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
-(define fgl-branch-merge-rules-lookup ((fn pseudo-fnsym-p) (alist))
+(define fgl-branch-merge-runes-lookup ((fn pseudo-fnsym-p) (alist))
   (cdr (hons-get (pseudo-fnsym-fix fn) alist)))
 
 
-(define fgl-branch-merge-rules ((fn pseudo-fnsym-p) (world plist-worldp))
+(define fgl-branch-merge-rules-from-lookup ((fn pseudo-fnsym-p)
+                                            (runes)
+                                            (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* ((table (make-fast-alist (table-alist 'fgl-branch-merge-rules world)))
-       (fn (pseudo-fnsym-fix fn))
-       (runes (fgl-branch-merge-rules-lookup fn table))
-       ((unless (fgl-runelist-p runes))
+  (b* (((unless (fgl-runelist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 fn 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
             nil))
        (lemmas (fgetprop 'if 'acl2::lemmas nil world))
        (map (map-rewrite-rules-memo lemmas))
        ((mv errmsg rules1) (fgl-rules-from-runes runes map world)))
     (mv errmsg (fgl-rules-filter-branch-fnsym fn rules1)))
+  ///
+  (defret rules-ev-good-fgl-rules-p-of-<fn>
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (equal world (w state)))
+             (rules-ev-good-fgl-rules-p rules)))
+
+  (memoize 'fgl-branch-merge-rules-from-lookup))
+
+(define fgl-branch-merge-rules ((fn pseudo-fnsym-p)
+                                (table)
+                                (world plist-worldp))
+  :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
+               (rules fgl-rulelist-p))
+  (fgl-branch-merge-rules-from-lookup fn
+                                      (fgl-branch-merge-runes-lookup fn (make-fast-alist table))
+                                      world)
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
     (implies (and (rules-ev-meta-extract-global-facts)

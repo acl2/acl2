@@ -54,7 +54,8 @@
    (trace-rewrites booleanp :default nil)
    (make-ites booleanp :default nil)
    (branch-on-ifs booleanp :default t)
-   (hide          booleanp :default nil)))
+   (hide          booleanp :default nil)
+   (if-merge-last-chance booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)
@@ -121,6 +122,11 @@
                         (satisfies interp-flags-p))
              :initially ,(make-interp-flags)
              :fix interp-flags-fix :pred interp-flags-p)
+
+      (rewrite-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (binder-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (branch-merge-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
 
       ;; backing arrays for fgarray primitives -- see fgarrays.lisp
       (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
@@ -204,6 +210,10 @@
                              (interp-st (update-interp-st->steplimit 0 interp-st))
                              (interp-st (update-interp-st->config (make-fgl-config) interp-st))
                              (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
+                             (interp-st (update-interp-st->rewrite-rules nil interp-st))
+                             (interp-st (update-interp-st->binder-rules nil interp-st))
+                             (interp-st (update-interp-st->branch-merge-rules nil interp-st))
+                             (interp-st (update-interp-st->congruence-rules nil interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))
                              (interp-st (update-interp-st->next-fgarray 0 interp-st))
                              (- (fast-alist-free (interp-st->cgraph interp-st))
