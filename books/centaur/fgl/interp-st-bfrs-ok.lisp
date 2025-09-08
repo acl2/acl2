@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "interp-st")
+(include-book "stack-bfrs-ok")
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -114,8 +115,8 @@
                 (constraint-pathcond (interp-st->constraint interp-st)))
                (ok)
                (b* ((bfrstate (logicman->bfrstate)))
-                 (and (bfr-listp (major-stack-bfrlist (stack-extract stack)))
-                      (bfr-listp (constraint-db-bfrlist constraint-db))
+                 (and (stack-bfrs-ok stack)
+                      (constraint-db-bfrs-ok constraint-db)
                       (bfr-listp (cgraph-bfrlist cgraph))
                       (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
                       (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate)))

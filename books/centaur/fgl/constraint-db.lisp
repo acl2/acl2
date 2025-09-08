@@ -1082,3 +1082,93 @@ prior to introducing the constraint rule above, but succeed after:</p>
   state))
 
 ||#
+
+
+
+
+
+
+(define fgl-object-bindingslist-bfrs-ok ((x fgl-object-bindingslist-p)
+                                         &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (fgl-bfr-object-bindings-p (fgl-object-bindings-fix (car x)))
+         (fgl-object-bindingslist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (fgl-object-bindingslist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable fgl-object-bindingslist-bfrlist)))))
+
+(define sig-table-bfrs-ok ((x sig-table-p)
+                           &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (if (mbt (and (consp (car x))
+                  (fgl-objectlist-p (caar x))))
+        (and (fgl-bfr-objectlist-p (caar x))
+             (fgl-object-bindingslist-bfrs-ok (cdar x))
+             (sig-table-bfrs-ok (cdr x)))
+      (sig-table-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (sig-table-bfrlist x)))
+    :hints(("Goal" :in-theory (enable sig-table-bfrlist))))
+
+  (local (in-theory (enable sig-table-fix))))
+
+(define constraint-tuple-bfrs-ok ((x constraint-tuple-p)
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (b* (((constraint-tuple x)))
+    (sig-table-bfrs-ok x.sig-table))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (constraint-tuple-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-tuple-bfrlist)))))
+
+(define constraint-tuplelist-bfrs-ok ((x constraint-tuplelist-p)
+                                      &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (constraint-tuple-bfrs-ok (car x))
+         (constraint-tuplelist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (constraint-tuplelist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
+
+
+
+(define constraint-table-bfrs-ok ((x constraint-table-p)
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (if (mbt (and (consp (car x))
+                  (pseudo-fnsym-p (caar x))))
+        (and (constraint-tuplelist-bfrs-ok (cdar x))
+             (constraint-table-bfrs-ok (cdr x)))
+      (constraint-table-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (constraint-table-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-table-bfrlist)))))
+
+
+(define constraint-db-bfrs-ok ((x constraint-db-p)
+                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (constraint-table-bfrs-ok (constraint-db->tab x))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (constraint-db-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-db-bfrlist)))))

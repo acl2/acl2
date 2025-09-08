@@ -379,7 +379,6 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 
-
 (define stack$a-rule ((x major-stack-p))
   :returns (rule maybe-fgl-generic-rule-p)
   (major-frame->rule (car x)))
@@ -794,3 +793,44 @@ passed into a function or bound to a different variable in a lambda.</p>
   (defthm major-stack-bfrlist-of-car
     (implies (not (member v (major-stack-bfrlist x)))
              (not (member v (major-stack-bfrlist (cdr x)))))))
+
+
+
+
+
+(define scratchobj-bfrs-ok ((x scratchobj-p)
+                            &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (scratchobj-case x
+    :fgl-obj (fgl-bfr-object-p x.val)
+    :fgl-objlist (fgl-bfr-objectlist-p x.val)
+    :bfr (bfr-p x.val)
+    :bfrlist (bfr-listp x.val)
+    :cinst (constraint-instance-bfrs-ok x.val)
+    :cinstlist (constraint-instancelist-bfrs-ok x.val)
+    :otherwise t)
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (scratchobj->bfrlist x)))
+    :hints(("Goal" :in-theory (e/d (scratchobj->bfrlist)
+                                   (bfrlist-of-scratchobj-bfrlist->val
+                                    bfrlist-of-scratchobj-fgl-obj->val
+                                    bfrlist-of-scratchobj-fgl-objlist->val
+                                    bfrlist-of-scratchobj-bfr->val
+                                    bfrlist-of-scratchobj-cinst->val
+                                    bfrlist-of-scratchobj-cinstlist->val))))))
+
+
+(define scratchlist-bfrs-ok ((x scratchlist-p)
+                             &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (scratchobj-bfrs-ok (car x))
+         (scratchlist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (scratchlist-bfrlist x)))
+    :hints(("Goal" :in-theory (e/d (scratchlist-bfrlist))))))

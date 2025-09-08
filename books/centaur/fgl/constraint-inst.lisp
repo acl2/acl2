@@ -56,3 +56,25 @@
            (append (constraint-instancelist-bfrlist a)
                    (constraint-instancelist-bfrlist b)))
     :hints(("Goal" :in-theory (enable constraint-instancelist-bfrlist)))))
+
+(define constraint-instance-bfrs-ok ((x constraint-instance-p)
+                                     &optional ((bfrstate bfrstate-p) 'bfrstate))
+  (fgl-bfr-object-bindings-p (constraint-instance->subst x))
+  ///
+  (defthm constraint-instance-bfrs-ok-in-terms-of-bfrlist
+    (equal (constraint-instance-bfrs-ok x)
+           (bfr-listp (constraint-instance-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-instance-bfrlist)))))
+
+
+(define constraint-instancelist-bfrs-ok ((x constraint-instancelist-p)
+                                         &optional ((bfrstate bfrstate-p) 'bfrstate))
+  (if (atom x)
+      t
+    (and (constraint-instance-bfrs-ok (car x))
+         (constraint-instancelist-bfrs-ok (cdr x))))
+  ///
+  (defthm constraint-instancelist-bfrs-ok-in-terms-of-bfrlist
+    (equal (constraint-instancelist-bfrs-ok x)
+           (bfr-listp (constraint-instancelist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable constraint-instancelist-bfrlist)))))
