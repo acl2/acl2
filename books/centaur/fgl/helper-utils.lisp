@@ -675,7 +675,8 @@ keyword argument. Examples of usage:</p>
         (syntax-interp (cw
                         "Failed to find satisfying assignment for path condition: ~x0~%" error)))
        (obj-val (cdr (assoc 'obj bindings)))
-       (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
+       ;; (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val)))
+       )
     obj-val))
     
 (defmacro break-on-fgl-error ()
