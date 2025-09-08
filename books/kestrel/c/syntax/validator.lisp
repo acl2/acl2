@@ -3617,7 +3617,7 @@
              (initer-case initer :list))
         (b* (((erp new-elems types table)
               (valid-desiniter-list
-               (initer-list->elems initer) (type-unknown) lifetime table ienv)))
+               (initer-list->elems initer) target-type lifetime table ienv)))
           (retok (make-initer-list
                   :elems new-elems
                   :final-comma (initer-list->final-comma initer))
@@ -3691,10 +3691,10 @@
        that the list of designators must be applicable to."))
     (b* (((reterr) (irr-desiniter) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-design & types table)
+         ((erp new-design initer-type types table)
           (valid-designor-list desiniter.designors target-type table ienv))
          ((erp new-init more-types table)
-          (valid-initer desiniter.initer target-type lifetime table ienv)))
+          (valid-initer desiniter.initer initer-type lifetime table ienv)))
       (retok (make-desiniter :designors new-design :initer new-init)
              (set::union types more-types)
              table))
@@ -3721,9 +3721,35 @@
     (xdoc::topstring
      (xdoc::p
       "The target type passed as argument is the type
-       that each list of designators must be applicable to."))
+       that each list of designators must be applicable to.
+       Currently, we do not support fine-grained type-checking of
+       aggregates or unions with an element/member type
+       which is also an aggregate or union type
+       (this condition is checked precisely for the array type,
+       but conservatively includes all struct and unions types
+       since out approximate types do not yet include member types).
+       In such contexts, when an initializer lacks a designator,
+       the type of the initializer may be
+       either the type of the element/member,
+       or the type of an element/member of that element/member
+       (which member depends on the order of the initializers)
+       [C17:6.7.9/20].
+       For now, we fall back to the unknown type in these cases
+       as opposed to dealing with this complexity."))
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp desiniters)) (retok nil nil (valid-table-fix table)))
+         (target-type
+           (if (type-case
+                 target-type
+                 :array (or (type-case target-type.of :array)
+                            (type-case target-type.of :struct)
+                            (type-case target-type.of :union)
+                            (type-case target-type.of :unknown))
+                 :struct t
+                 :union t
+                 :otherwise nil)
+               (type-unknown)
+             target-type))
          ((erp new-desiniter types table)
           (valid-desiniter (car desiniters) target-type lifetime table ienv))
          ((erp new-desiniters more-types table)
@@ -3783,13 +3809,25 @@
                             has type ~x1."
                            (designor-fix designor)
                            range?-type?))
-                 ((unless (or (type-case target-type :array)
-                              (type-case target-type :unknown)))
+                 ((when (type-case target-type :unknown))
+                  (retok (make-designor-sub :index new-index :range? new-range?)
+                         (type-unknown)
+                         (set::union index-types range?-types)
+                         table))
+                 ((unless (type-case target-type :array))
                   (retmsg$ "The target type of the designator ~x0 is ~x1."
                            (designor-fix designor)
-                           (type-fix target-type))))
+                           (type-fix target-type)))
+                 (element-type (type-array->of target-type))
+                 ((when (or (type-case element-type :function)
+                            (type-case element-type :void)))
+                  (retmsg$ "The result of applying the designator ~x0
+                            to type ~x1 is ~x2."
+                           (designor-fix designor)
+                           (type-fix target-type)
+                           element-type)))
               (retok (make-designor-sub :index new-index :range? new-range?)
-                     (type-fix target-type)
+                     element-type
                      (set::union index-types range?-types)
                      table))
        :dot (b* (((unless (or (type-case target-type :struct)
@@ -3845,16 +3883,47 @@
        resulting from the application of the designators."))
     (b* (((reterr) nil (irr-type) nil (irr-valid-table))
          ((when (endp designors))
-          (retok nil (type-fix target-type) nil (valid-table-fix table)))
+          (type-case
+            target-type
+            :array (if (or (type-case target-type.of :function)
+                           (type-case target-type.of :void))
+                       (retmsg$ "The result of applying
+                                 the empty designator list
+                                 to type ~x0 is ~x1."
+                                (type-fix target-type)
+                                target-type.of)
+                     (retok nil target-type.of nil (valid-table-fix table)))
+            :otherwise (retok nil (type-unknown) nil (valid-table-fix table))))
          ((erp new-designor target-type types table)
           (valid-designor (car designors) target-type table ienv))
+         ((when (endp (cdr designors)))
+          (retok (list new-designor) target-type types table))
          ((erp new-designors target-type more-types table)
-          (valid-designor-list (cdr designors) target-type table ienv)))
+          (valid-designor-list (cdr designors) target-type table ienv))
+         ((unless (mbt (and (not (type-case target-type :function))
+                            (not (type-case target-type :void)))))
+          (prog2$ (impossible) (retmsg$ ""))))
       (retok (cons new-designor new-designors)
              target-type
              (set::union types more-types)
              table))
-    :measure (designor-list-count designors))
+    :measure (designor-list-count designors)
+
+    ///
+
+    (defret valid-designor-list.new-target-type-not-function
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :function)))
+      :hints
+      (("Goal" :expand (valid-designor-list designors target-type table ienv))))
+
+    (defret valid-designor-list.new-target-type-not-void
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :void)))
+      :hints
+      (("Goal" :expand (valid-designor-list designors target-type table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
