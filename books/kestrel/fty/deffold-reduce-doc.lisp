@@ -345,6 +345,14 @@
       (xdoc::li
        "@('<type>-<suffix>-of-<type>')"))
      (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated,
+       for each field @('<field>') of @('<type>')
+       such that the field has type @('<field-type>'):")
+     (xdoc::ul
+      (xdoc::li
+       "@('<field-type>-<suffix>-of-<type>-><field>')"))
+     (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
@@ -359,7 +367,19 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-of-<type>-<kind>')"))
+       "@('<type>-<suffix>-of-<type>-<kind>'),
+        if the summand with kind @('<kind>') has one or more fields.")
+      (xdoc::li
+       "@('<type>-<suffix>-when-<kind>'),
+        if the summand with kind @('<kind>') has no fields."))
+     (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated,
+       for each field @('<field>') ofthe kind @('<kind>') of @('<type>')
+       such that the field has type @('<field-type>'):")
+     (xdoc::ul
+      (xdoc::li
+       "@('<field-type>-<suffix>-of-<type>-<kind>-><field>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
@@ -406,7 +426,9 @@
       (xdoc::li
        "@('<type>-<suffix>-when-<base>-<suffix>')")
       (xdoc::li
-       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')"))
+       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')")
+      (xdoc::li
+       "@('<base>-<suffix>-of-<type>-some->val')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))

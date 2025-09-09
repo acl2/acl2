@@ -67,6 +67,7 @@
   :key-type ident
   :val-type value
   :pred scopep
+
   ///
 
   (defruled cdr-of-assoc-when-scopep
@@ -138,6 +139,7 @@
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
   :require (consp scopes)
   :pred framep
+
   ///
 
   (defrule len-of-frame->scopes-lower-bound
@@ -255,6 +257,7 @@
      preserves the number of frames."))
   (len (compustate->frames compst))
   :hooks (:fix)
+
   ///
 
   (defrule compustate-frames-number-of-compustate-same-frames
@@ -273,6 +276,7 @@
        (new-stack (cons (frame-fix frame) stack)))
     (change-compustate compst :frames new-stack))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-push-frame
@@ -280,23 +284,7 @@
            (1+ (compustate-frames-number compst)))
     :hints (("Goal" :in-theory (enable compustate-frames-number len)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define top-frame ((compst compustatep))
-  :guard (> (compustate-frames-number compst) 0)
-  :returns (frame framep)
-  :short "Top frame of a computation state's call stack."
-  (frame-fix (car (compustate->frames compst)))
-  :guard-hints (("Goal" :in-theory (enable compustate-frames-number)))
-  :hooks (:fix)
-  ///
-
-  (defrule top-frame-of-push-frame
-    (equal (top-frame (push-frame frame compst))
-           (frame-fix frame))
-    :enable push-frame))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pop-frame ((compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
@@ -306,18 +294,51 @@
        (new-stack (cdr stack)))
     (change-compustate compst :frames new-stack))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-pop-frame
     (equal (compustate-frames-number new-compst)
            (1- (compustate-frames-number compst)))
     :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-frames-number len fix))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number len fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define top-frame ((compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
+  :returns (frame framep)
+  :short "Top frame of a computation state's call stack."
+  (frame-fix (car (compustate->frames compst)))
+  :guard-hints (("Goal" :in-theory (enable compustate-frames-number)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection push/pop/top-frame-theorems
+  :short "Theorems relating
+          @(tsee push-frame), @(tsee pop-frame), and @(tsee top-frame)."
+
+  (defrule top-frame-of-push-frame
+    (equal (top-frame (push-frame frame compst))
+           (frame-fix frame))
+    :enable (top-frame push-frame))
 
   (defrule pop-frame-of-push-frame
     (equal (pop-frame (push-frame frame compst))
            (compustate-fix compst))
-    :enable push-frame))
+    :enable (pop-frame push-frame))
+
+  (defrule push-frame-of-top-frame-and-pop-frame
+    (implies (> (compustate-frames-number compst) 0)
+             (equal (push-frame (top-frame compst)
+                                (pop-frame compst))
+                    (compustate-fix compst)))
+    :cases ((consp (compustate->frames compst)))
+    :enable (push-frame
+             top-frame
+             pop-frame
+             compustate-frames-number)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,6 +362,7 @@
            (t (cons (len (frame->scopes (car frames)))
                     (compustate-scopes-numbers-aux (cdr frames)))))
      :hooks (:fix)
+
      ///
 
      (defret len-of-compustate-scopes-numbers-aux
@@ -470,6 +492,7 @@
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-enter-scope
@@ -508,6 +531,7 @@
                                            top-frame
                                            len)))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-exit-scope
@@ -1085,6 +1109,7 @@
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-write-object

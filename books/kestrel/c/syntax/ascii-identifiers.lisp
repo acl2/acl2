@@ -127,21 +127,6 @@
   :combine and
   :override ((ident (ascii-ident-stringp (ident->unwrap ident) gcc))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
-  (implies (transunit-ensemble-aidentp tunits gcc)
-           (filepath-transunit-map-aidentp
-            (transunit-ensemble->unwrap tunits) gcc))
-  :enable transunit-ensemble-aidentp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(add-to-ruleset abstract-syntax-aidentp-rules
-                '(expr-aidentp-of-expr-ident
-                  expr-aidentp-of-expr-const
-                  filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define code-ensemble-aidentp ((code code-ensemblep))

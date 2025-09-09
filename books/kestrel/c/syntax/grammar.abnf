@@ -1192,10 +1192,23 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; (see https://gcc.gnu.org/onlinedocs/gcc/Named-Address-Spaces.html,
 ; which says that they are used like type qualifiers).
 
-; As a GCC extension, allow a list of type qualifiers
+; As a GCC extension, we allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
 ; instead of just type-qualifier-list.
+
+; As a GCC extension, we allow attribute specifiers
+; at the end of a parameter declaration,
+; just after the non-abstract or abstract declarator.
+
+; As a GCC extension, we allow attribute specifiers
+; at the end of a top-level declarator in an initialization declarator,
+; just after the assembler name specifier if any.
+; This extension,
+; including the fact that it follows the assembler name specifier if any,
+; is documented in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html,
+; under 'All other attributes', 5th paragraph
+; (this reference might change as the GCC manual gets updated).
 
 ; The above may not the only places where attribute specifiers may occur,
 ; in the full GCC extensions, but they are places that have been observed.
@@ -1230,15 +1243,6 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; (see the end of https://gcc.gnu.org/onlinedocs/gcc/Typeof.html),
 ; which is a type specifier.
 
-; As a GCC extension, we allow attribute specifiers
-; at the end of a top-level declarator in an initialization declarator,
-; just after the assembler name specifier if any.
-; This extension,
-; including the fact that it follows the assembler name specifier if any,
-; is documented in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html,
-; under 'All other attributes', 5th paragraph
-; (this reference might change as the GCC manual gets updated).
-
 ; As a GCC extension, we allow structures with no members:
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
 
@@ -1255,6 +1259,9 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; which are constant expressions,
 ; it seems reasonable that the two expressions of the range are also constant,
 ; although the GCC documentation is not explicit about this.
+
+; As a GCC extension, we allow initializers consisting of
+; just an open and closing brace, without nothing in between.
 
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
@@ -1406,8 +1413,12 @@ parameter-type-list = parameter-list
 parameter-list = parameter-declaration
                / parameter-list "," parameter-declaration
 
-parameter-declaration = declaration-specifiers declarator
-                      / declaration-specifiers [ abstract-declarator ]
+parameter-declaration = declaration-specifiers
+                        declarator
+                        *attribute-specifier ; GCC extension
+                      / declaration-specifiers
+                        [ abstract-declarator ]
+                        *attribute-specifier ; GCC extension
 
 identifier-list = identifier
                 / identifier-list "," identifier
@@ -1436,6 +1447,7 @@ typedef-name = identifier
 initializer = assignment-expression
             / "{" initializer-list "}"
             / "{" initializer-list "," "}"
+            / "{" "}" ; GCC extension
 
 initializer-list = [ designation ] initializer
                  / initializer-list "," [ designation ] initializer

@@ -2118,8 +2118,9 @@
      (xdoc::p
       "This corresponds to <i>initializer</i> in the grammar in [C17].
        The <i>initializer-list</i> is captured as
-       a list (which should be non-empty) of initializers with designations
-       (see @(tsee desiniter))."))
+       a list of initializers with designations
+       (see @(tsee desiniter)).
+       The list may be empty only as a GCC extension; see the ABNF grammar."))
     (:single ((expr expr)))
     (:list ((elems desiniter-list)
             (final-comma bool)))
@@ -2402,9 +2403,12 @@
        In our abstract syntax, this is defined as consisting of
        declaration specifiers followed by a parameter declarator;
        see @(tsee param-declor) for a description and motivation
-       for this notion of parameter declarator."))
+       for this notion of parameter declarator.
+       We also allow zero or more attribute specifiers at the end,
+       as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
-     (declor param-declor))
+     (declor param-declor)
+     (attribs attrib-spec-list))
     :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 
