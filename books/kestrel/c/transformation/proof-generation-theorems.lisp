@@ -51,14 +51,35 @@
      to keep them more readable.
      The theorems include additional hypotheses, in some cases,
      to ensure that the constructs in question are amenable to
-     our formal dynamic semantics of C, which currently only covers a subset.
-     The theorems include hypotheses about
+     our formal dynamic semantics of C, which currently only covers a subset.")
+   (xdoc::p
+    "The theorems include hypotheses about
      the execution of the old construct not yielding an error,
-     and about the execution of the sub-constructs of the new construct
+     and in some cases about
+     the execution of the sub-constructs of the new construct
      (not the new construct itself) not yielding an error);
      they also include hypotheses about
      the sub-constructs yielding the same results.
-     The theorems conclude that the new construct's execution
+     While in some cases the equality of the results of the sub-constructs
+     and the hypotheses that the old construct does not yield an error
+     imply already that the sub-constructs do not yield an error
+     (also see @(see exec-error-theorems)),
+     this is not quite the case for (pure) expressions,
+     which return expression values of type @(tsee c::expr-value).
+     For flexibility, the theorems require the equality, for sub-expressions,
+     not of their full expression values,
+     but just for the values of those expression values
+     (i.e. @(tsee expr-value->value)).
+     Thus, we need explicit hypotheses that
+     the expression values are not errors,
+     because they are not readily implied by the equality of
+     the values alone of the expression values.
+     The flexibility is important, for instance,
+     to handle the semantic equality of @('x + 0') and @('x'),
+     which return different expression values (but the same values),
+     because @('x') is an lvalue while @('x + 0') is not.")
+   (xdoc::p
+    "The theorems conclude that the new construct's execution
      does not yield an error either,
      and that its results are the same as the old construct's execution's.
      When these theorems are used in proof generation,
