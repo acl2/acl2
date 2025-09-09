@@ -67,6 +67,7 @@
   :key-type ident
   :val-type value
   :pred scopep
+
   ///
 
   (defruled cdr-of-assoc-when-scopep
@@ -138,6 +139,7 @@
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
   :require (consp scopes)
   :pred framep
+
   ///
 
   (defrule len-of-frame->scopes-lower-bound
@@ -255,6 +257,7 @@
      preserves the number of frames."))
   (len (compustate->frames compst))
   :hooks (:fix)
+
   ///
 
   (defrule compustate-frames-number-of-compustate-same-frames
@@ -359,6 +362,7 @@
            (t (cons (len (frame->scopes (car frames)))
                     (compustate-scopes-numbers-aux (cdr frames)))))
      :hooks (:fix)
+
      ///
 
      (defret len-of-compustate-scopes-numbers-aux
@@ -488,6 +492,7 @@
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-enter-scope
@@ -526,6 +531,7 @@
                                            top-frame
                                            len)))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-exit-scope
@@ -1103,6 +1109,7 @@
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :hooks (:fix)
+
   ///
 
   (defret compustate-frames-number-of-write-object
