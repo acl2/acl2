@@ -28,6 +28,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; for speed:
+(local (in-theory (disable acl2::unsigned-byte-p-from-bounds
+                           x86isa::canonical-address-p-when-unsigned-byte-p
+                           acl2::bvchop-identity
+                           acl2::bvchop-upper-bound-linear-strong
+                           acl2::bvchop-upper-bound-linear)))
+
 (defthm read-byte-of-xw-irrel
   (implies (not (equal fld :mem))
            (equal (read-byte addr (xw fld index val x86))
