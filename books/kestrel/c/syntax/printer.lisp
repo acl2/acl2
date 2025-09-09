@@ -33,6 +33,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled grammar-character-p-when-letter/digit/uscore-char-p
+  (implies (str::letter/digit/uscore-char-p char)
+           (grammar-character-p (char-code char)))
+  :enable (str::letter/digit/uscore-char-p
+           grammar-character-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled grammar-character-listp-when-letter/digit/uscore-charlist-p
+  (implies (str::letter/digit/uscore-charlist-p chars)
+           (grammar-character-listp (acl2::chars=>nats chars)))
+  :induct t
+  :enable (str::letter/digit/uscore-charlist-p
+           acl2::chars=>nats))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ printer
   :parents (syntax-for-tools)
   :short "A printer of C from the abstract syntax."
@@ -188,7 +205,48 @@
                  :indent-level 0
                  :options options
                  :gcc gcc)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret pristate->gcc-of-init-pristate
+    (equal (pristate->gcc pstate)
+           (bool-fix gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Macros to concisely express theorems saying that
+; the printing functions do not modify the GCC component of the printer state.
+
+(local ; for non-recursive FN
+ (defmacro defret-same-gcc (fn)
+   `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+      (equal (pristate->gcc new-pstate)
+             (pristate->gcc pstate)))))
+
+(local ; for singly recursive FN
+ (defmacro defret-rec-same-gcc (fn)
+   `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+      (equal (pristate->gcc new-pstate)
+             (pristate->gcc pstate))
+      :hints (("Goal" :induct t)))))
+
+(local
+ (defun defret-mut-same-gcc-fn (fns)
+   (b* (((when (endp fns)) nil)
+        (fn (car fns))
+        (event `(defret ,(packn-pos (list 'pristate->gcc-of- fn) fn)
+                  (equal (pristate->gcc new-pstate)
+                         (pristate->gcc pstate))
+                  :fn ,fn))
+        (events (defret-mut-same-gcc-fn (cdr fns))))
+     (cons event events))))
+
+(local
+ (defmacro defret-mut-same-gcc (name fns &key hints)
+   `(defret-mutual ,name
+      ,@(defret-mut-same-gcc-fn fns)
+      ,@(and hints (list :hints hints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,7 +254,11 @@
   :returns (new-pstate pristatep)
   :short "Increase the printer state's indentation level by one."
   (change-pristate pstate :indent-level (1+ (pristate->indent-level pstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc inc-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +279,11 @@
                 attempting to decrease a zero indentation level.")
         (pristate-fix pstate)))
     (change-pristate pstate :indent-level (1- indent-level)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc dec-pristate-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +336,9 @@
   ///
 
   (fty::deffixequiv print-char
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +358,9 @@
   ///
 
   (fty::deffixequiv print-chars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,7 +378,11 @@
      (ii) carriage returns, and
      (iii) line feeds immediately followed by carriage returns."))
   (print-char 10 pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-new-line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,7 +404,11 @@
        (spaces-to-print (* pstate.indent-level
                            (priopt->indent-size pstate.options))))
     (print-chars (repeat spaces-to-print 32) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-indent))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,7 +434,9 @@
   ///
 
   (fty::deffixequiv print-astring
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-atring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +461,9 @@
   ///
 
   (fty::deffixequiv print-dec-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-dec-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,7 +478,9 @@
   ///
 
   (fty::deffixequiv print-dec-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-dec-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,7 +505,9 @@
   ///
 
   (fty::deffixequiv print-oct-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-oct-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,7 +522,9 @@
   ///
 
   (fty::deffixequiv print-oct-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-oct-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +549,9 @@
   ///
 
   (fty::deffixequiv print-hex-digit-achar
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-same-gcc print-hex-digit-achar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -476,47 +566,44 @@
   ///
 
   (fty::deffixequiv print-hex-digit-achars
-    :args ((pstate pristatep))))
+    :args ((pstate pristatep)))
+
+  (defret-rec-same-gcc print-hex-digit-achars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident ((ident identp) (pstate pristatep))
+  :guard (ident-aidentp ident (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print an identifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the identifier is a non-empty ACL2 string
-     whose character codes are all valid in our C grammar.
-     This way we can call @(tsee print-chars).")
-   (xdoc::p
-    "This is a weaker check than ensuring that the string
-     is in fact a valid C identifier in our concrete syntax.
-     We plan to strengthen this in the future."))
-  (b* ((string? (ident->unwrap ident))
-       ((unless (stringp string?))
-        (raise "Misusage error: ~
-                the identifier contains ~x0 instead of an ACL2 string."
-               string?)
-        (pristate-fix pstate))
-       (chars (acl2::string=>nats string?))
-       ((unless chars)
-        (raise "Misusage error; ~
-                the identifier is empty.")
-        (pristate-fix pstate))
-       ((unless (grammar-character-listp chars))
-        (raise "Misusage error: ~
-                the identifier consists of the character codes ~x0, ~
-                not all of which are allowed by the ABNF grammar."
-               chars)
-        (pristate-fix pstate)))
+    "The @(tsee ident-aidentp) guard ensures that
+     the identifier contains an ACL2 string consisting of
+     one or more characters satisfying @(tsee grammar-character-p)."))
+  (b* ((string (ident->unwrap ident))
+       (chars (acl2::string=>nats string)))
     (print-chars chars pstate))
-  :hooks (:fix))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable ident-aidentp
+            ascii-ident-stringp
+            grammar-character-listp-when-letter/digit/uscore-charlist-p
+            acl2::string=>nats
+            c::paident-char-listp)))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-ident-list ((idents ident-listp) (pstate pristatep))
-  :guard (consp idents)
+  :guard (and (consp idents)
+              (ident-list-aidentp idents (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of one or more identifiers, separated by commas."
   :long
@@ -531,7 +618,11 @@
        ((when (endp (cdr idents))) pstate)
        (pstate (print-astring ", " pstate)))
     (print-ident-list (cdr idents) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-ident-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,7 +635,11 @@
    :upcase-l (print-astring "L" pstate)
    :locase-ll (print-astring "ll" pstate)
    :upcase-ll (print-astring "LL" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-lsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,7 +650,11 @@
    usuffix
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-usuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,7 +671,11 @@
    :lu (b* ((pstate (print-lsuffix isuffix.length pstate))
             (pstate (print-usuffix isuffix.unsigned pstate)))
          pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-isuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -587,7 +690,11 @@
    isuffix?
    :some (print-isuffix isuffix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-isuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,7 +705,11 @@
    hprefix
    :locase-0x (print-astring "0x" pstate)
    :upcase-0x (print-astring "0X" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -644,7 +755,11 @@
              (pstate (print-hprefix dohconst.prefix pstate))
              (pstate (print-hex-digit-achars dohconst.digits pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec/oct/hex-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -655,7 +770,11 @@
        (pstate (print-dec/oct/hex-const iconst.core pstate))
        (pstate (print-isuffix-option iconst.suffix? pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-iconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,7 +787,11 @@
    :upcase-f (print-astring "F" pstate)
    :locase-l (print-astring "l" pstate)
    :upcase-l (print-astring "L" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fsuffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -683,7 +806,11 @@
    fsuffix?
    :some (print-fsuffix fsuffix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fsuffix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -694,7 +821,11 @@
    sign
    :plus (print-astring "+" pstate)
    :minus (print-astring "-" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-sign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,7 +840,11 @@
    sign?
    :some (print-sign sign?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-sign-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -720,7 +855,11 @@
    prefix
    :locase-e (print-astring "e" pstate)
    :upcase-e (print-astring "E" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo-prefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,7 +870,11 @@
    prefix
    :locase-p (print-astring "p" pstate)
    :upcase-p (print-astring "P" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-bin-expo-prefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -751,7 +894,11 @@
         pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -766,7 +913,11 @@
    expo?
    :some (print-dec-expo expo?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-expo-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -786,7 +937,11 @@
         pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-bin-expo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -808,7 +963,11 @@
        (pstate (print-astring "." pstate))
        (pstate (print-dec-digit-achars dfconst.after pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -830,7 +989,11 @@
        (pstate (print-astring "." pstate))
        (pstate (print-hex-digit-achars hfconst.after pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-frac-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -856,7 +1019,11 @@
              (pstate (print-dec-digit-achars fconst.significand pstate))
              (pstate (print-dec-expo fconst.expo pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-dec-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,7 +1049,11 @@
              (pstate (print-hex-digit-achars fconst.significand pstate))
              (pstate (print-bin-expo fconst.expo pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-core-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -898,7 +1069,11 @@
              (pstate (print-hex-core-fconst fconst.core pstate))
              (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -919,7 +1094,11 @@
    :t (print-astring "\\t" pstate)        ; \t
    :v (print-astring "\\v" pstate)        ; \v
    :percent (print-astring "\\%" pstate)) ; \%
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-simple-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -939,7 +1118,11 @@
                      (pstate (print-oct-digit-achar esc.digit3 pstate)))
                   pstate))))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-oct-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -952,7 +1135,11 @@
        (pstate (print-hex-digit-achar quad.3rd pstate))
        (pstate (print-hex-digit-achar quad.4th pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-hex-quad))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -968,7 +1155,11 @@
                   (pstate (print-hex-quad ucname.quad1 pstate))
                   (pstate (print-hex-quad ucname.quad2 pstate)))
                pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-univ-char-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,7 +1183,11 @@
              (pstate (print-hex-digit-achars esc.unwrap pstate)))
           pstate)
    :univ (print-univ-char-name esc.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-escape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1028,7 +1223,11 @@
                (pristate-fix pstate)))
            (print-char cchar.unwrap pstate))
    :escape (print-escape cchar.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-c-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1039,7 +1238,11 @@
   (b* (((when (endp cchars)) (pristate-fix pstate))
        (pstate (print-c-char (car cchars) pstate)))
     (print-c-char-list (cdr cchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-c-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1051,7 +1254,11 @@
    :upcase-l (print-astring "L" pstate)
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1066,7 +1273,11 @@
    cprefix?
    :some (print-cprefix cprefix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,11 +1298,16 @@
        (pstate (print-c-char-list cconst.cchars pstate))
        (pstate (print-astring "'" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-cconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-const ((const constp) (pstate pristatep))
+  :guard (const-aidentp const (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print a constant."
   (const-case
@@ -1100,7 +1316,11 @@
    :float (print-fconst const.unwrap pstate)
    :enum (print-ident const.unwrap pstate)
    :char (print-cconst const.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1136,7 +1356,11 @@
                (pristate-fix pstate)))
            (print-char schar.unwrap pstate))
    :escape (print-escape schar.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-s-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1147,7 +1371,11 @@
   (b* (((when (endp schars)) (pristate-fix pstate))
        (pstate (print-s-char (car schars) pstate)))
     (print-s-char-list (cdr schars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-s-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,7 +1388,11 @@
    :locase-u (print-astring "u" pstate)
    :upcase-u (print-astring "U" pstate)
    :upcase-l (print-astring "L" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-eprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1175,7 +1407,11 @@
    eprefix?
    :some (print-eprefix eprefix?.val pstate)
    :none (pristate-fix pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-eprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1188,7 +1424,11 @@
        (pstate (print-s-char-list stringlit.schars pstate))
        (pstate (print-astring "\"" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-stringlit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1201,7 +1441,11 @@
        ((when (endp (cdr strings))) pstate)
        (pstate (print-astring " " pstate)))
     (print-stringlit-list (cdr strings) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-stringlit-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1234,7 +1478,11 @@
                code)
         (pristate-fix pstate)))
     (print-char code pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-h-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1245,7 +1493,11 @@
   (b* (((when (endp hchars)) (pristate-fix pstate))
        (pstate (print-h-char (car hchars) pstate)))
     (print-h-char-list (cdr hchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-h-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1278,7 +1530,11 @@
                code)
         (pristate-fix pstate)))
     (print-char code pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-q-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1289,7 +1545,11 @@
   (b* (((when (endp qchars)) (pristate-fix pstate))
        (pstate (print-q-char (car qchars) pstate)))
     (print-q-char-list (cdr qchars) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-q-char-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1306,7 +1566,11 @@
                 (pstate (print-q-char-list hname.chars pstate))
                 (pstate (print-astring "\"" pstate)))
              pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-header-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1326,7 +1590,11 @@
    :postinc (print-astring "++" pstate)
    :postdec (print-astring "--" pstate)
    :sizeof (print-astring "sizeof" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1364,7 +1632,11 @@
    :asg-and (print-astring "&=" pstate)
    :asg-xor (print-astring "^=" pstate)
    :asg-ior (print-astring "|=" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1375,7 +1647,11 @@
    op
    :inc (print-astring "++" pstate)
    :dec (print-astring "--" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-inc/dec-op))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1391,7 +1667,11 @@
        ((when (endp (cdr ops))) pstate)
        (pstate (print-astring " " pstate)))
     (print-inc/dec-op-list (cdr ops) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-inc/dec-op-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1408,7 +1688,11 @@
              (print-astring "__thread" pstate))
    :auto (print-astring "auto" pstate)
    :register (print-astring "register" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-stor-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1431,7 +1715,11 @@
    :atomic (print-astring "_Atomic" pstate)
    :seg-fs (print-astring "__seg_fs" pstate)
    :seg-gs (print-astring "__seg_gs" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-type-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1446,7 +1734,11 @@
             :start (print-astring "__inline" pstate)
             :both (print-astring "__inline__" pstate))
    :noreturn (print-astring "_Noreturn" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fun-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1470,7 +1762,11 @@
        (pstate (print-stringlit-list asmspec.strings pstate))
        (pstate (print-astring ")" pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-name-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1490,7 +1786,11 @@
             :start (print-astring "__inline" pstate)
             :both (print-astring "__inline__" pstate))
    :goto (print-astring "goto" pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-qual))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1503,7 +1803,11 @@
        ((when (endp (cdr quals))) pstate)
        (pstate (print-astring " " pstate)))
     (print-asm-qual-list (cdr quals) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-asm-qual-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1516,7 +1820,11 @@
                 no string literals in assembler clobber.")
         (pristate-fix pstate)))
     (print-stringlit-list strings pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-asm-clobber))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1529,11 +1837,16 @@
        ((when (endp (cdr clobbers))) pstate)
        (pstate (print-astring ", " pstate)))
     (print-asm-clobber-list (cdr clobbers) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-asm-clobber-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-attrib-name ((attrname attrib-namep) (pstate pristatep))
+  :guard (attrib-name-aidentp attrname (pristate->gcc pstate))
   :returns (new-pstate pristatep)
   :short "Print an attribute name."
   (attrib-name-case
@@ -1548,7 +1861,11 @@
                          chars)
                   (pristate-fix pstate)))
               (print-astring attrname.unwrap pstate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-attrib-name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1560,7 +1877,8 @@
   (define print-expr ((expr exprp)
                       (expected-prio expr-priorityp)
                       (pstate pristatep))
-    :guard (expr-unambp expr)
+    :guard (and (expr-unambp expr)
+                (expr-aidentp expr (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an expression."
@@ -1961,7 +2279,8 @@
 
   (define print-expr-list ((exprs expr-listp) (pstate pristatep))
     :guard (and (consp exprs)
-                (expr-list-unambp exprs))
+                (expr-list-unambp exprs)
+                (expr-list-aidentp exprs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more expressions, separated by commas."
@@ -1990,7 +2309,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-const-expr ((cexpr const-exprp) (pstate pristatep))
-    :guard (const-expr-unambp cexpr)
+    :guard (and (const-expr-unambp cexpr)
+                (const-expr-aidentp cexpr (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a constant expression."
@@ -2006,7 +2326,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-genassoc ((genassoc genassocp) (pstate pristatep))
-    :guard (genassoc-unambp genassoc)
+    :guard (and (genassoc-unambp genassoc)
+                (genassoc-aidentp genassoc (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a generic association."
@@ -2027,7 +2348,8 @@
 
   (define print-genassoc-list ((genassocs genassoc-listp) (pstate pristatep))
     :guard (and (consp genassocs)
-                (genassoc-list-unambp genassocs))
+                (genassoc-list-unambp genassocs)
+                (genassoc-list-aidentp genassocs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more generic associations,
@@ -2047,7 +2369,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-member-designor ((memdes member-designorp) (pstate pristatep))
-    :guard (member-designor-unambp memdes)
+    :guard (and (member-designor-unambp memdes)
+                (member-designor-aidentp memdes (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a member designator."
@@ -2067,7 +2390,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-type-spec ((tyspec type-specp) (pstate pristatep))
-    :guard (type-spec-unambp tyspec)
+    :guard (and (type-spec-unambp tyspec)
+                (type-spec-aidentp tyspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
@@ -2146,7 +2470,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-spec/qual ((specqual spec/qual-p) (pstate pristatep))
-    :guard (spec/qual-unambp specqual)
+    :guard (and (spec/qual-unambp specqual)
+                (spec/qual-aidentp specqual (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a specifier or qualifier."
@@ -2162,7 +2487,8 @@
 
   (define print-spec/qual-list ((specquals spec/qual-listp) (pstate pristatep))
     :guard (and (consp specquals)
-                (spec/qual-list-unambp specquals))
+                (spec/qual-list-unambp specquals)
+                (spec/qual-list-aidentp specquals (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more specifiers and qualifiers,
@@ -2177,7 +2503,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-align-spec ((alignspec align-specp) (pstate pristatep))
-    :guard (align-spec-unambp alignspec)
+    :guard (and (align-spec-unambp alignspec)
+                (align-spec-aidentp alignspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
@@ -2195,7 +2522,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
-    :guard (decl-spec-unambp declspec)
+    :guard (and (decl-spec-unambp declspec)
+                (decl-spec-aidentp declspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
@@ -2218,7 +2546,8 @@
 
   (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
     :guard (and (consp declspecs)
-                (decl-spec-list-unambp declspecs))
+                (decl-spec-list-unambp declspecs)
+                (decl-spec-list-aidentp declspecs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
@@ -2234,6 +2563,7 @@
 
   (define print-typequal/attribspec ((tyqualattrib typequal/attribspec-p)
                                      (pstate pristatep))
+    :guard (typequal/attribspec-aidentp tyqualattrib (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type qualifier or attribute specifier."
@@ -2248,7 +2578,9 @@
   (define print-typequal/attribspec-list
     ((tyqualattribs typequal/attribspec-listp)
      (pstate pristatep))
-    :guard (consp tyqualattribs)
+    :guard (and (consp tyqualattribs)
+                (typequal/attribspec-list-aidentp tyqualattribs
+                                                  (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more
@@ -2266,7 +2598,9 @@
   (define print-typequal/attribspec-list-list
     ((tyqualattribss typequal/attribspec-list-listp)
      (pstate pristatep))
-    :guard (consp tyqualattribss)
+    :guard (and (consp tyqualattribss)
+                (typequal/attribspec-list-list-aidentp tyqualattribss
+                                                       (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list or one or more lists of
@@ -2317,7 +2651,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initer ((initer initerp) (pstate pristatep))
-    :guard (initer-unambp initer)
+    :guard (and (initer-unambp initer)
+                (initer-aidentp initer (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer."
@@ -2347,7 +2682,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-desiniter ((desiniter desiniterp) (pstate pristatep))
-    :guard (desiniter-unambp desiniter)
+    :guard (and (desiniter-unambp desiniter)
+                (desiniter-aidentp desiniter (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
@@ -2367,7 +2703,8 @@
   (define print-desiniter-list ((desiniters desiniter-listp)
                                 (pstate pristatep))
     :guard (and (consp desiniters)
-                (desiniter-list-unambp desiniters))
+                (desiniter-list-unambp desiniters)
+                (desiniter-list-aidentp desiniters (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializers with optional designations,
@@ -2382,7 +2719,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-designor ((designor designorp) (pstate pristatep))
-    :guard (designor-unambp designor)
+    :guard (and (designor-unambp designor)
+                (designor-aidentp designor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a designator."
@@ -2410,7 +2748,8 @@
   (define print-designor-list ((designors designor-listp)
                                (pstate pristatep))
     :guard (and (consp designors)
-                (designor-list-unambp designors))
+                (designor-list-unambp designors)
+                (designor-list-aidentp designors (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more designators."
@@ -2427,7 +2766,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-declor ((declor declorp) (pstate pristatep))
-    :guard (declor-unambp declor)
+    :guard (and (declor-unambp declor)
+                (declor-aidentp declor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declarator."
@@ -2443,7 +2783,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirdeclor ((dirdeclor dirdeclorp) (pstate pristatep))
-    :guard (dirdeclor-unambp dirdeclor)
+    :guard (and (dirdeclor-unambp dirdeclor)
+                (dirdeclor-aidentp dirdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct declarator."
@@ -2549,7 +2890,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-absdeclor ((absdeclor absdeclorp) (pstate pristatep))
-    :guard (absdeclor-unambp absdeclor)
+    :guard (and (absdeclor-unambp absdeclor)
+                (absdeclor-aidentp absdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an abstract declarator."
@@ -2580,7 +2922,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-dirabsdeclor ((dirabsdeclor dirabsdeclorp) (pstate pristatep))
-    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :guard (and (dirabsdeclor-unambp dirabsdeclor)
+                (dirabsdeclor-aidentp dirabsdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a direct abstract declarator."
@@ -2679,7 +3022,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-param-declon ((param param-declonp) (pstate pristatep))
-    :guard (param-declon-unambp param)
+    :guard (and (param-declon-unambp param)
+                (param-declon-aidentp param (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declaration."
@@ -2701,7 +3045,8 @@
   (define print-param-declon-list ((params param-declon-listp)
                                    (pstate pristatep))
     :guard (and (consp params)
-                (param-declon-list-unambp params))
+                (param-declon-list-unambp params)
+                (param-declon-list-aidentp params (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more parameter declarations,
@@ -2716,7 +3061,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-param-declor ((paramdeclor param-declorp) (pstate pristatep))
-    :guard (param-declor-unambp paramdeclor)
+    :guard (and (param-declor-unambp paramdeclor)
+                (param-declor-aidentp paramdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
@@ -2743,7 +3089,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-tyname ((tyname tynamep) (pstate pristatep))
-    :guard (tyname-unambp tyname)
+    :guard (and (tyname-unambp tyname)
+                (tyname-aidentp tyname (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type name."
@@ -2766,7 +3113,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
-    :guard (struni-spec-unambp struni-spec)
+    :guard (and (struni-spec-unambp struni-spec)
+                (struni-spec-aidentp struni-spec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -2814,7 +3162,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdecl ((structdecl structdeclp) (pstate pristatep))
-    :guard (structdecl-unambp structdecl)
+    :guard (and (structdecl-unambp structdecl)
+                (structdecl-aidentp structdecl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declaration."
@@ -2857,7 +3206,8 @@
   (define print-structdecl-list ((structdecls structdecl-listp)
                                  (pstate pristatep))
     :guard (and (consp structdecls)
-                (structdecl-list-unambp structdecls))
+                (structdecl-list-unambp structdecls)
+                (structdecl-list-aidentp structdecls (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarations,
@@ -2882,7 +3232,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-structdeclor ((structdeclor structdeclorp) (pstate pristatep))
-    :guard (structdeclor-unambp structdeclor)
+    :guard (and (structdeclor-unambp structdeclor)
+                (structdeclor-aidentp structdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declarator."
@@ -2920,7 +3271,9 @@
   (define print-structdeclor-list ((structdeclors structdeclor-listp)
                                    (pstate pristatep))
     :guard (and (consp structdeclors)
-                (structdeclor-list-unambp structdeclors))
+                (structdeclor-list-unambp structdeclors)
+                (structdeclor-list-aidentp structdeclors
+                                           (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarators,
@@ -2935,7 +3288,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumspec ((enumspec enumspecp) (pstate pristatep))
-    :guard (enumspec-unambp enumspec)
+    :guard (and (enumspec-unambp enumspec)
+                (enumspec-aidentp enumspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enueration specifier."
@@ -2969,7 +3323,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-enumer ((enumer enumerp) (pstate pristatep))
-    :guard (enumer-unambp enumer)
+    :guard (and (enumer-unambp enumer)
+                (enumer-aidentp enumer (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enumerator."
@@ -2986,7 +3341,8 @@
 
   (define print-enumer-list ((enumers enumer-listp) (pstate pristatep))
     :guard (and (consp enumers)
-                (enumer-list-unambp enumers))
+                (enumer-list-unambp enumers)
+                (enumer-list-aidentp enumers (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more enumerators, separated by commas."
@@ -3000,7 +3356,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-statassert ((statassert statassertp) (pstate pristatep))
-    :guard (statassert-unambp statassert)
+    :guard (and (statassert-unambp statassert)
+                (statassert-aidentp statassert (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
@@ -3020,6 +3377,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib ((attr attribp) (pstate pristatep))
+    :guard (attrib-aidentp attr (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a GCC attribute."
@@ -3048,7 +3406,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-list ((attrs attrib-listp) (pstate pristatep))
-    :guard (consp attrs)
+    :guard (and (consp attrs)
+                (attrib-list-aidentp attrs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more GCC attributes, comma-separated."
@@ -3062,6 +3421,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-attrib-spec ((attrspec attrib-specp) (pstate pristatep))
+    :guard (attrib-spec-aidentp attrspec (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an attribute specifier."
@@ -3080,7 +3440,8 @@
 
   (define print-attrib-spec-list ((attrspecs attrib-spec-listp)
                                   (pstate pristatep))
-    :guard (consp attrspecs)
+    :guard (and (consp attrspecs)
+                (attrib-spec-list-aidentp attrspecs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more attribute specifiers,
@@ -3095,7 +3456,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
-    :guard (initdeclor-unambp initdeclor)
+    :guard (and (initdeclor-unambp initdeclor)
+                (initdeclor-aidentp initdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer declarator."
@@ -3124,7 +3486,8 @@
   (define print-initdeclor-list ((initdeclors initdeclor-listp)
                                  (pstate pristatep))
     :guard (and (consp initdeclors)
-                (initdeclor-list-unambp initdeclors))
+                (initdeclor-list-unambp initdeclors)
+                (initdeclor-list-aidentp initdeclors (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializer declarators,
@@ -3139,7 +3502,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl-inline ((decl declp) (pstate pristatep))
-    :guard (decl-unambp decl)
+    :guard (and (decl-unambp decl)
+                (decl-aidentp decl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, inline."
@@ -3178,7 +3542,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-decl ((decl declp) (pstate pristatep))
-    :guard (decl-unambp decl)
+    :guard (and (decl-unambp decl)
+                (decl-aidentp decl (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, in its own indented line."
@@ -3192,7 +3557,8 @@
 
   (define print-decl-list ((decls decl-listp) (pstate pristatep))
     :guard (and (consp decls)
-                (decl-list-unambp decls))
+                (decl-list-unambp decls)
+                (decl-list-aidentp decls (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
@@ -3206,7 +3572,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-label ((label labelp) (pstate pristatep))
-    :guard (label-unambp label)
+    :guard (and (label-unambp label)
+                (label-aidentp label (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a label."
@@ -3227,6 +3594,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-output ((output asm-outputp) (pstate pristatep))
+    :guard (asm-output-aidentp output (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler output operand."
@@ -3258,7 +3626,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-output-list ((outputs asm-output-listp) (pstate pristatep))
-    :guard (consp outputs)
+    :guard (and (consp outputs)
+                (asm-output-list-aidentp outputs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler output operands,
@@ -3273,6 +3642,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-input ((input asm-inputp) (pstate pristatep))
+    :guard (asm-input-aidentp input (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler input operand."
@@ -3304,7 +3674,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-input-list ((inputs asm-input-listp) (pstate pristatep))
-    :guard (consp inputs)
+    :guard (and (consp inputs)
+                (asm-input-list-aidentp inputs (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more assembler input operands,
@@ -3319,6 +3690,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-asm-stmt ((asm asm-stmtp) (pstate pristatep))
+    :guard (asm-stmt-aidentp asm (pristate->gcc pstate))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler statement."
@@ -3413,7 +3785,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-stmt ((stmt stmtp) (pstate pristatep))
-    :guard (stmt-unambp stmt)
+    :guard (and (stmt-unambp stmt)
+                (stmt-aidentp stmt (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a statement, in one or more lines, with proper indentation."
@@ -3492,6 +3865,9 @@
                          (pstate (print-stmt stmt.then pstate))
                          (pstate (dec-pristate-indent pstate)))
                       pstate)))
+          (pstate (if (stmt-case stmt.then :compound)
+                      pstate
+                    (print-indent pstate)))
           (pstate (print-astring "else" pstate))
           (pstate (if (stmt-case stmt.else :compound)
                       (b* ((pstate (print-astring " " pstate))
@@ -3647,7 +4023,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item ((item block-itemp) (pstate pristatep))
-    :guard (block-item-unambp item)
+    :guard (and (block-item-unambp item)
+                (block-item-aidentp item (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block item."
@@ -3661,7 +4038,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block-item-list ((items block-item-listp) (pstate pristatep))
-    :guard (block-item-list-unambp items)
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-aidentp items (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of zero or more block items."
@@ -3673,7 +4051,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-block ((items block-item-listp) (pstate pristatep))
-    :guard (block-item-list-unambp items)
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-aidentp items (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block."
@@ -3712,21 +4091,88 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil
-
-  ///
-
-  (verify-guards print-expr
-    :hints (("Goal" :in-theory (disable (:e tau-system))))) ; for speed
+  :verify-guards nil ; done below
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual print-exprs/decls/stmts))
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual print-exprs/decls/stmts)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mut-same-gcc pristate->gcc-of-print-exprs/decls/stmts
+    (print-expr
+     print-expr-list
+     print-const-expr
+     print-genassoc
+     print-genassoc-list
+     print-member-designor
+     print-type-spec
+     print-spec/qual
+     print-spec/qual-list
+     print-align-spec
+     print-decl-spec
+     print-decl-spec-list
+     print-typequal/attribspec
+     print-typequal/attribspec-list
+     print-typequal/attribspec-list-list
+     print-initer
+     print-desiniter
+     print-desiniter-list
+     print-designor
+     print-designor-list
+     print-declor
+     print-dirdeclor
+     print-absdeclor
+     print-dirabsdeclor
+     print-param-declon
+     print-param-declon-list
+     print-param-declor
+     print-tyname
+     print-struni-spec
+     print-structdecl
+     print-structdecl-list
+     print-structdeclor
+     print-structdeclor-list
+     print-enumspec
+     print-enumer
+     print-enumer-list
+     print-statassert
+     print-attrib
+     print-attrib-list
+     print-attrib-spec
+     print-attrib-spec-list
+     print-initdeclor
+     print-initdeclor-list
+     print-decl-inline
+     print-decl
+     print-decl-list
+     print-label
+     print-asm-output
+     print-asm-output-list
+     print-asm-input
+     print-asm-input-list
+     print-asm-stmt
+     print-stmt
+     print-block-item
+     print-block-item-list
+     print-block)
+    :hints (("Goal" :expand ((print-decl-inline decl pstate)
+                             (print-structdecl structdecl pstate)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards print-expr
+    :hints (("Goal" :in-theory (disable (:e tau-system)))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-fundef ((fundef fundefp) (pstate pristatep))
-  :guard (fundef-unambp fundef)
+  :guard (and (fundef-unambp fundef)
+              (fundef-aidentp fundef (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a function definition."
   :long
@@ -3773,12 +4219,17 @@
        (pstate (print-block fundef.body pstate))
        (pstate (print-new-line pstate)))
     pstate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-fundef))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl ((extdecl extdeclp) (pstate pristatep))
-  :guard (extdecl-unambp extdecl)
+  :guard (and (extdecl-unambp extdecl)
+              (extdecl-aidentp extdecl (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print an external declaration."
   (extdecl-case
@@ -3789,12 +4240,17 @@
                (pstate (print-new-line pstate)))
             pstate)
    :asm (print-asm-stmt extdecl.unwrap pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-extdecl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-extdecl-list ((extdecls extdecl-listp) (pstate pristatep))
-  :guard (extdecl-list-unambp extdecls)
+  :guard (and (extdecl-list-unambp extdecls)
+              (extdecl-list-aidentp extdecls (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of zero or more external declarations."
   :long
@@ -3804,12 +4260,17 @@
   (b* (((when (endp extdecls)) (pristate-fix pstate))
        (pstate (print-extdecl (car extdecls) pstate)))
     (print-extdecl-list (cdr extdecls) pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-extdecl-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-transunit ((tunit transunitp) (pstate pristatep))
-  :guard (transunit-unambp tunit)
+  :guard (and (transunit-unambp tunit)
+              (transunit-aidentp tunit (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   :long
@@ -3822,7 +4283,11 @@
         (raise "Misusage error: empty translation unit.")
         (pristate-fix pstate)))
     (print-extdecl-list tunit.decls pstate))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-transunit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
