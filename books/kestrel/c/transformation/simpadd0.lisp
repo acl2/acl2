@@ -4629,7 +4629,8 @@
 
 (define simpadd0-code-ensemble ((code code-ensemblep)
                                 (gin simpadd0-ginp))
-  :guard (code-ensemble-unambp code)
+  :guard (and (code-ensemble-unambp code)
+              (code-ensemble-annop code))
   :returns (mv (new-code code-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a code ensemble."
