@@ -1404,7 +1404,8 @@
           (const-prop-param-declor paramdecl.declor env)))
       (mv (make-param-declon
             :specs spec
-            :declor decl)
+            :declor decl
+            :attribs paramdecl.attribs)
           env))
     :measure (param-declon-count paramdecl))
 

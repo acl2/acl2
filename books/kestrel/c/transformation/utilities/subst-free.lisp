@@ -848,7 +848,7 @@
           (param-declor-subst-free
             (c$::param-declon->declor param-declon)
             subst bound-vars)))
-      (mv (param-declon specs declor)
+      (mv (param-declon specs declor (c$::param-declon->attribs param-declon))
           (ident-set-fix bound-vars)))
     :measure (param-declon-count param-declon))
 

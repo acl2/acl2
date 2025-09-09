@@ -4169,7 +4169,8 @@
              (if (equal dirdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :declor (param-declor-none))))
+                               :declor (param-declor-none)
+                               :attribs nil)))
                  (retok dirdeclor.params nil table)
                (valid-param-declon-list
                 dirdeclor.params fundef-params-p table ienv)))
@@ -4403,7 +4404,8 @@
              (if (equal dirabsdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :declor (param-declor-none))))
+                               :declor (param-declor-none)
+                               :attribs nil)))
                  (retok dirabsdeclor.params nil table)
                (valid-param-declon-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
@@ -4508,7 +4510,9 @@
                    (make-type-pointer :to type)
                  type))
          ((when (not ident?))
-          (retok (make-param-declon :specs new-specs :declor new-decl)
+          (retok (make-param-declon :specs new-specs
+                                    :declor new-decl
+                                    :attribs paramdecl.attribs)
                  (set::union types more-types)
                  table))
          (ord-info (make-valid-ord-info-objfun
@@ -4523,7 +4527,9 @@
                     with associated information ~x1."
                    (param-declon-fix paramdecl) info?))
          (table (valid-add-ord ident? ord-info table)))
-      (retok (make-param-declon :specs new-specs :declor new-decl)
+      (retok (make-param-declon :specs new-specs
+                                :declor new-decl
+                                :attribs paramdecl.attribs)
              (set::union types more-types)
              table))
     :measure (param-declon-count paramdecl))

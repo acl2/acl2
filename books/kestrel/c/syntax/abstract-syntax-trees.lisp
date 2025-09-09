@@ -2402,9 +2402,12 @@
        In our abstract syntax, this is defined as consisting of
        declaration specifiers followed by a parameter declarator;
        see @(tsee param-declor) for a description and motivation
-       for this notion of parameter declarator."))
+       for this notion of parameter declarator.
+       We also allow zero or more attribute specifiers at the end,
+       as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
-     (declor param-declor))
+     (declor param-declor)
+     (attribs attrib-spec-list))
     :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 

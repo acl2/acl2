@@ -1106,10 +1106,16 @@
     "The declaration specifiers must be all type specifiers,
      and must form a supported type specifier sequence.")
    (xdoc::p
-    "The parameter declarator must map to an object declarator."))
+    "The parameter declarator must map to an object declarator.")
+   (xdoc::p
+    "There must be no ending attribute specifiers."))
   (b* (((reterr) (c::param-declon (c::tyspecseq-void)
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
+       ((when (param-declon->attribs paramdecl))
+        (reterr (msg "Unsupported attribute specifiers ~
+                      in parameter declaration ~x0."
+                     (param-declon-fix paramdecl))))
        (declspecs (param-declon->specs paramdecl))
        (declor (param-declon->declor paramdecl))
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
