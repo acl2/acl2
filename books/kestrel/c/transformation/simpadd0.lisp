@@ -31,6 +31,7 @@
 
 (local (in-theory (enable* c$::abstract-syntax-aidentp-rules)))
 (local (in-theory (enable* c$::abstract-syntax-unambp-rules)))
+(local (in-theory (enable* c$::abstract-syntax-annop-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -2423,7 +2424,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr ((expr exprp) (gin simpadd0-ginp))
-    :guard (expr-unambp expr)
+    :guard (and (expr-unambp expr)
+                (expr-annop expr))
     :returns (mv (new-expr exprp) (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an expression."
@@ -2630,7 +2632,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr-list ((exprs expr-listp) (gin simpadd0-ginp))
-    :guard (expr-list-unambp exprs)
+    :guard (and (expr-list-unambp exprs)
+                (expr-list-annop exprs))
     :returns (mv (new-exprs expr-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2651,7 +2654,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-expr-option ((expr? expr-optionp) (gin simpadd0-ginp))
-    :guard (expr-option-unambp expr?)
+    :guard (and (expr-option-unambp expr?)
+                (expr-option-annop expr?))
     :returns (mv (new-expr? expr-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2672,7 +2676,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-const-expr ((cexpr const-exprp) (gin simpadd0-ginp))
-    :guard (const-expr-unambp cexpr)
+    :guard (and (const-expr-unambp cexpr)
+                (const-expr-annop cexpr))
     :returns (mv (new-cexpr const-exprp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2689,7 +2694,8 @@
 
   (define simpadd0-const-expr-option ((cexpr? const-expr-optionp)
                                       (gin simpadd0-ginp))
-    :guard (const-expr-option-unambp cexpr?)
+    :guard (and (const-expr-option-unambp cexpr?)
+                (const-expr-option-annop cexpr?))
     :returns (mv (new-cexpr? const-expr-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2704,7 +2710,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-genassoc ((genassoc genassocp) (gin simpadd0-ginp))
-    :guard (genassoc-unambp genassoc)
+    :guard (and (genassoc-unambp genassoc)
+                (genassoc-annop genassoc))
     :returns (mv (new-genassoc genassocp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2734,7 +2741,8 @@
 
   (define simpadd0-genassoc-list ((genassocs genassoc-listp)
                                   (gin simpadd0-ginp))
-    :guard (genassoc-list-unambp genassocs)
+    :guard (and (genassoc-list-unambp genassocs)
+                (genassoc-list-annop genassocs))
     :returns (mv (new-genassocs genassoc-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2756,7 +2764,8 @@
 
   (define simpadd0-member-designor ((memdes member-designorp)
                                     (gin simpadd0-ginp))
-    :guard (member-designor-unambp memdes)
+    :guard (and (member-designor-unambp memdes)
+                (member-designor-annop memdes))
     :returns (mv (new-memdes member-designorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2787,7 +2796,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-type-spec ((tyspec type-specp) (gin simpadd0-ginp))
-    :guard (type-spec-unambp tyspec)
+    :guard (and (type-spec-unambp tyspec)
+                (type-spec-annop tyspec))
     :returns (mv (new-tyspec type-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2858,7 +2868,8 @@
 
   (define simpadd0-spec/qual ((specqual spec/qual-p)
                               (gin simpadd0-ginp))
-    :guard (spec/qual-unambp specqual)
+    :guard (and (spec/qual-unambp specqual)
+                (spec/qual-annop specqual))
     :returns (mv (new-specqual spec/qual-p)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2884,7 +2895,8 @@
 
   (define simpadd0-spec/qual-list ((specquals spec/qual-listp)
                                    (gin simpadd0-ginp))
-    :guard (spec/qual-list-unambp specquals)
+    :guard (and (spec/qual-list-unambp specquals)
+                (spec/qual-list-annop specquals))
     :returns (mv (new-specquals spec/qual-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2906,7 +2918,8 @@
 
   (define simpadd0-align-spec ((alignspec align-specp)
                                (gin simpadd0-ginp))
-    :guard (align-spec-unambp alignspec)
+    :guard (and (align-spec-unambp alignspec)
+                (align-spec-annop alignspec))
     :returns (mv (new-alignspec align-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2931,7 +2944,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-decl-spec ((declspec decl-specp) (gin simpadd0-ginp))
-    :guard (decl-spec-unambp declspec)
+    :guard (and (decl-spec-unambp declspec)
+                (decl-spec-annop declspec))
     :returns (mv (new-declspec decl-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2961,7 +2975,8 @@
 
   (define simpadd0-decl-spec-list ((declspecs decl-spec-listp)
                                    (gin simpadd0-ginp))
-    :guard (decl-spec-list-unambp declspecs)
+    :guard (and (decl-spec-list-unambp declspecs)
+                (decl-spec-list-annop declspecs))
     :returns (mv (new-declspecs decl-spec-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -2982,7 +2997,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-initer ((initer initerp) (gin simpadd0-ginp))
-    :guard (initer-unambp initer)
+    :guard (and (initer-unambp initer)
+                (initer-annop initer))
     :returns (mv (new-initer initerp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3009,7 +3025,8 @@
 
   (define simpadd0-initer-option ((initer? initer-optionp)
                                   (gin simpadd0-ginp))
-    :guard (initer-option-unambp initer?)
+    :guard (and (initer-option-unambp initer?)
+                (initer-option-annop initer?))
     :returns (mv (new-initer? initer-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3025,7 +3042,8 @@
 
   (define simpadd0-desiniter ((desiniter desiniterp)
                               (gin simpadd0-ginp))
-    :guard (desiniter-unambp desiniter)
+    :guard (and (desiniter-unambp desiniter)
+                (desiniter-annop desiniter))
     :returns (mv (new-desiniter desiniterp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3045,7 +3063,8 @@
 
   (define simpadd0-desiniter-list ((desiniters desiniter-listp)
                                    (gin simpadd0-ginp))
-    :guard (desiniter-list-unambp desiniters)
+    :guard (and (desiniter-list-unambp desiniters)
+                (desiniter-list-annop desiniters))
     :returns (mv (new-desiniters desiniter-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3066,7 +3085,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-designor ((designor designorp) (gin simpadd0-ginp))
-    :guard (designor-unambp designor)
+    :guard (and (designor-unambp designor)
+                (designor-annop designor))
     :returns (mv (new-designor designorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3089,7 +3109,8 @@
 
   (define simpadd0-designor-list ((designors designor-listp)
                                   (gin simpadd0-ginp))
-    :guard (designor-list-unambp designors)
+    :guard (and (designor-list-unambp designors)
+                (designor-list-annop designors))
     :returns (mv (new-designors designor-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3110,7 +3131,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-declor ((declor declorp) (gin simpadd0-ginp))
-    :guard (declor-unambp declor)
+    :guard (and (declor-unambp declor)
+                (declor-annop declor))
     :returns (mv (new-declor declorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3130,7 +3152,8 @@
 
   (define simpadd0-declor-option ((declor? declor-optionp)
                                   (gin simpadd0-ginp))
-    :guard (declor-option-unambp declor?)
+    :guard (and (declor-option-unambp declor?)
+                (declor-option-annop declor?))
     :returns (mv (new-declor? declor-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3145,7 +3168,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-dirdeclor ((dirdeclor dirdeclorp) (gin simpadd0-ginp))
-    :guard (dirdeclor-unambp dirdeclor)
+    :guard (and (dirdeclor-unambp dirdeclor)
+                (dirdeclor-annop dirdeclor))
     :returns (mv (new-dirdeclor dirdeclorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3222,7 +3246,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-absdeclor ((absdeclor absdeclorp) (gin simpadd0-ginp))
-    :guard (absdeclor-unambp absdeclor)
+    :guard (and (absdeclor-unambp absdeclor)
+                (absdeclor-annop absdeclor))
     :returns (mv (new-absdeclor absdeclorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3241,7 +3266,8 @@
 
   (define simpadd0-absdeclor-option ((absdeclor? absdeclor-optionp)
                                      (gin simpadd0-ginp))
-    :guard (absdeclor-option-unambp absdeclor?)
+    :guard (and (absdeclor-option-unambp absdeclor?)
+                (absdeclor-option-annop absdeclor?))
     :returns (mv (new-absdeclor? absdeclor-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3257,7 +3283,8 @@
 
   (define simpadd0-dirabsdeclor ((dirabsdeclor dirabsdeclorp)
                                  (gin simpadd0-ginp))
-    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :guard (and (dirabsdeclor-unambp dirabsdeclor)
+                (dirabsdeclor-annop dirabsdeclor))
     :returns (mv (new-dirabsdeclor dirabsdeclorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3334,7 +3361,8 @@
 
   (define simpadd0-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
                                         (gin simpadd0-ginp))
-    :guard (dirabsdeclor-option-unambp dirabsdeclor?)
+    :guard (and (dirabsdeclor-option-unambp dirabsdeclor?)
+                (dirabsdeclor-option-annop dirabsdeclor?))
     :returns (mv (new-dirabsdeclor? dirabsdeclor-optionp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3349,7 +3377,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-param-declon ((paramdecl param-declonp) (gin simpadd0-ginp))
-    :guard (param-declon-unambp paramdecl)
+    :guard (and (param-declon-unambp paramdecl)
+                (param-declon-annop paramdecl))
     :returns (mv (new-paramdecl param-declonp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3372,7 +3401,8 @@
 
   (define simpadd0-param-declon-list ((paramdecls param-declon-listp)
                                       (gin simpadd0-ginp))
-    :guard (param-declon-list-unambp paramdecls)
+    :guard (and (param-declon-list-unambp paramdecls)
+                (param-declon-list-annop paramdecls))
     :returns (mv (new-paramdecls param-declon-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3397,7 +3427,8 @@
 
   (define simpadd0-param-declor ((paramdeclor param-declorp)
                                  (gin simpadd0-ginp))
-    :guard (param-declor-unambp paramdeclor)
+    :guard (and (param-declor-unambp paramdeclor)
+                (param-declor-annop paramdeclor))
     :returns (mv (new-paramdeclor param-declorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3436,7 +3467,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-tyname ((tyname tynamep) (gin simpadd0-ginp))
-    :guard (tyname-unambp tyname)
+    :guard (and (tyname-unambp tyname)
+                (tyname-annop tyname))
     :returns (mv (new-tyname tynamep)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3459,7 +3491,8 @@
 
   (define simpadd0-struni-spec ((struni-spec struni-specp)
                                 (gin simpadd0-ginp))
-    :guard (struni-spec-unambp struni-spec)
+    :guard (and (struni-spec-unambp struni-spec)
+                (struni-spec-annop struni-spec))
     :returns (mv (new-struni-spec struni-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3478,7 +3511,8 @@
 
   (define simpadd0-structdecl ((structdecl structdeclp)
                                (gin simpadd0-ginp))
-    :guard (structdecl-unambp structdecl)
+    :guard (and (structdecl-unambp structdecl)
+                (structdecl-annop structdecl))
     :returns (mv (new-structdecl structdeclp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3510,7 +3544,8 @@
 
   (define simpadd0-structdecl-list ((structdecls structdecl-listp)
                                     (gin simpadd0-ginp))
-    :guard (structdecl-list-unambp structdecls)
+    :guard (and (structdecl-list-unambp structdecls)
+                (structdecl-list-annop structdecls))
     :returns (mv (new-structdecls structdecl-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3532,7 +3567,8 @@
 
   (define simpadd0-structdeclor ((structdeclor structdeclorp)
                                  (gin simpadd0-ginp))
-    :guard (structdeclor-unambp structdeclor)
+    :guard (and (structdeclor-unambp structdeclor)
+                (structdeclor-annop structdeclor))
     :returns (mv (new-structdeclor structdeclorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3554,7 +3590,8 @@
 
   (define simpadd0-structdeclor-list ((structdeclors structdeclor-listp)
                                       (gin simpadd0-ginp))
-    :guard (structdeclor-list-unambp structdeclors)
+    :guard (and (structdeclor-list-unambp structdeclors)
+                (structdeclor-list-annop structdeclors))
     :returns (mv (new-structdeclors structdeclor-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3575,7 +3612,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumspec ((enumspec enumspecp) (gin simpadd0-ginp))
-    :guard (enumspec-unambp enumspec)
+    :guard (and (enumspec-unambp enumspec)
+                (enumspec-annop enumspec))
     :returns (mv (new-enumspec enumspecp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3594,7 +3632,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-enumer ((enumer enumerp) (gin simpadd0-ginp))
-    :guard (enumer-unambp enumer)
+    :guard (and (enumer-unambp enumer)
+                (enumer-annop enumer))
     :returns (mv (new-enumer enumerp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3613,7 +3652,8 @@
 
   (define simpadd0-enumer-list ((enumers enumer-listp)
                                 (gin simpadd0-ginp))
-    :guard (enumer-list-unambp enumers)
+    :guard (and (enumer-list-unambp enumers)
+                (enumer-list-annop enumers))
     :returns (mv (new-enumers enumer-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3635,7 +3675,8 @@
 
   (define simpadd0-statassert ((statassert statassertp)
                                (gin simpadd0-ginp))
-    :guard (statassert-unambp statassert)
+    :guard (and (statassert-unambp statassert)
+                (statassert-annop statassert))
     :returns (mv (new-statassert statassertp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3654,7 +3695,8 @@
 
   (define simpadd0-initdeclor ((initdeclor initdeclorp)
                                (gin simpadd0-ginp))
-    :guard (initdeclor-unambp initdeclor)
+    :guard (and (initdeclor-unambp initdeclor)
+                (initdeclor-annop initdeclor))
     :returns (mv (new-initdeclor initdeclorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3708,7 +3750,8 @@
 
   (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp)
                                     (gin simpadd0-ginp))
-    :guard (initdeclor-list-unambp initdeclors)
+    :guard (and (initdeclor-list-unambp initdeclors)
+                (initdeclor-list-annop initdeclors))
     :returns (mv (new-initdeclors initdeclor-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3744,7 +3787,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-decl ((decl declp) (gin simpadd0-ginp))
-    :guard (decl-unambp decl)
+    :guard (and (decl-unambp decl)
+                (decl-annop decl))
     :returns (mv (new-decl declp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3783,7 +3827,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-decl-list ((decls decl-listp) (gin simpadd0-ginp))
-    :guard (decl-list-unambp decls)
+    :guard (and (decl-list-unambp decls)
+                (decl-list-annop decls))
     :returns (mv (new-decls decl-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3807,7 +3852,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-label ((label labelp) (gin simpadd0-ginp))
-    :guard (label-unambp label)
+    :guard (and (label-unambp label)
+                (label-annop label))
     :returns (mv (new-label labelp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3831,7 +3877,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-stmt ((stmt stmtp) (gin simpadd0-ginp))
-    :guard (stmt-unambp stmt)
+    :guard (and (stmt-unambp stmt)
+                (stmt-annop stmt))
     :returns (mv (new-stmt stmtp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -3975,7 +4022,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define simpadd0-block-item ((item block-itemp) (gin simpadd0-ginp))
-    :guard (block-item-unambp item)
+    :guard (and (block-item-unambp item)
+                (block-item-annop item))
     :returns (mv (new-item block-itemp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -4007,7 +4055,8 @@
 
   (define simpadd0-block-item-list ((items block-item-listp)
                                     (gin simpadd0-ginp))
-    :guard (block-item-list-unambp items)
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-annop items))
     :returns (mv (new-items block-item-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
@@ -4256,7 +4305,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fundef ((fundef fundefp) (gin simpadd0-ginp))
-  :guard (fundef-unambp fundef)
+  :guard (and (fundef-unambp fundef)
+              (fundef-annop fundef))
   :returns (mv (new-fundef fundefp)
                (gout simpadd0-goutp))
   :short "Transform a function definition."
@@ -4486,7 +4536,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl ((extdecl extdeclp) (gin simpadd0-ginp))
-  :guard (extdecl-unambp extdecl)
+  :guard (and (extdecl-unambp extdecl)
+              (extdecl-annop extdecl))
   :returns (mv (new-extdecl extdeclp)
                (gout simpadd0-goutp))
   :short "Transform an external declaration."
@@ -4518,7 +4569,8 @@
 
 (define simpadd0-extdecl-list ((extdecls extdecl-listp)
                                (gin simpadd0-ginp))
-  :guard (extdecl-list-unambp extdecls)
+  :guard (and (extdecl-list-unambp extdecls)
+              (extdecl-list-annop extdecls))
   :returns (mv (new-extdecls extdecl-listp)
                (gout simpadd0-goutp))
   :short "Transform a list of external declarations."
@@ -4548,7 +4600,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit ((tunit transunitp) (gin simpadd0-ginp))
-  :guard (transunit-unambp tunit)
+  :guard (and (transunit-unambp tunit)
+              (transunit-annop tunit))
   :returns (mv (new-tunit transunitp)
                (gout simpadd0-goutp))
   :short "Transform a translation unit."
@@ -4571,7 +4624,8 @@
 
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp)
                                          (gin simpadd0-ginp))
-  :guard (filepath-transunit-map-unambp map)
+  :guard (and (filepath-transunit-map-unambp map)
+              (filepath-transunit-map-annop map))
   :returns (mv (new-map filepath-transunit-mapp
                         :hyp (filepath-transunit-mapp map))
                (gout simpadd0-goutp))
