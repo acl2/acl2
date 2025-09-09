@@ -1465,10 +1465,10 @@
 
   (defruled block-item-decl-compustate-vars
     (b* ((item (c::block-item-declon declon))
-         (declon-compst (c::exec-obj-declon declon compst fenv (1- limit)))
+         (compst0 (c::exec-obj-declon declon compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
       (implies (and (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type declon-compst))
+                    (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-block-item
              (c::block-item-declon declon) compst fenv limit))
