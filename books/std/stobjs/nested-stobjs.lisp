@@ -35,7 +35,6 @@
 
 (include-book "std/util/bstar" :dir :system)
 
-
 (defun stobj-get-stobj-return-vars (vars bindings)
   (declare (xargs :mode :program))
   (b* (((when (atom vars)) nil)
@@ -43,9 +42,47 @@
        ((unless look) (stobj-get-stobj-return-vars (cdr vars) bindings))
        (stobj (car (last (cadr look)))))
     (add-to-set-eq stobj (stobj-get-stobj-return-vars (cdr vars) bindings))))
-       
 
+#!acl2
+(defun stobj-let-binding-p (binding)
+  (declare (xargs :guard t))
+  (b* (((unless (true-listp binding)))
+       ((list* var accessor updaterp) binding)
+       ;; `UPDATERP' is a `TRUE-LISTP'
+       ((unless (symbolp var)))
+       ((unless (true-listp accessor)))
+       ((list* acc i stp) accessor)
+       ;; `STP' is a `TRUE-LISTP'
+       ((unless (symbolp acc)))
+       ((unless (or (null stp) ; scalar access
+                    (symbolp i)
+                    (natp i)
+                    (and (consp i)
+                         (equal (car i) 'quote)
+                         (consp (cdr i))
+                         (null (cddr i))))))
+       ((unless (null (cdr stp))))
+       (st (if stp
+               (car stp)
+               i))
+       ((unless (symbolp st))))
+    (or (null updaterp)
+        (and (symbolp (car updaterp))
+             (null (cdr updaterp))))))
 
+#!acl2
+(defun %stobj-let-bindings-p-rec (bindings)
+  (declare (xargs :guard t))
+  (if (consp bindings)
+      (and (stobj-let-binding-p (car bindings))
+           (%stobj-let-bindings-p-rec (cdr bindings)))
+      (null bindings)))
+
+#!acl2
+(defun stobj-let-bindings-p (bindings)
+  (declare (xargs :guard t))
+  (and (consp bindings)
+       (%stobj-let-bindings-p-rec bindings)))
 
 #!acl2
 (def-b*-binder stobj-get
@@ -110,7 +147,7 @@ the values returned by the last subform.</p>
   :decls
   ((declare (xargs :guard (and (symbol-listp args)
                                (consp forms)
-                               (doublet-listp (car forms))
+                               (stobj-let-bindings-p (car forms))
                                (consp (cdr forms))))))
   :body
   (b* (((cons bindings implicit-progn$) forms)
