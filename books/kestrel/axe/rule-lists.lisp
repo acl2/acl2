@@ -974,7 +974,7 @@
 
      not-equal-max-int-when-<=      ;new, rename
 
-     repeatbit-of-1     ;new
+     repeatbit-of-1-arg1     ;new
      lg                 ;new
      getbit-of-repeatbit ;new - what else do we need about repeatbit?
 

@@ -157,7 +157,6 @@
                          (bvcat width val low x))))
   :hints (("Goal" :cases ((equal size (+ low width)))
            :in-theory (e/d (bitops::part-install-width-low
-                            REPEATBIT-OF-1-ARG2
                             BVNOT-OF-0
                             LOGAND-BECOMES-BVAND
                             BVCHOP-OF-LOGNOT-BECOMES-BVNOT
