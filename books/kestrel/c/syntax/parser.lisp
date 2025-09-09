@@ -9880,7 +9880,10 @@
        it must be a single initializer.
        If the token is an open curly brace,
        we must have an aggregate initializer.
-       There is no overlap between these two cases."))
+       There is no overlap between these two cases.")
+     (xdoc::p
+      "If GCC extensions are enabled,
+       a closing brace could immediately follow the open one."))
     (b* (((reterr) (irr-initer) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -9890,13 +9893,22 @@
               (parse-assignment-expression parstate)))
           (retok (initer-single expr) span parstate)))
        ((token-punctuatorp token "{") ; {
-        (b* (((erp desiniters final-comma & parstate) ; { inits [,]
-              (parse-initializer-list parstate))
-             ((erp last-span parstate) ; { inits [,] }
-              (read-punctuator "}" parstate)))
-          (retok (make-initer-list :elems desiniters :final-comma final-comma)
-                 (span-join span last-span)
-                 parstate)))
+        (b* (((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((and (token-punctuatorp token2 "}") ; { }
+                 (parstate->gcc parstate))
+            (retok (make-initer-list :elems nil :final-comma nil)
+                   (span-join span span2)
+                   parstate))
+           (t ; { other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; {
+                 ((erp desiniters final-comma & parstate) ; { inits [,]
+                  (parse-initializer-list parstate))
+                 ((erp last-span parstate) ; { inits [,] }
+                  (read-punctuator "}" parstate)))
+              (retok (make-initer-list :elems desiniters :final-comma final-comma)
+                     (span-join span last-span)
+                     parstate))))))
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "an identifier ~

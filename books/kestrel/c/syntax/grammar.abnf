@@ -1260,6 +1260,9 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; it seems reasonable that the two expressions of the range are also constant,
 ; although the GCC documentation is not explicit about this.
 
+; As a GCC extension, we allow initializers consisting of
+; just an open and closing brace, without nothing in between.
+
 declaration = [ %s"__extension__" ] ; GCC extension
               declaration-specifiers
               [ init-declarator-list ]
@@ -1444,6 +1447,7 @@ typedef-name = identifier
 initializer = assignment-expression
             / "{" initializer-list "}"
             / "{" initializer-list "," "}"
+            / "{" "}" ; GCC extension
 
 initializer-list = [ designation ] initializer
                  / initializer-list "," [ designation ] initializer

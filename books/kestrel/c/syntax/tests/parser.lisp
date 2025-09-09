@@ -2408,3 +2408,9 @@ error (int __status, int __errnum, const char *__format, ...)
 }
 "
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "struct s x = {};
+"
+ :gcc t)

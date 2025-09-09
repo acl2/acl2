@@ -2118,8 +2118,9 @@
      (xdoc::p
       "This corresponds to <i>initializer</i> in the grammar in [C17].
        The <i>initializer-list</i> is captured as
-       a list (which should be non-empty) of initializers with designations
-       (see @(tsee desiniter))."))
+       a list of initializers with designations
+       (see @(tsee desiniter)).
+       The list may be empty only as a GCC extension; see the ABNF grammar."))
     (:single ((expr expr)))
     (:list ((elems desiniter-list)
             (final-comma bool)))
