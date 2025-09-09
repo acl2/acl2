@@ -10,7 +10,9 @@
 
 (in-package "C2C")
 
+(include-book "variables-in-computation-states")
 (include-book "proof-generation")
+(include-book "proof-generation-theorems")
 (include-book "constant-propagation")
 (include-book "copy-fn")
 (include-book "rename")

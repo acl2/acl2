@@ -10,6 +10,8 @@
 
 (in-package "C2C")
 
+(include-book "variables-in-computation-states")
+
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
 (include-book "../syntax/validation-information")
@@ -68,71 +70,6 @@
       (e.g. for declarations).")))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define c::compustate-has-var-with-type-p ((var c::identp)
-                                           (type c::typep)
-                                           (compst c::compustatep))
-  :returns (yes/no booleanp)
-  :short "Check if a computation state includes
-          a variable with a given name
-          containing a value of the given type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is essentially an abbreviation,
-     which we use in generated theorems.
-     In a way this predicate belongs to a more general place,
-     perhaps in the language formalization;
-     this is why we put it into the @('\"C\"') package."))
-  (b* ((objdes (c::objdesign-of-var var compst)))
-    (and objdes
-         (b* ((val (c::read-object objdes compst)))
-           (equal (c::type-of-value val) (c::type-fix type)))))
-  :guard-hints
-  (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var)))
-  :hooks (:fix)
-
-  ///
-
-  (defruled c::not-errorp-when-compustate-has-var-with-type-p
-    (implies (c::compustate-has-var-with-type-p var type compst)
-             (not (c::errorp
-                   (c::read-object (c::objdesign-of-var var compst)
-                                   compst))))
-    :enable (c::valuep-of-read-object-of-objdesign-of-var
-             c::not-errorp-when-valuep))
-
-  (defruled c::type-of-value-when-compustate-has-var-with-type-p
-    (implies (c::compustate-has-var-with-type-p var type compst)
-             (equal (c::type-of-value
-                     (c::read-object (c::objdesign-of-var var compst)
-                                     compst))
-                    (c::type-fix type))))
-
-  (defruled c::compustate-has-var-with-type-p-of-create-other-var
-    (b* ((compst1 (c::create-var var1 val compst)))
-      (implies (and (not (c::errorp compst1))
-                    (c::identp var)
-                    (c::identp var1)
-                    (not (equal var var1))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::objdesign-of-var-of-create-var
-             c::read-object-of-create-var-when-auto-or-static
-             c::objdesign-static->name-of-objdesign-of-var
-             c::objdesign-auto->name-of-objdesign-of-var))
-
-  (defruled c::compustate-has-var-with-type-p-of-create-same-var
-    (b* ((compst1 (c::create-var var val compst)))
-      (implies (and (not (c::errorp compst1))
-                    (c::identp var)
-                    (equal type (c::type-of-value val)))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::objdesign-of-var-of-create-var
-             c::read-object-of-create-var-when-auto-or-static
-             nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
