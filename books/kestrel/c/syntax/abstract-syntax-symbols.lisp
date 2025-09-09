@@ -620,6 +620,59 @@
     block-item-list-types
     fundef-types
 
+    expr-annop
+    expr-list-annop
+    expr-option-annop
+    const-expr-annop
+    const-expr-option-annop
+    genassoc-annop
+    genassoc-list-annop
+    member-designor-annop
+    type-spec-annop
+    spec/qual-annop
+    spec/qual-list-annop
+    align-spec-annop
+    decl-spec-annop
+    decl-spec-list-annop
+    initer-annop
+    initer-option-annop
+    desiniter-annop
+    desiniter-list-annop
+    designor-annop
+    designor-list-annop
+    declor-annop
+    declor-option-annop
+    dirdeclor-annop
+    absdeclor-annop
+    absdeclor-option-annop
+    dirabsdeclor-annop
+    dirabsdeclor-option-annop
+    param-declon-annop
+    param-declon-list-annop
+    param-declor-annop
+    tyname-annop
+    struni-spec-annop
+    structdecl-annop
+    structdecl-list-annop
+    structdeclor-annop
+    structdeclor-list-annop
+    enumspec-annop
+    enumer-annop
+    enumer-list-annop
+    statassert-annop
+    initdeclor-annop
+    initdeclor-list-annop
+    decl-annop
+    decl-list-annop
+    label-annop
+    stmt-annop
+    block-item-annop
+    block-item-list-annop
+    fundef-annop
+    extdecl-annop
+    extdecl-list-annop
+    transunit-annop
+    filepath-transunit-map-annop
     transunit-ensemble-annop
     code-ensemble-annop
 
