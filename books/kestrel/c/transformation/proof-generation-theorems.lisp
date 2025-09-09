@@ -69,7 +69,7 @@
      For flexibility, the theorems require the equality, for sub-expressions,
      not of their full expression values,
      but just for the values of those expression values
-     (i.e. @(tsee expr-value->value)).
+     (i.e. @(tsee c::expr-value->value)).
      Thus, we need explicit hypotheses that
      the expression values are not errors,
      because they are not readily implied by the equality of
