@@ -4608,7 +4608,8 @@
 
 (define simpadd0-transunit-ensemble ((tunits transunit-ensemblep)
                                      (gin simpadd0-ginp))
-  :guard (transunit-ensemble-unambp tunits)
+  :guard (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-annop tunits))
   :returns (mv (new-tunits transunit-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a translation unit ensemble."
@@ -4629,7 +4630,8 @@
 
 (define simpadd0-code-ensemble ((code code-ensemblep)
                                 (gin simpadd0-ginp))
-  :guard (code-ensemble-unambp code)
+  :guard (and (code-ensemble-unambp code)
+              (code-ensemble-annop code))
   :returns (mv (new-code code-ensemblep)
                (gout simpadd0-goutp))
   :short "Transform a code ensemble."
