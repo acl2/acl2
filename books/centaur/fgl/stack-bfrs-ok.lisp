@@ -52,8 +52,8 @@
                                         (scratchobj-bfrs-ok-in-terms-of-bfrlist))))
   (mbe :logic (scratchobj-bfrs-ok (stack-nth-scratch n stack))
        :exec (case (stack-nth-scratch-kind n stack)
-               (:fgl-obj (fgl-bfr-object-p (stack-nth-scratch-fgl-obj n stack)))
-               (:fgl-objlist (fgl-bfr-objectlist-p (stack-nth-scratch-fgl-objlist n stack)))
+               (:fgl-obj (fgl-object-bfrs-ok (stack-nth-scratch-fgl-obj n stack)))
+               (:fgl-objlist (fgl-objectlist-bfrs-ok (stack-nth-scratch-fgl-objlist n stack)))
                (:bfr (bfr-p (stack-nth-scratch-bfr n stack)))
                (:bfrlist (bfr-listp (stack-nth-scratch-bfrlist n stack)))
                (:cinst (constraint-instance-bfrs-ok (stack-nth-scratch-cinst n stack)))
@@ -420,7 +420,7 @@
   (if (mbe :logic (zp (- (nfix to) (nfix from)))
            :exec (eql from to))
       t
-    (and (fgl-bfr-object-bindings-p (stack-nth-frame-minor-bindings n from stack))
+    (and (fgl-object-bindings-bfrs-ok (stack-nth-frame-minor-bindings n from stack))
          (stack-nth-frame-minor-bindings-range-bfrs-ok n (1+ (lnfix from)) to stack)))
   ///
 
@@ -535,7 +535,7 @@
       t
     (and (stack-nth-frame-minor-bindings-range-bfrs-ok
           from 0 (stack-nth-frame-minor-frames from stack) stack)
-         (fgl-bfr-object-bindings-p (stack-nth-frame-bindings from stack))
+         (fgl-object-bindings-bfrs-ok (stack-nth-frame-bindings from stack))
          (stack-frame-range-bindings-bfrs-ok (1+ (lnfix from)) to stack)))
   ///
   (local (defthm consp-cdr-nthcdr

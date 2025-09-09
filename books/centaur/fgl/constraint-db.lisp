@@ -1093,7 +1093,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
   :returns (ok)
   (if (atom x)
       t
-    (and (fgl-bfr-object-bindings-p (fgl-object-bindings-fix (car x)))
+    (and (fgl-object-bindings-bfrs-ok (fgl-object-bindings-fix (car x)))
          (fgl-object-bindingslist-bfrs-ok (cdr x))))
   ///
   (defret <fn>-in-terms-of-bfrlist
@@ -1108,7 +1108,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
       t
     (if (mbt (and (consp (car x))
                   (fgl-objectlist-p (caar x))))
-        (and (fgl-bfr-objectlist-p (caar x))
+        (and (fgl-objectlist-bfrs-ok (caar x))
              (fgl-object-bindingslist-bfrs-ok (cdar x))
              (sig-table-bfrs-ok (cdr x)))
       (sig-table-bfrs-ok (cdr x))))

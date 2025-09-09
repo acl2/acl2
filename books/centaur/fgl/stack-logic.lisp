@@ -802,8 +802,8 @@ passed into a function or bound to a different variable in a lambda.</p>
                             &optional ((bfrstate bfrstate-p) 'bfrstate))
   :returns (ok)
   (scratchobj-case x
-    :fgl-obj (fgl-bfr-object-p x.val)
-    :fgl-objlist (fgl-bfr-objectlist-p x.val)
+    :fgl-obj (fgl-object-bfrs-ok x.val)
+    :fgl-objlist (fgl-objectlist-bfrs-ok x.val)
     :bfr (bfr-p x.val)
     :bfrlist (bfr-listp x.val)
     :cinst (constraint-instance-bfrs-ok x.val)

@@ -132,7 +132,6 @@
                   (cdar nbalist))
          :hints(("Goal" :in-theory (enable nbalistp)))))
 
-
 (defsection bounded-pathcond-p
   (defun-sk bounded-pathcond-p (nbalist num-fanins)
     (forall id
@@ -1217,6 +1216,186 @@
                           (nbalist ,(acl2::hq (cdr nbalist)))
                           (id ,(acl2::hq witness))))))))))
   :rule-classes :definition)
+
+(encapsulate nil
+  (local (defthm natp-car-nth-of-nbalist
+           (implies (and (nbalistp x)
+                         (< (nfix n) (len x)))
+                    (And (natp (car (nth n x)))
+                         (integerp (car (nth n x)))
+                         (rationalp (car (nth n x)))
+                         (<= 0 (car (nth n x)))
+                         (car (nth n x))))
+           :hints(("Goal" :in-theory (enable nbalistp nth)))))
+
+  (defthm natp-aignet-pathcond-nthkey
+    (implies (< (nfix n) (len (nbalist-fix x)))
+             (b* ((key (aignet-pathcond-nthkey n x)))
+               (natp key)))
+    :hints(("Goal" :in-theory (enable nbalistp nth)))
+    :rule-classes :type-prescription)
+
+  (defthm natp-aignet-pathcond-nthkey-rw
+    (implies (< (nfix n) (len (nbalist-fix x)))
+             (b* ((key (aignet-pathcond-nthkey n x)))
+               (and (natp key)
+                    (integerp key)
+                    (rationalp key)
+                    (<= 0 key)
+                    key))))
+
+  (defthm maybe-natp-of-aignet-pathcond-nthkey
+    (acl2::maybe-natp (aignet-pathcond-nthkey n x))
+    :hints (("goal" :cases ((< (nfix n) (len (nbalist-fix x))))))
+    :rule-classes :type-prescription)
+  
+  (local (defthm hons-assoc-equal-of-nth
+           (implies (and (< (nfix n) (len x))
+                         (alistp x))
+                    (hons-assoc-equal (car (nth n x)) x))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal nth)))))
+  
+  (local (defthm alistp-when-nbalistp
+           (implies (nbalistp x)
+                    (alistp x))
+           :hints(("Goal" :in-theory (enable nbalistp)))))
+  
+  (local (defthm nbalist-boundp-of-car-nth
+           (implies (< (nfix n) (len (nbalist-fix x)))
+                    (nbalist-boundp (car (nth n (nbalist-fix x))) x))
+           :hints(("Goal" :in-theory (enable nbalist-boundp
+                                             hons-assoc-equal
+                                             nbalist-fix nth)
+                   :do-not-induct t))))
+
+  (defthm nbalist-boundp-of-nthkey
+    (implies (< (nfix n) (len (nbalist-fix x)))
+             (nbalist-boundp (aignet-pathcond-nthkey n x) x))
+    :hints(("Goal" :in-theory (enable nbalist-boundp))))
+
+  (local (defthm nbalist-boundp-of-append
+           (equal (nbalist-boundp id (append x y))
+                  (or (nbalist-boundp id x)
+                      (nbalist-boundp id y)))
+           :hints(("Goal" :in-theory (enable nbalist-boundp nbalist-fix)))))
+  ;; (local (defthm hons-assoc-equal-of-nbalist-fix-append
+  ;;          (iff (hons-assoc-equal k (nbalist-fix (append a b)))
+  ;;               (or (hons-assoc-equal k (nbalist-fix a))
+  ;;                   (hons-assoc-equal k (nbalist-fix b))))
+  ;;          :hints(("Goal" :in-theory (enable nbalist-fix
+  ;;                                            nbalist-boundp)))))
+
+  (local (defthm cdr-equal-1-when-car-equal-0-nbalist
+           (implies (and (nbalistp x)
+                         (equal (car (nth n x)) 0))
+                    (equal (cdr (nth n x)) 1))
+           :hints(("Goal" :in-theory (enable nth nbalistp)))))
+                    
+  
+  (defthmd nbalist-boundp-of-take
+    (equal (nbalist-boundp id (take n (nbalist-fix x)))
+           (and (posp n)
+                (or (nbalist-boundp id (take (1- n) (nbalist-fix x)))
+                    (equal (nfix id) (aignet-pathcond-nthkey (1- n) x)))))
+    :hints(("Goal" :in-theory (e/d (aignet-pathcond-nthkey)
+                                   (hons-assoc-equal-of-nth
+                                    ACL2::TAKE-OF-TOO-MANY
+                                    nbalist-boundp-redef))
+            :cases ((< (1- n) (len (nbalist-fix x))))
+            :expand ((:with ACL2::TAKE-AS-APPEND-AND-NTH
+                      (:free (x) (take n x)))
+                     (:with nbalist-boundp (nbalist-boundp id nil))
+                     (:with nbalist-boundp
+                      (:free (pair) (nbalist-boundp id (list pair)))))
+            :do-not-induct t))
+    :rule-classes ((:definition :install-body nil
+                    :controller-alist ((nbalist-boundp nil t))))))
+
+(define aignet-pathcond-out-of-bounds-id ((n natp)
+                                          aignet-pathcond
+                                          (num-fanins natp))
+  :prepwork ((local (in-theory (disable aignet-pathcond-nthkey))))
+  :guard (<= n (aignet-pathcond-len aignet-pathcond))
+  :returns (bad-id acl2::maybe-natp :rule-classes :type-prescription
+                   :hints(("Goal" :in-theory (enable acl2::maybe-natp)
+                           :induct t)
+                          (and stable-under-simplificationp
+                               '(:cases ((<= (nfix n) (len (nbalist-fix aignet-pathcond))))))))
+  (if (zp n)
+      nil
+    (or (let ((id (aignet-pathcond-nthkey (1- n) aignet-pathcond)))
+          (and (not (< id (lnfix num-fanins)))
+               id))
+        (aignet-pathcond-out-of-bounds-id (1- n) aignet-pathcond num-fanins)))
+  ///
+  (fty::deffixequiv aignet-pathcond-out-of-bounds-id)
+  (local (in-theory (enable* acl2::arith-equiv-forwarding)))
+
+
+  ;; (local (defthm nbalist-boundp-of-take
+  ;;          (equal (nbalist-boundp id (take n x))
+  ;;                 (and (posp n)
+  ;;                      (or (nbalist-boundp id (take (1- n) x))
+  ;;                          (equal (nfix id) (aignet-pathcond-nthkey (1- n) x)))))
+  ;;          :hints(("Goal" :in-theory (enable aignet-pathcond-nthkey
+  ;;                                            nbalist-boundp)
+  ;;                  :expand ((:with ACL2::TAKE-AS-APPEND-AND-NTH
+  ;;                            (take n (nbalist-fix x))))))))
+                       
+  ;; (local (defthm nbalist-boundp-of-append
+  ;;          (equal (nbalist-boundp id (append x y))
+  ;;                 (or (nbalist-boundp id x)
+  ;;                     (nbalist-boundp id y)))
+  ;;          :hints(("Goal" :in-theory (enable nbalist-boundp nbalist-fix)))))
+  
+  (defretd <fn>-nil-implies
+    (implies (and (not bad-id)
+                  (<= (nfix num-fanins) (nfix id))
+                  (<= (nfix n) (len (nbalist-fix aignet-pathcond))))
+             (not (aignet-pathcond-lookup id (take n (nbalist-fix aignet-pathcond)))))
+    :hints(("Goal" :induct t
+            :expand ((:with nbalist-boundp-of-take
+                      (nbalist-boundp id
+                                      (take n (nbalist-fix aignet-pathcond))))
+                     (:with nbalist-boundp
+                      (nbalist-boundp id nil))))))
+
+  (defretd <fn>-finds-badguy
+    (implies bad-id
+             (and (<= (nfix num-fanins) bad-id)
+                  (aignet-pathcond-lookup bad-id (take n (nbalist-fix aignet-pathcond)))))
+    :hints(("Goal" :induct t
+            :expand ((:free (id)
+                      (:with nbalist-boundp-of-take
+                       (nbalist-boundp id
+                                       (take n (nbalist-fix aignet-pathcond)))))
+                     (:free (id)
+                      (:with nbalist-boundp
+                       (nbalist-boundp id nil))))))))
+
+(define aignet-pathcond-boundedp (aignet-pathcond
+                                  (num-fanins natp))
+  :guard-hints (("goal" :use ((:instance aignet-pathcond-out-of-bounds-id-nil-implies
+                               (id (bounded-pathcond-p-witness
+                                    aignet-pathcond num-fanins))
+                               (n (len aignet-pathcond)))
+                              (:instance bounded-pathcond-p-necc
+                               (id (aignet-pathcond-out-of-bounds-id
+                                    (len aignet-pathcond) aignet-pathcond num-fanins))
+                               (nbalist aignet-pathcond))
+                              (:instance aignet-pathcond-out-of-bounds-id-finds-badguy
+                               (n (len aignet-pathcond))))
+                 :in-theory (e/d (bounded-pathcond-p)
+                                 (bounded-pathcond-p-necc))))
+  :enabled t
+  (mbe :logic (bounded-pathcond-p aignet-pathcond (nfix num-fanins))
+       :exec (not (aignet-pathcond-out-of-bounds-id
+                   (aignet-pathcond-len aignet-pathcond) aignet-pathcond num-fanins))))
+
+
+
+
+
 
 (define nbalist-to-cube ((nbalist nbalistp))
   :measure (len (nbalist-fix nbalist))

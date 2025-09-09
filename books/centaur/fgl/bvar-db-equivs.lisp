@@ -35,7 +35,598 @@
 (include-book "contexts")
 
 
+;; (defines fgl-object-boundedp
+;;   (define fgl-object-boundedp (x &optional ((bfrstate bfrstate-p) 'bfrstate))
+;;     :measure (fgl-object-count x)
+;;     :verify-guards nil
+;;     (mbe :logic (and (fgl-object-p x)
+;;                      (fgl-object-case x
+;;                        :g-concrete t
+;;                        :g-boolean (bfr-p x.bool)
+;;                        :g-integer (bfr-listp x.bits)
+;;                        :g-ite (and (fgl-object-boundedp x.test)
+;;                                    (fgl-object-boundedp x.then)
+;;                                    (fgl-object-boundedp x.else))
+;;                        :g-apply (fgl-objectlist-boundedp x.args)
+;;                        :g-var t
+;;                        :g-cons (and (fgl-object-boundedp x.car)
+;;                                     (fgl-object-boundedp x.cdr))
+;;                        :g-map (fgl-object-alist-boundedp x.alist)))
+;;          :exec (and (fgl-object-p x)
+;;                     (fgl-object-boundedp-aux x))))
+;;   (define fgl-objectlist-boundedp (x
+;;                                &optional ((bfrstate bfrstate-p) 'bfrstate))
+;;     :measure (fgl-objectlist-count x)
+;;     (mbe :logic (and (fgl-objectlist-p x)
+;;                      (if (atom x)
+;;                          t
+;;                        (and (fgl-object-boundedp (car x))
+;;                             (fgl-objectlist-boundedp (cdr x)))))
+;;          :exec (and (fgl-objectlist-p x)
+;;                     (fgl-objectlist-boundedp-aux x))))
+;;   (define fgl-object-alist-boundedp (x
+;;                                &optional ((bfrstate bfrstate-p) 'bfrstate))
+;;     :measure (fgl-object-alist-count x)
+;;     (mbe :logic (and (fgl-object-alist-p x)
+;;                      (if (atom x)
+;;                          t
+;;                        (and (fgl-object-boundedp (cdar x))
+;;                             (fgl-object-alist-boundedp (cdr x)))))
+;;          :exec (and (fgl-object-alist-p x)
+;;                     (fgl-object-alist-boundedp-aux x))))
+;;   ///
+;;   (local
+;;    (defthm-fgl-object-boundedp-flag
+;;      (defthm fgl-object-boundedp-aux-elim
+;;        (implies (fgl-object-p x)
+;;                 (equal (fgl-object-boundedp-aux x)
+;;                        (fgl-object-boundedp x)))
+;;        :hints ('(:expand ((fgl-object-boundedp-aux x)
+;;                           (fgl-object-boundedp x))))
+;;        :flag fgl-object-boundedp)
+;;      (defthm fgl-objectlist-boundedp-aux-elim
+;;        (implies (fgl-objectlist-p x)
+;;                 (equal (fgl-objectlist-boundedp-aux x)
+;;                        (fgl-objectlist-boundedp x)))
+;;        :hints ('(:expand ((fgl-objectlist-boundedp-aux x)
+;;                           (fgl-objectlist-boundedp-aux nil)
+;;                           (fgl-objectlist-boundedp x)
+;;                           (fgl-objectlist-boundedp nil))))
+;;        :flag fgl-objectlist-boundedp)
+     
+;;      (defthm fgl-object-alist-boundedp-aux-elim
+;;        (implies (fgl-object-alist-p x)
+;;                 (equal (fgl-object-alist-boundedp-aux x)
+;;                        (fgl-object-alist-boundedp x)))
+;;        :hints ('(:expand ((fgl-object-alist-boundedp-aux x)
+;;                           (fgl-object-alist-boundedp-aux nil)
+;;                           (fgl-object-alist-boundedp x)
+;;                           (fgl-object-alist-boundedp nil))))
+;;        :flag fgl-object-alist-boundedp)))
+  
+;;   (verify-guards fgl-object-boundedp-fn)
 
+;;   (defthm fgl-object-p-when-fgl-object-boundedp
+;;     (implies (fgl-object-boundedp x)
+;;              (fgl-object-p x))
+;;     :rule-classes (:rewrite :forward-chaining))
+
+;;   (defthm fgl-objectlist-p-when-fgl-objectlist-boundedp
+;;     (implies (fgl-objectlist-boundedp x)
+;;              (fgl-objectlist-p x))
+;;     :rule-classes (:rewrite :forward-chaining))
+
+;;   (defthm fgl-object-boundedp-when-g-boolean
+;;     (implies (and (fgl-object-case x :g-boolean)
+;;                   (fgl-object-boundedp x))
+;;              (bfr-p (g-boolean->bool x)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-object-boundedp-when-g-integer
+;;     (implies (and (fgl-object-case x :g-integer)
+;;                   (fgl-object-boundedp x))
+;;              (bfr-listp (g-integer->bits x)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-object-boundedp-when-g-ite
+;;     (implies (and (fgl-object-case x :g-ite)
+;;                   (fgl-object-boundedp x))
+;;              (and (fgl-object-boundedp (g-ite->test x))
+;;                   (fgl-object-boundedp (g-ite->then x))
+;;                   (fgl-object-boundedp (g-ite->else x))))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-object-boundedp-when-g-apply
+;;     (implies (and (fgl-object-case x :g-apply)
+;;                   (fgl-object-boundedp x))
+;;              (fgl-objectlist-boundedp (g-apply->args x)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-object-boundedp-when-g-cons
+;;     (implies (and (fgl-object-case x :g-cons)
+;;                   (fgl-object-boundedp x))
+;;              (and (fgl-object-boundedp (g-cons->car x))
+;;                   (fgl-object-boundedp (g-cons->cdr x))))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-object-boundedp-when-g-map
+;;     (implies (and (fgl-object-case x :g-map)
+;;                   (fgl-object-boundedp x))
+;;              (fgl-object-alist-boundedp (g-map->alist x)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp x)))))
+
+;;   (defthm fgl-objectlist-boundedp-implies-car/cdr
+;;     (implies (fgl-objectlist-boundedp x)
+;;              (and (fgl-object-boundedp (car x))
+;;                   (fgl-objectlist-boundedp (cdr x))))
+;;     :hints (("goal" :expand ((fgl-objectlist-boundedp x)
+;;                              (fgl-object-boundedp nil)
+;;                              (fgl-objectlist-boundedp nil)))))
+
+;;   (defthm fgl-object-alist-boundedp-implies-cdar/cdr
+;;     (implies (fgl-object-alist-boundedp x)
+;;              (and (fgl-object-boundedp (cdar x))
+;;                   (fgl-object-alist-boundedp (cdr x))))
+;;     :hints (("goal" :expand ((fgl-object-alist-boundedp x)
+;;                              (fgl-object-boundedp nil)
+;;                              (fgl-object-alist-boundedp nil)))))
+
+;;   (defthm fgl-objectlist-boundedp-of-cons
+;;     (implies (and (fgl-object-boundedp x)
+;;                   (fgl-objectlist-boundedp y))
+;;              (fgl-objectlist-boundedp (cons x y)))
+;;     :hints (("goal" :expand ((fgl-objectlist-boundedp (cons x y))))))
+
+;;   (defthm fgl-objectlist-boundedp-of-nil
+;;     (fgl-objectlist-boundedp nil)
+;;     :hints (("goal" :expand ((fgl-objectlist-boundedp nil)))))
+
+;;   (defthm fgl-object-boundedp-of-g-concrete
+;;     (fgl-object-boundedp (g-concrete val))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-concrete val))))))
+
+;;   (defthm fgl-object-boundedp-of-g-boolean
+;;     (implies (bfr-p bool)
+;;              (fgl-object-boundedp (g-boolean bool)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-boolean bool))))))
+
+;;   (defthm fgl-object-boundedp-of-g-integer
+;;     (implies (bfr-listp bits)
+;;              (fgl-object-boundedp (g-integer bits)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-integer bits))))))
+
+;;   (defthm fgl-object-boundedp-of-g-ite
+;;     (implies (and (fgl-object-boundedp test)
+;;                   (fgl-object-boundedp then)
+;;                   (fgl-object-boundedp else))
+;;              (fgl-object-boundedp (g-ite test then else)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-ite test then else))))))
+
+;;   (defthm fgl-object-boundedp-of-g-apply
+;;     (implies (and (fgl-objectlist-boundedp args))
+;;              (fgl-object-boundedp (g-apply fn args)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-apply fn args))))))
+
+;;   (defthm fgl-object-boundedp-of-g-var
+;;     (fgl-object-boundedp (g-var name))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-var name))))))
+
+;;   (defthm fgl-object-boundedp-of-g-cons
+;;     (implies (and (fgl-object-boundedp car)
+;;                   (fgl-object-boundedp cdr))
+;;              (fgl-object-boundedp (g-cons car cdr)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-cons car cdr))))))
+
+;;   (defthm fgl-object-boundedp-of-g-map
+;;     (implies (fgl-object-alist-boundedp alist)
+;;              (fgl-object-boundedp (g-map tag alist)))
+;;     :hints (("goal" :expand ((fgl-object-boundedp (g-map tag alist))
+;;                              (fgl-object-alist-boundedp alist)
+;;                              (fgl-object-alist-boundedp (fgl-object-alist-fix alist))))))
+
+;;   (fty::deffixequiv-mutual fgl-object-boundedp
+;;     :hints ((acl2::use-termhint
+;;              `(:expand ((fgl-object-boundedp-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+;;                         (fgl-object-boundedp-aux ,(acl2::hq (fgl-object-fix x)) ,(acl2::hq bfrstate))
+;;                         (fgl-object-boundedp-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
+;;                         (fgl-objectlist-boundedp-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+;;                         (fgl-objectlist-boundedp-aux ,(acl2::hq (fgl-objectlist-fix x)) ,(acl2::hq bfrstate))
+;;                         (fgl-objectlist-boundedp-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate))))))))
+
+;;   (defthm-fgl-object-boundedp-flag
+;;     (defthm fgl-object-boundedp-when-bfrstate>=
+;;       (implies (and (bfrstate>= new old)
+;;                     (fgl-object-boundedp x old))
+;;                (fgl-object-boundedp x new))
+;;       :hints ('(:expand ((:free (bfrstate) (fgl-object-boundedp x)))))
+;;       :flag fgl-object-boundedp)
+;;     (defthm fgl-objectlist-boundedp-when-bfrstate>=
+;;       (implies (and (bfrstate>= new old)
+;;                     (fgl-objectlist-boundedp x old))
+;;                (fgl-objectlist-boundedp x new))
+;;       :hints ('(:expand ((:free (bfrstate) (fgl-objectlist-boundedp x)))))
+;;       :flag fgl-objectlist-boundedp)
+;;     (defthm fgl-object-alist-boundedp-when-bfrstate>=
+;;       (implies (and (bfrstate>= new old)
+;;                     (fgl-object-alist-boundedp x old))
+;;                (fgl-object-alist-boundedp x new))
+;;       :hints ('(:expand ((:free (bfrstate) (fgl-object-alist-boundedp x)))))
+;;       :flag fgl-object-alist-boundedp)
+;;     :hints (("goal" :induct (fgl-object-boundedp-flag flag x old)))))
+
+
+#!aignet
+(define id-max-pi-dep ((id natp) (aignet))
+  :measure (nfix id)
+  :guard (id-existsp id aignet)
+  :returns (pi-bound natp :rule-classes :type-prescription)
+  (b* (((unless (mbt (id-existsp id aignet)))
+        0)
+       (type (id->type id aignet))
+       (regp (id->regp id aignet)))
+    (aignet-case
+      type regp
+      :gate (max (id-max-pi-dep (lit->var (gate-id->fanin0 id aignet)) aignet)
+                 (id-max-pi-dep (lit->var (gate-id->fanin1 id aignet)) aignet))
+      ;; :co (id-max-pi-dep (lit->var (co-id->fanin id aignet)) aignet)
+      :pi (+ 1 (ci-id->ionum id aignet))
+      :reg 0
+      :const 0))
+  ///
+  (local (defthm nth-of-take
+           (implies (< (nfix n) (nfix m))
+                    (equal (nth n (take m x))
+                           (nth n x)))
+           :hints(("Goal" :in-theory (enable nth take)))))
+  
+  (local (defthm bits-equiv-of-take-implies-nth
+           (implies (and (bits-equiv (take n x) (take n y))
+                         (< (nfix i) (nfix n)))
+                    (equal (equal (bfix (nth i x)) (bfix (nth i y)))
+                           t))
+           :hints (("goal" :use ((:instance nth-of-take (m n) (n i) (x x))
+                                 (:instance nth-of-take (m n) (n i) (x y)))
+                    :in-theory (disable nth-of-take)))))
+  
+  (defthm id-max-pi-dep-implies-eval-with-low-bits-equiv
+    (implies (and (<= (id-max-pi-dep id aignet) (nfix n))
+                  (bits-equiv (take n invals1)
+                              (take n invals2)))
+             (equal (id-eval id invals1 regvals aignet)
+                    (id-eval id invals2 regvals aignet)))
+    :hints (("goal" :induct (id-max-pi-dep id aignet)
+             :expand ((id-max-pi-dep id aignet)
+                      (:free (invals) (id-eval id invals regvals aignet))
+                      (:free (lit invals) (lit-eval lit invals regvals aignet))
+                      (:free (lit invals) (lit-eval lit invals regvals aignet))
+                      (:free (lit1 lit2 invals) (eval-and-of-lits lit1 lit2 invals regvals aignet))
+                      (:free (lit1 lit2 invals) (eval-xor-of-lits lit1 lit2 invals regvals aignet)))))
+    :rule-classes nil))
+
+#!aignet
+(define aignet-record-pi-deps-aux ((i natp) (aignet) (u32arr))
+  :returns (new-u32arr)
+  :guard (and (<= i (num-fanins aignet))
+              (<= (num-fanins aignet) (u32-length u32arr)))
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  :measure (nfix (- (num-fanins aignet) (nfix i)))
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix i)))
+                   :exec (eql i (num-fanins aignet))))
+        u32arr)
+       (slot0 (id->slot i 0 aignet))
+       (type (snode->type slot0))
+       (u32arr
+        (aignet-case
+          type
+          :gate (b* ((max0 (get-u32 (lit->var (snode->fanin slot0)) u32arr))
+                     (slot1 (id->slot i 1 aignet))
+                     (max1 (get-u32 (lit->var (snode->fanin slot1)) u32arr)))
+                  (set-u32 i (max max0 max1) u32arr))
+          :in (b* ((slot1 (id->slot i 1 aignet))
+                   (regp (snode->regp slot1))
+                   ((when (eql regp 1))
+                    (set-u32 i 0 u32arr)))
+                (set-u32 i (+ 1 (snode->ionum slot1)) u32arr))
+          :const (set-u32 i 0 u32arr))))
+    (aignet-record-pi-deps-aux (1+ (lnfix i)) aignet u32arr))
+  ///
+  (local
+   (defun-sk aignet-record-pi-deps-aux-invar (i aignet u32arr)
+     (forall k
+             (implies (< (nfix k) (nfix i))
+                      (equal (nth k u32arr)
+                             (id-max-pi-dep k aignet))))
+     :rewrite :direct))
+
+  (local (in-theory (disable aignet-record-pi-deps-aux-invar)))
+  
+  (defthm aignet-record-pi-deps-aux-preserves-lower
+    (implies (< (nfix k) (nfix i))
+             (equal (nth k (aignet-record-pi-deps-aux i aignet u32arr))
+                    (nth k u32arr))))
+
+  (local (in-theory (disable nth update-nth
+                             (:d aignet-record-pi-deps-aux))))
+  
+  (local
+   (defthm aignet-record-pi-deps-aux-preserves-invar
+     (implies (aignet-record-pi-deps-aux-invar i aignet u32arr)
+              (aignet-record-pi-deps-aux-invar (num-fanins aignet) aignet
+                                               (aignet-record-pi-deps-aux
+                                                i aignet u32arr)))
+     :hints (("goal" :induct (aignet-record-pi-deps-aux
+                              i aignet u32arr)
+              :expand ((aignet-record-pi-deps-aux i aignet u32arr)))
+             (and stable-under-simplificationp
+                  (let* ((lit (assoc 'aignet-record-pi-deps-aux-invar clause))
+                         (witness `(aignet-record-pi-deps-aux-invar-witness . ,(cdr lit))))
+                    `(:computed-hint-replacement
+                      ('(:expand ((id-max-pi-dep i aignet)
+                                  (id-max-pi-dep ,witness aignet))
+                         :use ((:instance aignet-record-pi-deps-aux-invar-necc
+                                (k ,witness)))
+                         :in-theory (e/d (aignet-idp)
+                                         (aignet-record-pi-deps-aux-invar-necc))
+                         :cases ((< (nfix ,witness) (+ 1 (nfix i)))
+                                 (< (nfix ,witness) (nfix i)))))
+                      :expand (,lit)))))))
+
+
+  (defthm aignet-record-pi-deps-aux-correct
+    (implies (< (nfix k) (num-fanins aignet))
+             (equal (nth k (aignet-record-pi-deps-aux 0 aignet u32arr))
+                    (id-max-pi-dep k aignet)))
+    :hints(("Goal" :use ((:instance aignet-record-pi-deps-aux-preserves-invar
+                          (i 0)))
+            :expand ((aignet-record-pi-deps-aux-invar 0 aignet u32arr))
+            :in-theory (disable aignet-record-pi-deps-aux-preserves-invar))))
+
+  (defret len-of-<fn>
+    (implies (<= (num-fanins aignet) (len u32arr))
+             (equal (len new-u32arr)
+                    (len u32arr)))
+    :hints (("goal" :induct <call>
+             :expand (<call>)))))
+
+#!aignet
+(define aignet-record-pi-deps (aignet u32arr)
+  :returns (new-u32arr)
+  :guard-hints (("goal" :do-not-induct t))
+  :prepwork ((local (include-book "std/lists/resize-list" :dir :system)))
+  (b* ((u32arr (mbe :logic (non-exec (create-u32arr))
+                    :exec (resize-u32 0 u32arr)))
+       (u32arr (resize-u32 (num-fanins aignet) u32arr)))
+    (aignet-record-pi-deps-aux 0 aignet u32arr))
+  ///
+  (defthm aignet-record-pi-deps-correct
+    (implies (< (nfix k) (num-fanins aignet))
+             (equal (nth k (aignet-record-pi-deps aignet u32arr))
+                    (id-max-pi-dep k aignet))))
+
+  (defthm aignet-record-pi-deps-normalize-u32arr
+    (implies (syntaxp (not (equal u32arr ''nil)))
+             (equal (aignet-record-pi-deps aignet u32arr)
+                    (aignet-record-pi-deps aignet nil))))
+
+  (defret len-of-<fn>
+    (equal (len new-u32arr)
+           (num-fanins aignet))))
+
+
+(define bfr-var-bounds-ok (x 
+                           &optional
+                           ((bound natp) 'bound)
+                           (u32arr 'u32arr))
+  :guard (bfr-p x (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr)))))
+  :guard-hints (("goal" :in-theory (enable bfr-p)))
+  :returns (ok)
+  (or (booleanp x)
+      (let ((id (aignet::lit->var x)))
+        (and (< id (u32-length u32arr))
+             (<= (get-u32 id u32arr) (lnfix bound)))))
+  ///
+
+  (local (defthm nth-of-take
+           (equal (nth n (take m x))
+                  (if (< (nfix n) (nfix m))
+                      (nth n x)
+                    nil))
+           :hints(("Goal" :in-theory (enable nth take)))))
+  
+  (local (defthm bits-equiv-of-invals
+           (implies (<= (nfix bound) (nfix var))
+                    (acl2::bits-equiv (take bound (alist-to-bitarr pis (cons (cons var t) rest) nil))
+                                      (take bound (alist-to-bitarr pis rest nil))))
+           :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
+  
+  (defret <fn>-implies-bfr-boundedp
+    :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+    (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                  ok)
+             (bfr-boundedp x bound logicman))
+    :hints (("goal" :expand ((bfr-boundedp x bound logicman)
+                             (:free (invals) (aignet::lit-eval x invals nil (logicman->aignet logicman))))
+             :in-theory (enable bfr-eval bfr-set-var
+                                bfr->aignet-lit
+                                bfr-fix
+                                aignet-lit->bfr
+                                aignet::aignet-lit-fix
+                                aignet::aignet-idp
+                                aignet::aignet-id-fix)
+             :use ((:instance aignet::id-max-pi-dep-implies-eval-with-low-bits-equiv
+                    (aignet (logicman->aignet logicman))
+                    (id (aignet::lit->var x))
+                    (regvals nil)
+                    (invals1 (ALIST-TO-BITARR
+                              (AIGNET::STYPE-COUNT :PI (LOGICMAN->AIGNET LOGICMAN))
+                              (CONS (CONS (MV-NTH 0
+                                                  (BFR-BOUNDEDP-WITNESS X BOUND LOGICMAN))
+                                          T)
+                                    (MV-NTH 1
+                                            (BFR-BOUNDEDP-WITNESS X BOUND LOGICMAN)))
+                              NIL))
+                    (n bound)
+                    (invals2 (ALIST-TO-BITARR (AIGNET::STYPE-COUNT :PI (LOGICMAN->AIGNET LOGICMAN))
+                                              (MV-NTH 1
+                                                      (BFR-BOUNDEDP-WITNESS X BOUND LOGICMAN))
+                                              NIL)))))))
+
+  (fty::deffixequiv bfr-var-bounds-ok))
+
+(define bfrlist-var-bounds-ok (x 
+                               &optional
+                               ((bound natp) 'bound)
+                               (u32arr 'u32arr))
+  :guard (bfr-listp x (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr)))))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (bfr-var-bounds-ok (car x))
+         (bfrlist-var-bounds-ok (cdr x))))
+  ///
+  (defret <fn>-implies-bfr-boundedp
+    :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+    (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                  ok)
+             (bfrlist-boundedp x bound logicman))
+    :hints(("Goal" :in-theory (enable bfrlist-boundedp))))
+
+  (fty::deffixequiv bfrlist-var-bounds-ok))
+
+    
+             
+             
+                  
+             
+
+
+(defines fgl-object-var-bounds-ok
+  (define fgl-object-var-bounds-ok ((x fgl-object-p)
+                                    &optional
+                                    ((bound natp) 'bound)
+                                    (u32arr 'u32arr))
+    :guard (fgl-object-bfrs-ok x (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr)))))
+    :guard-hints (("Goal" :expand ((fgl-object-bfrlist x)
+                                   (fgl-objectlist-bfrlist x)
+                                   (fgl-object-alist-bfrlist x))))
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    :returns (ok)
+    (fgl-object-case x
+      :g-concrete t
+      :g-boolean (bfr-var-bounds-ok x.bool)
+      :g-integer (bfrlist-var-bounds-ok x.bits)
+      :g-ite (and (fgl-object-var-bounds-ok x.test)
+                  (fgl-object-var-bounds-ok x.then)
+                  (fgl-object-var-bounds-ok x.else))
+      :g-apply (fgl-objectlist-var-bounds-ok x.args)
+      :g-var t
+      :g-cons (and (fgl-object-var-bounds-ok x.car)
+                   (fgl-object-var-bounds-ok x.cdr))
+      :g-map (fgl-object-alist-var-bounds-ok x.alist)))
+  (define fgl-objectlist-var-bounds-ok ((x fgl-objectlist-p)
+                                        &optional
+                                        ((bound natp) 'bound)
+                                        (u32arr 'u32arr))
+    :guard (fgl-objectlist-bfrs-ok x (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr)))))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
+    :returns (ok)
+    (if (atom x)
+        t
+      (and (fgl-object-var-bounds-ok (car x))
+           (fgl-objectlist-var-bounds-ok (cdr x)))))
+
+  (define fgl-object-alist-var-bounds-ok ((x fgl-object-alist-p)
+                                          &optional
+                                          ((bound natp) 'bound)
+                                          (u32arr 'u32arr))
+    :guard (fgl-object-alist-bfrs-ok x (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr)))))
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
+    :returns (ok)
+    (if (atom x)
+        t
+      (if (mbt (consp (car x)))
+          (and (fgl-object-var-bounds-ok (cdar x))
+               (fgl-object-alist-var-bounds-ok (cdr x)))
+        (fgl-object-alist-var-bounds-ok (cdr x)))))
+  ///
+  (local (in-theory (disable (:d fgl-object-var-bounds-ok)
+                             (:d fgl-objectlist-var-bounds-ok)
+                             (:d fgl-object-alist-var-bounds-ok))))
+
+  (fty::deffixequiv-mutual fgl-object-var-bounds-ok
+    :hints (("goal" :expand ((fgl-object-alist-fix x)))
+            (acl2::use-termhint
+             `(:expand ((:free (bound) (fgl-object-var-bounds-ok ,(acl2::hq x)))
+                        (:free (bound) (fgl-object-var-bounds-ok ,(acl2::hq (fgl-object-fix x))))
+                        (:free (bound) (fgl-object-var-bounds-ok ,(acl2::hq x)))
+                        (:free (bound) (fgl-objectlist-var-bounds-ok ,(acl2::hq x)))
+                        (:free (bound) (fgl-objectlist-var-bounds-ok ,(acl2::hq (fgl-objectlist-fix x))))
+                        (:free (bound) (fgl-objectlist-var-bounds-ok ,(acl2::hq x)))
+                        (:free (bound) (fgl-object-alist-var-bounds-ok ,(acl2::hq x)))
+                        (:free (bound) (fgl-object-alist-var-bounds-ok ,(acl2::hq (fgl-object-alist-fix x))))
+                        (:free (bound) (fgl-object-alist-var-bounds-ok ,(acl2::hq x))))))))
+
+
+  (defret-mutual <fn>-implies-bfrlist-boundedp
+    (defret <fn>-implies-bfrlist-boundedp
+      :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+      (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                    ok)
+               (bfrlist-boundedp (fgl-object-bfrlist x) bound logicman))
+      :hints ('(:expand ((:free (u32arr) <call>)
+                         (fgl-object-bfrlist x))
+                :do-not-induct t))
+      :fn fgl-object-var-bounds-ok)
+    (defret <fn>-implies-bfrlist-boundedp
+      :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+      (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                    ok)
+               (bfrlist-boundedp (fgl-objectlist-bfrlist x) bound logicman))
+      :hints ('(:expand ((:free (u32arr) <call>)
+                         (fgl-objectlist-bfrlist x))
+                :do-not-induct t))
+      :fn fgl-objectlist-var-bounds-ok)
+    (defret <fn>-implies-bfrlist-boundedp
+      :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+      (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                    ok)
+               (bfrlist-boundedp (fgl-object-alist-bfrlist x) bound logicman))
+      :hints ('(:expand ((:free (u32arr) <call>)
+                         (fgl-object-alist-bfrlist x))
+                :do-not-induct t))
+      :fn fgl-object-alist-var-bounds-ok)
+    :hints (("Goal"
+             :INDUCT (FGL-OBJECT-VAR-BOUNDS-OK-FLAG FLAG X BOUND
+                                                    (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil))))))
+
+  
+(define bvar-db-var-bounds-ok ((var natp)
+                               bvar-db
+                               &optional
+                               (u32arr 'u32arr))
+  :guard (and (<= (base-bvar bvar-db) var)
+              (<= var (next-bvar bvar-db))
+              (bvar-db-bfrs-ok bvar-db (bfrstate (bfrmode :aignet) (max 0 (1- (u32-length u32arr))))))
+  :measure (nfix (- (next-bvar bvar-db) (nfix var)))
+  :returns (ok)
+  (if (mbe :logic (zp (- (next-bvar bvar-db) (nfix var)))
+           :exec (eql var (next-bvar bvar-db)))
+      t
+    (and (fgl-object-var-bounds-ok (get-bvar->term var bvar-db) (lnfix var))
+         (bvar-db-var-bounds-ok (1+ (lnfix var)) bvar-db)))
+  ///
+  (defret <fn>-implies-bfrlist-boundedp
+    :pre-bind ((u32arr (aignet::aignet-record-pi-deps (logicman->aignet logicman) nil)))
+    (implies (and (bfr-mode-is :aignet (bfrstate->mode (logicman->bfrstate)))
+                  ok
+                  (<= (base-bvar bvar-db) (nfix var))
+                  (<= (nfix var) (nfix k))
+                  (< (nfix k) (next-bvar bvar-db)))
+             (bfrlist-boundedp (fgl-object-bfrlist (get-bvar->term$c k bvar-db)) k logicman))
+    :hints(("Goal" :in-theory (enable* acl2::arith-equiv-forwarding)))))
+
+  
+  
 
 (defsection bvar-db-boundedp
   (defun-sk bvar-db-boundedp (bvar-db logicman)
@@ -77,6 +668,27 @@
              :use ((:instance bvar-db-boundedp-necc
                     (var (bvar-db-boundedp-witness bvar-db new))
                     (logicman old)))))))
+
+
+(define bvar-db-boundedp-exec (bvar-db logicman)
+  :guard (bvar-db-bfrs-ok bvar-db (logicman->bfrstate))
+  :guard-hints (("goal" :in-theory (enable logicman->bfrstate))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable bvar-db-boundedp))))
+  :enabled t
+  (mbe :logic (non-exec (ec-call (bvar-db-boundedp bvar-db logicman)))
+       :exec (or (bfr-mode-case (lbfr-mode)
+                   :aignet
+                   (with-local-stobj u32arr
+                     (mv-let (u32arr ok)
+                       (stobj-let ((aignet (logicman->aignet logicman)))
+                                  (u32arr)
+                                  (aignet::aignet-record-pi-deps aignet u32arr)
+                                  (let ((ok (bvar-db-var-bounds-ok (base-bvar bvar-db) bvar-db)))
+                                    (mv u32arr ok)))
+                       ok))
+                   :aig nil :bdd nil)
+                 (non-exec (ec-call (bvar-db-boundedp bvar-db logicman))))))
 
 
 

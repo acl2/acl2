@@ -59,7 +59,7 @@
 
 (define constraint-instance-bfrs-ok ((x constraint-instance-p)
                                      &optional ((bfrstate bfrstate-p) 'bfrstate))
-  (fgl-bfr-object-bindings-p (constraint-instance->subst x))
+  (fgl-object-bindings-bfrs-ok (constraint-instance->subst x))
   ///
   (defthm constraint-instance-bfrs-ok-in-terms-of-bfrlist
     (equal (constraint-instance-bfrs-ok x)

@@ -726,3 +726,9 @@ keyword argument. Examples of usage:</p>
                       "Stopping on error due to ~x0" 'stop-on-fgl-error))))
 
 
+
+(define interp-st-release-ipasirs (interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (logicman)
+             (logicman-release-ipasirs 0 logicman)
+             interp-st))

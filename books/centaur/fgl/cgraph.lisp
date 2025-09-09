@@ -420,3 +420,82 @@ conflicting assignment warning is stored.</li>
            :hints(("Goal" :in-theory (enable cgraph-fix))))))
 
 
+
+
+
+
+(define cgraph-formula-bfrs-ok ((x cgraph-formula-p)
+                                &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (fgl-object-bindings-bfrs-ok (cgraph-formula->deps x))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-formula-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-formula-bfrlist)))))
+
+(define cgraph-formulalist-bfrs-ok ((x cgraph-formulalist-p)
+                                    &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (cgraph-formula-bfrs-ok (car x))
+         (cgraph-formulalist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-formulalist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-formulalist-bfrlist)))))
+
+
+(define cgraph-equivnode-bfrs-ok ((x cgraph-equivnode-p)
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (and (fgl-object-bfrs-ok (cgraph-equivnode->equivalence x))
+       (fgl-object-bfrs-ok (cgraph-equivnode->other x)))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-equivnode-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-equivnode-bfrlist)))))
+
+(define cgraph-equivlist-bfrs-ok ((x cgraph-equivlist-p)
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (cgraph-equivnode-bfrs-ok (car x))
+            (cgraph-equivlist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-equivlist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-equivlist-bfrlist)))))
+
+(define cgraph-outedges-bfrs-ok ((x cgraph-outedges-p)
+                                 &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (and (cgraph-formulalist-bfrs-ok (cgraph-outedges->formulas x))
+       (cgraph-equivlist-bfrs-ok (cgraph-outedges->equivs x)))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-outedges-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-outedges-bfrlist)))))
+
+(define cgraph-bfrs-ok ((x cgraph-p)
+                        &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (if (atom x)
+      t
+    (and (or (not (mbt (And (consp (car x))
+                            (fgl-object-p (caar x)))))
+             (cgraph-outedges-bfrs-ok (cdar x)))
+         (cgraph-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (cgraph-bfrlist x)))
+    :hints(("Goal" :in-theory (enable cgraph-bfrlist)))))
+
+

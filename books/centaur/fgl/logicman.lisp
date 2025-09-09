@@ -3060,22 +3060,46 @@ evaluated using @('fgl-object-eval').</li>
                                         logicman->sat-litsi-of-update-logicman->sat-litsi-split)
                      :cases ((< (nfix (logicman-ipasir-sat-lits-invar-witness . ,(cdr lit)))
                                 (logicman->ipasir-length logicman)))))))))
-  
+
+(define logicman-ipasirs-undef ((n natp) logicman)
+  :guard (<= n (logicman->ipasir-length logicman))
+  (if (zp n)
+      t
+    (let ((n (1- n)))
+      (and (stobj-let ((ipasir (logicman->ipasiri n logicman)))
+                      (ok)
+                      (eq (ipasir::ipasir-get-status ipasir) :undef)
+                      ok)
+           (logicman-ipasirs-undef n logicman))))
+  ///
+  (defthm logicman-ipasirs-undef-implies
+    (implies (and (logicman-ipasirs-undef n logicman)
+                  (< (nfix k) (nfix n)))
+             (equal (ipasir::ipasir$a->status (logicman->ipasiri k logicman)) :undef))))
+
+(define logicman-ipasir-sat-lits-invar-exec (logicman)
+  :enabled t
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable logicman-ipasir-sat-lits-invar))))
+  (mbe :logic (ec-call (logicman-ipasir-sat-lits-invar logicman))
+       :exec (or (logicman-ipasirs-undef (logicman->ipasir-length logicman) logicman)
+                 (prog2$ (cw "Need to release all ipasir solvers to ensure that invariant holds -- please run ~x0~%"
+                             '(fgl::interp-st-release-ipasirs))
+                         (ec-call (logicman-ipasir-sat-lits-invar logicman))))))
 
 
 
 (define logicman-invar (logicman)
-  (non-exec
-   (b* (;; (mode (logicman->mode logicman))
-        (refcounts-index (logicman->refcounts-index logicman)))
-     (stobj-let ((aignet (logicman->aignet logicman))
-                 (u32arr (logicman->aignet-refcounts logicman)))
-                (ok)
-                (and (<= (lnfix refcounts-index) (aignet::u32-length u32arr))
-                     (eql (aignet::num-regs aignet) 0))
-                (and ok
-                     (equal (logicman->sat-lits-length logicman) (logicman->ipasir-length logicman))
-                     (ec-call (logicman-ipasir-sat-lits-invar logicman))))))
+  (b* (;; (mode (logicman->mode logicman))
+       (refcounts-index (logicman->refcounts-index logicman)))
+    (stobj-let ((aignet (logicman->aignet logicman))
+                (u32arr (logicman->aignet-refcounts logicman)))
+               (ok)
+               (and (<= (lnfix refcounts-index) (aignet::u32-length u32arr))
+                    (eql (aignet::num-regs aignet) 0))
+               (and ok
+                    (equal (logicman->sat-lits-length logicman) (logicman->ipasir-length logicman))
+                    (logicman-ipasir-sat-lits-invar-exec logicman))))
   ///
   (defthm logicman-invar-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
