@@ -9880,7 +9880,10 @@
        it must be a single initializer.
        If the token is an open curly brace,
        we must have an aggregate initializer.
-       There is no overlap between these two cases."))
+       There is no overlap between these two cases.")
+     (xdoc::p
+      "If GCC extensions are enabled,
+       a closing brace could immediately follow the open one."))
     (b* (((reterr) (irr-initer) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -9890,13 +9893,22 @@
               (parse-assignment-expression parstate)))
           (retok (initer-single expr) span parstate)))
        ((token-punctuatorp token "{") ; {
-        (b* (((erp desiniters final-comma & parstate) ; { inits [,]
-              (parse-initializer-list parstate))
-             ((erp last-span parstate) ; { inits [,] }
-              (read-punctuator "}" parstate)))
-          (retok (make-initer-list :elems desiniters :final-comma final-comma)
-                 (span-join span last-span)
-                 parstate)))
+        (b* (((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((and (token-punctuatorp token2 "}") ; { }
+                 (parstate->gcc parstate))
+            (retok (make-initer-list :elems nil :final-comma nil)
+                   (span-join span span2)
+                   parstate))
+           (t ; { other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; {
+                 ((erp desiniters final-comma & parstate) ; { inits [,]
+                  (parse-initializer-list parstate))
+                 ((erp last-span parstate) ; { inits [,] }
+                  (read-punctuator "}" parstate)))
+              (retok (make-initer-list :elems desiniters :final-comma final-comma)
+                     (span-join span last-span)
+                     parstate))))))
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "an identifier ~
@@ -12398,13 +12410,18 @@
      (xdoc::p
       "A parameter declaration always starts with
        a list of one or more declaration specifiers, which we parse.
-       Then we may have a declarator, an abstract declarator, or nothing.")
+       Then we may have a declarator, an abstract declarator, or nothing.
+       After that, we may have zero or more attribute specifiers
+       (this is a GCC extension).")
      (xdoc::p
       "As explained in @(tsee amb-declor/absdeclor),
        there is a complex syntactic overlap
        between declarators and abstract declarators.
        Thus, unless there is no (abstract or non-abstract) declarator,
-       which we recognize by the presence of a comma or closed parenthesis,
+       which we recognize by the presence of
+       a comma
+       or closed parenthesis
+       or (if GCC extensions are enabled) an attribute keyword,
        we parse a possibly ambiguous declarator or abstract declarator,
        and generate a parameter declarator accordingly,
        and then a parameter declaration with the declaration specifiers."))
@@ -12417,23 +12434,42 @@
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is a comma or a closed parenthesis,
+       ;; or an attribute keyword
+       ;; (which can only happen when GCC extensions are enabled),
        ;; there is no parameter declarator.
        ((or (token-punctuatorp token ")") ; declspecs )
-            (token-punctuatorp token ",")) ; declspecs ,
-        (b* ((parstate (unread-token parstate))) ; declspecs
+            (token-punctuatorp token ",") ; declspecs ,
+            (token-keywordp token "__attribute") ; declspecs __attribute
+            (token-keywordp token "__attribute__")) ; declspecs __attribute__
+        (b* ((parstate (unread-token parstate)) ; declspecs
+             ((erp attrspecs last-span parstate) ; declspecs attrspecs
+              (parse-*-attribute-specifier parstate)))
           (retok (make-param-declon :specs declspecs
-                                    :declor (param-declor-none))
-                 span
+                                    :declor (param-declor-none)
+                                    :attribs attrspecs)
+                 (if attrspecs
+                     (span-join span last-span)
+                   span)
                  parstate)))
        ;; Otherwise, we parse
        ;; a possibly ambiguous declarator or abstract declarator,
        ;; and return a parameter declaration in accordance.
+       ;; We also parse zero or more attribute specifiers
+       ;; (which can only occur if GCC extensions are enabled),
+       ;; after the possibly ambiguous declarator or abstract declarator.
        (t ; declspecs other
         (b* ((parstate (if token (unread-token parstate) parstate)) ; declspecs
+             (psize (parsize parstate))
              ((erp declor/absdeclor
-                   last-span
+                   declor/absdeclor-span
                    parstate) ; declspecs declor/absdeclor
-              (parse-declarator-or-abstract-declarator parstate)))
+              (parse-declarator-or-abstract-declarator parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp attrspecs
+                   attrs-span
+                   parstate) ; declspecs declor/absdeclor attrs
+              (parse-*-attribute-specifier parstate)))
           (amb?-declor/absdeclor-case
            declor/absdeclor
            ;; If we parsed an unambiguous declarator,
@@ -12443,24 +12479,33 @@
                    :specs declspecs
                    :declor (make-param-declor-nonabstract
                             :declor declor/absdeclor.unwrap
-                            :info nil))
-                  (span-join span last-span)
+                            :info nil)
+                   :attribs attrspecs)
+                  (if attrspecs
+                      (span-join span attrs-span)
+                    (span-join span declor/absdeclor-span))
                   parstate)
            ;; If we parsed an unambiguous abstract declarator,
            ;; we return a parameter declaration with that.
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-abstract declor/absdeclor.unwrap))
-                  (span-join span last-span)
+                   :declor (param-declor-abstract declor/absdeclor.unwrap)
+                   :attribs attrspecs)
+                  (if attrspecs
+                      (span-join span attrs-span)
+                    (span-join span declor/absdeclor-span))
                   parstate)
            ;; If we parsed an ambiguous declarator or abstract declarator,
            ;; we return a parameter declaration with that.
            :ambig
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-ambig declor/absdeclor.unwrap))
-                  (span-join span last-span)
+                   :declor (param-declor-ambig declor/absdeclor.unwrap)
+                   :attribs attrspecs)
+                  (if attrspecs
+                      (span-join span attrs-span)
+                    (span-join span declor/absdeclor-span))
                   parstate))))))
     :measure (two-nats-measure (parsize parstate) 2))
 
@@ -13139,9 +13184,11 @@
        in favor or a declarator,
        exploiting the fact that an ambiguous declarator or abstract declarator
        only occurs in a parameter declaration,
-       which is always follows by a comma or closed parenthesis.
+       which is always followed by a comma or closed parenthesis,
+       or by an attribute if GCC extensions are enabled.
        So, if we successfully parse an abstract declarator,
-       we also ensure that the next token is a comma or closed parenthesis,
+       we also ensure that the next token is
+       a comma or closed parenthesis or attribute keyword,
        otherwise we regard the parsing of the abstract declarator
        to have failed."))
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) parstate)
@@ -13233,12 +13280,15 @@
                        parstate))
             ;; If the parsing of an abstract declarator succeeds,
             ;; we still need to check whether
-            ;; it is followed by a comma or closed parenthesis,
+            ;; it is followed by a comma or closed parenthesis
+            ;; (or an attribute, if GCC extensions are enabled),
             ;; as explained in the documentation of the function above.
             ;; So we read a token.
             (b* (((erp token & parstate) (read-token parstate)))
               (if (or (token-punctuatorp token ",")
-                      (token-punctuatorp token ")"))
+                      (token-punctuatorp token ")")
+                      (token-keywordp token "__attribute")
+                      (token-keywordp token "__attribute__"))
                   ;; If a comma or closed parenthesis follows,
                   ;; the parsing of the abstract declarator has succeeded,
                   ;; we have an ambiguous declarator or abstract declarator.

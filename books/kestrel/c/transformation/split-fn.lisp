@@ -163,7 +163,8 @@
          (make-param-declon
            :specs declspecs
            :declor (make-param-declor-nonabstract :declor initdeclor.declor
-                                                  :info nil))
+                                                  :info nil)
+           :attribs nil)
          (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -245,7 +246,8 @@
                 ;; utility).
                 :abstract (param-declor-fix param-declon.declor)
                 :none (param-declor-fix param-declon.declor)
-                :ambig (param-declor-fix param-declon.declor)))))
+                :ambig (param-declor-fix param-declon.declor))
+      :attribs param-declon.attribs)))
 
 (define map-add-pointer-param-declon
   ((param-declons param-declon-listp))

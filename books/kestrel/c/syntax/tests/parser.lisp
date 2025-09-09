@@ -2400,3 +2400,17 @@ error (int __status, int __errnum, const char *__format, ...)
  "#pragma onceint x;
 "
  :cond (equal (len ast) 1))
+
+(test-parse
+ parse-external-declaration-list
+ "int foo (int arg __attribute__((unused))) {
+  return 0;
+}
+"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "struct s x = {};
+"
+ :gcc t)

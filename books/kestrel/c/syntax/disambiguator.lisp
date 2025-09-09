@@ -2338,7 +2338,9 @@
           (dimb-decl-spec-list param.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
           (dimb-param-declor param.declor table)))
-      (retok (make-param-declon :specs new-specs :declor new-decl)
+      (retok (make-param-declon :specs new-specs
+                                :declor new-decl
+                                :attribs param.attribs)
              table))
     :measure (param-declon-count param))
 

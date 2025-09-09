@@ -3363,7 +3363,8 @@
           (simpadd0-param-declor paramdecl.declor gin))
          (gin (simpadd0-gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
-                             :declor new-declor)
+                             :declor new-declor
+                             :attribs paramdecl.attribs)
           (change-simpadd0-gout (simpadd0-gout-no-thm gin)
                                 :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdecl))

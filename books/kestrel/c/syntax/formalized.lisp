@@ -924,12 +924,14 @@
    (xdoc::p
     "The declaration specifiers must be all type specifiers,
      and must form a supported type.
-     The parameter declarator must be a supported one."))
+     The parameter declarator must be a supported one.
+     There must be no ending attribute specifiers."))
   (b* (((param-declon param) param)
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (param-declor-formalp param.declor)))
+         (param-declor-formalp param.declor)
+         (endp param.attribs)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
