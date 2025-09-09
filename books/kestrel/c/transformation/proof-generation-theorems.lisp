@@ -1266,21 +1266,23 @@
   (defruled expr-binary-asg-compustate-vars
     (implies (not (equal (c::expr-kind expr) :call))
              (b* ((asg (c::expr-binary (c::binop-asg) (c::expr-ident var) expr))
-                  (compst1 (c::exec-expr-asg asg compst fenv limit)))
+                  (compst1 (c::exec-expr-asg asg compst fenv limit))
+                  (type-var (c::type-of-value
+                             (c::read-object
+                              (c::objdesign-of-var var compst)
+                              compst)))
+                  (type-expr (c::type-of-value
+                              (c::expr-value->value
+                               (c::exec-expr-pure expr compst)))))
                (implies (and (not (c::errorp compst1))
-                             (equal (c::type-of-value
-                                     (c::read-object
-                                      (c::objdesign-of-var var compst)
-                                      compst))
-                                    (c::type-of-value
-                                     (c::expr-value->value
-                                      (c::exec-expr-pure expr compst))))
-                             (c::type-nonchar-integerp
-                              (c::type-of-value
-                               (c::expr-value->value
-                                (c::exec-expr-pure expr compst))))
-                             (c::compustate-has-var-with-type-p var1 type compst))
-                        (c::compustate-has-var-with-type-p var1 type compst1))))
+                             (equal type-var type-expr)
+                             (c::type-nonchar-integerp type-expr)
+                             (c::compustate-has-var-with-type-p var1
+                                                                type
+                                                                compst))
+                        (c::compustate-has-var-with-type-p var1
+                                                           type
+                                                           compst1))))
     :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
                               compst fenv limit)
     :enable (c::compustate-has-var-with-type-p
@@ -1298,14 +1300,18 @@
     (implies (not (equal (c::expr-kind expr) :call))
              (b* ((initer (c::initer-single expr))
                   ((mv result compst1)
-                   (c::exec-initer initer compst fenv limit)))
+                   (c::exec-initer initer compst fenv limit))
+                  (type-expr (c::type-of-value
+                              (c::expr-value->value
+                               (c::exec-expr-pure expr compst)))))
                (implies (and (not (c::errorp result))
-                             (c::type-nonchar-integerp
-                              (c::type-of-value
-                               (c::expr-value->value
-                                (c::exec-expr-pure expr compst))))
-                             (c::compustate-has-var-with-type-p var type compst))
-                        (c::compustate-has-var-with-type-p var type compst1))))
+                             (c::type-nonchar-integerp type-expr)
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                compst))
+                        (c::compustate-has-var-with-type-p var
+                                                           type
+                                                           compst1))))
     :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
     :enable (c::exec-expr-call-or-pure
              c::compustate-has-var-with-type-p))
@@ -1325,11 +1331,11 @@
 
   (defruled stmt-expr-asg-compustate-vars
     (b* ((stmt (c::stmt-expr expr))
-         (expr-compst1 (c::exec-expr-asg expr compst fenv (- limit 2)))
+         (compst0 (c::exec-expr-asg expr compst fenv (- limit 2)))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (not (equal (c::expr-kind expr) :call))
                     (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type expr-compst1))
+                    (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
     :enable c::exec-expr-call-or-asg)
@@ -1342,8 +1348,12 @@
              (b* ((stmt (c::stmt-return expr?))
                   ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
                (implies (and (not (c::errorp result))
-                             (c::compustate-has-var-with-type-p var type compst))
-                        (c::compustate-has-var-with-type-p var type compst1))))
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                compst))
+                        (c::compustate-has-var-with-type-p var
+                                                           type
+                                                           compst1))))
     :expand ((c::exec-stmt (c::stmt-return expr?) compst fenv limit)
              (c::exec-stmt '(:return nil) compst fenv limit))
     :enable (c::compustate-has-var-with-type-p
@@ -1444,10 +1454,10 @@
 
   (defruled block-item-stmt-compustate-vars
     (b* ((item (c::block-item-stmt stmt))
-         ((mv & stmt-compst1) (c::exec-stmt stmt compst fenv (1- limit)))
+         ((mv & compst0) (c::exec-stmt stmt compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
       (implies (and (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type stmt-compst1))
+                    (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
 
