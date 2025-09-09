@@ -11,8 +11,8 @@
 
 (in-package "C")
 
-(include-book "../insertion-sort")
-(include-book "../insertion-sort-of-integers-from-to")
+(include-book "../../insertion-sort")
+(include-book "../../insertion-sort-of-integers-from-to")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)

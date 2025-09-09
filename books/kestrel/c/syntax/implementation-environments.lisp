@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "../language/implementation-environments")
+(include-book "../language/implementation-environments/top")
 
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
