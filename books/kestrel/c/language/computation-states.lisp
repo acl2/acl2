@@ -772,28 +772,7 @@
                          (if (equal var1 var)
                              (objdesign-auto var frame (1- (len scopes)))
                            (objdesign-of-var-aux var1 frame scopes)))))
-       :enable len)
-
-     (defruled objdesign-of-var-aux-of-create-var
-       (b* ((compst1 (create-var var val compst))
-            (scopes (frame->scopes (top-frame compst)))
-            (scopes1 (frame->scopes (top-frame compst1))))
-         (implies (and (not (errorp compst1))
-                       (identp var)
-                       (identp var1))
-                  (equal (objdesign-of-var-aux var1 frame scopes1)
-                         (if (and (equal var1 var)
-                                  (> (compustate-frames-number compst) 0))
-                             (objdesign-auto var frame (1- (len scopes)))
-                           (objdesign-of-var-aux var1 frame scopes)))))
-       :enable (create-var
-                nfix
-                max
-                objdesign-of-var-aux-of-cons-of-cdr
-                push-frame
-                pop-frame
-                top-frame)
-       :disable objdesign-of-var-aux)))
+       :enable len)))
 
   ///
 
@@ -814,25 +793,7 @@
       (implies (and objdes
                     (equal (objdesign-kind objdes) :auto))
                (equal (objdesign-auto->name objdes)
-                      (ident-fix var)))))
-
-  (defruled objdesign-of-var-of-create-var
-    (b* ((compst1 (create-var var val compst)))
-      (implies (and (not (errorp compst1))
-                    (identp var)
-                    (identp var1))
-               (equal (objdesign-of-var var1 compst1)
-                      (if (equal var1 var)
-                          (if (equal (compustate-frames-number compst) 0)
-                              (objdesign-static var)
-                            (objdesign-auto var
-                                            (1- (compustate-frames-number compst))
-                                            (1- (len (frame->scopes
-                                                      (top-frame compst))))))
-                        (objdesign-of-var var1 compst)))))
-    :enable (objdesign-of-var-aux-of-create-var
-             assoc-of-compustate-static-of-create-var
-             compustatep-when-compustate-resultp-and-not-errorp)))
+                      (ident-fix var))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1196,3 +1157,47 @@
              max
              equal-of-objdesign-auto-fix
              equal-of-objdesign-static-fix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection objdesign-of-var-of-create-var
+  :short "How @(tsee objdesign-of-var) changes under @(tsee create-var)."
+
+  (defruled objdesign-of-var-aux-of-create-var
+    (b* ((compst1 (create-var var val compst))
+         (scopes (frame->scopes (top-frame compst)))
+         (scopes1 (frame->scopes (top-frame compst1))))
+      (implies (and (not (errorp compst1))
+                    (identp var)
+                    (identp var1))
+               (equal (objdesign-of-var-aux var1 frame scopes1)
+                      (if (and (equal var1 var)
+                               (> (compustate-frames-number compst) 0))
+                          (objdesign-auto var frame (1- (len scopes)))
+                        (objdesign-of-var-aux var1 frame scopes)))))
+    :enable (create-var
+             nfix
+             max
+             objdesign-of-var-aux-of-cons-of-cdr
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled objdesign-of-var-of-create-var
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (identp var)
+                    (identp var1))
+               (equal (objdesign-of-var var1 compst1)
+                      (if (equal var1 var)
+                          (if (equal (compustate-frames-number compst) 0)
+                              (objdesign-static var)
+                            (objdesign-auto var
+                                            (1- (compustate-frames-number compst))
+                                            (1- (len (frame->scopes
+                                                      (top-frame compst))))))
+                        (objdesign-of-var var1 compst)))))
+    :enable (objdesign-of-var
+             objdesign-of-var-aux-of-create-var
+             assoc-of-compustate-static-of-create-var
+             compustatep-when-compustate-resultp-and-not-errorp)))
