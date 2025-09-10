@@ -774,7 +774,6 @@
                            (objdesign-of-var-aux var1 frame scopes)))))
        :enable len)
 
-
      (defruled objdesign-of-var-aux-of-create-var
        (b* ((compst1 (create-var var val compst))
             (scopes (frame->scopes (top-frame compst)))
