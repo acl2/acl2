@@ -62,8 +62,7 @@
            our timer and TTY devices and a few other minor changes.</p>
 
            <p>To run Linux, you need to certify the books, as described in @(see
-           x86isa-build-instructions) (Note: you do NOT need to set @('X86ISA_EXEC=t')
-           to run Linux). If you wish to interact with the model over a TCP
+           x86isa-build-instructions). If you wish to interact with the model over a TCP
            socket, you need to use ACL2 built with Clozure Common Lisp (CCL). You
            must also obtain a Linux kernel image and a rootfs (root filesystem)
            image. We provide instructions to build your own in @(see

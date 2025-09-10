@@ -231,14 +231,25 @@
   :short "Building books related to the x86 ISA and the machine-code
   analysis framework."
 
-  :long "<p>Some ways of building the @('x86isa') books are:</p>
+  :long "<p><b>Note:</b> If you intend on running a kernel in the x86 model,
+  like Linux, then you will NOT use the @(see app-view), so the value of
+  @('X86ISA_EXEC') (described below) is not relevant for your use case.
+  @('app-view') is used for running user software in the x86 model without
+  running a kernel by specifying the semantics of syscalls provided by the
+  kernel in the logic and (depending on the value of @('X86ISA_EXEC'))
+  potentially passing through syscalls to the machine ACL2 is running on in
+  execution. See the @(see app-view) doc topic for more information.</p>
+
+ <p>Some ways of building the @('x86isa') books are:</p>
 
  <ol>
 
  <li>
- <p>Using @('cert.pl top'): This @(see build::cert.pl) option should work well
- for most users.  Users who want to execute programs that utilize @('SYSCALL'),
- @('RDRAND'), etc. should consider the option listed below.</p>
+ <p>Using @('cert.pl top') in the @('books/projects/x86isa') directory of the
+ ACL2 source tree: This @(see build::cert.pl) option should work well for most
+ users.  Users who want to execute programs that utilize @('SYSCALL'),
+ @('RDRAND'), etc. in @(see app-view) should consider the option listed
+ below.</p>
  </li>
 
  <li>
@@ -251,10 +262,11 @@
  <code>
  make JOBS=8 \\
       X86ISA_EXEC=t \\
-      ACL2=/Users/shilpi/acl2/saved_acl2
+      ACL2=/path/to/saved_acl2
  </code>
- <p>where the number of jobs to be run in parallel in this example is
- 8.  Note that we use @('JOBS') here instead of the @('-j') flag.</p>
+ <p>in the @('books/projects/x86isa') directory of the ACL2 source tree where
+ the number of jobs to be run in parallel in this example is 8.  Note that we
+ use @('JOBS') here instead of the @('-j') flag.</p>
 
  <p>When @('X86ISA_EXEC') is @('t'), some dynamic C libraries that are
  used in the model for supporting the execution of @('SYSCALL') in the
@@ -263,12 +275,12 @@
  CL</a> (CCL), full execution support is available only if you use
  CCL.</b></p>
 
- <p>Values of @('X86ISA_EXEC') other than @('t') will not allow the
- execution of @('SYSCALL') instructions \(as may be the case with
- using other Lisps as well\).  Note that reasoning about these
- instructions will still be possible.  Execution and reasoning about
- all other instructions will always be possible, irrespective of
- @('X86ISA_EXEC') or the underlying Lisp.</p>
+ <p>Values of @('X86ISA_EXEC') other than @('t') will not allow the execution
+ of @('SYSCALL') instructions in @(see app-view) \(as may be the case with
+ using other Lisps as well\).  Note that reasoning about these instructions
+ will still be possible.  Execution and reasoning about all other instructions
+ will always be possible, irrespective of @('X86ISA_EXEC') or the underlying
+ Lisp.</p>
 
  <p><b>IMPORTANT:</b> You should do a \"make clean\" \(or \"make
  execclean\" if you are in a hurry\) if you wish to certify the books
@@ -277,12 +289,11 @@
  </li>
 
  <li> <p>Using the \"everything\" target of the ACL2 Community
- Books (see acl2/books/GNUmakefile): This is essentially the same as
- executing @('cert.pl books/projects/x86isa/top'). This will build the
- x86 books without full execution support, i.e., the effect will be
- the same as building these books with @('X86ISA_EXEC=nil'), even
- though the Makefile provided with the @('x86isa') books will not be
- used.</p> </li>
+ Books (see acl2/books/GNUmakefile): This is essentially the same as executing
+ @('cert.pl books/projects/x86isa/top'). This will build the x86 books without
+ full execution support in @(see app-view), i.e., the effect will be the same
+ as building these books with @('X86ISA_EXEC=nil'), even though the Makefile
+ provided with the @('x86isa') books will not be used.</p> </li>
 
  </ol>
 
@@ -296,7 +307,7 @@
  <code>X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not
  included.</code>
 
- <p>then you do <i>not</i> have @('SYSCALL') execution support.
+ <p>then you do <i>not</i> have @('SYSCALL') execution support in @(see app-view).
  Otherwise, you do.</p>"
   )
 
