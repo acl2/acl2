@@ -1039,40 +1039,12 @@
                 (frame (+ -1 (len (compustate->frames compst))))
                 (scopes (frame->scopes (car (compustate->frames compst)))))))
 
-  (defruled objdesign-of-var-aux-of-write-object
-    (b* ((compst1 (write-object objdes val compst))
-         (scopes (frame->scopes (nth i (compustate->frames compst))))
-         (scopes1 (frame->scopes (nth i (compustate->frames compst1)))))
-      (implies (not (errorp compst1))
-               (equal (objdesign-of-var-aux var frame scopes1)
-                      (objdesign-of-var-aux var frame scopes))))
-    :induct t
-    :enable (update-nth-of-rev
-             nfix
-             max
-             objdesign-of-var-aux-of-update-nth))
-
   (defruled assoc-of-compustate-static-of-write-object
     (b* ((compst1 (write-object objdes val compst)))
       (implies (not (errorp compst1))
                (iff (omap::assoc var (compustate->static compst1))
                     (omap::assoc var (compustate->static compst)))))
     :induct t)
-
-  (defruled objdesign-of-var-of-write-object
-    (b* ((compst1 (write-object objdes val compst)))
-      (implies (not (errorp compst1))
-               (equal (objdesign-of-var var compst1)
-                      (objdesign-of-var var compst))))
-    :enable (objdesign-of-var
-             compustatep-when-compustate-resultp-and-not-errorp
-             top-frame
-             nth)
-    :use ((:instance objdesign-of-var-aux-of-write-object
-                     (i 0)
-                     (frame (1- (compustate-frames-number compst))))
-          (:instance assoc-of-compustate-static-of-write-object
-                     (var (ident-fix var)))))
 
   (defruled read-object-of-write-object-when-auto-or-static
     (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
@@ -1133,6 +1105,40 @@
              objdesign-of-var-aux-of-create-var
              assoc-of-compustate-static-of-create-var
              compustatep-when-compustate-resultp-and-not-errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection objdesign-of-var-of-write-object
+  :short "How @(tsee objdesign-of-var) changes under @(tsee write-object)."
+
+  (defruled objdesign-of-var-aux-of-write-object
+    (b* ((compst1 (write-object objdes val compst))
+         (scopes (frame->scopes (nth i (compustate->frames compst))))
+         (scopes1 (frame->scopes (nth i (compustate->frames compst1)))))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var-aux var frame scopes1)
+                      (objdesign-of-var-aux var frame scopes))))
+    :induct t
+    :enable (write-object
+             update-nth-of-rev
+             nfix
+             max
+             objdesign-of-var-aux-of-update-nth))
+
+  (defruled objdesign-of-var-of-write-object
+    (b* ((compst1 (write-object objdes val compst)))
+      (implies (not (errorp compst1))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :enable (objdesign-of-var
+             compustatep-when-compustate-resultp-and-not-errorp
+             top-frame
+             nth)
+    :use ((:instance objdesign-of-var-aux-of-write-object
+                     (i 0)
+                     (frame (1- (compustate-frames-number compst))))
+          (:instance assoc-of-compustate-static-of-write-object
+                     (var (ident-fix var))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
