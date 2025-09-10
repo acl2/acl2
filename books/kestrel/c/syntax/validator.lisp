@@ -1209,11 +1209,9 @@
     "After converting function types to pointer types,
      the first sub-expression must have pointer type [C17:6.5.2.2/1];
      Furthermore, it must be a pointer to a function type.
-     Since we currently have just one function type,
+     Since our approximate function types do not yet store the parameter types,
      we do not check the argument types against the function type [C17:6.5.2.2/2].
-     For the same reason,
-     we return the unknown type,
-     because we do not have information about the result type.")
+     We return the function return type.")
    (xdoc::p
     "There is no need to perform array-to-pointer conversion,
      because array types cannot have function element types,
@@ -1230,7 +1228,9 @@
                   the first sub-expression has type ~x1."
                  (expr-fix expr)
                  (type-fix type-fun))))
-    (retok (type-unknown)))
+    (retok (if (type-case (type-pointer->to type) :function)
+               (type-function->ret (type-pointer->to type))
+             (type-unknown))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3785,7 +3785,8 @@
        the one that results from applying the designator to it.
        The target type is the type of the current object [C17:6.7.9/17].
        A subscript designator requires an array target type,
-       and must have an integer expression [C17:6.7.9/6].
+       and must have an integer expression [C17:6.7.9/6];
+       the result is the element type of the array type.
        A dotted designator requires a struct or union type [C17:6.7.9/7];
        the result is the unknown type,
        because currently we do not have information about the members."))
@@ -4255,7 +4256,7 @@
              (retmsg$ "The direct declarator ~x0 has type ~x1."
                        (dirdeclor-fix dirdeclor)
                        (type-fix type)))
-            (type (type-function))
+            (type (make-type-function :ret type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             (table (valid-push-scope table))
@@ -4285,7 +4286,7 @@
              (retmsg$ "The direct declarator ~x0 has type ~x1."
                       (dirdeclor-fix dirdeclor)
                       (type-fix type)))
-            (type (type-function))
+            (type (make-type-function :ret type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((when (and (consp dirdeclor.names)
@@ -4490,7 +4491,7 @@
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
                       (type-fix type)))
-            (type (type-function))
+            (type (make-type-function :ret type))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             (table (valid-push-scope table))
@@ -6329,8 +6330,9 @@
                      (and ext-info?
                           (not (type-compatiblep
                                  (valid-ext-info->type ext-info?)
-                                 (type-function)))))))
-        (retmsg$ "The function definition ~x0 with external linkage ~
+                                 type))))))
+        (retmsg$ "The function definition ~x0 ~
+                  with external linkage and type ~x1 ~
                   was previously declared with incompatible type ~x2."
                  ident
                  type
@@ -6370,8 +6372,7 @@
                         its associated information is ~x1."
                        (fundef-fix fundef) info))
              ((valid-ord-info-objfun info) info)
-             ((unless (or (type-case info.type :function)
-                          (type-case info.type :unknown)))
+             ((unless (type-compatiblep info.type type))
               (retmsg$ "The name of the function definition ~x0 ~
                         is already in the file scope, ~
                         but it has type ~x1."
@@ -6570,17 +6571,19 @@
        (table
          (if gcc
              (b* ((table
-                    (valid-add-ord-objfuns-file-scope *gcc-builtin-functions*
-                                                      (type-function)
-                                                      (linkage-external)
-                                                      (valid-defstatus-defined)
-                                                      table))
+                    (valid-add-ord-objfuns-file-scope
+                      *gcc-builtin-functions*
+                      (make-type-function :ret (type-unknown))
+                      (linkage-external)
+                      (valid-defstatus-defined)
+                      table))
                   (table
-                    (valid-add-ord-objfuns-file-scope *gcc-builtin-vars*
-                                                      (type-unknown)
-                                                      (linkage-external)
-                                                      (valid-defstatus-defined)
-                                                      table)))
+                    (valid-add-ord-objfuns-file-scope
+                      *gcc-builtin-vars*
+                      (make-type-function :ret (type-unknown))
+                      (linkage-external)
+                      (valid-defstatus-defined)
+                      table)))
                table)
            table))
        ((erp new-edecls table)

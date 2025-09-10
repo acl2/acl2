@@ -94,9 +94,9 @@
      "A pointer type [C17:6.2.5/20],
       derived from the ``referenced type.''")
     (xdoc::li
-     "A collective type for all function types [C17:6.2.5/20].
+     "A function type [C17:6.2.5/20], which contains the return type.
       This is an approximation,
-      because there are different function types.")
+      because we do not store the types of the function parameters.")
     (xdoc::li
      "An ``unknown'' type that we need due to our current approximation.
       Our validator must not reject valid code.
@@ -143,7 +143,7 @@
   (:enum ())
   (:array ((of type)))
   (:pointer ((to type)))
-  (:function ())
+  (:function ((ret type)))
   (:unknown ())
   :pred typep
   :prepwork ((set-induction-depth-limit 1)))
@@ -574,14 +574,9 @@
   (xdoc::topstring
    (xdoc::p
     "This performs the conversion in [C17:6.3.2.1/4].
-     It leaves non-function types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for functions.
-     Therefore, the sole function type is converted to
-     a pointer type derived from the function type."))
+     It leaves non-function types unchanged."))
   (if (type-case type :function)
-      (make-type-pointer :to (type-function))
+      (make-type-pointer :to (type-fix type))
     (type-fix type))
   :hooks (:fix))
 
@@ -882,12 +877,11 @@
      "If either type is unknown, the types are compatible.")
     (xdoc::li
      "Structure types are compatible if they share the same tag;
-      For now we do not consider members [6.2.7/1].")
+      For now we do not consider members [C17:6.2.7/1].")
     (xdoc::li
      "Due to their approximate representations,
-      all union types are considered compatible [6.2.7/1].
-      The same applies to enumeration types [[C17:6.7.2.2/4]]
-      and function types [C17:6.7.6.3/15].")
+      all union types are considered compatible [C17:6.2.7/1].
+      The same applies to enumeration types [C17:6.7.2.2/4].")
     (xdoc::li
      "Pointer types are compatible if they are derived from compatible types;
       we do not currently consider whether the types are qualified
@@ -903,6 +897,10 @@
       must be compatible with <i>some</i> integer type.
       However, the particular type is implementation-defined,
       may vary for different enumeration types [C17:6.7.2.2/4].")
+    (xdoc::li
+     "Function types are considered compatible
+      if their return types are compatible.
+      The function type parameters are not yet considered [C17:6.7.6.3/15].")
     (xdoc::li
      "For any other case, the types are compatible only if they are equal."))
    (xdoc::p
@@ -933,6 +931,10 @@
                    y
                    :pointer (type-compatiblep x.to y.to)
                    :otherwise nil)
+        :function (type-case
+                    y
+                    :function (type-compatiblep x.ret y.ret)
+                    :otherwise nil)
         :otherwise (or (equal (type-fix x) (type-fix y))
                        (and (type-integerp x) (type-case y :enum))
                        (and (type-case x :enum) (type-integerp y)))))
@@ -976,6 +978,12 @@
                :pointer (make-type-pointer :to (type-composite x.to y.to))
                :unknown (type-fix x)
                :otherwise (prog2$ (impossible) (irr-type)))
+    :function (type-case
+                y
+                :function (make-type-function
+                            :ret (type-composite x.ret y.ret))
+                :unknown (type-fix x)
+                :otherwise (prog2$ (impossible) (irr-type)))
     :unknown (type-fix y)
     :otherwise (type-fix x))
   :measure (type-count x)
