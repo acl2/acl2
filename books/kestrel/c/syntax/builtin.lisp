@@ -77,6 +77,7 @@
         (ident "__builtin_ctzl")
         (ident "__builtin_dynamic_object_size")
         (ident "__builtin_expect")
+        (ident "__builtin_extract_return_addr")
         (ident "__builtin_memchr")
         (ident "__builtin_memcmp")
         (ident "__builtin_memcpy")
