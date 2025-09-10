@@ -4364,14 +4364,13 @@
      the theorems about the initial scope and the parameters
      suffice to establish the variable-type hypotheses of the body."))
   (b* (((fundef fundef) fundef)
-       (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
        (gin (simpadd0-gin-update gin gout-spec))
        ((mv new-declor (simpadd0-gout gout-declor))
         (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
-       (type (c$::fundef-info->type info))
+       (type (c$::fundef-info->type fundef.info))
        (ident (c$::declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)
@@ -4386,7 +4385,7 @@
                                           gin :vartys vartys-with-fun)))
        (gin (simpadd0-gin-update gin gout-decls))
        (vartys (vartys-from-valid-table
-                (c$::fundef-info->table-body-start info)))
+                (c$::fundef-info->table-body-start fundef.info)))
        ((mv new-body (simpadd0-gout gout-body))
         (simpadd0-block-item-list fundef.body
                                   (change-simpadd0-gin gin :vartys vartys)))
@@ -4511,6 +4510,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys vartys-with-fun)))
+  :guard-hints (("Goal" :in-theory (enable fundef-annop)))
   :hooks (:fix)
 
   :prepwork
