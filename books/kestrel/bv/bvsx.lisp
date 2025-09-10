@@ -132,6 +132,7 @@
                                          slice-alt-def         ;slice
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+                                         repeatbit
                                          )
                                    (; BVPLUS-OF-*-ARG2
                                     ;;BVCAT-OF-+-HIGH ;looped
@@ -210,7 +211,8 @@
                            (+ -1 (expt 2 (- new-size old-size)))
                            old-size
                            val))))
-  :hints (("Goal" :in-theory (e/d (bvsx) (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
+  :hints (("Goal" :in-theory (e/d (bvsx repeatbit)
+                                  (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
 
 (defthmd equal-of-bvsx-and-constant
   (implies (and (syntaxp (and (quotep k)

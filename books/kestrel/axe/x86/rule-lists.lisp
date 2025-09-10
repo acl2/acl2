@@ -1557,7 +1557,6 @@
     x86isa::sub-sf-spec64-constant-opener
     x86isa::sub-zf-spec64-constant-opener
 
-    ;; acl2::bool->bit$inline-constant-opener
     ;; byte-ify-base
     ;; x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
     ;; x86isa::byte-listp-base-1
@@ -1943,103 +1942,103 @@
     run-until-exit-segment-or-hit-loop-header-of-if-split))
 
 ;; todo: deprecate?
-(defund separate-rules ()
-  (declare (xargs :guard t))
-  '(x86isa::separate-normalize-r-w-x-1
-    x86isa::separate-normalize-r-w-x-2
-    x86isa::not-separate-self
-    x86isa::separate-of-plus
-    x86isa::separate-of-plus-alt
-    x86isa::separate-below-and-above
-    x86isa::separate-below-and-above-alt
-    x86isa::separate-lemma-1
-    x86isa::separate-lemma-1-alt
-    x86isa::separate-lemma-1b
-    x86isa::separate-lemma-1b-alt
-    x86isa::separate-lemma-2b
-    x86isa::separate-lemma-2b-alt
-    x86isa::separate-lemma-3
-    x86isa::separate-lemma-3-alt
-    x86isa::separate-of-if-arg3
-    x86isa::separate-of-if-arg6
-    x86isa::separate-below-and-above-offset
-    x86isa::separate-below-and-above-offset-alt
-    x86isa::separate-same-lemma-1
-    x86isa::separate-same-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1
-    x86isa::separate-from-separate-lemma-1b
-    x86isa::separate-from-separate-lemma-1c
-    x86isa::separate-from-separate-lemma-1d
-    x86isa::separate-from-separate-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1b-alt
-    x86isa::separate-from-separate-lemma-1c-alt
-    x86isa::separate-from-separate-lemma-1d-alt
-    ;; these 2 may subsume much of the stuff above:
-    x86isa::separate-when-separate
-    x86isa::separate-when-separate-alt
-    ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
-    ;;x86isa::not-equal-when-separate
-    ;;x86isa::not-equal-when-separate-alt
-    x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
-    x86isa::not-equal-constant-when-separate-of-constants-alt
-    acl2::equal-of-+-combine-constants
-    acl2::equal-of-+-combine-constants-alt
-    acl2::equal-of-+-and-+-cancel-constants
-    ))
+;; (defund separate-rules ()
+;;   (declare (xargs :guard t))
+;;   '(x86isa::separate-normalize-r-w-x-1
+;;     x86isa::separate-normalize-r-w-x-2
+;;     x86isa::not-separate-self
+;;     x86isa::separate-of-plus
+;;     x86isa::separate-of-plus-alt
+;;     x86isa::separate-below-and-above
+;;     x86isa::separate-below-and-above-alt
+;;     x86isa::separate-lemma-1
+;;     x86isa::separate-lemma-1-alt
+;;     x86isa::separate-lemma-1b
+;;     x86isa::separate-lemma-1b-alt
+;;     x86isa::separate-lemma-2b
+;;     x86isa::separate-lemma-2b-alt
+;;     x86isa::separate-lemma-3
+;;     x86isa::separate-lemma-3-alt
+;;     x86isa::separate-of-if-arg3
+;;     x86isa::separate-of-if-arg6
+;;     x86isa::separate-below-and-above-offset
+;;     x86isa::separate-below-and-above-offset-alt
+;;     x86isa::separate-same-lemma-1
+;;     x86isa::separate-same-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1
+;;     x86isa::separate-from-separate-lemma-1b
+;;     x86isa::separate-from-separate-lemma-1c
+;;     x86isa::separate-from-separate-lemma-1d
+;;     x86isa::separate-from-separate-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1b-alt
+;;     x86isa::separate-from-separate-lemma-1c-alt
+;;     x86isa::separate-from-separate-lemma-1d-alt
+;;     ;; these 2 may subsume much of the stuff above:
+;;     x86isa::separate-when-separate
+;;     x86isa::separate-when-separate-alt
+;;     ;; these may be expensive but seem necessary in some cases
+;;     ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
+;;     ;;x86isa::not-equal-when-separate
+;;     ;;x86isa::not-equal-when-separate-alt
+;;     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
+;;     x86isa::not-equal-constant-when-separate-of-constants-alt
+;;     acl2::equal-of-+-combine-constants
+;;     acl2::equal-of-+-combine-constants-alt
+;;     acl2::equal-of-+-and-+-cancel-constants
+;;     ))
 
-(defund canonical-rules-non-bv ()
-  (declare (xargs :guard t))
-  '(booleanp-of-canonical-address-p
-    x86isa::canonical-address-p-of-logext-48
-    x86isa::logext-48-does-nothing-when-canonical-address-p
-    ;; x86isa::create-canonical-address-list-1
-    ;; x86isa::canonical-address-listp-of-cons
-    ;; x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
-    ;; x86isa::member-p-of-create-canonical-address-list-same
-    ;; x86isa::canonical-address-listp-create-canonical-address-list
-    ;; x86isa::pos-and-create-canonical-address-list
-    ;; x86isa::car-create-canonical-address-list
-    x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
-    ;;will axe try all free variable matches?
-    ;; x86isa::canonical-address-p-between-special1
-    ;; x86isa::canonical-address-p-between-special2
-    ;; x86isa::canonical-address-p-between-special3
-    ;; x86isa::canonical-address-p-between-special4
-    x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
-    x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
-    ;; x86isa::member-p-canonical-address-listp
-    ;; x86isa::true-listp-create-canonical-address-list
-    ;; x86isa::len-of-create-canonical-address-list
-    x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
-    x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
-    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
-    ;; x86isa::subset-p-two-create-canonical-address-lists-same-base-address
-    x86isa::canonical-address-p-of-logext-64
-    ;; x86isa::no-duplicates-p-create-canonical-address-list
-    ;; x86isa::not-member-p-canonical-address-listp-when-disjoint-p
-    ;; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
-    ;; <-when-canonical-address-p
-    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
-    x86isa::write-canonical-address-to-memory
-    ;; x86isa::canonical-address-listp-of-cdr
-    ;; x86isa::car-create-canonical-address-list
-    ;; x86isa::cdr-create-canonical-address-list
-    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
-    ;; signed-byte-p-when-between-canonical-addresses
-    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-    ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
-    logext-64-of-+-when-canonical-and-canonical
-    ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
-    ;; canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
-    ;; canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
-    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
-    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
-    x86isa::canonical-address-p-of-i48
-    x86isa::i48-when-canonical-address-p
-    ;; x86isa::canonical-address-p-of-if
-    acl2::logext-of-bvplus-64 ; new, to get rid of bvplus
-    ))
+;; (defund canonical-rules-non-bv ()
+;;   (declare (xargs :guard t))
+;;   '(booleanp-of-canonical-address-p
+;;     x86isa::canonical-address-p-of-logext-48
+;;     x86isa::logext-48-does-nothing-when-canonical-address-p
+;;     ;; x86isa::create-canonical-address-list-1
+;;     ;; x86isa::canonical-address-listp-of-cons
+;;     ;; x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
+;;     ;; x86isa::member-p-of-create-canonical-address-list-same
+;;     ;; x86isa::canonical-address-listp-create-canonical-address-list
+;;     ;; x86isa::pos-and-create-canonical-address-list
+;;     ;; x86isa::car-create-canonical-address-list
+;;     x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
+;;     ;;will axe try all free variable matches?
+;;     ;; x86isa::canonical-address-p-between-special1
+;;     ;; x86isa::canonical-address-p-between-special2
+;;     ;; x86isa::canonical-address-p-between-special3
+;;     ;; x86isa::canonical-address-p-between-special4
+;;     x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
+;;     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+;;     ;; x86isa::member-p-canonical-address-listp
+;;     ;; x86isa::true-listp-create-canonical-address-list
+;;     ;; x86isa::len-of-create-canonical-address-list
+;;     x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+;;     x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
+;;     ;; x86isa::subset-p-two-create-canonical-address-lists-same-base-address
+;;     x86isa::canonical-address-p-of-logext-64
+;;     ;; x86isa::no-duplicates-p-create-canonical-address-list
+;;     ;; x86isa::not-member-p-canonical-address-listp-when-disjoint-p
+;;     ;; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
+;;     ;; <-when-canonical-address-p
+;;     ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
+;;     x86isa::write-canonical-address-to-memory
+;;     ;; x86isa::canonical-address-listp-of-cdr
+;;     ;; x86isa::car-create-canonical-address-list
+;;     ;; x86isa::cdr-create-canonical-address-list
+;;     ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+;;     ;; signed-byte-p-when-between-canonical-addresses
+;;     x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
+;;     ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
+;;     logext-64-of-+-when-canonical-and-canonical
+;;     ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
+;;     ;; canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
+;;     ;; canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
+;;     x86isa::canonical-address-p-of-i48
+;;     x86isa::i48-when-canonical-address-p
+;;     ;; x86isa::canonical-address-p-of-if
+;;     acl2::logext-of-bvplus-64 ; new, to get rid of bvplus
+;;     ))
 
 (defund unsigned-canonical-rules ()
   (declare (xargs :guard t))
@@ -2502,7 +2501,6 @@
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
-            x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
             x86isa::undef-flg$notinline
@@ -2795,9 +2793,9 @@
             64bits-fix
 
             ;; maybe eventually remove, but needed for the loop lifter (at least remove other mentions)
-            x86isa::integerp-when-canonical-address-p-cheap
+            ;; x86isa::integerp-when-canonical-address-p-cheap
 
-            x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
+            ;; x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -5745,14 +5743,14 @@
     ;; x86isa::canonical-address-p-between-special5-alt
     ;; x86isa::canonical-address-p-between-special6
     ;; x86isa::canonical-address-p-between-special7
-    bitops::ash-is-expt-*-x
+    acl2::ash-when-non-negative-becomes-*-of-expt
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
     acl2::<-of-15-and-*-of-4
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
     acl2::not-bvlt-of-max-arg2
     acl2::<-of-*-when-constant-integers
-            ;separate-when-separate-2 ; todo: drop? but that caused problems
+    ;;separate-when-separate-2 ; todo: drop? but that caused problems
     acl2::collect-constants-over-<-2
     acl2::commutativity-of-*-when-constant
     acl2::<-of-*-of-constant-and-constant
@@ -5761,7 +5759,7 @@
     acl2::<-of-minus-and-constant ; ensure needed
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
-    bitops::ash-of-0-c ; at least for now
+    acl2::ash-of-0-arg1 ; bitops::ash-of-0-c ; at least for now
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
@@ -5798,16 +5796,16 @@
 
     acl2::logext-of-+-of-bvplus-same-size
     acl2::logext-of-+-of-+-of-mult-same-size
-            ;acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
+    ;; acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
     acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
     acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
     acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
     acl2::nth-becomes-bv-array-read-strong2
     acl2::bvplus-of-*-arg1 ; introduces bvmult
     acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
-    not-equal-of-+-and-+-when-separate
-    not-equal-of-+-of-+-and-+-when-separate
-    not-equal-of-+-of-+-and-+-when-separate-gen
+    ;; not-equal-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate-gen
     acl2::<-of-negative-constant-and-bv
     ;;read-1-of-write-1-both
     acl2::not-bvlt-of-constant-when-usb-dag ; rename
@@ -5827,7 +5825,7 @@
     acl2::bvif-of-if-constants-nonnil-nil
     acl2::equal-of-constant-and-bitand
     acl2::equal-of-bitand-and-constant
-            ;acl2::boolif-of-nil-and-t
+    ;;acl2::boolif-of-nil-and-t
     ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
     acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
     acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
@@ -5837,14 +5835,17 @@
     ;; booleanp-of-jz-condition
     ;; booleanp-of-jnz-condition
     acl2::getbit-0-of-bool-to-bit
-    acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
-    acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
+    acl2::equal-of-0-and-bool-to-bit ; alt version needed, or do equals get turned around?
+    acl2::equal-of-1-and-bool-to-bit ; alt version needed, or do equals get turned around?
     acl2::equal-of-1-and-bitnot ; todo: add 0 version
     ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
     ;; todo: just include boolean-rules?:
     ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
-    acl2::bvchop-of-bool-to-bit ;todo: drop
+    ;; acl2::bvchop-of-bool-to-bit ;todo: drop
     acl2::logext-of-bool-to-bit
+    acl2::bool-to-bit-of-not
+    acl2::bool-to-bit-of-equal-of-0-when-unsigned-byte-p ; todo: alt versions
+    acl2::bool-to-bit-of-equal-of-1-when-unsigned-byte-p
     acl2::<-of-if-arg1-safe
     ;; acl2::<-of-if-arg2-safe
     acl2::equal-of-bvif-safe2
@@ -5960,8 +5961,8 @@
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             ;read-1-of-write-within-new
-            not-equal-of-+-when-separate
-            not-equal-of-+-when-separate-alt
+            ;; not-equal-of-+-when-separate
+            ;; not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             )))
 
@@ -5997,7 +5998,7 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
-            bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
+            acl2::bool-to-bit-becomes-bvif ; in case bool-to-bit remains
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition

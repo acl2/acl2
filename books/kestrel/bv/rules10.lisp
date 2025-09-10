@@ -107,9 +107,6 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus repeatbit)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
-;goes to 2^n-1, but I think I like repeatbit better
-(in-theory (disable repeatbit-of-1-arg2))
-
 ;todo: move
 (defthm equal-of-bvchop-and-constant-when-signed-byte-p
   (implies (and (syntaxp (want-to-strengthen (equal k (bvchop 64 x))))

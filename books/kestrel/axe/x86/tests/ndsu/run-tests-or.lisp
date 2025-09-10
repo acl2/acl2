@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (depends-on "or.macho64")
-   (test-file "or.macho64")
+(test-file "or.macho64")
 
 ;; (depends-on "or.pe64")
 (test-file "or.pe64")
