@@ -1209,7 +1209,6 @@
     "After converting function types to pointer types,
      the first sub-expression must have pointer type [C17:6.5.2.2/1];
      Furthermore, it must be a pointer to a function type.
-     Since we currently have just one function type,
      Since our approximate function types do not yet store the parameter types,
      we do not check the argument types against the function type [C17:6.5.2.2/2].
      We return the function return type.")
