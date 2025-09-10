@@ -33,6 +33,17 @@
 
 (in-theory (disable xw logext))
 
+;; for speed:
+(local (in-theory (disable acl2::unsigned-byte-p-from-bounds
+                           acl2::bvchop-identity
+                           acl2::bvchop-upper-bound-linear-strong
+                           acl2::bvchop-upper-bound-linear
+                           acl2::<=-of-bvchop-same-linear
+                           acl2::unsigned-byte-p-of-bvchop-when-already
+                           acl2::slice-too-high-is-0
+                           acl2::logext-when-top-bit-0
+                           acl2::logext-bounds)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Register readers.
@@ -1111,7 +1122,8 @@
                     (if normalp
                         (bvchop 8 val)
                       (slice 15 8 val)))))
-  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15
+                                     unsigned-byte-p))))
 
 ;; Goes directly to RAX, etc. and directly to BVCHOP.
 (defthmd rr16-to-normal-form64

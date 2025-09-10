@@ -52,9 +52,9 @@
                 (integerp high))
            (equal (slice high low x)
                   (repeatbit (+ 1 high (- low)) 1)))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail
-                                          floor-when-negative-and-small)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail
+                                     floor-when-negative-and-small
+                                     repeatbit))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
 ;; any bit above the sign bit is the same as the sign bit

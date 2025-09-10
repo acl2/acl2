@@ -11,6 +11,9 @@
 
 (in-package "ACL2")
 
-(defun bit-to-bool (x)
-  (declare (xargs :guard (unsigned-byte-p 1 x))) ; todo: or use bitp?
-  (if (eql x 0) nil t))
+;; TODO: Consider chopping X down to 1 bit.
+(defund bit-to-bool (x)
+  (declare (xargs :guard (unsigned-byte-p 1 x) ; or we could use bitp
+                  :split-types t)
+           (type bit x))
+  (if (= x 0) nil t))

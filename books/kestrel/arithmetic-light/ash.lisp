@@ -37,6 +37,12 @@
 (defthm integerp-of-ash
   (integerp (ash i c)))
 
+(defthmd ash-when-non-negative-becomes-*-of-expt
+  (implies (natp c)
+           (equal (ash i c)
+                  (* (ifix i) (expt 2 c))))
+  :hints (("Goal" :in-theory (enable ash))))
+
 (defthm equal-of-0-and-ash
   (equal (equal 0 (ash i c))
          (or (not (integerp i))

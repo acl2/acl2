@@ -900,7 +900,7 @@
 ;; dag-len is only used in guards (including the guard of translate-bv-arg).
 ;todo: see repeated calls below to translate-bv-arg on same value...
 ;; We do not handle MYIF or IF, only BOOLIF, BVIF, and BV-ARRAY-IF.
-;; TODO: Consider supporting BOOL-TO-BIT.
+;; TODO: Consider supporting BOOL-TO-BIT and BIT-TO-BOOL.
 (defund translate-dag-expr (expr ;either a quotep or a function call over nodenums and quoteps (never a variable)
                             dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)

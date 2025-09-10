@@ -1348,11 +1348,31 @@
                   (bool-to-bit y)))
   :hints (("Goal" :in-theory (enable bool-to-bit xor))))
 
-(defthm bvif-0-1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+(defthm bvif-0-1-becomes-bvnot-of-bool-to-bit
   (equal (bvif 1 test 0 1)
          (bvnot 1 (bool-to-bit test)))
   :hints (("Goal" :in-theory (enable bool-to-bit bvif myif))))
 
+(defthm bvif-of-1-and-0-becomes-bool-to-bit
+  (implies (posp size)
+           (equal (bvif size test 1 0)
+                  (bool-to-bit test)))
+  :hints (("Goal" :in-theory (enable bvif BOOL-TO-BIT))))
+
+;; BVIF may be better than bool-to-bit as the STP translation handles it
+;; TODO: Or rewrite bool-to-bit away in the pre-translation.
+(defthmd bool-to-bit-becomes-bvif
+  (equal (bool-to-bit bool)
+         (bvif 1 bool 1 0)))
+
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-of-1-and-0-becomes-bool-to-bit)))
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-0-1-becomes-bvnot-of-bool-to-bit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (thm
 ;;  (equal (BVNOT LOWSIZE (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
@@ -1541,8 +1561,6 @@
                    (bvxor lowsize (bvchop lowsize x) lowval)))) ;could tighetn the slice?
   :hints (("Goal" :in-theory (enable ;bvcat bvxor
                                    ))))
-
-;fixme what does repeatbit do if not given a bit??
 
 ;; (DEFTHM SLICE-WHEN-high-IS-NEGATIVE
 ;;   (IMPLIES (AND (< high 0)
@@ -2427,13 +2445,6 @@
   (equal (+ y (* 1/2 x) (* 1/2 x))
          (+ y x)))
 
-;also a 0-1 rule?
-(defthm bvif-of-1-and-0-becomes-bool-to-bit
-  (implies (posp size)
-           (equal (bvif size test 1 0)
-                  (bool-to-bit test)))
-  :hints (("Goal" :in-theory (enable bvif BOOL-TO-BIT))))
-
 ;this is for powers of 2 (nicer theorem because we don't have to worry about the product getting chopped
 ;(chopping a number doesn't change whether it's a multiple of a small power of 2)
 (defthm bvmod-of-bvmult-of-expt
@@ -3247,13 +3258,13 @@
 ;;       x
 ;;     y))
 
-(defthm bool-to-bit-of-boolif
+;go to bvif?
+(defthmd bool-to-bit-of-boolif
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (bool-to-bit (boolif test x y))
                   (myif test (bool-to-bit x) (bool-to-bit y))))
   :hints (("Goal" :in-theory (enable myif bool-to-bit boolif))))
-
 
 (defthmd bool-to-bit-of-equal-becomes-bitxnor
   (implies (and (unsigned-byte-p 1 x)
@@ -5330,13 +5341,15 @@
 (defthm bit-to-bool-of-bool-to-bit
   (implies (booleanp x)
            (equal (bit-to-bool (bool-to-bit x))
-                  x)))
+                  x))
+  :hints (("Goal" :in-theory (enable bit-to-bool))))
 
 ;move
 (defthm bool-to-bit-of-bit-to-bool
   (implies (unsigned-byte-p 1 x)
            (equal (bool-to-bit (bit-to-bool x))
-                  x)))
+                  x))
+  :hints (("Goal" :in-theory (enable bit-to-bool))))
 
 ;move
 (defthm unsigned-byte-p-1-when-not-0

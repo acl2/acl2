@@ -782,7 +782,7 @@
 (defthm bit-to-bool-unguarded-correct
   (equal (bit-to-bool-unguarded x)
          (bit-to-bool x))
-  :hints (("Goal" :in-theory (enable bit-to-bool-unguarded))))
+  :hints (("Goal" :in-theory (enable bit-to-bool bit-to-bool-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

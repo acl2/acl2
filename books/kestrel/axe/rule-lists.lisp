@@ -532,6 +532,7 @@
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
+    ;; These just unconditionally replace non-bv operators with bv operators:
     bool->bit-becomes-bool-to-bit
     bit->bool-becomes-bit-to-bool
     acl2::logbitp-to-getbit-equal-1 ;rename
@@ -973,7 +974,7 @@
 
      not-equal-max-int-when-<=      ;new, rename
 
-     repeatbit-of-1     ;new
+     repeatbit-of-1-arg1     ;new
      lg                 ;new
      getbit-of-repeatbit ;new - what else do we need about repeatbit?
 
@@ -2364,12 +2365,16 @@
      sbvdivdown-rewrite-gen
 
 ;    unsigned-byte-p-tighten ;;removed tue jan 12 06:27:23 2010
-     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
-     equal-of-bool-to-bit-and-0
-     equal-of-bool-to-bit-and-1
-     ;;fixme what about backchain-limit? <- for which rule??
 
-     equal-of-bvchop-impossible
+     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
+     bvif-0-1-becomes-bvnot-of-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
+     equal-of-0-and-bool-to-bit ; alt form needed?
+     equal-of-1-and-bool-to-bit ; alt form needed?
+     getbit-0-of-bool-to-bit
+     equal-of-bool-to-bit-split ; remove?
+     unsigned-byte-p-of-bool-to-bit
+
+     equal-of-bvchop-impossible ;; todo: backchain-limit?
      ;;equal-of-bvchop-impossible-alt
 
 ;bvlt-transitive-free2
@@ -2380,7 +2385,7 @@
      bvif-t-bitxor-1-x-and-x
      ;;    bitxor-associative ;caused problems removing 1/12/09
      equal-of-bvuminus-and-constant ; move
-     getbit-0-of-bool-to-bit
+
      logext-when-top-bit-0 ;move?
      <-becomes-bvlt-dag
      sbvdiv-when-both-positive
@@ -2424,7 +2429,6 @@
      boolor-of-booland-same
      boolor-of-booland-same-alt
      bv-array-clear-of-bv-array-write-same
-     bvif-0-1
      getbit-of-bvuminus
      bvlt-tighten-gen2
      ;;bvplus-of-1-tighten
@@ -2710,14 +2714,13 @@
      equal-of-bvplus-cancel-arg2 ;drop?
 
      equal-of-0-and-bitxor ; tried moving this to core-rules-bv, but that caused problems.  we need bitxor cancellation rules.  (why doesn't the same thing happen for bvxor?)
-     equal-of-bool-to-bit-split
+
      iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
 ;                               bvlt-of-bvplus-of-bvuminus-alt ;tue feb 23 00:54:24 2010
      bvlt-of-bvplus-same
      equal-of-bitxor-same
      equal-of-bitxor-same-alt
-     unsigned-byte-p-1-of-bool-to-bit ;gen
 ;bvlt-when-bvlt-reverse ;seems expensive mon feb  1 20:26:19 2010
      bvlt-of-bvplus-and-bvplus-cancel
 
@@ -3699,7 +3702,7 @@
 ;                                    UNSIGNED-BYTE-P-OF-BITLIST-TO-BV2
              nthcdr-of-ungroup
              bvplus-of-bvuminus-of-bvcat-of-0
-;bool-to-bit ;was expensive
+             ;;bool-to-bit ;was expensive
              bvcat-of-slice-onto-constant
              getbit-when-not-bvlt-constant
 
@@ -4112,6 +4115,7 @@
 
 ;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
 ;; TODO: Use these whenever we translate to STP, not just in the tactic prover.
+;; However, consider that these may not have been applied when we use STP to relieve a hyp during rewriting.
 (defund pre-stp-rules ()
   (declare (xargs :guard t))
   (append
