@@ -932,7 +932,7 @@ void g() {
   "void foo() {
   int *a = 0;
   int **x = &a;
-  unsigned int *y = *x;
+  unsigned int *y = (unsigned int *) *x;
   short z = *y;
 }
 ")
@@ -990,5 +990,88 @@ int foo () {
    int x = a[3];
    int y = 3[a];
    return x+y;
+}
+")
+
+(test-valid
+  "int a[10] = {[0] = 1, [1] = 2};
+")
+
+(test-valid
+  "struct s { int a; };
+
+void foo () {
+  struct s p[][];
+  struct s *sp = *p;
+}
+")
+
+(test-valid-fail
+  "struct s { int a; };
+
+void foo () {
+  struct s p[][];
+  int *sp = *p;
+}
+")
+
+(test-valid
+  "char hello_world[] = \"Hello\" \" \" \"World!\";
+")
+
+(test-valid
+  "char *hello_world = \"Hello\" \" \" \"World!\";
+")
+
+(test-valid
+  "char hello_world[] = \"Hello\" u8\" \" \"World!\";
+")
+
+(test-valid
+  "struct s { int x; };
+   struct s arr[10] = {[0] = {.x = 1}, [1] = {.x = 2}};
+")
+
+(test-valid
+  "struct s { int x; };
+   struct s arr[10] = {{.x = 1}, {.x = 2}};
+")
+
+(test-valid
+  "struct s { int x; };
+   struct s arr[10] = {{.x = 1}, 42};
+")
+
+(test-valid
+  "struct s { int x; };
+   struct s arr[1][1] = {[0][0] = {.x = 1}};
+")
+
+(test-valid
+  "int matrix[][] = {{1, 2, 3}, {4, 5, 6}};
+")
+
+(test-valid
+  "int matrix[3][2] = {1, 2, 3, 4, 5, 6};
+")
+
+(test-valid
+  "char* str_arr[] = {\"Hello\", \" \", \"World!\"};
+")
+
+(test-valid
+  "struct s { int x; int y; };
+struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
+")
+
+(test-valid
+  "int foo(void) {
+  return (int [1]) {[0] = 42}[0];
+}
+")
+
+(test-valid
+  "int foo(void) {
+  return (int [1][1]) {42}[0][0];
 }
 ")

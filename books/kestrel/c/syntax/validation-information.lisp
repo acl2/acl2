@@ -54,12 +54,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Due to the approximate representation of types and our lack of constant
-     expression evaluation,
+    "Due to the approximate representation of types
+     and our lack of constant expression evaluation,
      this recognizer is highly overappoximating.
-     It will recognize any pointer or integer type."))
-  (or (type-case type :pointer)
-      (type-integerp type))
+     It will recognize any unknown,
+     @('void')/unknown pointer,
+     or integer type."))
+  (type-case
+   type
+   :unknown t
+   :pointer (or (type-case type.to :void)
+                (type-case type.to :unknown))
+   :otherwise (type-integerp type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
