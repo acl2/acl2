@@ -1003,15 +1003,24 @@
    (xdoc::p
     "We check the characters that form the string literal,
      with respect to the prefix (if any).
-     If validation is successful, we return the type of the string literal,
-     which according to [C17:6.4.5/6], is an array type
-     of @('char') or @('wchar_t') or @('char16_t') or @('char32_t').
-     In our current approximate type system,
-     we just have a single type for arrays, so we return that."))
+     If validation is successful, we return the type of the string literal.
+     If the literal is a character string literal
+     (i.e. it has no encoding prefix)
+     or a UTF-8 string literal
+     (i.e. it has the @('u8') prefix),
+     it has an array type with element type @('char').
+     If an encoding prefix is present,
+     the literal may have type @('wchar_t') or @('char16_t') or @('char32_t').
+     Since we do not yet model the values of these type definitions,
+     we return an array type with an unknown element type in these cases."))
   (b* (((reterr) (irr-type))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
-    (retok (type-array)))
+    (retok (make-type-array
+             :of (if (or (not strlit.prefix?)
+                         (eprefix-case strlit.prefix? :locase-u8))
+                     (type-char)
+                   (type-unknown)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1045,12 +1054,19 @@
      is implementation-defined [C17:6.4.5/5].
      We plan to extend our implementation environments
      with information about how to treat those cases,
-     but for now we allow all concatenations,
-     and the resulting type is just our approximate type for all arrays."))
+     but for now we allow all concatenations.")
+   (xdoc::p
+    "If all literals in the concatenation are character string literals
+     or UTF-8 string literals,
+     the result is an array type with the element type @('char').
+     Otherwise, it is an array type with an unknown element type.
+     This covers both the case of well-defined wide string literals
+     (whose types we do not yet model),
+     and the implementation-defined mixed string encoding."))
   (b* (((reterr) (irr-type))
-       ((erp) (valid-stringlit-list-loop strlits ienv))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
+       ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
        (prefixes (stringlit-list->prefix?-list strlits))
        ((when (and (member-equal (eprefix-locase-u8) prefixes)
                    (or (member-equal (eprefix-locase-u) prefixes)
@@ -1058,16 +1074,30 @@
                        (member-equal (eprefix-upcase-l) prefixes))))
         (retmsg$ "Incompatible prefixes ~x0 in the list of string literals."
                  prefixes)))
-    (retok (type-array)))
+    (retok (make-type-array
+             :of (if (or conflictp
+                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
+                     (type-unknown)
+                   (type-char)))))
   :hooks (:fix)
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
-     :returns (erp maybe-msgp)
+     :returns (mv (erp maybe-msgp)
+                  (prefix? eprefix-optionp)
+                  (conflictp booleanp :rule-classes :type-prescription))
      :parents nil
-     (b* (((reterr))
-          ((when (endp strlits)) (retok))
-          ((erp &) (valid-stringlit (car strlits) ienv)))
-       (valid-stringlit-list-loop (cdr strlits) ienv))
+     (b* (((reterr) nil nil)
+          ((when (endp strlits)) (retok nil nil))
+          ((erp &) (valid-stringlit (car strlits) ienv))
+          (first-prefix? (stringlit->prefix? (car strlits)))
+          ((erp rest-prefix? conflictp)
+           (valid-stringlit-list-loop (cdr strlits) ienv))
+          (prefix? (or first-prefix? rest-prefix?))
+          (conflictp (or conflictp
+                         (and first-prefix?
+                              rest-prefix?
+                              (not (equal first-prefix? rest-prefix?))))))
+       (retok prefix? conflictp))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1136,10 +1166,7 @@
      one sub-expression must have pointer type,
      and the other sub-expression must have integer type
      [C17:6.5.2.1/1].
-     The expression has the type referenced by the pointer type.
-     However, since we currently model just one array type,
-     all array types are converted to pointers to the unknown type
-     and the type of the expression is therefore unknown.")
+     The expression has the type referenced by the pointer type.")
    (xdoc::p
     "There is no need to perform function-to-pointer conversion,
      because that would result in a pointer to function,
@@ -1147,23 +1174,25 @@
      as it has to be a pointer to a complete object type [C17:6.5.2.1/1].
      So by leaving function types as such, we automatically disallow them."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
-        (retok (type-unknown)))
        (type1 (type-apconvert type-arg1))
        (type2 (type-apconvert type-arg2))
        ((when (and (type-case type1 :pointer)
-                   (type-integerp type2)))
+                   (or (type-integerp type2)
+                       (type-case type2 :unknown))))
         (retok (type-pointer->to type1)))
-       ((unless (and (type-integerp type1)
-                     (type-case type2 :pointer)))
-        (retmsg$ "In the array subscripting expression ~x0, ~
-                  the first sub-expression has type ~x1, ~
-                  and the second sub-expression has type ~x2."
-                 (expr-fix expr)
-                 (type-fix type-arg1)
-                 (type-fix type-arg2))))
-    (retok (type-pointer->to type2)))
+       ((when (and (type-case type2 :pointer)
+                   (or (type-integerp type1)
+                       (type-case type1 :unknown))))
+        (retok (type-pointer->to type2)))
+       ((when (or (type-case type-arg1 :unknown)
+                  (type-case type-arg2 :unknown)))
+        (retok (type-unknown))))
+    (retmsg$ "In the array subscripting expression ~x0, ~
+              the first sub-expression has type ~x1, ~
+              and the second sub-expression has type ~x2."
+             (expr-fix expr)
+             (type-fix type-arg1)
+             (type-fix type-arg2)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3469,7 +3498,7 @@
       "If the target type is an array of characters (of various types),
        the initializer may be a single string literal,
        subject to some constraints [C17:6.7.9/14] [C17:6.7.9/15].
-       In our currently approximated type system,
+       Because we do not yet model the wide character types,
        we must allow any kind of string literal with any array target type.")
      (xdoc::p
       "If the target type is an aggregate or union type,
@@ -3588,7 +3617,7 @@
              (initer-case initer :list))
         (b* (((erp new-elems types table)
               (valid-desiniter-list
-               (initer-list->elems initer) (type-unknown) lifetime table ienv)))
+               (initer-list->elems initer) target-type lifetime table ienv)))
           (retok (make-initer-list
                   :elems new-elems
                   :final-comma (initer-list->final-comma initer))
@@ -3662,10 +3691,10 @@
        that the list of designators must be applicable to."))
     (b* (((reterr) (irr-desiniter) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-design & types table)
+         ((erp new-design initer-type types table)
           (valid-designor-list desiniter.designors target-type table ienv))
          ((erp new-init more-types table)
-          (valid-initer desiniter.initer target-type lifetime table ienv)))
+          (valid-initer desiniter.initer initer-type lifetime table ienv)))
       (retok (make-desiniter :designors new-design :initer new-init)
              (set::union types more-types)
              table))
@@ -3692,9 +3721,35 @@
     (xdoc::topstring
      (xdoc::p
       "The target type passed as argument is the type
-       that each list of designators must be applicable to."))
+       that each list of designators must be applicable to.
+       Currently, we do not support fine-grained type-checking of
+       aggregates or unions with an element/member type
+       which is also an aggregate or union type
+       (this condition is checked precisely for the array type,
+       but conservatively includes all struct and unions types
+       since out approximate types do not yet include member types).
+       In such contexts, when an initializer lacks a designator,
+       the type of the initializer may be
+       either the type of the element/member,
+       or the type of an element/member of that element/member
+       (which member depends on the order of the initializers)
+       [C17:6.7.9/20].
+       For now, we fall back to the unknown type in these cases
+       as opposed to dealing with this complexity."))
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp desiniters)) (retok nil nil (valid-table-fix table)))
+         (target-type
+           (if (type-case
+                 target-type
+                 :array (or (type-case target-type.of :array)
+                            (type-case target-type.of :struct)
+                            (type-case target-type.of :union)
+                            (type-case target-type.of :unknown))
+                 :struct t
+                 :union t
+                 :otherwise nil)
+               (type-unknown)
+             target-type))
          ((erp new-desiniter types table)
           (valid-desiniter (car desiniters) target-type lifetime table ienv))
          ((erp new-desiniters more-types table)
@@ -3730,10 +3785,7 @@
        the one that results from applying the designator to it.
        The target type is the type of the current object [C17:6.7.9/17].
        A subscript designator requires an array target type,
-       and must have an integer expression [C17:6.7.9/6];
-       the result is the unknown type,
-       because currently we have just one array type
-       without information about the element type.
+       and must have an integer expression [C17:6.7.9/6].
        A dotted designator requires a struct or union type [C17:6.7.9/7];
        the result is the unknown type,
        because currently we do not have information about the members."))
@@ -3757,13 +3809,25 @@
                             has type ~x1."
                            (designor-fix designor)
                            range?-type?))
-                 ((unless (or (type-case target-type :array)
-                              (type-case target-type :unknown)))
+                 ((when (type-case target-type :unknown))
+                  (retok (make-designor-sub :index new-index :range? new-range?)
+                         (type-unknown)
+                         (set::union index-types range?-types)
+                         table))
+                 ((unless (type-case target-type :array))
                   (retmsg$ "The target type of the designator ~x0 is ~x1."
                            (designor-fix designor)
-                           (type-fix target-type))))
+                           (type-fix target-type)))
+                 (element-type (type-array->of target-type))
+                 ((when (or (type-case element-type :function)
+                            (type-case element-type :void)))
+                  (retmsg$ "The result of applying the designator ~x0
+                            to type ~x1 is ~x2."
+                           (designor-fix designor)
+                           (type-fix target-type)
+                           element-type)))
               (retok (make-designor-sub :index new-index :range? new-range?)
-                     (type-unknown)
+                     element-type
                      (set::union index-types range?-types)
                      table))
        :dot (b* (((unless (or (type-case target-type :struct)
@@ -3819,16 +3883,47 @@
        resulting from the application of the designators."))
     (b* (((reterr) nil (irr-type) nil (irr-valid-table))
          ((when (endp designors))
-          (retok nil (type-fix target-type) nil (valid-table-fix table)))
+          (type-case
+            target-type
+            :array (if (or (type-case target-type.of :function)
+                           (type-case target-type.of :void))
+                       (retmsg$ "The result of applying
+                                 the empty designator list
+                                 to type ~x0 is ~x1."
+                                (type-fix target-type)
+                                target-type.of)
+                     (retok nil target-type.of nil (valid-table-fix table)))
+            :otherwise (retok nil (type-unknown) nil (valid-table-fix table))))
          ((erp new-designor target-type types table)
           (valid-designor (car designors) target-type table ienv))
+         ((when (endp (cdr designors)))
+          (retok (list new-designor) target-type types table))
          ((erp new-designors target-type more-types table)
-          (valid-designor-list (cdr designors) target-type table ienv)))
+          (valid-designor-list (cdr designors) target-type table ienv))
+         ((unless (mbt (and (not (type-case target-type :function))
+                            (not (type-case target-type :void)))))
+          (prog2$ (impossible) (retmsg$ ""))))
       (retok (cons new-designor new-designors)
              target-type
              (set::union types more-types)
              table))
-    :measure (designor-list-count designors))
+    :measure (designor-list-count designors)
+
+    ///
+
+    (defret valid-designor-list.new-target-type-not-function
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :function)))
+      :hints
+      (("Goal" :expand (valid-designor-list designors target-type table ienv))))
+
+    (defret valid-designor-list.new-target-type-not-void
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :void)))
+      :hints
+      (("Goal" :expand (valid-designor-list designors target-type table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3976,9 +4071,8 @@
        we recursively validate the declarator.")
      (xdoc::p
       "If the direct declarator is one of the array kinds,
-       we refine the type to the array type [C17:6.7.6.2/3]
-       (so in our currently approximate type system
-       the input type is effectively ignored),
+       we refine the type to an array type [C17:6.7.6.2/3]
+       derived from the input type,
        and we recursively validate the enclosed direct declarator.
        Then we validate the index expression (if present),
        ensuring that it has integer type.
@@ -4080,7 +4174,7 @@
                 types
                 table))
        :array
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr? index-type? more-types table)
@@ -4102,7 +4196,7 @@
                 (set::union types more-types)
                 table))
        :array-static1
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
@@ -4123,7 +4217,7 @@
                 (set::union types more-types)
                 table))
        :array-static2
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
@@ -4144,7 +4238,7 @@
                 (set::union types more-types)
                 table))
        :array-star
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type table ienv)))
@@ -4321,7 +4415,7 @@
                 types
                 table))
        :array
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-size? index-type? more-types table)
@@ -4342,7 +4436,7 @@
                 (set::union types more-types)
                 table))
        :array-static1
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-size index-type more-types table)
@@ -4362,7 +4456,7 @@
                 (set::union types more-types)
                 table))
        :array-static2
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-size index-type more-types table)
@@ -4382,7 +4476,7 @@
                 (set::union types more-types)
                 table))
        :array-star
-       (b* ((type (type-array))
+       (b* ((type (make-type-array :of type))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -4503,12 +4597,11 @@
           (retmsg$ "The parameter declaration ~x0 ~
                     is for a function definition but has no identifier."
                    (param-declon-fix paramdecl)))
-         (type (if (type-case type :array)
-                   (make-type-pointer :to (type-unknown))
-                 type))
-         (type (if (type-case type :function)
-                   (make-type-pointer :to type)
-                 type))
+         (type (type-case
+                 type
+                 :array (make-type-pointer :to type.of)
+                 :function (make-type-pointer :to type)
+                 :otherwise type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
@@ -6185,7 +6278,8 @@
    (xdoc::p
     "We extend the validation table with the identifier @('__func__')
      [C17:6.4.2.2].
-     In our currently approximate type system, this has array type.
+     In our currently approximate type system, this has @('char') array type
+     (the @('const') type qualifier is ignored).
      If the GCC flag is enabled (i.e. GCC extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
      @('__PRETTY_FUNCTION__') (GCC manual, "
@@ -6312,7 +6406,7 @@
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
        (table (valid-add-ord (ident "__func__")
                              (make-valid-ord-info-objfun
-                               :type (type-array)
+                               :type (make-type-array :of (type-char))
                                :linkage (linkage-none)
                                :defstatus (valid-defstatus-defined)
                                :uid uid)
@@ -6321,7 +6415,7 @@
        (table (if (ienv->gcc ienv)
                   (valid-add-ord (ident "__FUNCTION__")
                                  (make-valid-ord-info-objfun
-                                   :type (type-array)
+                                   :type (make-type-array :of (type-char))
                                    :linkage (linkage-none)
                                    :defstatus (valid-defstatus-defined)
                                    :uid uid)
@@ -6331,7 +6425,7 @@
        (table (if (ienv->gcc ienv)
                   (valid-add-ord (ident "__PRETTY_FUNCTION__")
                                  (make-valid-ord-info-objfun
-                                   :type (type-array)
+                                   :type (make-type-array :of (type-char))
                                    :linkage (linkage-none)
                                    :defstatus (valid-defstatus-defined)
                                    :uid uid)
