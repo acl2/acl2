@@ -1128,6 +1128,13 @@
 
 (defsection read-object-of-create-var
   :short "How @(tsee read-object) changes under @(tsee create-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this is limited to automatic and static storage.
+     Handling other kinds of object designators is more complicated,
+     due to the possibility of partial overlap of objects;
+     we plan to tackle these eventually."))
 
   (defruled read-object-of-create-var-when-static
     (implies (and (equal (objdesign-kind objdes) :static)
