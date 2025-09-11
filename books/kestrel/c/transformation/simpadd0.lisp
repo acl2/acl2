@@ -4711,9 +4711,7 @@
   ///
 
   (defret code-ensemble-unambp-of-simpadd0-code-ensemble
-    (code-ensemble-unambp new-code)
-    :hints
-    (("Goal" :in-theory (enable c$::code-ensemble-unambp-of-code-ensemble)))))
+    (code-ensemble-unambp new-code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
