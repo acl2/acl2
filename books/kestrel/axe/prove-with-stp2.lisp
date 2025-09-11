@@ -44,7 +44,13 @@
 (local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 
-(local (in-theory (enable rationalp-when-natp)))
+(local (in-theory (e/d (rationalp-when-natp)
+                       (natp
+                        ;; for speed:
+                        all-<-when-not-consp
+                        default-<-1
+                        default-cdr
+                        ))))
 
 ;move, dup
 (local
@@ -77,6 +83,14 @@
              (<= x (integer-average-round-up x y)))
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable integer-average-round-up)))))
+
+(local
+  (defthm natp-of-integer-average-round-up-type
+    (implies (and (natp x)
+                  (natp y))
+             (natp (integer-average-round-up x y)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable integer-average-round-up natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,7 +596,7 @@
 ;            extra-asserts ;can arise, e.g., from cutting out a BVMULT of two 4-bit values, where the maximum product is 15x15=225, not 255.
 ;            )
 ;; Assumes the DAG is pure
-(defun gather-nodes-to-translate-for-aggressively-cut-proof2 (worklist1
+(defund gather-nodes-to-translate-for-aggressively-cut-proof2 (worklist1
                                                               worklist2
                                                               dag-array-name dag-array dag-len
                                                               var-type-alist
