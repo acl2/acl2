@@ -282,7 +282,11 @@
   (defret compustate-frames-number-of-push-frame
     (equal (compustate-frames-number new-compst)
            (1+ (compustate-frames-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-frames-number len)))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number len))))
+
+  (defret compustate->static-of-push-frame
+    (equal (compustate->static new-compst)
+           (compustate->static compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,7 +305,11 @@
     (equal (compustate-frames-number new-compst)
            (1- (compustate-frames-number compst)))
     :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-frames-number len fix)))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number len fix))))
+
+  (defret compustate->static-of-pop-frame
+    (equal (compustate->static new-compst)
+           (compustate->static compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,7 +516,11 @@
     :hyp (> (compustate-frames-number compst) 0)
     :hints (("Goal" :in-theory (enable top-frame
                                        car-of-compustate-scopes-numbers
-                                       len)))))
+                                       len))))
+
+  (defret compustate->static-of-enter-scope
+    (equal (compustate->static new-compst)
+           (compustate->static compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -549,7 +561,11 @@
     :hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
                                        top-frame
                                        fix
-                                       len)))))
+                                       len))))
+
+  (defret compustate->static-of-exit-scope
+    (equal (compustate->static new-compst)
+           (compustate->static compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
