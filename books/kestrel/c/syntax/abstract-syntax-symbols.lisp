@@ -614,12 +614,17 @@
     coerce-tyname-info
 
     param-declor-nonabstract-info
+    param-declor-nonabstract-info->type
     coerce-param-declor-nonabstract-info
 
     initdeclor-info
+    initdeclor-info->type
+    initdeclor-info->typedefp
     coerce-initdeclor-info
 
     fundef-info
+    fundef-info->type
+    fundef-info->table-body-start
 
     expr-type
     initer-type
@@ -628,6 +633,7 @@
     block-item-list-types
     fundef-types
 
+    iconst-annop
     const-annop
     expr-annop
     expr-list-annop

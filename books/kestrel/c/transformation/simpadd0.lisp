@@ -754,7 +754,7 @@
                             :thm-name thm-name
                             :vartys gin.vartys)))
   :guard-hints (("Goal" :in-theory (e/d (const-annop
-                                         c$::iconst-annop)
+                                         iconst-annop)
                                         ((:e tau-system))))) ; for speed
   :hooks (:fix)
 
@@ -3454,8 +3454,8 @@
              (simpadd0-declor paramdeclor.declor gin))
             (gin (simpadd0-gin-update gin gout-declor))
             (info (coerce-param-declor-nonabstract-info paramdeclor.info))
-            (type (c$::param-declor-nonabstract-info->type info))
-            (ident (c$::declor->ident paramdeclor.declor))
+            (type (param-declor-nonabstract-info->type info))
+            (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
                       (type-formalp type))
@@ -3733,10 +3733,10 @@
                                    gin :vartys gout-declor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?))
          (info (coerce-initdeclor-info initdeclor.info))
-         (type (c$::initdeclor-info->type info))
-         (ident (c$::declor->ident initdeclor.declor))
+         (type (initdeclor-info->type info))
+         (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (c$::initdeclor-info->typedefp info))
+          (if (and (not (initdeclor-info->typedefp info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -4382,8 +4382,8 @@
        ((mv new-declor (simpadd0-gout gout-declor))
         (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
-       (type (c$::fundef-info->type fundef.info))
-       (ident (c$::declor->ident fundef.declor))
+       (type (fundef-info->type fundef.info))
+       (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)
                                  (not (type-case type :void))
@@ -4397,7 +4397,7 @@
                                           gin :vartys vartys-with-fun)))
        (gin (simpadd0-gin-update gin gout-decls))
        (vartys (vartys-from-valid-table
-                (c$::fundef-info->table-body-start fundef.info)))
+                (fundef-info->table-body-start fundef.info)))
        ((mv new-body (simpadd0-gout gout-body))
         (simpadd0-block-item-list fundef.body
                                   (change-simpadd0-gin gin :vartys vartys)))
