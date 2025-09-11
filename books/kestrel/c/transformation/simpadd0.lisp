@@ -676,6 +676,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
+  :guard (const-annop const)
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a constant."
   :long
@@ -714,7 +715,7 @@
        (no-thm-gout (simpadd0-gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
-       ((iconst-info info) (coerce-iconst-info iconst.info))
+       ((iconst-info info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))
                     (and (type-case info.type :uint)
@@ -748,6 +749,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (enable const-annop c$::iconst-annop)))
   :hooks (:fix)
 
   ///
