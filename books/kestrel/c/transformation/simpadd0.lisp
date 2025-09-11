@@ -176,7 +176,7 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension."))
-  ((ienv c$::ienv
+  ((ienv ienv
          "The implementation environment from the code ensemble.")
    (const-new symbol
               "The @(':const-new') input of the transformation.")
@@ -669,13 +669,18 @@
   (defret expr-unambp-of-simpadd0-expr-ident
     (expr-unambp expr))
 
+  (defret expr-annop-of-simpadd0-expr-ident
+    (expr-annop expr)
+    :hints (("Goal" :in-theory (enable expr-annop identity))))
+
   (defret expr-aidentp-of-simpadd0-expr-ident
-    (c$::expr-aidentp expr gcc)
-    :hyp (c$::ident-aidentp ident gcc)))
+    (expr-aidentp expr gcc)
+    :hyp (ident-aidentp ident gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
+  :guard (const-annop const)
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a constant."
   :long
@@ -714,7 +719,7 @@
        (no-thm-gout (simpadd0-gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
-       ((iconst-info info) (coerce-iconst-info iconst.info))
+       ((iconst-info info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))
                     (and (type-case info.type :uint)
@@ -748,6 +753,9 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
+  :guard-hints (("Goal" :in-theory (e/d (const-annop
+                                         iconst-annop)
+                                        ((:e tau-system))))) ; for speed
   :hooks (:fix)
 
   ///
@@ -755,9 +763,13 @@
   (defret expr-unambp-of-simpadd0-expr-const
     (expr-unambp expr))
 
+  (defret expr-annop-of-simpadd0-expr-const
+    (expr-annop expr)
+    :hyp (const-annop const))
+
   (defret expr-aidentp-of-simpadd0-expr-const
-    (c$::expr-aidentp expr gcc)
-    :hyp (c$::const-aidentp const gcc)))
+    (expr-aidentp expr gcc)
+    :hyp (const-aidentp const gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3442,8 +3454,8 @@
              (simpadd0-declor paramdeclor.declor gin))
             (gin (simpadd0-gin-update gin gout-declor))
             (info (coerce-param-declor-nonabstract-info paramdeclor.info))
-            (type (c$::param-declor-nonabstract-info->type info))
-            (ident (c$::declor->ident paramdeclor.declor))
+            (type (param-declor-nonabstract-info->type info))
+            (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
                       (type-formalp type))
@@ -3721,10 +3733,10 @@
                                    gin :vartys gout-declor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?))
          (info (coerce-initdeclor-info initdeclor.info))
-         (type (c$::initdeclor-info->type info))
-         (ident (c$::declor->ident initdeclor.declor))
+         (type (initdeclor-info->type info))
+         (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (c$::initdeclor-info->typedefp info))
+          (if (and (not (initdeclor-info->typedefp info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -4364,15 +4376,14 @@
      the theorems about the initial scope and the parameters
      suffice to establish the variable-type hypotheses of the body."))
   (b* (((fundef fundef) fundef)
-       (info (coerce-fundef-info fundef.info))
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
        (gin (simpadd0-gin-update gin gout-spec))
        ((mv new-declor (simpadd0-gout gout-declor))
         (simpadd0-declor fundef.declor gin))
        (gin (simpadd0-gin-update gin gout-declor))
-       (type (c$::fundef-info->type info))
-       (ident (c$::declor->ident fundef.declor))
+       (type (fundef-info->type fundef.info))
+       (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)
                                  (not (type-case type :void))
@@ -4386,7 +4397,7 @@
                                           gin :vartys vartys-with-fun)))
        (gin (simpadd0-gin-update gin gout-decls))
        (vartys (vartys-from-valid-table
-                (c$::fundef-info->table-body-start info)))
+                (fundef-info->table-body-start fundef.info)))
        ((mv new-body (simpadd0-gout gout-body))
         (simpadd0-block-item-list fundef.body
                                   (change-simpadd0-gin gin :vartys vartys)))
@@ -4511,6 +4522,7 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys vartys-with-fun)))
+  :guard-hints (("Goal" :in-theory (enable fundef-annop)))
   :hooks (:fix)
 
   :prepwork
@@ -4699,9 +4711,7 @@
   ///
 
   (defret code-ensemble-unambp-of-simpadd0-code-ensemble
-    (code-ensemble-unambp new-code)
-    :hints
-    (("Goal" :in-theory (enable c$::code-ensemble-unambp-of-code-ensemble)))))
+    (code-ensemble-unambp new-code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

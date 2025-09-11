@@ -214,7 +214,6 @@
     declor-count
     declor
     make-declor
-    declor->ident
     declor->direct
 
     declor-optionp
@@ -454,6 +453,8 @@
     make-code-ensemble
     change-code-ensemble
 
+    ienv
+
     ;; irrelevants:
 
     irr-expr
@@ -532,10 +533,17 @@
     code-ensemble-unambp
 
     ;; purity:
+
     expr-purep
     expr-option-purep
 
-    ;; formalized:
+    ;; ASCII identifiers:
+
+    ident-aidentp
+    const-aidentp
+    expr-aidentp
+
+    ;; formalized subset:
 
     ident-formalp
     expr-pure-formalp
@@ -605,13 +613,17 @@
     coerce-tyname-info
 
     param-declor-nonabstract-info
+    param-declor-nonabstract-info->type
     coerce-param-declor-nonabstract-info
 
     initdeclor-info
+    initdeclor-info->type
+    initdeclor-info->typedefp
     coerce-initdeclor-info
 
     fundef-info
-    coerce-fundef-info
+    fundef-info->type
+    fundef-info->table-body-start
 
     expr-type
     initer-type
@@ -620,6 +632,8 @@
     block-item-list-types
     fundef-types
 
+    iconst-annop
+    const-annop
     expr-annop
     expr-list-annop
     expr-option-annop
@@ -680,5 +694,6 @@
 
     expr-zerop
     check-decl-spec-list-all-typespec
+    declor->ident
 
    ))
