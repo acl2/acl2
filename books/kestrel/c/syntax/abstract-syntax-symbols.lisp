@@ -542,6 +542,15 @@
     ident-aidentp
     const-aidentp
     expr-aidentp
+    expr-option-aidentp
+    initer-aidentp
+    tyname-aidentp
+    decl-spec-list-aidentp
+    initdeclor-list-aidentp
+    decl-aidentp
+    stmt-aidentp
+    block-item-aidentp
+    block-item-list-aidentp
 
     ;; formalized subset:
 
