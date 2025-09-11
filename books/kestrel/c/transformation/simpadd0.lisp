@@ -1013,7 +1013,7 @@
 
   (defret expr-aidentp-of-simpadd0-expr-cast
     (expr-aidentp expr gcc)
-    :hyp (and (c$::tyname-aidentp type-new gcc)
+    :hyp (and (tyname-aidentp type-new gcc)
               (expr-aidentp arg-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1427,7 +1427,7 @@
   (defret expr-aidentp-of-simpadd0-expr-cond
     (expr-aidentp expr gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (c$::expr-option-aidentp then-new gcc)
+              (expr-option-aidentp then-new gcc)
               (expr-aidentp else-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1504,7 +1504,7 @@
     :hyp (expr-annop expr-new))
 
   (defret initer-aidentp-of-simpadd0-initer-single
-    (c$::initer-aidentp initer gcc)
+    (initer-aidentp initer gcc)
     :hyp (expr-aidentp expr-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1631,8 +1631,8 @@
     :hyp (expr-option-annop expr?-new))
 
   (defret stmt-aidentp-of-simpadd0-stmt-expr
-    (c$::stmt-aidentp stmt gcc)
-    :hyp (c$::expr-option-aidentp expr?-new gcc)))
+    (stmt-aidentp stmt gcc)
+    :hyp (expr-option-aidentp expr?-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1744,8 +1744,8 @@
     :hyp (expr-option-annop expr?-new))
 
   (defret stmt-aidentp-of-simpadd0-stmt-return
-    (c$::stmt-aidentp stmt gcc)
-    :hyp (c$::expr-option-aidentp expr?-new gcc)))
+    (stmt-aidentp stmt gcc)
+    :hyp (expr-option-aidentp expr?-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1773,8 +1773,8 @@
     :hyp (block-item-list-annop items-new))
 
   (defret stmt-aidentp-of-simpadd0-stmt-compound
-    (c$::stmt-aidentp stmt gcc)
-    :hyp (c$::block-item-list-aidentp items-new gcc)))
+    (stmt-aidentp stmt gcc)
+    :hyp (block-item-list-aidentp items-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1882,9 +1882,9 @@
               (stmt-annop then-new)))
 
   (defret stmt-aidentp-of-simpadd0-stmt-if
-    (c$::stmt-aidentp stmt gcc)
+    (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (c$::stmt-aidentp then-new gcc))))
+              (stmt-aidentp then-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2022,10 +2022,10 @@
               (stmt-annop else-new)))
 
   (defret stmt-aidentp-of-simpadd0-stmt-ifelse
-    (c$::stmt-aidentp stmt gcc)
+    (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (c$::stmt-aidentp then-new gcc)
-              (c$::stmt-aidentp else-new gcc))))
+              (stmt-aidentp then-new gcc)
+              (stmt-aidentp else-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2189,9 +2189,9 @@
               (initdeclor-list-annop init-new)))
 
   (defret decl-aidentp-of-simpadd0-decl-decl
-    (c$::decl-aidentp decl gcc)
-    :hyp (and (c$::decl-spec-list-aidentp specs-new gcc)
-              (c$::initdeclor-list-aidentp init-new gcc))))
+    (decl-aidentp decl gcc)
+    :hyp (and (decl-spec-list-aidentp specs-new gcc)
+              (initdeclor-list-aidentp init-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2273,8 +2273,8 @@
     :hyp (stmt-annop stmt-new))
 
   (defret block-item-aidentp-of-simpadd0-block-item-stmt
-    (c$::block-item-aidentp item gcc)
-    :hyp (c$::stmt-aidentp stmt-new gcc)))
+    (block-item-aidentp item gcc)
+    :hyp (stmt-aidentp stmt-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2360,8 +2360,8 @@
     :hyp (decl-annop decl-new))
 
   (defret block-item-aidentp-of-simpadd0-block-item-decl
-    (c$::block-item-aidentp item gcc)
-    :hyp (c$::decl-aidentp decl-new gcc)))
+    (block-item-aidentp item gcc)
+    :hyp (decl-aidentp decl-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2549,9 +2549,9 @@
               (block-item-list-annop items-new)))
 
   (defret block-item-list-aidentp-of-simpadd0-block-item-list-cons
-    (c$::block-item-list-aidentp item+items gcc)
-    :hyp (and (c$::block-item-aidentp item-new gcc)
-              (c$::block-item-list-aidentp items-new gcc))))
+    (block-item-list-aidentp item+items gcc)
+    :hyp (and (block-item-aidentp item-new gcc)
+              (block-item-list-aidentp items-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
