@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "util2")
+(include-book "utilities")
 (include-book "std/testing/assert-equal" :dir :system)
 
 (assert-equal (symbolic-list 'x 4)

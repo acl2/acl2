@@ -1646,10 +1646,19 @@
 (local
   (defthm node-given-empty-type-type
     (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  )
+             (or (null (node-given-empty-type known-nodenum-type-alist))
+                 (and (integerp (node-given-empty-type known-nodenum-type-alist))
+                      (<= 0 (node-given-empty-type known-nodenum-type-alist)))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+
+(local
+  (defthm node-given-empty-type-return-type-rewrite
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
                   (node-given-empty-type known-nodenum-type-alist))
              (and (integerp (node-given-empty-type known-nodenum-type-alist))
-                  (<= 0 (node-given-empty-type known-nodenum-type-alist))))
-    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+                  (<= 0 (node-given-empty-type known-nodenum-type-alist))))))
 
 (local
   (defthm <-of-node-given-empty-type
@@ -2179,6 +2188,11 @@
     :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depths)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm helper
+    (implies (<= 0 x)
+             (not (< x -1)))))
 
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
