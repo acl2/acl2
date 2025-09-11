@@ -748,31 +748,6 @@
    (uid uid))
   :pred fundef-infop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-fundef-info
-  :short "An irrelevant validation information for function definitions."
-  :type fundef-infop
-  :body (make-fundef-info :table-start (irr-valid-table)
-                          :table-body-start (irr-valid-table)
-                          :type (irr-type)
-                          :uid (irr-uid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-fundef-info (x)
-  :returns (info fundef-infop)
-  :short "Coerce a value to @(tsee fundef-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (fundef-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy FUNDEF-INFOP." x)
-            (irr-fundef-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod transunit-info

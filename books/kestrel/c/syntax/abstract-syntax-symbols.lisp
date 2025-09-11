@@ -611,7 +611,6 @@
     coerce-initdeclor-info
 
     fundef-info
-    coerce-fundef-info
 
     expr-type
     initer-type
