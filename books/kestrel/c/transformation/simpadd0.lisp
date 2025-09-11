@@ -763,6 +763,10 @@
   (defret expr-unambp-of-simpadd0-expr-const
     (expr-unambp expr))
 
+  (defret expr-annop-of-simpadd0-expr-const
+    (expr-annop expr)
+    :hyp (const-annop const))
+
   (defret expr-aidentp-of-simpadd0-expr-const
     (c$::expr-aidentp expr gcc)
     :hyp (c$::const-aidentp const gcc)))
