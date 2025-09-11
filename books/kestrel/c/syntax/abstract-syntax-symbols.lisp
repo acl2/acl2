@@ -532,10 +532,11 @@
     code-ensemble-unambp
 
     ;; purity:
+
     expr-purep
     expr-option-purep
 
-    ;; formalized:
+    ;; formalized subset:
 
     ident-formalp
     expr-pure-formalp
