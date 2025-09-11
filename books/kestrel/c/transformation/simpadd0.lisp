@@ -956,7 +956,7 @@
         (raise "Internal error: ~
                 unexpected type name transformation theorem ~x0."
                type-thm-name)
-        (mv (irr-expr) (irr-simpadd0-gout)))
+        (mv expr-new (irr-simpadd0-gout)))
        ((tyname-info info) info)
        ((unless (and arg-thm-name
                      (expr-purep arg)
@@ -968,7 +968,7 @@
         (raise "Internal error: ~
                 type names ~x0 and ~x1 differ."
                type type-new)
-        (mv (irr-expr) (irr-simpadd0-gout)))
+        (mv expr-new (irr-simpadd0-gout)))
        ((mv & ctyname) (ldm-tyname type)) ; ERP must be NIL
        ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
        ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
@@ -1004,8 +1004,17 @@
   (defret expr-unambp-of-simpadd0-expr-cast
     (expr-unambp expr)
     :hyp (and (tyname-unambp type-new)
-              (expr-unambp arg-new))
-    :hints (("Goal" :in-theory (enable irr-expr)))))
+              (expr-unambp arg-new)))
+
+  (defret expr-annop-of-simpadd0-expr-cast
+    (expr-annop expr)
+    :hyp (and (tyname-annop type-new)
+              (expr-annop arg-new)))
+
+  (defret expr-aidentp-of-simpadd0-expr-cast
+    (expr-aidentp expr gcc)
+    :hyp (and (c$::tyname-aidentp type-new gcc)
+              (expr-aidentp arg-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1243,11 +1252,21 @@
 
   ///
 
-  (defret expr-unamp-of-simpadd0-expr-binary
+  (defret expr-unambp-of-simpadd0-expr-binary
     (expr-unambp expr)
     :hyp (and (expr-unambp arg1-new)
-              (expr-unambp arg2-new))
-    :hints (("Goal" :in-theory (enable irr-expr))))
+              (expr-unambp arg2-new)))
+
+  (defret expr-annop-of-simpadd0-expr-binary
+    (expr-annop expr)
+    :hyp (and (expr-annop arg1-new)
+              (expr-annop arg2-new)
+              (expr-binary-infop info)))
+
+  (defret expr-aidentp-of-simpadd0-expr-binary
+    (expr-aidentp expr gcc)
+    :hyp (and (expr-aidentp arg1-new gcc)
+              (expr-aidentp arg2-new gcc)))
 
   (defruledl c::add-values-of-sint-and-sint0
     (implies (and (c::valuep val)
@@ -1397,8 +1416,19 @@
     (expr-unambp expr)
     :hyp (and (expr-unambp test-new)
               (expr-option-unambp then-new)
-              (expr-unambp else-new))
-    :hints (("Goal" :in-theory (enable irr-expr)))))
+              (expr-unambp else-new)))
+
+  (defret expr-annop-of-simpadd0-expr-cond
+    (expr-annop expr)
+    :hyp (and (expr-annop test-new)
+              (expr-option-annop then-new)
+              (expr-annop else-new)))
+
+  (defret expr-aidentp-of-simpadd0-expr-cond
+    (expr-aidentp expr gcc)
+    :hyp (and (expr-aidentp test-new gcc)
+              (c$::expr-option-aidentp then-new gcc)
+              (expr-aidentp else-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1467,7 +1497,15 @@
 
   (defret initer-unambp-of-simpadd0-initer-single
     (initer-unambp initer)
-    :hyp (expr-unambp expr-new)))
+    :hyp (expr-unambp expr-new))
+
+  (defret initer-annop-of-simpadd0-initer-single
+    (initer-annop initer)
+    :hyp (expr-annop expr-new))
+
+  (defret initer-aidentp-of-simpadd0-initer-single
+    (c$::initer-aidentp initer gcc)
+    :hyp (expr-aidentp expr-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1503,7 +1541,7 @@
                 is transformed into ~
                 return statement with optional expression ~x1."
                expr? expr?-new)
-        (mv (irr-stmt) (irr-simpadd0-gout)))
+        (mv stmt-new (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
                          (not (expr-purep expr?)))))
@@ -1586,8 +1624,15 @@
 
   (defret stmt-unambp-of-simpadd0-stmt-expr
     (stmt-unambp stmt)
-    :hyp (expr-option-unambp expr?-new)
-    :hints (("Goal" :in-theory (enable irr-stmt)))))
+    :hyp (expr-option-unambp expr?-new))
+
+  (defret stmt-annop-of-simpadd0-stmt-expr
+    (stmt-annop stmt)
+    :hyp (expr-option-annop expr?-new))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-expr
+    (c$::stmt-aidentp stmt gcc)
+    :hyp (c$::expr-option-aidentp expr?-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1626,7 +1671,7 @@
                 is transformed into ~
                 return statement with optional expression ~x1."
                expr? expr?-new)
-        (mv (irr-stmt) (irr-simpadd0-gout)))
+        (mv stmt-new (irr-simpadd0-gout)))
        ((unless (or (not expr?)
                     (and expr?-thm-name
                          (expr-purep expr?))))
@@ -1692,8 +1737,15 @@
 
   (defret stmt-unambp-of-simpadd0-stmt-return
     (stmt-unambp stmt)
-    :hyp (expr-option-unambp expr?-new)
-    :hints (("Goal" :in-theory (enable irr-stmt)))))
+    :hyp (expr-option-unambp expr?-new))
+
+  (defret stmt-annop-of-simpadd0-stmt-return
+    (stmt-annop stmt)
+    :hyp (expr-option-annop expr?-new))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-return
+    (c$::stmt-aidentp stmt gcc)
+    :hyp (c$::expr-option-aidentp expr?-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1714,7 +1766,15 @@
 
   (defret stmt-unambp-of-simpadd0-stmt-compound
     (stmt-unambp stmt)
-    :hyp (block-item-list-unambp items-new)))
+    :hyp (block-item-list-unambp items-new))
+
+  (defret stmt-annop-of-simpadd0-stmt-compound
+    (stmt-annop stmt)
+    :hyp (block-item-list-annop items-new))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-compound
+    (c$::stmt-aidentp stmt gcc)
+    :hyp (c$::block-item-list-aidentp items-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1814,7 +1874,17 @@
   (defret stmt-unambp-of-simpadd0-stmt-if
     (stmt-unambp stmt)
     :hyp (and (expr-unambp test-new)
-              (stmt-unambp then-new))))
+              (stmt-unambp then-new)))
+
+  (defret stmt-annop-of-simpadd0-stmt-if
+    (stmt-annop stmt)
+    :hyp (and (expr-annop test-new)
+              (stmt-annop then-new)))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-if
+    (c$::stmt-aidentp stmt gcc)
+    :hyp (and (expr-aidentp test-new gcc)
+              (c$::stmt-aidentp then-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1943,7 +2013,19 @@
     (stmt-unambp stmt)
     :hyp (and (expr-unambp test-new)
               (stmt-unambp then-new)
-              (stmt-unambp else-new))))
+              (stmt-unambp else-new)))
+
+  (defret stmt-annop-of-simpadd0-stmt-ifelse
+    (stmt-annop stmt)
+    :hyp (and (expr-annop test-new)
+              (stmt-annop then-new)
+              (stmt-annop else-new)))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-ifelse
+    (c$::stmt-aidentp stmt gcc)
+    :hyp (and (expr-aidentp test-new gcc)
+              (c$::stmt-aidentp then-new gcc)
+              (c$::stmt-aidentp else-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1985,7 +2067,7 @@
                 new list of initializer declarators ~x0 ~
                 is not in the formalized subset."
                init)
-        (mv (irr-decl) (irr-simpadd0-gout)))
+        (mv decl-new (irr-simpadd0-gout)))
        ((unless (and init-thm-name
                      (decl-block-formalp decl)))
         (mv decl-new gout-no-thm))
@@ -1994,7 +2076,7 @@
                 new declaration ~x0 is not in the formalized subset ~
                 while old declaration ~x1 is."
                decl-new decl)
-        (mv (irr-decl) (irr-simpadd0-gout)))
+        (mv decl-new (irr-simpadd0-gout)))
        (initdeclor (car init))
        (var (dirdeclor-ident->ident
              (declor->direct
@@ -2010,14 +2092,14 @@
                 (declor->direct
                  (initdeclor->declor initdeclor-new)))
                var)
-        (mv (irr-decl) (irr-simpadd0-gout)))
+        (mv decl-new (irr-simpadd0-gout)))
        (initer-new (initdeclor->init? initdeclor-new))
        ((unless (equal specs specs-new))
         (raise "Internal error: ~
                 new declaration specifiers ~x0 differ from ~
                 old declaration specifiers ~x1."
                specs-new specs)
-        (mv (irr-decl) (irr-simpadd0-gout)))
+        (mv decl-new (irr-simpadd0-gout)))
        ((mv & tyspecs) (check-decl-spec-list-all-typespec specs))
        ((mv & ctyspecs) (ldm-type-spec-list tyspecs))
        (ctype (c::tyspecseq-to-type ctyspecs))
@@ -2099,8 +2181,17 @@
   (defret decl-unambp-of-simpadd0-decl-decl
     (decl-unambp decl)
     :hyp (and (decl-spec-list-unambp specs-new)
-              (initdeclor-list-unambp init-new))
-    :hints (("Goal" :in-theory (enable irr-decl)))))
+              (initdeclor-list-unambp init-new)))
+
+  (defret decl-annop-of-simpadd0-decl-decl
+    (decl-annop decl)
+    :hyp (and (decl-spec-list-annop specs-new)
+              (initdeclor-list-annop init-new)))
+
+  (defret decl-aidentp-of-simpadd0-decl-decl
+    (c$::decl-aidentp decl gcc)
+    :hyp (and (c$::decl-spec-list-aidentp specs-new gcc)
+              (c$::initdeclor-list-aidentp init-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2175,7 +2266,15 @@
 
   (defret block-item-unambp-of-simpadd0-block-item-stmt
     (block-item-unambp item)
-    :hyp (stmt-unambp stmt-new)))
+    :hyp (stmt-unambp stmt-new))
+
+  (defret block-item-annop-of-simpadd0-block-item-stmt
+    (block-item-annop item)
+    :hyp (stmt-annop stmt-new))
+
+  (defret block-item-aidentp-of-simpadd0-block-item-stmt
+    (c$::block-item-aidentp item gcc)
+    :hyp (c$::stmt-aidentp stmt-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2254,8 +2353,15 @@
 
   (defret block-item-unambp-of-simpadd0-block-item-decl
     (block-item-unambp item)
-    :hyp (decl-unambp decl-new)
-    :hints (("Goal" :in-theory (enable (:e irr-block-item))))))
+    :hyp (decl-unambp decl-new))
+
+  (defret block-item-annop-of-simpadd0-block-item-decl
+    (block-item-annop item)
+    :hyp (decl-annop decl-new))
+
+  (defret block-item-aidentp-of-simpadd0-block-item-decl
+    (c$::block-item-aidentp item gcc)
+    :hyp (c$::decl-aidentp decl-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2435,7 +2541,17 @@
   (defret block-item-list-unambp-of-simpadd0-block-item-list-cons
     (block-item-list-unambp item+items)
     :hyp (and (block-item-unambp item-new)
-              (block-item-list-unambp items-new))))
+              (block-item-list-unambp items-new)))
+
+  (defret block-item-list-annop-of-simpadd0-block-item-list-cons
+    (block-item-list-annop item+items)
+    :hyp (and (block-item-annop item-new)
+              (block-item-list-annop items-new)))
+
+  (defret block-item-list-aidentp-of-simpadd0-block-item-list-cons
+    (c$::block-item-list-aidentp item+items gcc)
+    :hyp (and (c$::block-item-aidentp item-new gcc)
+              (c$::block-item-list-aidentp items-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
