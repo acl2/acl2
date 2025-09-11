@@ -1240,7 +1240,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled read-object-of-write-object-when-auto-or-static
-  :short "How @(tsee read-objects) changes under @(tsee write-object)."
+  :short "How @(tsee read-object) changes under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
