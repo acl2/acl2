@@ -15,7 +15,6 @@
 (include-book "grammar")
 (include-book "keywords")
 (include-book "character-sets")
-(include-book "bytes")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "errors")
