@@ -753,7 +753,9 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-  :guard-hints (("Goal" :in-theory (enable const-annop c$::iconst-annop)))
+  :guard-hints (("Goal" :in-theory (e/d (const-annop
+                                         c$::iconst-annop)
+                                        ((:e tau-system))))) ; for speed
   :hooks (:fix)
 
   ///
