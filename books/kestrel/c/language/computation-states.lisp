@@ -286,7 +286,11 @@
 
   (defret compustate->static-of-push-frame
     (equal (compustate->static new-compst)
-           (compustate->static compst))))
+           (compustate->static compst)))
+
+  (defret compustate->heap-of-push-frame
+    (equal (compustate->heap new-compst)
+           (compustate->heap compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,7 +313,11 @@
 
   (defret compustate->static-of-pop-frame
     (equal (compustate->static new-compst)
-           (compustate->static compst))))
+           (compustate->static compst)))
+
+  (defret compustate->heap-of-pop-frame
+    (equal (compustate->heap new-compst)
+           (compustate->heap compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -520,7 +528,11 @@
 
   (defret compustate->static-of-enter-scope
     (equal (compustate->static new-compst)
-           (compustate->static compst))))
+           (compustate->static compst)))
+
+  (defret compustate->heap-of-enter-scope
+    (equal (compustate->heap new-compst)
+           (compustate->heap compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,7 +577,11 @@
 
   (defret compustate->static-of-exit-scope
     (equal (compustate->static new-compst)
-           (compustate->static compst))))
+           (compustate->static compst)))
+
+  (defret compustate->heap-of-exit-scope
+    (equal (compustate->heap new-compst)
+           (compustate->heap compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
