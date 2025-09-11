@@ -532,7 +532,13 @@
 
   (defret compustate->heap-of-enter-scope
     (equal (compustate->heap new-compst)
-           (compustate->heap compst))))
+           (compustate->heap compst)))
+
+  (defruled pop-frame-of-enter-scope
+    (equal (pop-frame (enter-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             push-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -581,7 +587,13 @@
 
   (defret compustate->heap-of-exit-scope
     (equal (compustate->heap new-compst)
-           (compustate->heap compst))))
+           (compustate->heap compst)))
+
+  (defruled pop-frame-of-exit-scope
+    (equal (pop-frame (exit-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             push-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
