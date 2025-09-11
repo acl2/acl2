@@ -18,12 +18,14 @@
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/strings/char-code-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -432,7 +434,25 @@
   :true-listp t
   :elementp-of-nil nil
   :pred char+position-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defruled char+position-listp-of-resize-list
+    (implies (and (char+position-listp chars)
+                  (char+position-p default))
+             (char+position-listp (resize-list chars length default)))
+    :induct t
+    :enable (resize-list))
+
+  (defruled char+position-listp-of-update-nth-strong
+    (implies (char+position-listp chars)
+             (equal (char+position-listp (update-nth i char chars))
+                    (and (char+position-p char)
+                         (<= (nfix i) (len chars)))))
+    :induct t
+    :enable (update-nth nfix zp len)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,7 +520,25 @@
   :true-listp t
   :elementp-of-nil nil
   :pred token+span-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defruled token+span-listp-of-resize-list
+    (implies (and (token+span-listp tokens)
+                  (token+span-p default))
+             (token+span-listp (resize-list tokens length default)))
+    :induct t
+    :enable (resize-list))
+
+  (defruled token+span-listp-of-update-nth-strong
+    (implies (token+span-listp tokens)
+             (equal (token+span-listp (update-nth i token tokens))
+                    (and (token+span-p token)
+                         (<= (nfix i) (len tokens)))))
+    :induct t
+    :enable (update-nth nfix zp len)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -829,57 +867,27 @@
     :define t
     :executablep nil)
 
+  ;; normalize recognizers:
+
+  (defrule raw-parstate->chars-p-becomes-char+position-listp
+    (equal (raw-parstate->chars-p x)
+           (char+position-listp x))
+    :induct t
+    :enable (raw-parstate->chars-p
+             char+position-listp))
+
+  (defrule raw-parstate->tokens-p-becomes-token+span-listp
+    (equal (raw-parstate->tokens-p x)
+           (token+span-listp x))
+    :induct t
+    :enable (raw-parstate->tokens-p
+             token+span-listp))
+
   ;; needed for reader/writer proofs:
 
   (local (in-theory (enable parstate-fix)))
 
   (local (include-book "arithmetic-3/top" :dir :system))
-
-  (defruled raw-parstate->chars-p-of-resize-list
-    (implies (and (raw-parstate->chars-p chars)
-                  (char+position-p default))
-             (raw-parstate->chars-p (resize-list chars length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled raw-parstate->tokens-p-of-resize-list
-    (implies (and (raw-parstate->tokens-p tokens)
-                  (token+span-p default))
-             (raw-parstate->tokens-p (resize-list tokens length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled char+position-p-of-nth-when-raw-parstate->chars-p
-    (implies (and (raw-parstate->chars-p chars)
-                  (natp i)
-                  (< i (len chars)))
-             (char+position-p (nth i chars)))
-    :induct t
-    :enable (nth len))
-
-  (defruled token+span-p-of-nth-when-raw-parstate->tokens-p
-    (implies (and (raw-parstate->tokens-p tokens)
-                  (natp i)
-                  (< i (len tokens)))
-             (token+span-p (nth i tokens)))
-    :induct t
-    :enable (nth len))
-
-  (defruled raw-parstate->chars-p-of-update-nth
-    (implies (raw-parstate->chars-p chars)
-             (equal (raw-parstate->chars-p (update-nth i char chars))
-                    (and (char+position-p char)
-                         (<= (nfix i) (len chars)))))
-    :induct t
-    :enable (update-nth nfix zp len))
-
-  (defruled raw-parstate->tokens-p-of-update-nth
-    (implies (raw-parstate->tokens-p tokens)
-             (equal (raw-parstate->tokens-p (update-nth i token tokens))
-                    (and (token+span-p token)
-                         (<= (nfix i) (len tokens)))))
-    :induct t
-    :enable (update-nth nfix zp len))
 
   ;; readers:
 
@@ -1010,7 +1018,8 @@
                        :hints (("Goal"
                                 :in-theory (enable nfix
                                                    parstate-fix
-                                                   length))))
+                                                   length
+                                                   char+position-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-length (nfix length) parstate))
     :hooks (:fix))
@@ -1025,7 +1034,7 @@
                          :in-theory
                          (enable update-nth-array
                                  parstate->chars-length
-                                 raw-parstate->chars-p-of-update-nth))))
+                                 char+position-listp-of-update-nth-strong))))
     (b* ((parstate (parstate-fix parstate)))
       (mbe :logic (if (< (nfix i) (parstate->chars-length parstate))
                       (raw-update-parstate->char (nfix i)
@@ -1052,7 +1061,8 @@
                        :hints (("Goal"
                                 :in-theory (enable nfix
                                                    parstate-fix
-                                                   length))))
+                                                   length
+                                                   token+span-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-length (nfix length) parstate))
     :hooks (:fix))
@@ -1067,7 +1077,7 @@
                          :in-theory
                          (enable update-nth-array
                                  parstate->tokens-length
-                                 raw-parstate->tokens-p-of-update-nth))))
+                                 token+span-listp-of-update-nth-strong))))
     (b* ((parstate (parstate-fix parstate)))
       (mbe :logic (if (< (nfix i) (parstate->tokens-length parstate))
                       (raw-update-parstate->token (nfix i)
@@ -1150,7 +1160,7 @@
              length
              update-nth-array
              parstate->tokens-length
-             raw-parstate->tokens-p-of-update-nth))
+             token+span-listp-of-update-nth-strong))
 
   (defrule parstate->size-of-update-parstate->tokens-read
     (equal (parstate->size (update-parstate->tokens-read tokens-read parstate))
@@ -1965,8 +1975,7 @@
     (reterr-msg :where (position-to-msg parstate.position)
                 :expected "a byte in the range 9-13 or 32-126 or 192-223"
                 :found (msg "the byte ~x0" byte)))
-  :guard-hints (("Goal" :in-theory (e/d (len fix natp)
-                                        ((:e tau-system))))) ; for speed
+  :guard-hints (("Goal" :in-theory (enable len fix natp)))
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
                                        acl2-numberp-when-natp
                                        rationalp-when-bytep
@@ -2178,7 +2187,6 @@
            (lex-identifier/keyword-loop pos parstate)))
        (retok (cons char chars) last-pos parstate))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards nil ; done below
 
      ///
@@ -2343,7 +2351,6 @@
        ((erp decdigs last-pos next-pos parstate) (lex-*-digit pos parstate)))
     (retok (cons decdig decdigs) last-pos next-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
                                            integerp-when-natp)))
@@ -2418,7 +2425,6 @@
         (lex-*-hexadecimal-digit pos parstate)))
     (retok (cons hexdig hexdigs) last-pos next-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
                                            integerp-when-natp)))
@@ -2646,7 +2652,6 @@
        ((erp cchars closing-squote-pos parstate) (lex-*-c-char parstate)))
     (retok (cons cchar cchars) closing-squote-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
@@ -2725,7 +2730,6 @@
        ((erp schars closing-dquote-pos parstate) (lex-*-s-char parstate)))
     (retok (cons schar schars) closing-dquote-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
@@ -2882,7 +2886,6 @@
        ((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate)))
     (retok (cons hchar hchars) closing-angle-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
@@ -2950,7 +2953,6 @@
        ((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate)))
     (retok (cons qchar qchars) closing-dquote-pos parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
@@ -4139,7 +4141,6 @@
         (retok char pos parstate)))
     (lex-non-octal-digit parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))
 
   ///
@@ -4506,7 +4507,6 @@
            (lex-rest-of-block-comment first-pos parstate))))
        :measure (parsize parstate))
 
-     :hints (("Goal" :in-theory (enable o< o-finp)))
 
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
@@ -4604,7 +4604,6 @@
         (t ; other
          (lex-line-comment-loop first-pos parstate))))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
      ///
@@ -4687,7 +4686,6 @@
         (t ; other
          (lex-prepr-directive-loop first-pos parstate))))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
      ///
@@ -4763,7 +4761,8 @@
                   t
                 (only-whitespace-backward-through-line-loop (- i 1) parstate)))
              (t nil)))
-     :hints (("Goal" :in-theory (enable o< nfix)))
+     :measure (nfix i)
+     :hints (("Goal" :in-theory (enable nfix)))
      :guard-hints (("Goal" :in-theory (enable nfix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5513,7 +5512,6 @@
              (retok token span parstate))))
        (read-token-loop parstate))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
 
      ///
 
@@ -6953,7 +6951,6 @@
            (if strings (span-join span last-span) span)
            parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
 
   ///
@@ -6988,7 +6985,6 @@
        (parstate (if token (unread-token parstate) parstate)))
     (retok nil parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
 
   ///
@@ -7141,7 +7137,6 @@
            (if quals (span-join span last-span) span)
            parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
 
   ///
@@ -7222,7 +7217,6 @@
               (span-join span last-span)
               parstate))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns
 
      ///
@@ -7276,7 +7270,6 @@
               (span-join span last-span)
               parstate))
      :measure (parsize parstate)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns
 
      ///
@@ -15248,7 +15241,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :hints (("Goal" :in-theory (enable o< o-finp nfix fix)))
+  :hints (("Goal" :in-theory (enable nfix fix)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17109,7 +17102,6 @@
            eof-pos
            parstate))
   :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
 
   ///

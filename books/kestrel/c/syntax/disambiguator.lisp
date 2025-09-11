@@ -17,6 +17,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
@@ -24,6 +25,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,12 +201,18 @@
 
   ///
 
+  (defrule alistp-when-dimb-scopep-cheap
+    (implies (dimb-scopep scope)
+             (alistp scope))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+    :induct t)
+
   (defrule dimb-kindp-of-cdr-of-assoc-equal-when-dimb-scopep
     (implies (dimb-scopep scope)
              (iff (dimb-kindp (cdr (assoc-equal ident scope)))
                   (assoc-equal ident scope)))
     :induct t
-    :enable (dimb-scopep assoc-equal)))
+    :enable (assoc-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,7 +241,16 @@
   :true-listp t
   :elementp-of-nil t
   :pred dimb-tablep
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+
+  ///
+
+  (defrule alistp-of-car-when-dimb-tablep-cheap
+    (implies (dimb-tablep table)
+             (alistp (car table)))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+    :induct t
+    :enable (dimb-tablep)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -447,7 +464,6 @@
                         :info nil)
     (make-expr-cast :type type :arg arg))
   :measure (expr-count arg)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :hooks (:fix)
 
@@ -610,7 +626,6 @@
         (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
      (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))))
   :measure (+ (expr-count arg1) (expr-count arg2))
-  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards :after-returns
   :hooks (:fix)
 
@@ -686,7 +701,6 @@
                       :arg2 (expr-binary->arg2 arg)
                       :info nil))
   :measure (expr-count arg)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
   :hooks (:fix)
 
@@ -817,7 +831,6 @@
         (raise "Internal error: unexpected expression ~x0." (expr-fix fun))
         (irr-expr)))
      :measure (expr-count rest)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
      :verify-guards :after-returns
      :hooks (:fix)
 
@@ -3208,8 +3221,6 @@
     :measure (amb-decl/stmt-count decl/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
 
