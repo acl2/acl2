@@ -214,7 +214,6 @@
     declor-count
     declor
     make-declor
-    declor->ident
     declor->direct
 
     declor-optionp
@@ -695,5 +694,6 @@
 
     expr-zerop
     check-decl-spec-list-all-typespec
+    declor->ident
 
    ))
