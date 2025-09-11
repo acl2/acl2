@@ -454,6 +454,8 @@
     make-code-ensemble
     change-code-ensemble
 
+    ienv
+
     ;; irrelevants:
 
     irr-expr
@@ -535,6 +537,12 @@
 
     expr-purep
     expr-option-purep
+
+    ;; ASCII identifiers:
+
+    ident-aidentp
+    const-aidentp
+    expr-aidentp
 
     ;; formalized subset:
 

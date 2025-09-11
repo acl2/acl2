@@ -176,7 +176,7 @@
      But each function also takes certain common inputs,
      which we put into this data structure
      for modularity and to facilitate extension."))
-  ((ienv c$::ienv
+  ((ienv ienv
          "The implementation environment from the code ensemble.")
    (const-new symbol
               "The @(':const-new') input of the transformation.")
@@ -674,8 +674,8 @@
     :hints (("Goal" :in-theory (enable expr-annop identity))))
 
   (defret expr-aidentp-of-simpadd0-expr-ident
-    (c$::expr-aidentp expr gcc)
-    :hyp (c$::ident-aidentp ident gcc)))
+    (expr-aidentp expr gcc)
+    :hyp (ident-aidentp ident gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -768,8 +768,8 @@
     :hyp (const-annop const))
 
   (defret expr-aidentp-of-simpadd0-expr-const
-    (c$::expr-aidentp expr gcc)
-    :hyp (c$::const-aidentp const gcc)))
+    (expr-aidentp expr gcc)
+    :hyp (const-aidentp const gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
