@@ -819,7 +819,15 @@
 
   (defret expr-unambp-of-simpadd0-expr-paren
     (expr-unambp expr)
-    :hyp (expr-unambp inner-new)))
+    :hyp (expr-unambp inner-new))
+
+  (defret expr-annop-of-simpadd0-expr-paren
+    (expr-annop expr)
+    :hyp (expr-annop inner-new))
+
+  (defret expr-aidentp-of-simpadd0-expr-paren
+    (expr-aidentp expr gcc)
+    :hyp (expr-aidentp inner-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -903,7 +911,19 @@
 
   (defret expr-unambp-of-simpadd0-expr-unary
     (expr-unambp expr)
-    :hyp (expr-unambp arg-new)))
+    :hyp (expr-unambp arg-new))
+
+  (defret expr-annop-of-simpadd0-expr-unary
+    (expr-annop expr)
+    :hyp (and (expr-annop arg-new)
+              (expr-unary-infop info))
+    :hints (("Goal"
+             :in-theory (enable identity expr-annop)
+             :expand (expr-annop (c$::expr-unary op arg-new info)))))
+
+  (defret expr-aidentp-of-simpadd0-expr-unary
+    (expr-aidentp expr gcc)
+    :hyp (expr-aidentp arg-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
