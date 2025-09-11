@@ -669,6 +669,10 @@
   (defret expr-unambp-of-simpadd0-expr-ident
     (expr-unambp expr))
 
+  (defret expr-annop-of-simpadd0-expr-ident
+    (expr-annop expr)
+    :hints (("Goal" :in-theory (enable expr-annop identity))))
+
   (defret expr-aidentp-of-simpadd0-expr-ident
     (c$::expr-aidentp expr gcc)
     :hyp (c$::ident-aidentp ident gcc)))
