@@ -666,7 +666,18 @@
                (equal (compustate->static compst1)
                       (compustate->static compst))))
     :enable (push-frame
-             pop-frame)))
+             pop-frame))
+
+  (defruled exit-scope-of-create-var
+    (implies (and (> (compustate-frames-number compst) 0)
+                  (> (compustate-top-frame-scopes-number compst) 1)
+                  (not (errorp (create-var var val compst))))
+             (equal (exit-scope (create-var var val compst))
+                    (exit-scope compst)))
+    :enable (exit-scope
+             push-frame
+             pop-frame
+             top-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
