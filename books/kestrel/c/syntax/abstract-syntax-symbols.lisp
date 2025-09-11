@@ -619,6 +619,7 @@
     block-item-list-types
     fundef-types
 
+    const-annop
     expr-annop
     expr-list-annop
     expr-option-annop
