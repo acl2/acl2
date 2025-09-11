@@ -670,8 +670,7 @@
     (expr-unambp expr))
 
   (defret expr-annop-of-simpadd0-expr-ident
-    (expr-annop expr)
-    :hints (("Goal" :in-theory (enable expr-annop identity))))
+    (expr-annop expr))
 
   (defret expr-aidentp-of-simpadd0-expr-ident
     (expr-aidentp expr gcc)
@@ -916,10 +915,7 @@
   (defret expr-annop-of-simpadd0-expr-unary
     (expr-annop expr)
     :hyp (and (expr-annop arg-new)
-              (expr-unary-infop info))
-    :hints (("Goal"
-             :in-theory (enable identity expr-annop)
-             :expand (expr-annop (c$::expr-unary op arg-new info)))))
+              (expr-unary-infop info)))
 
   (defret expr-aidentp-of-simpadd0-expr-unary
     (expr-aidentp expr gcc)
