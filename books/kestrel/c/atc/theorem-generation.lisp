@@ -704,7 +704,7 @@
                            update-var-of-add-var
                            equal-of-ident-and-ident
                            (:e str-fix)
-                           exit-scope-of-enter-scope
+                           exit-scope-of-enter-scope-when-compustatep
                            compustatep-of-add-var
                            compustate-frames-number-of-add-var-not-zero
                            objdesign-of-var-of-add-var-iff
@@ -772,7 +772,7 @@
                            update-var-of-add-var
                            equal-of-ident-and-ident
                            (:e str-fix)
-                           exit-scope-of-enter-scope
+                           exit-scope-of-enter-scope-when-compustatep
                            compustatep-of-add-var
                            compustate-frames-number-of-add-var-not-zero
                            objdesign-of-var-of-add-var-iff

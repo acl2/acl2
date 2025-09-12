@@ -4732,7 +4732,7 @@
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
-                               exit-scope-of-enter-scope
+                               exit-scope-of-enter-scope-when-compustatep
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
                                compustate-frames-number-of-enter-scope-not-zero
@@ -4764,7 +4764,7 @@
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
-                               exit-scope-of-enter-scope
+                               exit-scope-of-enter-scope-when-compustatep
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
                                compustate-frames-number-of-enter-scope-not-zero
@@ -4889,7 +4889,7 @@
                                  ,value-kind-when-test-type-pred
                                  compustatep-of-add-var
                                  compustate-frames-number-of-add-var-not-zero
-                                 exit-scope-of-enter-scope
+                                 exit-scope-of-enter-scope-when-compustatep
                                  ,@if-stmt-type-thms
                                  uchar-array-length-of-uchar-array-write
                                  schar-array-length-of-schar-array-write

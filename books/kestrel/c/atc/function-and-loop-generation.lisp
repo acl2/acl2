@@ -2847,7 +2847,7 @@
            '(pop-frame-of-if*
              update-var-of-enter-scope
              update-var-of-add-var
-             exit-scope-of-enter-scope
+             exit-scope-of-enter-scope-when-compustatep
              exit-scope-of-add-var
              compustate-frames-number-of-add-var-not-zero
              compustate-frames-number-of-enter-scope-not-zero
