@@ -118,7 +118,7 @@
    (xdoc::p
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
-    (xdoc::seetopic "integer-formats" "our model of integer values")
+    (xdoc::seetopic "integer-formats-definitions" "our model of integer values")
     "; these operations depend on the C representation of integers [C17:6.5/4]."))
   :order-subtopics t
   :default-parent t)
