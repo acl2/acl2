@@ -4851,11 +4851,11 @@
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
-        (mv (irr-fundef) (irr-simpadd0-gout)))
+        (mv new-fundef (irr-simpadd0-gout)))
        (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
-        (mv (irr-fundef) (irr-simpadd0-gout)))
+        (mv new-fundef (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
        (types (fundef-types fundef))
@@ -4966,8 +4966,12 @@
   ///
 
   (defret fundef-unambp-of-simpadd0-fundef
-    (fundef-unambp new-fundef)
-    :hints (("Goal" :in-theory (enable (:e irr-fundef))))))
+    (fundef-unambp new-fundef))
+
+  (defret fundef-annop-of-simpadd0-fundef
+    (fundef-annop new-fundef)
+    :hyp (and (fundef-unambp fundef)
+              (fundef-annop fundef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4999,7 +5003,12 @@
   ///
 
   (defret extdecl-unambp-of-simpadd0-extdecl
-    (extdecl-unambp new-extdecl)))
+    (extdecl-unambp new-extdecl))
+
+  (defret extdecl-annop-of-simpadd0-extdecl
+    (extdecl-annop new-extdecl)
+    :hyp (and (extdecl-unambp extdecl)
+              (extdecl-annop extdecl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5031,6 +5040,12 @@
 
   (defret extdecl-list-unambp-of-simpadd0-extdecl-list
     (extdecl-list-unambp new-extdecls)
+    :hints (("Goal" :induct t)))
+
+  (defret extdecl-list-annop-of-simpadd0-extdecl-list
+    (extdecl-list-annop new-extdecls)
+    :hyp (and (extdecl-list-unambp extdecls)
+              (extdecl-list-annop extdecls))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5054,7 +5069,12 @@
   ///
 
   (defret transunit-unambp-of-simpadd0-transunit
-    (transunit-unambp new-tunit)))
+    (transunit-unambp new-tunit))
+
+  (defret transunit-annop-of-simpadd0-transunit
+    (transunit-annop new-tunit)
+    :hyp (and (transunit-unambp tunit)
+              (transunit-annop tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5092,6 +5112,13 @@
   (defret filepath-transunit-map-unambp-of-simpadd0-filepath-transunit-map
     (filepath-transunit-map-unambp new-map)
     :hyp (filepath-transunit-mapp map)
+    :hints (("Goal" :induct t)))
+
+  (defret filepath-transunit-map-annop-of-simpadd0-filepath-transunit-map
+    (filepath-transunit-map-annop new-map)
+    :hyp (and (filepath-transunit-mapp map)
+              (filepath-transunit-map-unambp map)
+              (filepath-transunit-map-annop map))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5114,7 +5141,12 @@
   ///
 
   (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-unambp new-tunits)))
+    (transunit-ensemble-unambp new-tunits))
+
+  (defret transunit-ensemble-annop-of-simpadd0-transunit-ensemble
+    (transunit-ensemble-annop new-tunits)
+    :hyp (and (transunit-ensemble-unambp tunits)
+              (transunit-ensemble-annop tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
