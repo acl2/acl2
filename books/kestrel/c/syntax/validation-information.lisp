@@ -989,6 +989,11 @@
 
   ;; theorems about accessors:
 
+  (defruled iconst-infop-of-iconst->info
+    (implies (iconst-annop iconst)
+             (iconst-infop (iconst->info iconst)))
+    :enable iconst-annop)
+
   (defruled expr-annop-of-expr-unary->arg
     (implies (and (expr-annop expr)
                   (expr-case expr :unary))
@@ -1094,6 +1099,7 @@
      initdeclor-annop-of-initdeclor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
+     iconst-infop-of-iconst->info
      expr-annop-of-expr-unary->arg
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
