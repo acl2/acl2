@@ -201,12 +201,6 @@
 
   ///
 
-  (defrule alistp-when-dimb-scopep-cheap
-    (implies (dimb-scopep scope)
-             (alistp scope))
-    :rule-classes ((:rewrite :backchain-limit-lst (0)))
-    :induct t)
-
   (defrule dimb-kindp-of-cdr-of-assoc-equal-when-dimb-scopep
     (implies (dimb-scopep scope)
              (iff (dimb-kindp (cdr (assoc-equal ident scope)))
@@ -241,16 +235,7 @@
   :true-listp t
   :elementp-of-nil t
   :pred dimb-tablep
-  :prepwork ((local (in-theory (enable nfix))))
-
-  ///
-
-  (defrule alistp-of-car-when-dimb-tablep-cheap
-    (implies (dimb-tablep table)
-             (alistp (car table)))
-    :rule-classes ((:rewrite :backchain-limit-lst (0)))
-    :induct t
-    :enable (dimb-tablep)))
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -325,6 +310,7 @@
        (ident+kind (assoc-equal (ident-fix ident) scope))
        ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
     (dimb-lookup-ident ident (cdr table)))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -355,7 +341,7 @@
        (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
        (new-table (cons new-scope (cdr table))))
     (dimb-table-fix new-table))
-  :guard-hints (("Goal" :in-theory (enable acons)))
+  :guard-hints (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
