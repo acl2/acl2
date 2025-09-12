@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,7 +27,7 @@
 ;; See also bounded-axe-treep.
 ;; TODO: Disable these:
 (mutual-recursion
- (defun axe-treep (tree)
+ (defund axe-treep (tree)
    (declare (xargs :guard t))
    (if (atom tree)
        (or (symbolp tree) ; a variable
@@ -50,7 +50,7 @@
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
- (defun axe-tree-listp (trees)
+ (defund axe-tree-listp (trees)
    (declare (xargs :guard t))
    (if (atom trees)
        (null trees)

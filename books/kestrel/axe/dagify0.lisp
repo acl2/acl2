@@ -960,9 +960,10 @@
     :flag merge-trees-into-dag-array)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d ( ;nth-0-of-nth-of-len-minus1-when-pseudo-dagp
-                                   car-becomes-nth-of-0
-                                   merge-tree-into-dag-array
-                                   merge-trees-into-dag-array)
+                            car-becomes-nth-of-0
+                            merge-tree-into-dag-array
+                            merge-trees-into-dag-array
+                            axe-treep)
                            (natp)))))
 
 (defthm merge-trees-into-dag-array-return-type-corollary
@@ -1056,8 +1057,7 @@
                     *max-1d-array-length*)))
   :hints (("Goal" :use (:instance merge-tree-into-dag-array-return-type)
            :in-theory (disable merge-tree-into-dag-array-return-type
-                               pseudo-dag-arrayp-monotone
-                               axe-treep))))
+                               pseudo-dag-arrayp-monotone))))
 
 (defthm merge-trees-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1098,8 +1098,7 @@
                                                   interpreted-function-alist))
                                        *max-1d-array-length*))
   :hints (("Goal" :use (:instance merge-tree-into-dag-array-return-type)
-           :in-theory (disable merge-tree-into-dag-array-return-type
-                               axe-treep))))
+           :in-theory (disable merge-tree-into-dag-array-return-type))))
 
 (defthm integerp-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1114,8 +1113,7 @@
                   (not (consp (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array)
            :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array
-                               merge-tree-into-dag-array-return-type
-                               axe-treep))))
+                               merge-tree-into-dag-array-return-type))))
 
 (defthm nonneg-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1129,8 +1127,7 @@
            (<= 0 (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array)
            :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array
-                               merge-tree-into-dag-array-return-type
-                               axe-treep))))
+                               merge-tree-into-dag-array-return-type))))
 
 (defthm bound-of-mv-nth-1-of-merge-tree-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1150,8 +1147,7 @@
                                integerp-of-mv-nth-1-of-merge-tree-into-dag-array))))
 
 (verify-guards merge-tree-into-dag-array
-   :hints (("Goal" :in-theory (e/d (axe-treep
-                                    car-becomes-nth-of-0
+   :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
                                     cadr-becomes-nth-of-1
                                     consp-of-cdr-of-nth-when-darg-listp
                                     <-of-nth-when-bounded-darg-listp
@@ -1159,7 +1155,6 @@
                                     consp-when-true-listp-iff
                                     len-of-nth-when-darg-listp)
                                    (axe-tree-listp
-                                    axe-treep
                                     natp
                                     dargp
                                     pseudo-dag-arrayp))
