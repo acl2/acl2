@@ -5235,7 +5235,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys vartys-with-fun)))
-  :guard-hints (("Goal" :in-theory (enable fundef-annop)))
   :hooks (:fix)
 
   :prepwork
