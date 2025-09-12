@@ -4445,6 +4445,297 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defret-mutual exprs/decls-annop-of-simpadd0-exprs/decls
+    (defret expr-annop-of-simpadd0-expr
+      (expr-annop new-expr)
+      :hyp (and (expr-unambp expr)
+                (expr-annop expr))
+      :fn simpadd0-expr)
+    (defret expr-list-annop-of-simpadd0-expr-list
+      (expr-list-annop new-exprs)
+      :hyp (and (expr-list-unambp exprs)
+                (expr-list-annop exprs))
+      :fn simpadd0-expr-list)
+    (defret expr-option-annop-of-simpadd0-expr-option
+      (expr-option-annop new-expr?)
+      :hyp (and (expr-option-unambp expr?)
+                (expr-option-annop expr?))
+      :fn simpadd0-expr-option)
+    (defret const-expr-annop-of-simpadd0-const-expr
+      (const-expr-annop new-cexpr)
+      :hyp (and (const-expr-unambp cexpr)
+                (const-expr-annop cexpr))
+      :fn simpadd0-const-expr)
+    (defret const-expr-option-annop-of-simpadd0-const-expr-option
+      (const-expr-option-annop new-cexpr?)
+      :hyp (and (const-expr-option-unambp cexpr?)
+                (const-expr-option-annop cexpr?))
+      :fn simpadd0-const-expr-option)
+    (defret genassoc-annop-of-simpadd0-genassoc
+      (genassoc-annop new-genassoc)
+      :hyp (and (genassoc-unambp genassoc)
+                (genassoc-annop genassoc))
+      :fn simpadd0-genassoc)
+    (defret genassoc-list-annop-of-simpadd0-genassoc-list
+      (genassoc-list-annop new-genassocs)
+      :hyp (and (genassoc-list-unambp genassocs)
+                (genassoc-list-annop genassocs))
+      :fn simpadd0-genassoc-list)
+    (defret member-designor-annop-of-simpadd0-member-designor
+      (member-designor-annop new-memdes)
+      :hyp (and (member-designor-unambp memdes)
+                (member-designor-annop memdes))
+      :fn simpadd0-member-designor)
+    (defret type-spec-annop-of-simpadd0-type-spec
+      (type-spec-annop new-tyspec)
+      :hyp (and (type-spec-unambp tyspec)
+                (type-spec-annop tyspec))
+      :fn simpadd0-type-spec)
+    (defret spec/qual-annop-of-simpadd0-spec/qual
+      (spec/qual-annop new-specqual)
+      :hyp (and (spec/qual-unambp specqual)
+                (spec/qual-annop specqual))
+      :fn simpadd0-spec/qual)
+    (defret spec/qual-list-annop-of-simpadd0-spec/qual-list
+      (spec/qual-list-annop new-specquals)
+      :hyp (and (spec/qual-list-unambp specquals)
+                (spec/qual-list-annop specquals))
+      :fn simpadd0-spec/qual-list)
+    (defret align-spec-annop-of-simpadd0-align-spec
+      (align-spec-annop new-alignspec)
+      :hyp (and (align-spec-unambp alignspec)
+                (align-spec-annop alignspec))
+      :fn simpadd0-align-spec)
+    (defret decl-spec-annop-of-simpadd0-decl-spec
+      (decl-spec-annop new-declspec)
+      :hyp (and (decl-spec-unambp declspec)
+                (decl-spec-annop declspec))
+      :fn simpadd0-decl-spec)
+    (defret decl-spec-list-annop-of-simpadd0-decl-spec-list
+      (decl-spec-list-annop new-declspecs)
+      :hyp (and (decl-spec-list-unambp declspecs)
+                (decl-spec-list-annop declspecs))
+      :fn simpadd0-decl-spec-list)
+    (defret initer-annop-of-simpadd0-initer
+      (initer-annop new-initer)
+      :hyp (and (initer-unambp initer)
+                (initer-annop initer))
+      :fn simpadd0-initer)
+    (defret initer-option-annop-of-simpadd0-initer-option
+      (initer-option-annop new-initer?)
+      :hyp (and (initer-option-unambp initer?)
+                (initer-option-annop initer?))
+      :fn simpadd0-initer-option)
+    (defret desiniter-annop-of-simpadd0-desiniter
+      (desiniter-annop new-desiniter)
+      :hyp (and (desiniter-unambp desiniter)
+                (desiniter-annop desiniter))
+      :fn simpadd0-desiniter)
+    (defret desiniter-list-annop-of-simpadd0-desiniter-list
+      (desiniter-list-annop new-desiniters)
+      :hyp (and (desiniter-list-unambp desiniters)
+                (desiniter-list-annop desiniters))
+      :fn simpadd0-desiniter-list)
+    (defret designor-annop-of-simpadd0-designor
+      (designor-annop new-designor)
+      :hyp (and (designor-unambp designor)
+                (designor-annop designor))
+      :fn simpadd0-designor)
+    (defret designor-list-annop-of-simpadd0-designor-list
+      (designor-list-annop new-designors)
+      :hyp (and (designor-list-unambp designors)
+                (designor-list-annop designors))
+      :fn simpadd0-designor-list)
+    (defret declor-annop-of-simpadd0-declor
+      (declor-annop new-declor)
+      :hyp (and (declor-unambp declor)
+                (declor-annop declor))
+      :fn simpadd0-declor)
+    (defret declor-option-annop-of-simpadd0-declor-option
+      (declor-option-annop new-declor?)
+      :hyp (and (declor-option-unambp declor?)
+                (declor-option-annop declor?))
+      :fn simpadd0-declor-option)
+    (defret dirdeclor-annop-of-simpadd0-dirdeclor
+      (dirdeclor-annop new-dirdeclor)
+      :hyp (and (dirdeclor-unambp dirdeclor)
+                (dirdeclor-annop dirdeclor))
+      :fn simpadd0-dirdeclor)
+    (defret absdeclor-annop-of-simpadd0-absdeclor
+      (absdeclor-annop new-absdeclor)
+      :hyp (and (absdeclor-unambp absdeclor)
+                (absdeclor-annop absdeclor))
+      :fn simpadd0-absdeclor)
+    (defret absdeclor-option-annop-of-simpadd0-absdeclor-option
+      (absdeclor-option-annop new-absdeclor?)
+      :hyp (and (absdeclor-option-unambp absdeclor?)
+                (absdeclor-option-annop absdeclor?))
+      :fn simpadd0-absdeclor-option)
+    (defret dirabsdeclor-annop-of-simpadd0-dirabsdeclor
+      (dirabsdeclor-annop new-dirabsdeclor)
+      :hyp (and (dirabsdeclor-unambp dirabsdeclor)
+                (dirabsdeclor-annop dirabsdeclor))
+      :fn simpadd0-dirabsdeclor)
+    (defret dirabsdeclor-option-annop-of-simpadd0-dirabsdeclor-option
+      (dirabsdeclor-option-annop new-dirabsdeclor?)
+      :hyp (and (dirabsdeclor-option-unambp dirabsdeclor?)
+                (dirabsdeclor-option-annop dirabsdeclor?))
+      :fn simpadd0-dirabsdeclor-option)
+    (defret param-declon-annop-of-simpadd0-param-declon
+      (param-declon-annop new-paramdecl)
+      :hyp (and (param-declon-unambp paramdecl)
+                (param-declon-annop paramdecl))
+      :fn simpadd0-param-declon)
+    (defret param-declon-list-annop-of-simpadd0-param-declon-list
+      (param-declon-list-annop new-paramdecls)
+      :hyp (and (param-declon-list-unambp paramdecls)
+                (param-declon-list-annop paramdecls))
+      :fn simpadd0-param-declon-list)
+    (defret param-declor-annop-of-simpadd0-param-declor
+      (param-declor-annop new-paramdeclor)
+      :hyp (and (param-declor-unambp paramdeclor)
+                (param-declor-annop paramdeclor))
+      :fn simpadd0-param-declor)
+    (defret tyname-annop-of-simpadd0-tyname
+      (tyname-annop new-tyname)
+      :hyp (and (tyname-unambp tyname)
+                (tyname-annop tyname))
+      :fn simpadd0-tyname)
+    (defret struni-spec-annop-of-simpadd0-struni-spec
+      (struni-spec-annop new-struni-spec)
+      :hyp (and (struni-spec-unambp struni-spec)
+                (struni-spec-annop struni-spec))
+      :fn simpadd0-struni-spec)
+    (defret structdecl-annop-of-simpadd0-structdecl
+      (structdecl-annop new-structdecl)
+      :hyp (and (structdecl-unambp structdecl)
+                (structdecl-annop structdecl))
+      :fn simpadd0-structdecl)
+    (defret structdecl-list-annop-of-simpadd0-structdecl-list
+      (structdecl-list-annop new-structdecls)
+      :hyp (and (structdecl-list-unambp structdecls)
+                (structdecl-list-annop structdecls))
+      :fn simpadd0-structdecl-list)
+    (defret structdeclor-annop-of-simpadd0-structdeclor
+      (structdeclor-annop new-structdeclor)
+      :hyp (and (structdeclor-unambp structdeclor)
+                (structdeclor-annop structdeclor))
+      :fn simpadd0-structdeclor)
+    (defret structdeclor-list-annop-of-simpadd0-structdeclor-list
+      (structdeclor-list-annop new-structdeclors)
+      :hyp (and (structdeclor-list-unambp structdeclors)
+                (structdeclor-list-annop structdeclors))
+      :fn simpadd0-structdeclor-list)
+    (defret enumspec-annop-of-simpadd0-enumspec
+      (enumspec-annop new-enumspec)
+      :hyp (and (enumspec-unambp enumspec)
+                (enumspec-annop enumspec))
+      :fn simpadd0-enumspec)
+    (defret enumer-annop-of-simpadd0-enumer
+      (enumer-annop new-enumer)
+      :hyp (and (enumer-unambp enumer)
+                (enumer-annop enumer))
+      :fn simpadd0-enumer)
+    (defret enumer-list-annop-of-simpadd0-enumer-list
+      (enumer-list-annop new-enumers)
+      :hyp (and (enumer-list-unambp enumers)
+                (enumer-list-annop enumers))
+      :fn simpadd0-enumer-list)
+    (defret statassert-annop-of-simpadd0-statassert
+      (statassert-annop new-statassert)
+      :hyp (and (statassert-unambp statassert)
+                (statassert-annop statassert))
+      :fn simpadd0-statassert)
+    (defret initdeclor-annop-of-simpadd0-initdeclor
+      (initdeclor-annop new-initdeclor)
+      :hyp (and (initdeclor-unambp initdeclor)
+                (initdeclor-annop initdeclor))
+      :fn simpadd0-initdeclor)
+    (defret initdeclor-list-annop-of-simpadd0-initdeclor-list
+      (initdeclor-list-annop new-initdeclors)
+      :hyp (and (initdeclor-list-unambp initdeclors)
+                (initdeclor-list-annop initdeclors))
+      :fn simpadd0-initdeclor-list)
+    (defret decl-annop-of-simpadd0-decl
+      (decl-annop new-decl)
+      :hyp (and (decl-unambp decl)
+                (decl-annop decl))
+      :fn simpadd0-decl)
+    (defret decl-list-annop-of-simpadd0-decl-list
+      (decl-list-annop new-decls)
+      :hyp (and (decl-list-unambp decls)
+                (decl-list-annop decls))
+      :fn simpadd0-decl-list)
+    (defret label-annop-of-simpadd0-label
+      (label-annop new-label)
+      :hyp (and (label-unambp label)
+                (label-annop label))
+      :fn simpadd0-label)
+    (defret stmt-annop-of-simpadd0-stmt
+      (stmt-annop new-stmt)
+      :hyp (and (stmt-unambp stmt)
+                (stmt-annop stmt))
+      :fn simpadd0-stmt)
+    (defret block-item-annop-of-simpadd0-block-item
+      (block-item-annop new-item)
+      :hyp (and (block-item-unambp item)
+                (block-item-annop item))
+      :fn simpadd0-block-item)
+    (defret block-item-list-annop-of-simpadd0-block-item-list
+      (block-item-list-annop new-items)
+      :hyp (and (block-item-list-unambp items)
+                (block-item-list-annop items))
+      :fn simpadd0-block-item-list)
+    :hints (("Goal" :in-theory (enable simpadd0-expr
+                                       simpadd0-expr-list
+                                       simpadd0-expr-option
+                                       simpadd0-const-expr
+                                       simpadd0-const-expr-option
+                                       simpadd0-genassoc
+                                       simpadd0-genassoc-list
+                                       simpadd0-type-spec
+                                       simpadd0-spec/qual
+                                       simpadd0-spec/qual-list
+                                       simpadd0-align-spec
+                                       simpadd0-decl-spec
+                                       simpadd0-decl-spec-list
+                                       simpadd0-initer
+                                       simpadd0-initer-option
+                                       simpadd0-desiniter
+                                       simpadd0-desiniter-list
+                                       simpadd0-designor
+                                       simpadd0-designor-list
+                                       simpadd0-declor
+                                       simpadd0-declor-option
+                                       simpadd0-dirdeclor
+                                       simpadd0-absdeclor
+                                       simpadd0-absdeclor-option
+                                       simpadd0-dirabsdeclor
+                                       simpadd0-dirabsdeclor-option
+                                       simpadd0-param-declon
+                                       simpadd0-param-declon-list
+                                       simpadd0-param-declor
+                                       simpadd0-tyname
+                                       simpadd0-struni-spec
+                                       simpadd0-structdecl
+                                       simpadd0-structdecl-list
+                                       simpadd0-structdeclor
+                                       simpadd0-structdeclor-list
+                                       simpadd0-enumspec
+                                       simpadd0-enumer
+                                       simpadd0-enumer-list
+                                       simpadd0-statassert
+                                       simpadd0-initdeclor
+                                       simpadd0-initdeclor-list
+                                       simpadd0-decl
+                                       simpadd0-decl-list
+                                       simpadd0-label
+                                       simpadd0-stmt
+                                       simpadd0-block-item
+                                       simpadd0-block-item-list))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (verify-guards simpadd0-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
