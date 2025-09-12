@@ -1063,9 +1063,19 @@
              (block-item-list-annop (fundef->body fundef)))
     :enable fundef-annop)
 
+  (defruled fundef-infop-of-fundef->info
+    (implies (fundef-annop fundef)
+             (fundef-infop (fundef->info fundef)))
+    :enable fundef-annop)
+
   (defruled extdecl-list-annop-of-transunit->decls
     (implies (transunit-annop transunit)
              (extdecl-list-annop (transunit->decls transunit)))
+    :enable transunit-annop)
+
+  (defruled transunit-infop-of-transunit->info
+    (implies (transunit-annop transunit)
+             (transunit-infop (transunit->info transunit)))
     :enable transunit-annop)
 
   ;; Add the above theorems to the rule set.
@@ -1095,7 +1105,9 @@
      declor-annop-of-fundef->declor
      decl-list-annop-of-fundef->decls
      block-item-list-annop-of-fundef->body
-     extdecl-list-annop-of-transunit->decls)))
+     fundef-infop-of-fundef->info
+     extdecl-list-annop-of-transunit->decls
+     transunit-infop-of-transunit->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
