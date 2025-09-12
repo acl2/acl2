@@ -542,16 +542,60 @@
     ident-aidentp
     const-aidentp
     expr-aidentp
+    expr-list-aidentp
     expr-option-aidentp
-    initer-aidentp
-    tyname-aidentp
+    const-expr-aidentp
+    const-expr-option-aidentp
+    genassoc-aidentp
+    genassoc-list-aidentp
+    member-designor-aidentp
+    type-spec-aidentp
+    spec/qual-aidentp
+    spec/qual-list-aidentp
+    align-spec-aidentp
+    decl-spec-aidentp
     decl-spec-list-aidentp
+    initer-aidentp
+    initer-option-aidentp
+    desiniter-aidentp
+    desiniter-list-aidentp
+    designor-aidentp
+    designor-list-aidentp
+    declor-aidentp
+    declor-option-aidentp
+    dirdeclor-aidentp
+    absdeclor-aidentp
+    absdeclor-option-aidentp
+    dirabsdeclor-aidentp
+    dirabsdeclor-option-aidentp
+    param-declon-aidentp
+    param-declon-list-aidentp
+    param-declor-aidentp
+    tyname-aidentp
+    struni-spec-aidentp
+    structdecl-aidentp
+    structdecl-list-aidentp
+    structdeclor-aidentp
+    structdeclor-list-aidentp
+    enumspec-aidentp
+    enumer-aidentp
+    enumer-list-aidentp
+    statassert-aidentp
+    initdeclor-aidentp
     initdeclor-list-aidentp
     decl-aidentp
+    decl-list-aidentp
+    label-aidentp
     stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
     fundef-aidentp
+    extdecl-aidentp
+    extdecl-list-aidentp
+    transunit-aidentp
+    filepath-transunit-map-aidentp
+    transunit-ensemble-aidentp
+    code-ensemble-aidentp
 
     ;; formalized subset:
 
