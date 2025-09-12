@@ -551,6 +551,7 @@
     stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
+    fundef-aidentp
 
     ;; formalized subset:
 
