@@ -159,6 +159,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define objdesign-top ((objdes objdesignp))
+  :returns (top-objdes objdesignp)
+  :short "Top object designator of an object designator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An element or member object designator
+     denotes a portion of an object
+     designated the @('super') component,
+     which in turn may be a portion of a larger object, and so on.
+     This function returns the topmost object designator."))
+  (objdesign-case objdes
+                  :static (objdesign-fix objdes)
+                  :auto (objdesign-fix objdes)
+                  :alloc (objdesign-fix objdes)
+                  :element (objdesign-top objdes.super)
+                  :member (objdesign-top objdes.super))
+  :measure (objdesign-count objdes)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :hooks (:fix)
+
+  ///
+
+  (defret objdesign-kind-of-objdesign-top
+    (member-equal (objdesign-kind top-objdes)
+                  '(:static :auto :alloc))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define object-disjointp ((objdes1 objdesignp) (objdes2 objdesignp))
   :returns (yes/no booleanp)
   :short "Check if two designated objects are disjoint."
@@ -180,6 +210,7 @@
        (not (equal (objdesign-alloc->get objdes1)
                    (objdesign-alloc->get objdes2))))
   :hooks (:fix)
+
   ///
 
   (defrule object-disjointp-commutative
