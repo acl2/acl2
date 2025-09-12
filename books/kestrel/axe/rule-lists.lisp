@@ -684,6 +684,7 @@
   (trim-rules))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
+;; TODO: Consider removing myif rules from this, since not all Axe variants need myif.
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
