@@ -2043,6 +2043,7 @@
 (defund unsigned-canonical-rules ()
   (declare (xargs :guard t))
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
+    ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
     canonical-regionp-of-+-arg2
     unsigned-canonical-address-p-of-bvif
