@@ -1112,7 +1112,16 @@
       (implies (not (errorp compst1))
                (iff (omap::assoc var (compustate->static compst1))
                     (omap::assoc var (compustate->static compst)))))
-    :induct t))
+    :induct t)
+
+  (defruled not-errorp-of-read-object-when-not-write-error
+    (implies (not (errorp (write-object objdes val compst)))
+             (not (errorp (read-object objdes compst))))
+    :induct t
+    :enable (read-object
+             not-errorp-of-value-struct-read-when-not-write-error
+             not-errorp-of-value-array-read-when-not-write-error
+             not-errorp-when-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
