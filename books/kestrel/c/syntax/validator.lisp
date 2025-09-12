@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
@@ -28,6 +29,7 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,7 +275,12 @@
                      (change-valid-table
                        table
                        :next-uid (uid-increment table.next-uid)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret valid-get-fresh-uid.uid-under-iff
+    uid))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2772,7 +2779,16 @@
              (acons tyname-type? expr-type type-alist)
              (set::union types more-types)
              table))
-    :measure (genassoc-list-count genassocs))
+    :measure (genassoc-list-count genassocs)
+
+    ///
+
+    (defret alistp-of-valid-genassoc-list.type-alist
+      (alistp type-alist)
+      :hints
+      (("Goal" :in-theory (e/d (alistp-when-type-option-type-alistp-rewrite)
+                               (return-type-of-valid-genassoc-list.type-alist))
+               :use return-type-of-valid-genassoc-list.type-alist))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3380,7 +3396,14 @@
       (implies new-type?
                (not new-tyspecs))
       :hyp (not (and type? tyspecs))
-      :hints (("Goal" :use not-type-and-type-specs-of-valid-decl-spec))))
+      :hints (("Goal" :use not-type-and-type-specs-of-valid-decl-spec)))
+
+    (defret valid-decl-spec.new-storspecs-type-prescription
+      (true-listp new-storspecs)
+      :rule-classes :type-prescription
+      :hints
+      (("Goal"
+        :expand (valid-decl-spec declspec type? tyspecs storspecs table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3447,8 +3470,13 @@
 
     ///
 
-    (more-returns
-     (all-storspecs true-listp :rule-classes :type-prescription)))
+    (defret valid-decl-spec-list.all-storspecs-type-prescription
+      (true-listp all-storspecs)
+      :rule-classes :type-prescription
+      :hints
+      (("Goal"
+         :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
+         :use return-type-of-valid-decl-spec-list.all-storspecs))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4733,7 +4761,12 @@
       (implies (not erp)
                (iff uid? ident?))
       :hints
-      (("Goal" :expand (valid-param-declor paramdeclor type table ienv)))))
+      (("Goal"
+         :expand (valid-param-declor paramdeclor type table ienv)
+         :in-theory (disable return-type-of-valid-declor.ident)
+         :use ((:instance return-type-of-valid-declor.ident
+                          (declor (param-declor-nonabstract->declor paramdeclor))
+                          (fundef-params-p nil)))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5946,8 +5979,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-
   :verify-guards nil ; done below
 
   :prepwork ((local (in-theory (enable acons))))
@@ -6448,7 +6479,6 @@
                         :body new-body
                         :info info)
            table))
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :hooks (:fix)
 
   ///
