@@ -1440,6 +1440,7 @@
     defopeners
     add-known-boolean
 
+    defconst-x86
     defconst-computed
     defconst-computed2 ;drop?
     defconst-computed3
