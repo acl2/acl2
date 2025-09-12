@@ -1025,10 +1025,22 @@
              (absdeclor-option-annop (tyname->declor? tyname)))
     :enable tyname-annop)
 
+  (defruled tyname-infop-of-tyname->info
+    (implies (tyname-annop tyname)
+             (tyname-infop (tyname->info tyname)))
+    :enable tyname-annop)
+
   (defruled declor-annop-of-param-declor-nonabstract->declor
     (implies (and (param-declor-annop param-declor)
                   (param-declor-case param-declor :nonabstract))
              (declor-annop (param-declor-nonabstract->declor param-declor)))
+    :enable param-declor-annop)
+
+  (defruled param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :nonabstract))
+             (param-declor-nonabstract-infop
+              (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
   (defruled decl-spec-list-annop-of-fundef->spec
@@ -1058,29 +1070,32 @@
 
   ;; Add the above theorems to the rule set.
 
-  (add-to-ruleset abstract-syntax-annop-rules
-                  '(iconst-annop-of-iconst
-                    expr-annop-of-expr-ident
-                    expr-annop-of-expr-unary
-                    expr-annop-of-expr-binary
-                    tyname-annop-of-tyname
-                    param-declor-annop-of-param-declor-nonabstract
-                    initdeclor-annop-of-initdeclor
-                    fundef-annop-of-fundef
-                    transunit-annop-of-transunit
-                    expr-annop-of-expr-unary->arg
-                    expr-annop-of-expr-binary->arg1
-                    expr-annop-of-expr-binary->arg2
-                    declor-annop-of-initdeclor->declor
-                    initer-option-annop-of-initdeclor->init?
-                    spec/qual-list-annop-of-tyname->specquals
-                    absdeclor-option-annop-of-tyname->declor?
-                    declor-annop-of-param-declor-nonabstract->declor
-                    decl-spec-list-annop-of-fundef->spec
-                    declor-annop-of-fundef->declor
-                    decl-list-annop-of-fundef->decls
-                    block-item-list-annop-of-fundef->body
-                    extdecl-list-annop-of-transunit->decls)))
+  (add-to-ruleset
+   abstract-syntax-annop-rules
+   '(iconst-annop-of-iconst
+     expr-annop-of-expr-ident
+     expr-annop-of-expr-unary
+     expr-annop-of-expr-binary
+     tyname-annop-of-tyname
+     param-declor-annop-of-param-declor-nonabstract
+     param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+     initdeclor-annop-of-initdeclor
+     fundef-annop-of-fundef
+     transunit-annop-of-transunit
+     expr-annop-of-expr-unary->arg
+     expr-annop-of-expr-binary->arg1
+     expr-annop-of-expr-binary->arg2
+     declor-annop-of-initdeclor->declor
+     initer-option-annop-of-initdeclor->init?
+     spec/qual-list-annop-of-tyname->specquals
+     absdeclor-option-annop-of-tyname->declor?
+     tyname-infop-of-tyname->info
+     declor-annop-of-param-declor-nonabstract->declor
+     decl-spec-list-annop-of-fundef->spec
+     declor-annop-of-fundef->declor
+     decl-list-annop-of-fundef->decls
+     block-item-list-annop-of-fundef->body
+     extdecl-list-annop-of-transunit->decls)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
