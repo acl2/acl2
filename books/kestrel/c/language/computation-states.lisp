@@ -532,7 +532,13 @@
 
   (defret compustate->heap-of-enter-scope
     (equal (compustate->heap new-compst)
-           (compustate->heap compst))))
+           (compustate->heap compst)))
+
+  (defruled pop-frame-of-enter-scope
+    (equal (pop-frame (enter-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             push-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -581,7 +587,26 @@
 
   (defret compustate->heap-of-exit-scope
     (equal (compustate->heap new-compst)
-           (compustate->heap compst))))
+           (compustate->heap compst)))
+
+  (defruled pop-frame-of-exit-scope
+    (equal (pop-frame (exit-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             push-frame)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection entr/exit-scope-theorems
+  :short "Theorems relating @(tsee enter-scope) and @(tsee exit-scope)."
+
+  (defruled exit-scope-of-enter-scope
+    (implies (> (compustate-frames-number compst) 0)
+             (equal (exit-scope (enter-scope compst))
+                    (compustate-fix compst)))
+    :enable (exit-scope
+             enter-scope
+             push-frame-of-top-frame-and-pop-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,7 +691,18 @@
                (equal (compustate->static compst1)
                       (compustate->static compst))))
     :enable (push-frame
-             pop-frame)))
+             pop-frame))
+
+  (defruled exit-scope-of-create-var
+    (implies (and (> (compustate-frames-number compst) 0)
+                  (> (compustate-top-frame-scopes-number compst) 1)
+                  (not (errorp (create-var var val compst))))
+             (equal (exit-scope (create-var var val compst))
+                    (exit-scope compst)))
+    :enable (exit-scope
+             push-frame
+             pop-frame
+             top-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

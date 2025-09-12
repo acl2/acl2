@@ -618,7 +618,7 @@
      No rule is needed for computation states that start with @(tsee update-var)
      because @(tsee update-var) is always pushed past @(tsee enter-scope)."))
 
-  (defruled exit-scope-of-enter-scope
+  (defruled exit-scope-of-enter-scope-when-compustatep
     (implies (and (compustatep compst)
                   (> (compustate-frames-number compst) 0))
              (equal (exit-scope (enter-scope compst))
@@ -642,7 +642,7 @@
     :enable if*)
 
   (defval *atc-exit-scope-rules*
-    '(exit-scope-of-enter-scope
+    '(exit-scope-of-enter-scope-when-compustatep
       exit-scope-of-add-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
