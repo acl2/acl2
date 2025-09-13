@@ -775,7 +775,9 @@
                              (inner-thm-name symbolp)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp inner)
-              (expr-unambp inner-new))
+              (expr-annop inner)
+              (expr-unambp inner-new)
+              (expr-annop inner-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a parenthesized pure expression."
   :long
@@ -835,7 +837,9 @@
                              (info expr-unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
-              (expr-unambp arg-new))
+              (expr-annop arg)
+              (expr-unambp arg-new)
+              (expr-annop arg-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a unary expression."
   :long
@@ -930,9 +934,13 @@
                             (info tyname-infop)
                             (gin simpadd0-ginp))
   :guard (and (tyname-unambp type)
+              (tyname-annop type)
               (tyname-unambp type-new)
+              (tyname-annop type-new)
               (expr-unambp arg)
-              (expr-unambp arg-new))
+              (expr-annop arg)
+              (expr-unambp arg-new)
+              (expr-annop arg-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a cast expression."
   :long
@@ -1026,9 +1034,13 @@
                               (info expr-binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
+              (expr-annop arg1)
               (expr-unambp arg1-new)
+              (expr-annop arg1-new)
               (expr-unambp arg2)
-              (expr-unambp arg2-new))
+              (expr-annop arg2)
+              (expr-unambp arg2-new)
+              (expr-annop arg2-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a binary expression."
   :long
@@ -1321,11 +1333,17 @@
                             (else-thm-name symbolp)
                             (gin simpadd0-ginp))
   :guard (and (expr-unambp test)
+              (expr-annop test)
               (expr-unambp test-new)
+              (expr-annop test-new)
               (expr-option-unambp then)
+              (expr-option-annop then)
               (expr-option-unambp then-new)
+              (expr-option-annop then-new)
               (expr-unambp else)
-              (expr-unambp else-new))
+              (expr-annop else)
+              (expr-unambp else-new)
+              (expr-annop else-new))
   :returns (mv (expr exprp) (gou simpadd0-goutp))
   :short "Transform a conditional expression."
   :long
@@ -1435,7 +1453,9 @@
                                 (expr-thm-name symbolp)
                                 (gin simpadd0-ginp))
   :guard (and (expr-unambp expr)
-              (expr-unambp expr-new))
+              (expr-annop expr)
+              (expr-unambp expr-new)
+              (expr-annop expr-new))
   :returns (mv (initer initerp) (gout simpadd0-goutp))
   :short "Transform an initializer consisting of a single expression."
   (b* (((simpadd0-gin gin) gin)
@@ -1513,7 +1533,9 @@
                             info
                             (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
+              (expr-option-annop expr?)
               (expr-option-unambp expr?-new)
+              (expr-option-annop expr?-new)
               (iff expr? expr?-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform an expression statement."
@@ -1640,7 +1662,9 @@
                               info
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
+              (expr-option-annop expr?)
               (expr-option-unambp expr?-new)
+              (expr-option-annop expr?-new)
               (iff expr? expr?-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform a return statement."
@@ -1752,7 +1776,9 @@
                                 (items-thm-name symbolp)
                                 (gin simpadd0-ginp))
   :guard (and (block-item-list-unambp items)
-              (block-item-list-unambp items-new))
+              (block-item-list-annop items)
+              (block-item-list-unambp items-new)
+              (block-item-list-annop items-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform a compound statement."
   (declare (ignore items items-thm-name))
@@ -1784,9 +1810,13 @@
                           (then-thm-name symbolp)
                           (gin simpadd0-ginp))
   :guard (and (expr-unambp test)
+              (expr-annop test)
               (expr-unambp test-new)
+              (expr-annop test-new)
               (stmt-unambp then)
-              (stmt-unambp then-new))
+              (stmt-annop then)
+              (stmt-unambp then-new)
+              (stmt-annop then-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform an @('if') statement (without @('else'))."
   (b* (((simpadd0-gin gin) gin)
@@ -1897,11 +1927,17 @@
                               (else-thm-name symbolp)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp test)
+              (expr-annop test)
               (expr-unambp test-new)
+              (expr-annop test-new)
               (stmt-unambp then)
+              (stmt-annop then)
               (stmt-unambp then-new)
+              (stmt-annop then-new)
               (stmt-unambp else)
-              (stmt-unambp else-new))
+              (stmt-annop else)
+              (stmt-unambp else-new)
+              (stmt-annop else-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform an @('if')-@('else') statement."
   (b* (((simpadd0-gin gin) gin)
@@ -2037,9 +2073,13 @@
                             (vartys-post c::ident-type-mapp)
                             (gin simpadd0-ginp))
   :guard (and (decl-spec-list-unambp specs)
+              (decl-spec-list-annop specs)
               (decl-spec-list-unambp specs-new)
+              (decl-spec-list-annop specs-new)
               (initdeclor-list-unambp init)
-              (initdeclor-list-unambp init-new))
+              (initdeclor-list-annop init)
+              (initdeclor-list-unambp init-new)
+              (initdeclor-list-annop init-new))
   :returns (mv (decl declp) (gout simpadd0-goutp))
   :short "Transform a non-static-assert declaration."
   :long
@@ -2199,7 +2239,9 @@
                                   info
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
-              (stmt-unambp stmt-new))
+              (stmt-annop stmt)
+              (stmt-unambp stmt-new)
+              (stmt-annop stmt-new))
   :returns (mv (item block-itemp) (gout simpadd0-goutp))
   :short "Transform a block item that consists of a statement."
   :long
@@ -2283,7 +2325,9 @@
                                   (vartys-post c::ident-type-mapp)
                                   (gin simpadd0-ginp))
   :guard (and (decl-unambp decl)
-              (decl-unambp decl-new))
+              (decl-annop decl)
+              (decl-unambp decl-new)
+              (decl-annop decl-new))
   :returns (mv (item block-itemp) (gout simpadd0-goutp))
   :short "Transform a block item that consists of a declaration."
   :long
@@ -2418,9 +2462,13 @@
                                        (items-thm-name symbolp)
                                        (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
+              (block-item-annop item)
               (block-item-unambp item-new)
+              (block-item-annop item-new)
               (block-item-list-unambp items)
-              (block-item-list-unambp items-new))
+              (block-item-list-annop items)
+              (block-item-list-unambp items-new)
+              (block-item-list-annop items-new))
   :returns (mv (item+items block-item-listp) (gout simpadd0-goutp))
   :short "Transform a non-empty list of block items."
   :long
