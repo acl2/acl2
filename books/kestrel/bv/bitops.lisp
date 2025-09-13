@@ -39,7 +39,7 @@
 (in-theory (disable bitops::part-select-width-low
                     bitops::part-install-width-low))
 
-;move or make local
+;move?
 (local
   (defthm <=-of-*-same-linear-special
     (implies (and (<= 1 y)
@@ -70,44 +70,56 @@
 ;;            (equal (< (* a b) (* c a))
 ;;                   (< b c))))
 
+;move
 (local
+  ;; slicing a mask of all ones to extract the run of ones
   (defthm slice-mask
     (implies (and (natp low)
                   (natp width))
-             (equal (SLICE (+ -1 LOW WIDTH)
-                           LOW
-                           (+ (- (EXPT 2 LOW))
-                              (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
+             (equal (slice (+ -1 low width)
+                           low
+                           (+ (- (expt 2 low))
+                              (* (expt 2 low) (expt 2 width))))
                     (+ -1 (expt 2 width))))
-    :hints (("Goal" :in-theory (e/d (slice) ())))))
-
-;; ;;move
-;; (defthm <-of-expt-and-expt
-;;   (implies (and (natp i)
-;;                 (natp j))
-;;            (equal (< (EXPT '2 i) (EXPT '2 j))
-;;                   (< i j))))
+    :hints (("Goal" :in-theory (enable slice)))))
 
 (local
+  ;; slicing a mask of all ones above the run of ones
   (defthm slice-too-high-lemma-2
     (implies (and (natp low)
                   (natp width)
                   (natp size))
-             (equal (SLICE (+ -1 SIZE)
-                           (+ LOW WIDTH)
-                           (+ (- (EXPT 2 LOW))
-                              (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
+             (equal (slice (+ -1 size)
+                           (+ low width)
+                           (+ (- (expt 2 low))
+                              (* (expt 2 low) (expt 2 width))))
                     0))
-    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+ logtail-of-plus)
-                                    (<-OF-BVCHOP-HACK))))))
+    :hints (("Goal" :in-theory (e/d (slice getbit-of-+ logtail-of-plus)
+                                    (<-of-bvchop-hack))))))
 
+;move
+(local
+  (defthm bvnot-of-*-of-expt-same-arg2
+    (implies (and (natp i)
+                  (natp low))
+             (equal (bvnot low (* i (expt 2 low)))
+                    (+ -1 (expt 2 low))))
+    :hints (("Goal" :in-theory (enable bvnot lognot bvchop-of-sum-cases)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; should almost always fire.
 (defthm part-select-width-low-becomes-slice
   (implies (and (integerp low)
                 (integerp width))
            (equal (bitops::part-select-width-low x width low)
                   (slice (+ low width -1) low x)))
-  :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low slice)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bitops::part-select-width-low slice))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We want to replace calls of part-install-width-low with BV terms, but this
+;; is awkward in general, because we may not know the size of the "x" argument.
 
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)
@@ -127,15 +139,6 @@
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
            :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
                            (ash logmask)))))
-
-;move
-(local
-  (defthm bvnot-of-*-of-expt-same-arg2
-    (implies (and (natp i)
-                  (natp low))
-             (equal (BVNOT LOW (* i (EXPT 2 LOW)))
-                    (+ -1 (expt 2 low))))
-    :hints (("Goal" :in-theory (enable bvnot LOGNOT BVCHOP-OF-SUM-CASES)))))
 
 (defthm bvchop-of-part-install-width-low-same
   (implies (and (natp low)
@@ -184,7 +187,6 @@
   :hints (("Goal" :in-theory (e/d (slice
                                    BVCHOP-OF-LOGTAIL)
                                   (SLICE-OF-BVAND
-
                                    ;;for speed:
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
