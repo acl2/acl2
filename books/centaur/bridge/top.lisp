@@ -191,8 +191,11 @@ add pretty-printing.</p>")
   :long "<p>The ACL2 Bridge can probably be used from just about any
 programming language that has sockets.</p>
 
-<p>There is a nice <a href='http://www.ruby-lang.org/'>Ruby</a> interface in
+<p>There is a nice <a href='https://www.ruby-lang.org/'>Ruby</a> interface in
 @('books/centaur/bridge/ruby').</p>
+
+<p>A <a href='https://www.python.org/'>Python</a> interface with synchronous and
+asynchronous bindings is available in @('books/centaur/bridge/python').</p>
 
 <p>For other programming languages, implementing a client should be a very easy
 exercise: just read about @(see command)s and @(see message)s to understand the
