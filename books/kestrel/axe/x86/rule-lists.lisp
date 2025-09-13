@@ -2422,7 +2422,7 @@
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
-            acl2::ash-of-0
+            acl2::ash-of-0-arg2
             ;acl2::acl2-numberp-of-+
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
