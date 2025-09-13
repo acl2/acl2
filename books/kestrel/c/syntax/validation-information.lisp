@@ -1147,7 +1147,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-type ((expr exprp))
-  :guard (expr-unambp expr)
+  :guard (and (expr-unambp expr)
+              (expr-annop expr))
   :returns (type typep)
   :short "Type of an expression, from the validation information."
   :long
@@ -1206,12 +1207,14 @@
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initer-type ((initer initerp))
-  :guard (initer-unambp initer)
+  :guard (and (initer-unambp initer)
+              (initer-annop initer))
   :returns (type typep)
   :short "Type of an initializer, from the validation information."
   :long
@@ -1224,12 +1227,14 @@
    initer
    :single (expr-type initer.expr)
    :list (type-unknown))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stmt-types ((stmt stmtp))
-  :guard (stmt-unambp stmt)
+  :guard (and (stmt-unambp stmt)
+              (stmt-annop stmt))
   :returns (types type-option-setp)
   :short "Types of a statement, from the validation information."
   :long
@@ -1272,12 +1277,14 @@
    :asm nil)
   :measure (stmt-count stmt)
   :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define block-item-types ((item block-itemp))
-  :guard (block-item-unambp item)
+  :guard (and (block-item-unambp item)
+              (block-item-annop item))
   :returns (types type-option-setp)
   :short "Types of a block item, from the validation information."
   :long
@@ -1290,12 +1297,14 @@
    :decl (set::insert nil nil)
    :stmt (stmt-types item.stmt)
    :ambig (impossible))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define block-item-list-types ((items block-item-listp))
-  :guard (block-item-list-unambp items)
+  :guard (and (block-item-list-unambp items)
+              (block-item-list-annop items))
   :returns (types type-option-setp)
   :short "Types of a list of block items, from the validation information."
   :long
@@ -1319,12 +1328,14 @@
        (items-types (block-item-list-types (cdr items))))
     (set::union (set::delete nil item-types) items-types))
   :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-types ((fundef fundefp))
-  :guard (fundef-unambp fundef)
+  :guard (and (fundef-unambp fundef)
+              (fundef-annop fundef))
   :returns (types type-setp
                   :hints
                   (("Goal"
@@ -1363,4 +1374,5 @@
                   (set::insert (type-void) (set::delete nil types))
                 types)))
     types)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
