@@ -994,6 +994,12 @@
              (iconst-infop (iconst->info iconst)))
     :enable iconst-annop)
 
+  (defruled var-infop-of-expr-ident->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :ident))
+             (var-infop (expr-ident->info expr)))
+    :enable expr-annop)
+
   (defruled expr-annop-of-expr-unary->arg
     (implies (and (expr-annop expr)
                   (expr-case expr :unary))
@@ -1100,6 +1106,7 @@
      fundef-annop-of-fundef
      transunit-annop-of-transunit
      iconst-infop-of-iconst->info
+     var-infop-of-expr-ident->info
      expr-annop-of-expr-unary->arg
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
