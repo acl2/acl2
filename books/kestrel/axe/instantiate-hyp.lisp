@@ -115,6 +115,7 @@
              (all-myquotep (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist))))
     :flag instantiate-hyp-lst)
   :skip-others t
-  :hints (("Goal" :in-theory (e/d (instantiate-hyp instantiate-hyp-lst) (myquotep)))))
+  :hints (("Goal" :in-theory (e/d (instantiate-hyp instantiate-hyp-lst myquotep-when-axe-treep)
+                                  (myquotep)))))
 
 (verify-guards instantiate-hyp :hints (("Goal" :in-theory (enable pseudo-termp))))

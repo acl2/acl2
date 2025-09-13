@@ -963,7 +963,8 @@
                             car-becomes-nth-of-0
                             merge-tree-into-dag-array
                             merge-trees-into-dag-array
-                            axe-treep)
+                            axe-treep
+                            myquotep-when-axe-treep)
                            (natp)))))
 
 (defthm merge-trees-into-dag-array-return-type-corollary
@@ -1518,7 +1519,7 @@
                                   ;; cannot mention any dag nodes because there aren't any:
                                   (all-myquotep (strip-cdrs var-replacement-alist))
                                 (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))))
-                  :guard-hints (("Goal" :in-theory (e/d (rationalp-when-natp) (natp))))))
+                  :guard-hints (("Goal" :in-theory (e/d (rationalp-when-natp myquotep-when-axe-treep) (natp))))))
   (mv-let (erp nodenum-or-quotep new-dag)
     (merge-tree-into-dag tree dag var-replacement-alist) ;todo: this converts the array back to a list, but get-subdag converts it back to an array
     (if erp

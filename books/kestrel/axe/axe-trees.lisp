@@ -246,7 +246,8 @@
   :hints (("Goal" :in-theory (enable axe-treep))))
 
 ;;uses (equal 'quote (car tree)) as the normal form
-(defthm myquotep-when-axe-treep
+;; Disabled to avoid backchaining to axe-treep in irrelevant contexts
+(defthmd myquotep-when-axe-treep
   (implies (and (syntaxp (want-to-weaken (myquotep x)))
                 (axe-treep x))
            (equal (myquotep x)
