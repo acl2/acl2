@@ -2225,6 +2225,17 @@
   ;;         (zmm-rules-common))
   )
 
+;move
+(defund acl2::ash-rules ()
+  (declare (xargs :guard t))
+  '(acl2::ash-negative-becomes-slice-axe
+    acl2::ash-of-0-arg1
+    acl2::ash-of-0-arg2
+    acl2::open-ash-positive-constants
+    acl2::bvchop-of-ash
+    acl2::integerp-of-ash))
+
+
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
@@ -2253,6 +2264,7 @@
           (logops-to-bv-rules-x86)
           (logops-rules)
           (acl2::bv-of-logext-rules)
+          (acl2::ash-rules)
           (arith-to-bv-rules)
           (bitops-to-bv-rules)
           (x86-bv-rules)
@@ -2375,7 +2387,6 @@
             ;; acl2::acl2-numberp-when-signed-byte-p
 
             acl2::fold-consts-in-+
-            acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
@@ -2422,7 +2433,6 @@
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
-            acl2::ash-of-0-arg2
             ;acl2::acl2-numberp-of-+
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
@@ -2443,7 +2453,6 @@
             ;acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
-            acl2::open-ash-positive-constants
             acl2::logext-of-bvchop-same
             acl2::logext-identity
             acl2::logext-of-+-of-logext-arg1
@@ -2513,7 +2522,6 @@
             ;x86isa::wb-xw-in-app-view
 
             ;acl2::bvchop-of-bvmult
-            acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
             acl2::natp-of-nfix
@@ -2742,7 +2750,6 @@
 
             x86isa::x86-operand-to-zmm/mem
 
-            acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
 
             ;; See books/projects/x86isa/utils/basic-structs.lisp
@@ -5744,7 +5751,7 @@
     ;; x86isa::canonical-address-p-between-special5-alt
     ;; x86isa::canonical-address-p-between-special6
     ;; x86isa::canonical-address-p-between-special7
-    acl2::ash-when-non-negative-becomes-*-of-expt
+    acl2::ash-when-non-negative-becomes-*-of-expt ; todo
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
     acl2::<-of-15-and-*-of-4
@@ -5760,7 +5767,6 @@
     acl2::<-of-minus-and-constant ; ensure needed
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
-    acl2::ash-of-0-arg1 ; bitops::ash-of-0-c ; at least for now
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
