@@ -2696,7 +2696,7 @@
                               expr.arg
                               new-arg
                               gout-arg.thm-name
-                              (coerce-expr-unary-info expr.info)
+                              expr.info
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
@@ -2724,7 +2724,7 @@
                              expr.arg
                              new-arg
                              gout-arg.thm-name
-                             (coerce-tyname-info (tyname->info expr.type))
+                             (tyname->info expr.type)
                              gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
@@ -2740,7 +2740,7 @@
                                expr.arg2
                                new-arg2
                                gout-arg2.thm-name
-                               (coerce-expr-binary-info expr.info)
+                               expr.info
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
@@ -3629,8 +3629,7 @@
        (b* (((mv new-declor (simpadd0-gout gout-declor))
              (simpadd0-declor paramdeclor.declor gin))
             (gin (simpadd0-gin-update gin gout-declor))
-            (info (coerce-param-declor-nonabstract-info paramdeclor.info))
-            (type (param-declor-nonabstract-info->type info))
+            (type (param-declor-nonabstract-info->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
@@ -3908,11 +3907,10 @@
                                   (change-simpadd0-gin
                                    gin :vartys gout-declor.vartys)))
          ((simpadd0-gin gin) (simpadd0-gin-update gin gout-init?))
-         (info (coerce-initdeclor-info initdeclor.info))
-         (type (initdeclor-info->type info))
+         (type (initdeclor-info->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (initdeclor-info->typedefp info))
+          (if (and (not (initdeclor-info->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -3925,7 +3923,7 @@
                            :asm? initdeclor.asm?
                            :attribs initdeclor.attribs
                            :init? new-init?
-                           :info info)
+                           :info initdeclor.info)
           (if gout-init?.thm-name
               (make-simpadd0-gout :events gin.events
                                   :thm-index gin.thm-index
