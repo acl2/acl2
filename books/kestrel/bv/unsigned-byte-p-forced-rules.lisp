@@ -16,6 +16,7 @@
 (include-book "bool-to-bit-def")
 (include-book "defs")
 (local (include-book "bvshr"))
+(local (include-book "bvashr"))
 (local (include-book "bvshl"))
 (local (include-book "bvchop"))
 (local (include-book "bvand"))
@@ -176,6 +177,11 @@
 (defthm unsigned-byte-p-forced-of-bvshr
   (implies (natp size)
            (unsigned-byte-p-forced size (bvshr size x amt)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-bvashr
+  (implies (natp size)
+           (unsigned-byte-p-forced size (bvashr size x amt)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthm unsigned-byte-p-forced-of-bvshl
