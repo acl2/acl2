@@ -459,29 +459,6 @@
    (value nat))
   :pred iconst-infop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-iconst-info
-  :short "An irrelevant validation information for integer constants."
-  :type iconst-infop
-  :body (make-iconst-info :type (irr-type)
-                          :value 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-iconst-info (x)
-  :returns (info iconst-infop)
-  :short "Coerce a value to @(tsee iconst-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (iconst-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy ICONST-INFOP." x)
-            (irr-iconst-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var-info
@@ -540,28 +517,6 @@
   ((type type))
   :pred expr-unary-infop)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-expr-unary-info
-  :short "An irrelevant validation information for unary expressions."
-  :type expr-unary-infop
-  :body (make-expr-unary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-expr-unary-info (x)
-  :returns (info expr-unary-infop)
-  :short "Coerce a value to @(tsee expr-unary-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (expr-unary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-UNARY-INFOP." x)
-            (irr-expr-unary-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-binary-info
@@ -575,28 +530,6 @@
      The information for a binary expression consists of its type."))
   ((type type))
   :pred expr-binary-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-expr-binary-info
-  :short "An irrelevant validation information for binary expressions."
-  :type expr-binary-infop
-  :body (make-expr-binary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-expr-binary-info (x)
-  :returns (info expr-binary-infop)
-  :short "Coerce a value to @(tsee expr-binary-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (expr-binary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-BINARY-INFOP." x)
-            (irr-expr-binary-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -616,31 +549,6 @@
    (uid uid))
   :pred param-declor-nonabstract-infop)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor-nonabstract-info
-  :short "An irrelevant validation information
-          for non-abstract parameter declarators."
-  :type param-declor-nonabstract-infop
-  :body (make-param-declor-nonabstract-info :type (irr-type)
-                                            :uid (irr-uid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-param-declor-nonabstract-info (x)
-  :returns (info param-declor-nonabstract-infop)
-  :short "Coerce a value to @(tsee param-declor-nonabstract-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (param-declor-nonabstract-infop x)
-      x
-    (prog2$ (raise "Internal error: ~
-                    ~x0 does not satisfy PARAM-DECLOR-NONABSTRACT-INFOP." x)
-            (irr-param-declor-nonabstract-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod tyname-info
@@ -654,28 +562,6 @@
      The information for a type name consists of its denoted type."))
   ((type type))
   :pred tyname-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tyname-info
-  :short "An irrelevant validation information for type names."
-  :type tyname-infop
-  :body (make-tyname-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-tyname-info (x)
-  :returns (info tyname-infop)
-  :short "Coerce a value to @(tsee tyname-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (tyname-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TYNAME-INFOP." x)
-            (irr-tyname-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -704,28 +590,6 @@
    (typedefp bool)
    (uid? uid-option))
   :pred initdeclor-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-initdeclor-info
-  :short "An irrelevant validation information for initializer declarators."
-  :type initdeclor-infop
-  :body (make-initdeclor-info :type (irr-type) :uid? nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-initdeclor-info (x)
-  :returns (info initdeclor-infop)
-  :short "Coerce a value to @(tsee initdeclor-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (initdeclor-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy INITDECLOR-INFOP." x)
-            (irr-initdeclor-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,28 +627,6 @@
      the final validation table for the translation unit."))
   ((table-end valid-table))
   :pred transunit-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-transunit-info
-  :short "An irrelevant validation information for translation units."
-  :type transunit-infop
-  :body (make-transunit-info :table-end (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-transunit-info (x)
-  :returns (info transunit-infop)
-  :short "Coerce a value to @(tsee transunit-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (transunit-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TRANSUNIT-INFOP." x)
-            (irr-transunit-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
