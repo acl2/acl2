@@ -2622,9 +2622,7 @@
     (b* (((simpadd0-gin gin) gin))
       (expr-case
        expr
-       :ident (simpadd0-expr-ident expr.ident
-                                   (coerce-var-info expr.info)
-                                   gin)
+       :ident (simpadd0-expr-ident expr.ident expr.info gin)
        :const (simpadd0-expr-const expr.const gin)
        :string (mv (expr-fix expr) (simpadd0-gout-no-thm gin))
        :paren
