@@ -1006,6 +1006,12 @@
              (expr-annop (expr-unary->arg expr)))
     :enable expr-annop)
 
+  (defruled expr-unary-infop-of-expr-unary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :unary))
+             (expr-unary-infop (expr-unary->info expr)))
+    :enable expr-annop)
+
   (defruled expr-annop-of-expr-binary->arg1
     (implies (and (expr-annop expr)
                   (expr-case expr :binary))
@@ -1018,6 +1024,12 @@
              (expr-annop (expr-binary->arg2 expr)))
     :enable expr-annop)
 
+  (defruled expr-binary-infop-of-expr-binary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :binary))
+             (expr-binary-infop (expr-binary->info expr)))
+    :enable expr-annop)
+
   (defruled declor-annop-of-initdeclor->declor
     (implies (initdeclor-annop initdeclor)
              (declor-annop (initdeclor->declor initdeclor)))
@@ -1026,6 +1038,11 @@
   (defruled initer-option-annop-of-initdeclor->init?
     (implies (initdeclor-annop initdeclor)
              (initer-option-annop (initdeclor->init? initdeclor)))
+    :enable initdeclor-annop)
+
+  (defruled initdeclor-infop-of-initdeclor->info
+    (implies (initdeclor-annop initdeclor)
+             (initdeclor-infop (initdeclor->info initdeclor)))
     :enable initdeclor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
@@ -1108,10 +1125,13 @@
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      expr-annop-of-expr-unary->arg
+     expr-unary-infop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
+     expr-binary-infop-of-expr-binary->info
      declor-annop-of-initdeclor->declor
      initer-option-annop-of-initdeclor->init?
+     initdeclor-infop-of-initdeclor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
