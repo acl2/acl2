@@ -1172,12 +1172,11 @@
      This is an approximation."))
   (expr-case
    expr
-   :ident (var-info->type (coerce-var-info expr.info))
+   :ident (var-info->type expr.info)
    :const (if (const-case expr.const :int)
               (iconst-info->type
-               (coerce-iconst-info
-                (iconst->info
-                 (const-int->unwrap expr.const))))
+               (iconst->info
+                (const-int->unwrap expr.const)))
             (type-unknown))
    :string (type-unknown)
    :paren (expr-type expr.inner)
@@ -1187,11 +1186,11 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (expr-unary-info->type (coerce-expr-unary-info expr.info))
+   :unary (expr-unary-info->type expr.info)
    :sizeof (type-unknown)
    :alignof (type-unknown)
-   :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
-   :binary (expr-binary-info->type (coerce-expr-binary-info expr.info))
+   :cast (tyname-info->type (tyname->info expr.type))
+   :binary (expr-binary-info->type expr.info)
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
               (then-type (expr-type expr.then))
