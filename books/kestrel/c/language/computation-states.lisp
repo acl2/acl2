@@ -836,7 +836,8 @@
                      (identp var1)
                      (valuep val))
                 (b* ((scope (omap::update var val (car scopes))))
-                  (equal (objdesign-of-var-aux var1 frame (cons scope (cdr scopes)))
+                  (equal (objdesign-of-var-aux
+                          var1 frame (cons scope (cdr scopes)))
                          (if (equal var1 var)
                              (objdesign-auto var frame (1- (len scopes)))
                            (objdesign-of-var-aux var1 frame scopes)))))
@@ -937,20 +938,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled valuep-of-read-object-of-objdesign-of-var
-    (b* ((objdes (objdesign-of-var var compst)))
-      (implies objdes
-               (valuep (read-object objdes compst))))
-    :enable (objdesign-of-var
-             read-object
-             fix
-             compustate-frames-number
-             top-frame)
-    :use
-    (:instance objdesign-of-var-aux-lemma
-               (frame (+ -1 (len (compustate->frames compst))))
-               (scopes (frame->scopes (car (compustate->frames compst))))))
 
   (defruled read-object-top-static/alloc-of-pop-frame
     (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
@@ -1183,23 +1170,6 @@
                                 acl2::nth-of-rev
                                 update-nth-of-rev))))
 
-  (defruled compustatep-of-write-object-of-objdesign-of-var
-    (b* ((objdes (objdesign-of-var var compst)))
-      (implies objdes
-               (equal (compustatep (write-object objdes val compst))
-                      (equal (type-of-value (read-object objdes compst))
-                             (type-of-value val)))))
-    :enable (objdesign-of-var
-             write-object
-             read-object
-             top-frame
-             compustate-frames-number)
-    :use
-    (valuep-of-read-object-of-objdesign-of-var
-     (:instance objdesign-of-var-aux-lemma
-                (frame (+ -1 (len (compustate->frames compst))))
-                (scopes (frame->scopes (car (compustate->frames compst)))))))
-
   (defruled assoc-of-compustate-static-of-write-object
     (b* ((compst1 (write-object objdes val compst)))
       (implies (not (errorp compst1))
@@ -1215,6 +1185,45 @@
              not-errorp-of-value-struct-read-when-not-write-error
              not-errorp-of-value-array-read-when-not-write-error
              not-errorp-when-valuep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled valuep-of-read-object-of-objdesign-of-var
+  :short "If @(tsee objdesign-of-var) succeeds,
+          @(tsee read-object) returns a value (not an error)."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (valuep (read-object objdes compst))))
+  :enable (objdesign-of-var
+           read-object
+           fix
+           compustate-frames-number
+           top-frame)
+  :use
+  (:instance objdesign-of-var-aux-lemma
+             (frame (+ -1 (len (compustate->frames compst))))
+             (scopes (frame->scopes (car (compustate->frames compst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled compustatep-of-write-object-of-objdesign-of-var
+  :short "If @(tsee objdesign-of-var) succeeds,
+          @(tsee write-object) returns a computation state (not an error)."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (compustatep (write-object objdes val compst))
+                    (equal (type-of-value (read-object objdes compst))
+                           (type-of-value val)))))
+  :enable (objdesign-of-var
+           write-object
+           read-object
+           top-frame
+           compustate-frames-number)
+  :use
+  (valuep-of-read-object-of-objdesign-of-var
+   (:instance objdesign-of-var-aux-lemma
+              (frame (+ -1 (len (compustate->frames compst))))
+              (scopes (frame->scopes (car (compustate->frames compst)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1251,7 +1260,8 @@
                           (if (equal (compustate-frames-number compst) 0)
                               (objdesign-static var)
                             (objdesign-auto var
-                                            (1- (compustate-frames-number compst))
+                                            (1- (compustate-frames-number
+                                                 compst))
                                             (1- (len (frame->scopes
                                                       (top-frame compst))))))
                         (objdesign-of-var var1 compst)))))
