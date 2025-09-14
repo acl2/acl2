@@ -939,6 +939,8 @@
 
   ///
 
+  ;; Interaction between READ-OBJECT and POP-FRAME:
+
   (defruled read-object-top-static/alloc-of-pop-frame
     (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
                                 '(:static :alloc))
@@ -979,6 +981,8 @@
              read-object-top-auto-of-pop-frame)
     :use objdesign-kind-of-objdesign-top
     :disable objdesign-kind-of-objdesign-top)
+
+  ;; Interaction between READ-OBJECT and EXIT-SCOPE:
 
   (defruled read-object-top-static/alloc-of-exit-scope
     (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
@@ -1186,6 +1190,8 @@
              not-errorp-of-value-array-read-when-not-write-error
              not-errorp-when-valuep))
 
+  ;; Interaction between WRITE-OBJECT and POP-FRAME:
+
   (defruled pop-frame-of-write-object-static/alloc
     (implies (and (member-equal (objdesign-kind objdes) '(:static :alloc))
                   (not (errorp (write-object objdes val compst))))
@@ -1260,6 +1266,8 @@
              pop-frame-of-write-object-top-auto)
     :use objdesign-kind-of-objdesign-top
     :disable objdesign-kind-of-objdesign-top)
+
+  ;; Interaction between WRITE-OBJECT and EXIT-SCOPE:
 
   (defruled exit-scope-of-write-object-static/alloc
     (implies (and (member-equal (objdesign-kind objdes) '(:static :alloc))
