@@ -1267,6 +1267,57 @@
     :use objdesign-kind-of-objdesign-top
     :disable objdesign-kind-of-objdesign-top)
 
+  ;; Interaction between WRITE-OBJECT and POP-FRAME and errors:
+
+  (defruled not-errorp-of-write-object-top-static/alloc-of-pop-frame
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-of-pop-frame))
+
+  (defruled not-errorp-of-write-object-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (not (equal (objdesign-auto->frame objdes)
+                              (1- (compustate-frames-number compst))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :enable (pop-frame
+             write-object
+             compustate-frames-number
+             len
+             fix
+             nfix
+             nth))
+
+  (defruled not-errorp-of-write-object-top-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :induct t
+    :enable (write-object
+             objdesign-top
+             read-object-top-auto-of-pop-frame
+             nfix)
+    :hints ('(:use not-errorp-of-write-object-auto-of-pop-frame)))
+
+  (defruled not-errorp-of-write-object-of-pop-frame
+    (implies (and (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :enable (not-errorp-of-write-object-top-static/alloc-of-pop-frame
+             not-errorp-of-write-object-top-auto-of-pop-frame)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top)
+
   ;; Interaction between WRITE-OBJECT and EXIT-SCOPE:
 
   (defruled exit-scope-of-write-object-static/alloc
@@ -1350,6 +1401,71 @@
                       (write-object objdes val (exit-scope compst)))))
     :enable (exit-scope-of-write-object-top-static/alloc
              exit-scope-of-write-object-top-auto)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top)
+
+  ;; Interaction between WRITE-OBJECT and EXIT-SCOPE:
+
+  (defruled not-errorp-of-write-object-top-static/alloc-of-exit-scope
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-of-exit-scope))
+
+  (defruled not-errorp-of-write-object-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (or (not (equal (objdesign-auto->frame objdes)
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope objdes)
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :enable (exit-scope
+             write-object
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             compustate-scopes-numbers
+             len
+             fix
+             nfix
+             update-nth-of-rev
+             nth))
+
+  (defruled not-errorp-of-write-object-top-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (or (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope (objdesign-top objdes))
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :induct t
+    :enable (write-object
+             objdesign-top
+             read-object-top-auto-of-exit-scope
+             nfix)
+    :hints ('(:use not-errorp-of-write-object-auto-of-exit-scope)))
+
+  (defruled not-errorp-of-write-object-of-exit-scope
+    (implies (and (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope (objdesign-top objdes))
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :enable (not-errorp-of-write-object-top-static/alloc-of-exit-scope
+             not-errorp-of-write-object-top-auto-of-exit-scope)
     :use objdesign-kind-of-objdesign-top
     :disable objdesign-kind-of-objdesign-top))
 
