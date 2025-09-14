@@ -1188,6 +1188,31 @@
              not-errorp-of-value-array-read-when-not-write-error
              not-errorp-when-valuep))
 
+  (defruled objdesign-top-auto-frame-bound-when-write-object-not-error
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (< (objdesign-auto->frame (objdesign-top objdes))
+                (compustate-frames-number compst)))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             nfix
+             compustate-frames-number))
+
+  (defruled objdesign-top-auto-scope-bound-when-write-object-not-error
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (equal (objdesign-auto->frame (objdesign-top objdes))
+                         (1- (compustate-frames-number compst)))
+                  (not (errorp (write-object objdes val compst))))
+             (< (objdesign-auto->scope (objdesign-top objdes))
+                (compustate-top-frame-scopes-number compst)))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             nfix
+             compustate-frames-number
+             compustate-scopes-numbers))
+
   ;; Interaction between WRITE-OBJECT and POP-FRAME:
 
   (defruled pop-frame-of-write-object-static/alloc
