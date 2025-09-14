@@ -948,8 +948,7 @@
              (equal (read-object objdes (pop-frame compst))
                     (read-object objdes compst)))
     :induct t
-    :enable (objdesign-top
-             read-object))
+    :enable objdesign-top)
 
   (defruled read-object-top-auto-of-pop-frame
     (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
@@ -960,7 +959,6 @@
                     (read-object objdes compst)))
     :induct t
     :enable (objdesign-top
-             read-object
              pop-frame
              compustate-frames-number
              len
@@ -980,7 +978,8 @@
     :enable (read-object-top-static/alloc-of-pop-frame
              read-object-top-auto-of-pop-frame)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top)
+    :disable (objdesign-kind-of-objdesign-top
+              read-object))
 
   ;; Interaction between READ-OBJECT and EXIT-SCOPE:
 
@@ -991,8 +990,7 @@
              (equal (read-object objdes (exit-scope compst))
                     (read-object objdes compst)))
     :induct t
-    :enable (objdesign-top
-             read-object))
+    :enable objdesign-top)
 
   (defruled read-object-top-auto-of-exit-scope
     (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
@@ -1007,7 +1005,6 @@
                     (read-object objdes compst)))
     :induct t
     :enable (objdesign-top
-             read-object
              exit-scope
              push-frame
              pop-frame
@@ -1034,7 +1031,8 @@
     :enable (read-object-top-static/alloc-of-exit-scope
              read-object-top-auto-of-exit-scope)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top))
+    :disable (objdesign-kind-of-objdesign-top
+              read-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1197,8 +1195,7 @@
                   (not (errorp (write-object objdes val compst))))
              (equal (pop-frame (write-object objdes val compst))
                     (write-object objdes val (pop-frame compst))))
-    :enable (pop-frame
-             write-object))
+    :enable pop-frame)
 
   (defruled pop-frame-of-write-object-top-static/alloc
     (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
@@ -1207,8 +1204,7 @@
              (equal (pop-frame (write-object objdes val compst))
                     (write-object objdes val (pop-frame compst))))
     :induct t
-    :enable (write-object
-             objdesign-top
+    :enable (objdesign-top
              pop-frame)
     :hints ('(:use ((:instance read-object-of-pop-frame
                                (objdes (objdesign-member->super objdes)))
@@ -1265,7 +1261,8 @@
     :enable (pop-frame-of-write-object-top-static/alloc
              pop-frame-of-write-object-top-auto)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top)
+    :disable (objdesign-kind-of-objdesign-top
+              write-object))
 
   ;; Interaction between WRITE-OBJECT and POP-FRAME and errors:
 
@@ -1276,7 +1273,6 @@
              (not (errorp (write-object objdes val (pop-frame compst)))))
     :induct t
     :enable (objdesign-top
-             write-object
              read-object-of-pop-frame))
 
   (defruled not-errorp-of-write-object-auto-of-pop-frame
@@ -1286,7 +1282,6 @@
                   (not (errorp (write-object objdes val compst))))
              (not (errorp (write-object objdes val (pop-frame compst)))))
     :enable (pop-frame
-             write-object
              compustate-frames-number
              len
              fix
@@ -1300,8 +1295,7 @@
                   (not (errorp (write-object objdes val compst))))
              (not (errorp (write-object objdes val (pop-frame compst)))))
     :induct t
-    :enable (write-object
-             objdesign-top
+    :enable (objdesign-top
              read-object-top-auto-of-pop-frame
              nfix)
     :hints ('(:use not-errorp-of-write-object-auto-of-pop-frame)))
@@ -1316,7 +1310,8 @@
     :enable (not-errorp-of-write-object-top-static/alloc-of-pop-frame
              not-errorp-of-write-object-top-auto-of-pop-frame)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top)
+    :disable (objdesign-kind-of-objdesign-top
+              write-object))
 
   ;; Interaction between WRITE-OBJECT and EXIT-SCOPE:
 
@@ -1326,7 +1321,6 @@
              (equal (exit-scope (write-object objdes val compst))
                     (write-object objdes val (exit-scope compst))))
     :enable (exit-scope
-             write-object
              push-frame
              pop-frame
              top-frame))
@@ -1339,7 +1333,6 @@
                     (write-object objdes val (exit-scope compst))))
     :induct t
     :enable (objdesign-top
-             write-object
              read-object-top-static/alloc-of-exit-scope)
     :hints ('(:use exit-scope-of-write-object-static/alloc)))
 
@@ -1356,7 +1349,6 @@
                         (exit-scope compst)
                       (write-object objdes val (exit-scope compst)))))
     :enable (exit-scope
-             write-object
              push-frame
              pop-frame
              top-frame
@@ -1402,7 +1394,8 @@
     :enable (exit-scope-of-write-object-top-static/alloc
              exit-scope-of-write-object-top-auto)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top)
+    :disable (objdesign-kind-of-objdesign-top
+              write-object))
 
   ;; Interaction between WRITE-OBJECT and EXIT-SCOPE:
 
@@ -1413,7 +1406,6 @@
              (not (errorp (write-object objdes val (exit-scope compst)))))
     :induct t
     :enable (objdesign-top
-             write-object
              read-object-of-exit-scope))
 
   (defruled not-errorp-of-write-object-auto-of-exit-scope
@@ -1426,7 +1418,6 @@
                   (not (errorp (write-object objdes val compst))))
              (not (errorp (write-object objdes val (exit-scope compst)))))
     :enable (exit-scope
-             write-object
              push-frame
              pop-frame
              top-frame
@@ -1448,8 +1439,7 @@
                   (not (errorp (write-object objdes val compst))))
              (not (errorp (write-object objdes val (exit-scope compst)))))
     :induct t
-    :enable (write-object
-             objdesign-top
+    :enable (objdesign-top
              read-object-top-auto-of-exit-scope
              nfix)
     :hints ('(:use not-errorp-of-write-object-auto-of-exit-scope)))
@@ -1467,7 +1457,8 @@
     :enable (not-errorp-of-write-object-top-static/alloc-of-exit-scope
              not-errorp-of-write-object-top-auto-of-exit-scope)
     :use objdesign-kind-of-objdesign-top
-    :disable objdesign-kind-of-objdesign-top))
+    :disable (objdesign-kind-of-objdesign-top
+              write-object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
