@@ -140,9 +140,10 @@
 ;drop?:
 (defconst *minus-1* 4294967295)
 
+;gen, move
 (defthm plus-equal-bvplus-rewrite
   (implies (and (natp x)
-                (unsigned-byte-p 32 n)
+                (unsigned-byte-p 32 n) ; maybe n is a small constant (require that?)
                 )
            (equal (equal (+ n x) (bvplus 32 n x))
                   (and (unsigned-byte-p 32 x)
@@ -183,7 +184,7 @@
                   (bvplus (+ 1 free) 1 x)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-
+;gen, move
 (defthm plus-1-bvplus-minus-1
   (equal (+ 1 (bvplus 32 *minus-1* x))
          (if (EQUAL (BVCHOP 32 X) 0)
@@ -387,7 +388,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvuminus) (bvminus-becomes-bvplus-of-bvuminus))
 ;;            :cases ((natp size)))))
 
-
 (defthm sbvlt-cancel-hack2
   (implies (integerp x)
            (equal (sbvlt 32 4 (bvplus 32 4 x))
@@ -431,11 +431,10 @@
 ;;   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm integerp-of-times-1/4-bvchop-31
-  (IMPLIES (AND (INTEGERP X)
-                )
-           (equal (INTEGERP (* 1/4 (bvchop 31 X)))
-                  (INTEGERP (* 1/4 X))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (;MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
+  (implies (integerp x)
+           (equal (integerp (* 1/4 (bvchop 31 x)))
+                  (integerp (* 1/4 x))))
+  :hints (("Goal" :in-theory (e/d (bvchop mod) (;mod-recollapse-lemma2 mod-recollapse-lemma
                                                 )))))
 
 ;gen
@@ -447,10 +446,9 @@
 ;;                                      integerp-of-*-of-1/4-of-bvchop))))
 
 (defthm integerp-of-times-1/4-logext-32
-  (IMPLIES (AND (INTEGERP X)
-                )
-           (equal (INTEGERP (* 1/4 (LOGEXT 32 X)))
-                  (INTEGERP (* 1/4 X))))
+  (implies (integerp x)
+           (equal (integerp (* 1/4 (logext 32 x)))
+                  (integerp (* 1/4 x))))
   :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthmd bound-when-mult-of-4
@@ -1128,8 +1126,6 @@
            (equal (zp x)
                   (equal 0 x))))
 
-
-
 (defthm slice-31-2-minus-4
   (implies (natp x)
            (equal (SLICE 31 2 (+ -4 x))
@@ -1161,16 +1157,18 @@
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    plus-1-and-bvchop-becomes-bvplus)))))
 
+;gen
 (defthm bvlt-of-bvuminus-trim2
   (implies (unsigned-byte-p 30 z)
-           (equal (BVLT 32 (BVUMINUS 30 x) z)
-                  (BVLT 30 (BVUMINUS 30 x) z)))
+           (equal (bvlt 32 (bvuminus 30 x) z)
+                  (bvlt 30 (bvuminus 30 x) z)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-identity))))
 
+;gen
 (defthm bvlt-of-bvuminus-trim2b
   (implies (unsigned-byte-p 30 z)
-           (equal (BVLT 32 z (BVUMINUS 30 x))
-                  (BVLT 30 z (BVUMINUS 30 x))))
+           (equal (bvlt 32 z (bvuminus 30 x))
+                  (bvlt 30 z (bvuminus 30 x))))
   :hints (("Goal" :in-theory (enable bvlt bvchop-identity))))
 
 ;; (thm
@@ -1355,14 +1353,15 @@
   :hints (("Goal"
            :in-theory (enable bvlt))))
 
-(defthm UNSIGNED-BYTE-P-tighten
+;gen
+(defthm unsigned-byte-p-tighten
   (implies (equal 0 (getbit 31 x))
-           (equal (UNSIGNED-BYTE-P 32 x)
-                  (UNSIGNED-BYTE-P 31 x)))
+           (equal (unsigned-byte-p 32 x)
+                  (unsigned-byte-p 31 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs 1) (ls 31))
-           :in-theory (disable BVCHOP-CONTRACT-HACK-GEN REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1))))
+           :in-theory (disable bvchop-contract-hack-gen rewrite-bv-equality-when-sizes-dont-match-1))))
 
 (defthm bv-3-2-1-hack
   (implies (and (bvlt size 1 x)
@@ -7073,6 +7072,7 @@
                             )))))
 
 ;use polarity?
+;todo: drop?
 (defthmd consp-when-true-listp
   (implies (true-listp x)
            (equal (consp x)
@@ -7215,8 +7215,7 @@
                       (slice 8 5 x)
                     0)))
   :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
-                                  (
-                                   anti-slice)))))
+                                  (anti-slice)))))
 
 ;we may not want to do this if it's surrounded by a bvplus with a large size!
 (defthmd bvplus-of-bvuminus-tighten-31-32

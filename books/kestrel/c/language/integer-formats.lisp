@@ -25,9 +25,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ integer-formats
+(defxdoc+ integer-formats-definitions
   :parents (language)
-  :short "C integer formats."
+  :short "Definitions of the C integer formats."
   :long
   (xdoc::topstring
    (xdoc::p
