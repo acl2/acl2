@@ -950,7 +950,100 @@
     :use
     (:instance objdesign-of-var-aux-lemma
                (frame (+ -1 (len (compustate->frames compst))))
-               (scopes (frame->scopes (car (compustate->frames compst)))))))
+               (scopes (frame->scopes (car (compustate->frames compst))))))
+
+  (defruled read-object-top-static/alloc-of-pop-frame
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (read-object objdes compst))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object))
+
+  (defruled read-object-top-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (read-object objdes compst)))
+                  (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst)))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object
+             pop-frame
+             compustate-frames-number
+             len
+             nfix
+             fix
+             nth))
+
+  (defruled read-object-of-pop-frame
+    (implies (and (not (errorp (read-object objdes compst)))
+                  (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :enable (read-object-top-static/alloc-of-pop-frame
+             read-object-top-auto-of-pop-frame)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top)
+
+  (defruled read-object-top-static/alloc-of-exit-scope
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (read-object objdes compst))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object))
+
+  (defruled read-object-top-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (read-object objdes compst)))
+                  (or (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))
+                      (not (equal
+                            (objdesign-auto->scope (objdesign-top objdes))
+                            (1- (compustate-top-frame-scopes-number compst))))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object
+             exit-scope
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             compustate-scopes-numbers
+             len
+             nfix
+             fix
+             nth))
+
+  (defruled read-object-of-exit-scope
+    (implies (and (not (errorp (read-object objdes compst)))
+                  (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))
+                      (not (equal
+                            (objdesign-auto->scope (objdesign-top objdes))
+                            (1- (compustate-top-frame-scopes-number compst))))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :enable (read-object-top-static/alloc-of-exit-scope
+             read-object-top-auto-of-exit-scope)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
