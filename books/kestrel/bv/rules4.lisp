@@ -386,7 +386,6 @@
                                  ;BVCHOP-TOP-BIT-CASES
                                  )
                                   (EXPONENTS-ADD
-                                   ;BVCAT-OF-+-HIGH ;looped
                                    BVLT-OF-BVCHOP-ARG3-SAME
                                    BVLT-OF-BVCHOP-ARG2
                                    EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
