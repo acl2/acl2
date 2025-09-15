@@ -649,7 +649,6 @@
     type-integerp
 
     iconst-info
-    coerce-iconst-info
 
     var-info
     var-infop
@@ -657,23 +656,18 @@
     coerce-var-info
 
     expr-unary-infop
-    coerce-expr-unary-info
 
     expr-binary-infop
-    coerce-expr-binary-info
 
     tyname-info
     tyname-infop
-    coerce-tyname-info
 
     param-declor-nonabstract-info
     param-declor-nonabstract-info->type
-    coerce-param-declor-nonabstract-info
 
     initdeclor-info
     initdeclor-info->type
     initdeclor-info->typedefp
-    coerce-initdeclor-info
 
     fundef-info
     fundef-info->type
