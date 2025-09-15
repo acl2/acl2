@@ -83,9 +83,13 @@
                     (c::compustate-has-var-with-type-p var type compst))
                (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::objdesign-of-var-of-create-var
-             c::read-object-of-create-var-when-auto-or-static
+             c::read-object-of-create-var-when-auto/static/alloc
              c::objdesign-static->name-of-objdesign-of-var
-             c::objdesign-auto->name-of-objdesign-of-var))
+             c::objdesign-auto->name-of-objdesign-of-var)
+    :use (:instance c::objdesign-kind-of-objdesign-of-var
+                    (var var)
+                    (compst compst))
+    :disable c::objdesign-kind-of-objdesign-of-var)
 
   (defruled c::compustate-has-var-with-type-p-of-create-same-var
     (b* ((compst1 (c::create-var var val compst)))
@@ -94,7 +98,7 @@
                     (equal type (c::type-of-value val)))
                (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::objdesign-of-var-of-create-var
-             c::read-object-of-create-var-when-auto-or-static
+             c::read-object-of-create-var-when-auto/static/alloc
              nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
