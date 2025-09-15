@@ -33,6 +33,7 @@
 (include-book "operations")
 (include-book "computation-states")
 (include-book "dynamic-semantics")
+(include-book "execution-without-function-calls")
 (include-book "variable-preservation-in-execution")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
