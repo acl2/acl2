@@ -385,12 +385,13 @@
     unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
-    unsigned-byte-p-of-bv-array-read-gen ;todo name
+    unsigned-byte-p-forced-of-bool-to-bit
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
-    unsigned-byte-p-of-0-arg1
-    ))
+    unsigned-byte-p-of-bv-array-read-gen ;todo name
+
+    unsigned-byte-p-of-0-arg1))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
 (defund unsigned-byte-p-forced-rules ()
@@ -417,15 +418,15 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
-    unsigned-byte-p-forced-of-leftrotate
-    unsigned-byte-p-forced-of-rightrotate
-    unsigned-byte-p-forced-of-leftrotate32
-    unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
+    unsigned-byte-p-forced-of-leftrotate
+    unsigned-byte-p-forced-of-leftrotate32
+    unsigned-byte-p-forced-of-rightrotate
+    unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-bool-to-bit
     unsigned-byte-p-forced-of-bvshl
     unsigned-byte-p-forced-of-bvshr
-    ;;todo bvashr
+    unsigned-byte-p-forced-of-bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
 

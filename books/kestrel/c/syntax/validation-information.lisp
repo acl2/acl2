@@ -459,29 +459,6 @@
    (value nat))
   :pred iconst-infop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-iconst-info
-  :short "An irrelevant validation information for integer constants."
-  :type iconst-infop
-  :body (make-iconst-info :type (irr-type)
-                          :value 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-iconst-info (x)
-  :returns (info iconst-infop)
-  :short "Coerce a value to @(tsee iconst-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (iconst-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy ICONST-INFOP." x)
-            (irr-iconst-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var-info
@@ -540,28 +517,6 @@
   ((type type))
   :pred expr-unary-infop)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-expr-unary-info
-  :short "An irrelevant validation information for unary expressions."
-  :type expr-unary-infop
-  :body (make-expr-unary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-expr-unary-info (x)
-  :returns (info expr-unary-infop)
-  :short "Coerce a value to @(tsee expr-unary-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (expr-unary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-UNARY-INFOP." x)
-            (irr-expr-unary-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-binary-info
@@ -575,28 +530,6 @@
      The information for a binary expression consists of its type."))
   ((type type))
   :pred expr-binary-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-expr-binary-info
-  :short "An irrelevant validation information for binary expressions."
-  :type expr-binary-infop
-  :body (make-expr-binary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-expr-binary-info (x)
-  :returns (info expr-binary-infop)
-  :short "Coerce a value to @(tsee expr-binary-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (expr-binary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy EXPR-BINARY-INFOP." x)
-            (irr-expr-binary-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -616,31 +549,6 @@
    (uid uid))
   :pred param-declor-nonabstract-infop)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor-nonabstract-info
-  :short "An irrelevant validation information
-          for non-abstract parameter declarators."
-  :type param-declor-nonabstract-infop
-  :body (make-param-declor-nonabstract-info :type (irr-type)
-                                            :uid (irr-uid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-param-declor-nonabstract-info (x)
-  :returns (info param-declor-nonabstract-infop)
-  :short "Coerce a value to @(tsee param-declor-nonabstract-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (param-declor-nonabstract-infop x)
-      x
-    (prog2$ (raise "Internal error: ~
-                    ~x0 does not satisfy PARAM-DECLOR-NONABSTRACT-INFOP." x)
-            (irr-param-declor-nonabstract-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod tyname-info
@@ -654,28 +562,6 @@
      The information for a type name consists of its denoted type."))
   ((type type))
   :pred tyname-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tyname-info
-  :short "An irrelevant validation information for type names."
-  :type tyname-infop
-  :body (make-tyname-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-tyname-info (x)
-  :returns (info tyname-infop)
-  :short "Coerce a value to @(tsee tyname-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (tyname-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TYNAME-INFOP." x)
-            (irr-tyname-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -704,28 +590,6 @@
    (typedefp bool)
    (uid? uid-option))
   :pred initdeclor-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-initdeclor-info
-  :short "An irrelevant validation information for initializer declarators."
-  :type initdeclor-infop
-  :body (make-initdeclor-info :type (irr-type) :uid? nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-initdeclor-info (x)
-  :returns (info initdeclor-infop)
-  :short "Coerce a value to @(tsee initdeclor-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (initdeclor-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy INITDECLOR-INFOP." x)
-            (irr-initdeclor-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,28 +627,6 @@
      the final validation table for the translation unit."))
   ((table-end valid-table))
   :pred transunit-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-transunit-info
-  :short "An irrelevant validation information for translation units."
-  :type transunit-infop
-  :body (make-transunit-info :table-end (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-transunit-info (x)
-  :returns (info transunit-infop)
-  :short "Coerce a value to @(tsee transunit-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (transunit-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TRANSUNIT-INFOP." x)
-            (irr-transunit-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -989,10 +831,27 @@
 
   ;; theorems about accessors:
 
+  (defruled iconst-infop-of-iconst->info
+    (implies (iconst-annop iconst)
+             (iconst-infop (iconst->info iconst)))
+    :enable iconst-annop)
+
+  (defruled var-infop-of-expr-ident->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :ident))
+             (var-infop (expr-ident->info expr)))
+    :enable expr-annop)
+
   (defruled expr-annop-of-expr-unary->arg
     (implies (and (expr-annop expr)
                   (expr-case expr :unary))
              (expr-annop (expr-unary->arg expr)))
+    :enable expr-annop)
+
+  (defruled expr-unary-infop-of-expr-unary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :unary))
+             (expr-unary-infop (expr-unary->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-binary->arg1
@@ -1007,6 +866,12 @@
              (expr-annop (expr-binary->arg2 expr)))
     :enable expr-annop)
 
+  (defruled expr-binary-infop-of-expr-binary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :binary))
+             (expr-binary-infop (expr-binary->info expr)))
+    :enable expr-annop)
+
   (defruled declor-annop-of-initdeclor->declor
     (implies (initdeclor-annop initdeclor)
              (declor-annop (initdeclor->declor initdeclor)))
@@ -1015,6 +880,11 @@
   (defruled initer-option-annop-of-initdeclor->init?
     (implies (initdeclor-annop initdeclor)
              (initer-option-annop (initdeclor->init? initdeclor)))
+    :enable initdeclor-annop)
+
+  (defruled initdeclor-infop-of-initdeclor->info
+    (implies (initdeclor-annop initdeclor)
+             (initdeclor-infop (initdeclor->info initdeclor)))
     :enable initdeclor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
@@ -1094,11 +964,16 @@
      initdeclor-annop-of-initdeclor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
+     iconst-infop-of-iconst->info
+     var-infop-of-expr-ident->info
      expr-annop-of-expr-unary->arg
+     expr-unary-infop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
+     expr-binary-infop-of-expr-binary->info
      declor-annop-of-initdeclor->declor
      initer-option-annop-of-initdeclor->init?
+     initdeclor-infop-of-initdeclor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
@@ -1114,7 +989,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-type ((expr exprp))
-  :guard (expr-unambp expr)
+  :guard (and (expr-unambp expr)
+              (expr-annop expr))
   :returns (type typep)
   :short "Type of an expression, from the validation information."
   :long
@@ -1138,12 +1014,11 @@
      This is an approximation."))
   (expr-case
    expr
-   :ident (var-info->type (coerce-var-info expr.info))
+   :ident (var-info->type expr.info)
    :const (if (const-case expr.const :int)
               (iconst-info->type
-               (coerce-iconst-info
-                (iconst->info
-                 (const-int->unwrap expr.const))))
+               (iconst->info
+                (const-int->unwrap expr.const)))
             (type-unknown))
    :string (type-unknown)
    :paren (expr-type expr.inner)
@@ -1153,11 +1028,11 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (expr-unary-info->type (coerce-expr-unary-info expr.info))
+   :unary (expr-unary-info->type expr.info)
    :sizeof (type-unknown)
    :alignof (type-unknown)
-   :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
-   :binary (expr-binary-info->type (coerce-expr-binary-info expr.info))
+   :cast (tyname-info->type (tyname->info expr.type))
+   :binary (expr-binary-info->type expr.info)
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
               (then-type (expr-type expr.then))
@@ -1173,12 +1048,14 @@
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initer-type ((initer initerp))
-  :guard (initer-unambp initer)
+  :guard (and (initer-unambp initer)
+              (initer-annop initer))
   :returns (type typep)
   :short "Type of an initializer, from the validation information."
   :long
@@ -1191,12 +1068,14 @@
    initer
    :single (expr-type initer.expr)
    :list (type-unknown))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stmt-types ((stmt stmtp))
-  :guard (stmt-unambp stmt)
+  :guard (and (stmt-unambp stmt)
+              (stmt-annop stmt))
   :returns (types type-option-setp)
   :short "Types of a statement, from the validation information."
   :long
@@ -1239,12 +1118,14 @@
    :asm nil)
   :measure (stmt-count stmt)
   :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define block-item-types ((item block-itemp))
-  :guard (block-item-unambp item)
+  :guard (and (block-item-unambp item)
+              (block-item-annop item))
   :returns (types type-option-setp)
   :short "Types of a block item, from the validation information."
   :long
@@ -1257,12 +1138,14 @@
    :decl (set::insert nil nil)
    :stmt (stmt-types item.stmt)
    :ambig (impossible))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define block-item-list-types ((items block-item-listp))
-  :guard (block-item-list-unambp items)
+  :guard (and (block-item-list-unambp items)
+              (block-item-list-annop items))
   :returns (types type-option-setp)
   :short "Types of a list of block items, from the validation information."
   :long
@@ -1286,12 +1169,14 @@
        (items-types (block-item-list-types (cdr items))))
     (set::union (set::delete nil item-types) items-types))
   :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-types ((fundef fundefp))
-  :guard (fundef-unambp fundef)
+  :guard (and (fundef-unambp fundef)
+              (fundef-annop fundef))
   :returns (types type-setp
                   :hints
                   (("Goal"
@@ -1330,4 +1215,5 @@
                   (set::insert (type-void) (set::delete nil types))
                 types)))
     types)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))

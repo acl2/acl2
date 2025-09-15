@@ -1857,7 +1857,7 @@
 ;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
 (set-axe-rule-priority acl2::bvchop-identity 1)
 
-;; for 32-bit mode, with no stop-pcs
+;; for 32-bit mode, without :stop-pcs
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(    ;; newer scheme, 32-bit:
@@ -1868,14 +1868,14 @@
     esp-is-abovep
     ))
 
-;; for 64-bit mode, with no stop-pcs
+;; for 64-bit mode, without :stop-pcs
 (defund symbolic-execution-rules64 ()
   (declare (xargs :guard t))
-  '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
-    run-until-stack-shorter-than-opener-axe ; not for IFs
-    run-until-stack-shorter-than-base-axe ; not for IFs
-    run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
-    stack-shorter-thanp
+  '(;run-until-return ; we always open this, to expose run-until-stack-shorter-than
+    ;run-until-stack-shorter-than-opener-axe ; not for IFs
+    ;run-until-stack-shorter-than-base-axe ; not for IFs
+    ;run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ;stack-shorter-thanp
 
     ;; new scheme:
     ;; run-until-return32
@@ -1896,7 +1896,7 @@
     ;; acl2::bvminus-of-+-arg3
     acl2::bvminus-of-+-cancel-arg3))
 
-;; Extra rules to support the :stop-pcs option:
+;; for 32-bit mode, with :stop-pcs
 ;;newer-scheme, 32-bits:
 (defund symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
@@ -1906,7 +1906,8 @@
     run-until-esp-is-above-or-reach-pc-of-if-arg2
     esp-is-abovep))
 
-;; Extra rules to support the :stop-pcs option:
+;; for 64-bit mode, with :stop-pcs
+;; todo: do we have any tests of this?
 (defund symbolic-execution-rules-with-stop-pcs64 ()
   (declare (xargs :guard t))
   '(run-until-return-or-reach-pc ; we always open this, to expose run-until-stack-shorter-than

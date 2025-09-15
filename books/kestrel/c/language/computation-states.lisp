@@ -836,7 +836,8 @@
                      (identp var1)
                      (valuep val))
                 (b* ((scope (omap::update var val (car scopes))))
-                  (equal (objdesign-of-var-aux var1 frame (cons scope (cdr scopes)))
+                  (equal (objdesign-of-var-aux
+                          var1 frame (cons scope (cdr scopes)))
                          (if (equal var1 var)
                              (objdesign-auto var frame (1- (len scopes)))
                            (objdesign-of-var-aux var1 frame scopes)))))
@@ -934,23 +935,7 @@
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
-  :hooks (:fix)
-
-  ///
-
-  (defruled valuep-of-read-object-of-objdesign-of-var
-    (b* ((objdes (objdesign-of-var var compst)))
-      (implies objdes
-               (valuep (read-object objdes compst))))
-    :enable (objdesign-of-var
-             read-object
-             fix
-             compustate-frames-number
-             top-frame)
-    :use
-    (:instance objdesign-of-var-aux-lemma
-               (frame (+ -1 (len (compustate->frames compst))))
-               (scopes (frame->scopes (car (compustate->frames compst)))))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,29 +1075,85 @@
                                 acl2::nth-of-rev
                                 update-nth-of-rev))))
 
-  (defruled compustatep-of-write-object-of-objdesign-of-var
-    (b* ((objdes (objdesign-of-var var compst)))
-      (implies objdes
-               (equal (compustatep (write-object objdes val compst))
-                      (equal (type-of-value (read-object objdes compst))
-                             (type-of-value val)))))
-    :enable (objdesign-of-var
-             write-object
-             read-object
-             top-frame
-             compustate-frames-number)
-    :use
-    (valuep-of-read-object-of-objdesign-of-var
-     (:instance objdesign-of-var-aux-lemma
-                (frame (+ -1 (len (compustate->frames compst))))
-                (scopes (frame->scopes (car (compustate->frames compst)))))))
-
   (defruled assoc-of-compustate-static-of-write-object
     (b* ((compst1 (write-object objdes val compst)))
       (implies (not (errorp compst1))
                (iff (omap::assoc var (compustate->static compst1))
                     (omap::assoc var (compustate->static compst)))))
-    :induct t))
+    :induct t)
+
+  (defruled not-errorp-of-read-object-when-not-write-error
+    (implies (not (errorp (write-object objdes val compst)))
+             (not (errorp (read-object objdes compst))))
+    :induct t
+    :enable (read-object
+             not-errorp-of-value-struct-read-when-not-write-error
+             not-errorp-of-value-array-read-when-not-write-error
+             not-errorp-when-valuep))
+
+  (defruled objdesign-top-auto-frame-bound-when-write-object-not-error
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (< (objdesign-auto->frame (objdesign-top objdes))
+                (compustate-frames-number compst)))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             nfix
+             compustate-frames-number))
+
+  (defruled objdesign-top-auto-scope-bound-when-write-object-not-error
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (equal (objdesign-auto->frame (objdesign-top objdes))
+                         (1- (compustate-frames-number compst)))
+                  (not (errorp (write-object objdes val compst))))
+             (< (objdesign-auto->scope (objdesign-top objdes))
+                (compustate-top-frame-scopes-number compst)))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             nfix
+             compustate-frames-number
+             compustate-scopes-numbers)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled valuep-of-read-object-of-objdesign-of-var
+  :short "If @(tsee objdesign-of-var) succeeds,
+          @(tsee read-object) returns a value (not an error)."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (valuep (read-object objdes compst))))
+  :enable (objdesign-of-var
+           read-object
+           fix
+           compustate-frames-number
+           top-frame)
+  :use
+  (:instance objdesign-of-var-aux-lemma
+             (frame (+ -1 (len (compustate->frames compst))))
+             (scopes (frame->scopes (car (compustate->frames compst))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled compustatep-of-write-object-of-objdesign-of-var
+  :short "If @(tsee objdesign-of-var) succeeds,
+          @(tsee write-object) returns a computation state (not an error)."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (compustatep (write-object objdes val compst))
+                    (equal (type-of-value (read-object objdes compst))
+                           (type-of-value val)))))
+  :enable (objdesign-of-var
+           write-object
+           read-object
+           top-frame
+           compustate-frames-number)
+  :use
+  (valuep-of-read-object-of-objdesign-of-var
+   (:instance objdesign-of-var-aux-lemma
+              (frame (+ -1 (len (compustate->frames compst))))
+              (scopes (frame->scopes (car (compustate->frames compst)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1149,7 +1190,8 @@
                           (if (equal (compustate-frames-number compst) 0)
                               (objdesign-static var)
                             (objdesign-auto var
-                                            (1- (compustate-frames-number compst))
+                                            (1- (compustate-frames-number
+                                                 compst))
                                             (1- (len (frame->scopes
                                                       (top-frame compst))))))
                         (objdesign-of-var var1 compst)))))
@@ -1301,3 +1343,401 @@
            max
            equal-of-objdesign-auto-fix
            equal-of-objdesign-static-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read-object-of-pop-frame
+  :short "Invariance of @(tsee read-object) under @(tsee pop-frame),
+          provided that the object is not in the popped frame."
+
+  (defruled read-object-top-static/alloc-of-pop-frame
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (read-object objdes compst))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object))
+
+  (defruled read-object-top-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (read-object objdes compst)))
+                  (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst)))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object
+             pop-frame
+             compustate-frames-number
+             len
+             nfix
+             fix
+             nth))
+
+  (defruled read-object-of-pop-frame
+    (implies (and (not (errorp (read-object objdes compst)))
+                  (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))))
+             (equal (read-object objdes (pop-frame compst))
+                    (read-object objdes compst)))
+    :enable (read-object-top-static/alloc-of-pop-frame
+             read-object-top-auto-of-pop-frame)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read-object-of-exit-scope
+  :short "Invariance of @(tsee read-object) under @(tsee exit-scope),
+          provided that the object is not in the exited scope."
+
+  (defruled read-object-top-static/alloc-of-exit-scope
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (read-object objdes compst))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object))
+
+  (defruled read-object-top-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (read-object objdes compst)))
+                  (or (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))
+                      (not (equal
+                            (objdesign-auto->scope (objdesign-top objdes))
+                            (1- (compustate-top-frame-scopes-number compst))))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :induct t
+    :enable (objdesign-top
+             read-object
+             exit-scope
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             compustate-scopes-numbers
+             len
+             nfix
+             fix
+             nth))
+
+  (defruled read-object-of-exit-scope
+    (implies (and (not (errorp (read-object objdes compst)))
+                  (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal
+                            (objdesign-auto->frame (objdesign-top objdes))
+                            (1- (compustate-frames-number compst))))
+                      (not (equal
+                            (objdesign-auto->scope (objdesign-top objdes))
+                            (1- (compustate-top-frame-scopes-number compst))))))
+             (equal (read-object objdes (exit-scope compst))
+                    (read-object objdes compst)))
+    :enable (read-object-top-static/alloc-of-exit-scope
+             read-object-top-auto-of-exit-scope)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection pop-frame-of-write-object
+  :short "How @(tsee write-object) changes under @(tsee pop-frame)."
+
+  (defruled pop-frame-of-write-object-static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (pop-frame (write-object objdes val compst))
+                    (write-object objdes val (pop-frame compst))))
+    :enable (pop-frame
+             write-object))
+
+  (defruled pop-frame-of-write-object-top-static/alloc
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (pop-frame (write-object objdes val compst))
+                    (write-object objdes val (pop-frame compst))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             pop-frame)
+    :hints ('(:use ((:instance read-object-of-pop-frame
+                               (objdes (objdesign-member->super objdes)))
+                    (:instance read-object-of-pop-frame
+                               (objdes (objdesign-element->super objdes))))
+              ;; for speed:
+              :expand (write-object
+                       objdes
+                       val
+                       (compustate (compustate->static compst)
+                                   (cdr (compustate->frames compst))
+                                   (compustate->heap compst))))))
+
+  (defruled pop-frame-of-write-object-auto
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (equal (pop-frame (write-object objdes val compst))
+                    (if (equal (objdesign-auto->frame objdes)
+                               (1- (compustate-frames-number compst)))
+                        (pop-frame compst)
+                      (write-object objdes val (pop-frame compst)))))
+    :enable (write-object
+             pop-frame
+             compustate-frames-number
+             len
+             fix
+             nfix
+             update-nth-of-rev
+             nth))
+
+  (defruled pop-frame-of-write-object-top-auto
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (equal (pop-frame (write-object objdes val compst))
+                    (if (equal (objdesign-auto->frame (objdesign-top objdes))
+                               (1- (compustate-frames-number compst)))
+                        (pop-frame compst)
+                      (write-object objdes val (pop-frame compst)))))
+    :induct t
+    :enable (write-object
+             objdesign-top
+             read-object-of-pop-frame
+             nfix)
+    :hints ('(:use pop-frame-of-write-object-auto)))
+
+  (defruled pop-frame-of-write-object
+    (implies (not (errorp (write-object objdes val compst)))
+             (equal (pop-frame (write-object objdes val compst))
+                    (if (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                             (equal (objdesign-auto->frame (objdesign-top objdes))
+                                    (1- (compustate-frames-number compst))))
+                        (pop-frame compst)
+                      (write-object objdes val (pop-frame compst)))))
+    :enable (pop-frame-of-write-object-top-static/alloc
+             pop-frame-of-write-object-top-auto)
+    :use objdesign-kind-of-objdesign-top
+    :disable (objdesign-kind-of-objdesign-top)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exit-scope-of-write-object
+  :short "How @(tsee write-object) changes under @(tsee exit-scope)."
+
+  (defruled exit-scope-of-write-object-static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (exit-scope (write-object objdes val compst))
+                    (write-object objdes val (exit-scope compst))))
+    :enable (exit-scope
+             write-object
+             push-frame
+             pop-frame
+             top-frame))
+
+  (defruled exit-scope-of-write-object-top-static/alloc
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (exit-scope (write-object objdes val compst))
+                    (write-object objdes val (exit-scope compst))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-top-static/alloc-of-exit-scope)
+    :hints ('(:use exit-scope-of-write-object-static/alloc)))
+
+  (defruled exit-scope-of-write-object-auto
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (equal (exit-scope (write-object objdes val compst))
+                    (if (and (equal
+                              (objdesign-auto->frame objdes)
+                              (1- (compustate-frames-number compst)))
+                             (equal
+                              (objdesign-auto->scope objdes)
+                              (1- (compustate-top-frame-scopes-number compst))))
+                        (exit-scope compst)
+                      (write-object objdes val (exit-scope compst)))))
+    :enable (exit-scope
+             write-object
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             compustate-scopes-numbers
+             len
+             fix
+             nfix
+             update-nth-of-rev
+             nth))
+
+  (defruled exit-scope-of-write-object-top-auto
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (errorp (write-object objdes val compst))))
+             (equal (exit-scope (write-object objdes val compst))
+                    (if (and (equal
+                              (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst)))
+                             (equal
+                              (objdesign-auto->scope (objdesign-top objdes))
+                              (1- (compustate-top-frame-scopes-number compst))))
+                        (exit-scope compst)
+                      (write-object objdes val (exit-scope compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-top-auto-of-exit-scope
+             nfix)
+    :hints ('(:use exit-scope-of-write-object-auto)))
+
+  (defruled exit-scope-of-write-object
+    (implies (not (errorp (write-object objdes val compst)))
+             (equal (exit-scope (write-object objdes val compst))
+                    (if (and (objdesign-case (objdesign-top objdes) :auto)
+                             (equal
+                              (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst)))
+                             (equal
+                              (objdesign-auto->scope (objdesign-top objdes))
+                              (1- (compustate-top-frame-scopes-number compst))))
+                        (exit-scope compst)
+                      (write-object objdes val (exit-scope compst)))))
+    :enable (exit-scope-of-write-object-top-static/alloc
+             exit-scope-of-write-object-top-auto)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection not-errorp-of-write-object-of-pop-frame
+  :short "If writing an object not in the top frame causes no error,
+          neither does writing the object after popping the frame."
+
+  (defruled not-errorp-of-write-object-top-static/alloc-of-pop-frame
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-of-pop-frame))
+
+  (defruled not-errorp-of-write-object-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (not (equal (objdesign-auto->frame objdes)
+                              (1- (compustate-frames-number compst))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :enable (pop-frame
+             write-object
+             compustate-frames-number
+             len
+             fix
+             nfix
+             nth))
+
+  (defruled not-errorp-of-write-object-top-auto-of-pop-frame
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                              (1- (compustate-frames-number compst))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-top-auto-of-pop-frame
+             nfix)
+    :hints ('(:use not-errorp-of-write-object-auto-of-pop-frame)))
+
+  (defruled not-errorp-of-write-object-of-pop-frame
+    (implies (and (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (pop-frame compst)))))
+    :enable (not-errorp-of-write-object-top-static/alloc-of-pop-frame
+             not-errorp-of-write-object-top-auto-of-pop-frame)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection not-errorp-of-write-object-of-exit-scope
+  :short "If writing an object not in the top scope causes no error,
+          neither does writing the object after exiting the scope."
+
+  (defruled not-errorp-of-write-object-top-static/alloc-of-exit-scope
+    (implies (and (member-equal (objdesign-kind (objdesign-top objdes))
+                                '(:static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-of-exit-scope))
+
+  (defruled not-errorp-of-write-object-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind objdes) :auto)
+                  (or (not (equal (objdesign-auto->frame objdes)
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope objdes)
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :enable (exit-scope
+             write-object
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             compustate-scopes-numbers
+             len
+             fix
+             nfix
+             update-nth-of-rev
+             nth))
+
+  (defruled not-errorp-of-write-object-top-auto-of-exit-scope
+    (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
+                  (or (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope (objdesign-top objdes))
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :induct t
+    :enable (objdesign-top
+             write-object
+             read-object-top-auto-of-exit-scope
+             nfix)
+    :hints ('(:use not-errorp-of-write-object-auto-of-exit-scope)))
+
+  (defruled not-errorp-of-write-object-of-exit-scope
+    (implies (and (or (member-equal (objdesign-kind (objdesign-top objdes))
+                                    '(:static :alloc))
+                      (not (equal (objdesign-auto->frame (objdesign-top objdes))
+                                  (1- (compustate-frames-number compst))))
+                      (not (equal (objdesign-auto->scope (objdesign-top objdes))
+                                  (1- (compustate-top-frame-scopes-number
+                                       compst)))))
+                  (not (errorp (write-object objdes val compst))))
+             (not (errorp (write-object objdes val (exit-scope compst)))))
+    :enable (not-errorp-of-write-object-top-static/alloc-of-exit-scope
+             not-errorp-of-write-object-top-auto-of-exit-scope)
+    :use objdesign-kind-of-objdesign-top
+    :disable objdesign-kind-of-objdesign-top))

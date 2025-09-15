@@ -88,4 +88,12 @@
   (defret value-kind-of-value-array-write
     (implies (not (errorp new-array))
              (equal (value-kind new-array)
-                    :array))))
+                    :array)))
+
+  (defruled not-errorp-of-value-array-read-when-not-write-error
+    (implies (not (errorp (value-array-write index elem array)))
+             (not (errorp (value-array-read index array))))
+    :enable (value-array-read
+             nfix
+             value-array->length
+             not-errorp-when-valuep)))

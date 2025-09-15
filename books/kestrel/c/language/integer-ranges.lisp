@@ -40,7 +40,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the nullary functions defined in @(see integer-formats),
+    "Based on the nullary functions
+     defined in @(see integer-formats-definitions),
      for each standard signed and unsigned integer type except @('_Bool'),
      we define the following:")
    (xdoc::ul
@@ -65,7 +66,7 @@
      but also as plain integers in certain ranges,
      which should lead to simpler reasoning about ranges.")
    (xdoc::p
-    "As mentioned in @(see integer-formats),
+    "As mentioned in @(see integer-formats-definitions),
      the definitions of ranges we give here
      should still work if the format definitions are changed."))
   :order-subtopics t

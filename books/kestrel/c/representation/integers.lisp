@@ -45,7 +45,7 @@
      the C standard signed and unsigned integer values,
      except @('_Bool') for now,
      based on their "
-    (xdoc::seetopic "integer-formats" "format definitions")
+    (xdoc::seetopic "integer-formats-definitions" "format definitions")
     " and "
     (xdoc::seetopic "integer-ranges" "range definitions")
     ". As mentioned in the documentation of the integer formats,
