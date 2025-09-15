@@ -34,6 +34,7 @@
 (include-book "computation-states")
 (include-book "dynamic-semantics")
 (include-book "execution-without-function-calls")
+(include-book "frame-and-scope-peeling")
 (include-book "variable-preservation-in-execution")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
