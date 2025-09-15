@@ -108,13 +108,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; should almost always fire.
-(defthm part-select-width-low-becomes-slice
+(defthm part-select-width-low-becomes-slice-gen
   (implies (and (integerp low)
                 (integerp width))
            (equal (bitops::part-select-width-low x width low)
                   (slice (+ low width -1) low x)))
   :hints (("Goal" :in-theory (enable bitops::part-select-width-low slice))))
+
+;; TODO: When low and width are not constants, can we go to a shift or something?
+;; Disabled since we have the -gen one.  This one will be used by Axe.
+(defthmd part-select-width-low-becomes-slice
+  (implies (and (syntaxp (and (quotep low)
+                              (quotep width)))
+                (integerp low)
+                (integerp width))
+           (equal (bitops::part-select-width-low x width low)
+                  (slice (+ low width -1) low x)))
+  :hints (("Goal" :use part-select-width-low-becomes-slice-gen
+           :in-theory (disable part-select-width-low-becomes-slice-gen))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

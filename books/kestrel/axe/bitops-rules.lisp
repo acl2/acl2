@@ -48,5 +48,5 @@
            :use ash-negative-becomes-slice)))
 
 ; Only needed for Axe.
-(defthmd integerp-of-part-install-width-low$inline
-  (integerp (bitops::part-install-width-low$inline val x width low)))
+(defthmd integerp-of-part-install-width-low
+  (integerp (bitops::part-install-width-low val x width low)))
