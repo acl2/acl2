@@ -693,6 +693,12 @@
     :enable (push-frame
              pop-frame))
 
+  (defrule compustate->heap-of-create-var
+    (b* ((compst1 (create-var var val compst)))
+      (implies (not (errorp compst1))
+               (equal (compustate->heap compst1)
+                      (compustate->heap compst)))))
+
   (defruled exit-scope-of-create-var
     (implies (and (> (compustate-frames-number compst) 0)
                   (> (compustate-top-frame-scopes-number compst) 1)
@@ -1241,7 +1247,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this is limited to automatic and static storage.
+    "For now this is limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
      we plan to tackle these eventually."))
@@ -1257,6 +1263,14 @@
                       (read-object objdes compst))))
     :enable (read-object
              assoc-of-compustate-static-of-create-var))
+
+  (defruled read-object-of-create-var-when-alloc
+    (implies (and (equal (objdesign-kind objdes) :alloc)
+                  (not (errorp (create-var var val compst)))
+                  (identp var))
+             (equal (read-object objdes (create-var var val compst))
+                    (read-object objdes compst)))
+    :enable read-object)
 
   (defruled read-object-of-create-var-when-auto
     (implies (and (equal (objdesign-kind objdes) :auto)
@@ -1292,8 +1306,8 @@
        :induct t
        :enable nth)))
 
-  (defruled read-object-of-create-var-when-auto-or-static
-    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+  (defruled read-object-of-create-var-when-auto/static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
                   (not (errorp (create-var var val compst)))
                   (identp var))
              (equal (read-object objdes (create-var var val compst))
@@ -1313,6 +1327,7 @@
                         (remove-flexible-array-member val)
                       (read-object objdes compst))))
     :enable (read-object-of-create-var-when-static
+             read-object-of-create-var-when-alloc
              read-object-of-create-var-when-auto)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
