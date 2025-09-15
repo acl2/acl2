@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ variable-preservation-in-execution
-  :parents (language)
+  :parents (dynamic-semantics)
   :short "Preservation of variables under execution"
   :long
   (xdoc::topstring
