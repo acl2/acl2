@@ -147,7 +147,7 @@
    (xdoc::p
     "We prove theorems about how this function interacts
      with creating variables and with writing objects.
-     Some of these theorems generalize similar ones for @(tsee exit-frame)."))
+     Some of these theorems generalize similar ones for @(tsee exit-scope)."))
   (cond ((zp m) (compustate-fix compst))
         ((= (compustate-frames-number compst) 0) (compustate-fix compst))
         ((= (compustate-top-frame-scopes-number compst) 1)
