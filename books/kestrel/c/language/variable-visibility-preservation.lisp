@@ -25,31 +25,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ variable-preservation-in-execution
+(defxdoc+ variable-visibility-preservation
   :parents (dynamic-semantics)
-  :short "Preservation of variables under execution"
+  :short "Preservation of variable visibility under execution."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prove theorems about the fact that,
+    "We prove theorems saying that,
      in our dynamic semantics of C,
-     the execution functions preserve the variables in the computation state:
-     for each execution function,
-     if a variable exists before execution,
-     then it also exists after execution.
-     This preservation is critically dependent on
-     the big-step nature of our execution functions:
-     clearly, in a small-step execution, variables may disappear
-     as scopes are exited and frames are popped;
-     but in a big-step execution,
-     frames are popped and scopes are exited only after
-     pushing frames and entering scopes.")
+     if a variable with a certain name
+     is visible in the computation state before an execution function,
+     then a variable with the same name
+     is visible in the computation state after the execution function.
+     The variable may be the same or a different one,
+     e.g. after executing a block item declaration
+     that introduces a variable that hides one in an outer scope.")
    (xdoc::p
-    "we prove these properties by induction,
-     on computation states involving "
-    (xdoc::seetopic "the frame-and-scope-peeling"
-                    "peeling of frames and scopes")
-    ", and then we obtain the desired properties as corollaries."))
+    "The visibility is expressed via @(tsee objdesign-of-var).
+     We prove an inductively stronger property, involving "
+    (xdoc::seetopic "frame-and-scope-peeling"
+                    "the peeling of frames and scopes")
+    ", from which the desired theorems follow as corollaries."))
   :order-subtopics t
   :default-parent t)
 
@@ -58,13 +54,13 @@
 (define-sk objdesign-of-var-preservep ((compst compustatep)
                                        (compst1 compustatep))
   :returns (yes/no booleanp)
-  :short "Check if all variables in a computation state
-          are also in another computation state,
+  :short "Check if all variable names visible in a computation state
+          are also visible in another computation state,
           for any number of peeled frames and scopes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This expressed the property that we want to prove by induction."))
+    "This expresses the property that we want to prove by induction."))
   (forall (var n m)
           (implies (and (identp var)
                         (natp n)
@@ -93,11 +89,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-create-var
-  :short "Preservation of variables under @(tsee create-var)."
+  :short "Preservation of variable visibility under @(tsee create-var)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicates @(tsee objdesign-of-var-preservep)
+    "The predicate @(tsee objdesign-of-var-preservep)
      holds between a computation state
      and the one obtained from it via @(tsee create-var).")
    (xdoc::p
@@ -177,7 +173,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-exit-scope-and-exit-scope
-  :short "Preservation of variables is invariant
+  :short "Preservation of variable visibility is invariant
           under exiting a scope in both computation states."
   :long
   (xdoc::topstring
@@ -270,10 +266,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-exit-scope-when-enter-scope
-  :short "If variables are preserved between
+  :short "If variable visibility is preserved between
           a computation state just after entering a scope
           and another computation state,
-          they are preserved also between
+          it is preserved also between
           the first computation state before entering the scope
           and the second computation state after exiting a scope."
   :long
@@ -304,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-pop-frame-and-pop-frame
-  :short "Preservation of variables is invariant
+  :short "Preservation of variable visibility is invariant
           under popping a frame in both computation states."
   :long
   (xdoc::topstring
@@ -347,10 +343,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-pop-frame-when-push-frame
-  :short "If variables are preserved between
+  :short "If variable visibility is preserved between
           a computation state just after pushing a frame
           and another computation state,
-          they are preserved also between
+          it is preserved also between
           the first computation state before pushing the frame
           and the second computation state after popping a frame."
   :long
@@ -378,7 +374,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-write-object
-  :short "Preservation of variables under @(tsee write-object)."
+  :short "Preservation of variable visbility under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -414,7 +410,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection objdesign-of-var-preservep-of-exec
-  :short "Preservation of variables under execution,
+  :short "Preservation of variable visibility under execution,
           for any number of peeled frames and scopes."
   :long
   (xdoc::topstring
@@ -523,7 +519,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection objdesign-of-var-of-exec
-  :short "Preservation of variables under execution."
+  :short "Preservation of variable visibility under execution."
 
   (defruled objdesign-of-var-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
