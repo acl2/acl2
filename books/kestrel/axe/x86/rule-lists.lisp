@@ -460,7 +460,7 @@
 ;; (defund read-and-write-rules-non-bv ()
 ;;   (declare (xargs :guard t))
 ;;   '(read-of-write-irrel
-;;     read-of-write-when-separate ; todo: rename to have separate in the name
+;;     read-of-write-when-separate
 ;;     ))
 
 ;; SMT-amendable read-of-write rules:
@@ -6380,10 +6380,11 @@
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
-(set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
+(set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 
-;; Try last
-(set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe 1) ; todo: add smt to name
+;; Try these as a last resort:
+;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
+(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p-axe-smt 1)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)

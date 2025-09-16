@@ -12,7 +12,7 @@
 (in-package "X")
 
 ;; This book contains supporting material that is Axe-specific (e.g., rules
-;; that use axe-syntaxp or axe-bind-free).
+;; that use axe-syntaxp, axe-bind-free, or axe-smt).
 
 ;; TODO: Factor out any non-Axe-specific stuff
 
@@ -101,7 +101,8 @@
 (defthmd aref1-rewrite ;for axe
   (implies (and (not (equal :header n))
                 (not (equal :default n))
-                (assoc-equal n l))
+                (assoc-equal n l) ; optimize using a binding-hyp
+                )
            (equal (aref1 name l n)
                   (lookup-equal n l)))
   :hints (("Goal" :in-theory (enable lookup-equal aref1))))
@@ -433,13 +434,11 @@
 ;; For use by Axe.  Can't disable since this is in :rule-classes nil.
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)
-                              (quotep flag2)
-                              ))
+                              (quotep flag2)))
                 (axe-syntaxp (lighter-dargp flag2 flag1))
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
-                (member-eq flag2 *flags*)
-                )
+                (member-eq flag2 *flags*))
            (equal (set-flag flag1 val1 (set-flag flag2 val2 x86))
                   (set-flag flag2 val2 (set-flag flag1 val1 x86))))
   :hints (("Goal" :use (:instance set-flag-of-set-flag-diff)
@@ -839,9 +838,11 @@
   :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
                                      x86-operation-mode))))
 
-(defopeners bv-array-read-chunk-little)
+(defopeners bv-array-read-chunk-little) ; restrict?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A scheme for removing shadowed writes
 
 ;; WARNING: Keep in sync with the analogous scheme for RISC-V:
 
@@ -1001,7 +1002,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd read-of-write-irrel-bv-axe
+;; or do we want a rule that has a disjoint-regions hyp, so we don't have to rephrase such things in BV terms?
+(defthmd read-of-write-irrel-bv-axe-smt
   (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2)))
                 (axe-smt (bvle 48 n1 (bvminus 48 addr2 addr1)))
                 (unsigned-byte-p 48 n1)
@@ -1011,13 +1013,25 @@
   :hints (("Goal" :use (:instance read-of-write-irrel-gen)
            :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
 
-(defthmd canonical-address-p-when-bvlt-of-bvplus-axe
-  (implies (and (signed-byte-p 64 x)
-                (axe-smt (bvlt 64 (bvplus 64 140737488355328 x) 281474976710656)))
-           (canonical-address-p x))
-  :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p bvlt signed-byte-p
-                              acl2::bvchop-when-negative-lemma))))
+;; ;; drop?
+;; (defthmd canonical-address-p-when-bvlt-of-bvplus-axe-smt
+;;   (implies (and (signed-byte-p 64 x)
+;;                 (axe-smt (bvlt 64 (bvplus 64 140737488355328 x) 281474976710656)))
+;;            (canonical-address-p x))
+;;   :hints (("Goal" :cases ((< x 0))
+;;            :in-theory (enable canonical-address-p bvlt signed-byte-p
+;;                               acl2::bvchop-when-negative-lemma))))
+
+(defthm unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt
+  (implies (and (canonical-regionp len ad2) ;free vars
+                ;; (in-region64p ad len ad2) ; instead, we use the 2 hyps below
+                (natp len)
+                (axe-smt (bvlt 64 (bvminus 64 ad ad2) len)) ; add is in the region
+                (integerp ad)
+                (integerp ad2))
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :use unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus
+           :in-theory (disable unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

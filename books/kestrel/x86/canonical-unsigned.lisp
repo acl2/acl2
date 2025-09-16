@@ -148,6 +148,16 @@
                                      bvlt bvuminus bvplus
                                      acl2::bvchop-of-sum-cases))))
 
+(defthm unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus
+  (implies (and (canonical-regionp len ad2) ;free vars
+                ;; (in-region64p ad len ad2) ; instead, we use the 2 hyps below
+                (natp len)
+                (bvlt 64 (bvminus 64 ad ad2) len) ; add is in the region
+                (integerp ad)
+                (integerp ad2))
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :in-theory (enable in-region64p))))
+
 (defthm canonical-regionp-of-+-arg2
   (implies (and (integerp x)
                 (integerp y))
@@ -158,3 +168,7 @@
                                      acl2::bvplus-of-+-arg3))))
 
 ;; todo: prove that a subregion of a canonical region is a canonical region
+
+;; sanity check:
+;; TODO: Prove that a canonical region is at most 2^48 bytes
+(thm (not (canonical-regionp (expt 2 64) ad)) :hints (("Goal" :in-theory (enable canonical-regionp))))
