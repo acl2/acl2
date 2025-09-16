@@ -86,7 +86,7 @@
     :disable objdesign-of-var-preservep
     :enable objdesign-of-var-preservep-necc))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-create-var
   :short "Preservation of variable visibility under @(tsee create-var)."
@@ -170,7 +170,7 @@
                  var1 (peel-scopes m (peel-frames n compst1)))))
      :use (lemma1 lemma2 lemma3))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-exit-scope-and-exit-scope
   :short "Preservation of variable visibility is invariant
@@ -297,7 +297,7 @@
                   (compst1 compst1))
   :enable exit-scope-of-enter-scope)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-pop-frame-and-pop-frame
   :short "Preservation of variable visibility is invariant
@@ -371,14 +371,14 @@
                   (compst1 compst1))
   :enable pop-frame-of-push-frame)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled objdesign-of-var-preservep-of-write-object
   :short "Preservation of variable visbility under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicates @(tsee objdesign-of-var-preservep)
+    "The predicate @(tsee objdesign-of-var-preservep)
      holds between a computation state
      and the one obtained from it via @(tsee write-object).")
    (xdoc::p
@@ -407,7 +407,7 @@
      :disable objdesign-kind-of-objdesign-top
      ::use objdesign-kind-of-objdesign-top)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection objdesign-of-var-preservep-of-exec
   :short "Preservation of variable visibility under execution,
