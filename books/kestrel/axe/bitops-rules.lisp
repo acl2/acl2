@@ -14,6 +14,7 @@
 (include-book "kestrel/bv/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
 (include-book "axe-syntax")
 (include-book "axe-syntax-functions-bv")
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/ash" :dir :system)) ; for ash-negative-becomes-slice
@@ -22,13 +23,10 @@
 
 (local (in-theory (disable ash)))
 
-;todo: we could use unsigned-byte-p-forced in these rules!
-
+;; We can only do this when we know the size of X
 (defthmd part-install-width-low-becomes-bvcat-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
-                (unsigned-byte-p xsize x)
-                (natp xsize) ;drop?
-;                (< (+ width low) xsize)   ;allow = ?
+                (unsigned-byte-p-forced xsize x)
                 (natp low)
                 (natp width))
            (equal (bitops::part-install-width-low val x width low)
@@ -37,11 +35,12 @@
                          (+ width low)
                          (bvcat width val low x)))))
 
+;; Is ASH really a bitops function?
+;; We can only do this when we know the size of X
 (defthmd ash-negative-becomes-slice-axe
-  (implies (and (< n 0)
+  (implies (and (< n 0) ; could allow 0, could restrict to constant n
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-         ;       (<= (- n) xsize)
+                (unsigned-byte-p-forced xsize x)
                 (integerp n))
            (equal (ash x n)
                   (slice (+ -1 xsize) (- n) x)))
@@ -49,5 +48,5 @@
            :use ash-negative-becomes-slice)))
 
 ; Only needed for Axe.
-(defthmd integerp-of-part-install-width-low$inline
-  (integerp (bitops::part-install-width-low$inline val x width low)))
+(defthmd integerp-of-part-install-width-low
+  (integerp (bitops::part-install-width-low val x width low)))
