@@ -1144,10 +1144,9 @@
            fix
            compustate-frames-number
            top-frame)
-  :use
-  (:instance objdesign-of-var-aux-lemma
-             (frame (+ -1 (len (compustate->frames compst))))
-             (scopes (frame->scopes (car (compustate->frames compst))))))
+  :use (:instance objdesign-of-var-aux-lemma
+                  (frame (+ -1 (len (compustate->frames compst))))
+                  (scopes (frame->scopes (car (compustate->frames compst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
