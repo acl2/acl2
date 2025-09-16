@@ -135,10 +135,6 @@
                                          repeatbit
                                          )
                                    (; BVPLUS-OF-*-ARG2
-                                    ;;BVCAT-OF-+-HIGH ;looped
-
-
-
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 

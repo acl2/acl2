@@ -1683,6 +1683,7 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;do this better with congruences?
+;todo: can loop with bvplus
 (defthmd bvcat-of-+-high
   (implies (and (integerp x)
                 (integerp y)
@@ -1690,9 +1691,9 @@
                 (natp lowsize))
            (equal (bvcat highsize (+ x y) lowsize lowval)
                   (bvcat highsize (bvplus highsize x y) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
+;todo: can loop with bvplus
 (defthmd bvcat-of-+-low
   (implies (and (integerp x)
                 (integerp y)
@@ -1700,8 +1701,7 @@
                 (natp lowsize))
            (equal (bvcat highsize highval lowsize (+ x y))
                   (bvcat highsize highval lowsize (bvplus lowsize x y))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 ;todo: rename
 (defthmd bvplus-of-*-arg2
   (implies (and (integerp y)

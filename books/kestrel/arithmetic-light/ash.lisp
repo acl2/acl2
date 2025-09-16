@@ -24,7 +24,7 @@
 
 (in-theory (disable ash))
 
-(defthm ash-of-0
+(defthm ash-of-0-arg2
   (equal (ash i 0)
          (ifix i))
   :hints (("Goal" :in-theory (enable ash))))
