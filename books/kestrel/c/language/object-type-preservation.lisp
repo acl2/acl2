@@ -225,8 +225,8 @@
      (b* ((compst1 (create-var var val compst))
           (peeled-compst (peel-scopes m (peel-frames n compst)))
           (peeled-compst1 (peel-scopes m (peel-frames n compst1))))
-       (implies (and (not (zp n)) ; <<<
-                     (> (compustate-frames-number compst) 0) ; <<<
+       (implies (and (not (zp n))
+                     (> (compustate-frames-number compst) 0)
                      (not (errorp compst1))
                      (not (errorp (read-object objdes peeled-compst))))
                 (and (not (errorp (read-object objdes peeled-compst1)))
@@ -577,21 +577,18 @@
     (defthm object-type-preservep-of-exec-obj-declon
       (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp compst1)))
                  (object-type-preservep compst compst1)))
       :flag exec-obj-declon)
     (defthm object-type-preservep-of-exec-block-item
       (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
                  (object-type-preservep compst compst1)))
       :flag exec-block-item)
     (defthm object-type-preservep-of-exec-block-item-list
       (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
                  (object-type-preservep compst compst1)))
       :flag exec-block-item-list)
@@ -805,7 +802,6 @@
   (defruled object-type-of-exec-block-item
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
@@ -826,7 +822,6 @@
   (defruled object-type-of-exec-block-item-list
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
