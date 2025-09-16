@@ -13,12 +13,7 @@
 (verify-termination expand-tilde-to-user-home-dir)
 ;(verify-guards expand-tilde-to-user-home-dir :otf-flg t) ; todo: needs a guard
 
-(local (include-book "system/extend-pathname" :dir :system)) ; for the verify termination ; todo: avoid non-local theory event, then make this non-local
-(verify-termination merge-using-dot-dot)
-(verify-termination our-merge-pathnames)
-(verify-termination directory-of-absolute-pathname)
-(verify-termination extend-pathname+)
-(verify-termination extend-pathname)
+(include-book "system/extend-pathname" :dir :system) ; for the verify termination
 
 ;; (verify-guards merge-using-dot-dot) ; todo
 
