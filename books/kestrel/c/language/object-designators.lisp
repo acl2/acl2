@@ -148,6 +148,17 @@
                            (objdesign-static->name objdes2))))
     :enable objdesign-static->name
     :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2)))
+
+  (defruled equal-of-objdesign-alloc-fix
+    (implies (and (objdesign-case objdes1 :alloc)
+                  (objdesign-case objdes2 :alloc))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (equal (objdesign-alloc->get objdes1)
+                           (objdesign-alloc->get objdes2))))
+    :enable objdesign-alloc->get
+    :expand ((objdesign-fix objdes1)
              (objdesign-fix objdes2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
