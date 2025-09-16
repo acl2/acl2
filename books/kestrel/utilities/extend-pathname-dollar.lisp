@@ -1,6 +1,6 @@
 ; An improved version of extend-pathname
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,10 +12,15 @@
 
 (verify-termination expand-tilde-to-user-home-dir)
 ;(verify-guards expand-tilde-to-user-home-dir :otf-flg t) ; todo: needs a guard
-;(verify-termination merge-using-dot-dot) ;todo
-;(verify-termination our-merge-pathnames)
-;(verify-termination extend-pathname+)
-;(verify-termination extend-pathname)
+
+(local (include-book "system/extend-pathname" :dir :system)) ; for the verify termination ; todo: avoid non-local theory event, then make this non-local
+(verify-termination merge-using-dot-dot)
+(verify-termination our-merge-pathnames)
+(verify-termination directory-of-absolute-pathname)
+(verify-termination extend-pathname+)
+(verify-termination extend-pathname)
+
+;; (verify-guards merge-using-dot-dot) ; todo
 
 ;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
 ;; (extend-pathname "." "../foo" state).
@@ -26,7 +31,8 @@
                                   (stringp dir))
                               (stringp filename))
                   :stobjs state
-                  :mode :program))
+                  :verify-guards nil ; todo
+                  ))
   (if (keywordp dir)
       (extend-pathname dir filename state)
     ;; canonical-pathname makes the path absolute:
@@ -51,7 +57,8 @@
                                   (stringp dir))
                               (string-listp filenames))
                   :stobjs state
-                  :mode :program))
+                  :verify-guards nil ; todo
+                  ))
   (if (endp filenames)
       nil
     (cons (extend-pathname$ dir (first filenames) state)
