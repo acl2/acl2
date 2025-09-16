@@ -66,7 +66,7 @@
                                   (acl2::x x)
                                   (acl2::y 'string)))))))
 
-(in-theory (disable coerce-inverse-1))
+(local (in-theory (disable coerce-inverse-1)))
 
 (local (defthm len-revappend
          (equal (len (revappend x y))
