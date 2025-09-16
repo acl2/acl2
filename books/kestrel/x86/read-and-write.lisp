@@ -2149,10 +2149,10 @@
                              ((:e expt) ; memory exhaustion
                               ))))))
 
-; same n and same address
+; the read and the write same the n and the same address.
+;; could restrict to constant n
 (defthm read-of-write-same
   (implies (and (<= n 281474976710656) ; 2^48
-                ;; (integerp addr)
                 (integerp n))
            (equal (read n addr (write n addr val x86))
                   (bvchop (* 8 n) val)))
@@ -2254,9 +2254,8 @@
 
 ;; subsumed by read-of-write-same
 (defthm read-1-of-write-1-same
-  (implies t ;(integerp addr) ; drop?  maybe have write fix this arg
-           (equal (read 1 addr (write 1 addr val x86))
-                  (bvchop 8 val))))
+  (equal (read 1 addr (write 1 addr val x86))
+         (bvchop 8 val)))
 
 (defthm read-1-of-write-1-diff
   (implies (not (equal (bvchop 48 addr1) (bvchop 48 addr2)))
@@ -2401,7 +2400,7 @@
 ;;   :hints (("Goal" :expand (write 4 addr val x86)
 ;;            :in-theory (enable read write))))
 
-
+;drop? ; uses <= instead of bvle
 (defthm read-of-write-irrel-gen
   (implies (and (<= n2 (bvminus 48 addr1 addr2)) ; use bvle instead of <= ?
                 (<= n1 (bvminus 48 addr2 addr1))
@@ -2934,6 +2933,7 @@
 ;;                              (+ 1 addr2)
 ;;                              (logtail 8 val))))
 
+;; same address, at least as many bytes written as read
 (defthm read-of-write-within-same-address
   (implies (and (<= n1 n2)
                 (<= n2 281474976710656) ; 2^48
@@ -3372,9 +3372,10 @@
                                write-of-bvchop-arg3 ; todo: just keep the gen one?
                                )))))
 
-;move
+;move up?
+;see also the SMT version of this rule
 (defthm read-of-write-irrel-bv
-  (implies (and (bvle 48 n2 (bvminus 48 addr1 addr2))
+  (implies (and (bvle 48 n2 (bvminus 48 addr1 addr2)) ; these 2 hyps are the expanded form of disjoint-regions48p
                 (bvle 48 n1 (bvminus 48 addr2 addr1))
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))

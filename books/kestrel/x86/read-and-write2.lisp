@@ -10,13 +10,15 @@
 
 (in-package "X")
 
-;; The rules in this book use the functions in disjoint.lisp, which can be
-;; opened up to BV terms.
+;; The rules in this book use the functions in
+;; books/kestrel/memory/memory48.lisp, which can be opened up to BV terms.
 
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
 (include-book "kestrel/memory/memory48" :dir :system)
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regions48p len1 start1 len2 start2)
@@ -130,6 +132,7 @@
                                      bvlt bvminus BVUMINUS bvplus
                                      acl2::bvchop-of-sum-cases))))
 
+;; Good for 2 sub-regions of the same region
 (defthm read-of-write-when-disjoint-regions48p
   (implies (and (disjoint-regions48p n1 ad1 n2 ad2)
                 (integerp ad1)
@@ -140,6 +143,7 @@
                   (read n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read write))))
 
+;move
 (defthm subregion48p-when-not-unsigned-byte-p
   (implies (and (not (unsigned-byte-p 48 len1))
                 (integerp len1))
@@ -164,6 +168,7 @@
 ;;                       t))))
 ;;   :hints (("Goal" :in-theory (enable subregion48p unsigned-byte-p))))
 
+;; Good for subregions of corresponding, larger disjoint regions.
 (defthm read-of-write-when-disjoint-regions48p-gen
   (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
                 (subregion48p n1 ad1 len1 start1)
@@ -473,7 +478,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; (defthm read-of-write-when-subregion48p
 ;;   (implies (and (subregion48p n1 ad1 n2 ad2)
 ;;                 (unsigned-byte-p 48 n2)
@@ -538,6 +542,7 @@
 ;move!
 (include-book "canonical-unsigned")
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce? why?
+
 (defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
   (equal (equal (bvsx 64 48 x) x)
          (and (unsigned-byte-p 64 x)
@@ -570,7 +575,6 @@
   :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
                                   (x (bvplus 64 offset ad)))
            :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
-
 
 ;move
 ;; todo: prove that unsigned-canonical-address-p is equivalent to bvsx doing nothing
@@ -610,5 +614,4 @@
                   ))
   :hints (("Goal" :in-theory (enable read write acl2::bvminus-of-+-arg2
                                      in-region48p ; why?
-                                     bvlt
-                                     ))))
+                                     bvlt))))

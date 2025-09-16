@@ -1003,8 +1003,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; or do we want a rule that has a disjoint-regions hyp, so we don't have to rephrase such things in BV terms?
+;; this can help if we have two subregions of the same region (same base address)
 (defthmd read-of-write-irrel-bv-axe-smt
-  (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2)))
+  (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2))) ; these 2 hyps are the opened form of disjoint-regions48p
                 (axe-smt (bvle 48 n1 (bvminus 48 addr2 addr1)))
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
