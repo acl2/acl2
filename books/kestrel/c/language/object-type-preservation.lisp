@@ -16,22 +16,10 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "std/lists/nth" :dir :system))
-(local (include-book "std/lists/update-nth" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruledl update-nth-of-rev
-  (implies (and (< (nfix i) (len x)))
-           (equal (update-nth i a (rev x))
-                  (rev (update-nth (- (1- (len x)) (nfix i)) a x))))
-  :induct t
-  :enable (update-nth len rev fix nfix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
