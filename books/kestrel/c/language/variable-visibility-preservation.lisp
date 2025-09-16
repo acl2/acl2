@@ -466,21 +466,18 @@
     (defthm objdesign-of-var-preservep-of-exec-obj-declon
       (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp compst1)))
                  (objdesign-of-var-preservep compst compst1)))
       :flag exec-obj-declon)
     (defthm objdesign-of-var-preservep-of-exec-block-item
       (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
                  (objdesign-of-var-preservep compst compst1)))
       :flag exec-block-item)
     (defthm objdesign-of-var-preservep-of-exec-block-item-list
       (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
                  (objdesign-of-var-preservep compst compst1)))
       :flag exec-block-item-list)
@@ -643,7 +640,6 @@
   (defruled objdesign-of-var-of-exec-obj-declon
     (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp compst1))
                     (identp var)
                     (objdesign-of-var var compst))
@@ -659,7 +655,6 @@
   (defruled objdesign-of-var-of-exec-block-item
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
@@ -676,7 +671,6 @@
   (defruled objdesign-of-var-of-exec-block-item-list
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
