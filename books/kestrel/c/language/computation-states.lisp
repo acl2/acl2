@@ -1332,24 +1332,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled read-object-of-write-object-when-auto-or-static
+(defruled read-object-of-write-object-when-auto/static/alloc
   :short "How @(tsee read-object) changes under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a read-over-write theorem.")
    (xdoc::p
-    "For now this is limited to automatic and static storage.
+    "For now this is limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
      we plan to tackle these eventually."))
-  (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
-                (member-equal (objdesign-kind objdes1) '(:auto :static))
+  (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
+                (member-equal (objdesign-kind objdes1) '(:auto :static :alloc))
                 (not (errorp (write-object objdes val compst))))
            (equal (read-object objdes1 (write-object objdes val compst))
                   (if (equal (objdesign-fix objdes1)
                              (objdesign-fix objdes))
-                      (remove-flexible-array-member val)
+                      (if (equal (objdesign-kind objdes) :alloc)
+                          (value-fix val)
+                        (remove-flexible-array-member val))
                     (read-object objdes1 compst))))
   :enable (read-object
            write-object
@@ -1357,7 +1359,8 @@
            nfix
            max
            equal-of-objdesign-auto-fix
-           equal-of-objdesign-static-fix))
+           equal-of-objdesign-static-fix
+           equal-of-objdesign-alloc-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

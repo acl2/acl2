@@ -152,9 +152,16 @@
              c::exec-expr-pure
              c::exec-ident
              c::objdesign-of-var-of-write-object
-             c::read-object-of-write-object-when-auto-or-static
+             c::read-object-of-write-object-when-auto/static/alloc
              c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
+             c::value-kind-not-array-when-value-integerp)
+    :use ((:instance c::objdesign-kind-of-objdesign-of-var
+                     (var var)
+                     (compst compst))
+          (:instance c::objdesign-kind-of-objdesign-of-var
+                     (var var1)
+                     (compst compst)))
+    :disable c::objdesign-kind-of-objdesign-of-var)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,8 +366,10 @@
           (c::exec-block-item-list item+items compst fenv limit)))
       (implies (and (not (c::errorp result2))
                     (or (and (equal (c::stmt-value-kind result0) :return)
-                             (c::compustate-has-var-with-type-p var type compst0))
+                             (c::compustate-has-var-with-type-p
+                              var type compst0))
                         (and (equal (c::stmt-value-kind result0) :none)
-                             (c::compustate-has-var-with-type-p var type compst1))))
+                             (c::compustate-has-var-with-type-p
+                              var type compst1))))
                (c::compustate-has-var-with-type-p var type compst2)))
     :enable c::exec-block-item-list))
