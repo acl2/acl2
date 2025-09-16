@@ -1360,6 +1360,9 @@
     ;; needed to shorten arrays by making the indices obviously smaller bvs:
     acl2::bvchop-tighten-when-not-bvlt-of-constant
     acl2::bvchop-tighten-when-bvlt-of-constant
+
+    acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2
+    acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
     ))
 
 ;; ;not used?
@@ -5011,7 +5014,6 @@
     r14-of-if
     r15-of-if
 
-
     rax-of-!rflags
     rbx-of-!rflags
     rcx-of-!rflags
@@ -5935,8 +5937,10 @@
             ;x86isa::idiv-spec-32 ; trying
             acl2::bvchop-when-size-is-not-posp ; move?
 
-            acl2::bvcat-of-if-arg2 ; these just lift the if
-            acl2::bvcat-of-if-arg4
+            ;; do we want these?:
+            ;; acl2::bvcat-of-bvif-arg2
+            ;; acl2::bvcat-of-bvif-arg4
+
             ;;acl2::bvif-of-0-arg1
             ;acl2::bvplus-when-size-is-not-positive ; todo: more like this, make a rule-list
 

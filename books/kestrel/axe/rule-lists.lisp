@@ -528,6 +528,10 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    ;; uncomment these if we use trim to convert these functions:
+    ;; trim-of-logext-becomes-bvsx
+    ;; trim-of-logtail-becomes-slice
+    trim-of-if-becomes-bvif
     ;; todo: replace these with a more general scheme:
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
