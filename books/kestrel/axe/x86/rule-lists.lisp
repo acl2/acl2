@@ -2050,6 +2050,7 @@
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
     ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP
     canonical-regionp-of-+-arg2
     unsigned-canonical-address-p-of-bvif
     unsigned-canonical-address-p-of-if
