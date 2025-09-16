@@ -1376,35 +1376,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled read-object-of-write-object-when-auto/static/alloc
+(defsection read-object-of-write-object
   :short "How @(tsee read-object) changes under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a read-over-write theorem.")
-   (xdoc::p
-    "For now this is limited to top-level object designators.
+    "We provide a read-over-write theorem,
+     limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
-     we plan to tackle these eventually."))
-  (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
-                (member-equal (objdesign-kind objdes1) '(:auto :static :alloc))
-                (not (errorp (write-object objdes val compst))))
-           (equal (read-object objdes1 (write-object objdes val compst))
-                  (if (equal (objdesign-fix objdes1)
-                             (objdesign-fix objdes))
-                      (if (equal (objdesign-kind objdes) :alloc)
-                          (value-fix val)
-                        (remove-flexible-array-member val))
-                    (read-object objdes1 compst))))
-  :enable (read-object
-           write-object
-           fix
-           nfix
-           max
-           equal-of-objdesign-auto-fix
-           equal-of-objdesign-static-fix
-           equal-of-objdesign-alloc-fix))
+     we plan to tackle these eventually.")
+   (xdoc::p
+    "We also provide an object type preservation theorem,
+     saying that if a computation state includes
+     an object with a certain type,
+     the computation state after a @(tsee write-object)
+     still contains that object with the same type
+     (although the value may have been changed).
+     This theorem is also limited to top-level object designators,
+     for the object whose preservation the theorem asserts;
+     the object designator for @(tsee write-object) is arbitrary."))
+
+  (defruled read-object-of-write-object-when-auto/static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
+                  (member-equal (objdesign-kind objdes1) '(:auto :static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (read-object objdes1 (write-object objdes val compst))
+                    (if (equal (objdesign-fix objdes1)
+                               (objdesign-fix objdes))
+                        (if (equal (objdesign-kind objdes) :alloc)
+                            (value-fix val)
+                          (remove-flexible-array-member val))
+                      (read-object objdes1 compst))))
+    :enable (read-object
+             write-object
+             fix
+             nfix
+             max
+             equal-of-objdesign-auto-fix
+             equal-of-objdesign-static-fix
+             equal-of-objdesign-alloc-fix))
+
+  (defruled read-object-of-write-object-when-auto/static/alloc-existing
+    (b* ((compst1 (write-object objdes1 val compst)))
+      (implies (and (not (errorp compst1))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :induct t
+    :disable (acl2::<-+-negative-0-1)
+    :enable (read-object
+             write-object
+             nfix
+             fix
+             max
+             not-errorp-when-valuep
+             update-nth-of-rev)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
