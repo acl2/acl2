@@ -1256,10 +1256,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this is limited to top-level object designators.
+    "The theorem that
+     equates @(tsee read-object) after @(tsee create-var) to a conditional term
+     is limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
-     we plan to tackle these eventually."))
+     we plan to tackle these eventually.")
+   (xdoc::p
+    "The theorem that assumes
+     the existence of the object before the variable creation
+     works with every kind of object designator."))
 
   (defruled read-object-of-create-var-when-static
     (implies (and (equal (objdesign-kind objdes) :static)
@@ -1337,7 +1343,37 @@
                       (read-object objdes compst))))
     :enable (read-object-of-create-var-when-static
              read-object-of-create-var-when-alloc
-             read-object-of-create-var-when-auto)))
+             read-object-of-create-var-when-auto))
+
+  (defruled read-object-of-create-var-when-existing
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (not (errorp (read-object objdes compst))))
+               (equal (read-object objdes compst1)
+                      (read-object objdes compst))))
+    :induct (read-object objdes compst)
+    :enable (read-object
+             objdesign-top
+             create-var
+             push-frame
+             pop-frame
+             top-frame
+             len
+             nfix
+             fix
+             nth)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (< (nfix i) (len scopes))
+                     (omap::assoc var0 (nth i scopes))
+                     (not (omap::assoc var (car scopes))))
+                (equal (omap::assoc
+                        var0 (nth i (cons (omap::update var val (car scopes))
+                                          (cdr scopes))))
+                       (omap::assoc
+                        var0 (nth i scopes))))
+       :induct t
+       :enable nth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
