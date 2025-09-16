@@ -186,13 +186,13 @@
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-helper width term operators))))
 
-;; WARNING: Keep this in sync with the rules in convert-to-bv-rules.lisp.
-;; TODO: Consider adding IF and then getting rid of the rules that introduce BVIF
+;; WARNING: Keep this in sync with the rules in trim-elim-rules-non-bv.lisp.
 (defconst *functions-convertible-to-bv*
   '(binary-logand
     binary-logior
     binary-logxor
     lognot
+    ;; if ; for ACL2, unlike for Axe, we don't trim IF because ACL2 might split on the IF, leaving a trim with no appropriate term to trim
     ;; logext ; todo: uncomment?
     ;; logtail ; todo: uncomment?
     binary-+
