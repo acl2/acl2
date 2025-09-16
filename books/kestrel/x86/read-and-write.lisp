@@ -153,8 +153,8 @@
 ;todo: enable this less below, using rules instead?
 ;todo: could we instead express this as a bv-array-read 48 on the memory (converted to a bv-array)?
 (defund read-byte (addr x86)
-  (declare (xargs :stobjs x86
-                  :guard (integerp addr)))
+  (declare (xargs :guard (integerp addr)
+                  :stobjs x86))
   (bvchop 8 (memi (bvchop 48 addr) X86)))
 
 (defthm read-byte-when-not-integerp
@@ -373,9 +373,9 @@
 ;; Reads an N-byte chunk starting at ADDR (in little endian fashion).
 ;; Unlike read-bytes, this returns the value as a bit-vector.
 (defund read (n addr x86)
-  (declare (xargs :stobjs x86
-                  :guard (and (natp n)
-                              (integerp addr))))
+  (declare (xargs :guard (and (natp n)
+                              (integerp addr))
+                  :stobjs x86))
   (if (zp n)
       0
     (let ((addr (mbe :logic (ifix addr) :exec addr)) ; treats non-integer address as 0
@@ -1312,9 +1312,9 @@
 
 ;; Writes the BYTE at address ADDR.
 (defund write-byte (addr byte x86)
-  (declare (xargs :stobjs x86
-                  :guard (and (acl2::unsigned-byte-p 8 byte)
-                              (integerp addr))))
+  (declare (xargs :guard (and (acl2::unsigned-byte-p 8 byte)
+                              (integerp addr))
+                  :stobjs x86))
   (!memi (bvchop 48 addr)
          (bvchop 8 byte)
          X86))
@@ -1469,10 +1469,10 @@
 
 ;; Writes the N-byte chunk VAL starting at ADDR (in little endian fashion).
 (defund write (n addr val x86)
-  (declare (xargs :stobjs x86
-                  :guard (and (natp n)
+  (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p (* 8 n) val)
-                              (integerp addr))))
+                              (integerp addr))
+                  :stobjs x86))
   (if (zp n)
       x86
     (let ((x86 (write-byte addr (bvchop 8 val) X86)))
@@ -2511,10 +2511,10 @@
 
 ;; this version does the write-byte last
 (defund write-alt (n addr val x86)
-  (declare (xargs :stobjs x86
-                  :guard (and (natp n)
+  (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p (* 8 n) val)
-                              (integerp addr))))
+                              (integerp addr))
+                  :stobjs x86))
   (if (zp n)
       x86
       (let ((x86 (write-alt (+ -1 n)
