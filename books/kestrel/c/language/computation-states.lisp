@@ -693,6 +693,15 @@
     :enable (push-frame
              pop-frame))
 
+  (defruled compustate->static-of-create-var
+    (implies (not (errorp (create-var var val compst)))
+             (equal (compustate->static (create-var var val compst))
+                    (if (> (compustate-frames-number compst) 0)
+                        (compustate->static compst)
+                      (omap::update (ident-fix var)
+                                    (remove-flexible-array-member val)
+                                    (compustate->static compst))))))
+
   (defrule compustate->heap-of-create-var
     (b* ((compst1 (create-var var val compst)))
       (implies (not (errorp compst1))
