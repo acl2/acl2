@@ -197,8 +197,8 @@
       (implies (and (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::exec-stmt
-             c::compustate-has-var-with-type-p))
+    :enable (c::compustate-has-var-with-type-p
+             c::exec-stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
