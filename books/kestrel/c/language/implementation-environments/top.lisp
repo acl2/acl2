@@ -15,6 +15,7 @@
 (include-book "signed-formats")
 (include-book "schar-formats")
 (include-book "char-formats")
+(include-book "bool-formats")
 (include-book "integer-format-templates")
 (include-book "integer-formats")
 
@@ -61,6 +62,7 @@
                     signed-formats
                     schar-formats
                     char-formats
+                    bool-formats
                     integer-format-templates
                     integer-formats
                     t)
