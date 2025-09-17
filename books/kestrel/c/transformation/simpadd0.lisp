@@ -1781,10 +1781,54 @@
               (block-item-list-annop items-new))
   :returns (mv (stmt stmtp) (gout simpadd0-goutp))
   :short "Transform a compound statement."
-  (declare (ignore items items-thm-name))
   (b* (((simpadd0-gin gin) gin)
-       (stmt-new (stmt-compound items-new)))
-    (mv stmt-new (simpadd0-gout-no-thm gin)))
+       (stmt (stmt-compound items))
+       (stmt-new (stmt-compound items-new))
+       ((unless (and items-thm-name
+                     nil)) ; temporary
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be nIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-compound))
+           :use (,items-thm-name
+                 (:instance stmt-compound-congruence
+                            (old-items ',old-items)
+                            (new-items ',new-items))
+                 (:instance stmt-compound-errors
+                            (items ',old-items)
+                            (fenv old-fenv))
+                 ,@(simpadd0-stmt-compound-lemma-instances
+                    gin.vartys old-items)))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-stmt-compound-lemma-instances ((vartys c::ident-type-mapp)
+                                                   (items c::block-item-listp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance stmt-compound-compustate-vars
+                       (items ',items)
+                       (var ',var)
+                       (type ',type)))
+          (lemma-instances
+           (simpadd0-stmt-compound-lemma-instances (omap::tail vartys) items)))
+       (cons lemma-instance lemma-instances))))
 
   ///
 

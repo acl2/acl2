@@ -757,6 +757,31 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled stmt-compound-congruence
+    (b* ((old (c::stmt-compound old-items))
+         (new (c::stmt-compound new-items))
+         (compst1 (c::enter-scope compst))
+         ((mv old-items-result old-items-compst)
+          (c::exec-block-item-list old-items compst1 old-fenv (1- limit)))
+         ((mv new-items-result new-items-compst)
+          (c::exec-block-item-list new-items compst1 new-fenv (1- limit)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (equal old-items-result new-items-result)
+                    (equal old-items-compst new-items-compst)
+                    (set::in (c::type-option-of-stmt-value old-items-result)
+                             types))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             types))))
+    :expand ((c::exec-stmt (c::stmt-compound old-items) compst old-fenv limit)
+             (c::exec-stmt (c::stmt-compound new-items) compst new-fenv limit)))
+
   ;;;;;;;;;;;;;;;;;;;;
 
   (defruled decl-decl-congruence
@@ -1180,6 +1205,17 @@
     :expand (c::exec-stmt (c::stmt-ifelse test then else) compst fenv limit)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled stmt-compound-errors
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-block-item-list
+                         items (c::enter-scope compst) fenv (1- limit))))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt
+                         (c::stmt-compound items) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-compound items) compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
