@@ -611,7 +611,6 @@
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
        ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
        ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
@@ -629,8 +628,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-result)
-                                  ',ctypes)
-                         ,@vars-post))))
+                                  ',ctypes)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
