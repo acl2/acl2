@@ -452,6 +452,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ienv->bool-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of @('_Bool') objects."
+  (* (bool-format->byte-size
+      (char+short+int+long+llong+bool-format->bool
+       (ienv->char+short+int+long+llong+bool-format ienv)))
+     (uchar-format->size
+      (char+short+int+long+llong+bool-format->uchar
+       (ienv->char+short+int+long+llong+bool-format ienv))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->bool-byte-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bytes of @('_Bool') objects."
+  (bool-format->byte-size
+   (char+short+int+long+llong+bool-format->bool
+    (ienv->char+short+int+long+llong+bool-format ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->ushort-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
