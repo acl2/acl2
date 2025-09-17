@@ -224,17 +224,19 @@
                  (not (equal (c::expr-kind expr?) :call)))
              (b* ((stmt (c::stmt-return expr?))
                   ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-               (implies (and (not (c::errorp result))
+               (implies (and (> (c::compustate-frames-number compst) 0)
+                             (not (c::errorp result))
                              (c::compustate-has-var-with-type-p var
                                                                 type
                                                                 compst))
                         (c::compustate-has-var-with-type-p var
                                                            type
                                                            compst1))))
-    :expand ((c::exec-stmt (c::stmt-return expr?) compst fenv limit)
-             (c::exec-stmt '(:return nil) compst fenv limit))
     :enable (c::compustate-has-var-with-type-p
-             c::exec-expr-call-or-pure))
+             c::var-resolve-of-exec-stmt
+             c::object-type-of-exec-stmt
+             c::not-errorp-when-valuep
+             c::valuep-of-read-object-of-objdesign-of-var))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
