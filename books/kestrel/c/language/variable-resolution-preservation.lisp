@@ -543,12 +543,12 @@
   (defruled var-resolve-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
       (implies (and (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-expr-call
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
                      (n 0)
@@ -559,12 +559,12 @@
   (defruled var-resolve-of-exec-expr-call-or-pure
     (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
       (implies (and (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-expr-call-or-pure
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
                      (n 0)
@@ -575,12 +575,12 @@
   (defruled var-resolve-of-exec-expr-asg
     (b* ((compst1 (exec-expr-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-expr-asg
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1 (exec-expr-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
@@ -590,12 +590,12 @@
   (defruled var-resolve-of-exec-call-or-asg
     (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-expr-call-or-asg
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1 (exec-expr-call-or-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
@@ -605,12 +605,12 @@
   (defruled var-resolve-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
       (implies (and (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-fun
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
                      (n 0)
                      (m 0)))
@@ -621,12 +621,12 @@
     (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-stmt
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1 (mv-nth 1 (exec-stmt s compst fenv limit)))
                      (n 0)
                      (m 0)))
@@ -637,12 +637,12 @@
     (b* (((mv result compst1) (exec-stmt-while test body compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-stmt-while
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
                      (n 0)
@@ -654,12 +654,12 @@
     (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-initer
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-initer initer compst fenv limit)))
                      (n 0)
@@ -671,12 +671,12 @@
     (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp compst1))
-                    (identp var)
                     (objdesign-of-var var (prev-scope/frame compst)))
                (equal (objdesign-of-var var (prev-scope/frame compst1))
                       (objdesign-of-var var (prev-scope/frame compst)))))
     :use (var-resolve-preservep-of-exec-obj-declon
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst (prev-scope/frame compst))
                      (compst1 (prev-scope/frame
                                (exec-obj-declon declon compst fenv limit)))
@@ -689,12 +689,12 @@
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var (prev-scope/frame compst)))
                (equal (objdesign-of-var var (prev-scope/frame compst1))
                       (objdesign-of-var var (prev-scope/frame compst)))))
     :use (var-resolve-preservep-of-exec-block-item
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst (prev-scope/frame compst))
                      (compst1 (prev-scope/frame
                                (mv-nth 1 (exec-block-item
@@ -708,12 +708,12 @@
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (identp var)
                     (objdesign-of-var var (prev-scope/frame compst)))
                (equal (objdesign-of-var var (prev-scope/frame compst1))
                       (objdesign-of-var var (prev-scope/frame compst)))))
     :use (var-resolve-preservep-of-exec-block-item-list
           (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
                      (compst (prev-scope/frame compst))
                      (compst1 (prev-scope/frame
                                (mv-nth 1 (exec-block-item-list
