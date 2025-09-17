@@ -717,7 +717,15 @@
     :enable (exit-scope
              push-frame
              pop-frame
-             top-frame)))
+             top-frame))
+
+  (defruled pop-frame-of-create-var
+    (implies (and (> (compustate-frames-number compst) 0)
+                  (not (errorp (create-var var val compst))))
+             (equal (pop-frame (create-var var val compst))
+                    (pop-frame compst)))
+    :enable (pop-frame
+             push-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
