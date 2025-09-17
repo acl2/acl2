@@ -77,12 +77,6 @@
     :enable (create-var
              fix))
 
-  (defruled peel-frames-of-pop-frame-fold
-    (implies (> (compustate-frames-number compst) 0)
-             (equal (peel-frames n (pop-frame compst))
-                    (peel-frames (1+ (nfix n)) compst)))
-    :enable fix)
-
   (defruled peel-frames-of-exit-scope
     (implies (and (not (zp n))
                   (> (compustate-frames-number compst) 0))
@@ -95,6 +89,12 @@
              compustate-frames-number
              len)
     :expand (peel-frames n compst))
+
+  (defruled peel-frames-of-pop-frame-fold
+    (implies (> (compustate-frames-number compst) 0)
+             (equal (peel-frames n (pop-frame compst))
+                    (peel-frames (1+ (nfix n)) compst)))
+    :enable fix)
 
   (defruled peel-frames-of-write-object
     (implies (not (errorp (write-object objdes val compst)))
