@@ -193,7 +193,7 @@
     binary-logxor
     lognot
     ;; if ; for ACL2, unlike for Axe, we don't trim IF because ACL2 might split on the IF, leaving a trim with no appropriate term to trim
-    ;; logext ; todo: uncomment?
+    logext
     ;; logtail ; todo: uncomment?
     binary-+
     unary--

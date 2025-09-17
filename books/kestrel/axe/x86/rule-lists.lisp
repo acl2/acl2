@@ -2812,6 +2812,10 @@
             ;; x86isa::integerp-when-canonical-address-p-cheap
 
             ;; x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
+
+            ;; these seemed to break things - todo: why?
+            ;; acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            ;; acl2::signed-byte-p-of-+-of---becomes-bv-claim ; todo: alt version?
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -3568,7 +3572,7 @@
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
     slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
-    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop ; todo: involved in loops!
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
     natp-of-+-of-esp-lemma
@@ -4143,7 +4147,7 @@
     esp-of-xw
     ebp-of-xw
 
-    bvplus-of-constant-and-esp-when-overflow ; caused loops with turning + into bvplus
+    bvplus-of-constant-and-esp-when-overflow ; todo: caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
     ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes eax.  TODO: Go directly
@@ -6091,7 +6095,7 @@
             sub-zf-spec64
             ;; todo: how to open the other flags, like pf, to bv notions?
             acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
-            acl2::signed-byte-p-of-+-of---becomes-bv-claim
+            acl2::signed-byte-p-of-+-of---becomes-bv-claim ; todo: alt version?
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
             acl2::bvplus-convert-arg3-to-bv-axe
             acl2::slice-convert-arg3-to-bv-axe

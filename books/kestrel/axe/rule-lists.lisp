@@ -485,7 +485,7 @@
     bvplus-convert-arg3-to-bv-axe-restricted
     bvmult-convert-arg2-to-bv-axe
     bvmult-convert-arg3-to-bv-axe
-    ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
+    ;; bvminus-convert-arg2-to-bv-axe ; todo: these seemed to cause loops, with (memoized applications of bvplus-of-constant-and-esp-when-overflow and/or bvchop-of-+-of-esp-becomes-+-of-esp
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
     bvnot-convert-arg2-to-bv-axe
@@ -528,11 +528,13 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+
     ;; uncomment these if we use trim to convert these functions:
-    ;; trim-of-logext-becomes-bvsx
     ;; trim-of-logtail-becomes-slice
+    trim-of-logext-becomes-bvsx
     trim-of-if-becomes-bvif
-    ;; todo: replace these with a more general scheme:
+
+    ;; todo: replace these with the more general trim scheme:
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
@@ -1723,6 +1725,7 @@
     bvchop-list-does-nothing-rewrite ;rename
     bvchop-list-of-bvchop-list))
 
+;; are these all for when the logext is too big?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
