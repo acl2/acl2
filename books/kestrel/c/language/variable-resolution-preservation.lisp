@@ -42,7 +42,7 @@
      is expressed via the equality of @(tsee objdesign-of-var)
      before and after the execution.
      Compare this notion with
-     the one in @(see variable-visibiliy-preservation).
+     the one in @(see variable-visibility-preservation).
      The exception mentioned above applied to
      the execution of
      object declarations,
