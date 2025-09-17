@@ -251,6 +251,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled object-type-preservep-of-write-object
+  :short "Preservation of object types under @(tsee write-object)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The predicate @(tsee object-type-preservep)
+     holds between a computation state
+     and the one obtained from it via @(tsee write-object).")
+   (xdoc::p
+    "This theorem is used, in @(tsee object-type-preservep-of-exec),
+     to handle the execution of assignments."))
+  (b* ((compst1 (write-object objdes val compst)))
+    (implies (not (errorp compst1))
+             (object-type-preservep compst compst1)))
+  :enable object-type-preservep
+
+  :prep-lemmas
+
+  ((defrule lemma
+     (b* ((compst1 (write-object objdes1 val compst))
+          (peeled-compst (peel-scopes m (peel-frames n compst)))
+          (peeled-compst1 (peel-scopes m (peel-frames n compst1))))
+       (implies (and (not (errorp compst1))
+                     (member-equal (objdesign-kind objdes)
+                                   '(:auto :static :alloc))
+                     (not (errorp (read-object objdes peeled-compst))))
+                (and (not (errorp (read-object objdes peeled-compst1)))
+                     (equal (type-of-value
+                             (read-object objdes peeled-compst1))
+                            (type-of-value
+                             (read-object objdes peeled-compst))))))
+     :enable (peel-frames
+              peel-frames-of-write-object
+              peel-scopes-of-write-object
+              not-errorp-of-write-object-of-peel-frames
+              not-errorp-of-write-object-of-peel-scopes
+              read-object-of-write-object-when-auto/static/alloc-existing)
+     :disable objdesign-kind-of-objdesign-top
+     ::use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled object-type-preservep-of-exit-scope-and-exit-scope
   :short "Preservation of object types is invariant
           under exiting a scope in both computation states."
@@ -475,48 +517,6 @@
                   (compst (push-frame frame compst))
                   (compst1 compst1))
   :enable pop-frame-of-push-frame)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled object-type-preservep-of-write-object
-  :short "Preservation of object types under @(tsee write-object)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The predicate @(tsee object-type-preservep)
-     holds between a computation state
-     and the one obtained from it via @(tsee write-object).")
-   (xdoc::p
-    "This theorem is used, in @(tsee object-type-preservep-of-exec),
-     to handle the execution of assignments."))
-  (b* ((compst1 (write-object objdes val compst)))
-    (implies (not (errorp compst1))
-             (object-type-preservep compst compst1)))
-  :enable object-type-preservep
-
-  :prep-lemmas
-
-  ((defrule lemma
-     (b* ((compst1 (write-object objdes1 val compst))
-          (peeled-compst (peel-scopes m (peel-frames n compst)))
-          (peeled-compst1 (peel-scopes m (peel-frames n compst1))))
-       (implies (and (not (errorp compst1))
-                     (member-equal (objdesign-kind objdes)
-                                   '(:auto :static :alloc))
-                     (not (errorp (read-object objdes peeled-compst))))
-                (and (not (errorp (read-object objdes peeled-compst1)))
-                     (equal (type-of-value
-                             (read-object objdes peeled-compst1))
-                            (type-of-value
-                             (read-object objdes peeled-compst))))))
-     :enable (peel-frames
-              peel-frames-of-write-object
-              peel-scopes-of-write-object
-              not-errorp-of-write-object-of-peel-frames
-              not-errorp-of-write-object-of-peel-scopes
-              read-object-of-write-object-when-auto/static/alloc-existing)
-     :disable objdesign-kind-of-objdesign-top
-     ::use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

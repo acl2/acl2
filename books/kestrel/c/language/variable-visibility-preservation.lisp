@@ -172,6 +172,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled var-visible-preservep-of-write-object
+  :short "Preservation of variable visbility under @(tsee write-object)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The predicate @(tsee var-visible-preservep)
+     holds between a computation state
+     and the one obtained from it via @(tsee write-object).")
+   (xdoc::p
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
+     to handle the execution of assignments."))
+  (b* ((compst1 (write-object objdes val compst)))
+    (implies (not (errorp compst1))
+             (var-visible-preservep compst compst1)))
+  :enable var-visible-preservep
+
+  :prep-lemmas
+
+  ((defrule lemma
+     (b* ((compst1 (write-object objdes val compst)))
+       (implies (and (not (errorp compst1))
+                     (objdesign-of-var
+                      var1 (peel-scopes m (peel-frames n compst))))
+                (objdesign-of-var
+                 var1 (peel-scopes m (peel-frames n compst1)))))
+     :enable (peel-frames
+              peel-frames-of-write-object
+              peel-scopes-of-write-object
+              not-errorp-of-write-object-of-peel-frames
+              not-errorp-of-write-object-of-peel-scopes
+              objdesign-of-var-of-write-object)
+     :disable objdesign-kind-of-objdesign-top
+     ::use objdesign-kind-of-objdesign-top)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled var-visible-preservep-of-exit-scope-and-exit-scope
   :short "Preservation of variable visibility is invariant
           under exiting a scope in both computation states."
@@ -370,42 +406,6 @@
                   (compst (push-frame frame compst))
                   (compst1 compst1))
   :enable pop-frame-of-push-frame)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled var-visible-preservep-of-write-object
-  :short "Preservation of variable visbility under @(tsee write-object)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The predicate @(tsee var-visible-preservep)
-     holds between a computation state
-     and the one obtained from it via @(tsee write-object).")
-   (xdoc::p
-    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
-     to handle the execution of assignments."))
-  (b* ((compst1 (write-object objdes val compst)))
-    (implies (not (errorp compst1))
-             (var-visible-preservep compst compst1)))
-  :enable var-visible-preservep
-
-  :prep-lemmas
-
-  ((defrule lemma
-     (b* ((compst1 (write-object objdes val compst)))
-       (implies (and (not (errorp compst1))
-                     (objdesign-of-var
-                      var1 (peel-scopes m (peel-frames n compst))))
-                (objdesign-of-var
-                 var1 (peel-scopes m (peel-frames n compst1)))))
-     :enable (peel-frames
-              peel-frames-of-write-object
-              peel-scopes-of-write-object
-              not-errorp-of-write-object-of-peel-frames
-              not-errorp-of-write-object-of-peel-scopes
-              objdesign-of-var-of-write-object)
-     :disable objdesign-kind-of-objdesign-top
-     ::use objdesign-kind-of-objdesign-top)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
