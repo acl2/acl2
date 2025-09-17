@@ -174,7 +174,8 @@
                   (type-expr (c::type-of-value
                               (c::expr-value->value
                                (c::exec-expr-pure expr compst)))))
-               (implies (and (not (c::errorp result))
+               (implies (and (> (c::compustate-frames-number compst) 0)
+                             (not (c::errorp result))
                              (c::type-nonchar-integerp type-expr)
                              (c::compustate-has-var-with-type-p var
                                                                 type
@@ -182,9 +183,11 @@
                         (c::compustate-has-var-with-type-p var
                                                            type
                                                            compst1))))
-    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
-    :enable (c::exec-expr-call-or-pure
-             c::compustate-has-var-with-type-p))
+    :enable (c::compustate-has-var-with-type-p
+             c::var-resolve-of-exec-initer
+             c::object-type-of-exec-initer
+             c::not-errorp-when-valuep
+             c::valuep-of-read-object-of-objdesign-of-var))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
