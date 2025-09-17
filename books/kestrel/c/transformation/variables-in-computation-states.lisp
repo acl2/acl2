@@ -10,7 +10,8 @@
 
 (in-package "C2C")
 
-(include-book "../language/dynamic-semantics")
+(include-book "../language/object-type-preservation")
+(include-book "../language/variable-resolution-preservation")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -26,7 +27,7 @@
   (xdoc::topstring
    (xdoc::p
     "Transformations may need facts about certain variables
-     being in the computation state and having values or certain types.
+     being in the computation state and having values of certain types.
      Here we introduce a predicate to state that fact,
      along with some theorems about how execution relates to that predicate."))
   :order-subtopics t
@@ -44,9 +45,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is essentially an abbreviation,
-     which we use in generated theorems.
-     In a way this predicate belongs to a more general place,
+    "This predicate may belong to a more general place,
      perhaps in the language formalization;
      this is why we put it into the @('\"C\"') package."))
   (b* ((objdes (c::objdesign-of-var var compst)))
