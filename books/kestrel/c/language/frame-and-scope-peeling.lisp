@@ -83,6 +83,19 @@
                     (peel-frames (1+ (nfix n)) compst)))
     :enable fix)
 
+  (defruled peel-frames-of-exit-scope
+    (implies (and (not (zp n))
+                  (> (compustate-frames-number compst) 0))
+             (equal (peel-frames n (exit-scope compst))
+                    (peel-frames n compst)))
+    :enable (exit-scope
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             len)
+    :expand (peel-frames n compst))
+
   (defruled peel-frames-of-write-object
     (implies (not (errorp (write-object objdes val compst)))
              (equal (peel-frames n (write-object objdes val compst))
