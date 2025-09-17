@@ -203,13 +203,17 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-expr-asg-compustate-vars
-    (b* ((stmt (c::stmt-expr expr))
-         (compst0 (c::exec-expr-asg expr compst fenv (- limit 2)))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (not (equal (c::expr-kind expr) :call))
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst0))
-               (c::compustate-has-var-with-type-p var type compst1)))
+    (implies (not (equal (c::expr-kind expr) :call))
+             (b* ((stmt (c::stmt-expr expr))
+                  (compst0 (c::exec-expr-asg expr compst fenv (- limit 2)))
+                  ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+               (implies (and (not (c::errorp result))
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                compst0))
+                        (c::compustate-has-var-with-type-p var
+                                                           type
+                                                           compst1))))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
     :enable c::exec-expr-call-or-asg)
 
