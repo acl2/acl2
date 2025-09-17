@@ -76,6 +76,8 @@
      (xdoc::p
       "List of one or more file paths that specify the files to be read.")
      (xdoc::p
+      "Each file path must be a string.")
+     (xdoc::p
       "These paths are relative to
        the path specified by the @(':path') input.")
      (xdoc::p

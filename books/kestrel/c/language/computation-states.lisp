@@ -693,6 +693,21 @@
     :enable (push-frame
              pop-frame))
 
+  (defruled compustate->static-of-create-var
+    (implies (not (errorp (create-var var val compst)))
+             (equal (compustate->static (create-var var val compst))
+                    (if (> (compustate-frames-number compst) 0)
+                        (compustate->static compst)
+                      (omap::update (ident-fix var)
+                                    (remove-flexible-array-member val)
+                                    (compustate->static compst))))))
+
+  (defrule compustate->heap-of-create-var
+    (b* ((compst1 (create-var var val compst)))
+      (implies (not (errorp compst1))
+               (equal (compustate->heap compst1)
+                      (compustate->heap compst)))))
+
   (defruled exit-scope-of-create-var
     (implies (and (> (compustate-frames-number compst) 0)
                   (> (compustate-top-frame-scopes-number compst) 1)
@@ -702,7 +717,15 @@
     :enable (exit-scope
              push-frame
              pop-frame
-             top-frame)))
+             top-frame))
+
+  (defruled pop-frame-of-create-var
+    (implies (and (> (compustate-frames-number compst) 0)
+                  (not (errorp (create-var var val compst))))
+             (equal (pop-frame (create-var var val compst))
+                    (pop-frame compst)))
+    :enable (pop-frame
+             push-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1129,10 +1152,9 @@
            fix
            compustate-frames-number
            top-frame)
-  :use
-  (:instance objdesign-of-var-aux-lemma
-             (frame (+ -1 (len (compustate->frames compst))))
-             (scopes (frame->scopes (car (compustate->frames compst))))))
+  :use (:instance objdesign-of-var-aux-lemma
+                  (frame (+ -1 (len (compustate->frames compst))))
+                  (scopes (frame->scopes (car (compustate->frames compst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1241,10 +1263,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this is limited to automatic and static storage.
+    "The theorem that
+     equates @(tsee read-object) after @(tsee create-var) to a conditional term
+     is limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
-     we plan to tackle these eventually."))
+     we plan to tackle these eventually.")
+   (xdoc::p
+    "The theorem that assumes
+     the existence of the object before the variable creation
+     works with every kind of object designator."))
 
   (defruled read-object-of-create-var-when-static
     (implies (and (equal (objdesign-kind objdes) :static)
@@ -1257,6 +1285,14 @@
                       (read-object objdes compst))))
     :enable (read-object
              assoc-of-compustate-static-of-create-var))
+
+  (defruled read-object-of-create-var-when-alloc
+    (implies (and (equal (objdesign-kind objdes) :alloc)
+                  (not (errorp (create-var var val compst)))
+                  (identp var))
+             (equal (read-object objdes (create-var var val compst))
+                    (read-object objdes compst)))
+    :enable read-object)
 
   (defruled read-object-of-create-var-when-auto
     (implies (and (equal (objdesign-kind objdes) :auto)
@@ -1292,8 +1328,8 @@
        :induct t
        :enable nth)))
 
-  (defruled read-object-of-create-var-when-auto-or-static
-    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+  (defruled read-object-of-create-var-when-auto/static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
                   (not (errorp (create-var var val compst)))
                   (identp var))
              (equal (read-object objdes (create-var var val compst))
@@ -1313,36 +1349,100 @@
                         (remove-flexible-array-member val)
                       (read-object objdes compst))))
     :enable (read-object-of-create-var-when-static
-             read-object-of-create-var-when-auto)))
+             read-object-of-create-var-when-alloc
+             read-object-of-create-var-when-auto))
+
+  (defruled read-object-of-create-var-when-existing
+    (b* ((compst1 (create-var var val compst)))
+      (implies (and (not (errorp compst1))
+                    (not (errorp (read-object objdes compst))))
+               (equal (read-object objdes compst1)
+                      (read-object objdes compst))))
+    :induct (read-object objdes compst)
+    :enable (read-object
+             objdesign-top
+             create-var
+             push-frame
+             pop-frame
+             top-frame
+             len
+             nfix
+             fix
+             nth)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (< (nfix i) (len scopes))
+                     (omap::assoc var0 (nth i scopes))
+                     (not (omap::assoc var (car scopes))))
+                (equal (omap::assoc
+                        var0 (nth i (cons (omap::update var val (car scopes))
+                                          (cdr scopes))))
+                       (omap::assoc
+                        var0 (nth i scopes))))
+       :induct t
+       :enable nth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled read-object-of-write-object-when-auto-or-static
+(defsection read-object-of-write-object
   :short "How @(tsee read-object) changes under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a read-over-write theorem.")
-   (xdoc::p
-    "For now this is limited to automatic and static storage.
+    "We provide a read-over-write theorem,
+     limited to top-level object designators.
      Handling other kinds of object designators is more complicated,
      due to the possibility of partial overlap of objects;
-     we plan to tackle these eventually."))
-  (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
-                (member-equal (objdesign-kind objdes1) '(:auto :static))
-                (not (errorp (write-object objdes val compst))))
-           (equal (read-object objdes1 (write-object objdes val compst))
-                  (if (equal (objdesign-fix objdes1)
-                             (objdesign-fix objdes))
-                      (remove-flexible-array-member val)
-                    (read-object objdes1 compst))))
-  :enable (read-object
-           write-object
-           fix
-           nfix
-           max
-           equal-of-objdesign-auto-fix
-           equal-of-objdesign-static-fix))
+     we plan to tackle these eventually.")
+   (xdoc::p
+    "We also provide an object type preservation theorem,
+     saying that if a computation state includes
+     an object with a certain type,
+     the computation state after a @(tsee write-object)
+     still contains that object with the same type
+     (although the value may have been changed).
+     This theorem is also limited to top-level object designators,
+     for the object whose preservation the theorem asserts;
+     the object designator for @(tsee write-object) is arbitrary."))
+
+  (defruled read-object-of-write-object-when-auto/static/alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static :alloc))
+                  (member-equal (objdesign-kind objdes1) '(:auto :static :alloc))
+                  (not (errorp (write-object objdes val compst))))
+             (equal (read-object objdes1 (write-object objdes val compst))
+                    (if (equal (objdesign-fix objdes1)
+                               (objdesign-fix objdes))
+                        (if (equal (objdesign-kind objdes) :alloc)
+                            (value-fix val)
+                          (remove-flexible-array-member val))
+                      (read-object objdes1 compst))))
+    :enable (read-object
+             write-object
+             fix
+             nfix
+             max
+             equal-of-objdesign-auto-fix
+             equal-of-objdesign-static-fix
+             equal-of-objdesign-alloc-fix))
+
+  (defruled read-object-of-write-object-when-auto/static/alloc-existing
+    (b* ((compst1 (write-object objdes1 val compst)))
+      (implies (and (not (errorp compst1))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :induct t
+    :disable (acl2::<-+-negative-0-1)
+    :enable (read-object
+             write-object
+             nfix
+             fix
+             max
+             not-errorp-when-valuep
+             update-nth-of-rev)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
