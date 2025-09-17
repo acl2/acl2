@@ -112,6 +112,20 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defrulel objdesign-kind-of-objdesign-of-var-is-auto/static/alloc
+    (b* ((objdes (c::objdesign-of-var var compst)))
+      (implies objdes
+               (member-equal (c::objdesign-kind objdes)
+                             '(:auto :static :alloc))))
+    :disable c::objdesign-kind-of-objdesign-of-var
+    :use (:instance c::objdesign-kind-of-objdesign-of-var
+                    (var var)
+                    (compst compst)))
+
+  (local (in-theory (disable acl2::member-of-cons)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defruled expr-ident-compustate-vars
     (b* ((expr (c::expr-ident var))
          (result (c::exec-expr-pure expr compst))
@@ -144,23 +158,11 @@
                         (c::compustate-has-var-with-type-p var1
                                                            type
                                                            compst1))))
-    :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
-                              compst fenv limit)
     :enable (c::compustate-has-var-with-type-p
-             c::exec-expr-call-or-pure
-             c::exec-expr-pure
-             c::exec-ident
-             c::objdesign-of-var-of-write-object
-             c::read-object-of-write-object-when-auto/static/alloc
-             c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp)
-    :use ((:instance c::objdesign-kind-of-objdesign-of-var
-                     (var var)
-                     (compst compst))
-          (:instance c::objdesign-kind-of-objdesign-of-var
-                     (var var1)
-                     (compst compst)))
-    :disable c::objdesign-kind-of-objdesign-of-var)
+             c::var-resolve-of-exec-expr-asg
+             c::object-type-of-exec-expr-asg
+             c::not-errorp-when-valuep
+             c::valuep-of-read-object-of-objdesign-of-var))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
