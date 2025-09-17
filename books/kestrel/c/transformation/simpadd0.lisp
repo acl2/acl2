@@ -1833,11 +1833,14 @@
        ((mv & new-then) (ldm-stmt then-new)) ; ERP must be NIL
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::stmt-if)
-                              (:e c::type-nonchar-integerp)
-                              (:e set::insert)
-                              (:e set::subset)
-                              set::subset-in)
+                 :in-theory
+                 '((:e c::stmt-if)
+                   (:e c::type-nonchar-integerp)
+                   (:e set::insert)
+                   (:e set::subset)
+                   set::subset-in
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance
@@ -1960,11 +1963,14 @@
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
        ((mv & else-ctypes) (ldm-type-option-set else-types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::stmt-ifelse)
-                              (:e c::type-nonchar-integerp)
-                              (:e set::insert)
-                              (:e set::subset)
-                              set::subset-in)
+                 :in-theory
+                 '((:e c::stmt-ifelse)
+                   (:e c::type-nonchar-integerp)
+                   (:e set::insert)
+                   (:e set::subset)
+                   set::subset-in
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance ,else-thm-name (limit (1- limit)))
@@ -2148,11 +2154,14 @@
        ((mv & new-initer) (ldm-initer initer-new))
        (vartys-post (omap::update cvar ctype gin.vartys))
        (hints `(("Goal"
-                 :in-theory '((:e c::obj-declor-ident)
-                              (:e c::scspecseq-none)
-                              (:e c::obj-declon)
-                              (:e c::tyspecseq-to-type)
-                              (:e c::identp))
+                 :in-theory
+                 '((:e c::obj-declor-ident)
+                   (:e c::scspecseq-none)
+                   (:e c::obj-declon)
+                   (:e c::tyspecseq-to-type)
+                   (:e c::identp)
+                   c::compustate-frames-number-of-exec-initer
+                   c::compustatep-when-compustate-resultp-and-not-errorp)
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
                         decl-decl-congruence
@@ -2258,7 +2267,10 @@
        ((mv & new-stmt) (ldm-stmt stmt-new)) ; ERP must be NIL
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::block-item-stmt))
+                 :in-theory
+                 '((:e c::block-item-stmt)
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp)
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         block-item-stmt-congruence
@@ -2343,8 +2355,11 @@
        ((mv & old-declon) (ldm-decl-obj decl)) ; ERP must be NIL
        ((mv & new-declon) (ldm-decl-obj decl-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::block-item-declon)
-                              (:e set::insert))
+                 :in-theory
+                 '((:e c::block-item-declon)
+                   (:e set::insert)
+                   c::compustate-frames-number-of-exec-obj-declon
+                   c::compustatep-when-compustate-resultp-and-not-errorp)
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         block-item-decl-congruence
@@ -2501,9 +2516,12 @@
        ((mv & rest-ctypes) (ldm-type-option-set rest-types)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '(c::stmt-value-kind-possibilities
-                        (:e set::delete)
-                        (:e set::union))
+           :in-theory
+           '(c::stmt-value-kind-possibilities
+             (:e set::delete)
+             (:e set::union)
+             c::compustate-frames-number-of-exec-block-item
+             c::compustatep-when-compustate-resultp-and-not-errorp)
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))
@@ -5269,7 +5287,9 @@
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
-                        c::errorp-of-error))))
+                        c::errorp-of-error
+                        c::compustate-frames-number-of-push-frame
+                        (:t c::compustate-frames-number)))))
        (thm-event `(defrule ,thm-name
                      ,formula
                      :rule-classes nil

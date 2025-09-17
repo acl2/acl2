@@ -291,7 +291,8 @@
                (c::exec-initer old-initer compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-initer new-initer compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -426,7 +427,8 @@
                (c::exec-stmt old-stmt compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -485,7 +487,8 @@
                (c::exec-obj-declon old-decl compst old-fenv limit))
               (new-compst
                (c::exec-obj-declon new-decl compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)
@@ -546,7 +549,8 @@
                (c::exec-block-item old-item compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -618,7 +622,8 @@
                (c::exec-block-item-list old-items compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
