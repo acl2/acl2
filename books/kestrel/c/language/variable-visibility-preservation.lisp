@@ -515,10 +515,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection objdesign-of-var-of-exec
+(defsection var-visible-of-exec
   :short "Preservation of variable visibility under execution."
 
-  (defruled objdesign-of-var-of-exec-expr-call
+  (defruled var-visible-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
@@ -533,7 +533,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-expr-call-or-pure
+  (defruled var-visible-of-exec-expr-call-or-pure
     (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
@@ -548,7 +548,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-expr-asg
+  (defruled var-visible-of-exec-expr-asg
     (b* ((compst1 (exec-expr-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
                     (identp var)
@@ -562,7 +562,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-call-or-asg
+  (defruled var-visible-of-exec-call-or-asg
     (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
                     (identp var)
@@ -576,7 +576,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-fun
+  (defruled var-visible-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
@@ -590,7 +590,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-stmt
+  (defruled var-visible-of-exec-stmt
     (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
@@ -605,7 +605,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-stmt-while
+  (defruled var-visible-of-exec-stmt-while
     (b* (((mv result compst1) (exec-stmt-while test body compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
@@ -621,7 +621,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-initer
+  (defruled var-visible-of-exec-initer
     (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
@@ -637,7 +637,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-obj-declon
+  (defruled var-visible-of-exec-obj-declon
     (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp compst1))
@@ -652,7 +652,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-block-item
+  (defruled var-visible-of-exec-block-item
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
@@ -668,7 +668,7 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-block-item-list
+  (defruled var-visible-of-exec-block-item-list
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
