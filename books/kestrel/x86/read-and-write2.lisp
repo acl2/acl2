@@ -539,53 +539,6 @@
                         (:instance set-rip-of-logext (rip (+ x y z))))
            :in-theory (disable set-rip-of-logext))))
 
-;move!
-(include-book "canonical-unsigned")
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: reduce? why?
-
-(defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
-  (equal (equal (bvsx 64 48 x) x)
-         (and (unsigned-byte-p 64 x)
-              (unsigned-canonical-address-p x)))
-  :hints (("Goal"
-           :use (:instance acl2::split-bv
-                           (n 64)
-                           (m 48))
-           :in-theory (e/d (unsigned-canonical-address-p
-                            acl2::bvsx-alt-def-2
-                            bvlt)
-                           (acl2::bvcat-equal-rewrite-alt
-                            acl2::bvcat-equal-rewrite
-                            bvcat logapp
-                            acl2::bvcat-of-slice-and-x-adjacent
-                            acl2::bvcat-of-slice-and-slice-adjacent
-                            acl2::rewrite-unsigned-byte-p-when-term-size-is-larger)))))
-
-(defthm bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
-  (implies (and ;(canonical-regionp len base)
-                ;(in-region64p ad len base)
-                ;(in-region64p (bvplus 64 offset ad) len base)
-                (unsigned-canonical-address-p (bvplus 64 offset ad))
-                (integerp offset)
-                (integerp ad)
-                (integerp base)
-                )
-           (equal (bvsx 64 48 (bvplus 48 offset ad))
-                  (bvplus 64 offset ad)))
-  :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
-                                  (x (bvplus 64 offset ad)))
-           :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
-
-;move
-;; todo: prove that unsigned-canonical-address-p is equivalent to bvsx doing nothing
-(defthm bvsx-when-unsigned-canonical-address-p
-  (implies (and (unsigned-canonical-address-p x)
-                (unsigned-byte-p 64 x) ;todo
-                )
-           (equal (bvsx 64 48 x)
-                  x))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
-
 ;; can help clarify failures
 (defthm read-of-write-of-write-irrel-inner-bv
   (implies (and (disjoint-regions48p n1 addr1 n2 addr2)
