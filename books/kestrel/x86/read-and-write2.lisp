@@ -79,22 +79,18 @@
   :hints (("Goal" :use (:instance read-byte-of-write-when-disjoint)
            :in-theory (disable read-byte-of-write-when-disjoint))))
 
-(DEFTHM READ-BYTE-OF-WRITE-BOTH-new
-  (IMPLIES (AND ;(<= N (EXPT 2 48))
-                (unsigned-byte-p 48 n)
-                (INTEGERP N)
-                ;; (INTEGERP AD1)
-                ;; (INTEGERP AD2)
-                )
-           (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL X86))
-                  (IF (in-region48p ad1 n ad2)
-                      (SLICE (+ 7 (* 8 (BVMINUS 48 AD1 AD2)))
-                             (* 8 (BVMINUS 48 AD1 AD2))
-                             VAL)
-                    (READ-BYTE AD1 X86))))
+(defthm read-byte-of-write-both-new
+  (implies (and (<= n (expt 2 48))
+                (integerp n))
+           (equal (read-byte ad1 (write n ad2 val x86))
+                  (if (in-region48p ad1 n ad2)
+                      (slice (+ 7 (* 8 (bvminus 48 ad1 ad2)))
+                             (* 8 (bvminus 48 ad1 ad2))
+                             val)
+                    (read-byte ad1 x86))))
   :hints (("Goal" :in-theory (enable in-region48p bvlt))))
 
-(in-theory (disable READ-BYTE-OF-WRITE-BOTH))
+(in-theory (disable read-byte-of-write-both))
 
 ;todo: in-region48p is subregion48p of size 1
 
@@ -554,17 +550,22 @@
            :in-theory (e/d (disjoint-regions48p bvlt)
                            (read-of-write-of-write-irrel-inner)))))
 
-;; can help clarify failures
+;; We don't know which whether the write to ad2 has an effect, but any writes
+;; inside the write to ad1 (of size n1) can't possibly affect the read to ad1
+;; (of size n1).  Can help clarify failures.
 (defthm read-of-write-of-write-of-write-same-middle-bv
-  (implies (and ;(disjoint-regions48p n1 addr1 n2 addr2)
-                (integerp ad1)
-                (integerp ad2)
-                (unsigned-byte-p 48 n1)
+  (implies (and (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2)
-                (integerp n4))
+                ;; (integerp ad1)
+                ;; (integerp ad2)
+                ;; (integerp n4)
+                )
            (equal (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner (write n4 ad4 val4 x86))))
                   (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner x86)))
                   ))
-  :hints (("Goal" :in-theory (enable read write acl2::bvminus-of-+-arg2
-                                     in-region48p ; why?
-                                     bvlt))))
+  :hints (("subgoal *1/3" :cases ((integerp n4)))
+          ("Goal"
+           :in-theory (enable read write acl2::bvminus-of-+-arg2
+                              in-region48p ; why?
+                              bvlt
+                              ifix))))
