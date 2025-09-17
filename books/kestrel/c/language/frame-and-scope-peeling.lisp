@@ -77,6 +77,19 @@
     :enable (create-var
              fix))
 
+  (defruled peel-frames-of-exit-scope
+    (implies (and (not (zp n))
+                  (> (compustate-frames-number compst) 0))
+             (equal (peel-frames n (exit-scope compst))
+                    (peel-frames n compst)))
+    :enable (exit-scope
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             len)
+    :expand (peel-frames n compst))
+
   (defruled peel-frames-of-pop-frame-fold
     (implies (> (compustate-frames-number compst) 0)
              (equal (peel-frames n (pop-frame compst))

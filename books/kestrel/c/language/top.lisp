@@ -36,6 +36,8 @@
 (include-book "execution-without-function-calls")
 (include-book "frame-and-scope-peeling")
 (include-book "variable-visibility-preservation")
+(include-book "variable-resolution-preservation")
+(include-book "object-type-preservation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

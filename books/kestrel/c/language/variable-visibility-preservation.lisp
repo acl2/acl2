@@ -51,8 +51,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk objdesign-of-var-preservep ((compst compustatep)
-                                       (compst1 compustatep))
+(define-sk var-visible-preservep ((compst compustatep)
+                                  (compst1 compustatep))
   :returns (yes/no booleanp)
   :short "Check if all variable names visible in a computation state
           are also visible in another computation state,
@@ -72,39 +72,39 @@
 
   ///
 
-  (fty::deffixequiv-sk objdesign-of-var-preservep
+  (fty::deffixequiv-sk var-visible-preservep
     :args ((compst compustatep) (compst1 compustatep)))
 
-  (defrule objdesign-of-var-preservep-reflexive
-    (objdesign-of-var-preservep compst compst))
+  (defrule var-visible-preservep-reflexive
+    (var-visible-preservep compst compst))
 
-  (defrule objdesign-of-var-preservep-transitive
-    (implies (and (objdesign-of-var-preservep compst compst1)
-                  (objdesign-of-var-preservep compst1 compst2))
-             (objdesign-of-var-preservep compst compst2))
-    :expand (objdesign-of-var-preservep compst compst2)
-    :disable objdesign-of-var-preservep
-    :enable objdesign-of-var-preservep-necc))
+  (defrule var-visible-preservep-transitive
+    (implies (and (var-visible-preservep compst compst1)
+                  (var-visible-preservep compst1 compst2))
+             (var-visible-preservep compst compst2))
+    :expand (var-visible-preservep compst compst2)
+    :disable var-visible-preservep
+    :enable var-visible-preservep-necc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled objdesign-of-var-preservep-of-create-var
+(defruled var-visible-preservep-of-create-var
   :short "Preservation of variable visibility under @(tsee create-var)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate @(tsee objdesign-of-var-preservep)
+    "The predicate @(tsee var-visible-preservep)
      holds between a computation state
      and the one obtained from it via @(tsee create-var).")
    (xdoc::p
-    "This theorem is used, in @(tsee objdesign-of-var-preservep-of-exec),
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
      to handle the execution of object declarations."))
   (b* ((compst1 (create-var var val compst)))
     (implies (and (> (compustate-frames-number compst) 0)
                   (not (errorp compst1))
                   (identp var))
-             (objdesign-of-var-preservep compst compst1)))
-  :enable (objdesign-of-var-preservep lemma4)
+             (var-visible-preservep compst compst1)))
+  :enable (var-visible-preservep lemma4)
 
   :prep-lemmas
 
@@ -172,222 +172,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled objdesign-of-var-preservep-of-exit-scope-and-exit-scope
-  :short "Preservation of variable visibility is invariant
-          under exiting a scope in both computation states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We take two computation states
-     with the same non-zero number of frames
-     and with the same numbers od scopes in each frame,
-     and more than one scope in the top frame.
-     If @(tsee objdesign-of-var-preservep) holds on the two computation states,
-     it also holds on the ones obtained by
-     applying @(tsee exit-scope) to both;
-     the hypotheses guarantee that this operation can be applied.")
-   (xdoc::p
-    "This theorem serves to prove
-     @(tsee objdesign-of-var-preservep-of-exit-scope-when-enter-scope)."))
-  (implies (and (objdesign-of-var-preservep compst compst1)
-                (equal (compustate-frames-number compst1)
-                       (compustate-frames-number compst))
-                (equal (compustate-scopes-numbers compst1)
-                       (compustate-scopes-numbers compst))
-                (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 1))
-           (objdesign-of-var-preservep (exit-scope compst) (exit-scope compst1)))
-  :expand (objdesign-of-var-preservep (exit-scope compst) (exit-scope compst1))
-  :enable lemma
-
-  :prep-lemmas
-
-  ((defruled lemma1
-     (implies (and (objdesign-of-var-preservep compst compst1)
-                   (equal (compustate-frames-number compst1)
-                          (compustate-frames-number compst))
-                   (equal (compustate-scopes-numbers compst1)
-                          (compustate-scopes-numbers compst))
-                   (> (compustate-frames-number compst) 0)
-                   (> (compustate-top-frame-scopes-number compst) 1)
-                   (zp n)
-                   (natp m)
-                   (identp var)
-                   (objdesign-of-var
-                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
-              (objdesign-of-var
-               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
-     :enable (peel-frames
-              peel-scopes-of-exit-scope-fold
-              nfix)
-     :use (:instance objdesign-of-var-preservep-necc (n 0) (m (1+ m))))
-
-   (defruled lemma2
-     (implies (and (objdesign-of-var-preservep compst compst1)
-                   (equal (compustate-frames-number compst1)
-                          (compustate-frames-number compst))
-                   (equal (compustate-scopes-numbers compst1)
-                          (compustate-scopes-numbers compst))
-                   (> (compustate-frames-number compst) 0)
-                   (> (compustate-top-frame-scopes-number compst) 1)
-                   (not (zp n))
-                   (natp m)
-                   (identp var)
-                   (objdesign-of-var
-                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
-              (objdesign-of-var
-               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
-     :expand ((peel-frames n (exit-scope compst))
-              (peel-frames n (exit-scope compst1)))
-     :enable (peel-frames
-              pop-frame-of-exit-scope
-              peel-frames-of-pop-frame-fold
-              nfix
-              fix
-              objdesign-of-var-preservep-necc))
-
-   (defruled lemma
-     (implies (and (objdesign-of-var-preservep compst compst1)
-                   (equal (compustate-frames-number compst1)
-                          (compustate-frames-number compst))
-                   (equal (compustate-scopes-numbers compst1)
-                          (compustate-scopes-numbers compst))
-                   (> (compustate-frames-number compst) 0)
-                   (> (compustate-top-frame-scopes-number compst) 1)
-                   (natp m)
-                   (identp var)
-                   (objdesign-of-var
-                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
-              (objdesign-of-var
-               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
-     :cases ((zp n))
-     :enable (lemma1 lemma2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled objdesign-of-var-preservep-of-exit-scope-when-enter-scope
-  :short "If variable visibility is preserved between
-          a computation state just after entering a scope
-          and another computation state,
-          it is preserved also between
-          the first computation state before entering the scope
-          and the second computation state after exiting a scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Note the ``cross-symmetry''
-     between the two computation states in the hypothesis and conclusion,
-     and between entering and exiting scopes.")
-   (xdoc::p
-    "This theorem is proved from
-     @(tsee objdesign-of-var-preservep-of-exit-scope-and-exit-scope),
-     by suitably instantiating the computation states there.")
-   (xdoc::p
-    "This theorem is used, in @(tsee objdesign-of-var-preservep-of-exec),
-     to handle the execution of compound statements."))
-  (implies (and (objdesign-of-var-preservep (enter-scope compst) compst1)
-                (equal (compustate-frames-number compst1)
-                       (compustate-frames-number compst))
-                (equal (compustate-scopes-numbers compst1)
-                       (compustate-scopes-numbers (enter-scope compst)))
-                (> (compustate-frames-number compst) 0))
-           (objdesign-of-var-preservep compst (exit-scope compst1)))
-  :use (:instance objdesign-of-var-preservep-of-exit-scope-and-exit-scope
-                  (compst (enter-scope compst))
-                  (compst1 compst1))
-  :enable exit-scope-of-enter-scope)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled objdesign-of-var-preservep-of-pop-frame-and-pop-frame
-  :short "Preservation of variable visibility is invariant
-          under popping a frame in both computation states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We take two computation states
-     with the same non-zero number of frames.
-     If @(tsee objdesign-of-var-preservep) holds on the two computation states,
-     it also holds on the ones obtained by
-     applying @(tsee pop-frame) to both;
-     the hypotheses guarantee that this operation can be applied.")
-   (xdoc::p
-    "This theorem serves to prove
-     @(tsee objdesign-of-var-preservep-of-pop-frame-when-push-frame)."))
-  (implies (and (objdesign-of-var-preservep compst compst1)
-                (equal (compustate-frames-number compst1)
-                       (compustate-frames-number compst))
-                (> (compustate-frames-number compst) 0))
-           (objdesign-of-var-preservep (pop-frame compst) (pop-frame compst1)))
-  :expand (objdesign-of-var-preservep (pop-frame compst) (pop-frame compst1))
-  :enable lemma
-
-  :prep-lemmas
-
-  ((defruled lemma
-     (implies (and (objdesign-of-var-preservep compst compst1)
-                   (equal (compustate-frames-number compst1)
-                          (compustate-frames-number compst))
-                   (> (compustate-frames-number compst) 0)
-                   (natp n)
-                   (natp m)
-                   (identp var)
-                   (objdesign-of-var
-                    var (peel-scopes m (peel-frames n (pop-frame compst)))))
-              (objdesign-of-var
-               var (peel-scopes m (peel-frames n (pop-frame compst1)))))
-     :enable (peel-frames-of-pop-frame-fold
-              nfix
-              objdesign-of-var-preservep-necc))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled objdesign-of-var-preservep-of-pop-frame-when-push-frame
-  :short "If variable visibility is preserved between
-          a computation state just after pushing a frame
-          and another computation state,
-          it is preserved also between
-          the first computation state before pushing the frame
-          and the second computation state after popping a frame."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Note the ``cross-symmetry''
-     between the two computation states in the hypothesis and conclusion,
-     and between pushing and popping frames.")
-   (xdoc::p
-    "This theorem is proved from
-     @(tsee objdesign-of-var-preservep-of-pop-frame-and-pop-frame),
-     by suitably instantiating the computation states there.")
-   (xdoc::p
-    "This theorem is used, in @(tsee objdesign-of-var-preservep-of-exec),
-     to handle the execution of functions calls."))
-  (implies (and (objdesign-of-var-preservep (push-frame frame compst) compst1)
-                (equal (compustate-frames-number (push-frame frame compst))
-                       (compustate-frames-number compst1)))
-           (objdesign-of-var-preservep compst (pop-frame compst1)))
-  :use (:instance objdesign-of-var-preservep-of-pop-frame-and-pop-frame
-                  (compst (push-frame frame compst))
-                  (compst1 compst1))
-  :enable pop-frame-of-push-frame)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled objdesign-of-var-preservep-of-write-object
+(defruled var-visible-preservep-of-write-object
   :short "Preservation of variable visbility under @(tsee write-object)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate @(tsee objdesign-of-var-preservep)
+    "The predicate @(tsee var-visible-preservep)
      holds between a computation state
      and the one obtained from it via @(tsee write-object).")
    (xdoc::p
-    "This theorem is used, in @(tsee objdesign-of-var-preservep-of-exec),
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
      to handle the execution of assignments."))
   (b* ((compst1 (write-object objdes val compst)))
     (implies (not (errorp compst1))
-             (objdesign-of-var-preservep compst compst1)))
-  :enable objdesign-of-var-preservep
+             (var-visible-preservep compst compst1)))
+  :enable var-visible-preservep
 
   :prep-lemmas
 
@@ -409,80 +208,278 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection objdesign-of-var-preservep-of-exec
+(defruled var-visible-preservep-of-exit-scope-and-exit-scope
+  :short "Preservation of variable visibility is invariant
+          under exiting a scope in both computation states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We take two computation states
+     with the same non-zero number of frames
+     and with the same numbers od scopes in each frame,
+     and more than one scope in the top frame.
+     If @(tsee var-visible-preservep) holds on the two computation states,
+     it also holds on the ones obtained by
+     applying @(tsee exit-scope) to both;
+     the hypotheses guarantee that this operation can be applied.")
+   (xdoc::p
+    "This theorem serves to prove
+     @(tsee var-visible-preservep-of-exit-scope-when-enter-scope)."))
+  (implies (and (var-visible-preservep compst compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers compst))
+                (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 1))
+           (var-visible-preservep (exit-scope compst) (exit-scope compst1)))
+  :expand (var-visible-preservep (exit-scope compst) (exit-scope compst1))
+  :enable lemma
+
+  :prep-lemmas
+
+  ((defruled lemma1
+     (implies (and (var-visible-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (zp n)
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (objdesign-of-var
+               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
+     :enable (peel-frames
+              peel-scopes-of-exit-scope-fold
+              nfix)
+     :use (:instance var-visible-preservep-necc (n 0) (m (1+ m))))
+
+   (defruled lemma2
+     (implies (and (var-visible-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (not (zp n))
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (objdesign-of-var
+               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
+     :expand ((peel-frames n (exit-scope compst))
+              (peel-frames n (exit-scope compst1)))
+     :enable (peel-frames
+              pop-frame-of-exit-scope
+              peel-frames-of-pop-frame-fold
+              nfix
+              fix
+              var-visible-preservep-necc))
+
+   (defruled lemma
+     (implies (and (var-visible-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (objdesign-of-var
+               var (peel-scopes m (peel-frames n (exit-scope compst1)))))
+     :cases ((zp n))
+     :enable (lemma1 lemma2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-visible-preservep-of-exit-scope-when-enter-scope
+  :short "If variable visibility is preserved between
+          a computation state just after entering a scope
+          and another computation state,
+          it is preserved also between
+          the first computation state before entering the scope
+          and the second computation state after exiting a scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note the ``cross-symmetry''
+     between the two computation states in the hypothesis and conclusion,
+     and between entering and exiting scopes.")
+   (xdoc::p
+    "This theorem is proved from
+     @(tsee var-visible-preservep-of-exit-scope-and-exit-scope),
+     by suitably instantiating the computation states there.")
+   (xdoc::p
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
+     to handle the execution of compound statements."))
+  (implies (and (var-visible-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0))
+           (var-visible-preservep compst (exit-scope compst1)))
+  :use (:instance var-visible-preservep-of-exit-scope-and-exit-scope
+                  (compst (enter-scope compst))
+                  (compst1 compst1))
+  :enable exit-scope-of-enter-scope)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-visible-preservep-of-pop-frame-and-pop-frame
+  :short "Preservation of variable visibility is invariant
+          under popping a frame in both computation states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We take two computation states
+     with the same non-zero number of frames.
+     If @(tsee var-visible-preservep) holds on the two computation states,
+     it also holds on the ones obtained by
+     applying @(tsee pop-frame) to both;
+     the hypotheses guarantee that this operation can be applied.")
+   (xdoc::p
+    "This theorem serves to prove
+     @(tsee var-visible-preservep-of-pop-frame-when-push-frame)."))
+  (implies (and (var-visible-preservep compst compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (> (compustate-frames-number compst) 0))
+           (var-visible-preservep (pop-frame compst) (pop-frame compst1)))
+  :expand (var-visible-preservep (pop-frame compst) (pop-frame compst1))
+  :enable lemma
+
+  :prep-lemmas
+
+  ((defruled lemma
+     (implies (and (var-visible-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (> (compustate-frames-number compst) 0)
+                   (natp n)
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (pop-frame compst)))))
+              (objdesign-of-var
+               var (peel-scopes m (peel-frames n (pop-frame compst1)))))
+     :enable (peel-frames-of-pop-frame-fold
+              nfix
+              var-visible-preservep-necc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-visible-preservep-of-pop-frame-when-push-frame
+  :short "If variable visibility is preserved between
+          a computation state just after pushing a frame
+          and another computation state,
+          it is preserved also between
+          the first computation state before pushing the frame
+          and the second computation state after popping a frame."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note the ``cross-symmetry''
+     between the two computation states in the hypothesis and conclusion,
+     and between pushing and popping frames.")
+   (xdoc::p
+    "This theorem is proved from
+     @(tsee var-visible-preservep-of-pop-frame-and-pop-frame),
+     by suitably instantiating the computation states there.")
+   (xdoc::p
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
+     to handle the execution of functions calls."))
+  (implies (and (var-visible-preservep (push-frame frame compst) compst1)
+                (equal (compustate-frames-number (push-frame frame compst))
+                       (compustate-frames-number compst1)))
+           (var-visible-preservep compst (pop-frame compst1)))
+  :use (:instance var-visible-preservep-of-pop-frame-and-pop-frame
+                  (compst (push-frame frame compst))
+                  (compst1 compst1))
+  :enable pop-frame-of-push-frame)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection var-visible-preservep-of-exec
   :short "Preservation of variable visibility under execution,
           for any number of peeled frames and scopes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prove by induction that @(tsee objdesign-of-var-preservep) holds
+    "We prove by induction that @(tsee var-visible-preservep) holds
      between each computation state before execution
      and the computation state after execution."))
 
   (defthm-exec-flag
-    (defthm objdesign-of-var-preservep-of-exec-expr-call
+    (defthm var-visible-preservep-of-exec-expr-call
       (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
         (implies (not (errorp result))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-expr-call)
-    (defthm objdesign-of-var-preservep-of-exec-expr-call-or-pure
+    (defthm var-visible-preservep-of-exec-expr-call-or-pure
       (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
         (implies (not (errorp result))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-expr-call-or-pure)
-    (defthm objdesign-of-var-preservep-of-exec-expr-asg
+    (defthm var-visible-preservep-of-exec-expr-asg
       (b* ((compst1 (exec-expr-asg e compst fenv limit)))
         (implies (not (errorp compst1))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-expr-asg)
-    (defthm objdesign-of-var-preservep-of-exec-expr-call-or-asg
+    (defthm var-visible-preservep-of-exec-expr-call-or-asg
       (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
         (implies (not (errorp compst1))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-expr-call-or-asg)
-    (defthm objdesign-of-var-preservep-of-exec-fun
+    (defthm var-visible-preservep-of-exec-fun
       (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
         (implies (not (errorp result))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-fun)
-    (defthm objdesign-of-var-preservep-of-exec-stmt
+    (defthm var-visible-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
                       (not (errorp result)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-stmt)
-    (defthm objdesign-of-var-preservep-of-exec-stmt-while
+    (defthm var-visible-preservep-of-exec-stmt-while
       (b* (((mv result compst1) (exec-stmt-while test body compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
                       (not (errorp result)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-stmt-while)
-    (defthm objdesign-of-var-preservep-of-exec-initer
+    (defthm var-visible-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
                       (not (errorp result)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-initer)
-    (defthm objdesign-of-var-preservep-of-exec-obj-declon
+    (defthm var-visible-preservep-of-exec-obj-declon
       (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp compst1)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-obj-declon)
-    (defthm objdesign-of-var-preservep-of-exec-block-item
+    (defthm var-visible-preservep-of-exec-block-item
       (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-block-item)
-    (defthm objdesign-of-var-preservep-of-exec-block-item-list
+    (defthm var-visible-preservep-of-exec-block-item-list
       (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
-                      (> (compustate-top-frame-scopes-number compst) 0)
                       (not (errorp result)))
-                 (objdesign-of-var-preservep compst compst1)))
+                 (var-visible-preservep compst compst1)))
       :flag exec-block-item-list)
     :hints (("Goal"
              :in-theory
@@ -498,37 +495,37 @@
               exec-obj-declon
               exec-block-item
               exec-block-item-list
-              objdesign-of-var-preservep-of-create-var
-              objdesign-of-var-preservep-of-exit-scope-when-enter-scope
-              objdesign-of-var-preservep-of-pop-frame-when-push-frame
-              objdesign-of-var-preservep-of-write-object
+              var-visible-preservep-of-create-var
+              var-visible-preservep-of-exit-scope-when-enter-scope
+              var-visible-preservep-of-pop-frame-when-push-frame
+              var-visible-preservep-of-write-object
               len))))
 
-  (in-theory (disable objdesign-of-var-preservep-of-exec-expr-call
-                      objdesign-of-var-preservep-of-exec-expr-call-or-pure
-                      objdesign-of-var-preservep-of-exec-expr-asg
-                      objdesign-of-var-preservep-of-exec-expr-call-or-asg
-                      objdesign-of-var-preservep-of-exec-fun
-                      objdesign-of-var-preservep-of-exec-stmt
-                      objdesign-of-var-preservep-of-exec-stmt-while
-                      objdesign-of-var-preservep-of-exec-initer
-                      objdesign-of-var-preservep-of-exec-obj-declon
-                      objdesign-of-var-preservep-of-exec-block-item
-                      objdesign-of-var-preservep-of-exec-block-item-list)))
+  (in-theory (disable var-visible-preservep-of-exec-expr-call
+                      var-visible-preservep-of-exec-expr-call-or-pure
+                      var-visible-preservep-of-exec-expr-asg
+                      var-visible-preservep-of-exec-expr-call-or-asg
+                      var-visible-preservep-of-exec-fun
+                      var-visible-preservep-of-exec-stmt
+                      var-visible-preservep-of-exec-stmt-while
+                      var-visible-preservep-of-exec-initer
+                      var-visible-preservep-of-exec-obj-declon
+                      var-visible-preservep-of-exec-block-item
+                      var-visible-preservep-of-exec-block-item-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection objdesign-of-var-of-exec
+(defsection var-visible-of-exec
   :short "Preservation of variable visibility under execution."
 
-  (defruled objdesign-of-var-of-exec-expr-call
+  (defruled var-visible-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-expr-call
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-expr-call
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
                      (n 0)
@@ -536,14 +533,14 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-expr-call-or-pure
+  (defruled var-visible-of-exec-expr-call-or-pure
     (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-expr-call-or-pure
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-expr-call-or-pure
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
                      (n 0)
@@ -551,72 +548,72 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-expr-asg
+  (defruled var-visible-of-exec-expr-asg
     (b* ((compst1 (exec-expr-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-expr-asg
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-expr-asg
+          (:instance var-visible-preservep-necc
                      (compst1 (exec-expr-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-call-or-asg
+  (defruled var-visible-of-exec-call-or-asg
     (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-expr-call-or-asg
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-expr-call-or-asg
+          (:instance var-visible-preservep-necc
                      (compst1 (exec-expr-call-or-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-fun
+  (defruled var-visible-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
       (implies (and (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-fun
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-fun
+          (:instance var-visible-preservep-necc
                      (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-stmt
+  (defruled var-visible-of-exec-stmt
     (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-stmt
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-stmt
+          (:instance var-visible-preservep-necc
                      (compst1 (mv-nth 1 (exec-stmt s compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-stmt-while
+  (defruled var-visible-of-exec-stmt-while
     (b* (((mv result compst1) (exec-stmt-while test body compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-stmt-while
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-stmt-while
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
                      (n 0)
@@ -624,15 +621,15 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-initer
+  (defruled var-visible-of-exec-initer
     (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-initer
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-initer
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-initer initer compst fenv limit)))
                      (n 0)
@@ -640,32 +637,30 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-obj-declon
+  (defruled var-visible-of-exec-obj-declon
     (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp compst1))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-obj-declon
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-obj-declon
+          (:instance var-visible-preservep-necc
                      (compst1 (exec-obj-declon declon compst fenv limit))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-block-item
+  (defruled var-visible-of-exec-block-item
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-block-item
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-block-item
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-block-item item compst fenv limit)))
                      (n 0)
@@ -673,16 +668,15 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled objdesign-of-var-of-exec-block-item-list
+  (defruled var-visible-of-exec-block-item-list
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
-                    (> (compustate-top-frame-scopes-number compst) 0)
                     (not (errorp result))
                     (identp var)
                     (objdesign-of-var var compst))
                (objdesign-of-var var compst1)))
-    :use (objdesign-of-var-preservep-of-exec-block-item-list
-          (:instance objdesign-of-var-preservep-necc
+    :use (var-visible-preservep-of-exec-block-item-list
+          (:instance var-visible-preservep-necc
                      (compst1
                       (mv-nth 1 (exec-block-item-list items compst fenv limit)))
                      (n 0)
