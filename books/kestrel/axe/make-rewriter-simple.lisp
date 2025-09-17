@@ -498,6 +498,15 @@
   (declare (xargs :guard t))
   nil)
 
+(defund maybe-print-smt-result (axe-smtp monitoredp hyp-num rule-symbol result)
+  (declare (xargs :guard (and (booleanp axe-smtp)
+                              ;; (booleanp monitoredp)
+                              (natp hyp-num)
+                              (symbolp rule-symbol))))
+  (and axe-smtp
+       monitoredp
+       (cw "(STP result for hyp ~x0 of rule ~x1: ~x2.)~%" hyp-num rule-symbol result)))
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -1045,10 +1054,12 @@
                                        (known-true-in-node-replacement-arrayp new-nodenum node-replacement-array node-replacement-count))
                                    ;;hyp rewrote to a known assumption and so counts as relieved:
                                    (mv (erp-nil) t rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
+                                  ;; todo: bool-fix this?:
                                   (monitoredp (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))) ; todo: pull this out into a subroutine?:
                                   ,@(if smtp
                                         ;; Splice the SMT connection code into the b* bindings:
-                                        `(((mv result state)
+                                        `(;; Maybe try to relieve the hyp using SMT:
+                                          ((mv result state)
                                            (if axe-smtp
                                                ;; Tries to prove that the rewriten HYP is true or some assumption is false:
                                                (prove-disjunction-with-stp (cons new-nodenum (get-negated-assumptions rewrite-stobj2))
@@ -1064,11 +1075,11 @@
                                              (mv :did-not-call-stp state)))
                                           ((when (eq *error* result))
                                            (mv :error-calling-stp nil rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
+                                          (- (maybe-print-smt-result axe-smtp monitoredp hyp-num rule-symbol result))
                                           ((when (eq *valid* result))
                                            (mv (erp-nil) t rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
                                           ;; for any other result from STP (like :invalid or :timedout), or for :did-not-call-stp, we just continue:
-                                          (- (and axe-smtp ;; monitoredp ;; todo: put back
-                                                  (cw "(STP result for hyp ~x0 of rule ~x1: ~x2.)~%" hyp-num rule-symbol result))))
+                                          )
                                       ;; Splice in a possible warning for non-SMT rewriters:
                                       `((- (and axe-smtp (cw "WARNING: The ~x0 rewriter lacks SMT support, but rule ~x1 has an axe-smt hyp.~%" ',suffix rule-symbol)))))
                                   ;; Hyp failed to be relieved:

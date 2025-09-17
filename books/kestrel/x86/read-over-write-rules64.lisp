@@ -1335,20 +1335,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm program-at-of-write
-  (implies (and (separate :r (len bytes) prog-addr :r n addr) ; todo: gen the :rs
-                (canonical-address-p prog-addr)
-                (canonical-address-p (+ -1 (len bytes) prog-addr))
-                (canonical-address-p addr)
-                (implies (posp n)
-                         (canonical-address-p (+ -1 n addr)))
-                (app-view x86)
-                (x86p x86))
-           (equal (program-at prog-addr bytes (write n addr val x86))
-                  (program-at prog-addr bytes x86)))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d (program-at)
-                           (rb wb app-view)))))
+;; (defthm program-at-of-write
+;;   (implies (and (separate :r (len bytes) prog-addr :r n addr) ; todo: gen the :rs
+;;                 (canonical-address-p prog-addr)
+;;                 (canonical-address-p (+ -1 (len bytes) prog-addr))
+;;                 (canonical-address-p addr)
+;;                 (implies (posp n)
+;;                          (canonical-address-p (+ -1 n addr)))
+;;                 (app-view x86)
+;;                 (x86p x86))
+;;            (equal (program-at prog-addr bytes (write n addr val x86))
+;;                   (program-at prog-addr bytes x86)))
+;;   :hints (("Goal" :do-not-induct t
+;;            :in-theory (e/d (program-at)
+;;                            (rb wb app-view)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
