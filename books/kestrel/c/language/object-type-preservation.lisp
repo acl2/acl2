@@ -101,7 +101,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate @(tsee type-object-preservep)
+    "The predicate @(tsee object-type-preservep)
      holds between a computation state
      and the one obtained from it via @(tsee create-var).")
    (xdoc::p
@@ -410,7 +410,7 @@
      the hypotheses guarantee that this operation can be applied.")
    (xdoc::p
     "This theorem serves to prove
-     @(tsee object-type--preservep-of-pop-frame-when-push-frame)."))
+     @(tsee object-type-preservep-of-pop-frame-when-push-frame)."))
   (implies (and (object-type-preservep compst compst1)
                 (equal (compustate-frames-number compst1)
                        (compustate-frames-number compst))
