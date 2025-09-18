@@ -1688,88 +1688,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-stmt-compound ((items block-item-listp)
-                                (items-new block-item-listp)
-                                (items-thm-name symbolp)
-                                (gin simpadd0-ginp))
-  :guard (and (block-item-list-unambp items)
-              (block-item-list-annop items)
-              (block-item-list-unambp items-new)
-              (block-item-list-annop items-new))
-  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
-  :short "Transform a compound statement."
-  (b* (((simpadd0-gin gin) gin)
-       (stmt (stmt-compound items))
-       (stmt-new (stmt-compound items-new))
-       ((unless items-thm-name)
-        (mv stmt-new (simpadd0-gout-no-thm gin)))
-       (types (block-item-list-types items))
-       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
-       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
-       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
-       (hints
-        `(("Goal"
-           :in-theory '((:e c::stmt-compound)
-                        c::compustate-frames-number-of-enter-scope
-                        c::compustate-has-var-with-type-p-of-enter-scope)
-           :use ((:instance ,items-thm-name
-                            (compst (c::enter-scope compst))
-                            (limit (1- limit)))
-                 (:instance stmt-compound-congruence
-                            (old-items ',old-items)
-                            (new-items ',new-items)
-                            (types ',ctypes))
-                 (:instance stmt-compound-errors
-                            (items ',old-items)
-                            (fenv old-fenv))
-                 ,@(simpadd0-stmt-compound-lemma-instances
-                    gin.vartys old-items)))))
-       ((mv thm-event thm-name thm-index)
-        (gen-stmt-thm stmt
-                      stmt-new
-                      gin.vartys
-                      gin.const-new
-                      gin.thm-index
-                      hints)))
-    (mv stmt-new
-        (make-simpadd0-gout :events (cons thm-event gin.events)
-                            :thm-index thm-index
-                            :thm-name thm-name
-                            :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-compound-lemma-instances ((vartys c::ident-type-mapp)
-                                                   (items c::block-item-listp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-compound-compustate-vars
-                       (items ',items)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-compound-lemma-instances (omap::tail vartys) items)))
-       (cons lemma-instance lemma-instances))))
-
-  ///
-
-  (defret stmt-unambp-of-simpadd0-stmt-compound
-    (stmt-unambp stmt)
-    :hyp (block-item-list-unambp items-new))
-
-  (defret stmt-annop-of-simpadd0-stmt-compound
-    (stmt-annop stmt)
-    :hyp (block-item-list-annop items-new))
-
-  (defret stmt-aidentp-of-simpadd0-stmt-compound
-    (stmt-aidentp stmt gcc)
-    :hyp (block-item-list-aidentp items-new gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define simpadd0-stmt-if ((test exprp)
                           (test-new exprp)
                           (test-thm-name symbolp)
@@ -1998,6 +1916,88 @@
     :hyp (and (expr-aidentp test-new gcc)
               (stmt-aidentp then-new gcc)
               (stmt-aidentp else-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-stmt-compound ((items block-item-listp)
+                                (items-new block-item-listp)
+                                (items-thm-name symbolp)
+                                (gin simpadd0-ginp))
+  :guard (and (block-item-list-unambp items)
+              (block-item-list-annop items)
+              (block-item-list-unambp items-new)
+              (block-item-list-annop items-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform a compound statement."
+  (b* (((simpadd0-gin gin) gin)
+       (stmt (stmt-compound items))
+       (stmt-new (stmt-compound items-new))
+       ((unless items-thm-name)
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
+       (types (block-item-list-types items))
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-compound)
+                        c::compustate-frames-number-of-enter-scope
+                        c::compustate-has-var-with-type-p-of-enter-scope)
+           :use ((:instance ,items-thm-name
+                            (compst (c::enter-scope compst))
+                            (limit (1- limit)))
+                 (:instance stmt-compound-congruence
+                            (old-items ',old-items)
+                            (new-items ',new-items)
+                            (types ',ctypes))
+                 (:instance stmt-compound-errors
+                            (items ',old-items)
+                            (fenv old-fenv))
+                 ,@(simpadd0-stmt-compound-lemma-instances
+                    gin.vartys old-items)))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  :prepwork
+  ((define simpadd0-stmt-compound-lemma-instances ((vartys c::ident-type-mapp)
+                                                   (items c::block-item-listp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (omap::emptyp vartys)) nil)
+          ((mv var type) (omap::head vartys))
+          (lemma-instance
+           `(:instance stmt-compound-compustate-vars
+                       (items ',items)
+                       (fenv old-fenv)
+                       (var ',var)
+                       (type ',type)))
+          (lemma-instances
+           (simpadd0-stmt-compound-lemma-instances (omap::tail vartys) items)))
+       (cons lemma-instance lemma-instances))))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-compound
+    (stmt-unambp stmt)
+    :hyp (block-item-list-unambp items-new))
+
+  (defret stmt-annop-of-simpadd0-stmt-compound
+    (stmt-annop stmt)
+    :hyp (block-item-list-annop items-new))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-compound
+    (stmt-aidentp stmt gcc)
+    :hyp (block-item-list-aidentp items-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
