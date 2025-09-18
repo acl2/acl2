@@ -791,8 +791,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdeclor-formalp ((structdeclor structdeclorp))
-  :guard (structdeclor-unambp structdeclor)
+(define struct-declor-formalp ((structdeclor struct-declorp))
+  :guard (struct-declor-unambp structdeclor)
   :returns (yes/no booleanp)
   :short "Check if a structure declarator has formal dynamic semantics."
   :long
@@ -800,7 +800,7 @@
    (xdoc::p
     "The declarator must be present and supported.
      The optional expression must be absent."))
-  (b* (((structdeclor structdeclor) structdeclor))
+  (b* (((struct-declor structdeclor) structdeclor))
     (and structdeclor.declor?
          (declor-obj-formalp structdeclor.declor?)
          (not structdeclor.expr?)))
@@ -829,7 +829,7 @@
                        (type-spec-list-formalp tyspecs)))
                 (consp structdecl.declor)
                 (endp (cdr structdecl.declor))
-                (structdeclor-formalp (car structdecl.declor))
+                (struct-declor-formalp (car structdecl.declor))
                 (endp structdecl.attrib))
    :statassert nil
    :empty nil)

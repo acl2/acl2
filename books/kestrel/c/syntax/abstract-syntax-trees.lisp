@@ -2534,7 +2534,7 @@
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
-              (declor structdeclor-list)
+              (declor struct-declor-list)
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
@@ -2560,7 +2560,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod structdeclor
+  (fty::defprod struct-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of structure declarators [C17:6.7.2.1] [C17:A.2.2]."
     :long
@@ -2576,24 +2576,24 @@
        even though this is disallowed in the concrete syntax."))
     ((declor? declor-option)
      (expr? const-expr-option))
-    :pred structdeclorp
+    :pred struct-declorp
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist structdeclor-list
+  (fty::deflist struct-declor-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of structure declarators."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarators are defined in @(tsee structdeclor).
+      "Structure declarators are defined in @(tsee struct-declor).
        This fixtype corresponds to <i>struct-declarator-list</i>
        in the grammar in [C17]."))
-    :elt-type structdeclor
+    :elt-type struct-declor
     :true-listp t
     :elementp-of-nil nil
-    :pred structdeclor-listp
+    :pred struct-declor-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

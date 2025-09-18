@@ -620,7 +620,7 @@
         (b* ((free-vars0
                (free-vars-spec/qual-list structdecl.specqual bound-vars))
              ((mv free-vars1 bound-vars)
-              (free-vars-structdeclor-list structdecl.declor bound-vars)))
+              (free-vars-struct-declor-list structdecl.declor bound-vars)))
           (mv (union free-vars0
                      (union free-vars1
                             (free-vars-attrib-spec-list structdecl.attrib
@@ -648,23 +648,23 @@
           bound-vars))
     :measure (structdecl-list-count structdecls))
 
-  (define free-vars-structdeclor
-    ((structdeclor structdeclorp)
+  (define free-vars-struct-declor
+    ((structdeclor struct-declorp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a structure declarator."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((structdeclor structdeclor) structdeclor)
+    (b* (((struct-declor structdeclor) structdeclor)
          (free-vars0
            (free-vars-const-expr-option structdeclor.expr? bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-declor-option structdeclor.declor? bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define free-vars-structdeclor-list
-    ((structdeclors structdeclor-listp)
+  (define free-vars-struct-declor-list
+    ((structdeclors struct-declor-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of structure
             declarators."
@@ -673,12 +673,12 @@
     (b* (((when (endp structdeclors))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-structdeclor (first structdeclors) bound-vars))
+          (free-vars-struct-declor (first structdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-structdeclor-list (rest structdeclors) bound-vars)))
+          (free-vars-struct-declor-list (rest structdeclors) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   (define free-vars-enumspec
     ((enumspec enumspecp)

@@ -1498,7 +1498,7 @@
         :member (b* (((mv specqual env)
                       (const-prop-spec/qual-list structdecl.specqual env))
                      ((mv declor env)
-                      (const-prop-structdeclor-list structdecl.declor env)))
+                      (const-prop-struct-declor-list structdecl.declor env)))
                   (mv (make-structdecl-member
                         :extension structdecl.extension
                         :specqual specqual
@@ -1529,41 +1529,41 @@
           env))
     :measure (structdecl-list-count structdecls))
 
-  (define const-prop-structdeclor
-    ((structdeclor structdeclorp)
+  (define const-prop-struct-declor
+    ((structdeclor struct-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdeclor)."
-    :returns (mv (new-structdeclor structdeclorp)
+    :short "Propagate a constant through a @(see c$::struct-declor)."
+    :returns (mv (new-structdeclor struct-declorp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((structdeclor structdeclor)
+         ((struct-declor structdeclor)
           structdeclor)
          ((mv declor? env)
           (const-prop-declor-option structdeclor.declor? env))
          ((mv expr? env)
           (const-prop-const-expr-option structdeclor.expr? env)))
-      (mv (make-structdeclor
+      (mv (make-struct-declor
             :declor? declor?
             :expr? expr?)
           env))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define const-prop-structdeclor-list
-    ((structdeclors structdeclor-listp)
+  (define const-prop-struct-declor-list
+    ((structdeclors struct-declor-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdeclor-list)."
-    :returns (mv (new-structdeclors structdeclor-listp)
+    :short "Propagate a constant through a @(see c$::struct-declor-list)."
+    :returns (mv (new-structdeclors struct-declor-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
          ((when (endp structdeclors))
           (mv nil env))
          ((mv first env)
-          (const-prop-structdeclor (first structdeclors) env))
+          (const-prop-struct-declor (first structdeclors) env))
          ((mv rest env)
-          (const-prop-structdeclor-list (rest structdeclors) env)))
+          (const-prop-struct-declor-list (rest structdeclors) env)))
       (mv (cons first rest)
           env))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   (define const-prop-enumspec
     ((enumspec enumspecp)

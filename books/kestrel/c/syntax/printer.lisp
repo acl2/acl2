@@ -3191,8 +3191,8 @@
           (pstate (print-spec/qual-list structdecl.specqual pstate))
           (pstate (if structdecl.declor
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-structdeclor-list structdecl.declor
-                                                            pstate)))
+                           (pstate (print-struct-declor-list structdecl.declor
+                                                             pstate)))
                         pstate)
                     pstate))
           (pstate (if structdecl.attrib
@@ -3237,9 +3237,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-structdeclor ((structdeclor structdeclorp) (pstate pristatep))
-    :guard (and (structdeclor-unambp structdeclor)
-                (structdeclor-aidentp structdeclor (pristate->gcc pstate)))
+  (define print-struct-declor ((structdeclor struct-declorp) (pstate pristatep))
+    :guard (and (struct-declor-unambp structdeclor)
+                (struct-declor-aidentp structdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declarator."
@@ -3249,7 +3249,7 @@
       "We ensure that the structure declarator is not empty,
        i.e. that there is a declarator or an expression,
        as required by the grammar."))
-    (b* (((structdeclor structdeclor) structdeclor)
+    (b* (((struct-declor structdeclor) structdeclor)
          ((unless (or (declor-option-case structdeclor.declor? :some)
                       (const-expr-option-case structdeclor.expr? :some)))
           (raise "Misusage error: empty structure declarator.")
@@ -3270,26 +3270,26 @@
                           pstate)
                   :none pstate)))
       pstate)
-    :measure (two-nats-measure (structdeclor-count structdeclor) 0))
+    :measure (two-nats-measure (struct-declor-count structdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-structdeclor-list ((structdeclors structdeclor-listp)
-                                   (pstate pristatep))
+  (define print-struct-declor-list ((structdeclors struct-declor-listp)
+                                    (pstate pristatep))
     :guard (and (consp structdeclors)
-                (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-aidentp structdeclors
-                                           (pristate->gcc pstate)))
+                (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-aidentp structdeclors
+                                            (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarators,
             separated by commas."
     (b* (((unless (mbt (consp structdeclors))) (pristate-fix pstate))
-         (pstate (print-structdeclor (car structdeclors) pstate))
+         (pstate (print-struct-declor (car structdeclors) pstate))
          ((when (endp (cdr structdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
-      (print-structdeclor-list (cdr structdeclors) pstate))
-    :measure (two-nats-measure (structdeclor-list-count structdeclors) 0))
+      (print-struct-declor-list (cdr structdeclors) pstate))
+    :measure (two-nats-measure (struct-declor-list-count structdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4141,8 +4141,8 @@
      print-struni-spec
      print-structdecl
      print-structdecl-list
-     print-structdeclor
-     print-structdeclor-list
+     print-struct-declor
+     print-struct-declor-list
      print-enumspec
      print-enumer
      print-enumer-list

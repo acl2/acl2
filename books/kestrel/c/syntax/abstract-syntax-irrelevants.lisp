@@ -345,10 +345,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdeclor
+(defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
-  :type structdeclorp
-  :body (make-structdeclor :declor? nil :expr? nil))
+  :type struct-declorp
+  :body (make-struct-declor :declor? nil :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

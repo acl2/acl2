@@ -311,15 +311,15 @@
     structdecl-list-fix
     structdecl-list-count
 
-    structdeclorp
-    structdeclor-fix
-    structdeclor-count
-    structdeclor
-    make-structdeclor
+    struct-declorp
+    struct-declor-fix
+    struct-declor-count
+    struct-declor
+    make-struct-declor
 
-    structdeclor-listp
-    structdeclor-list-fix
-    structdeclor-list-count
+    struct-declor-listp
+    struct-declor-list-fix
+    struct-declor-list-count
 
     enumspecp
     enumspec-fix
@@ -510,8 +510,8 @@
     struni-spec-unambp
     structdecl-unambp
     structdecl-list-unambp
-    structdeclor-unambp
-    structdeclor-list-unambp
+    struct-declor-unambp
+    struct-declor-list-unambp
     enumspec-unambp
     enumer-unambp
     enumer-list-unambp
@@ -575,8 +575,8 @@
     struni-spec-aidentp
     structdecl-aidentp
     structdecl-list-aidentp
-    structdeclor-aidentp
-    structdeclor-list-aidentp
+    struct-declor-aidentp
+    struct-declor-list-aidentp
     enumspec-aidentp
     enumer-aidentp
     enumer-list-aidentp
@@ -716,8 +716,8 @@
     struni-spec-annop
     structdecl-annop
     structdecl-list-annop
-    structdeclor-annop
-    structdeclor-list-annop
+    struct-declor-annop
+    struct-declor-list-annop
     enumspec-annop
     enumer-annop
     enumer-list-annop

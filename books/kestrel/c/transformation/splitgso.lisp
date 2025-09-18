@@ -209,8 +209,8 @@
 
 ;; split global struct type
 
-(define structdeclor-list-get-ident
-  ((structdeclors structdeclor-listp))
+(define struct-declor-list-get-ident
+  ((structdeclors struct-declor-listp))
   :returns (mv (er? maybe-msgp)
                (ident identp))
   (b* (((reterr) (c$::irr-ident))
@@ -221,7 +221,7 @@
         (retmsg$ "Multiple struct declarators in a single struct declaration
                   are unsupported: ~x0"
                  structdeclors))
-       ((structdeclor structdeclor) (first structdeclors))
+       ((struct-declor structdeclor) (first structdeclors))
        ((when structdeclor.expr?)
         (retmsg$ "Bit-field struct declarator is unsupported: ~x0"
                  structdeclor.expr?))
@@ -243,7 +243,7 @@
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
       :member (b* (((erp ident)
-                    (structdeclor-list-get-ident structdecl.declor)))
+                    (struct-declor-list-get-ident structdecl.declor)))
                 (retok (and (member-equal ident names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"

@@ -934,7 +934,7 @@
                       (c$::structdecl-member->specqual structdecl)
                       subst bound-vars))
           ((mv declor bound-vars)
-           (structdeclor-list-subst-free
+           (struct-declor-list-subst-free
              (c$::structdecl-member->declor structdecl)
              subst bound-vars)))
        (mv (c$::structdecl-member
@@ -970,37 +970,37 @@
           (ident-set-fix bound-vars)))
     :measure (structdecl-list-count structdecl-list))
 
-  (define structdeclor-subst-free ((structdeclor structdeclorp)
-                                   (subst ident-expr-mapp)
-                                   (bound-vars ident-setp))
-    :returns (mv (result structdeclorp)
+  (define struct-declor-subst-free ((structdeclor struct-declorp)
+                                    (subst ident-expr-mapp)
+                                    (bound-vars ident-setp))
+    :returns (mv (result struct-declorp)
                  (bound-vars ident-setp))
     (b* ((expr? (const-expr-option-subst-free
-                    (c$::structdeclor->expr? structdeclor)
-                    subst bound-vars))
+                 (c$::struct-declor->expr? structdeclor)
+                 subst bound-vars))
          ((mv declor? bound-vars)
           (declor-option-subst-free
-                    (c$::structdeclor->declor? structdeclor)
-                    subst bound-vars)))
-      (mv (structdeclor declor? expr?)
+           (c$::struct-declor->declor? structdeclor)
+           subst bound-vars)))
+      (mv (struct-declor declor? expr?)
           (ident-set-fix bound-vars)))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define structdeclor-list-subst-free
-    ((structdeclor-list structdeclor-listp)
+  (define struct-declor-list-subst-free
+    ((struct-declor-list struct-declor-listp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (mv (result structdeclor-listp)
+    :returns (mv (result struct-declor-listp)
                  (bound-vars ident-setp))
-    (b* (((when (endp structdeclor-list))
+    (b* (((when (endp struct-declor-list))
           (mv nil (ident-set-fix bound-vars)))
          ((mv first bound-vars)
-          (structdeclor-subst-free (first structdeclor-list) subst bound-vars))
+          (struct-declor-subst-free (first struct-declor-list) subst bound-vars))
          ((mv rest bound-vars)
-          (structdeclor-list-subst-free (rest structdeclor-list) subst bound-vars)))
+          (struct-declor-list-subst-free (rest struct-declor-list) subst bound-vars)))
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
-    :measure (structdeclor-list-count structdeclor-list))
+    :measure (struct-declor-list-count struct-declor-list))
 
   (define enumspec-subst-free ((enumspec enumspecp)
                                (subst ident-expr-mapp)

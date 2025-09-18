@@ -12133,7 +12133,7 @@
 
   (define parse-struct-declarator ((parstate parstatep))
     :returns (mv erp
-                 (structdeclor structdeclorp)
+                 (structdeclor struct-declorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12145,7 +12145,7 @@
        a declarator,
        or a declarator followed by colon and a constant expression,
        or a colon and a constant expression."))
-    (b* (((reterr) (irr-structdeclor) (irr-span) parstate)
+    (b* (((reterr) (irr-struct-declor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token may start a declarator, we parse it,
@@ -12163,16 +12163,16 @@
            ((token-punctuatorp token2 ":") ; declor :
             (b* (((erp cexpr last-span parstate) ; declor : expr
                   (parse-constant-expression parstate)))
-              (retok (make-structdeclor :declor? declor
-                                        :expr? cexpr)
+              (retok (make-struct-declor :declor? declor
+                                         :expr? cexpr)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not a colon,
            ;; the declarator is the whole structure declarator.
            (t ; declor other
             (b* ((parstate (if token2 (unread-token parstate) parstate)))
-              (retok (make-structdeclor :declor? declor
-                                        :expr? nil)
+              (retok (make-struct-declor :declor? declor
+                                         :expr? nil)
                      span
                      parstate))))))
        ;; If token is a colon,
@@ -12181,8 +12181,8 @@
        ((token-punctuatorp token ":") ; :
         (b* (((erp cexpr last-span parstate) ; : expr
               (parse-constant-expression parstate)))
-          (retok (make-structdeclor :declor? nil
-                                    :expr? cexpr)
+          (retok (make-struct-declor :declor? nil
+                                     :expr? cexpr)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -12196,7 +12196,7 @@
 
   (define parse-struct-declarator-list ((parstate parstatep))
     :returns (mv erp
-                 (structdeclors structdeclor-listp)
+                 (structdeclors struct-declor-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)

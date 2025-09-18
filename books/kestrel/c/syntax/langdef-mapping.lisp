@@ -905,7 +905,7 @@
         (reterr (msg "Unsupported number of declarators ~
                       in structure declaration ~x0."
                      (structdecl-fix structdecl))))
-       ((structdeclor declor) (car declors))
+       ((struct-declor declor) (car declors))
        ((unless declor.declor?)
         (reterr (msg "Unsupported structure declarator ~
                       in structure declaration ~x0."
@@ -929,7 +929,7 @@
     (not erp)
     :hyp (structdecl-formalp structdecl)
     :hints (("Goal" :in-theory (enable structdecl-formalp
-                                       structdeclor-formalp)))))
+                                       struct-declor-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

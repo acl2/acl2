@@ -157,7 +157,7 @@
    (structdecl :member (and (not (structdecl-member->extension structdecl))
                             (spec/qual-list-standardp
                              (structdecl-member->specqual structdecl))
-                            (structdeclor-list-standardp
+                            (struct-declor-list-standardp
                              (structdecl-member->declor structdecl))
                             (endp (structdecl-member->attrib structdecl))))
    (structdecl :empty nil)
