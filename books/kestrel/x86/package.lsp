@@ -1305,6 +1305,49 @@
 
     x86isa::bitcount8))
 
+;; TODO: Add more?
+(defconst *axe-tools*
+  '(unroll-spec-basic
+    unroll-spec
+
+    prove-equal-with-axe
+    prove-equality
+    prove-with-axe
+    prove-equal-with-tactics
+
+    defthm-axe
+    defthm-axe-basic
+    defthm-stp
+    prove-with-stp
+
+    symbolic-byte-assumptions
+    symbolic-list
+    symbolic-array
+    symbolic-byte-list
+
+    byte-types-for-vars
+    make-var-names
+
+    set-axe-rule-priority
+
+    def-constant-opener
+    defopeners
+    add-known-boolean
+
+    defconst-x86
+    defconst-computed
+    defconst-computed2 ;drop?
+    defconst-computed3
+
+    def-simplified-basic
+    basic ; name of the basic rewriter (may be printed by "The ~x0 rewriter lacks SMT support ...")
+
+    dag-info
+    dag-fns
+    dag-vars
+    dag-size
+    ))
+
 (defconst *symbols-from-acl2-package*
   '(loghead
     loghead$inline
@@ -1436,16 +1479,6 @@
     erp-nil
     erp-t
 
-    def-constant-opener
-    defopeners
-    add-known-boolean
-
-    defconst-x86
-    defconst-computed
-    defconst-computed2 ;drop?
-    defconst-computed3
-    def-simplified-basic
-    basic ; name of the basic rewriter (may be printed by "The ~x0 rewriter lacks SMT support ...")
 
     ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
@@ -1467,10 +1500,6 @@
     acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest
-    dag-info
-    dag-fns
-    dag-vars
-    dag-size
     dag-or-quotep-fns
     dag-or-quotep-vars
     dag-or-quotep-size
@@ -1487,10 +1516,6 @@
     dag-array ; for calls of axe-syntaxp functions
     def-simplified-x86
     dag-val-with-axe-evaluator
-    defthm-axe
-    defthm-axe-basic
-    defthm-stp
-    prove-with-stp
     defmacrodoc
     simplify-conjunction-basic
     print-to-hundredths
@@ -1512,21 +1537,13 @@
     term-should-be-trimmed-axe
     lighter-dargp
 
-    prove-equal-with-axe
-    prove-equality
-    prove-with-axe
-    prove-equal-with-tactics
-    symbolic-byte-assumptions
-    symbolic-list
     ;rule lists:
     lookup-rules
     list-rules
     core-rules-bv
     amazing-rules-bv
     trim-rules
-    set-axe-rule-priority
-    unroll-spec-basic
-    unroll-spec
+
 
     memberp
 
@@ -1744,6 +1761,7 @@
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
+                    *axe-tools*
                     *symbols-from-x86isa*
                     *symbols-from-bitops*
                     *symbols-from-rtl*
