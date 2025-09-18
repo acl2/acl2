@@ -3318,7 +3318,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-sign-if-present ((parstate parstatep))
+(define lex-?-sign ((parstate parstatep))
   :returns (mv erp
                (sign? sign-optionp)
                (last/next-pos positionp)
@@ -3350,12 +3350,12 @@
 
   ///
 
-  (defret parsize-of-lex-sign-if-present-ucond
+  (defret parsize-of-lex-?-sign-ucond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-sign-if-present-cond
+  (defret parsize-of-lex-?-sign-cond
     (implies (and (not erp)
                   sign?)
              (<= (parsize new-parstate)
@@ -3396,7 +3396,7 @@
       (b* ((prefix (if (= char (char-code #\e))
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
-           ((erp sign? sign-pos parstate) (lex-sign-if-present parstate))
+           ((erp sign? sign-pos parstate) (lex-?-sign parstate))
            (pos-so-far (if sign? sign-pos pos))
            ((erp digits last-pos & parstate)
             (lex-*-digit pos-so-far parstate))
@@ -3458,7 +3458,7 @@
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
            ((erp sign? sign-last-pos parstate)
-            (lex-sign-if-present parstate))
+            (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
@@ -3519,7 +3519,7 @@
                        (bin-expo-prefix-locase-p)
                      (bin-expo-prefix-upcase-p)))
            ((erp sign? sign-last-pos parstate)
-            (lex-sign-if-present parstate))
+            (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
