@@ -1407,6 +1407,43 @@
  "L"
  :cond (equal ast (fsuffix-upcase-l)))
 
+(test-lex
+ lex-?-floating-suffix
+ "other"
+ :cond (equal ast nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-lex
+ lex-?-sign
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-sign
+ "+"
+ :cond (equal ast (sign-plus)))
+
+(test-lex
+ lex-?-sign
+ "-"
+ :cond (equal ast (sign-minus)))
+
+(test-lex
+ lex-?-sign
+ "*"
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-sign
+ "6"
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-sign
+ "L"
+ :cond (equal ast nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.

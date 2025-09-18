@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unambiguity
-  :parents (syntax-for-tools)
+  :parents (disambiguation)
   :short "Unambiguity of the ASTs."
   :long
   (xdoc::topstring

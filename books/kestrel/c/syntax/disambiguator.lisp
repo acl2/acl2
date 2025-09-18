@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ disambiguator
-  :parents (syntax-for-tools)
+  :parents (disambiguation)
   :short "Disambiguator of the C abstract syntax for tools."
   :long
   (xdoc::topstring
@@ -2464,62 +2464,62 @@
     (b* (((reterr) (irr-struni-spec) (irr-dimb-table))
          ((struni-spec struni-spec) struni-spec)
          ((erp new-members table)
-          (dimb-structdecl-list struni-spec.members table)))
+          (dimb-struct-declon-list struni-spec.members table)))
       (retok (make-struni-spec :name? struni-spec.name? :members new-members)
              table))
     :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-structdecl ((structdecl structdeclp) (table dimb-tablep))
+  (define dimb-struct-declon ((structdeclon struct-declonp) (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-structdecl structdeclp)
+                 (new-structdeclon struct-declonp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declaration."
-    (b* (((reterr) (irr-structdecl) (irr-dimb-table)))
-      (structdecl-case
-       structdecl
+    (b* (((reterr) (irr-struct-declon) (irr-dimb-table)))
+      (struct-declon-case
+       structdeclon
        :member
        (b* (((erp new-specqual table)
-             (dimb-spec/qual-list structdecl.specqual table))
+             (dimb-spec/qual-list structdeclon.specqual table))
             ((erp new-declor table)
-             (dimb-structdeclor-list structdecl.declor table)))
-         (retok (make-structdecl-member :extension structdecl.extension
-                                        :specqual new-specqual
-                                        :declor new-declor
-                                        :attrib structdecl.attrib)
+             (dimb-struct-declor-list structdeclon.declor table)))
+         (retok (make-struct-declon-member :extension structdeclon.extension
+                                           :specqual new-specqual
+                                           :declor new-declor
+                                           :attrib structdeclon.attrib)
                 table))
        :statassert
        (b* (((erp new-statassert table)
-             (dimb-statassert structdecl.unwrap table)))
-         (retok (structdecl-statassert new-statassert)
+             (dimb-statassert structdeclon.unwrap table)))
+         (retok (struct-declon-statassert new-statassert)
                 table))
-       :empty (retok (structdecl-empty) (dimb-table-fix table))))
-    :measure (structdecl-count structdecl))
+       :empty (retok (struct-declon-empty) (dimb-table-fix table))))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-structdecl-list ((structdecls structdecl-listp)
-                                (table dimb-tablep))
+  (define dimb-struct-declon-list ((structdeclons struct-declon-listp)
+                                   (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-structdecls structdecl-listp)
+                 (new-structdeclons struct-declon-listp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of structure declarations."
     (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp structdecls)) (retok nil (dimb-table-fix table)))
-         ((erp new-structdecl table) (dimb-structdecl (car structdecls) table))
-         ((erp new-structdecls table)
-          (dimb-structdecl-list (cdr structdecls) table)))
-      (retok (cons new-structdecl new-structdecls) table))
-    :measure (structdecl-list-count structdecls))
+         ((when (endp structdeclons)) (retok nil (dimb-table-fix table)))
+         ((erp new-structdeclon table) (dimb-struct-declon (car structdeclons) table))
+         ((erp new-structdeclons table)
+          (dimb-struct-declon-list (cdr structdeclons) table)))
+      (retok (cons new-structdeclon new-structdeclons) table))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-structdeclor ((structdeclor structdeclorp) (table dimb-tablep))
+  (define dimb-struct-declor ((structdeclor struct-declorp) (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-structdeclor structdeclorp)
+                 (new-structdeclor struct-declorp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure declarator."
@@ -2530,33 +2530,33 @@
        does not keep track of structure and union members.
        This is why we ignore the identifier, if any,
        returned from disambiguating the optional declarator."))
-    (b* (((reterr) (irr-structdeclor) (irr-dimb-table))
-         ((structdeclor structdeclor) structdeclor)
+    (b* (((reterr) (irr-struct-declor) (irr-dimb-table))
+         ((struct-declor structdeclor) structdeclor)
          ((erp new-declor? & table)
           (dimb-declor-option structdeclor.declor? table))
          ((erp new-expr? table)
           (dimb-const-expr-option structdeclor.expr? table)))
-      (retok (make-structdeclor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
              table))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-structdeclor-list ((structdeclors structdeclor-listp)
-                                  (table dimb-tablep))
+  (define dimb-struct-declor-list ((structdeclors struct-declor-listp)
+                                   (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-structdeclors structdeclor-listp)
+                 (new-structdeclors struct-declor-listp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of structure declarators."
     (b* (((reterr) nil (irr-dimb-table))
          ((when (endp structdeclors)) (retok nil (dimb-table-fix table)))
          ((erp new-structdeclor table)
-          (dimb-structdeclor (car structdeclors) table))
+          (dimb-struct-declor (car structdeclors) table))
          ((erp new-structdeclors table)
-          (dimb-structdeclor-list (cdr structdeclors) table)))
+          (dimb-struct-declor-list (cdr structdeclors) table)))
       (retok (cons new-structdeclor new-structdeclors) table))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3345,22 +3345,22 @@
       (implies (not erp)
                (struni-spec-unambp new-struni-spec))
       :fn dimb-struni-spec)
-    (defret structdecl-unambp-of-dimb-structdecl
+    (defret struct-declon-unambp-of-dimb-struct-declon
       (implies (not erp)
-               (structdecl-unambp new-structdecl))
-      :fn dimb-structdecl)
-    (defret structdecl-list-unambp-of-dimb-structdecl-list
+               (struct-declon-unambp new-structdeclon))
+      :fn dimb-struct-declon)
+    (defret struct-declon-list-unambp-of-dimb-struct-declon-list
       (implies (not erp)
-               (structdecl-list-unambp new-structdecls))
-      :fn dimb-structdecl-list)
-    (defret structdeclor-unambp-of-dimb-structdeclor
+               (struct-declon-list-unambp new-structdeclons))
+      :fn dimb-struct-declon-list)
+    (defret struct-declor-unambp-of-dimb-struct-declor
       (implies (not erp)
-               (structdeclor-unambp new-structdeclor))
-      :fn dimb-structdeclor)
-    (defret structdeclor-list-unambp-of-dimb-structdeclor-list
+               (struct-declor-unambp new-structdeclor))
+      :fn dimb-struct-declor)
+    (defret struct-declor-list-unambp-of-dimb-struct-declor-list
       (implies (not erp)
-               (structdeclor-list-unambp new-structdeclors))
-      :fn dimb-structdeclor-list)
+               (struct-declor-list-unambp new-structdeclors))
+      :fn dimb-struct-declor-list)
     (defret enumspec-unambp-of-dimb-enumspec
       (implies (not erp)
                (enumspec-unambp new-enumspec))
@@ -3497,9 +3497,9 @@
        (table (dimb-add-ident-objfun (ident "__func__") table))
        (table (if gcc
                   (dimb-add-idents-objfun
-                    (list (ident "__FUNCTION__")
-                          (ident "__PRETTY_FUNCTION__"))
-                    table)
+                   (list (ident "__FUNCTION__")
+                         (ident "__PRETTY_FUNCTION__"))
+                   table)
                 table))
        ((erp new-items table) (dimb-block-item-list fundef.body table))
        (table (dimb-pop-scope table))

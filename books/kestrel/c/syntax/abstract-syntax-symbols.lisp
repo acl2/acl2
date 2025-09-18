@@ -299,27 +299,27 @@
     struni-spec
     make-struni-spec
 
-    structdeclp
-    structdecl-fix
-    structdecl-count
-    structdecl-case
-    make-structdecl-member
-    structdecl-statassert
-    structdecl-empty
+    struct-declonp
+    struct-declon-fix
+    struct-declon-count
+    struct-declon-case
+    make-struct-declon-member
+    struct-declon-statassert
+    struct-declon-empty
 
-    structdecl-listp
-    structdecl-list-fix
-    structdecl-list-count
+    struct-declon-listp
+    struct-declon-list-fix
+    struct-declon-list-count
 
-    structdeclorp
-    structdeclor-fix
-    structdeclor-count
-    structdeclor
-    make-structdeclor
+    struct-declorp
+    struct-declor-fix
+    struct-declor-count
+    struct-declor
+    make-struct-declor
 
-    structdeclor-listp
-    structdeclor-list-fix
-    structdeclor-list-count
+    struct-declor-listp
+    struct-declor-list-fix
+    struct-declor-list-count
 
     enumspecp
     enumspec-fix
@@ -508,10 +508,10 @@
     param-declor-unambp
     tyname-unambp
     struni-spec-unambp
-    structdecl-unambp
-    structdecl-list-unambp
-    structdeclor-unambp
-    structdeclor-list-unambp
+    struct-declon-unambp
+    struct-declon-list-unambp
+    struct-declor-unambp
+    struct-declor-list-unambp
     enumspec-unambp
     enumer-unambp
     enumer-list-unambp
@@ -573,10 +573,10 @@
     param-declor-aidentp
     tyname-aidentp
     struni-spec-aidentp
-    structdecl-aidentp
-    structdecl-list-aidentp
-    structdeclor-aidentp
-    structdeclor-list-aidentp
+    struct-declon-aidentp
+    struct-declon-list-aidentp
+    struct-declor-aidentp
+    struct-declor-list-aidentp
     enumspec-aidentp
     enumer-aidentp
     enumer-list-aidentp
@@ -714,10 +714,10 @@
     param-declor-annop
     tyname-annop
     struni-spec-annop
-    structdecl-annop
-    structdecl-list-annop
-    structdeclor-annop
-    structdeclor-list-annop
+    struct-declon-annop
+    struct-declon-list-annop
+    struct-declor-annop
+    struct-declor-list-annop
     enumspec-annop
     enumer-annop
     enumer-list-annop

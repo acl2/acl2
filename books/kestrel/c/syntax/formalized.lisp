@@ -791,8 +791,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdeclor-formalp ((structdeclor structdeclorp))
-  :guard (structdeclor-unambp structdeclor)
+(define struct-declor-formalp ((structdeclor struct-declorp))
+  :guard (struct-declor-unambp structdeclor)
   :returns (yes/no booleanp)
   :short "Check if a structure declarator has formal dynamic semantics."
   :long
@@ -800,7 +800,7 @@
    (xdoc::p
     "The declarator must be present and supported.
      The optional expression must be absent."))
-  (b* (((structdeclor structdeclor) structdeclor))
+  (b* (((struct-declor structdeclor) structdeclor))
     (and structdeclor.declor?
          (declor-obj-formalp structdeclor.declor?)
          (not structdeclor.expr?)))
@@ -808,8 +808,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-formalp ((structdecl structdeclp))
-  :guard (structdecl-unambp structdecl)
+(define struct-declon-formalp ((structdeclon struct-declonp))
+  :guard (struct-declon-unambp structdeclon)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -820,31 +820,32 @@
      There must be only type specifiers, not type qualifiers,
      and they must form a supported type.
      There must be a single supported structure declarator."))
-  (structdecl-case
-   structdecl
-   :member (and (not structdecl.extension)
+  (struct-declon-case
+   structdeclon
+   :member (and (not structdeclon.extension)
                 (b* (((mv okp tyspecs)
-                      (check-spec/qual-list-all-typespec structdecl.specqual)))
+                      (check-spec/qual-list-all-typespec
+                       structdeclon.specqual)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp structdecl.declor)
-                (endp (cdr structdecl.declor))
-                (structdeclor-formalp (car structdecl.declor))
-                (endp structdecl.attrib))
+                (consp structdeclon.declor)
+                (endp (cdr structdeclon.declor))
+                (struct-declor-formalp (car structdeclon.declor))
+                (endp structdeclon.attrib))
    :statassert nil
    :empty nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-list-formalp ((structdecls structdecl-listp))
-  :guard (structdecl-list-unambp structdecls)
+(define struct-declon-list-formalp ((structdeclons struct-declon-listp))
+  :guard (struct-declon-list-unambp structdeclons)
   :returns (yes/no booleanp)
   :short "Check if all the structure declarations in a list
           have formal dynamic semantics."
-  (or (endp structdecls)
-      (and (structdecl-formalp (car structdecls))
-           (structdecl-list-formalp (cdr structdecls))))
+  (or (endp structdeclons)
+      (and (struct-declon-formalp (car structdeclons))
+           (struct-declon-list-formalp (cdr structdeclons))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -861,7 +862,7 @@
   (b* (((struni-spec struni-spec) struni-spec))
     (and struni-spec.name?
          (ident-formalp struni-spec.name?)
-         (structdecl-list-formalp struni-spec.members)))
+         (struct-declon-list-formalp struni-spec.members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

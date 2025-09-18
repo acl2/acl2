@@ -154,13 +154,14 @@
    (dirabsdeclor :dummy-base (raise "Internal error: ~
                                      dummy base case of ~
                                      direct abstract declarator."))
-   (structdecl :member (and (not (structdecl-member->extension structdecl))
-                            (spec/qual-list-standardp
-                             (structdecl-member->specqual structdecl))
-                            (structdeclor-list-standardp
-                             (structdecl-member->declor structdecl))
-                            (endp (structdecl-member->attrib structdecl))))
-   (structdecl :empty nil)
+   (struct-declon :member
+                  (and (not (struct-declon-member->extension struct-declon))
+                       (spec/qual-list-standardp
+                        (struct-declon-member->specqual struct-declon))
+                       (struct-declor-list-standardp
+                        (struct-declon-member->declor struct-declon))
+                       (endp (struct-declon-member->attrib struct-declon))))
+   (struct-declon :empty nil)
    (attrib nil)
    (attrib-spec nil)
    (initdeclor (and (declor-standardp (initdeclor->declor initdeclor))

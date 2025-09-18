@@ -3757,7 +3757,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
-          (simpadd0-structdecl-list struni-spec.members gin))
+          (simpadd0-struct-declon-list struni-spec.members gin))
          (gin (simpadd0-gin-update gin gout-members)))
       (mv (make-struni-spec :name? struni-spec.name?
                             :members new-members)
@@ -3766,90 +3766,90 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdecl ((structdecl structdeclp)
-                               (gin simpadd0-ginp))
-    :guard (and (structdecl-unambp structdecl)
-                (structdecl-annop structdecl))
-    :returns (mv (new-structdecl structdeclp)
+  (define simpadd0-struct-declon ((structdeclon struct-declonp)
+                                  (gin simpadd0-ginp))
+    :guard (and (struct-declon-unambp structdeclon)
+                (struct-declon-annop structdeclon))
+    :returns (mv (new-structdeclon struct-declonp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure declaration."
     (b* (((simpadd0-gin gin) gin))
-      (structdecl-case
-       structdecl
+      (struct-declon-case
+       structdeclon
        :member (b* (((mv new-specqual (simpadd0-gout gout-specqual))
-                     (simpadd0-spec/qual-list structdecl.specqual gin))
+                     (simpadd0-spec/qual-list structdeclon.specqual gin))
                     (gin (simpadd0-gin-update gin gout-specqual))
                     ((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-structdeclor-list structdecl.declor gin))
+                     (simpadd0-struct-declor-list structdeclon.declor gin))
                     (gin (simpadd0-gin-update gin gout-declor)))
-                 (mv (make-structdecl-member
-                      :extension structdecl.extension
+                 (mv (make-struct-declon-member
+                      :extension structdeclon.extension
                       :specqual new-specqual
                       :declor new-declor
-                      :attrib structdecl.attrib)
+                      :attrib structdeclon.attrib)
                      (simpadd0-gout-no-thm gin)))
-       :statassert (b* (((mv new-structdecl (simpadd0-gout gout-structdecl))
-                         (simpadd0-statassert structdecl.unwrap gin))
-                        (gin (simpadd0-gin-update gin gout-structdecl)))
-                     (mv (structdecl-statassert new-structdecl)
+       :statassert (b* (((mv new-structdeclon (simpadd0-gout gout-structdeclon))
+                         (simpadd0-statassert structdeclon.unwrap gin))
+                        (gin (simpadd0-gin-update gin gout-structdeclon)))
+                     (mv (struct-declon-statassert new-structdeclon)
                          (simpadd0-gout-no-thm gin)))
-       :empty (mv (structdecl-empty) (simpadd0-gout-no-thm gin))))
-    :measure (structdecl-count structdecl))
+       :empty (mv (struct-declon-empty) (simpadd0-gout-no-thm gin))))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdecl-list ((structdecls structdecl-listp)
-                                    (gin simpadd0-ginp))
-    :guard (and (structdecl-list-unambp structdecls)
-                (structdecl-list-annop structdecls))
-    :returns (mv (new-structdecls structdecl-listp)
+  (define simpadd0-struct-declon-list ((structdeclons struct-declon-listp)
+                                       (gin simpadd0-ginp))
+    :guard (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-annop structdeclons))
+    :returns (mv (new-structdeclons struct-declon-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of structure declarations."
     (b* (((simpadd0-gin gin) gin)
-         ((when (endp structdecls))
+         ((when (endp structdeclons))
           (mv nil (simpadd0-gout-no-thm gin)))
-         ((mv new-structdecl (simpadd0-gout gout-structdecl))
-          (simpadd0-structdecl (car structdecls) gin))
-         (gin (simpadd0-gin-update gin gout-structdecl))
-         ((mv new-structdecls (simpadd0-gout gout-structdecls))
-          (simpadd0-structdecl-list (cdr structdecls) gin))
-         (gin (simpadd0-gin-update gin gout-structdecls)))
-      (mv (cons new-structdecl new-structdecls)
+         ((mv new-structdeclon (simpadd0-gout gout-structdeclon))
+          (simpadd0-struct-declon (car structdeclons) gin))
+         (gin (simpadd0-gin-update gin gout-structdeclon))
+         ((mv new-structdeclons (simpadd0-gout gout-structdeclons))
+          (simpadd0-struct-declon-list (cdr structdeclons) gin))
+         (gin (simpadd0-gin-update gin gout-structdeclons)))
+      (mv (cons new-structdeclon new-structdeclons)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdeclor ((structdeclor structdeclorp)
-                                 (gin simpadd0-ginp))
-    :guard (and (structdeclor-unambp structdeclor)
-                (structdeclor-annop structdeclor))
-    :returns (mv (new-structdeclor structdeclorp)
+  (define simpadd0-struct-declor ((structdeclor struct-declorp)
+                                  (gin simpadd0-ginp))
+    :guard (and (struct-declor-unambp structdeclor)
+                (struct-declor-annop structdeclor))
+    :returns (mv (new-structdeclor struct-declorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure declarator."
     (b* (((simpadd0-gin gin) gin)
-         ((structdeclor structdeclor) structdeclor)
+         ((struct-declor structdeclor) structdeclor)
          ((mv new-declor? (simpadd0-gout gout-declor?))
           (simpadd0-declor-option structdeclor.declor? gin))
          (gin (simpadd0-gin-update gin gout-declor?))
          ((mv new-expr? (simpadd0-gout gout-expr?))
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (simpadd0-gin-update gin gout-expr?)))
-      (mv (make-structdeclor :declor? new-declor?
-                             :expr? new-expr?)
+      (mv (make-struct-declor :declor? new-declor?
+                              :expr? new-expr?)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdeclor-list ((structdeclors structdeclor-listp)
-                                      (gin simpadd0-ginp))
-    :guard (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-annop structdeclors))
-    :returns (mv (new-structdeclors structdeclor-listp)
+  (define simpadd0-struct-declor-list ((structdeclors struct-declor-listp)
+                                       (gin simpadd0-ginp))
+    :guard (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-annop structdeclors))
+    :returns (mv (new-structdeclors struct-declor-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of structure declarators."
@@ -3857,14 +3857,14 @@
          ((when (endp structdeclors))
           (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
-          (simpadd0-structdeclor (car structdeclors) gin))
+          (simpadd0-struct-declor (car structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclor))
          ((mv new-structdeclors (simpadd0-gout gout-structdeclors))
-          (simpadd0-structdeclor-list (cdr structdeclors) gin))
+          (simpadd0-struct-declor-list (cdr structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclors)))
       (mv (cons new-structdeclor new-structdeclors)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4450,18 +4450,18 @@
     (defret struni-spec-unambp-of-simpadd0-struni-spec
       (struni-spec-unambp new-struni-spec)
       :fn simpadd0-struni-spec)
-    (defret structdecl-unambp-of-simpadd0-structdecl
-      (structdecl-unambp new-structdecl)
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-unambp-of-simpadd0-structdecl-list
-      (structdecl-list-unambp new-structdecls)
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-unambp-of-simpadd0-structdeclor
-      (structdeclor-unambp new-structdeclor)
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-unambp-of-simpadd0-structdeclor-list
-      (structdeclor-list-unambp new-structdeclors)
-      :fn simpadd0-structdeclor-list)
+    (defret struct-declon-unambp-of-simpadd0-struct-declon
+      (struct-declon-unambp new-structdeclon)
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-unambp-of-simpadd0-struct-declon-list
+      (struct-declon-list-unambp new-structdeclons)
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-unambp-of-simpadd0-struct-declor
+      (struct-declor-unambp new-structdeclor)
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-unambp-of-simpadd0-struct-declor-list
+      (struct-declor-list-unambp new-structdeclors)
+      :fn simpadd0-struct-declor-list)
     (defret enumspec-unambp-of-simpadd0-enumspec
       (enumspec-unambp new-enumspec)
       :fn simpadd0-enumspec)
@@ -4529,10 +4529,10 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
                                        simpadd0-enumspec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
@@ -4717,26 +4717,26 @@
       :hyp (and (struni-spec-unambp struni-spec)
                 (struni-spec-annop struni-spec))
       :fn simpadd0-struni-spec)
-    (defret structdecl-annop-of-simpadd0-structdecl
-      (structdecl-annop new-structdecl)
-      :hyp (and (structdecl-unambp structdecl)
-                (structdecl-annop structdecl))
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-annop-of-simpadd0-structdecl-list
-      (structdecl-list-annop new-structdecls)
-      :hyp (and (structdecl-list-unambp structdecls)
-                (structdecl-list-annop structdecls))
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-annop-of-simpadd0-structdeclor
-      (structdeclor-annop new-structdeclor)
-      :hyp (and (structdeclor-unambp structdeclor)
-                (structdeclor-annop structdeclor))
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-annop-of-simpadd0-structdeclor-list
-      (structdeclor-list-annop new-structdeclors)
-      :hyp (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-annop structdeclors))
-      :fn simpadd0-structdeclor-list)
+    (defret struct-declon-annop-of-simpadd0-struct-declon
+      (struct-declon-annop new-structdeclon)
+      :hyp (and (struct-declon-unambp structdeclon)
+                (struct-declon-annop structdeclon))
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-annop-of-simpadd0-struct-declon-list
+      (struct-declon-list-annop new-structdeclons)
+      :hyp (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-annop structdeclons))
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-annop-of-simpadd0-struct-declor
+      (struct-declor-annop new-structdeclor)
+      :hyp (and (struct-declor-unambp structdeclor)
+                (struct-declor-annop structdeclor))
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-annop-of-simpadd0-struct-declor-list
+      (struct-declor-list-annop new-structdeclors)
+      :hyp (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-annop structdeclors))
+      :fn simpadd0-struct-declor-list)
     (defret enumspec-annop-of-simpadd0-enumspec
       (enumspec-annop new-enumspec)
       :hyp (and (enumspec-unambp enumspec)
@@ -4828,10 +4828,10 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
                                        simpadd0-enumspec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
@@ -5008,26 +5008,26 @@
       :hyp (and (struni-spec-unambp struni-spec)
                 (struni-spec-aidentp struni-spec gcc))
       :fn simpadd0-struni-spec)
-    (defret structdecl-aidentp-of-simpadd0-structdecl
-      (structdecl-aidentp new-structdecl gcc)
-      :hyp (and (structdecl-unambp structdecl)
-                (structdecl-aidentp structdecl gcc))
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-aidentp-of-simpadd0-structdecl-list
-      (structdecl-list-aidentp new-structdecls gcc)
-      :hyp (and (structdecl-list-unambp structdecls)
-                (structdecl-list-aidentp structdecls gcc))
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-aidentp-of-simpadd0-structdeclor
-      (structdeclor-aidentp new-structdeclor gcc)
-      :hyp (and (structdeclor-unambp structdeclor)
-                (structdeclor-aidentp structdeclor gcc))
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-aidentp-of-simpadd0-structdeclor-list
-      (structdeclor-list-aidentp new-structdeclors gcc)
-      :hyp (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-aidentp structdeclors gcc))
-      :fn simpadd0-structdeclor-list)
+    (defret struct-declon-aidentp-of-simpadd0-struct-declon
+      (struct-declon-aidentp new-structdeclon gcc)
+      :hyp (and (struct-declon-unambp structdeclon)
+                (struct-declon-aidentp structdeclon gcc))
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-aidentp-of-simpadd0-struct-declon-list
+      (struct-declon-list-aidentp new-structdeclons gcc)
+      :hyp (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-aidentp structdeclons gcc))
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-aidentp-of-simpadd0-struct-declor
+      (struct-declor-aidentp new-structdeclor gcc)
+      :hyp (and (struct-declor-unambp structdeclor)
+                (struct-declor-aidentp structdeclor gcc))
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-aidentp-of-simpadd0-struct-declor-list
+      (struct-declor-list-aidentp new-structdeclors gcc)
+      :hyp (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-aidentp structdeclors gcc))
+      :fn simpadd0-struct-declor-list)
     (defret enumspec-aidentp-of-simpadd0-enumspec
       (enumspec-aidentp new-enumspec gcc)
       :hyp (and (enumspec-unambp enumspec)
@@ -5120,10 +5120,10 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
                                        simpadd0-enumspec
                                        simpadd0-enumer
                                        simpadd0-enumer-list

@@ -3318,7 +3318,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-sign-if-present ((parstate parstatep))
+(define lex-?-sign ((parstate parstatep))
   :returns (mv erp
                (sign? sign-optionp)
                (last/next-pos positionp)
@@ -3350,12 +3350,12 @@
 
   ///
 
-  (defret parsize-of-lex-sign-if-present-ucond
+  (defret parsize-of-lex-?-sign-ucond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-sign-if-present-cond
+  (defret parsize-of-lex-?-sign-cond
     (implies (and (not erp)
                   sign?)
              (<= (parsize new-parstate)
@@ -3396,7 +3396,7 @@
       (b* ((prefix (if (= char (char-code #\e))
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
-           ((erp sign? sign-pos parstate) (lex-sign-if-present parstate))
+           ((erp sign? sign-pos parstate) (lex-?-sign parstate))
            (pos-so-far (if sign? sign-pos pos))
            ((erp digits last-pos & parstate)
             (lex-*-digit pos-so-far parstate))
@@ -3458,7 +3458,7 @@
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
            ((erp sign? sign-last-pos parstate)
-            (lex-sign-if-present parstate))
+            (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
@@ -3519,7 +3519,7 @@
                        (bin-expo-prefix-locase-p)
                      (bin-expo-prefix-upcase-p)))
            ((erp sign? sign-last-pos parstate)
-            (lex-sign-if-present parstate))
+            (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
             (lex-*-digit sign-last-pos parstate))
            ((unless digits)
@@ -11045,34 +11045,34 @@
                    (t ; struct ident { other
                     (b* ((parstate ; struct ident {
                           (if token3 (unread-token parstate) parstate))
-                         ((erp structdecls & parstate)
-                          ;; struct ident { structdecls
+                         ((erp structdeclons & parstate)
+                          ;; struct ident { structdeclons
                           (parse-struct-declaration-list parstate))
                          ((erp last-span parstate)
-                          ;; struct ident { structdecls }
+                          ;; struct ident { structdeclons }
                           (read-punctuator "}" parstate)))
                       (retok (type-spec-struct
                               (make-struni-spec :name? ident
-                                                :members structdecls))
+                                                :members structdeclons))
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
               ;; or GCC extensions are not enabled,
               ;; we need to parse one of more structure declarations,
               ;; followed by a closed curly brace.
-              (b* (((erp structdecls & parstate)
-                    ;; struct/union ident { structdecls
+              (b* (((erp structdeclons & parstate)
+                    ;; struct/union ident { structdeclons
                     (parse-struct-declaration-list parstate))
                    ((erp last-span parstate)
-                    ;; struct/union ident { structdecls }
+                    ;; struct/union ident { structdeclons }
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (type-spec-struct
                              (make-struni-spec :name? ident
-                                               :members structdecls))
+                                               :members structdeclons))
                          (type-spec-union
                              (make-struni-spec :name? ident
-                                               :members structdecls)))
+                                               :members structdeclons)))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -11116,31 +11116,31 @@
                (t ; struct { other
                 (b* ((parstate ; struct {
                       (if token3 (unread-token parstate) parstate))
-                     ((erp structdecls & parstate)
-                      ;; struct { structdecls
+                     ((erp structdeclons & parstate)
+                      ;; struct { structdeclons
                       (parse-struct-declaration-list parstate))
                      ((erp last-span parstate)
-                      ;; struct { structdecls }
+                      ;; struct { structdeclons }
                       (read-punctuator "}" parstate)))
                   (retok (type-spec-struct
                           (make-struni-spec :name? nil
-                                            :members structdecls))
+                                            :members structdeclons))
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
           ;; or GCC extensions are not enabled,
           ;; we must have one or more structure declarations.
-          (b* (((erp structdecls & parstate) ; struct/union { structdecls
+          (b* (((erp structdeclons & parstate) ; struct/union { structdeclons
                 (parse-struct-declaration-list parstate))
-               ((erp last-span parstate) ; struct/union { structdecls }
+               ((erp last-span parstate) ; struct/union { structdeclons }
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (type-spec-struct
                         (make-struni-spec :name? nil
-                                          :members structdecls))
+                                          :members structdeclons))
                      (type-spec-union
                       (make-struni-spec :name? nil
-                                        :members structdecls)))
+                                        :members structdeclons)))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,
@@ -12133,7 +12133,7 @@
 
   (define parse-struct-declarator ((parstate parstatep))
     :returns (mv erp
-                 (structdeclor structdeclorp)
+                 (structdeclor struct-declorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12145,7 +12145,7 @@
        a declarator,
        or a declarator followed by colon and a constant expression,
        or a colon and a constant expression."))
-    (b* (((reterr) (irr-structdeclor) (irr-span) parstate)
+    (b* (((reterr) (irr-struct-declor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token may start a declarator, we parse it,
@@ -12163,16 +12163,16 @@
            ((token-punctuatorp token2 ":") ; declor :
             (b* (((erp cexpr last-span parstate) ; declor : expr
                   (parse-constant-expression parstate)))
-              (retok (make-structdeclor :declor? declor
-                                        :expr? cexpr)
+              (retok (make-struct-declor :declor? declor
+                                         :expr? cexpr)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not a colon,
            ;; the declarator is the whole structure declarator.
            (t ; declor other
             (b* ((parstate (if token2 (unread-token parstate) parstate)))
-              (retok (make-structdeclor :declor? declor
-                                        :expr? nil)
+              (retok (make-struct-declor :declor? declor
+                                         :expr? nil)
                      span
                      parstate))))))
        ;; If token is a colon,
@@ -12181,8 +12181,8 @@
        ((token-punctuatorp token ":") ; :
         (b* (((erp cexpr last-span parstate) ; : expr
               (parse-constant-expression parstate)))
-          (retok (make-structdeclor :declor? nil
-                                    :expr? cexpr)
+          (retok (make-struct-declor :declor? nil
+                                     :expr? cexpr)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -12196,7 +12196,7 @@
 
   (define parse-struct-declarator-list ((parstate parstatep))
     :returns (mv erp
-                 (structdeclors structdeclor-listp)
+                 (structdeclors struct-declor-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12237,7 +12237,7 @@
 
   (define parse-struct-declaration ((parstate parstatep))
     :returns (mv erp
-                 (structdecl structdeclp)
+                 (structdeclon struct-declonp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12253,7 +12253,7 @@
        a non-assert structure declaration
        may start with the @('__extension__') keyword,
        and may end (before the semicolon) with attribute specifiers."))
-    (b* (((reterr) (irr-structdecl) (irr-span) parstate)
+    (b* (((reterr) (irr-struct-declon) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is the '_Static_assert' keyword,
@@ -12261,13 +12261,13 @@
        ((token-keywordp token "_Static_assert") ; _Static_assert
         (b* (((erp statassert span parstate) ; staticassertion
               (parse-static-assert-declaration span parstate)))
-          (retok (structdecl-statassert statassert)
+          (retok (struct-declon-statassert statassert)
                  span
                  parstate)))
        ;; If token is a semicolon, and GCC extensions are enabled,
        ;; we have an empty structure declaration.
        ((token-punctuatorp token ";") ; ;
-        (retok (structdecl-empty) span parstate))
+        (retok (struct-declon-empty) span parstate))
        ;; Otherwise, we must have a specifier and qualifier list,
        ;; optionally preceded by the '__extension__' keyword
        ;; if GCC extensions are supported.
@@ -12307,10 +12307,10 @@
                  ((erp last-span parstate)
                   ;; [__extension__] specquals structdeclors [attrspecs] ;
                   (read-punctuator ";" parstate)))
-              (retok (make-structdecl-member :extension extension
-                                             :specqual specquals
-                                             :declor structdeclors
-                                             :attrib attrspecs)
+              (retok (make-struct-declon-member :extension extension
+                                                :specqual specquals
+                                                :declor structdeclors
+                                                :attrib attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is the keyword '__attribute__',
@@ -12328,19 +12328,19 @@
                  ((erp last-span parstate)
                   ;; [__extension__] specquals [attrspecs] ;
                   (read-punctuator ";" parstate)))
-              (retok (make-structdecl-member :extension extension
-                                             :specqual specquals
-                                             :declor nil
-                                             :attrib attrspecs)
+              (retok (make-struct-declon-member :extension extension
+                                                :specqual specquals
+                                                :declor nil
+                                                :attrib attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon,
            ;; we have reached the end of the structure declaration.
            ((token-punctuatorp token2 ";") ; specquals ;
-            (retok (make-structdecl-member :extension extension
-                                           :specqual specquals
-                                           :declor nil
-                                           :attrib nil)
+            (retok (make-struct-declon-member :extension extension
+                                              :specqual specquals
+                                              :declor nil
+                                              :attrib nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.
@@ -12354,7 +12354,7 @@
 
   (define parse-struct-declaration-list ((parstate parstatep))
     :returns (mv erp
-                 (structdecls structdecl-listp)
+                 (structdeclons struct-declon-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12367,7 +12367,7 @@
        may start another structure declaration."))
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
-         ((erp structdecl span parstate) ; structdecl
+         ((erp structdeclon span parstate) ; structdeclon
           (parse-struct-declaration parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
@@ -12376,17 +12376,18 @@
        ;; If token may start another structure declaration,
        ;; recursively call this function.
        ((token-struct-declaration-start-p
-         token (parstate->gcc parstate)) ; structdecl structdecl...
+         token (parstate->gcc parstate)) ; structdeclon structdeclon...
         (b* ((parstate (unread-token parstate))
-             ((erp structdecls last-span parstate) ; structdecl structdecls
+             ((erp structdeclons last-span parstate)
+              ;; structdeclon structdeclons
               (parse-struct-declaration-list parstate)))
-          (retok (cons structdecl structdecls)
+          (retok (cons structdeclon structdeclons)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, we have reached the end of the structure declarations.
-       (t ; structdecl other
+       (t ; structdeclon other
         (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok (list structdecl) span parstate)))))
+          (retok (list structdeclon) span parstate)))))
     :measure (two-nats-measure (parsize parstate) 3))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
