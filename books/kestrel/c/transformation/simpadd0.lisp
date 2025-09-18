@@ -1915,13 +1915,18 @@
        ((mv & else-ctypes) (ldm-type-option-set else-types)) ; ERP must be NIL
        (hints `(("Goal"
                  :in-theory
-                 '((:e c::stmt-ifelse)
+                 '((:e c::stmt-kind)
+                   (:e c::stmt-ifelse->test)
+                   (:e c::stmt-ifelse->then)
+                   (:e c::stmt-ifelse->else)
+                   (:e c::stmt-ifelse)
                    (:e c::type-nonchar-integerp)
                    (:e set::insert)
                    (:e set::subset)
                    set::subset-in
                    c::compustate-frames-number-of-exec-stmt
-                   c::compustatep-when-compustate-resultp-and-not-errorp)
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   stmt-ifelse-compustate-vars)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance ,else-thm-name (limit (1- limit)))
@@ -1960,9 +1965,7 @@
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else)
-                        (fenv old-fenv))
-                       ,@(simpadd0-stmt-ifelse-lemma-instances
-                          gin.vartys old-test old-then old-else)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1975,28 +1978,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-ifelse-lemma-instances ((vartys c::ident-type-mapp)
-                                                 (test c::exprp)
-                                                 (then c::stmtp)
-                                                 (else c::stmtp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-ifelse-compustate-vars
-                       (test ',test)
-                       (then ',then)
-                       (else ',else)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-ifelse-lemma-instances
-            (omap::tail vartys) test then else)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
