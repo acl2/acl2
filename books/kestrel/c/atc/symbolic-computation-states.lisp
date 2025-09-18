@@ -1723,7 +1723,7 @@
              push-frame
              read-object))
 
-  (defruled read-object-of-enter-scope
+  (defruled read-object-alloc-of-enter-scope
     (implies (equal (objdesign-kind objdes) :alloc)
              (equal (read-object objdes (enter-scope compst))
                     (read-object objdes compst)))
@@ -1782,7 +1782,7 @@
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
-      read-object-of-enter-scope
+      read-object-alloc-of-enter-scope
       read-object-of-add-var
       read-object-of-update-var
       read-object-of-update-object-same
