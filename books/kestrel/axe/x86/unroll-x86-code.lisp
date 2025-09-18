@@ -876,7 +876,7 @@
                ((when incomplete-run-functions)
                 (cw "~%")
                 (print-dag-nicely dag) ; use the print-base?
-                (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
+                (er hard? 'repeatedly-run " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))
         ;; Continue the symbolic execution:
