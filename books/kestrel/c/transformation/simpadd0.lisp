@@ -1634,15 +1634,16 @@
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
-       (vartys-lemma-instances
-        (simpadd0-stmt-return-lemma-instances gin.vartys old-expr?))
        (hints
         (if expr?
             `(("Goal"
                :in-theory '((:e set::insert)
+                            (:e c::stmt-kind)
                             (:e c::stmt-return)
+                            (:e c::stmt-return->value)
                             (:e c::expr-kind)
-                            (:e c::type-nonchar-integerp))
+                            (:e c::type-nonchar-integerp)
+                            stmt-return-compustate-vars)
                :use (,expr?-thm-name
                      (:instance
                       stmt-return-value-congruence
@@ -1651,14 +1652,13 @@
                      (:instance
                       stmt-return-errors
                       (expr ',old-expr?)
-                      (fenv old-fenv))
-                     ,@vartys-lemma-instances)))
+                      (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e c::stmt-return)
                           (:e c::type-void)
-                          (:e set::insert))
-             :use (stmt-return-novalue-congruence
-                   ,@vartys-lemma-instances)))))
+                          (:e set::insert)
+                          stmt-return-compustate-vars)
+             :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1671,23 +1671,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-return-lemma-instances ((vartys c::ident-type-mapp)
-                                                 (expr? c::expr-optionp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-return-compustate-vars
-                       (expr? ',expr?)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-return-lemma-instances (omap::tail vartys) expr?)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 

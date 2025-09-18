@@ -233,18 +233,16 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-return-compustate-vars
-    (implies (or (not expr?)
-                 (not (equal (c::expr-kind expr?) :call)))
-             (b* ((stmt (c::stmt-return expr?))
-                  ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-               (implies (and (> (c::compustate-frames-number compst) 0)
-                             (not (c::errorp result))
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                compst))
-                        (c::compustate-has-var-with-type-p var
-                                                           type
-                                                           compst1))))
+    (b* ((expr? (c::stmt-return->value stmt))
+         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (syntaxp (quotep stmt))
+                    (equal (c::stmt-kind stmt) :return)
+                    (or (not expr?)
+                        (not (equal (c::expr-kind expr?) :call)))
+                    (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp result))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::compustate-has-var-with-type-p
              c::var-resolve-of-exec-stmt
              c::object-type-of-exec-stmt
