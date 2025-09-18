@@ -1179,6 +1179,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled objdesign-of-var-of-enter-scope
+  :short "How @(tsee objdesign-of-var) changes under @(tsee enter-scope)."
+  (equal (objdesign-of-var var (enter-scope compst))
+         (objdesign-of-var var compst))
+  :enable (objdesign-of-var
+           objdesign-of-var-aux
+           enter-scope
+           pop-frame
+           push-frame
+           top-frame
+           compustate-frames-number
+           len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection objdesign-of-var-of-create-var
   :short "How @(tsee objdesign-of-var) changes under @(tsee create-var)."
 
