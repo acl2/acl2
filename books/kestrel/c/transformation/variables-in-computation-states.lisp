@@ -102,6 +102,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled c::compustate-has-var-with-type-p-of-enter-scope
+  :short "Preservation of @(tsee c::compustate-has-var-with-type-p)
+          under @(tsee c::enter-scope)."
+  (implies (c::compustate-has-var-with-type-p var type compst)
+           (c::compustate-has-var-with-type-p var type (c::enter-scope compst)))
+  :enable (c::compustate-has-var-with-type-p
+           c::objdesign-of-var-of-enter-scope
+           c::read-object-of-enter-scope
+           c::not-errorp-when-valuep
+           c::valuep-of-read-object-of-objdesign-of-var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-compustate-vars-theorems
   :short "Theorems about variables in computation states w.r.t. execution."
   :long
