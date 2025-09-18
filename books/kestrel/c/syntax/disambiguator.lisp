@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ disambiguator
-  :parents (syntax-for-tools)
+  :parents (disambiguation)
   :short "Disambiguator of the C abstract syntax for tools."
   :long
   (xdoc::topstring
