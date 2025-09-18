@@ -1537,7 +1537,8 @@
             `(("Goal"
                :in-theory '((:e c::expr-kind)
                             (:e c::stmt-expr)
-                            (:e set::insert))
+                            (:e set::insert)
+                            stmt-null-compustate-vars)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -1552,12 +1553,13 @@
                      ,@(simpadd0-stmt-expr-asg-lemma-instances
                         gin.vartys old-expr?))))
           `(("Goal"
-             :in-theory '((:e c::stmt-null)
+             :in-theory '((:e c::stmt-kind)
+                          (:e c::stmt-null)
                           c::type-option-of-stmt-value
                           (:e set::in)
-                          (:e set::insert))
-             :use (stmt-null-congruence
-                   ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
+                          (:e set::insert)
+                          stmt-null-compustate-vars)
+             :use (stmt-null-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1573,22 +1575,7 @@
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
   :prepwork
-
-  ((define simpadd0-stmt-null-lemma-instances ((vartys c::ident-type-mapp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-null-compustate-vars
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
-       (cons lemma-instance lemma-instances)))
-
-   (define simpadd0-stmt-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
+  ((define simpadd0-stmt-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
                                                    (expr c::exprp))
      :returns (lemma-instances true-listp)
      :parents nil
