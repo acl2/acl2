@@ -1449,18 +1449,19 @@
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '((:e c::expr-kind)
+           :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
-                        (:e c::type-nonchar-integerp))
+                        (:e c::initer-single->get)
+                        (:e c::expr-kind)
+                        (:e c::type-nonchar-integerp)
+                        initer-single-pure-compustate-vars)
            :use ((:instance ,expr-thm-name)
                  (:instance initer-single-pure-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
                  (:instance initer-single-pure-errors
                             (expr ',old-expr)
-                            (fenv old-fenv))
-                 ,@(simpadd0-initer-single-pure-lemma-instances
-                    gin.vartys old-expr)))))
+                            (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-initer-single-thm initer
                                initer-new
@@ -1473,24 +1474,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-initer-single-pure-lemma-instances
-     ((vartys c::ident-type-mapp) (expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance initer-single-pure-compustate-vars
-                       (expr ',expr)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
-                                                        expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
