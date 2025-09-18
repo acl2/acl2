@@ -1196,13 +1196,15 @@
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
-           (vartys-lemma-instances
-            (simpadd0-expr-asg-lemma-instances gin.vartys cvar old-arg2))
            (hints
             `(("Goal"
                :in-theory
                '((:e c::expr-kind)
                  (:e c::expr-ident)
+                 (:e c::expr-ident->get)
+                 (:e c::expr-binary->op)
+                 (:e c::expr-binary->arg1)
+                 (:e c::expr-binary->arg2)
                  (:e c::expr-binary)
                  (:e c::binop-asg)
                  (:e c::ident)
@@ -1211,7 +1213,8 @@
                  c::not-errorp-when-compustate-has-var-with-type-p
                  c::type-of-value-when-compustate-has-var-with-type-p
                  c::valuep-of-read-object-of-objdesign-of-var
-                 c::not-errorp-when-valuep)
+                 c::not-errorp-when-valuep
+                 expr-binary-asg-compustate-vars)
                :use (,arg1-thm-name
                      ,arg2-thm-name
                      (:instance
@@ -1223,8 +1226,7 @@
                       expr-binary-asg-errors
                       (var ',cvar)
                       (expr ',old-arg2)
-                      (fenv old-fenv))
-                     ,@vartys-lemma-instances))))
+                      (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-asg-thm expr
                               expr-new
@@ -1238,27 +1240,6 @@
                                 :thm-name thm-name
                                 :vartys gin.vartys))))
      (t (mv expr-new gout-no-thm))))
-
-  :prepwork
-  ((define simpadd0-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
-                                              (asg-var c::identp)
-                                              (asg-expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance expr-binary-asg-compustate-vars
-                       (var ',asg-var)
-                       (expr ',asg-expr)
-                       (fenv old-fenv)
-                       (var1 ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-expr-asg-lemma-instances (omap::tail vartys)
-                                              asg-var
-                                              asg-expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 

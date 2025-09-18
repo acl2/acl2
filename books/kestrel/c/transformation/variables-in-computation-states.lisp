@@ -152,25 +152,28 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-asg-compustate-vars
-    (implies (not (equal (c::expr-kind expr) :call))
-             (b* ((asg (c::expr-binary (c::binop-asg) (c::expr-ident var) expr))
-                  (compst1 (c::exec-expr-asg asg compst fenv limit))
-                  (type-var (c::type-of-value
-                             (c::read-object
-                              (c::objdesign-of-var var compst)
-                              compst)))
-                  (type-expr (c::type-of-value
-                              (c::expr-value->value
-                               (c::exec-expr-pure expr compst)))))
-               (implies (and (not (c::errorp compst1))
-                             (equal type-var type-expr)
-                             (c::type-nonchar-integerp type-expr)
-                             (c::compustate-has-var-with-type-p var1
-                                                                type
-                                                                compst))
-                        (c::compustate-has-var-with-type-p var1
-                                                           type
-                                                           compst1))))
+    (b* ((op (c::expr-binary->op asg))
+         (var-expr (c::expr-binary->arg1 asg))
+         (var (c::expr-ident->get var-expr))
+         (expr (c::expr-binary->arg2 asg))
+         (compst1 (c::exec-expr-asg asg compst fenv limit))
+         (type-var (c::type-of-value
+                    (c::read-object
+                     (c::objdesign-of-var var compst)
+                     compst)))
+         (type-expr (c::type-of-value
+                     (c::expr-value->value
+                      (c::exec-expr-pure expr compst)))))
+      (implies (and (syntaxp (quotep asg))
+                    (equal (c::expr-kind asg) :binary)
+                    (equal op (c::binop-asg))
+                    (equal (c::expr-kind var-expr) :ident)
+                    (not (equal (c::expr-kind expr) :call))
+                    (not (c::errorp compst1))
+                    (equal type-var type-expr)
+                    (c::type-nonchar-integerp type-expr)
+                    (c::compustate-has-var-with-type-p var1 type compst))
+               (c::compustate-has-var-with-type-p var1 type compst1)))
     :enable (c::compustate-has-var-with-type-p
              c::var-resolve-of-exec-expr-asg
              c::object-type-of-exec-expr-asg
