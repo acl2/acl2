@@ -1535,10 +1535,12 @@
        (hints
         (if expr?
             `(("Goal"
-               :in-theory '((:e c::expr-kind)
+               :in-theory '((:e c::stmt-kind)
+                            (:e c::stmt-expr->get)
                             (:e c::stmt-expr)
+                            (:e c::expr-kind)
                             (:e set::insert)
-                            stmt-null-compustate-vars)
+                            stmt-expr-asg-compustate-vars)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -1549,9 +1551,7 @@
                      (:instance
                       stmt-expr-asg-errors
                       (expr ',old-expr?)
-                      (fenv old-fenv))
-                     ,@(simpadd0-stmt-expr-asg-lemma-instances
-                        gin.vartys old-expr?))))
+                      (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e c::stmt-kind)
                           (:e c::stmt-null)
@@ -1573,23 +1573,6 @@
                             :thm-name thm-name
                             :vartys gin.vartys)))
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
-
-  :prepwork
-  ((define simpadd0-stmt-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
-                                                   (expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-expr-asg-compustate-vars
-                       (expr ',expr)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-expr-asg-lemma-instances (omap::tail vartys) expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
