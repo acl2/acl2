@@ -1787,15 +1787,20 @@
        ((unless (and items-thm-name
                      nil)) ; temporary
         (mv stmt-new (simpadd0-gout-no-thm gin)))
-       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be nIL
+       (types (block-item-list-types items))
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
        ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints
         `(("Goal"
            :in-theory '((:e c::stmt-compound))
-           :use (,items-thm-name
+           :use ((:instance ,items-thm-name
+                            (compst (c::enter-scope compst))
+                            (limit (1- limit)))
                  (:instance stmt-compound-congruence
                             (old-items ',old-items)
-                            (new-items ',new-items))
+                            (new-items ',new-items)
+                            (types ',ctypes))
                  (:instance stmt-compound-errors
                             (items ',old-items)
                             (fenv old-fenv))
@@ -1824,6 +1829,7 @@
           (lemma-instance
            `(:instance stmt-compound-compustate-vars
                        (items ',items)
+                       (fenv old-fenv)
                        (var ',var)
                        (type ',type)))
           (lemma-instances
