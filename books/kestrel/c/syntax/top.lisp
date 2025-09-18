@@ -29,6 +29,7 @@
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
+(include-book "compilation-db")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
