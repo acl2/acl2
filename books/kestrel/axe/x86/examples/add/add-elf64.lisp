@@ -16,6 +16,8 @@
 ;; Lifts the functionality of add.elf64 into logic using the Axe-based x86
 ;; lifter and prove equivalent to spec.
 
+;; cert_param: (uses-stp)
+
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
 
 ;; Lift the subroutine into logic:

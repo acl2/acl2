@@ -17,6 +17,8 @@
 ;; functionality of TEA into logic using the Axe-based x86 lifter and proves
 ;; the result equivalent to the spec.
 
+;; cert_param: (uses-stp)
+
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)

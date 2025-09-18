@@ -10,6 +10,8 @@
 
 (in-package "X") ; X is the package for doing x86 proofs with Axe
 
+;; cert_param: (uses-stp)
+
 ;; Include the Axe Formal Unit Tester for x86:
 (include-book "kestrel/axe/x86/tester" :dir :system)
 
