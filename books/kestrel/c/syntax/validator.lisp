@@ -4836,7 +4836,7 @@
                     has no name and no members."
                    (struni-spec-fix struni-spec)))
          ((erp new-members types table)
-          (valid-structdecl-list struni-spec.members nil table ienv)))
+          (valid-struct-declon-list struni-spec.members nil table ienv)))
       (retok (make-struni-spec :name? struni-spec.name?
                                :members new-members)
              types
@@ -4845,13 +4845,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdecl ((structdecl structdeclp)
-                            (previous ident-listp)
-                            (table valid-tablep)
-                            (ienv ienvp))
-    :guard (structdecl-unambp structdecl)
+  (define valid-struct-declon ((structdeclon struct-declonp)
+                               (previous ident-listp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (struct-declon-unambp structdeclon)
     :returns (mv (erp maybe-msgp)
-                 (new-structdecl structdeclp)
+                 (new-structdeclon struct-declonp)
                  (new-previous ident-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
@@ -4880,45 +4880,45 @@
       "If the structure declaration is empty (i.e. a semicolon),
        which is a GCC extension,
        the list of member names and the validation table are unchanged."))
-    (b* (((reterr) (irr-structdecl) nil nil (irr-valid-table)))
-      (structdecl-case
-       structdecl
+    (b* (((reterr) (irr-struct-declon) nil nil (irr-valid-table)))
+      (struct-declon-case
+       structdeclon
        :member
        (b* (((erp new-specqual type types table)
-             (valid-spec/qual-list structdecl.specqual nil nil table ienv))
+             (valid-spec/qual-list structdeclon.specqual nil nil table ienv))
             ((erp new-declor previous more-types table)
              (valid-struct-declor-list
-              structdecl.declor previous type table ienv)))
-         (retok (make-structdecl-member :extension structdecl.extension
-                                        :specqual new-specqual
-                                        :declor new-declor
-                                        :attrib structdecl.attrib)
+              structdeclon.declor previous type table ienv)))
+         (retok (make-struct-declon-member :extension structdeclon.extension
+                                           :specqual new-specqual
+                                           :declor new-declor
+                                           :attrib structdeclon.attrib)
                 previous
                 (set::union types more-types)
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert structdecl.unwrap table ienv)))
-         (retok (structdecl-statassert new-statassert)
+             (valid-statassert structdeclon.unwrap table ienv)))
+         (retok (struct-declon-statassert new-statassert)
                 (ident-list-fix previous)
                 types
                 table))
        :empty
-       (retok (structdecl-empty)
+       (retok (struct-declon-empty)
               (ident-list-fix previous)
               nil
               (valid-table-fix table))))
-    :measure (structdecl-count structdecl))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdecl-list ((structdecls structdecl-listp)
-                                 (previous ident-listp)
-                                 (table valid-tablep)
-                                 (ienv ienvp))
-    :guard (structdecl-list-unambp structdecls)
+  (define valid-struct-declon-list ((structdeclons struct-declon-listp)
+                                    (previous ident-listp)
+                                    (table valid-tablep)
+                                    (ienv ienvp))
+    :guard (struct-declon-list-unambp structdeclons)
     :returns (mv (erp maybe-msgp)
-                 (new-structdecls structdecl-listp)
+                 (new-structdeclons struct-declon-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4932,15 +4932,15 @@
        in the structure or union specifier being validated.
        This list is used to ensure uniqueness of member names."))
     (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp structdecls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-structdecl previous types table)
-          (valid-structdecl (car structdecls) previous table ienv))
-         ((erp new-structdecls more-types table)
-          (valid-structdecl-list (cdr structdecls) previous table ienv)))
-      (retok (cons new-structdecl new-structdecls)
+         ((when (endp structdeclons)) (retok nil nil (valid-table-fix table)))
+         ((erp new-structdeclon previous types table)
+          (valid-struct-declon (car structdeclons) previous table ienv))
+         ((erp new-structdeclons more-types table)
+          (valid-struct-declon-list (cdr structdeclons) previous table ienv)))
+      (retok (cons new-structdeclon new-structdeclons)
              (set::union types more-types)
              table))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4961,7 +4961,7 @@
     (xdoc::topstring
      (xdoc::p
       "The @('previous') input and @('new-previous') output
-       have the same meaning as in @(tsee valid-structdecl).")
+       have the same meaning as in @(tsee valid-struct-declon).")
      (xdoc::p
       "The @('type') input comes from the list of specifiers and qualifiers
        that precedes the list of structure declarators
@@ -6160,16 +6160,16 @@
                (struni-spec-unambp new-struni-spec))
       :hyp (struni-spec-unambp struni-spec)
       :fn valid-struni-spec)
-    (defret structdecl-unambp-of-valid-structdecl
+    (defret struct-declon-unambp-of-valid-struct-declon
       (implies (not erp)
-               (structdecl-unambp new-structdecl))
-      :hyp (structdecl-unambp structdecl)
-      :fn valid-structdecl)
-    (defret structdecl-list-unambp-of-valid-structdecl-list
+               (struct-declon-unambp new-structdeclon))
+      :hyp (struct-declon-unambp structdeclon)
+      :fn valid-struct-declon)
+    (defret struct-declon-list-unambp-of-valid-struct-declon-list
       (implies (not erp)
-               (structdecl-list-unambp new-structdecls))
-      :hyp (structdecl-list-unambp structdecls)
-      :fn valid-structdecl-list)
+               (struct-declon-list-unambp new-structdeclons))
+      :hyp (struct-declon-list-unambp structdeclons)
+      :fn valid-struct-declon-list)
     (defret struct-declor-unambp-of-valid-struct-declor
       (implies (not erp)
                (struct-declor-unambp new-structdeclor))

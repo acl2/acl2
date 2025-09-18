@@ -3160,16 +3160,16 @@
                    pstate))
          ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
-         (pstate (print-structdecl-list struni-spec.members pstate))
+         (pstate (print-struct-declon-list struni-spec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
     :measure (two-nats-measure (struni-spec-count struni-spec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-structdecl ((structdecl structdeclp) (pstate pristatep))
-    :guard (and (structdecl-unambp structdecl)
-                (structdecl-aidentp structdecl (pristate->gcc pstate)))
+  (define print-struct-declon ((structdeclon struct-declonp) (pstate pristatep))
+    :guard (and (struct-declon-unambp structdeclon)
+                (struct-declon-aidentp structdeclon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure declaration."
@@ -3179,41 +3179,41 @@
       "For the case of a member, we ensure that
        the list of specifiers and qualifiers is not empty,
        as required in the grammar."))
-    (structdecl-case
-     structdecl
+    (struct-declon-case
+     structdeclon
      :member
-     (b* ((pstate (if structdecl.extension
+     (b* ((pstate (if structdeclon.extension
                       (print-astring "__extension__ " pstate)
                     (pristate-fix pstate)))
-          ((unless structdecl.specqual)
+          ((unless structdeclon.specqual)
            (raise "Misusage error: empty specifier/qualifier list.")
            pstate)
-          (pstate (print-spec/qual-list structdecl.specqual pstate))
-          (pstate (if structdecl.declor
+          (pstate (print-spec/qual-list structdeclon.specqual pstate))
+          (pstate (if structdeclon.declor
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-struct-declor-list structdecl.declor
+                           (pstate (print-struct-declor-list structdeclon.declor
                                                              pstate)))
                         pstate)
                     pstate))
-          (pstate (if structdecl.attrib
+          (pstate (if structdeclon.attrib
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-attrib-spec-list structdecl.attrib
+                           (pstate (print-attrib-spec-list structdeclon.attrib
                                                            pstate)))
                         pstate)
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdecl.unwrap pstate)
+     :statassert (print-statassert structdeclon.unwrap pstate)
      :empty (print-astring ";" pstate))
-    :measure (two-nats-measure (structdecl-count structdecl) 0))
+    :measure (two-nats-measure (struct-declon-count structdeclon) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-structdecl-list ((structdecls structdecl-listp)
-                                 (pstate pristatep))
-    :guard (and (consp structdecls)
-                (structdecl-list-unambp structdecls)
-                (structdecl-list-aidentp structdecls (pristate->gcc pstate)))
+  (define print-struct-declon-list ((structdeclons struct-declon-listp)
+                                    (pstate pristatep))
+    :guard (and (consp structdeclons)
+                (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-aidentp structdeclons (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more structure declarations,
@@ -3228,12 +3228,12 @@
        but we plan to print these in multiple lines,
        at least under certain conditions
        (e.g. when the structure or union specifier is at the top level."))
-    (b* (((unless (mbt (consp structdecls))) (pristate-fix pstate))
-         (pstate (print-structdecl (car structdecls) pstate))
-         ((when (endp (cdr structdecls))) pstate)
+    (b* (((unless (mbt (consp structdeclons))) (pristate-fix pstate))
+         (pstate (print-struct-declon (car structdeclons) pstate))
+         ((when (endp (cdr structdeclons))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-structdecl-list (cdr structdecls) pstate))
-    :measure (two-nats-measure (structdecl-list-count structdecls) 0))
+      (print-struct-declon-list (cdr structdeclons) pstate))
+    :measure (two-nats-measure (struct-declon-list-count structdeclons) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4139,8 +4139,8 @@
      print-param-declor
      print-tyname
      print-struni-spec
-     print-structdecl
-     print-structdecl-list
+     print-struct-declon
+     print-struct-declon-list
      print-struct-declor
      print-struct-declor-list
      print-enumspec
@@ -4167,7 +4167,7 @@
      print-block-item-list
      print-block)
     :hints (("Goal" :expand ((print-decl-inline decl pstate)
-                             (print-structdecl structdecl pstate)))))
+                             (print-struct-declon structdeclon pstate)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

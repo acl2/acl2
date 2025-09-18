@@ -601,52 +601,52 @@
     :returns (free-vars ident-setp)
     (b* (((struni-spec struni-spec) struni-spec)
          ((mv free-vars -)
-          (free-vars-structdecl-list struni-spec.members bound-vars)))
+          (free-vars-struct-declon-list struni-spec.members bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   struct tag to the set of bound variables.
       free-vars)
     :measure (struni-spec-count struni-spec))
 
-  (define free-vars-structdecl
-    ((structdecl structdeclp)
+  (define free-vars-struct-declon
+    ((struct-declon struct-declonp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a structure declaration."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* ((bound-vars (ident-set-fix bound-vars)))
-      (structdecl-case
-        structdecl
+      (struct-declon-case
+        struct-declon
         :member
         (b* ((free-vars0
-               (free-vars-spec/qual-list structdecl.specqual bound-vars))
+               (free-vars-spec/qual-list struct-declon.specqual bound-vars))
              ((mv free-vars1 bound-vars)
-              (free-vars-struct-declor-list structdecl.declor bound-vars)))
+              (free-vars-struct-declor-list struct-declon.declor bound-vars)))
           (mv (union free-vars0
                      (union free-vars1
-                            (free-vars-attrib-spec-list structdecl.attrib
+                            (free-vars-attrib-spec-list struct-declon.attrib
                                                         bound-vars)))
               bound-vars))
-        :statassert (mv (free-vars-statassert structdecl.unwrap bound-vars)
+        :statassert (mv (free-vars-statassert struct-declon.unwrap bound-vars)
                         bound-vars)
         :empty (mv nil bound-vars)))
-    :measure (structdecl-count structdecl))
+    :measure (struct-declon-count struct-declon))
 
-  (define free-vars-structdecl-list
-    ((structdecls structdecl-listp)
+  (define free-vars-struct-declon-list
+    ((struct-declons struct-declon-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of structure
             declarations."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((when (endp structdecls))
+    (b* (((when (endp struct-declons))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-structdecl (first structdecls) bound-vars))
+          (free-vars-struct-declon (first struct-declons) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-structdecl-list (rest structdecls) bound-vars)))
+          (free-vars-struct-declon-list (rest struct-declons) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count struct-declons))
 
   (define free-vars-struct-declor
     ((structdeclor struct-declorp)

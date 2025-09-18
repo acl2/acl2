@@ -2498,13 +2498,13 @@
        which is a GCC extension;
        this is covered as a separate case in @(tsee type-spec)."))
     ((name? ident-option)
-     (members structdecl-list))
+     (members struct-declon-list))
     :pred struni-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum structdecl
+  (fty::deftagsum struct-declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of structure declarations [C17:6.7.2.1] [C17:A.2.2]."
     :long
@@ -2538,24 +2538,24 @@
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
-    :pred structdeclp
+    :pred struct-declonp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist structdecl-list
+  (fty::deflist struct-declon-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of structure declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarations are defined in @(tsee structdecl).
+      "Structure declarations are defined in @(tsee struct-declon).
        This fixtype corresponds to <i>struct-declaration-list</i>
        in the grammar in [C17]."))
-    :elt-type structdecl
+    :elt-type struct-declon
     :true-listp t
     :elementp-of-nil nil
-    :pred structdecl-listp
+    :pred struct-declon-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2568,7 +2568,7 @@
      (xdoc::p
       "This corresponds to <i>struct-declarator</i> in the grammar in [C17].
        This is part of structure declarations,
-       so as discussed in @(tsee structdecl)
+       so as discussed in @(tsee struct-declon)
        arguably a better name would be `member declarators'.")
      (xdoc::p
       "To make this definition simpler,

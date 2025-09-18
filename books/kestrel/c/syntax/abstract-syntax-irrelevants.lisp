@@ -338,10 +338,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdecl
+(defirrelevant irr-struct-declon
   :short "An irrelevant structure declaration."
-  :type structdeclp
-  :body (make-structdecl-empty))
+  :type struct-declonp
+  :body (make-struct-declon-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
