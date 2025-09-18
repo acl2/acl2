@@ -1784,8 +1784,7 @@
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-compound items))
        (stmt-new (stmt-compound items-new))
-       ((unless (and items-thm-name
-                     nil)) ; temporary
+       ((unless items-thm-name)
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        (types (block-item-list-types items))
        ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
@@ -1793,7 +1792,9 @@
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '((:e c::stmt-compound))
+           :in-theory '((:e c::stmt-compound)
+                        c::compustate-frames-number-of-enter-scope
+                        c::compustate-has-var-with-type-p-of-enter-scope)
            :use ((:instance ,items-thm-name
                             (compst (c::enter-scope compst))
                             (limit (1- limit)))
