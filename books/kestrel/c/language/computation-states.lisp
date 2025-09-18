@@ -1508,6 +1508,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled read-object-of-enter-scope
+  :short "Invariance of @(tsee read-object) under @(tsee enter-scope)."
+  (implies (not (errorp (read-object objdes compst)))
+           (equal (read-object objdes (enter-scope compst))
+                  (read-object objdes compst)))
+  :induct t
+  :enable (read-object
+           enter-scope
+           push-frame
+           pop-frame
+           top-frame
+           compustate-frames-number
+           nth
+           len
+           fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection read-object-of-exit-scope
   :short "Invariance of @(tsee read-object) under @(tsee exit-scope),
           provided that the object is not in the exited scope."
