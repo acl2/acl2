@@ -344,17 +344,17 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled decl-decl-compustate-vars-new
-    (b* ((declor (c::obj-declor-ident var))
-         (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
-         (compst1 (c::exec-obj-declon declon compst fenv limit))
-         (type (c::tyspecseq-to-type tyspecs)))
-      (implies (and (not (c::errorp compst1))
-                    (c::identp var))
+    (b* ((declor (c::obj-declon->declor declon))
+         (tyspecs (c::obj-declon->tyspec declon))
+         (compst1 (c::exec-obj-declon declon compst fenv limit)))
+      (implies (and (syntaxp (quotep declon))
+                    (equal (c::obj-declon->scspec declon) (c::scspecseq-none))
+                    (equal (c::obj-declor-kind declor) :ident)
+                    (equal type (c::tyspecseq-to-type tyspecs))
+                    (equal var (c::obj-declor-ident->get declor))
+                    (not (c::errorp compst1)))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-obj-declon
-             (c::obj-declon
-              '(:none) tyspecs (c::obj-declor-ident var) initer)
-             compst fenv limit)
+    :expand (c::exec-obj-declon declon compst fenv limit)
     :enable (c::compustate-has-var-with-type-p-of-create-same-var
              c::obj-declon-to-ident+scspec+tyname+init
              c::tyspec+declor-to-ident+tyname

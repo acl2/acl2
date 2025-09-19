@@ -2071,6 +2071,7 @@
        (hints `(("Goal"
                  :in-theory
                  '((:e c::obj-declon->scspec)
+                   (:e c::obj-declon->tyspec)
                    (:e c::obj-declon->declor)
                    (:e c::obj-declon->init?)
                    (:e c::obj-declon)
@@ -2080,9 +2081,11 @@
                    (:e c::scspecseq-none)
                    (:e c::tyspecseq-to-type)
                    (:e c::identp)
+                   (:e c::init-type-single)
                    c::compustate-frames-number-of-exec-initer
                    c::compustatep-when-compustate-resultp-and-not-errorp
-                   decl-decl-compustate-vars-old)
+                   decl-decl-compustate-vars-old
+                   decl-decl-compustate-vars-new)
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
                         decl-decl-congruence
@@ -2092,12 +2095,6 @@
                         (new-initer ',new-initer))
                        (:instance
                         decl-decl-errors
-                        (var ',cvar)
-                        (tyspecs ',ctyspecs)
-                        (initer ',old-initer)
-                        (fenv old-fenv))
-                       (:instance
-                        decl-decl-compustate-vars-new
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
