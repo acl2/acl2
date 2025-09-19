@@ -1586,7 +1586,7 @@
                 (retok (type-spec-union new-struni-spec)
                        table))
        :enum (b* (((erp new-enumspec table)
-                   (dimb-enumspec tyspec.spec table)))
+                   (dimb-enum-spec tyspec.spec table)))
                (retok (type-spec-enum new-enumspec) table))
        :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
                      ((unless kind)
@@ -2560,9 +2560,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-enumspec ((enumspec enumspecp) (table dimb-tablep))
+  (define dimb-enum-spec ((enumspec enum-specp) (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-enumspec enumspecp)
+                 (new-enumspec enum-specp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an enumeration specifier."
@@ -2575,14 +2575,14 @@
        just after the appearance of its enumerator [C17:6.2.1/7].
        The extension of the table is actually done by
        the function that disambiguates the enumerators."))
-    (b* (((reterr) (irr-enumspec) (irr-dimb-table))
-         ((enumspec enumspec) enumspec)
+    (b* (((reterr) (irr-enum-spec) (irr-dimb-table))
+         ((enum-spec enumspec) enumspec)
          ((erp new-list table) (dimb-enumer-list enumspec.list table)))
-      (retok (make-enumspec :name enumspec.name
-                            :list new-list
-                            :final-comma enumspec.final-comma)
+      (retok (make-enum-spec :name enumspec.name
+                             :list new-list
+                             :final-comma enumspec.final-comma)
              table))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3361,10 +3361,10 @@
       (implies (not erp)
                (struct-declor-list-unambp new-structdeclors))
       :fn dimb-struct-declor-list)
-    (defret enumspec-unambp-of-dimb-enumspec
+    (defret enum-spec-unambp-of-dimb-enum-spec
       (implies (not erp)
-               (enumspec-unambp new-enumspec))
-      :fn dimb-enumspec)
+               (enum-spec-unambp new-enumspec))
+      :fn dimb-enum-spec)
     (defret enumer-unambp-of-dimb-enumer
       (implies (not erp)
                (enumer-unambp new-enumer))

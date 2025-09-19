@@ -321,11 +321,11 @@
     struct-declor-list-fix
     struct-declor-list-count
 
-    enumspecp
-    enumspec-fix
-    enumspec-count
-    enumspec
-    make-enumspec
+    enum-specp
+    enum-spec-fix
+    enum-spec-count
+    enum-spec
+    make-enum-spec
 
     enumerp
     enumer-fix
@@ -512,7 +512,7 @@
     struct-declon-list-unambp
     struct-declor-unambp
     struct-declor-list-unambp
-    enumspec-unambp
+    enum-spec-unambp
     enumer-unambp
     enumer-list-unambp
     statassert-unambp
@@ -577,7 +577,7 @@
     struct-declon-list-aidentp
     struct-declor-aidentp
     struct-declor-list-aidentp
-    enumspec-aidentp
+    enum-spec-aidentp
     enumer-aidentp
     enumer-list-aidentp
     statassert-aidentp
@@ -718,7 +718,7 @@
     struct-declon-list-annop
     struct-declor-annop
     struct-declor-list-annop
-    enumspec-annop
+    enum-spec-annop
     enumer-annop
     enumer-list-annop
     statassert-annop

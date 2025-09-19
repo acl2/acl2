@@ -351,7 +351,7 @@
                                subst bound-vars))
      :enum
      (type-spec-enum
-       (enumspec-subst-free (c$::type-spec-enum->spec type-spec)
+       (enum-spec-subst-free (c$::type-spec-enum->spec type-spec)
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
@@ -1002,15 +1002,15 @@
           (ident-set-fix bound-vars)))
     :measure (struct-declor-list-count struct-declor-list))
 
-  (define enumspec-subst-free ((enumspec enumspecp)
-                               (subst ident-expr-mapp)
-                               (bound-vars ident-setp))
-    :returns (result enumspecp)
-    (enumspec (c$::enumspec->name enumspec)
-              (enumer-list-subst-free (c$::enumspec->list enumspec)
-                                      subst bound-vars)
-              (c$::enumspec->final-comma enumspec))
-    :measure (enumspec-count enumspec))
+  (define enum-spec-subst-free ((enumspec enum-specp)
+                                (subst ident-expr-mapp)
+                                (bound-vars ident-setp))
+    :returns (result enum-specp)
+    (enum-spec (c$::enum-spec->name enumspec)
+               (enumer-list-subst-free (c$::enum-spec->list enumspec)
+                                       subst bound-vars)
+               (c$::enum-spec->final-comma enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define enumer-subst-free ((enumer enumerp)
                              (subst ident-expr-mapp)
