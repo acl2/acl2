@@ -2162,8 +2162,11 @@
        (hints `(("Goal"
                  :in-theory
                  '((:e c::block-item-stmt)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-stmt->get)
                    c::compustate-frames-number-of-exec-stmt
-                   c::compustatep-when-compustate-resultp-and-not-errorp)
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-stmt-compustate-vars)
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         block-item-stmt-congruence
@@ -2173,9 +2176,7 @@
                        (:instance
                         block-item-stmt-errors
                         (stmt ',old-stmt)
-                        (fenv old-fenv))
-                       ,@(simpadd0-block-item-stmt-lemma-instances
-                          gin.vartys old-stmt)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2189,23 +2190,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-block-item-stmt-lemma-instances ((vartys c::ident-type-mapp)
-                                                     (stmt c::stmtp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-stmt-compustate-vars
-                       (stmt ',stmt)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 

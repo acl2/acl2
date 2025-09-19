@@ -366,13 +366,15 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled block-item-stmt-compustate-vars
-    (b* ((item (c::block-item-stmt stmt))
+    (b* ((stmt (c::block-item-stmt->get item))
          ((mv & compst0) (c::exec-stmt stmt compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))
-      (implies (and (not (c::errorp result))
+      (implies (and (syntaxp (quotep item))
+                    (equal (c::block-item-kind item) :stmt)
+                    (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
+    :expand (c::exec-block-item item compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
