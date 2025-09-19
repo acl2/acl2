@@ -12,27 +12,32 @@
 
 (include-book "files")
 
-(include-book "centaur/misc/tshell" :dir :system)
-(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
-(include-book "kestrel/strings-light/split-string-last" :dir :system)
-(include-book "oslib/dirname" :dir :system)
-(include-book "oslib/mkdir" :dir :system)
-(include-book "oslib/rmtree" :dir :system)
-(include-book "oslib/tempfile" :dir :system)
-(include-book "std/strings/cat" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(include-book "centaur/fty/baselists" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+
+(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "kestrel/strings-light/split-string-last" :dir :system)
+(include-book "std/strings/cat" :dir :system)
+
+(include-book "centaur/misc/tshell" :dir :system)
+(include-book "oslib/dirname" :dir :system)
+(include-book "oslib/mkdir" :dir :system)
+(include-book "oslib/rmtree" :dir :system)
+(include-book "oslib/tempfile" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e acl2::tshell-call))))
 (set-induction-depth-limit 0)
 
-(local (in-theory (disable (:e acl2::tshell-call))))
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,7 +82,23 @@
   (byte-listp (mv-nth 1 (acl2::read-file-into-byte-list filename state)))
   :enable (byte-listp-becomes-unsigned-byte-listp-8))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap string-string-list-map
+  :key-type string
+  :val-type str::string-list
+  :pred string-string-list-mapp)
+
+(in-theory (disable string-listp-of-cdr-of-assoc-string-string-list-mapp))
+
+(defruled string-listp-of-cdr-of-assoc-when-string-string-list-map
+  (implies (string-string-list-mapp map)
+           (string-listp (cdr (omap::assoc key map))))
+  :induct t
+  :enable (string-string-list-mapp
+           omap::assoc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-file
   ((file stringp
@@ -227,9 +248,18 @@
                    \"gcc\". Other reasonable values might be \"cpp\",
                    \"clang\", \"cc\", etc.")
     '"gcc")
-   ((extra-args string-listp
+   ((extra-args (or (string-listp extra-args)
+                    (string-string-list-mapp extra-args))
                 "Arguments to pass to the C preprocessor, in addition to
-                 \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
+                 \"-E\". This may either be a string list, representing the
+                 list of preprocessing arguments providing for every file,
+                 or an omap from strings to string lists, associating a list of
+                 preprocessing arguments to each file independently.
+                 When an omap is provided, any file without an association
+                 under the map is interpreted as if it is associated with an
+                 empty list. A value of @('nil') has the same interpretation as
+                 both a list and map, and so may be considered either.
+                 The default value is @('(list \"-P\" \"-std=c17\")').
                  (The flag @('\"-P\"') suppresses the generation of
                  linemarkers and @('\"-std=c17\"') instructs the preprocessor
                  to use the C17 standard.)")
@@ -260,12 +290,17 @@
                                      filename
                                      ".i")))))
        (filename (concatenate 'string path "/" (first files)))
+       (extra-args-is-mapp (and (consp extra-args)
+                                (consp (first extra-args))))
+       (preprocessor-args (if extra-args-is-mapp
+                              (cdr (omap::assoc filename extra-args))
+                            extra-args))
        ((erp - filedata state)
         (preprocess-file filename
                          :out out
                          :save save
                          :preprocessor preprocessor
-                         :extra-args extra-args
+                         :extra-args preprocessor-args
                          :state state))
        ((erp (fileset fileset) state)
         (preprocess-files (rest files)
@@ -279,5 +314,6 @@
                                   filedata
                                   fileset.unwrap))
            state))
-  :hints (("Goal" :in-theory (enable o< o-finp emptyp)))
+  :guard-hints (("Goal" :in-theory (enable string-string-list-mapp
+                                           string-listp-of-cdr-of-assoc-when-string-string-list-map)))
   :verify-guards :after-returns)

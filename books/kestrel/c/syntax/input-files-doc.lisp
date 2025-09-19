@@ -124,8 +124,8 @@
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "This must be either absent or a list of zero or more strings,
-       each of which is an argument to pass, e.g. @('-I').")
+      "If this is not absent, it must evaluate to a list of strings
+       or to an omap from strings to lists of strings.")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
        the @(':preprocess-args') input must be absent.")
@@ -137,8 +137,22 @@
      (xdoc::p
       "If @(':preprocess') is not @('nil'),
        and @(':preprocess-args') input is present,
-       the argument @('-E') is passed to the preprocessor,
-       followed by the arguments in the list, in that order.")
+       the behavior depends on whether
+       it evaluates to a string list or to an omap.
+       For each file, the argument @('-E') is passed to the preprocessor.
+       If @(':preprocess-args') is a string list,
+       this list of arguments is also passed to the preprocessor,
+       following the @('-E') argument.
+       If @(':preprocess-args') is an omap,
+       then we provide the list of arguments associated with the file name
+       (again, after the @('-E') argument).
+       If the file name is not in the key set,
+       only the @('-E') argument is provided.
+       If @(':preprocess-args') is @('nil'),
+       it is technically both a string list and
+       an omap from strings to string lists.
+       The behavior is the same under either interpretation:
+       only the argument @('-E') is provided for each file.")
      (xdoc::p
       "See the preprocessor documentation for information about
        the arguments mentioned above."))
