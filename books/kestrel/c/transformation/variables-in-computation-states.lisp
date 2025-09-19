@@ -306,9 +306,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-compound-compustate-vars
-    (b* ((stmt (c::stmt-compound items))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (> (c::compustate-frames-number compst) 0)
+    (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (syntaxp (quotep stmt))
+                    (equal (c::stmt-kind stmt) :compound)
+                    (> (c::compustate-frames-number compst) 0)
                     (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst))
                (c::compustate-has-var-with-type-p var type compst1)))

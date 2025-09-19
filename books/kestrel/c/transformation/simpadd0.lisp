@@ -1941,8 +1941,10 @@
        (hints
         `(("Goal"
            :in-theory '((:e c::stmt-compound)
+                        (:e c::stmt-kind)
                         c::compustate-frames-number-of-enter-scope
-                        c::compustate-has-var-with-type-p-of-enter-scope)
+                        c::compustate-has-var-with-type-p-of-enter-scope
+                        stmt-compound-compustate-vars)
            :use ((:instance ,items-thm-name
                             (compst (c::enter-scope compst))
                             (limit (1- limit)))
@@ -1952,9 +1954,7 @@
                             (types ',ctypes))
                  (:instance stmt-compound-errors
                             (items ',old-items)
-                            (fenv old-fenv))
-                 ,@(simpadd0-stmt-compound-lemma-instances
-                    gin.vartys old-items)))))
+                            (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1967,23 +1967,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-compound-lemma-instances ((vartys c::ident-type-mapp)
-                                                   (items c::block-item-listp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-compound-compustate-vars
-                       (items ',items)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-compound-lemma-instances (omap::tail vartys) items)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
