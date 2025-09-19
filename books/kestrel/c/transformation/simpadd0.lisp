@@ -3090,7 +3090,7 @@
                 (mv (type-spec-union new-spec)
                     (simpadd0-gout-no-thm gin)))
        :enum (b* (((mv new-spec (simpadd0-gout gout-spec))
-                   (simpadd0-enumspec tyspec.spec gin))
+                   (simpadd0-enum-spec tyspec.spec gin))
                   (gin (simpadd0-gin-update gin gout-spec)))
                (mv (type-spec-enum new-spec)
                    (simpadd0-gout-no-thm gin)))
@@ -3868,23 +3868,23 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumspec ((enumspec enumspecp) (gin simpadd0-ginp))
-    :guard (and (enumspec-unambp enumspec)
-                (enumspec-annop enumspec))
-    :returns (mv (new-enumspec enumspecp)
+  (define simpadd0-enum-spec ((enumspec enum-specp) (gin simpadd0-ginp))
+    :guard (and (enum-spec-unambp enumspec)
+                (enum-spec-annop enumspec))
+    :returns (mv (new-enumspec enum-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an enumeration specifier."
     (b* (((simpadd0-gin gin) gin)
-         ((enumspec enumspec) enumspec)
+         ((enum-spec enumspec) enumspec)
          ((mv new-list (simpadd0-gout gout-list))
           (simpadd0-enumer-list enumspec.list gin))
          (gin (simpadd0-gin-update gin gout-list)))
-      (mv (make-enumspec :name enumspec.name
-                         :list new-list
-                         :final-comma enumspec.final-comma)
+      (mv (make-enum-spec :name enumspec.name
+                          :list new-list
+                          :final-comma enumspec.final-comma)
           (simpadd0-gout-no-thm gin)))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4462,9 +4462,9 @@
     (defret struct-declor-list-unambp-of-simpadd0-struct-declor-list
       (struct-declor-list-unambp new-structdeclors)
       :fn simpadd0-struct-declor-list)
-    (defret enumspec-unambp-of-simpadd0-enumspec
-      (enumspec-unambp new-enumspec)
-      :fn simpadd0-enumspec)
+    (defret enum-spec-unambp-of-simpadd0-enum-spec
+      (enum-spec-unambp new-enumspec)
+      :fn simpadd0-enum-spec)
     (defret enumer-unambp-of-simpadd0-enumer
       (enumer-unambp new-enumer)
       :fn simpadd0-enumer)
@@ -4533,7 +4533,7 @@
                                        simpadd0-struct-declon-list
                                        simpadd0-struct-declor
                                        simpadd0-struct-declor-list
-                                       simpadd0-enumspec
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
@@ -4737,11 +4737,11 @@
       :hyp (and (struct-declor-list-unambp structdeclors)
                 (struct-declor-list-annop structdeclors))
       :fn simpadd0-struct-declor-list)
-    (defret enumspec-annop-of-simpadd0-enumspec
-      (enumspec-annop new-enumspec)
-      :hyp (and (enumspec-unambp enumspec)
-                (enumspec-annop enumspec))
-      :fn simpadd0-enumspec)
+    (defret enum-spec-annop-of-simpadd0-enum-spec
+      (enum-spec-annop new-enumspec)
+      :hyp (and (enum-spec-unambp enumspec)
+                (enum-spec-annop enumspec))
+      :fn simpadd0-enum-spec)
     (defret enumer-annop-of-simpadd0-enumer
       (enumer-annop new-enumer)
       :hyp (and (enumer-unambp enumer)
@@ -4832,7 +4832,7 @@
                                        simpadd0-struct-declon-list
                                        simpadd0-struct-declor
                                        simpadd0-struct-declor-list
-                                       simpadd0-enumspec
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
@@ -5028,11 +5028,11 @@
       :hyp (and (struct-declor-list-unambp structdeclors)
                 (struct-declor-list-aidentp structdeclors gcc))
       :fn simpadd0-struct-declor-list)
-    (defret enumspec-aidentp-of-simpadd0-enumspec
-      (enumspec-aidentp new-enumspec gcc)
-      :hyp (and (enumspec-unambp enumspec)
-                (enumspec-aidentp enumspec gcc))
-      :fn simpadd0-enumspec)
+    (defret enum-spec-aidentp-of-simpadd0-enum-spec
+      (enum-spec-aidentp new-enumspec gcc)
+      :hyp (and (enum-spec-unambp enumspec)
+                (enum-spec-aidentp enumspec gcc))
+      :fn simpadd0-enum-spec)
     (defret enumer-aidentp-of-simpadd0-enumer
       (enumer-aidentp new-enumer gcc)
       :hyp (and (enumer-unambp enumer)
@@ -5124,7 +5124,7 @@
                                        simpadd0-struct-declon-list
                                        simpadd0-struct-declor
                                        simpadd0-struct-declor-list
-                                       simpadd0-enumspec
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert

@@ -334,7 +334,7 @@
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :enum))
       (b* ((tyspec (car tyspecs))
-           (ident (check-enumspec-no-list
+           (ident (check-enum-spec-no-list
                    (type-spec-enum->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
@@ -1040,7 +1040,7 @@
              ((erp members1) (ldm-struct-declon-list struni-spec.members)))
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
-        (b* (((enumspec enumspec) (type-spec-enum->spec tyspec))
+        (b* (((enum-spec enumspec) (type-spec-enum->spec tyspec))
              ((unless enumspec.name)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))

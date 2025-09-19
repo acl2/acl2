@@ -2983,7 +2983,7 @@
                        table))
        :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp new-spec types table)
-                   (valid-enumspec tyspec.spec table ienv)))
+                   (valid-enum-spec tyspec.spec table ienv)))
                (retok (type-spec-enum new-spec) (type-enum) nil types table))
        :typedef (b* (((unless (endp tyspecs))
                       (reterr msg-bad-preceding))
@@ -5051,12 +5051,12 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-enumspec ((enumspec enumspecp)
-                          (table valid-tablep)
-                          (ienv ienvp))
-    :guard (enumspec-unambp enumspec)
+  (define valid-enum-spec ((enumspec enum-specp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (enum-spec-unambp enumspec)
     :returns (mv (erp maybe-msgp)
-                 (new-enumspec enumspecp)
+                 (new-enumspec enum-specp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5074,21 +5074,21 @@
        so we do not extend the validation table,
        if the enumeration specifier has a name.
        However, we validate the enumerators, if present."))
-    (b* (((reterr) (irr-enumspec) nil (irr-valid-table))
-         ((enumspec enumspec) enumspec)
+    (b* (((reterr) (irr-enum-spec) nil (irr-valid-table))
+         ((enum-spec enumspec) enumspec)
          ((when (and (not enumspec.name)
                      (endp enumspec.list)))
           (retmsg$ "The enumeration specifier ~x0 ~
                     has no name and no enumerators."
-                   (enumspec-fix enumspec)))
+                   (enum-spec-fix enumspec)))
          ((erp new-list types table)
           (valid-enumer-list enumspec.list table ienv)))
-      (retok (make-enumspec :name enumspec.name
-                            :list new-list
-                            :final-comma enumspec.final-comma)
+      (retok (make-enum-spec :name enumspec.name
+                             :list new-list
+                             :final-comma enumspec.final-comma)
              types
              table))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6180,11 +6180,11 @@
                (struct-declor-list-unambp new-structdeclors))
       :hyp (struct-declor-list-unambp structdeclors)
       :fn valid-struct-declor-list)
-    (defret enumspec-unambp-of-valid-enumspec
+    (defret enum-spec-unambp-of-valid-enum-spec
       (implies (not erp)
-               (enumspec-unambp new-enumspec))
-      :hyp (enumspec-unambp enumspec)
-      :fn valid-enumspec)
+               (enum-spec-unambp new-enumspec))
+      :hyp (enum-spec-unambp enumspec)
+      :fn valid-enum-spec)
     (defret enumer-unambp-of-valid-enumer
       (implies (not erp)
                (enumer-unambp new-enumer))

@@ -964,7 +964,7 @@
                      (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
         :enum (b* (((mv spec env)
-                    (const-prop-enumspec tyspec.spec env)))
+                    (const-prop-enum-spec tyspec.spec env)))
                 (mv (type-spec-enum spec) env))
         :typedef (mv (type-spec-fix tyspec) env)
         :int128 (mv (type-spec-fix tyspec) env)
@@ -1565,21 +1565,21 @@
           env))
     :measure (struct-declor-list-count structdeclors))
 
-  (define const-prop-enumspec
-    ((enumspec enumspecp)
+  (define const-prop-enum-spec
+    ((enumspec enum-specp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::enumspec)."
-    :returns (mv (new-enumspec enumspecp)
+    :short "Propagate a constant through a @(see c$::enum-spec)."
+    :returns (mv (new-enumspec enum-specp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((enumspec enumspec) enumspec)
+         ((enum-spec enumspec) enumspec)
          ((mv list env)
           (const-prop-enumer-list enumspec.list env)))
-      (mv (make-enumspec :name enumspec.name
-                         :list list
-                         :final-comma enumspec.final-comma)
+      (mv (make-enum-spec :name enumspec.name
+                          :list list
+                          :final-comma enumspec.final-comma)
           env))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define const-prop-enumer
     ((enumer enumerp)
