@@ -1348,24 +1348,9 @@
     dag-size
     ))
 
-(defconst *symbols-from-acl2-package*
-  '(loghead
-    loghead$inline
-    logtail
-    logtail$inline
-    logcar
-    logcar$inline
-    logcdr
-    logcdr$inline
-
-    logapp ; not inline
-    logmask
-    logmask$inline
-
-    expt2$inline ; from IHS
-
-    bvchop
-    logext
+;; BV, boolean, and array function
+(defconst *axe-functions*
+  '(bvchop
     getbit
     bvlt
     bvle
@@ -1394,22 +1379,10 @@
     putbyte
     trim
     bvcount
-
-    bool->bit$inline
-    bool->bit
-    bit->bool$inline
-    bit->bool
-    boolif
-    boolor
-    booland
-    bool-fix
-    bool-fix$inline
-
     bitxor
     bitnot
     bitand
     bitor
-    bool-to-bit
     bvxor
     bvand
     bvor
@@ -1422,130 +1395,13 @@
     leftrotate32
     rightrotate32
 
-    acl2::bfix
-    ;; acl2::bfix$ ; doesn't seem to exist
-    acl2::bfix$inline
-
-    binary-logand
-    binary-logxor
-    binary-logior
-
-    unsigned-byte-p-forced
-
-    ceiling-of-lg
-    lg
-    log2
-    power-of-2p
-
-    ;; list and bv-list stuff:
-    prefixp
-    ;; byte-listp ; todo: clash!
-    all-integerp
-    all-all-unsigned-byte-p
-    all-true-listp
-    items-have-len
-    all-unsigned-byte-p
     bit-to-bool
-
-    farg1
-    farg2
-    farg3
-    farg4
-    check-arities
-
-    lookup-eq
-    lookup-eq-safe
-    lookup
-    lookup-safe
-    lookup-equal
-    lookup-equal-safe
-
-    want-to-weaken ; for polarity-based reasoning
-    want-to-strengthen ; for polarity-based reasoning
-
-    ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
-    my-sublis-var
-    *t*
-    *nil*
-    ffn-symb
-
-    define
-    __function__
-    defrule
-
-    defpun
-    defp
-
-    erp-nil
-    erp-t
-
-
-    ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
-    simp-dag
-    compose-term-and-dag
-    compose-term-and-dags
-    compose-dags
-    make-axe-rules
-    make-axe-rules!
-    axe-quotep
-    result-array-stobj
-    dag-to-term
-    dag-or-quotep-to-term
-    nat-to-string
-    print-dag-nicely
-    print-dag-nicely-with-base
-    print-terms-elided
-    make-term-into-dag
-    remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
-    ;; simplify-terms-using-each-other
-    make-cons-nest
-    dag-or-quotep-fns
-    dag-or-quotep-vars
-    dag-or-quotep-size
-    make-rule-alist
-    make-rule-alist!
-    dagify-term
-    dagify-term2
-    axe-syntaxp
-    axe-bind-free
-    axe-binding-hyp
-    axe-smt
-    work-hard ; may not be needed
-    axe-rewrite-objective ; may not be needed
-    dag-array ; for calls of axe-syntaxp functions
-    def-simplified-x86
-    dag-val-with-axe-evaluator
-    defmacrodoc
-    simplify-conjunction-basic
-    print-to-hundredths
-    equivalent-dagsp2
-    maybe-add-debug-rules
-
-    ;; These are for writing axe-syntaxp and axe-bind-free functions:
-    pseudo-dag-arrayp
-    dargs
-    darg1
-    darg2
-    darg3
-    darg4
-
-    ;; axe-syntaxp and axe-bind-free functions:
-    bind-bv-size-axe
-
-    syntactic-call-of
-    term-should-be-trimmed-axe
-    lighter-dargp
-
-    ;rule lists:
-    lookup-rules
-    list-rules
-    core-rules-bv
-    amazing-rules-bv
-    trim-rules
-
-
-    memberp
+    bool-to-bit
+    boolif
+    boolor
+    booland
+    bool-fix
+    bool-fix$inline
 
     list-to-bv-array
     bv-array-to-list
@@ -1553,67 +1409,205 @@
     bv-array-read
     bv-array-write
     bv-array-read-chunk-little
-    bv-arrayp
+    bv-arrayp))
 
-    ;; Stuff supporting b*
-    b*
-    when
-    unless
-    ///
+(defconst *symbols-from-acl2-package*
+  (append
+    '(loghead
+      loghead$inline
+      logtail
+      logtail$inline
+      logcar
+      logcar$inline
+      logcdr
+      logcdr$inline
 
-    ;; APT transformations (sometimes used to verify listed code):
-    wrap-output
-    extract-output
-    rename-params
-    flatten-params
-    drop-irrelevant-params
-    tailrec
-    make-tail-rec-bv-up
-    make-tail-rec-bv-up2
-    def ; handy APT utility
+      logapp ; not inline
+      logmask
+      logmask$inline
 
-    ;; utilities:
-    call-of
-    fargs
-    pack-in-package-of-symbol
-    pack-in-package-of-first-symbol
-    myif
-    extend-progn
-    get-vars-from-term
-    doublets-to-alist
-    translate-term
-    translate-terms
-    myquotep
-    variablep
-    empty-alist
-    empty-acc
-    defforall-simple
-    subset-eq
-    submit-event
-    must-be-redundant
-    must-fail
-    strip-cadrs
+      expt2$inline ; from IHS
 
-    ;; x86 stuff (move to x package?):
-    elf-info
-    parse-elf-file-bytes ; helpful for tracing
-    parsed-elfp
+      logext
 
-    ;; Testing utilities:
-    assert-equal
-    deftest
+      binary-logand
+      binary-logxor
+      binary-logior
 
-    ruleset
-    e/d*
+      unsigned-byte-p-forced
 
-    defconst-computed-simple
+      ceiling-of-lg
+      lg
+      log2
+      power-of-2p
 
-    _  ; for printing non-pure node patterns
+      ;; list and bv-list stuff:
+      prefixp
+      ;; byte-listp ; todo: clash!
+      all-integerp
+      all-all-unsigned-byte-p
+      all-true-listp
+      items-have-len
+      all-unsigned-byte-p
 
-    memory-regionp
-    memory-regionsp
-    memory-region-addresses-and-lens
-    ))
+      farg1
+      farg2
+      farg3
+      farg4
+      check-arities
+
+      lookup-eq
+      lookup-eq-safe
+      lookup
+      lookup-safe
+      lookup-equal
+      lookup-equal-safe
+
+      want-to-weaken ; for polarity-based reasoning
+      want-to-strengthen ; for polarity-based reasoning
+
+      ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
+      my-sublis-var
+      *t*
+      *nil*
+      ffn-symb
+
+      define
+      __function__
+      defrule
+
+      defpun
+      defp
+
+      erp-nil
+      erp-t
+
+      ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
+      simp-dag
+      compose-term-and-dag
+      compose-term-and-dags
+      compose-dags
+      make-axe-rules
+      make-axe-rules!
+      axe-quotep
+      result-array-stobj
+      dag-to-term
+      dag-or-quotep-to-term
+      nat-to-string
+      print-dag-nicely
+      print-dag-nicely-with-base
+      print-terms-elided
+      make-term-into-dag
+      remove-assumptions-about
+      acl2::*non-stp-assumption-functions*
+      ;; simplify-terms-using-each-other
+      make-cons-nest
+      dag-or-quotep-fns
+      dag-or-quotep-vars
+      dag-or-quotep-size
+      make-rule-alist
+      make-rule-alist!
+      dagify-term
+      dagify-term2
+      axe-syntaxp
+      axe-bind-free
+      axe-binding-hyp
+      axe-smt
+      work-hard ; may not be needed
+      axe-rewrite-objective ; may not be needed
+      dag-array ; for calls of axe-syntaxp functions
+      def-simplified-x86
+      dag-val-with-axe-evaluator
+      defmacrodoc
+      simplify-conjunction-basic
+      print-to-hundredths
+      equivalent-dagsp2
+      maybe-add-debug-rules
+
+      ;; These are for writing axe-syntaxp and axe-bind-free functions:
+      pseudo-dag-arrayp
+      dargs
+      darg1
+      darg2
+      darg3
+      darg4
+
+      ;; axe-syntaxp and axe-bind-free functions:
+      bind-bv-size-axe
+
+      syntactic-call-of
+      term-should-be-trimmed-axe
+      lighter-dargp
+
+      ;; rule lists:
+      lookup-rules
+      list-rules
+      core-rules-bv
+      amazing-rules-bv
+      trim-rules
+
+      memberp
+
+      ;; Stuff supporting b*
+      b*
+      when
+      unless
+      ///
+
+      ;; APT transformations (sometimes used to verify listed code):
+      wrap-output
+      extract-output
+      rename-params
+      flatten-params
+      drop-irrelevant-params
+      tailrec
+      make-tail-rec-bv-up
+      make-tail-rec-bv-up2
+      def ; handy APT utility
+
+      ;; utilities:
+      call-of
+      fargs
+      pack-in-package-of-symbol
+      pack-in-package-of-first-symbol
+      myif
+      extend-progn
+      get-vars-from-term
+      doublets-to-alist
+      translate-term
+      translate-terms
+      myquotep
+      variablep
+      empty-alist
+      empty-acc
+      defforall-simple
+      subset-eq
+      submit-event
+      must-be-redundant
+      must-fail
+      strip-cadrs
+
+      ;; x86 stuff (move to x package?):
+      elf-info
+      parse-elf-file-bytes ; helpful for tracing
+      parsed-elfp
+
+      ;; Testing utilities:
+      assert-equal
+      deftest
+
+      ruleset
+      e/d*
+
+      defconst-computed-simple
+
+      _  ; for printing non-pure node patterns
+
+      memory-regionp
+      memory-regionsp
+      memory-region-addresses-and-lens
+      )
+    *axe-functions*))
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
@@ -1629,6 +1623,15 @@
     b-xor$inline ; really from ihs
     logbit
     logbit$inline ; really from ihs
+
+    bool->bit$inline
+    bool->bit
+    bit->bool$inline
+    bit->bool
+
+    acl2::bfix
+    ;; acl2::bfix$ ; doesn't seem to exist
+    acl2::bfix$inline
     ))
 
 ;; Ideally, these would all be rewritten away
