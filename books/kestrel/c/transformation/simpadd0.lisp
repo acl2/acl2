@@ -2081,7 +2081,6 @@
                    (:e c::scspecseq-none)
                    (:e c::tyspecseq-to-type)
                    (:e c::identp)
-                   (:e c::init-type-single)
                    c::compustate-frames-number-of-exec-initer
                    c::compustatep-when-compustate-resultp-and-not-errorp
                    decl-decl-compustate-vars-old
