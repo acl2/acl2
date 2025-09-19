@@ -322,20 +322,20 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled decl-decl-compustate-vars-old
-    (b* ((declor (c::obj-declor-ident var))
-         (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer))
+    (b* ((declor (c::obj-declon->declor declon))
+         (var (c::obj-declor-ident->get declor))
+         (initer (c::obj-declon->init? declon))
          ((mv & compst0) (c::exec-initer initer compst fenv (1- limit)))
          (compst1 (c::exec-obj-declon declon compst fenv limit)))
-      (implies (and (not (c::errorp compst1))
-                    (c::identp var)
+      (implies (and (syntaxp (quotep declon))
+                    (equal (c::obj-declon->scspec declon) (c::scspecseq-none))
+                    (equal (c::obj-declor-kind declor) :ident)
+                    (not (c::errorp compst1))
                     (c::identp var1)
                     (not (equal var var1))
                     (c::compustate-has-var-with-type-p var1 type compst0))
                (c::compustate-has-var-with-type-p var1 type compst1)))
-    :expand (c::exec-obj-declon
-             (c::obj-declon
-              '(:none) tyspecs (c::obj-declor-ident var) initer)
-             compst fenv limit)
+    :expand (c::exec-obj-declon declon compst fenv limit)
     :enable (c::obj-declon-to-ident+scspec+tyname+init
              c::tyspec+declor-to-ident+tyname
              c::obj-declor-to-ident+adeclor

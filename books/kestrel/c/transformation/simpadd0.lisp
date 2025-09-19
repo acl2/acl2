@@ -2070,13 +2070,19 @@
        (vartys-post (omap::update cvar ctype gin.vartys))
        (hints `(("Goal"
                  :in-theory
-                 '((:e c::obj-declor-ident)
-                   (:e c::scspecseq-none)
+                 '((:e c::obj-declon->scspec)
+                   (:e c::obj-declon->declor)
+                   (:e c::obj-declon->init?)
                    (:e c::obj-declon)
+                   (:e c::obj-declor-kind)
+                   (:e c::obj-declor-ident->get)
+                   (:e c::obj-declor-ident)
+                   (:e c::scspecseq-none)
                    (:e c::tyspecseq-to-type)
                    (:e c::identp)
                    c::compustate-frames-number-of-exec-initer
-                   c::compustatep-when-compustate-resultp-and-not-errorp)
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   decl-decl-compustate-vars-old)
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
                         decl-decl-congruence
@@ -2090,8 +2096,6 @@
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
                         (fenv old-fenv))
-                       ,@(simpadd0-decl-decl-lemma-instances
-                          gin.vartys cvar ctyspecs old-initer)
                        (:instance
                         decl-decl-compustate-vars-new
                         (var ',cvar)
@@ -2115,28 +2119,6 @@
                                            initdeclor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
-
-  :prepwork
-  ((define simpadd0-decl-decl-lemma-instances ((vartys c::ident-type-mapp)
-                                               (var c::identp)
-                                               (tyspecs c::tyspecseqp)
-                                               (initer c::initerp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var1 type) (omap::head vartys))
-          (lemma-instance
-           `(:instance decl-decl-compustate-vars-old
-                       (var1 ',var1)
-                       (var ',var)
-                       (type ',type)
-                       (tyspecs ',tyspecs)
-                       (initer ',initer)
-                       (fenv old-fenv)))
-          (lemma-instances
-           (simpadd0-decl-decl-lemma-instances
-            (omap::tail vartys) var tyspecs initer)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
