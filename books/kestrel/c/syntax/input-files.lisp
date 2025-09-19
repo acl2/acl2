@@ -103,7 +103,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-files ((options symbol-alistp))
+(define input-files-process-files ((options symbol-alistp) state)
   :returns (mv erp (files string-listp))
   :short "Process the @(':files') input."
   (b* (((reterr) nil)
@@ -112,8 +112,17 @@
         (reterr (msg "The :FILES input must be supplied, ~
                       but it was not supplied.")))
        (files (cdr files-option))
+       ((unless (pseudo-termp files))
+        (reterr (msg "The :FILES input must be a term, ~
+                      but it is ~x0 instead."
+                     files)))
+       ((mv erp files/msg)
+        (acl2::magic-ev files nil state nil t))
+       ((when erp)
+        (reterr files/msg))
+       (files files/msg)
        ((unless (string-listp files))
-        (reterr (msg "The :FILES input must be a list of strings, ~
+        (reterr (msg "The :FILES input must evaluate to a list of strings, ~
                       but it is ~x0 instead."
                      files)))
        ((unless (no-duplicatesp-equal files))
@@ -441,7 +450,7 @@
                      *input-files-allowed-options*
                      extra)))
        ;; Process the inputs.
-       ((erp files) (input-files-process-files options))
+       ((erp files) (input-files-process-files options state))
        ((erp path) (input-files-process-path options))
        ((erp preprocessor) (input-files-process-preprocess options))
        ((erp preprocess-args-presentp preprocess-extra-args)

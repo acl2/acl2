@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("ternary_int.c")
+(c$::input-files :files '("ternary_int.c")
                  :path "old"
                  :const *old-code*)
 

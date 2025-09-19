@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (specialize *old*
@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (specialize *old*
