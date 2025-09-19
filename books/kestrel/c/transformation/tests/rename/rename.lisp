@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   ;; TODO: transformation should define the const

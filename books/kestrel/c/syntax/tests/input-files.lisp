@@ -25,7 +25,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c")
+(input-files :files '("simple.c")
              :process :parse
              :const *parsed-simple*)
 
@@ -41,7 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c")
              ;; We exclude stdint.c because it has occurrences of #define
              ;; (not at the left margin) even after preprocessing.
              :preprocess :auto
@@ -61,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c")
              :preprocess :auto
              :process :parse
              :preprocess-args '("-E" "-std=c17")
@@ -88,7 +88,7 @@
                               (list "-std=c17" "-P")
                               nil)))
 
-(input-files :files ("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c")
              :preprocess :auto
              :process :parse
              :preprocess-args *preprocess-args-simple/stdbool*
@@ -108,7 +108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c")
+(input-files :files '("simple.c")
              :process :disambiguate
              :const *disamb-simple*)
 
@@ -120,7 +120,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c")
              ;; We exclude stdint.c because it has occurrences of #define
              ;; (not at the left margin) even after preprocessing.
              :preprocess :auto
@@ -135,7 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c")
+(input-files :files '("simple.c")
              :process :validate
              :const *valid-simple*)
 
@@ -147,7 +147,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files ("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c")
              ;; We exclude stdint.c because it has occurrences of #define
              ;; (not at the left margin) even after preprocessing.
              :preprocess :auto
@@ -163,12 +163,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-fail
-  (input-files :files ("failparse.c")
+  (input-files :files '("failparse.c")
                :const *failparse*))
 
 ;; Ensures the error is in parsing, not a later step
 (must-fail
-  (input-files :files ("failparse.c")
+  (input-files :files '("failparse.c")
                :process :parse
                :const *failparse*))
 
@@ -179,18 +179,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-fail
-  (input-files :files ("faildimb.c")
+  (input-files :files '("faildimb.c")
                :const *faildimb*))
 
 ;; Ensures no error if we only parse, not disambiguate
-(input-files :files ("faildimb.c")
+(input-files :files '("faildimb.c")
              :process :parse
              :const *faildimb-parse-only*)
 
 ;; Ensures the error is not in validation (together with the above test, this
 ;; ensures the error is in disambiguation)
 (must-fail
-  (input-files :files ("faildimb.c")
+  (input-files :files '("faildimb.c")
                :process :disambiguate
                :const *faildimb*))
 
@@ -201,12 +201,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-fail
-  (input-files :files ("failvalidate.c")
+  (input-files :files '("failvalidate.c")
                :process :validate ; the default
                :const *failvalidate*))
 
 ;; Ensures no error if we only parse+disambiguate, not validate, so the error
 ;; must be in validation
-(input-files :files ("failvalidate.c")
+(input-files :files '("failvalidate.c")
              :process :disambiguate
              :const *failvalidate-parse-and-dimb-only*)
