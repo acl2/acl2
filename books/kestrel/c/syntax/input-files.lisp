@@ -16,6 +16,7 @@
 (include-book "validator")
 (include-book "code-ensembles")
 
+(include-book "clause-processors/magic-ev" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -183,10 +184,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-process-preprocess-args ((options symbol-alistp)
-                                             (preprocessor string-optionp))
+                                             (preprocessor string-optionp)
+                                             state)
   :returns (mv erp
                (preprocess-args-presentp booleanp)
-               (preprocess-extra-args string-listp))
+               (preprocess-extra-args
+                 (or (string-listp preprocess-extra-args)
+                     (string-string-list-mapp preprocess-extra-args))))
   :short "Process the @(':preprocess-args') input."
   :long
   (xdoc::topstring
@@ -209,11 +213,39 @@
                       the :PREPROCESS-ARGS input must be absent, ~
                       but it is ~x0 instead."
                      preprocess-args)))
-       ((unless (string-listp preprocess-args))
-        (reterr (msg "The :PREPROCESS-ARGS input must a list of strings, ~
+       ((unless (pseudo-termp preprocess-args))
+        (reterr (msg "The :PREPROCESS-ARGS input must be a term, ~
+                      but it is ~x0 instead."
+                     preprocess-args)))
+       ((mv erp preprocess-args/msg)
+        (acl2::magic-ev preprocess-args nil state nil t))
+       ((when erp)
+        (reterr preprocess-args/msg))
+       (preprocess-args preprocess-args/msg)
+       ((unless (or (string-listp preprocess-args)
+                    (string-string-list-mapp preprocess-args)))
+        (reterr (msg "The :PREPROCESS-ARGS input must evaluate to ~
+                      a list of strings ~
+                      or an omap associating strings to lists of strings, ~
                       but it is ~x0 instead."
                      preprocess-args))))
-    (retok t preprocess-args)))
+    (retok t preprocess-args))
+
+  ///
+
+  (defret string-listp-of-input-files-process-preprocess-args.preprocess-extra-args
+    (implies (not (string-string-list-mapp preprocess-extra-args))
+             (string-listp preprocess-extra-args))
+    :hints
+    (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
+             :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args))))
+
+  (defret string-string-list-mapp-of-input-files-process-preprocess-args.preprocess-extra-args
+    (implies (not (string-listp preprocess-extra-args))
+             (string-string-list-mapp preprocess-extra-args))
+    :hints
+    (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
+             :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,13 +402,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-inputs ((args true-listp) (progp booleanp))
+(define input-files-process-inputs ((args true-listp) (progp booleanp) state)
   :returns (mv erp
                (files string-listp)
                (path stringp)
                (preprocessor string-optionp)
                (preprocess-args-presentp booleanp)
-               (preprocess-extra-args string-listp)
+               (preprocess-extra-args
+                 (or (string-listp preprocess-extra-args)
+                     (string-string-list-mapp preprocess-extra-args)))
                (process input-files-process-inputp)
                (const symbolp)
                (ienv ienvp))
@@ -411,7 +445,7 @@
        ((erp path) (input-files-process-path options))
        ((erp preprocessor) (input-files-process-preprocess options))
        ((erp preprocess-args-presentp preprocess-extra-args)
-        (input-files-process-preprocess-args options preprocessor))
+        (input-files-process-preprocess-args options preprocessor state))
        ((erp process) (input-files-process-process options))
        ((erp const) (input-files-process-const options progp))
        ((erp ienv) (input-files-process-ienv options)))
@@ -426,6 +460,20 @@
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
   ///
+
+  (defret string-listp-of-input-files-process-inputs.preprocess-extra-args
+    (implies (not (string-string-list-mapp preprocess-extra-args))
+             (string-listp preprocess-extra-args))
+    :hints
+    (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
+             :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
+
+  (defret string-string-list-mapp-of-input-files-process-inputs.preprocess-extra-args
+    (implies (not (string-listp preprocess-extra-args))
+             (string-string-list-mapp preprocess-extra-args))
+    :hints
+    (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
+             :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
 
   (defret input-files-process-inputs.process-to-cdr-assoc-args
     (implies (not erp)
@@ -477,7 +525,9 @@
                                 (path stringp)
                                 (preprocessor string-optionp)
                                 (preprocess-args-presentp booleanp)
-                                (preprocess-extra-args string-listp)
+                                (preprocess-extra-args
+                                  (or (string-string-list-mapp preprocess-extra-args)
+                                      (string-listp preprocess-extra-args)))
                                 (process input-files-process-inputp)
                                 (const symbolp)
                                 (ienv ienvp)
@@ -577,7 +627,7 @@
              process
              const
              ienv)
-        (input-files-process-inputs args progp))
+        (input-files-process-inputs args progp state))
        ((erp events code state)
         (input-files-gen-events files
                                 path
