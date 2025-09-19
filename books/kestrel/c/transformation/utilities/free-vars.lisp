@@ -187,7 +187,7 @@
      :atomic (free-vars-tyname type-spec.type bound-vars)
      :struct (free-vars-struni-spec type-spec.spec bound-vars)
      :union (free-vars-struni-spec type-spec.spec bound-vars)
-     :enum (free-vars-enumspec type-spec.spec bound-vars)
+     :enum (free-vars-enum-spec type-spec.spec bound-vars)
      :typedef (if (in type-spec.name bound-vars)
                 nil
               (insert type-spec.name nil))
@@ -680,18 +680,18 @@
           bound-vars))
     :measure (struct-declor-list-count structdeclors))
 
-  (define free-vars-enumspec
-    ((enumspec enumspecp)
+  (define free-vars-enum-spec
+    ((enumspec enum-specp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a enumeration specifier."
     :returns (free-vars ident-setp)
-    (b* (((enumspec enumspec) enumspec)
+    (b* (((enum-spec enumspec) enumspec)
          ((mv free-vars -)
           (free-vars-enumer-list enumspec.list bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   enum tag to the set of bound variables.
       free-vars)
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define free-vars-enumer
     ((enumer enumerp)

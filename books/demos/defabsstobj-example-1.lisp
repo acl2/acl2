@@ -247,7 +247,7 @@
 
 (local
  (DEFTHM LOOKUP{GUARD-THM}
-   (IMPLIES (AND (ST$CORR ST$C C)
+   (IMPLIES (AND (ST$CORR ST$C ST)
                  (INTEGERP I)
                  (<= 0 I)
                  (<= I 49)

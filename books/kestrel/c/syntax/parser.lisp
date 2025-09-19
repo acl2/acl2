@@ -11156,7 +11156,7 @@
 
   (define parse-enum-specifier ((first-span spanp) (parstate parstatep))
     :returns (mv erp
-                 (enumspec enumspecp)
+                 (enumspec enum-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -11167,7 +11167,7 @@
       "This is called after parsing the initial @('enum') keyword.")
      (xdoc::p
       "The span of the @('enum') keyword is passed as input here."))
-    (b* (((reterr) (irr-enumspec) (irr-span) parstate)
+    (b* (((reterr) (irr-enum-spec) (irr-span) parstate)
          ;; There must be at least one token (identifier of open curly brace),
          ;; so we read one.
          ((erp token span parstate) (read-token parstate)))
@@ -11187,9 +11187,9 @@
                   (parse-enumerator-list parstate)) ; ident { enumers [,]
                  ((erp last-span parstate) ; ident { enumers [,] }
                   (read-punctuator "}" parstate)))
-              (retok (make-enumspec :name ident
-                                    :list enumers
-                                    :final-comma final-comma)
+              (retok (make-enum-spec :name ident
+                                     :list enumers
+                                     :final-comma final-comma)
                      (span-join first-span last-span)
                      parstate)))
            ;; If token2 is not an open curly brace,
@@ -11197,9 +11197,9 @@
            (t ; ident other
             (b* ((parstate
                   (if token2 (unread-token parstate) parstate))) ; ident
-              (retok (make-enumspec :name ident
-                                    :list nil
-                                    :final-comma nil)
+              (retok (make-enum-spec :name ident
+                                     :list nil
+                                     :final-comma nil)
                      (span-join first-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -11210,9 +11210,9 @@
               (parse-enumerator-list parstate)) ; { enumers [,]
              ((erp last-span parstate) ; { enumers [,] }
               (read-punctuator "}" parstate)))
-          (retok (make-enumspec :name nil
-                                :list enumers
-                                :final-comma final-comma)
+          (retok (make-enum-spec :name nil
+                                 :list enumers
+                                 :final-comma final-comma)
                  (span-join first-span last-span)
                  parstate)))
        ;; If token is neither an identifier nor an open curly brace,

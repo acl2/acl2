@@ -588,7 +588,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-enumspec-no-list ((enumspec enumspecp))
+(define check-enum-spec-no-list ((enumspec enum-specp))
   :returns (ident? ident-optionp)
   :short "Check if an enumeration union specifier has no enumerators,
           returning the name if the check passes."
@@ -598,7 +598,7 @@
     "If the specifier is empty (i.e. has no enumerators or name),
      we throw a hard error,
      because the specifier does not conform to the concrete syntax."))
-  (b* (((enumspec enumspec) enumspec)
+  (b* (((enum-spec enumspec) enumspec)
        ((when enumspec.list) nil)
        ((unless enumspec.name)
         (raise "Misusage error: empty enumeration specifier.")))

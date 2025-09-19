@@ -2423,7 +2423,7 @@
                  (pstate (print-struni-spec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
-                (pstate (print-enumspec tyspec.spec pstate)))
+                (pstate (print-enum-spec tyspec.spec pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
      :int128 (if tyspec.uscoret
@@ -3293,9 +3293,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-enumspec ((enumspec enumspecp) (pstate pristatep))
-    :guard (and (enumspec-unambp enumspec)
-                (enumspec-aidentp enumspec (pristate->gcc pstate)))
+  (define print-enum-spec ((enumspec enum-specp) (pstate pristatep))
+    :guard (and (enum-spec-unambp enumspec)
+                (enum-spec-aidentp enumspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an enueration specifier."
@@ -3304,7 +3304,7 @@
      (xdoc::p
       "We ensure that the enumeration specifier is not empty,
        i.e. that there is a name or a non-empty list of enumerators."))
-    (b* (((enumspec enumspec) enumspec)
+    (b* (((enum-spec enumspec) enumspec)
          ((unless (or (ident-option-case enumspec.name :some)
                       enumspec.list))
           (raise "Misusage error: empty enumeration specifiers.")
@@ -3324,7 +3324,7 @@
                      (print-astring ", }" pstate)
                    (print-astring "}" pstate))))
       pstate)
-    :measure (two-nats-measure (enumspec-count enumspec) 0))
+    :measure (two-nats-measure (enum-spec-count enumspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4143,7 +4143,7 @@
      print-struct-declon-list
      print-struct-declor
      print-struct-declor-list
-     print-enumspec
+     print-enum-spec
      print-enumer
      print-enumer-list
      print-statassert

@@ -1929,7 +1929,7 @@
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)))
     (:union ((spec struni-spec)))
-    (:enum ((spec enumspec)))
+    (:enum ((spec enum-spec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
@@ -2598,7 +2598,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod enumspec
+  (fty::defprod enum-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of enumeration specifiers [C17:6.7.2.2] [C17:A.2.2]."
     :long
@@ -2612,7 +2612,7 @@
     ((name ident-option)
      (list enumer-list)
      (final-comma bool))
-    :pred enumspecp
+    :pred enum-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
