@@ -404,14 +404,17 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled block-item-list-cons-compustate-vars
-    (b* ((item+items (cons item items))
+    (b* ((item (car item+items))
+         (items (cdr item+items))
          ((mv result0 compst0)
           (c::exec-block-item item compst fenv (1- limit)))
          ((mv & compst1)
           (c::exec-block-item-list items compst0 fenv (1- limit)))
          ((mv result2 compst2)
           (c::exec-block-item-list item+items compst fenv limit)))
-      (implies (and (not (c::errorp result2))
+      (implies (and (syntaxp (quotep item+items))
+                    (consp item+items)
+                    (not (c::errorp result2))
                     (or (and (equal (c::stmt-value-kind result0) :return)
                              (c::compustate-has-var-with-type-p
                               var type compst0))

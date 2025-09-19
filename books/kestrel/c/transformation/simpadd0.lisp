@@ -2365,7 +2365,8 @@
              (:e set::delete)
              (:e set::union)
              c::compustate-frames-number-of-exec-block-item
-             c::compustatep-when-compustate-resultp-and-not-errorp)
+             c::compustatep-when-compustate-resultp-and-not-errorp
+             block-item-list-cons-compustate-vars)
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))
@@ -2400,9 +2401,7 @@
                   block-item-list-cons-rest-errors
                   (item ',old-item)
                   (items ',old-items)
-                  (fenv old-fenv))
-                 ,@(simpadd0-block-item-list-cons-lemma-instances
-                    gin.vartys old-item old-items)))))
+                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm item+items
                                  item+items-new
@@ -2415,28 +2414,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-block-item-list-cons-lemma-instances
-     ((vartys c::ident-type-mapp)
-      (item c::block-itemp)
-      (items c::block-item-listp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-list-cons-compustate-vars
-                       (item ',item)
-                       (items ',items)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
-                                                          item
-                                                          items)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
