@@ -74,14 +74,13 @@
     (xdoc::desc
      "@(':files')"
      (xdoc::p
-      "List of one or more file paths that specify the files to be read.")
+      "Term evaluating to a list of one or more file paths
+       that specify the files to be read.")
      (xdoc::p
       "Each file path must be a string.")
      (xdoc::p
       "These paths are relative to
-       the path specified by the @(':path') input.")
-     (xdoc::p
-      "This input to this macro is not evaluated."))
+       the path specified by the @(':path') input."))
 
     (xdoc::desc
      "@(':path') &mdash; default @('\".\"')"

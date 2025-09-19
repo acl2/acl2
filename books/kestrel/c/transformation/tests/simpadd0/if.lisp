@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("if.c")
+(c$::input-files :files '("if.c")
                  :path "old"
                  :const *old-code*)
 

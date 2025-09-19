@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("nosimp_ulong.c")
+(c$::input-files :files '("nosimp_ulong.c")
                  :path "old"
                  :const *old-code*)
 

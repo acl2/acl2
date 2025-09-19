@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("paren.c")
+(c$::input-files :files '("paren.c")
                  :path "old"
                  :const *old-code*)
 
