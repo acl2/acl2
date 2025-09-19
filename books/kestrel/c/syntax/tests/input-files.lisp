@@ -57,6 +57,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Preprocess with arguments and parse.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files ("simple.c" "stdbool.c")
+             :preprocess :auto
+             :process :parse
+             :preprocess-args '("-E" "-std=c17")
+             :const *parsed-with-args-simple/stdbool*)
+
+(acl2::assert! (code-ensemblep *parsed-with-args-simple/stdbool*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths
+   (code-ensemble->transunits *parsed-with-args-simple/stdbool*))
+ (set::mergesort (list (filepath "simple.c")
+                       (filepath "stdbool.c"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocess with omap arguments and parse.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *preprocess-args-simple/stdbool*
+  (omap::update "simple.c"
+                (list "-P" "-std=c17")
+                (omap::update "stdbool.c"
+                              (list "-std=c17" "-P")
+                              nil)))
+
+(input-files :files ("simple.c" "stdbool.c")
+             :preprocess :auto
+             :process :parse
+             :preprocess-args *preprocess-args-simple/stdbool*
+             :const *parsed-with-omap-args-simple/stdbool*)
+
+(acl2::assert! (code-ensemblep *parsed-with-omap-args-simple/stdbool*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths
+   (code-ensemble->transunits *parsed-with-omap-args-simple/stdbool*))
+ (set::mergesort (list (filepath "simple.c")
+                       (filepath "stdbool.c"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Parse and disambiguate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
