@@ -24,6 +24,7 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvsx")
+(include-book "bvif")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
@@ -100,3 +101,8 @@
            (equal (trim size (logtail pos x))
                   (slice (+ -1 size pos) pos x)))
   :hints (("Goal" :in-theory (enable trim slice))))
+
+(defthmd trim-of-if-becomes-bvif
+  (equal (trim size (if test x y))
+         (bvif size test x y))
+  :hints (("Goal" :in-theory (enable trim))))

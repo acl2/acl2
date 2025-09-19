@@ -6089,3 +6089,25 @@
   :hints (("Goal" :in-theory (enable sbvlt bvplus bvminus signed-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; could allow the bvif size to differ
+(defthmd bvcat-of-bvif-arg2
+  (implies (and (natp highsize)
+                (natp lowsize))
+           (equal (bvcat highsize (bvif highsize test highval1 highval2) lowsize lowval)
+                  (bvif (+ lowsize highsize)
+                        test
+                        (bvcat highsize highval1 lowsize lowval)
+                        (bvcat highsize highval2 lowsize lowval))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+; could allow the bvif size to differ
+(defthmd bvcat-of-bvif-arg4
+  (implies (and (natp highsize)
+                (natp lowsize))
+           (equal (bvcat highsize highval lowsize (bvif lowsize test lowval1 lowval2))
+                  (bvif (+ lowsize highsize)
+                        test
+                        (bvcat highsize highval lowsize lowval1)
+                        (bvcat highsize highval lowsize lowval2))))
+  :hints (("Goal" :in-theory (enable bvif))))

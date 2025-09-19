@@ -959,7 +959,6 @@
                             simplify-assumptionsp
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
-                            ;; debug
                             max-conflicts ;a number of conflicts, or nil for no max
                             call-stp-when-pruning
                             counterexamplep
