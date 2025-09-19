@@ -2295,10 +2295,9 @@
   (b* (((simpadd0-gin gin) gin)
        (items nil)
        (hints `(("Goal"
-                 :in-theory '((:e set::insert))
-                 :use (block-item-list-empty-congruence
-                       ,@(simpadd0-block-item-list-empty-lemma-instances
-                          gin.vartys)))))
+                 :in-theory '((:e set::insert)
+                              block-item-list-empty-compustate-vars)
+                 :use (block-item-list-empty-congruence))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
@@ -2310,23 +2309,7 @@
                         :thm-index thm-index
                         :thm-name thm-name
                         :vartys gin.vartys))
-  :hooks (:fix)
-
-  :prepwork
-  ((define simpadd0-block-item-list-empty-lemma-instances
-     ((vartys c::ident-type-mapp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-list-empty-compustate-vars
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
-       (cons lemma-instance lemma-instances)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

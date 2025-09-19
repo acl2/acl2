@@ -392,10 +392,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled block-item-list-empty-compustate-vars
-    (b* ((items nil)
-         ((mv result compst1)
+    (b* (((mv result compst1)
           (c::exec-block-item-list items compst fenv limit)))
-      (implies (and (not (c::errorp result))
+      (implies (and (equal items nil)
+                    (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst))
                (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::exec-block-item-list
