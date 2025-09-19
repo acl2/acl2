@@ -2234,9 +2234,12 @@
        (hints `(("Goal"
                  :in-theory
                  '((:e c::block-item-declon)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-declon->get)
                    (:e set::insert)
                    c::compustate-frames-number-of-exec-obj-declon
-                   c::compustatep-when-compustate-resultp-and-not-errorp)
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-decl-compustate-vars)
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         block-item-decl-congruence
@@ -2245,9 +2248,7 @@
                        (:instance
                         block-item-decl-errors
                         (declon ',old-declon)
-                        (fenv old-fenv))
-                       ,@(simpadd0-block-item-decl-lemma-instances
-                          vartys-post old-declon)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2265,23 +2266,6 @@
                                            initdeclor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
-
-  :prepwork
-  ((define simpadd0-block-item-decl-lemma-instances ((vartys c::ident-type-mapp)
-                                                     (decl c::obj-declonp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-decl-compustate-vars
-                       (var ',var)
-                       (type ',type)
-                       (declon ',decl)
-                       (fenv old-fenv)))
-          (lemma-instances
-           (simpadd0-block-item-decl-lemma-instances (omap::tail vartys) decl)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
