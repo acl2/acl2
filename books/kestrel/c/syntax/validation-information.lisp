@@ -1073,104 +1073,109 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stmt-types ((stmt stmtp))
-  :guard (and (stmt-unambp stmt)
-              (stmt-annop stmt))
-  :returns (types type-option-setp)
-  :short "Types of a statement, from the validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return a set of optional types:
-     a @('nil') means that the statement's may terminate
-     without a @('return') (e.g. an expression statement);
-     a @('void') means that the statement may terminate
-     with a @('return') without an expression;
-     and a non-@('void') type means that the statemetn may terminate
-     with a @('return') with an expression of that type.")
-   (xdoc::p
-    "Similarly to @(tsee expr-type),
-     the types calculated by this function are an approximation.
-     We return the empty set in cases that we do not handle yet.
-     This is adequate for the current use of this function,
-     but it will need to be suitably extended."))
-  (stmt-case
-   stmt
-   :labeled (stmt-types stmt.stmt)
-   :compound nil
-   :expr (set::insert nil nil)
-   :if (set::insert nil (stmt-types stmt.then))
-   :ifelse (set::union (stmt-types stmt.then)
-                       (stmt-types stmt.else))
-   :switch nil
-   :while nil
-   :dowhile nil
-   :for-expr nil
-   :for-decl nil
-   :for-ambig (impossible)
-   :goto nil
-   :continue nil
-   :break nil
-   :return (expr-option-case
-            stmt.expr?
-            :some (set::insert (expr-type stmt.expr?.val) nil)
-            :none (set::insert (type-void) nil))
-   :asm nil)
-  :measure (stmt-count stmt)
+(defines stmts-types
+  :short "Types of statements and related entities,
+          from the validation information."
+
+  (define stmt-types ((stmt stmtp))
+    :guard (and (stmt-unambp stmt)
+                (stmt-annop stmt))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a statement, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types:
+       a @('nil') means that the statement's may terminate
+       without a @('return') (e.g. an expression statement);
+       a @('void') means that the statement may terminate
+       with a @('return') without an expression;
+       and a non-@('void') type means that the statemetn may terminate
+       with a @('return') with an expression of that type.")
+     (xdoc::p
+      "Similarly to @(tsee expr-type),
+       the types calculated by this function are an approximation.
+       We return the empty set in cases that we do not handle yet.
+       This is adequate for the current use of this function,
+       but it will need to be suitably extended."))
+    (stmt-case
+     stmt
+     :labeled (stmt-types stmt.stmt)
+     :compound (block-item-list-types stmt.items)
+     :expr (set::insert nil nil)
+     :if (set::insert nil (stmt-types stmt.then))
+     :ifelse (set::union (stmt-types stmt.then)
+                         (stmt-types stmt.else))
+     :switch nil
+     :while nil
+     :dowhile nil
+     :for-expr nil
+     :for-decl nil
+     :for-ambig (impossible)
+     :goto nil
+     :continue nil
+     :break nil
+     :return (expr-option-case
+              stmt.expr?
+              :some (set::insert (expr-type stmt.expr?.val) nil)
+              :none (set::insert (type-void) nil))
+     :asm nil)
+    :measure (stmt-count stmt))
+
+  (define block-item-types ((item block-itemp))
+    :guard (and (block-item-unambp item)
+                (block-item-annop item))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a block item, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types, as in @(tsee stmt-types):
+       see the documentation of that function for a rationale."))
+    (block-item-case
+     item
+     :decl (set::insert nil nil)
+     :stmt (stmt-types item.stmt)
+     :ambig (impossible))
+    :measure (block-item-count item))
+
+  (define block-item-list-types ((items block-item-listp))
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-annop items))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a list of block items, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types, as in @(tsee stmt-types):
+       see the documentation of that function for a rationale.")
+     (xdoc::p
+      "If the list is empty, we return the singleton set with @('nil').
+       If the list is not empty,
+       we take the union of the types of the first and remaining block items,
+       but first we remove @('nil') from the first set (if present).
+       The removal is because,
+       if the first block item terminates without @('return'),
+       the whole list of block items does not necessarily do so;
+       it happens only if the rest of the block items in the list does,
+       which is accounted for in the set of optional types
+       for the rest of the list."))
+    (b* (((when (endp items)) (set::insert nil nil))
+         (item-types (block-item-types (car items)))
+         (items-types (block-item-list-types (cdr items))))
+      (set::union (set::delete nil item-types) items-types))
+    :measure (block-item-list-count items))
+
   :verify-guards :after-returns
+
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(define block-item-types ((item block-itemp))
-  :guard (and (block-item-unambp item)
-              (block-item-annop item))
-  :returns (types type-option-setp)
-  :short "Types of a block item, from the validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return a set of optional types, as in @(tsee stmt-types):
-     see the documentation of that function for a rationale."))
-  (block-item-case
-   item
-   :decl (set::insert nil nil)
-   :stmt (stmt-types item.stmt)
-   :ambig (impossible))
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define block-item-list-types ((items block-item-listp))
-  :guard (and (block-item-list-unambp items)
-              (block-item-list-annop items))
-  :returns (types type-option-setp)
-  :short "Types of a list of block items, from the validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return a set of optional types, as in @(tsee stmt-types):
-     see the documentation of that function for a rationale.")
-   (xdoc::p
-    "If the list is empty, we return the singleton set with @('nil').
-     If the list is not empty,
-     we take the union of the types of the first and remaining block items,
-     but first we remove @('nil') from the first set (if present).
-     The removal is because,
-     if the first block item terminates without @('return'),
-     the whole list of block items does not necessarily do so;
-     it happens only if the rest of the block items in the list does,
-     which is accounted for in the set of optional types
-     for the rest of the list."))
-  (b* (((when (endp items)) (set::insert nil nil))
-       (item-types (block-item-types (car items)))
-       (items-types (block-item-list-types (cdr items))))
-    (set::union (set::delete nil item-types) items-types))
-  :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  (fty::deffixequiv-mutual stmts-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

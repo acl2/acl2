@@ -632,7 +632,6 @@
   (defruled object-type-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
       (implies (and (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -641,6 +640,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-expr-call
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
                      (n 0)
@@ -651,7 +651,6 @@
   (defruled object-type-of-exec-expr-call-or-pure
     (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
       (implies (and (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -660,6 +659,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-expr-call-or-pure
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
                      (n 0)
@@ -670,7 +670,6 @@
   (defruled object-type-of-exec-expr-asg
     (b* ((compst1 (exec-expr-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -679,6 +678,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-expr-asg
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1 (exec-expr-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
@@ -688,7 +688,6 @@
   (defruled object-type-of-exec-call-or-asg
     (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
       (implies (and (not (errorp compst1))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -697,6 +696,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-expr-call-or-asg
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1 (exec-expr-call-or-asg e compst fenv limit))
                      (n 0)
                      (m 0)))
@@ -706,7 +706,6 @@
   (defruled object-type-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
       (implies (and (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -715,6 +714,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-fun
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
                      (n 0)
                      (m 0)))
@@ -725,7 +725,6 @@
     (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -734,6 +733,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-stmt
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1 (mv-nth 1 (exec-stmt s compst fenv limit)))
                      (n 0)
                      (m 0)))
@@ -744,7 +744,6 @@
     (b* (((mv result compst1) (exec-stmt-while test body compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -753,6 +752,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-stmt-while
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
                      (n 0)
@@ -764,7 +764,6 @@
     (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -773,6 +772,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-initer
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-initer initer compst fenv limit)))
                      (n 0)
@@ -784,7 +784,6 @@
     (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp compst1))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -793,6 +792,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-obj-declon
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1 (exec-obj-declon declon compst fenv limit))
                      (n 0)
                      (m 0)))
@@ -803,7 +803,6 @@
     (b* (((mv result compst1) (exec-block-item item compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -812,6 +811,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-block-item
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-block-item item compst fenv limit)))
                      (n 0)
@@ -823,7 +823,6 @@
     (b* (((mv result compst1) (exec-block-item-list items compst fenv limit)))
       (implies (and (> (compustate-frames-number compst) 0)
                     (not (errorp result))
-                    (objdesignp objdes)
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -832,6 +831,7 @@
                            (type-of-value (read-object objdes compst))))))
     :use (object-type-preservep-of-exec-block-item-list
           (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-block-item-list items compst fenv limit)))
                      (n 0)

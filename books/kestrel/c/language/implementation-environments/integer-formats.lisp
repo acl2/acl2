@@ -14,6 +14,7 @@
 (include-book "uchar-formats")
 (include-book "schar-formats")
 (include-book "char-formats")
+(include-book "bool-formats")
 (include-book "integer-format-templates")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -611,29 +612,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod char+short+int+long+llong-format
+(fty::defprod char+short+int+long+llong+bool-format
   :short "Fixtype of formats of
           (unsigned, signed, and plain) @('char') objects,
           (unsigned and signed) @('short') objects,
           (unsigned and signed) @('int') objects,
-          (unsigned and signed) @('long') objects, and
-          (unsigned and signed) @('long long') objects."
+          (unsigned and signed) @('long') objects,
+          (unsigned and signed) @('long long') objects, and
+          @('_Bool') objects."
   ((uchar uchar-format)
    (schar schar-format)
    (char char-format)
    (short integer-format)
    (int integer-format)
    (long integer-format)
-   (llong integer-format))
-  :pred char+short+int+long+llong-formatp)
+   (llong integer-format)
+   (bool bool-format))
+  :pred char+short+int+long+llong+bool-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char+short+int+long+llong-format-wfp
-  ((format char+short+int+long+llong-formatp))
+(define char+short+int+long+llong+bool-format-wfp
+  ((format char+short+int+long+llong+bool-formatp))
   :returns (yes/no booleanp)
   :short "Check if the formats of
-          @('char'), @('short'), @('int'), @('long'), and @('long long') objects
+          @('char'),
+          @('short'),
+          @('int'),
+          @('long'),
+          @('long long'),
+          and @('_Bool')
+          objects
           are well-formed."
   :long
   (xdoc::topstring
@@ -641,63 +650,73 @@
     "The formats for @('char') objects already include
      their own well-formedness in their definition.
      We impose well-formedness on the other formats."))
-  (b* (((char+short+int+long+llong-format format) format))
+  (b* (((char+short+int+long+llong+bool-format format) format))
     (and (integer-format-short-wfp format.short format.uchar format.schar)
          (integer-format-int-wfp format.int format.uchar format.short)
          (integer-format-long-wfp format.long format.uchar format.int)
-         (integer-format-llong-wfp format.llong format.uchar format.long)))
+         (integer-format-llong-wfp format.llong format.uchar format.long)
+         (bool-format-wfp format.bool format.uchar)))
   :hooks (:fix)
 
   ///
 
-  (defrule char+short+int+long+llong-format-wf-short-bit-size-lower-bound
-    (implies (char+short+int+long+llong-format-wfp format)
+  (defrule char+short+int+long+llong+bool-format-wf-short-bit-size-lower-bound
+    (implies (char+short+int+long+llong+bool-format-wfp format)
              (>= (integer-format->bit-size
-                  (char+short+int+long+llong-format->short format))
+                  (char+short+int+long+llong+bool-format->short format))
                  16))
     :rule-classes :linear)
 
-  (defrule char+short+int+long+llong-format-wf-int-bit-size-lower-bound
-    (implies (char+short+int+long+llong-format-wfp format)
+  (defrule char+short+int+long+llong+bool-format-wf-int-bit-size-lower-bound
+    (implies (char+short+int+long+llong+bool-format-wfp format)
              (>= (integer-format->bit-size
-                  (char+short+int+long+llong-format->int format))
+                  (char+short+int+long+llong+bool-format->int format))
                  16))
     :rule-classes :linear)
 
-  (defrule char+short+int+long+llong-format-wf-long-bit-size-lower-bound
-    (implies (char+short+int+long+llong-format-wfp format)
+  (defrule char+short+int+long+llong+bool-format-wf-long-bit-size-lower-bound
+    (implies (char+short+int+long+llong+bool-format-wfp format)
              (>= (integer-format->bit-size
-                  (char+short+int+long+llong-format->long format))
+                  (char+short+int+long+llong+bool-format->long format))
                  32))
     :rule-classes :linear)
 
-  (defrule char+short+int+long+llong-format-wf-llong-bit-size-lower-bound
-    (implies (char+short+int+long+llong-format-wfp format)
+  (defrule char+short+int+long+llong+bool-format-wf-llong-bit-size-lower-bound
+    (implies (char+short+int+long+llong+bool-format-wfp format)
              (>= (integer-format->bit-size
-                  (char+short+int+long+llong-format->llong format))
+                  (char+short+int+long+llong+bool-format->llong format))
                  64))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char8+short16+int16+long32+llong64-tcnt ()
-  :short "The @('char'), @('short'), @('int'), @('long'), and @('long long')
+(define char8+short16+int16+long32+llong64+bool0-tcnt ()
+  :short "The
+          @('char'),
+          @('short'),
+          @('int'),
+          @('long'),
+          @('long long'), and
+          @('_Bool')
           integer formats defined by
           the minimal number of bits with increasing values,
           two's complement,
-          no trap representations, and
-          unsigned plain @('char')s."
-  (make-char+short+int+long+llong-format
+          no trap representations,
+          unsigned plain @('char')s,
+          and one-byte @('_Bool') objects
+          with value in the least significant bit."
+  (make-char+short+int+long+llong+bool-format
    :uchar (uchar-format-8)
    :schar (schar-format-8tcnt)
    :char (char-format-8u)
    :short (short-format-16tcnt)
    :int (int-format-16tcnt)
    :long (long-format-32tcnt)
-   :llong (llong-format-64tcnt))
+   :llong (llong-format-64tcnt)
+   :bool (bool-format-lsb))
 
   ///
 
-  (defruled wfp-of-char8+short16+int16+long32+llong64-tcnt
-    (char+short+int+long+llong-format-wfp
-     (char8+short16+int16+long32+llong64-tcnt))))
+  (defruled wfp-of-char8+short16+int16+long32+llong64+bool0-tcnt
+    (char+short+int+long+llong+bool-format-wfp
+     (char8+short16+int16+long32+llong64+bool0-tcnt))))

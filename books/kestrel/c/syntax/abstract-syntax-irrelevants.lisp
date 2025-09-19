@@ -338,24 +338,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdecl
+(defirrelevant irr-struct-declon
   :short "An irrelevant structure declaration."
-  :type structdeclp
-  :body (make-structdecl-empty))
+  :type struct-declonp
+  :body (make-struct-declon-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdeclor
+(defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
-  :type structdeclorp
-  :body (make-structdeclor :declor? nil :expr? nil))
+  :type struct-declorp
+  :body (make-struct-declor :declor? nil :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-enumspec
+(defirrelevant irr-enum-spec
   :short "An irrelevant enumeration specifier."
-  :type enumspecp
-  :body (make-enumspec :name nil :list nil :final-comma nil))
+  :type enum-specp
+  :body (make-enum-spec :name nil :list nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

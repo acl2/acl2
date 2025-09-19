@@ -1,0 +1,28 @@
+[
+  {
+    "arguments": [
+      "/usr/local/bin/gcc",
+      "-std=c17",
+      "-I/usr/include/libfoo",
+      "-c",
+      "foo.c"
+    ],
+    "directory": "/working-dir/c-project/",
+    "file": "foo.c"
+  },
+  {
+    "arguments": [
+      "/usr/local/bin/gcc",
+      "-ggdb",
+      "-O0",
+      "-Wall",
+      "-c",
+      "bar.c",
+      "-o",
+      "bar.o"
+    ],
+    "directory": "/working-dir/c-project/bar",
+    "file": "bar.c",
+    "output": "/working-dir/c-project/bar/bar.o"
+  }
+]

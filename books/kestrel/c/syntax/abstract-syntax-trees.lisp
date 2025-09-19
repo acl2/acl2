@@ -1929,7 +1929,7 @@
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)))
     (:union ((spec struni-spec)))
-    (:enum ((spec enumspec)))
+    (:enum ((spec enum-spec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
@@ -2498,13 +2498,13 @@
        which is a GCC extension;
        this is covered as a separate case in @(tsee type-spec)."))
     ((name? ident-option)
-     (members structdecl-list))
+     (members struct-declon-list))
     :pred struni-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum structdecl
+  (fty::deftagsum struct-declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of structure declarations [C17:6.7.2.1] [C17:A.2.2]."
     :long
@@ -2534,33 +2534,33 @@
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specqual spec/qual-list)
-              (declor structdeclor-list)
+              (declor struct-declor-list)
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
-    :pred structdeclp
+    :pred struct-declonp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist structdecl-list
+  (fty::deflist struct-declon-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of structure declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarations are defined in @(tsee structdecl).
+      "Structure declarations are defined in @(tsee struct-declon).
        This fixtype corresponds to <i>struct-declaration-list</i>
        in the grammar in [C17]."))
-    :elt-type structdecl
+    :elt-type struct-declon
     :true-listp t
     :elementp-of-nil nil
-    :pred structdecl-listp
+    :pred struct-declon-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod structdeclor
+  (fty::defprod struct-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of structure declarators [C17:6.7.2.1] [C17:A.2.2]."
     :long
@@ -2568,7 +2568,7 @@
      (xdoc::p
       "This corresponds to <i>struct-declarator</i> in the grammar in [C17].
        This is part of structure declarations,
-       so as discussed in @(tsee structdecl)
+       so as discussed in @(tsee struct-declon)
        arguably a better name would be `member declarators'.")
      (xdoc::p
       "To make this definition simpler,
@@ -2576,29 +2576,29 @@
        even though this is disallowed in the concrete syntax."))
     ((declor? declor-option)
      (expr? const-expr-option))
-    :pred structdeclorp
+    :pred struct-declorp
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist structdeclor-list
+  (fty::deflist struct-declor-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of structure declarators."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Structure declarators are defined in @(tsee structdeclor).
+      "Structure declarators are defined in @(tsee struct-declor).
        This fixtype corresponds to <i>struct-declarator-list</i>
        in the grammar in [C17]."))
-    :elt-type structdeclor
+    :elt-type struct-declor
     :true-listp t
     :elementp-of-nil nil
-    :pred structdeclor-listp
+    :pred struct-declor-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod enumspec
+  (fty::defprod enum-spec
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of enumeration specifiers [C17:6.7.2.2] [C17:A.2.2]."
     :long
@@ -2612,7 +2612,7 @@
     ((name ident-option)
      (list enumer-list)
      (final-comma bool))
-    :pred enumspecp
+    :pred enum-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

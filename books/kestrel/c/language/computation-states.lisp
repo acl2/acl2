@@ -1179,6 +1179,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled objdesign-of-var-of-enter-scope
+  :short "How @(tsee objdesign-of-var) changes under @(tsee enter-scope)."
+  (equal (objdesign-of-var var (enter-scope compst))
+         (objdesign-of-var var compst))
+  :enable (objdesign-of-var
+           objdesign-of-var-aux
+           enter-scope
+           pop-frame
+           push-frame
+           top-frame
+           compustate-frames-number
+           len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection objdesign-of-var-of-create-var
   :short "How @(tsee objdesign-of-var) changes under @(tsee create-var)."
 
@@ -1490,6 +1505,24 @@
              read-object-top-auto-of-pop-frame)
     :use objdesign-kind-of-objdesign-top
     :disable objdesign-kind-of-objdesign-top))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled read-object-of-enter-scope
+  :short "Invariance of @(tsee read-object) under @(tsee enter-scope)."
+  (implies (not (errorp (read-object objdes compst)))
+           (equal (read-object objdes (enter-scope compst))
+                  (read-object objdes compst)))
+  :induct t
+  :enable (read-object
+           enter-scope
+           push-frame
+           pop-frame
+           top-frame
+           compustate-frames-number
+           nth
+           len
+           fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

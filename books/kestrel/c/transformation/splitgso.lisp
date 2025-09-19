@@ -209,8 +209,8 @@
 
 ;; split global struct type
 
-(define structdeclor-list-get-ident
-  ((structdeclors structdeclor-listp))
+(define struct-declor-list-get-ident
+  ((structdeclors struct-declor-listp))
   :returns (mv (er? maybe-msgp)
                (ident identp))
   (b* (((reterr) (c$::irr-ident))
@@ -221,7 +221,7 @@
         (retmsg$ "Multiple struct declarators in a single struct declaration
                   are unsupported: ~x0"
                  structdeclors))
-       ((structdeclor structdeclor) (first structdeclors))
+       ((struct-declor structdeclor) (first structdeclors))
        ((when structdeclor.expr?)
         (retmsg$ "Bit-field struct declarator is unsupported: ~x0"
                  structdeclor.expr?))
@@ -231,42 +231,42 @@
                  structdeclor)))
     (retok (declor->ident structdeclor.declor?))))
 
-(define structdecl-member-in-listp
+(define struct-declon-member-in-listp
   ((names ident-listp)
-   (structdecl structdeclp))
+   (struct-declon struct-declonp))
   :returns (mv (er? maybe-msgp)
                (yes/no booleanp
                        :rule-classes :type-prescription))
   (b* (((reterr) nil))
-    (structdecl-case
-      structdecl
+    (struct-declon-case
+      struct-declon
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
       :member (b* (((erp ident)
-                    (structdeclor-list-get-ident structdecl.declor)))
+                    (struct-declor-list-get-ident struct-declon.declor)))
                 (retok (and (member-equal ident names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"
-                           structdecl.unwrap)
+                           struct-declon.unwrap)
       :empty (retok nil))))
 
-(define split-structdecl-list
+(define split-struct-declon-list
   ((split-members ident-listp)
-   (structdecls structdecl-listp))
+   (struct-declons struct-declon-listp))
   :returns (mv (er? maybe-msgp)
-               (structdecls1 structdecl-listp)
-               (structdecls2 structdecl-listp))
+               (struct-declons1 struct-declon-listp)
+               (struct-declons2 struct-declon-listp))
   (b* (((reterr) nil nil)
-       ((when (endp structdecls))
+       ((when (endp struct-declons))
         (retok nil nil))
-       (structdecl (structdecl-fix (first structdecls)))
+       (struct-declon (struct-declon-fix (first struct-declons)))
        ((erp split)
-        (structdecl-member-in-listp split-members structdecl))
-       ((erp structdecls1 structdecls2)
-        (split-structdecl-list split-members (rest structdecls))))
+        (struct-declon-member-in-listp split-members struct-declon))
+       ((erp struct-declons1 struct-declons2)
+        (split-struct-declon-list split-members (rest struct-declons))))
     (if split
-        (retok structdecls1 (cons structdecl structdecls2))
-      (retok (cons structdecl structdecls1) structdecls2))))
+        (retok struct-declons1 (cons struct-declon struct-declons2))
+      (retok (cons struct-declon struct-declons1) struct-declons2))))
 
 (define all-no-init
   ((initdeclors initdeclor-listp))
@@ -305,8 +305,8 @@
                              ((erp remanining-struct-decls split-struct-decls)
                               ;; TODO: also check that split-members are
                               ;;   all in the struct.
-                              (split-structdecl-list split-members
-                                                     struni-spec.members))
+                              (split-struct-declon-list split-members
+                                                        struni-spec.members))
                              (new1 (or new1 struni-spec.name? (ident "new_struct")))
                              (new2 (or new2 struni-spec.name? (ident "new_struct")))
                              ((list new1 new2)

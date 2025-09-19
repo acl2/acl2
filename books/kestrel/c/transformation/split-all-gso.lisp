@@ -35,32 +35,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-get-ident
-  ((structdecl structdeclp))
+(define struct-declon-get-ident
+  ((struct-declon struct-declonp))
   :returns (ident? ident-optionp)
-  (structdecl-case
-   structdecl
+  (struct-declon-case
+   struct-declon
    ;; TODO: properly handle struct declarations with multiple declarators
    ;;   instead of returning error.
    :member (b* (((mv erp ident)
-                 (structdeclor-list-get-ident structdecl.declor)))
+                 (struct-declor-list-get-ident struct-declon.declor)))
              (if erp
                  nil
                ident))
    :statassert nil
    :empty nil))
 
-;; TODO: needs to ensure that structdecls doesn't contain static asserts or empty
-(define structdecls-find-first-field-name
-  ((structdecls structdecl-listp))
+;; TODO: needs to ensure that struct-declons doesn't contain static asserts or empty
+(define struct-declons-find-first-field-name
+  ((struct-declons struct-declon-listp))
   :returns (ident? ident-optionp)
-  (b* (((when (or (endp structdecls)
-                  (endp (rest structdecls))))
+  (b* (((when (or (endp struct-declons)
+                  (endp (rest struct-declons))))
         nil)
-       (structdecl (structdecl-fix (first structdecls)))
-       (ident? (structdecl-get-ident structdecl)))
+       (struct-declon (struct-declon-fix (first struct-declons)))
+       (ident? (struct-declon-get-ident struct-declon)))
     (or ident?
-        (structdecls-find-first-field-name (rest structdecls)))))
+        (struct-declons-find-first-field-name (rest struct-declons)))))
 
 (define decl-find-first-field-name
   ((decl declp)
@@ -76,7 +76,7 @@
        type-spec?
        :struct (b* (((struni-spec struni-spec) type-spec?.spec))
                  (if (equal struni-spec.name? struct-tag)
-                     (structdecls-find-first-field-name struni-spec.members)
+                     (struct-declons-find-first-field-name struni-spec.members)
                    nil))
        :otherwise nil))
    :statassert nil))

@@ -15,13 +15,12 @@
 (include-book "abstract-syntax")
 (include-book "preprocess-file")
 (include-book "parsing")
-(include-book "unambiguity")
+(include-book "disambiguation")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
 (include-book "builtin")
-(include-book "disambiguator")
 (include-book "validator")
 (include-book "printer")
 (include-book "input-files")
@@ -30,6 +29,7 @@
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
+(include-book "compilation-db")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,12 +192,11 @@
                     abstract-syntax
                     preprocessing
                     parsing
-                    unambiguity
+                    disambiguation
                     validation-information
                     ascii-identifiers
                     standard
                     purity
-                    disambiguator
                     validator
                     printer
                     input-files

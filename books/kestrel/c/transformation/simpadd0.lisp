@@ -1196,13 +1196,15 @@
                          (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
-           (vartys-lemma-instances
-            (simpadd0-expr-asg-lemma-instances gin.vartys cvar old-arg2))
            (hints
             `(("Goal"
                :in-theory
                '((:e c::expr-kind)
                  (:e c::expr-ident)
+                 (:e c::expr-ident->get)
+                 (:e c::expr-binary->op)
+                 (:e c::expr-binary->arg1)
+                 (:e c::expr-binary->arg2)
                  (:e c::expr-binary)
                  (:e c::binop-asg)
                  (:e c::ident)
@@ -1211,7 +1213,8 @@
                  c::not-errorp-when-compustate-has-var-with-type-p
                  c::type-of-value-when-compustate-has-var-with-type-p
                  c::valuep-of-read-object-of-objdesign-of-var
-                 c::not-errorp-when-valuep)
+                 c::not-errorp-when-valuep
+                 expr-binary-asg-compustate-vars)
                :use (,arg1-thm-name
                      ,arg2-thm-name
                      (:instance
@@ -1223,8 +1226,7 @@
                       expr-binary-asg-errors
                       (var ',cvar)
                       (expr ',old-arg2)
-                      (fenv old-fenv))
-                     ,@vartys-lemma-instances))))
+                      (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-asg-thm expr
                               expr-new
@@ -1238,27 +1240,6 @@
                                 :thm-name thm-name
                                 :vartys gin.vartys))))
      (t (mv expr-new gout-no-thm))))
-
-  :prepwork
-  ((define simpadd0-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
-                                              (asg-var c::identp)
-                                              (asg-expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance expr-binary-asg-compustate-vars
-                       (var ',asg-var)
-                       (expr ',asg-expr)
-                       (fenv old-fenv)
-                       (var1 ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-expr-asg-lemma-instances (omap::tail vartys)
-                                              asg-var
-                                              asg-expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -1468,18 +1449,19 @@
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '((:e c::expr-kind)
+           :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
-                        (:e c::type-nonchar-integerp))
+                        (:e c::initer-single->get)
+                        (:e c::expr-kind)
+                        (:e c::type-nonchar-integerp)
+                        initer-single-pure-compustate-vars)
            :use ((:instance ,expr-thm-name)
                  (:instance initer-single-pure-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
                  (:instance initer-single-pure-errors
                             (expr ',old-expr)
-                            (fenv old-fenv))
-                 ,@(simpadd0-initer-single-pure-lemma-instances
-                    gin.vartys old-expr)))))
+                            (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-initer-single-thm initer
                                initer-new
@@ -1492,24 +1474,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-initer-single-pure-lemma-instances
-     ((vartys c::ident-type-mapp) (expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance initer-single-pure-compustate-vars
-                       (expr ',expr)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-initer-single-pure-lemma-instances (omap::tail vartys)
-                                                        expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -1571,9 +1535,12 @@
        (hints
         (if expr?
             `(("Goal"
-               :in-theory '((:e c::expr-kind)
+               :in-theory '((:e c::stmt-kind)
+                            (:e c::stmt-expr->get)
                             (:e c::stmt-expr)
-                            (:e set::insert))
+                            (:e c::expr-kind)
+                            (:e set::insert)
+                            stmt-expr-asg-compustate-vars)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
@@ -1584,16 +1551,15 @@
                      (:instance
                       stmt-expr-asg-errors
                       (expr ',old-expr?)
-                      (fenv old-fenv))
-                     ,@(simpadd0-stmt-expr-asg-lemma-instances
-                        gin.vartys old-expr?))))
+                      (fenv old-fenv)))))
           `(("Goal"
-             :in-theory '((:e c::stmt-null)
+             :in-theory '((:e c::stmt-kind)
+                          (:e c::stmt-null)
                           c::type-option-of-stmt-value
                           (:e set::in)
-                          (:e set::insert))
-             :use (stmt-null-congruence
-                   ,@(simpadd0-stmt-null-lemma-instances gin.vartys))))))
+                          (:e set::insert)
+                          stmt-null-compustate-vars)
+             :use (stmt-null-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1607,38 +1573,6 @@
                             :thm-name thm-name
                             :vartys gin.vartys)))
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
-
-  :prepwork
-
-  ((define simpadd0-stmt-null-lemma-instances ((vartys c::ident-type-mapp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-null-compustate-vars
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-null-lemma-instances (omap::tail vartys))))
-       (cons lemma-instance lemma-instances)))
-
-   (define simpadd0-stmt-expr-asg-lemma-instances ((vartys c::ident-type-mapp)
-                                                   (expr c::exprp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-expr-asg-compustate-vars
-                       (expr ',expr)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-expr-asg-lemma-instances (omap::tail vartys) expr)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -1700,15 +1634,16 @@
         (mv stmt-new (simpadd0-gout-no-thm gin)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
-       (vartys-lemma-instances
-        (simpadd0-stmt-return-lemma-instances gin.vartys old-expr?))
        (hints
         (if expr?
             `(("Goal"
                :in-theory '((:e set::insert)
+                            (:e c::stmt-kind)
                             (:e c::stmt-return)
+                            (:e c::stmt-return->value)
                             (:e c::expr-kind)
-                            (:e c::type-nonchar-integerp))
+                            (:e c::type-nonchar-integerp)
+                            stmt-return-compustate-vars)
                :use (,expr?-thm-name
                      (:instance
                       stmt-return-value-congruence
@@ -1717,14 +1652,13 @@
                      (:instance
                       stmt-return-errors
                       (expr ',old-expr?)
-                      (fenv old-fenv))
-                     ,@vartys-lemma-instances)))
+                      (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e c::stmt-return)
                           (:e c::type-void)
-                          (:e set::insert))
-             :use (stmt-return-novalue-congruence
-                   ,@vartys-lemma-instances)))))
+                          (:e set::insert)
+                          stmt-return-compustate-vars)
+             :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1737,23 +1671,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-return-lemma-instances ((vartys c::ident-type-mapp)
-                                                 (expr? c::expr-optionp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-return-compustate-vars
-                       (expr? ',expr?)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-return-lemma-instances (omap::tail vartys) expr?)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -1768,37 +1685,6 @@
   (defret stmt-aidentp-of-simpadd0-stmt-return
     (stmt-aidentp stmt gcc)
     :hyp (expr-option-aidentp expr?-new gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define simpadd0-stmt-compound ((items block-item-listp)
-                                (items-new block-item-listp)
-                                (items-thm-name symbolp)
-                                (gin simpadd0-ginp))
-  :guard (and (block-item-list-unambp items)
-              (block-item-list-annop items)
-              (block-item-list-unambp items-new)
-              (block-item-list-annop items-new))
-  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
-  :short "Transform a compound statement."
-  (declare (ignore items items-thm-name))
-  (b* (((simpadd0-gin gin) gin)
-       (stmt-new (stmt-compound items-new)))
-    (mv stmt-new (simpadd0-gout-no-thm gin)))
-
-  ///
-
-  (defret stmt-unambp-of-simpadd0-stmt-compound
-    (stmt-unambp stmt)
-    :hyp (block-item-list-unambp items-new))
-
-  (defret stmt-annop-of-simpadd0-stmt-compound
-    (stmt-annop stmt)
-    :hyp (block-item-list-annop items-new))
-
-  (defret stmt-aidentp-of-simpadd0-stmt-compound
-    (stmt-aidentp stmt gcc)
-    :hyp (block-item-list-aidentp items-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1833,11 +1719,18 @@
        ((mv & new-then) (ldm-stmt then-new)) ; ERP must be NIL
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::stmt-if)
-                              (:e c::type-nonchar-integerp)
-                              (:e set::insert)
-                              (:e set::subset)
-                              set::subset-in)
+                 :in-theory
+                 '((:e c::stmt-kind)
+                   (:e c::stmt-if->test)
+                   (:e c::stmt-if->then)
+                   (:e c::stmt-if)
+                   (:e c::type-nonchar-integerp)
+                   (:e set::insert)
+                   (:e set::subset)
+                   set::subset-in
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   stmt-if-compustate-vars)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance
@@ -1862,9 +1755,7 @@
                         stmt-if-then-errors
                         (test ',old-test)
                         (then ',old-then)
-                        (fenv old-fenv))
-                       ,@(simpadd0-stmt-if-lemma-instances
-                          gin.vartys old-test old-then)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -1877,25 +1768,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-if-lemma-instances ((vartys c::ident-type-mapp)
-                                             (test c::exprp)
-                                             (then c::stmtp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-if-compustate-vars
-                       (test ',test)
-                       (then ',then)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-if-lemma-instances (omap::tail vartys) test then)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -1960,11 +1832,19 @@
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
        ((mv & else-ctypes) (ldm-type-option-set else-types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::stmt-ifelse)
-                              (:e c::type-nonchar-integerp)
-                              (:e set::insert)
-                              (:e set::subset)
-                              set::subset-in)
+                 :in-theory
+                 '((:e c::stmt-kind)
+                   (:e c::stmt-ifelse->test)
+                   (:e c::stmt-ifelse->then)
+                   (:e c::stmt-ifelse->else)
+                   (:e c::stmt-ifelse)
+                   (:e c::type-nonchar-integerp)
+                   (:e set::insert)
+                   (:e set::subset)
+                   set::subset-in
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   stmt-ifelse-compustate-vars)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance ,else-thm-name (limit (1- limit)))
@@ -2003,9 +1883,7 @@
                         (test ',old-test)
                         (then ',old-then)
                         (else ',old-else)
-                        (fenv old-fenv))
-                       ,@(simpadd0-stmt-ifelse-lemma-instances
-                          gin.vartys old-test old-then old-else)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2018,28 +1896,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-stmt-ifelse-lemma-instances ((vartys c::ident-type-mapp)
-                                                 (test c::exprp)
-                                                 (then c::stmtp)
-                                                 (else c::stmtp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance stmt-ifelse-compustate-vars
-                       (test ',test)
-                       (then ',then)
-                       (else ',else)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-stmt-ifelse-lemma-instances
-            (omap::tail vartys) test then else)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2060,6 +1916,71 @@
     :hyp (and (expr-aidentp test-new gcc)
               (stmt-aidentp then-new gcc)
               (stmt-aidentp else-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-stmt-compound ((items block-item-listp)
+                                (items-new block-item-listp)
+                                (items-thm-name symbolp)
+                                (gin simpadd0-ginp))
+  :guard (and (block-item-list-unambp items)
+              (block-item-list-annop items)
+              (block-item-list-unambp items-new)
+              (block-item-list-annop items-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform a compound statement."
+  (b* (((simpadd0-gin gin) gin)
+       (stmt (stmt-compound items))
+       (stmt-new (stmt-compound items-new))
+       ((unless items-thm-name)
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
+       (types (block-item-list-types items))
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-compound)
+                        (:e c::stmt-kind)
+                        c::compustate-frames-number-of-enter-scope
+                        c::compustate-has-var-with-type-p-of-enter-scope
+                        stmt-compound-compustate-vars)
+           :use ((:instance ,items-thm-name
+                            (compst (c::enter-scope compst))
+                            (limit (1- limit)))
+                 (:instance stmt-compound-congruence
+                            (old-items ',old-items)
+                            (new-items ',new-items)
+                            (types ',ctypes))
+                 (:instance stmt-compound-errors
+                            (items ',old-items)
+                            (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-compound
+    (stmt-unambp stmt)
+    :hyp (block-item-list-unambp items-new))
+
+  (defret stmt-annop-of-simpadd0-stmt-compound
+    (stmt-annop stmt)
+    :hyp (block-item-list-annop items-new))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-compound
+    (stmt-aidentp stmt gcc)
+    :hyp (block-item-list-aidentp items-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2148,11 +2069,22 @@
        ((mv & new-initer) (ldm-initer initer-new))
        (vartys-post (omap::update cvar ctype gin.vartys))
        (hints `(("Goal"
-                 :in-theory '((:e c::obj-declor-ident)
-                              (:e c::scspecseq-none)
-                              (:e c::obj-declon)
-                              (:e c::tyspecseq-to-type)
-                              (:e c::identp))
+                 :in-theory
+                 '((:e c::obj-declon->scspec)
+                   (:e c::obj-declon->tyspec)
+                   (:e c::obj-declon->declor)
+                   (:e c::obj-declon->init?)
+                   (:e c::obj-declon)
+                   (:e c::obj-declor-kind)
+                   (:e c::obj-declor-ident->get)
+                   (:e c::obj-declor-ident)
+                   (:e c::scspecseq-none)
+                   (:e c::tyspecseq-to-type)
+                   (:e c::identp)
+                   c::compustate-frames-number-of-exec-initer
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   decl-decl-compustate-vars-old
+                   decl-decl-compustate-vars-new)
                  :use ((:instance ,init-thm-name (limit (1- limit)))
                        (:instance
                         decl-decl-congruence
@@ -2162,14 +2094,6 @@
                         (new-initer ',new-initer))
                        (:instance
                         decl-decl-errors
-                        (var ',cvar)
-                        (tyspecs ',ctyspecs)
-                        (initer ',old-initer)
-                        (fenv old-fenv))
-                       ,@(simpadd0-decl-decl-lemma-instances
-                          gin.vartys cvar ctyspecs old-initer)
-                       (:instance
-                        decl-decl-compustate-vars-new
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
@@ -2191,28 +2115,6 @@
                                            initdeclor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
-
-  :prepwork
-  ((define simpadd0-decl-decl-lemma-instances ((vartys c::ident-type-mapp)
-                                               (var c::identp)
-                                               (tyspecs c::tyspecseqp)
-                                               (initer c::initerp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var1 type) (omap::head vartys))
-          (lemma-instance
-           `(:instance decl-decl-compustate-vars-old
-                       (var1 ',var1)
-                       (var ',var)
-                       (type ',type)
-                       (tyspecs ',tyspecs)
-                       (initer ',initer)
-                       (fenv old-fenv)))
-          (lemma-instances
-           (simpadd0-decl-decl-lemma-instances
-            (omap::tail vartys) var tyspecs initer)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2258,7 +2160,13 @@
        ((mv & new-stmt) (ldm-stmt stmt-new)) ; ERP must be NIL
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::block-item-stmt))
+                 :in-theory
+                 '((:e c::block-item-stmt)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-stmt->get)
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-stmt-compustate-vars)
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         block-item-stmt-congruence
@@ -2268,9 +2176,7 @@
                        (:instance
                         block-item-stmt-errors
                         (stmt ',old-stmt)
-                        (fenv old-fenv))
-                       ,@(simpadd0-block-item-stmt-lemma-instances
-                          gin.vartys old-stmt)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2284,23 +2190,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-block-item-stmt-lemma-instances ((vartys c::ident-type-mapp)
-                                                     (stmt c::stmtp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-stmt-compustate-vars
-                       (stmt ',stmt)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-stmt-lemma-instances (omap::tail vartys) stmt)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2343,8 +2232,14 @@
        ((mv & old-declon) (ldm-decl-obj decl)) ; ERP must be NIL
        ((mv & new-declon) (ldm-decl-obj decl-new)) ; ERP must be NIL
        (hints `(("Goal"
-                 :in-theory '((:e c::block-item-declon)
-                              (:e set::insert))
+                 :in-theory
+                 '((:e c::block-item-declon)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-declon->get)
+                   (:e set::insert)
+                   c::compustate-frames-number-of-exec-obj-declon
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-decl-compustate-vars)
                  :use ((:instance ,decl-thm-name (limit (1- limit)))
                        (:instance
                         block-item-decl-congruence
@@ -2353,9 +2248,7 @@
                        (:instance
                         block-item-decl-errors
                         (declon ',old-declon)
-                        (fenv old-fenv))
-                       ,@(simpadd0-block-item-decl-lemma-instances
-                          vartys-post old-declon)))))
+                        (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-thm item
                             item-new
@@ -2373,23 +2266,6 @@
                                            initdeclor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
-
-  :prepwork
-  ((define simpadd0-block-item-decl-lemma-instances ((vartys c::ident-type-mapp)
-                                                     (decl c::obj-declonp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-decl-compustate-vars
-                       (var ',var)
-                       (type ',type)
-                       (declon ',decl)
-                       (fenv old-fenv)))
-          (lemma-instances
-           (simpadd0-block-item-decl-lemma-instances (omap::tail vartys) decl)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -2419,10 +2295,9 @@
   (b* (((simpadd0-gin gin) gin)
        (items nil)
        (hints `(("Goal"
-                 :in-theory '((:e set::insert))
-                 :use (block-item-list-empty-congruence
-                       ,@(simpadd0-block-item-list-empty-lemma-instances
-                          gin.vartys)))))
+                 :in-theory '((:e set::insert)
+                              block-item-list-empty-compustate-vars)
+                 :use (block-item-list-empty-congruence))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
@@ -2434,23 +2309,7 @@
                         :thm-index thm-index
                         :thm-name thm-name
                         :vartys gin.vartys))
-  :hooks (:fix)
-
-  :prepwork
-  ((define simpadd0-block-item-list-empty-lemma-instances
-     ((vartys c::ident-type-mapp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-list-empty-compustate-vars
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-list-empty-lemma-instances (omap::tail vartys))))
-       (cons lemma-instance lemma-instances)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2501,9 +2360,13 @@
        ((mv & rest-ctypes) (ldm-type-option-set rest-types)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory '(c::stmt-value-kind-possibilities
-                        (:e set::delete)
-                        (:e set::union))
+           :in-theory
+           '(c::stmt-value-kind-possibilities
+             (:e set::delete)
+             (:e set::union)
+             c::compustate-frames-number-of-exec-block-item
+             c::compustatep-when-compustate-resultp-and-not-errorp
+             block-item-list-cons-compustate-vars)
            :use ((:instance
                   ,item-thm-name
                   (limit (1- limit)))
@@ -2538,9 +2401,7 @@
                   block-item-list-cons-rest-errors
                   (item ',old-item)
                   (items ',old-items)
-                  (fenv old-fenv))
-                 ,@(simpadd0-block-item-list-cons-lemma-instances
-                    gin.vartys old-item old-items)))))
+                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm item+items
                                  item+items-new
@@ -2553,28 +2414,6 @@
                             :thm-index thm-index
                             :thm-name thm-name
                             :vartys gin.vartys)))
-
-  :prepwork
-  ((define simpadd0-block-item-list-cons-lemma-instances
-     ((vartys c::ident-type-mapp)
-      (item c::block-itemp)
-      (items c::block-item-listp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (omap::emptyp vartys)) nil)
-          ((mv var type) (omap::head vartys))
-          (lemma-instance
-           `(:instance block-item-list-cons-compustate-vars
-                       (item ',item)
-                       (items ',items)
-                       (fenv old-fenv)
-                       (var ',var)
-                       (type ',type)))
-          (lemma-instances
-           (simpadd0-block-item-list-cons-lemma-instances (omap::tail vartys)
-                                                          item
-                                                          items)))
-       (cons lemma-instance lemma-instances))))
 
   ///
 
@@ -3021,7 +2860,7 @@
                 (mv (type-spec-union new-spec)
                     (simpadd0-gout-no-thm gin)))
        :enum (b* (((mv new-spec (simpadd0-gout gout-spec))
-                   (simpadd0-enumspec tyspec.spec gin))
+                   (simpadd0-enum-spec tyspec.spec gin))
                   (gin (simpadd0-gin-update gin gout-spec)))
                (mv (type-spec-enum new-spec)
                    (simpadd0-gout-no-thm gin)))
@@ -3688,7 +3527,7 @@
     (b* (((simpadd0-gin gin) gin)
          ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
-          (simpadd0-structdecl-list struni-spec.members gin))
+          (simpadd0-struct-declon-list struni-spec.members gin))
          (gin (simpadd0-gin-update gin gout-members)))
       (mv (make-struni-spec :name? struni-spec.name?
                             :members new-members)
@@ -3697,90 +3536,90 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdecl ((structdecl structdeclp)
-                               (gin simpadd0-ginp))
-    :guard (and (structdecl-unambp structdecl)
-                (structdecl-annop structdecl))
-    :returns (mv (new-structdecl structdeclp)
+  (define simpadd0-struct-declon ((structdeclon struct-declonp)
+                                  (gin simpadd0-ginp))
+    :guard (and (struct-declon-unambp structdeclon)
+                (struct-declon-annop structdeclon))
+    :returns (mv (new-structdeclon struct-declonp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure declaration."
     (b* (((simpadd0-gin gin) gin))
-      (structdecl-case
-       structdecl
+      (struct-declon-case
+       structdeclon
        :member (b* (((mv new-specqual (simpadd0-gout gout-specqual))
-                     (simpadd0-spec/qual-list structdecl.specqual gin))
+                     (simpadd0-spec/qual-list structdeclon.specqual gin))
                     (gin (simpadd0-gin-update gin gout-specqual))
                     ((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-structdeclor-list structdecl.declor gin))
+                     (simpadd0-struct-declor-list structdeclon.declor gin))
                     (gin (simpadd0-gin-update gin gout-declor)))
-                 (mv (make-structdecl-member
-                      :extension structdecl.extension
+                 (mv (make-struct-declon-member
+                      :extension structdeclon.extension
                       :specqual new-specqual
                       :declor new-declor
-                      :attrib structdecl.attrib)
+                      :attrib structdeclon.attrib)
                      (simpadd0-gout-no-thm gin)))
-       :statassert (b* (((mv new-structdecl (simpadd0-gout gout-structdecl))
-                         (simpadd0-statassert structdecl.unwrap gin))
-                        (gin (simpadd0-gin-update gin gout-structdecl)))
-                     (mv (structdecl-statassert new-structdecl)
+       :statassert (b* (((mv new-structdeclon (simpadd0-gout gout-structdeclon))
+                         (simpadd0-statassert structdeclon.unwrap gin))
+                        (gin (simpadd0-gin-update gin gout-structdeclon)))
+                     (mv (struct-declon-statassert new-structdeclon)
                          (simpadd0-gout-no-thm gin)))
-       :empty (mv (structdecl-empty) (simpadd0-gout-no-thm gin))))
-    :measure (structdecl-count structdecl))
+       :empty (mv (struct-declon-empty) (simpadd0-gout-no-thm gin))))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdecl-list ((structdecls structdecl-listp)
-                                    (gin simpadd0-ginp))
-    :guard (and (structdecl-list-unambp structdecls)
-                (structdecl-list-annop structdecls))
-    :returns (mv (new-structdecls structdecl-listp)
+  (define simpadd0-struct-declon-list ((structdeclons struct-declon-listp)
+                                       (gin simpadd0-ginp))
+    :guard (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-annop structdeclons))
+    :returns (mv (new-structdeclons struct-declon-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of structure declarations."
     (b* (((simpadd0-gin gin) gin)
-         ((when (endp structdecls))
+         ((when (endp structdeclons))
           (mv nil (simpadd0-gout-no-thm gin)))
-         ((mv new-structdecl (simpadd0-gout gout-structdecl))
-          (simpadd0-structdecl (car structdecls) gin))
-         (gin (simpadd0-gin-update gin gout-structdecl))
-         ((mv new-structdecls (simpadd0-gout gout-structdecls))
-          (simpadd0-structdecl-list (cdr structdecls) gin))
-         (gin (simpadd0-gin-update gin gout-structdecls)))
-      (mv (cons new-structdecl new-structdecls)
+         ((mv new-structdeclon (simpadd0-gout gout-structdeclon))
+          (simpadd0-struct-declon (car structdeclons) gin))
+         (gin (simpadd0-gin-update gin gout-structdeclon))
+         ((mv new-structdeclons (simpadd0-gout gout-structdeclons))
+          (simpadd0-struct-declon-list (cdr structdeclons) gin))
+         (gin (simpadd0-gin-update gin gout-structdeclons)))
+      (mv (cons new-structdeclon new-structdeclons)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdeclor ((structdeclor structdeclorp)
-                                 (gin simpadd0-ginp))
-    :guard (and (structdeclor-unambp structdeclor)
-                (structdeclor-annop structdeclor))
-    :returns (mv (new-structdeclor structdeclorp)
+  (define simpadd0-struct-declor ((structdeclor struct-declorp)
+                                  (gin simpadd0-ginp))
+    :guard (and (struct-declor-unambp structdeclor)
+                (struct-declor-annop structdeclor))
+    :returns (mv (new-structdeclor struct-declorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure declarator."
     (b* (((simpadd0-gin gin) gin)
-         ((structdeclor structdeclor) structdeclor)
+         ((struct-declor structdeclor) structdeclor)
          ((mv new-declor? (simpadd0-gout gout-declor?))
           (simpadd0-declor-option structdeclor.declor? gin))
          (gin (simpadd0-gin-update gin gout-declor?))
          ((mv new-expr? (simpadd0-gout gout-expr?))
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (simpadd0-gin-update gin gout-expr?)))
-      (mv (make-structdeclor :declor? new-declor?
-                             :expr? new-expr?)
+      (mv (make-struct-declor :declor? new-declor?
+                              :expr? new-expr?)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-structdeclor-list ((structdeclors structdeclor-listp)
-                                      (gin simpadd0-ginp))
-    :guard (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-annop structdeclors))
-    :returns (mv (new-structdeclors structdeclor-listp)
+  (define simpadd0-struct-declor-list ((structdeclors struct-declor-listp)
+                                       (gin simpadd0-ginp))
+    :guard (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-annop structdeclors))
+    :returns (mv (new-structdeclors struct-declor-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of structure declarators."
@@ -3788,34 +3627,34 @@
          ((when (endp structdeclors))
           (mv nil (simpadd0-gout-no-thm gin)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
-          (simpadd0-structdeclor (car structdeclors) gin))
+          (simpadd0-struct-declor (car structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclor))
          ((mv new-structdeclors (simpadd0-gout gout-structdeclors))
-          (simpadd0-structdeclor-list (cdr structdeclors) gin))
+          (simpadd0-struct-declor-list (cdr structdeclors) gin))
          (gin (simpadd0-gin-update gin gout-structdeclors)))
       (mv (cons new-structdeclor new-structdeclors)
           (simpadd0-gout-no-thm gin)))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumspec ((enumspec enumspecp) (gin simpadd0-ginp))
-    :guard (and (enumspec-unambp enumspec)
-                (enumspec-annop enumspec))
-    :returns (mv (new-enumspec enumspecp)
+  (define simpadd0-enum-spec ((enumspec enum-specp) (gin simpadd0-ginp))
+    :guard (and (enum-spec-unambp enumspec)
+                (enum-spec-annop enumspec))
+    :returns (mv (new-enumspec enum-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an enumeration specifier."
     (b* (((simpadd0-gin gin) gin)
-         ((enumspec enumspec) enumspec)
+         ((enum-spec enumspec) enumspec)
          ((mv new-list (simpadd0-gout gout-list))
           (simpadd0-enumer-list enumspec.list gin))
          (gin (simpadd0-gin-update gin gout-list)))
-      (mv (make-enumspec :name enumspec.name
-                         :list new-list
-                         :final-comma enumspec.final-comma)
+      (mv (make-enum-spec :name enumspec.name
+                          :list new-list
+                          :final-comma enumspec.final-comma)
           (simpadd0-gout-no-thm gin)))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4381,21 +4220,21 @@
     (defret struni-spec-unambp-of-simpadd0-struni-spec
       (struni-spec-unambp new-struni-spec)
       :fn simpadd0-struni-spec)
-    (defret structdecl-unambp-of-simpadd0-structdecl
-      (structdecl-unambp new-structdecl)
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-unambp-of-simpadd0-structdecl-list
-      (structdecl-list-unambp new-structdecls)
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-unambp-of-simpadd0-structdeclor
-      (structdeclor-unambp new-structdeclor)
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-unambp-of-simpadd0-structdeclor-list
-      (structdeclor-list-unambp new-structdeclors)
-      :fn simpadd0-structdeclor-list)
-    (defret enumspec-unambp-of-simpadd0-enumspec
-      (enumspec-unambp new-enumspec)
-      :fn simpadd0-enumspec)
+    (defret struct-declon-unambp-of-simpadd0-struct-declon
+      (struct-declon-unambp new-structdeclon)
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-unambp-of-simpadd0-struct-declon-list
+      (struct-declon-list-unambp new-structdeclons)
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-unambp-of-simpadd0-struct-declor
+      (struct-declor-unambp new-structdeclor)
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-unambp-of-simpadd0-struct-declor-list
+      (struct-declor-list-unambp new-structdeclors)
+      :fn simpadd0-struct-declor-list)
+    (defret enum-spec-unambp-of-simpadd0-enum-spec
+      (enum-spec-unambp new-enumspec)
+      :fn simpadd0-enum-spec)
     (defret enumer-unambp-of-simpadd0-enumer
       (enumer-unambp new-enumer)
       :fn simpadd0-enumer)
@@ -4460,11 +4299,11 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
-                                       simpadd0-enumspec
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
@@ -4648,31 +4487,31 @@
       :hyp (and (struni-spec-unambp struni-spec)
                 (struni-spec-annop struni-spec))
       :fn simpadd0-struni-spec)
-    (defret structdecl-annop-of-simpadd0-structdecl
-      (structdecl-annop new-structdecl)
-      :hyp (and (structdecl-unambp structdecl)
-                (structdecl-annop structdecl))
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-annop-of-simpadd0-structdecl-list
-      (structdecl-list-annop new-structdecls)
-      :hyp (and (structdecl-list-unambp structdecls)
-                (structdecl-list-annop structdecls))
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-annop-of-simpadd0-structdeclor
-      (structdeclor-annop new-structdeclor)
-      :hyp (and (structdeclor-unambp structdeclor)
-                (structdeclor-annop structdeclor))
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-annop-of-simpadd0-structdeclor-list
-      (structdeclor-list-annop new-structdeclors)
-      :hyp (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-annop structdeclors))
-      :fn simpadd0-structdeclor-list)
-    (defret enumspec-annop-of-simpadd0-enumspec
-      (enumspec-annop new-enumspec)
-      :hyp (and (enumspec-unambp enumspec)
-                (enumspec-annop enumspec))
-      :fn simpadd0-enumspec)
+    (defret struct-declon-annop-of-simpadd0-struct-declon
+      (struct-declon-annop new-structdeclon)
+      :hyp (and (struct-declon-unambp structdeclon)
+                (struct-declon-annop structdeclon))
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-annop-of-simpadd0-struct-declon-list
+      (struct-declon-list-annop new-structdeclons)
+      :hyp (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-annop structdeclons))
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-annop-of-simpadd0-struct-declor
+      (struct-declor-annop new-structdeclor)
+      :hyp (and (struct-declor-unambp structdeclor)
+                (struct-declor-annop structdeclor))
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-annop-of-simpadd0-struct-declor-list
+      (struct-declor-list-annop new-structdeclors)
+      :hyp (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-annop structdeclors))
+      :fn simpadd0-struct-declor-list)
+    (defret enum-spec-annop-of-simpadd0-enum-spec
+      (enum-spec-annop new-enumspec)
+      :hyp (and (enum-spec-unambp enumspec)
+                (enum-spec-annop enumspec))
+      :fn simpadd0-enum-spec)
     (defret enumer-annop-of-simpadd0-enumer
       (enumer-annop new-enumer)
       :hyp (and (enumer-unambp enumer)
@@ -4759,11 +4598,11 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
-                                       simpadd0-enumspec
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
@@ -4939,31 +4778,31 @@
       :hyp (and (struni-spec-unambp struni-spec)
                 (struni-spec-aidentp struni-spec gcc))
       :fn simpadd0-struni-spec)
-    (defret structdecl-aidentp-of-simpadd0-structdecl
-      (structdecl-aidentp new-structdecl gcc)
-      :hyp (and (structdecl-unambp structdecl)
-                (structdecl-aidentp structdecl gcc))
-      :fn simpadd0-structdecl)
-    (defret structdecl-list-aidentp-of-simpadd0-structdecl-list
-      (structdecl-list-aidentp new-structdecls gcc)
-      :hyp (and (structdecl-list-unambp structdecls)
-                (structdecl-list-aidentp structdecls gcc))
-      :fn simpadd0-structdecl-list)
-    (defret structdeclor-aidentp-of-simpadd0-structdeclor
-      (structdeclor-aidentp new-structdeclor gcc)
-      :hyp (and (structdeclor-unambp structdeclor)
-                (structdeclor-aidentp structdeclor gcc))
-      :fn simpadd0-structdeclor)
-    (defret structdeclor-list-aidentp-of-simpadd0-structdeclor-list
-      (structdeclor-list-aidentp new-structdeclors gcc)
-      :hyp (and (structdeclor-list-unambp structdeclors)
-                (structdeclor-list-aidentp structdeclors gcc))
-      :fn simpadd0-structdeclor-list)
-    (defret enumspec-aidentp-of-simpadd0-enumspec
-      (enumspec-aidentp new-enumspec gcc)
-      :hyp (and (enumspec-unambp enumspec)
-                (enumspec-aidentp enumspec gcc))
-      :fn simpadd0-enumspec)
+    (defret struct-declon-aidentp-of-simpadd0-struct-declon
+      (struct-declon-aidentp new-structdeclon gcc)
+      :hyp (and (struct-declon-unambp structdeclon)
+                (struct-declon-aidentp structdeclon gcc))
+      :fn simpadd0-struct-declon)
+    (defret struct-declon-list-aidentp-of-simpadd0-struct-declon-list
+      (struct-declon-list-aidentp new-structdeclons gcc)
+      :hyp (and (struct-declon-list-unambp structdeclons)
+                (struct-declon-list-aidentp structdeclons gcc))
+      :fn simpadd0-struct-declon-list)
+    (defret struct-declor-aidentp-of-simpadd0-struct-declor
+      (struct-declor-aidentp new-structdeclor gcc)
+      :hyp (and (struct-declor-unambp structdeclor)
+                (struct-declor-aidentp structdeclor gcc))
+      :fn simpadd0-struct-declor)
+    (defret struct-declor-list-aidentp-of-simpadd0-struct-declor-list
+      (struct-declor-list-aidentp new-structdeclors gcc)
+      :hyp (and (struct-declor-list-unambp structdeclors)
+                (struct-declor-list-aidentp structdeclors gcc))
+      :fn simpadd0-struct-declor-list)
+    (defret enum-spec-aidentp-of-simpadd0-enum-spec
+      (enum-spec-aidentp new-enumspec gcc)
+      :hyp (and (enum-spec-unambp enumspec)
+                (enum-spec-aidentp enumspec gcc))
+      :fn simpadd0-enum-spec)
     (defret enumer-aidentp-of-simpadd0-enumer
       (enumer-aidentp new-enumer gcc)
       :hyp (and (enumer-unambp enumer)
@@ -5051,11 +4890,11 @@
                                        simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-struni-spec
-                                       simpadd0-structdecl
-                                       simpadd0-structdecl-list
-                                       simpadd0-structdeclor
-                                       simpadd0-structdeclor-list
-                                       simpadd0-enumspec
+                                       simpadd0-struct-declon
+                                       simpadd0-struct-declon-list
+                                       simpadd0-struct-declor
+                                       simpadd0-struct-declor-list
+                                       simpadd0-enum-spec
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
@@ -5269,7 +5108,9 @@
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
-                        c::errorp-of-error))))
+                        c::errorp-of-error
+                        c::compustate-frames-number-of-push-frame
+                        (:t c::compustate-frames-number)))))
        (thm-event `(defrule ,thm-name
                      ,formula
                      :rule-classes nil

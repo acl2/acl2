@@ -261,20 +261,20 @@
      that the returned @(tsee UID) is now taken."))
   (b* (((valid-table table) table))
     (linkage-case
-      linkage
-      :external (b* ((info? (valid-lookup-ext ident table)))
-                  (valid-ext-info-option-case
-                    info?
-                    :some (mv (valid-ext-info->uid info?.val)
-                              (valid-table-fix table))
-                    :none (mv table.next-uid
-                              (change-valid-table
-                                table
-                                :next-uid (uid-increment table.next-uid)))))
-      :otherwise (mv table.next-uid
-                     (change-valid-table
-                       table
-                       :next-uid (uid-increment table.next-uid)))))
+     linkage
+     :external (b* ((info? (valid-lookup-ext ident table)))
+                 (valid-ext-info-option-case
+                  info?
+                  :some (mv (valid-ext-info->uid info?.val)
+                            (valid-table-fix table))
+                  :none (mv table.next-uid
+                            (change-valid-table
+                             table
+                             :next-uid (uid-increment table.next-uid)))))
+     :otherwise (mv table.next-uid
+                    (change-valid-table
+                     table
+                     :next-uid (uid-increment table.next-uid)))))
   :hooks (:fix)
 
   ///
@@ -305,19 +305,19 @@
   (b* (((valid-table table) table)
        (info? (valid-lookup-ext ident table))
        (new-info
-         (valid-ext-info-option-case
-           info?
-           :some (change-valid-ext-info
-                   info?
-                   :declared-in (insert table.filepath
-                                        (valid-ext-info->declared-in
-                                          info?.val)))
-           :none (make-valid-ext-info
-                   :type type
-                   :declared-in (insert table.filepath nil)
-                   :uid uid)))
+        (valid-ext-info-option-case
+         info?
+         :some (change-valid-ext-info
+                info?
+                :declared-in (insert table.filepath
+                                     (valid-ext-info->declared-in
+                                      info?.val)))
+         :none (make-valid-ext-info
+                :type type
+                :declared-in (insert table.filepath nil)
+                :uid uid)))
        (new-externals
-         (omap::update (ident-fix ident) new-info table.externals)))
+        (omap::update (ident-fix ident) new-info table.externals)))
     (change-valid-table table :externals new-externals))
   :hooks (:fix))
 
@@ -362,13 +362,13 @@
        (table (change-valid-table table :scopes new-scopes))
        (table
          (valid-ord-info-case
-           info
-           :objfun (linkage-case
-                     info.linkage
-                     :external
-                     (valid-update-ext ident info.type info.uid table)
-                     :otherwise table)
-           :otherwise table)))
+          info
+          :objfun (linkage-case
+                   info.linkage
+                   :external
+                   (valid-update-ext ident info.type info.uid table)
+                   :otherwise table)
+          :otherwise table)))
     table)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
   :hooks (:fix))
@@ -404,13 +404,13 @@
        (table (change-valid-table table :scopes new-scopes))
        (table
          (valid-ord-info-case
-           info
-           :objfun (linkage-case
-                     info.linkage
-                     :external
-                     (valid-update-ext ident info.type info.uid table)
-                     :otherwise table)
-           :otherwise table)))
+          info
+          :objfun (linkage-case
+                   info.linkage
+                   :external
+                   (valid-update-ext ident info.type info.uid table)
+                   :otherwise table)
+          :otherwise table)))
     table)
   :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
@@ -434,17 +434,17 @@
         (valid-table-fix table))
        ((mv uid table) (valid-get-fresh-uid (first idents) linkage table)))
     (valid-add-ord-objfuns-file-scope
-      (rest idents)
-      type
-      linkage
-      defstatus
-      (valid-add-ord-file-scope (first idents)
-                                (make-valid-ord-info-objfun
-                                  :type type
-                                  :linkage linkage
-                                  :defstatus defstatus
-                                  :uid uid)
-                                table)))
+     (rest idents)
+     type
+     linkage
+     defstatus
+     (valid-add-ord-file-scope (first idents)
+                               (make-valid-ord-info-objfun
+                                :type type
+                                :linkage linkage
+                                :defstatus defstatus
+                                :uid uid)
+                               table)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -468,12 +468,12 @@
   (b* ((info? (valid-lookup-ord-file-scope ident table)))
     (and info?
          (valid-ord-info-case
-           info?
-           :objfun (linkage-case
-                     info?.linkage
-                     :internal t
-                     :otherwise nil)
-           :otherwise nil)))
+          info?
+          :objfun (linkage-case
+                   info?.linkage
+                   :internal t
+                   :otherwise nil)
+          :otherwise nil)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1024,10 +1024,10 @@
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
-             :of (if (or (not strlit.prefix?)
-                         (eprefix-case strlit.prefix? :locase-u8))
-                     (type-char)
-                   (type-unknown)))))
+            :of (if (or (not strlit.prefix?)
+                        (eprefix-case strlit.prefix? :locase-u8))
+                    (type-char)
+                  (type-unknown)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1082,10 +1082,10 @@
         (retmsg$ "Incompatible prefixes ~x0 in the list of string literals."
                  prefixes)))
     (retok (make-type-array
-             :of (if (or conflictp
-                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
-                     (type-unknown)
-                   (type-char)))))
+            :of (if (or conflictp
+                        (and prefix? (not (eprefix-case prefix? :locase-u8))))
+                    (type-unknown)
+                  (type-char)))))
   :hooks (:fix)
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
@@ -1373,16 +1373,16 @@
   (b* (((reterr) (irr-type))
        (msg (msg$ "In the unary expression ~x0, ~
                    the sub-expression has type ~x1."
-                 (expr-fix expr) (type-fix type-arg))))
+                  (expr-fix expr) (type-fix type-arg))))
     (case (unop-kind op)
       (:address (retok (make-type-pointer :to type-arg)))
       (:indir (b* (((when (type-case type-arg :unknown))
                     (retok (type-unknown)))
                    (type (type-fpconvert (type-apconvert type-arg))))
                 (type-case
-                  type
-                  :pointer (retok type.to)
-                  :otherwise (reterr msg))))
+                 type
+                 :pointer (retok type.to)
+                 :otherwise (reterr msg))))
       ((:plus :minus) (b* (((when (type-case type-arg :unknown))
                             (retok (type-unknown)))
                            ((unless (type-arithmeticp type-arg))
@@ -1492,7 +1492,7 @@
      so it is probably a GCC extension.
      We therefore accept this when the GCC flag of the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-     " is enabled.
+    " is enabled.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -2788,7 +2788,7 @@
       :hints
       (("Goal" :in-theory (e/d (alistp-when-type-option-type-alistp-rewrite)
                                (return-type-of-valid-genassoc-list.type-alist))
-               :use return-type-of-valid-genassoc-list.type-alist))))
+        :use return-type-of-valid-genassoc-list.type-alist))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2983,7 +2983,7 @@
                        table))
        :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp new-spec types table)
-                   (valid-enumspec tyspec.spec table ienv)))
+                   (valid-enum-spec tyspec.spec table ienv)))
                (retok (type-spec-enum new-spec) (type-enum) nil types table))
        :typedef (b* (((unless (endp tyspecs))
                       (reterr msg-bad-preceding))
@@ -3475,8 +3475,8 @@
       :rule-classes :type-prescription
       :hints
       (("Goal"
-         :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
-         :use return-type-of-valid-decl-spec-list.all-storspecs))))
+        :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
+        :use return-type-of-valid-decl-spec-list.all-storspecs))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3767,17 +3767,17 @@
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp desiniters)) (retok nil nil (valid-table-fix table)))
          (target-type
-           (if (type-case
-                 target-type
-                 :array (or (type-case target-type.of :array)
-                            (type-case target-type.of :struct)
-                            (type-case target-type.of :union)
-                            (type-case target-type.of :unknown))
-                 :struct t
-                 :union t
-                 :otherwise nil)
-               (type-unknown)
-             target-type))
+          (if (type-case
+               target-type
+               :array (or (type-case target-type.of :array)
+                          (type-case target-type.of :struct)
+                          (type-case target-type.of :union)
+                          (type-case target-type.of :unknown))
+               :struct t
+               :union t
+               :otherwise nil)
+              (type-unknown)
+            target-type))
          ((erp new-desiniter types table)
           (valid-desiniter (car desiniters) target-type lifetime table ienv))
          ((erp new-desiniters more-types table)
@@ -3829,8 +3829,8 @@
                               (type-case index-type :unknown)))
                   (retmsg$ "The first or only index of the designator ~x0 ~
                             has type ~x1."
-                            (designor-fix designor)
-                            index-type))
+                           (designor-fix designor)
+                           index-type))
                  ((unless (or (not range?-type?)
                               (type-integerp range?-type?)
                               (type-case range?-type? :unknown)))
@@ -3863,8 +3863,8 @@
                               (type-case target-type :union)
                               (type-case target-type :unknown)))
                   (retmsg$ "The target type of the designator ~x0 is ~x1."
-                            (designor-fix designor)
-                            (type-fix target-type))))
+                           (designor-fix designor)
+                           (type-fix target-type))))
               (retok (designor-dot designor.name)
                      (type-unknown)
                      nil
@@ -3913,16 +3913,16 @@
     (b* (((reterr) nil (irr-type) nil (irr-valid-table))
          ((when (endp designors))
           (type-case
-            target-type
-            :array (if (or (type-case target-type.of :function)
-                           (type-case target-type.of :void))
-                       (retmsg$ "The result of applying
+           target-type
+           :array (if (or (type-case target-type.of :function)
+                          (type-case target-type.of :void))
+                      (retmsg$ "The result of applying
                                  the empty designator list
                                  to type ~x0 is ~x1."
-                                (type-fix target-type)
-                                target-type.of)
-                     (retok nil target-type.of nil (valid-table-fix table)))
-            :otherwise (retok nil (type-unknown) nil (valid-table-fix table))))
+                               (type-fix target-type)
+                               target-type.of)
+                    (retok nil target-type.of nil (valid-table-fix table)))
+           :otherwise (retok nil (type-unknown) nil (valid-table-fix table))))
          ((erp new-designor target-type types table)
           (valid-designor (car designors) target-type table ienv))
          ((when (endp (cdr designors)))
@@ -4282,8 +4282,8 @@
        (b* (((when (or (type-case type :function)
                        (type-case type :array)))
              (retmsg$ "The direct declarator ~x0 has type ~x1."
-                       (dirdeclor-fix dirdeclor)
-                       (type-fix type)))
+                      (dirdeclor-fix dirdeclor)
+                      (type-fix type)))
             (type (make-type-function :ret type))
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
@@ -4627,10 +4627,10 @@
                     is for a function definition but has no identifier."
                    (param-declon-fix paramdecl)))
          (type (type-case
-                 type
-                 :array (make-type-pointer :to type.of)
-                 :function (make-type-pointer :to type)
-                 :otherwise type))
+                type
+                :array (make-type-pointer :to type.of)
+                :function (make-type-pointer :to type)
+                :otherwise type))
          ((when (not ident?))
           (retok (make-param-declon :specs new-specs
                                     :declor new-decl
@@ -4762,11 +4762,11 @@
                (iff uid? ident?))
       :hints
       (("Goal"
-         :expand (valid-param-declor paramdeclor type table ienv)
-         :in-theory (disable return-type-of-valid-declor.ident)
-         :use ((:instance return-type-of-valid-declor.ident
-                          (declor (param-declor-nonabstract->declor paramdeclor))
-                          (fundef-params-p nil)))))))
+        :expand (valid-param-declor paramdeclor type table ienv)
+        :in-theory (disable return-type-of-valid-declor.ident)
+        :use ((:instance return-type-of-valid-declor.ident
+                         (declor (param-declor-nonabstract->declor paramdeclor))
+                         (fundef-params-p nil)))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4808,8 +4808,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-struni-spec ((struni-spec struni-specp)
-                            (table valid-tablep)
-                            (ienv ienvp))
+                             (table valid-tablep)
+                             (ienv ienvp))
     :guard (struni-spec-unambp struni-spec)
     :returns (mv (erp maybe-msgp)
                  (new-struni-spec struni-specp)
@@ -4836,7 +4836,7 @@
                     has no name and no members."
                    (struni-spec-fix struni-spec)))
          ((erp new-members types table)
-          (valid-structdecl-list struni-spec.members nil table ienv)))
+          (valid-struct-declon-list struni-spec.members nil table ienv)))
       (retok (make-struni-spec :name? struni-spec.name?
                                :members new-members)
              types
@@ -4845,13 +4845,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdecl ((structdecl structdeclp)
-                            (previous ident-listp)
-                            (table valid-tablep)
-                            (ienv ienvp))
-    :guard (structdecl-unambp structdecl)
+  (define valid-struct-declon ((structdeclon struct-declonp)
+                               (previous ident-listp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (struct-declon-unambp structdeclon)
     :returns (mv (erp maybe-msgp)
-                 (new-structdecl structdeclp)
+                 (new-structdeclon struct-declonp)
                  (new-previous ident-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
@@ -4880,45 +4880,45 @@
       "If the structure declaration is empty (i.e. a semicolon),
        which is a GCC extension,
        the list of member names and the validation table are unchanged."))
-    (b* (((reterr) (irr-structdecl) nil nil (irr-valid-table)))
-      (structdecl-case
-       structdecl
+    (b* (((reterr) (irr-struct-declon) nil nil (irr-valid-table)))
+      (struct-declon-case
+       structdeclon
        :member
        (b* (((erp new-specqual type types table)
-             (valid-spec/qual-list structdecl.specqual nil nil table ienv))
+             (valid-spec/qual-list structdeclon.specqual nil nil table ienv))
             ((erp new-declor previous more-types table)
-             (valid-structdeclor-list
-              structdecl.declor previous type table ienv)))
-         (retok (make-structdecl-member :extension structdecl.extension
-                                        :specqual new-specqual
-                                        :declor new-declor
-                                        :attrib structdecl.attrib)
+             (valid-struct-declor-list
+              structdeclon.declor previous type table ienv)))
+         (retok (make-struct-declon-member :extension structdeclon.extension
+                                           :specqual new-specqual
+                                           :declor new-declor
+                                           :attrib structdeclon.attrib)
                 previous
                 (set::union types more-types)
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert structdecl.unwrap table ienv)))
-         (retok (structdecl-statassert new-statassert)
+             (valid-statassert structdeclon.unwrap table ienv)))
+         (retok (struct-declon-statassert new-statassert)
                 (ident-list-fix previous)
                 types
                 table))
        :empty
-       (retok (structdecl-empty)
+       (retok (struct-declon-empty)
               (ident-list-fix previous)
               nil
               (valid-table-fix table))))
-    :measure (structdecl-count structdecl))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdecl-list ((structdecls structdecl-listp)
-                                 (previous ident-listp)
-                                 (table valid-tablep)
-                                 (ienv ienvp))
-    :guard (structdecl-list-unambp structdecls)
+  (define valid-struct-declon-list ((structdeclons struct-declon-listp)
+                                    (previous ident-listp)
+                                    (table valid-tablep)
+                                    (ienv ienvp))
+    :guard (struct-declon-list-unambp structdeclons)
     :returns (mv (erp maybe-msgp)
-                 (new-structdecls structdecl-listp)
+                 (new-structdeclons struct-declon-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4932,26 +4932,26 @@
        in the structure or union specifier being validated.
        This list is used to ensure uniqueness of member names."))
     (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp structdecls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-structdecl previous types table)
-          (valid-structdecl (car structdecls) previous table ienv))
-         ((erp new-structdecls more-types table)
-          (valid-structdecl-list (cdr structdecls) previous table ienv)))
-      (retok (cons new-structdecl new-structdecls)
+         ((when (endp structdeclons)) (retok nil nil (valid-table-fix table)))
+         ((erp new-structdeclon previous types table)
+          (valid-struct-declon (car structdeclons) previous table ienv))
+         ((erp new-structdeclons more-types table)
+          (valid-struct-declon-list (cdr structdeclons) previous table ienv)))
+      (retok (cons new-structdeclon new-structdeclons)
              (set::union types more-types)
              table))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdeclor ((structdeclor structdeclorp)
-                              (previous ident-listp)
-                              (type typep)
-                              (table valid-tablep)
-                              (ienv ienvp))
-    :guard (structdeclor-unambp structdeclor)
+  (define valid-struct-declor ((structdeclor struct-declorp)
+                               (previous ident-listp)
+                               (type typep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (struct-declor-unambp structdeclor)
     :returns (mv (erp maybe-msgp)
-                 (new-structdeclor structdeclorp)
+                 (new-structdeclor struct-declorp)
                  (new-previous ident-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
@@ -4961,7 +4961,7 @@
     (xdoc::topstring
      (xdoc::p
       "The @('previous') input and @('new-previous') output
-       have the same meaning as in @(tsee valid-structdecl).")
+       have the same meaning as in @(tsee valid-struct-declon).")
      (xdoc::p
       "The @('type') input comes from the list of specifiers and qualifiers
        that precedes the list of structure declarators
@@ -4978,12 +4978,12 @@
        [C17:6.7.2.1/4];
        we also do not constrain the types of bit fields [C17:6.7.2.1/5],
        but we ensure that the constant expression, if present, is integer."))
-    (b* (((reterr) (irr-structdeclor) nil nil (irr-valid-table))
-         ((structdeclor structdeclor) structdeclor)
+    (b* (((reterr) (irr-struct-declor) nil nil (irr-valid-table))
+         ((struct-declor structdeclor) structdeclor)
          ((when (and (not structdeclor.declor?)
                      (not structdeclor.expr?)))
           (retmsg$ "The structure declarator ~x0 is empty."
-                   (structdeclor-fix structdeclor)))
+                   (struct-declor-fix structdeclor)))
          ((erp new-declor? & ident? types table)
           (valid-declor-option structdeclor.declor? type table ienv))
          (previous (ident-list-fix previous))
@@ -4991,7 +4991,7 @@
                      (member-equal ident? previous)))
           (retmsg$ "The structure declarator ~x0 ~
                     duplicates the member name."
-                   (structdeclor-fix structdeclor)))
+                   (struct-declor-fix structdeclor)))
          (previous (if ident?
                        (rcons ident? previous)
                      previous))
@@ -5002,24 +5002,24 @@
                      (not (type-case width-type? :unknown))))
           (retmsg$ "The structure declarator ~x0 ~
                     has a width of type ~x1."
-                   (structdeclor-fix structdeclor)
+                   (struct-declor-fix structdeclor)
                    width-type?)))
-      (retok (make-structdeclor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
              previous
              (set::union types more-types)
              table))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-structdeclor-list ((structdeclors structdeclor-listp)
-                                   (previous ident-listp)
-                                   (type typep)
-                                   (table valid-tablep)
-                                   (ienv ienvp))
-    :guard (structdeclor-list-unambp structdeclors)
+  (define valid-struct-declor-list ((structdeclors struct-declor-listp)
+                                    (previous ident-listp)
+                                    (type typep)
+                                    (table valid-tablep)
+                                    (ienv ienvp))
+    :guard (struct-declor-list-unambp structdeclors)
     :returns (mv (erp maybe-msgp)
-                 (new-structdeclors structdeclor-listp)
+                 (new-structdeclors struct-declor-listp)
                  (new-previous ident-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
@@ -5039,24 +5039,24 @@
          ((when (endp structdeclors))
           (retok nil (ident-list-fix previous) nil (valid-table-fix table)))
          ((erp new-structdeclor previous types table)
-          (valid-structdeclor (car structdeclors) previous type table ienv))
+          (valid-struct-declor (car structdeclors) previous type table ienv))
          ((erp new-structdeclors previous more-types table)
-          (valid-structdeclor-list
+          (valid-struct-declor-list
            (cdr structdeclors) previous type table ienv)))
       (retok (cons new-structdeclor new-structdeclors)
              previous
              (set::union types more-types)
              table))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-enumspec ((enumspec enumspecp)
-                          (table valid-tablep)
-                          (ienv ienvp))
-    :guard (enumspec-unambp enumspec)
+  (define valid-enum-spec ((enumspec enum-specp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (enum-spec-unambp enumspec)
     :returns (mv (erp maybe-msgp)
-                 (new-enumspec enumspecp)
+                 (new-enumspec enum-specp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5074,21 +5074,21 @@
        so we do not extend the validation table,
        if the enumeration specifier has a name.
        However, we validate the enumerators, if present."))
-    (b* (((reterr) (irr-enumspec) nil (irr-valid-table))
-         ((enumspec enumspec) enumspec)
+    (b* (((reterr) (irr-enum-spec) nil (irr-valid-table))
+         ((enum-spec enumspec) enumspec)
          ((when (and (not enumspec.name)
                      (endp enumspec.list)))
           (retmsg$ "The enumeration specifier ~x0 ~
                     has no name and no enumerators."
-                   (enumspec-fix enumspec)))
+                   (enum-spec-fix enumspec)))
          ((erp new-list types table)
           (valid-enumer-list enumspec.list table ienv)))
-      (retok (make-enumspec :name enumspec.name
-                            :list new-list
-                            :final-comma enumspec.final-comma)
+      (retok (make-enum-spec :name enumspec.name
+                             :list new-list
+                             :final-comma enumspec.final-comma)
              types
              table))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5362,10 +5362,10 @@
                             (valid-defstatus-tentative))))))
          ((mv uid table) (valid-get-fresh-uid ident linkage table))
          (new-info (make-valid-ord-info-objfun
-                     :type type
-                     :linkage linkage
-                     :defstatus defstatus
-                     :uid uid))
+                    :type type
+                    :linkage linkage
+                    :defstatus defstatus
+                    :uid uid))
          (table (valid-add-ord ident new-info table))
          (anno-info (make-initdeclor-info :type type
                                           :typedefp nil
@@ -5376,14 +5376,14 @@
                      (let ((ext-info? (valid-lookup-ext ident table)))
                        (and ext-info?
                             (not (type-compatiblep
-                                   (valid-ext-info->type ext-info?)
-                                   type))))))
+                                  (valid-ext-info->type ext-info?)
+                                  type))))))
           (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
                     was previously declared with incompatible type ~x2."
                    ident
                    type
                    (valid-ext-info->type
-                     (valid-lookup-ext ident table))))
+                    (valid-lookup-ext ident table))))
          ((when (and (linkage-case linkage :external)
                      (valid-has-internalp ident table)))
           (retmsg$ "The identifier ~x0 with external linkage ~
@@ -5736,7 +5736,7 @@
             ((unless (or (type-scalarp test-type)
                          (type-case test-type :unknown)))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
-                       (stmt-fix stmt) test-type))
+                      (stmt-fix stmt) test-type))
             (table (valid-push-scope table))
             ((erp new-then then-types & table)
              (valid-stmt stmt.then table ienv))
@@ -6160,31 +6160,31 @@
                (struni-spec-unambp new-struni-spec))
       :hyp (struni-spec-unambp struni-spec)
       :fn valid-struni-spec)
-    (defret structdecl-unambp-of-valid-structdecl
+    (defret struct-declon-unambp-of-valid-struct-declon
       (implies (not erp)
-               (structdecl-unambp new-structdecl))
-      :hyp (structdecl-unambp structdecl)
-      :fn valid-structdecl)
-    (defret structdecl-list-unambp-of-valid-structdecl-list
+               (struct-declon-unambp new-structdeclon))
+      :hyp (struct-declon-unambp structdeclon)
+      :fn valid-struct-declon)
+    (defret struct-declon-list-unambp-of-valid-struct-declon-list
       (implies (not erp)
-               (structdecl-list-unambp new-structdecls))
-      :hyp (structdecl-list-unambp structdecls)
-      :fn valid-structdecl-list)
-    (defret structdeclor-unambp-of-valid-structdeclor
+               (struct-declon-list-unambp new-structdeclons))
+      :hyp (struct-declon-list-unambp structdeclons)
+      :fn valid-struct-declon-list)
+    (defret struct-declor-unambp-of-valid-struct-declor
       (implies (not erp)
-               (structdeclor-unambp new-structdeclor))
-      :hyp (structdeclor-unambp structdeclor)
-      :fn valid-structdeclor)
-    (defret structdeclor-list-unambp-of-valid-structdeclor-list
+               (struct-declor-unambp new-structdeclor))
+      :hyp (struct-declor-unambp structdeclor)
+      :fn valid-struct-declor)
+    (defret struct-declor-list-unambp-of-valid-struct-declor-list
       (implies (not erp)
-               (structdeclor-list-unambp new-structdeclors))
-      :hyp (structdeclor-list-unambp structdeclors)
-      :fn valid-structdeclor-list)
-    (defret enumspec-unambp-of-valid-enumspec
+               (struct-declor-list-unambp new-structdeclors))
+      :hyp (struct-declor-list-unambp structdeclors)
+      :fn valid-struct-declor-list)
+    (defret enum-spec-unambp-of-valid-enum-spec
       (implies (not erp)
-               (enumspec-unambp new-enumspec))
-      :hyp (enumspec-unambp enumspec)
-      :fn valid-enumspec)
+               (enum-spec-unambp new-enumspec))
+      :hyp (enum-spec-unambp enumspec)
+      :fn valid-enum-spec)
     (defret enumer-unambp-of-valid-enumer
       (implies (not erp)
                (enumer-unambp new-enumer))
@@ -6360,15 +6360,15 @@
                    (let ((ext-info? (valid-lookup-ext ident table)))
                      (and ext-info?
                           (not (type-compatiblep
-                                 (valid-ext-info->type ext-info?)
-                                 type))))))
+                                (valid-ext-info->type ext-info?)
+                                type))))))
         (retmsg$ "The function definition ~x0 ~
                   with external linkage and type ~x1 ~
                   was previously declared with incompatible type ~x2."
                  ident
                  type
                  (valid-ext-info->type
-                   (valid-lookup-ext ident table))))
+                  (valid-lookup-ext ident table))))
        ((when (and (linkage-case linkage :external)
                    (valid-has-internalp ident table)))
         (retmsg$ "The function definition ~x0 with external linkage ~
@@ -6390,10 +6390,10 @@
              ((when (not info?))
               (b* (((mv uid table) (valid-get-fresh-uid ident linkage table))
                    (info (make-valid-ord-info-objfun
-                           :type type
-                           :linkage linkage
-                           :defstatus (valid-defstatus-defined)
-                           :uid uid)))
+                          :type type
+                          :linkage linkage
+                          :defstatus (valid-defstatus-defined)
+                          :uid uid)))
                 (retok uid (valid-add-ord-file-scope ident info table))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
@@ -6425,10 +6425,10 @@
                        (fundef-fix fundef)))
              ((mv uid table) (valid-get-fresh-uid ident linkage table))
              (info (make-valid-ord-info-objfun
-                     :type type
-                     :linkage linkage
-                     :defstatus (valid-defstatus-defined)
-                     :uid uid)))
+                    :type type
+                    :linkage linkage
+                    :defstatus (valid-defstatus-defined)
+                    :uid uid)))
           (retok uid (valid-add-ord-file-scope ident info table))))
        ((erp new-decls types table) (valid-decl-list fundef.decls table ienv))
        ((unless (set::emptyp types))
@@ -6438,29 +6438,29 @@
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
        (table (valid-add-ord (ident "__func__")
                              (make-valid-ord-info-objfun
-                               :type (make-type-array :of (type-char))
-                               :linkage (linkage-none)
-                               :defstatus (valid-defstatus-defined)
-                               :uid uid)
+                              :type (make-type-array :of (type-char))
+                              :linkage (linkage-none)
+                              :defstatus (valid-defstatus-defined)
+                              :uid uid)
                              table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
        (table (if (ienv->gcc ienv)
                   (valid-add-ord (ident "__FUNCTION__")
                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
+                                  :type (make-type-array :of (type-char))
+                                  :linkage (linkage-none)
+                                  :defstatus (valid-defstatus-defined)
+                                  :uid uid)
                                  table)
                 table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
        (table (if (ienv->gcc ienv)
                   (valid-add-ord (ident "__PRETTY_FUNCTION__")
                                  (make-valid-ord-info-objfun
-                                   :type (make-type-array :of (type-char))
-                                   :linkage (linkage-none)
-                                   :defstatus (valid-defstatus-defined)
-                                   :uid uid)
+                                  :type (make-type-array :of (type-char))
+                                  :linkage (linkage-none)
+                                  :defstatus (valid-defstatus-defined)
+                                  :uid uid)
                                  table)
                 table))
        (table-body-start table)
@@ -6602,18 +6602,18 @@
          (if gcc
              (b* ((table
                     (valid-add-ord-objfuns-file-scope
-                      *gcc-builtin-functions*
-                      (make-type-function :ret (type-unknown))
-                      (linkage-external)
-                      (valid-defstatus-defined)
-                      table))
+                     *gcc-builtin-functions*
+                     (make-type-function :ret (type-unknown))
+                     (linkage-external)
+                     (valid-defstatus-defined)
+                     table))
                   (table
                     (valid-add-ord-objfuns-file-scope
-                      *gcc-builtin-vars*
-                      (make-type-function :ret (type-unknown))
-                      (linkage-external)
-                      (valid-defstatus-defined)
-                      table)))
+                     *gcc-builtin-vars*
+                     (make-type-function :ret (type-unknown))
+                     (linkage-external)
+                     (valid-defstatus-defined)
+                     table)))
                table)
            table))
        ((erp new-edecls table)

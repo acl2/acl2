@@ -396,7 +396,7 @@
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
                 compustate-frames-number-of-add-var-not-zero
-                read-object-of-enter-scope))
+                read-object-alloc-of-enter-scope))
        ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
                              rules prec-tags thm-index names-to-avoid wrld)))
@@ -685,7 +685,7 @@
           (then-hints
            `(("Goal"
               :in-theory '(,then-var-thm
-                           read-object-of-enter-scope
+                           read-object-alloc-of-enter-scope
                            read-object-of-update-object-same
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff
@@ -753,7 +753,7 @@
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
-                           read-object-of-enter-scope
+                           read-object-alloc-of-enter-scope
                            read-object-of-update-object-same
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff

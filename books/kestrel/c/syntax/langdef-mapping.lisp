@@ -334,7 +334,7 @@
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :enum))
       (b* ((tyspec (car tyspecs))
-           (ident (check-enumspec-no-list
+           (ident (check-enum-spec-no-list
                    (type-spec-enum->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
@@ -866,9 +866,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-structdecl ((structdecl structdeclp))
-  :guard (structdecl-unambp structdecl)
-  :returns (mv erp (structdecl1 c::struct-declonp))
+(define ldm-struct-declon ((structdeclon struct-declonp))
+  :guard (struct-declon-unambp structdeclon)
+  :returns (mv erp (structdeclon1 c::struct-declonp))
   :short "Map a structure declaration to
           a structure declaration in the language definition."
   :long
@@ -882,75 +882,75 @@
   (b* (((reterr) (c::struct-declon (c::tyspecseq-void)
                                    (c::obj-declor-ident
                                     (c::ident "irrelevant"))))
-       ((when (structdecl-case structdecl :empty))
+       ((when (struct-declon-case structdeclon :empty))
         (reterr (msg "Unsupported empty structure declaration.")))
-       ((when (structdecl-case structdecl :statassert))
+       ((when (struct-declon-case structdeclon :statassert))
         (reterr (msg "Unsupported structure declaration ~x0."
-                     (structdecl-fix structdecl))))
-       (extension (structdecl-member->extension structdecl))
+                     (struct-declon-fix structdeclon))))
+       (extension (struct-declon-member->extension structdeclon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl))))
-       (specquals (structdecl-member->specqual structdecl))
-       (declors (structdecl-member->declor structdecl))
+                     (struct-declon-fix structdeclon))))
+       (specquals (struct-declon-member->specqual structdeclon))
+       (declors (struct-declon-member->declor structdeclon))
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl))))
+                     (struct-declon-fix structdeclon))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((unless (and (consp declors)
                      (endp (cdr declors))))
         (reterr (msg "Unsupported number of declarators ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl))))
-       ((structdeclor declor) (car declors))
+                     (struct-declon-fix structdeclon))))
+       ((struct-declor declor) (car declors))
        ((unless declor.declor?)
         (reterr (msg "Unsupported structure declarator ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl))))
+                     (struct-declon-fix structdeclon))))
        ((when declor.expr?)
         (reterr (msg "Unsupported structure declarator ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl))))
+                     (struct-declon-fix structdeclon))))
        ((erp objdeclor) (ldm-declor-obj declor.declor?))
-       (attrib (structdecl-member->attrib structdecl))
+       (attrib (struct-declon-member->attrib structdeclon))
        ((when attrib)
         (reterr (msg "Unsupporte GCC attributes ~
                       in structure declaration ~x0."
-                     (structdecl-fix structdecl)))))
+                     (struct-declon-fix structdeclon)))))
     (retok (c::make-struct-declon :tyspec tyspecseq :declor objdeclor)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-structdecl-ok-when-structdecl-formalp
+  (defret ldm-struct-declon-ok-when-struct-declon-formalp
     (not erp)
-    :hyp (structdecl-formalp structdecl)
-    :hints (("Goal" :in-theory (enable structdecl-formalp
-                                       structdeclor-formalp)))))
+    :hyp (struct-declon-formalp structdeclon)
+    :hints (("Goal" :in-theory (enable struct-declon-formalp
+                                       struct-declor-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-structdecl-list ((structdecls structdecl-listp))
-  :guard (structdecl-list-unambp structdecls)
-  :returns (mv erp (structdecls1 c::struct-declon-listp))
+(define ldm-struct-declon-list ((structdeclons struct-declon-listp))
+  :guard (struct-declon-list-unambp structdeclons)
+  :returns (mv erp (structdeclons1 c::struct-declon-listp))
   :short "Map a list of structure declarations to
           a list of structure declarations in the language definition."
   (b* (((reterr) nil)
-       ((when (endp structdecls)) (retok nil))
-       ((erp structdecl1) (ldm-structdecl (car structdecls)))
-       ((erp structdecls1) (ldm-structdecl-list (cdr structdecls))))
-    (retok (cons structdecl1 structdecls1)))
+       ((when (endp structdeclons)) (retok nil))
+       ((erp structdeclon1) (ldm-struct-declon (car structdeclons)))
+       ((erp structdeclons1) (ldm-struct-declon-list (cdr structdeclons))))
+    (retok (cons structdeclon1 structdeclons1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-structdecl-list-ok-when-structdecl-list-formalp
+  (defret ldm-struct-declon-list-ok-when-struct-declon-list-formalp
     (not erp)
-    :hyp (structdecl-list-formalp structdecls)
-    :hints (("Goal" :induct t :in-theory (enable structdecl-list-formalp)))))
+    :hyp (struct-declon-list-formalp structdeclons)
+    :hints (("Goal" :induct t :in-theory (enable struct-declon-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1030,17 +1030,17 @@
              ((unless struni-spec.name?)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident struni-spec.name?))
-             ((erp members1) (ldm-structdecl-list struni-spec.members)))
+             ((erp members1) (ldm-struct-declon-list struni-spec.members)))
           (retok (c::make-tag-declon-struct :tag name1 :members members1))))
        ((when (type-spec-case tyspec :union))
         (b* (((struni-spec struni-spec) (type-spec-union->spec tyspec))
              ((unless struni-spec.name?)
               (reterr (msg "Unsupported union declaration without name.")))
              ((erp name1) (ldm-ident struni-spec.name?))
-             ((erp members1) (ldm-structdecl-list struni-spec.members)))
+             ((erp members1) (ldm-struct-declon-list struni-spec.members)))
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
-        (b* (((enumspec enumspec) (type-spec-enum->spec tyspec))
+        (b* (((enum-spec enumspec) (type-spec-enum->spec tyspec))
              ((unless enumspec.name)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))

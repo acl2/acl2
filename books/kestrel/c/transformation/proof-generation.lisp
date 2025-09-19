@@ -291,7 +291,8 @@
                (c::exec-initer old-initer compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-initer new-initer compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -426,7 +427,8 @@
                (c::exec-stmt old-stmt compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -485,7 +487,8 @@
                (c::exec-obj-declon old-decl compst old-fenv limit))
               (new-compst
                (c::exec-obj-declon new-decl compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-compst)))
                     (and (not (c::errorp new-compst))
                          (equal old-compst new-compst)
@@ -546,7 +549,8 @@
                (c::exec-block-item old-item compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -607,7 +611,6 @@
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
        ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
        ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
@@ -618,14 +621,14 @@
                (c::exec-block-item-list old-items compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
-           (implies (and ,@vars-pre
+           (implies (and (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-result)
-                                  ',ctypes)
-                         ,@vars-post))))
+                                  ',ctypes)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
