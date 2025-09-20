@@ -256,6 +256,14 @@
       handle theorems over trivial @(tsee mutual-recursion) cliques consisting
       of just one function.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bridge::bridge"
+                             "Bridge"))
+
+   (xdoc::p
+     "Python bindings are available in @('[books]/centaur/bridge/python').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
