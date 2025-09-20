@@ -1190,3 +1190,39 @@
        (cons (parstate->token i parstate)
              (to-parstate$-tokens-unread (1- n) parstate)))
      :guard-hints (("Goal" :in-theory (enable natp zp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ reterr-msg (&key where expected found extra)
+  :short "Return an error consisting of a message
+          with information about what was expected and what was found where."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by our lexing and parsing functions
+     to more concisely return more uniform error messages.")
+   (xdoc::p
+    "This macro assumes that a suitable local macro @('reterr') is in scope
+     (see "
+    (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
+    "), which is the case for our lexing and parsing functions.
+     This macro takes as inputs four terms,
+     which must evaluate to messages (i.e. values satisfying @(tsee msgp)).
+     Those are used to form a larger message,
+     in the manner that should be obvious from the body of this macro.
+     Note that the fourth term is optional,
+     in case we want to provide additional information.")
+   (xdoc::p
+    "For now we also include, at the end of the message,
+     an indication of the ACL2 function that caused the error.
+     This is useful as we are debugging the parser,
+     but we may remove it once the parser is more tested or even verified."))
+  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
+                 [from function ~x4]~%"
+                ,expected
+                ,where
+                ,found
+                ,(if extra
+                     `(msg " ~@0" ,extra)
+                   "")
+                __function__)))
