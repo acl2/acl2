@@ -100,6 +100,19 @@
              c::read-object-of-create-var-when-auto/static/alloc
              nfix)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define c::compustate-has-vars-with-types-p ((vartys c::ident-type-mapp)
+                                             (compst c::compustatep))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee c::compustate-has-var-with-type-p) to
+          maps from identifiers to types, pointwise."
+  (b* (((when (omap::emptyp (c::ident-type-map-fix vartys))) t)
+       ((mv var type) (omap::head vartys)))
+    (and (c::compustate-has-var-with-type-p var type compst)
+         (c::compustate-has-vars-with-types-p (omap::tail vartys) compst)))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled c::compustate-has-var-with-type-p-of-enter-scope
