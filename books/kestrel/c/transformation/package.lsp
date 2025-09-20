@@ -29,6 +29,7 @@
                  constant-symbolp
                  constant-value
                  defirrelevant
+                 defund-sk
                  defxdoc+
                  enable*
                  er-soft+
