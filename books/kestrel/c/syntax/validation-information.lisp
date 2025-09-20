@@ -1108,7 +1108,7 @@
      :ifelse (set::union (stmt-types stmt.then)
                          (stmt-types stmt.else))
      :switch nil
-     :while nil
+     :while (set::insert nil (stmt-types stmt.body))
      :dowhile nil
      :for-expr nil
      :for-decl nil
