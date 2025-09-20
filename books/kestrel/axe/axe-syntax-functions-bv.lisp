@@ -378,6 +378,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *functions-convertible-to-bv-axe*
+  ;; Axe does not split IFs, unlike ACL2:
+  ;; todo: now get rid of the rules that introduce BVIF
+  (cons 'if *functions-convertible-to-bv*))
+
 ;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
 ;; but not one of the EXCLUDE-FNS.
 (defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)

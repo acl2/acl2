@@ -1195,7 +1195,7 @@
                                    node-replacement-array))
                      ;;failed to relieve the hyps, so try the next rule:
                      (prog2$ (and (eq print :verbose!)
-                                  (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
+                                  (cw " Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                              (,try-to-apply-rules-name (rest stored-rules)
                                                        args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))
 
@@ -1232,6 +1232,7 @@
                   ;;Try looking it up in the memoization (note that the dargs are now simplified):
                   (memo-match (and memoization (lookup-in-memoization expr memoization))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
                   ((when memo-match)
+                   ;; (and (eq (get-print rewrite-stobj) :verbose!) (cw "Memo match for fun-call ~x0: ~x1~%" expr memo-match))
                    (let ((memoization (add-pairs-to-memoization trees-equal-to-tree
                                                                 memo-match ;the nodenum or quotep they are all equal to
                                                                 memoization)))
@@ -2009,14 +2010,15 @@
                      ;; Try looking it up in memoization (note that the args are not yet simplified):
                      (let ((memo-match (and memoization (lookup-in-memoization tree memoization))))
                        (if memo-match
-                           (mv (erp-nil)
-                               memo-match ; a darg
-                               rewrite-stobj2 ,@maybe-state
-                               (add-pairs-to-memoization trees-equal-to-tree ; We don't add a memoization entry for TREE itself, because it already has one.
-                                                         memo-match ;the nodenum or quotep to which all the TREES-EQUAL-TO-TREE rewrote
-                                                         memoization)
-                               hit-counts tries limits
-                               node-replacement-array)
+                           (progn$ ;; (and (eq (get-print rewrite-stobj) :verbose!) (cw "Memo match for tree ~x0: ~x1~%" tree memo-match))
+                                   (mv (erp-nil)
+                                       memo-match ; a darg
+                                       rewrite-stobj2 ,@maybe-state
+                                       (add-pairs-to-memoization trees-equal-to-tree ; We don't add a memoization entry for TREE itself, because it already has one.
+                                                                 memo-match ;the nodenum or quotep to which all the TREES-EQUAL-TO-TREE rewrote
+                                                                 memoization)
+                                       hit-counts tries limits
+                                       node-replacement-array))
                          ;; Handle NOT and the various kinds of IF:
                          (case fn
                            (not ; could perhaps delay special handling for NOT until after the args are simplified

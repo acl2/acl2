@@ -31,13 +31,8 @@
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
 
-    dag-fns ; todo: collect into *axe-tools* list
-    dag-vars
-    dag-size
-    dag-info
     dag-to-term
     dag-node-to-term
-    add-known-boolean
 
     remove-assumptions-about
     *non-stp-assumption-functions*
@@ -65,7 +60,6 @@
 
     ;; todo: organize
 
-    def-constant-opener
     fargs
     ffn-symb
     farg1
@@ -83,11 +77,8 @@
 
     _ ;; used to print non-pure patterns
 
-    symbolic-array
     ;; symbolic-list
-    symbolic-byte-list
-    byte-types-for-vars
-    make-var-names
+
     ))
 
 (defpkg "R"
@@ -156,8 +147,6 @@
             patbind-when
 
             unsigned-byte-listp
-            defopeners
-
 
             ubyte32-list-fix
 
@@ -280,6 +269,7 @@
             riscv::instr.rs2
             riscv::instr.imm
             )
+          *axe-tools*
           *axe-implementation-functions*
           (set-difference-eq *acl2-exports*
                              '(pc ; we need this name for accessing the program counter
