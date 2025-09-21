@@ -52,11 +52,6 @@
   (implies (natp x)
            (acl2-numberp x)))
 
-(defruledl natp-of-ash
-  (implies (natp x)
-           (natp (ash x y)))
-  :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ reader
@@ -661,8 +656,7 @@
                                        rationalp-when-bytep
                                        rationalp-when-natp
                                        integerp-when-natp
-                                       natp-when-bytep
-                                       natp-of-ash))))
+                                       natp-when-bytep))))
 
   ///
 
