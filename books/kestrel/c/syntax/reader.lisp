@@ -15,6 +15,8 @@
 (include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "arithmetic/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -673,8 +675,7 @@
                                        natp-when-bytep
                                        natp-of-plus
                                        natp-of-logand
-                                       natp-of-ash)))
-             (local (include-book "arithmetic/top" :dir :system)))
+                                       natp-of-ash))))
 
   ///
 
