@@ -1984,6 +1984,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-while ((test exprp)
+                             (test-new exprp)
+                             (test-thm-name symbolp)
+                             (body stmtp)
+                             (body-new stmtp)
+                             (body-thm-name symbolp)
+                             (gin simpadd0-ginp))
+  :guard (and (expr-unambp test)
+              (expr-annop test)
+              (expr-unambp test-new)
+              (expr-annop test-new)
+              (stmt-unambp body)
+              (stmt-annop body)
+              (stmt-unambp body-new)
+              (stmt-annop body-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform a @('while') loop."
+  (b* (((simpadd0-gin gin) gin)
+       (stmt (make-stmt-while :test test
+                              :body body))
+       (stmt-new (make-stmt-while :test test-new
+                                  :body body-new))
+       ((unless (and test-thm-name
+                     body-thm-name))
+        (mv stmt-new (simpadd0-gout-no-thm gin)))
+       (types (stmt-types body))
+       ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
+       ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
+       ((mv & old-body) (ldm-stmt body)) ; ERP must be NIL
+       ((mv & new-body) (ldm-stmt body-new)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-while)
+                        (:e c::ident-type-map-fix)
+                        (:e omap::emptyp)
+                        (:e omap::head)
+                        (:e omap::tail)
+                        (:e set::insert)
+                        (:e c::type-nonchar-integerp)
+                        while-hyp
+                        c::compustate-has-vars-with-types-p)
+           :use ((:instance
+                  ,test-thm-name
+                  (compst (mv-nth 0 (while-hyp-witness ',old-test
+                                                       ',new-test
+                                                       ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys))))
+                 (:instance
+                  ,body-thm-name
+                  (compst (mv-nth 0 (while-hyp-witness ',old-test
+                                                       ',new-test
+                                                       ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys)))
+                  (limit (mv-nth 1 (while-hyp-witness ',old-test
+                                                      ',new-test
+                                                      ',old-body
+                                                      ',new-body
+                                                      old-fenv
+                                                      new-fenv
+                                                      ',types
+                                                      ',gin.vartys))))
+                 (:instance
+                  stmt-while-theorem
+                  (old-test ',old-test)
+                  (new-test ',new-test)
+                  (old-body ',old-body)
+                  (new-body ',new-body)
+                  (types ',types)
+                  (vartys ',gin.vartys))))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (cons thm-event gin.events)
+                            :thm-index thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-while
+    (stmt-unambp stmt)
+    :hyp (and (expr-unambp test-new)
+              (stmt-unambp body-new)))
+
+  (defret stmt-annop-of-simpadd0-stmt-while
+    (stmt-annop stmt)
+    :hyp (and (expr-annop test-new)
+              (stmt-annop body-new)))
+
+  (defret stmt-aidentp-of-simpadd0-stmt-while
+    (stmt-aidentp stmt gcc)
+    :hyp (and (expr-aidentp test-new gcc)
+              (stmt-aidentp body-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-decl-decl ((extension booleanp)
                             (specs decl-spec-listp)
                             (specs-new decl-spec-listp)
@@ -3983,9 +4092,13 @@
                    ((mv new-body (simpadd0-gout gout-body))
                     (simpadd0-stmt stmt.body gin))
                    (gin (simpadd0-gin-update gin gout-body)))
-                (mv (make-stmt-while :test new-test
-                                     :body new-body)
-                    (simpadd0-gout-no-thm gin)))
+                (simpadd0-stmt-while stmt.test
+                                     new-test
+                                     gout-test.thm-name
+                                     stmt.body
+                                     new-body
+                                     gout-body.thm-name
+                                     gin))
        :dowhile (b* (((mv new-body (simpadd0-gout gout-body))
                       (simpadd0-stmt stmt.body gin))
                      (gin (simpadd0-gin-update gin gout-body))

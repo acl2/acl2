@@ -12,6 +12,8 @@
 
 (include-book "proof-generation")
 
+(include-book "std/util/defund-sk" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -1274,3 +1276,274 @@
                 (mv-nth 0 (c::exec-block-item-list
                            (cons item items) compst fenv limit)))))
     :expand (c::exec-block-item-list (cons item items) compst fenv limit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-loop-theorems
+  :short "Theorems about loop execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Loops need theorems similar to
+     the congruence theorems in @(see exec-congruence-theorems),
+     but since they involve proofs by induction,
+     those theorems also combine the equivalent of
+     the errors theorems in @(see exec-error-theorems)
+     and the variable theorems in @(see exec-compustate-vars-theorems),
+     because those facts participate in the induction.
+     This is why we use the generic term @('exec-loop-theorems') here.")
+   (xdoc::p
+    "For now we only support @('while') loops,
+     but other kinds of loops should be analogous.")
+   (xdoc::p
+    "The starting point to understand these theorems and their proofs
+     is that we want something like the aforementioned congruence theorems:
+     if the execution of the old test and new test are equivalent,
+     and the execution of the old body and new body are equivalent,
+     then the execution of the old loop and new loop are equivalent.
+     But the execution of the loop may take zero or more iterations,
+     so the proof is by induction.")
+   (xdoc::p
+    "Although @(tsee c::exec-stmt-while) has a recursive structure,
+     it is mutually recursive with the other execution functions.
+     Additionally, @(tsee c::exec-stmt-while) operates
+     on a single test and body of a single loop,
+     while here we have two loops (and tests and bodies).
+     So we need a custom induction induction scheme,
+     captured by the function @('while-induct') below,
+     which has a singly recursive structure
+     similar to @(tsee c::exec-stmt-while),
+     but involving two tests and bodies,
+     and also two function environments.
+     But it has only one computation state,
+     because the idea behind the congruence is that
+     the two loops start in the same computation states,
+     and stay in the same computation states.
+     We ``force'' this equality, as well as the equality of the tests,
+     by stopping the recursion in @('while-induct')
+     if those are not equal.
+     We also need a single limit,
+     because the two executions are synchronized.
+     The recursion of @('while-induct') stops as soon as
+     some of the early-exit tests in @(tsee c::exec-stmt-while) fails.
+     The only difference with @(tsee c::exec-stmt-while) is that
+     we avoid the array-to-pointer conversion and its check
+     by checking that the test yields an integer value.")
+   (xdoc::p
+    "The congruence theorems in @(see exec-congruence-theorems)
+     have hypotheses about the execution of
+     the sub-constructs of the construct of interest,
+     starting with the same computation state @('compst'),
+     and possibly involving a second computation state
+     between the execution of a sub-construct
+     and the execution of another sub-construct
+     (e.g. see @('block-item-list-cons-rest-congruence')).
+     If we attempted to do the same for loops,
+     with test and body as the sub-constructs,
+     we would run into trouble with the induction hypothesis,
+     which would involve different computation states.
+     Intuitively, the issue is that we want to show that
+     the executions of the two loops remain ``synchronized''
+     for a variable number of iterations,
+     i.e. not just starting from the @('compst') computation state
+     at the beginning of the loop.
+     What we need is the fact that the executions of the tests and bodies
+     are equivalent for every possible starting computation state,
+     not just the specific @('compst') used in the theorem we want to prove.
+     Indeed, in the bottom-up proof of theorems in our transformations,
+     the equivalence theorems proved for tests and bodies
+     are implicitly universally quantified.
+     But we need to explicate the universal quantification
+     in the hypotheses of the theorem we want to prove here.")
+   (xdoc::p
+    "This justifies the universally quantified predicate @('while-hyp')
+     defined below, whose name indicates that it is used as hypothesis,
+     in the theorem we want to prove about loops.
+     The predicate states, for all possible computation states and limits,
+     the equivalence of the test and of the bodies.
+     Since, in general, our generated theorems include hypotheses
+     about certain variables in the computation state with certain types,
+     we parameterize the predicate over a map from identifiers to types,
+     to capture such variables and their types.
+     We use @(tsee c::compustate-has-vars-with-types-p),
+     with that variable-type map,
+     as both a hypothesis and a conclusion of the quantified predicate:
+     the hypothesis is needed to show the satisfaction of the predicate
+     (in the theorems generated by the transformation),
+     and the conclusion is needed to support the induction.
+     The quantified predicate is also parameterized by
+     the set of optional types that can be returned by the loop bodies.")
+   (xdoc::p
+    "With @('while-hyp') as hypothesis,
+     we can prove, by induction,
+     the desired theorem about @(tsee c::exec-stmt-while).
+     We need a few rules to handle the array-to-pointer conversion,
+     but the proof hints are otherwise unremarkable.
+     The @('while-hyp-necc') theorem is instantiated
+     for the induction hypothesis.
+     Note that the theorem has @(tsee c::compustate-has-vars-with-types-p)
+     as both hypothesis and conclusion, matching @('while-hyp').")
+   (xdoc::p
+    "From the theorem about @(tsee c::exec-stmt-while),
+     we prove the desired one, about @(tsee c::exec-stmt)
+     applied to a @('while') loop.
+     This already includes the conclusion about
+     the variables in the computation state with certain types,
+     and it also handles the errors.
+     This is why, we noted earlier,
+     it is more than the congruence theorems for non-loop constructs,
+     which have separate theorems for handling errors and variables.")
+   (xdoc::p
+    "The theorems proved here make no claims about the loop terminating.
+     The theorems say that, if the loop terminates,
+     then it yields equivalent results for old and new code.
+     If the loop fails to terminate,
+     @(tsee c::exec-stmt-while), and thus @(tsee c::exec-stmt)
+     returns an error due to the limit being exhausted,
+     but the theorems deny that as hypothesis."))
+
+  (defund while-induct (old-test
+                        new-test
+                        old-body
+                        new-body
+                        old-fenv
+                        new-fenv
+                        compst
+                        limit)
+    (declare (xargs :measure (nfix limit)
+                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+    (b* (((when (zp limit)) nil)
+         (old-test-eval (c::exec-expr-pure old-test compst))
+         ((when (c::errorp old-test-eval)) nil)
+         (new-test-eval (c::exec-expr-pure new-test compst))
+         ((when (c::errorp new-test-eval)) nil)
+         (old-test-val (c::expr-value->value old-test-eval))
+         ((unless (c::type-nonchar-integerp (c::type-of-value old-test-val)))
+          nil)
+         (new-test-val (c::expr-value->value new-test-eval))
+         ((unless (c::type-nonchar-integerp (c::type-of-value new-test-val)))
+          nil)
+         ((unless (equal old-test-val new-test-val)) nil)
+         (old-continuep (c::test-value old-test-val))
+         ((when (c::errorp old-continuep)) nil)
+         (new-continuep (c::test-value new-test-val))
+         ((when (c::errorp new-continuep)) nil)
+         ((when (not old-continuep)) nil)
+         ((when (not new-continuep)) nil)
+         ((mv old-sval old-compst)
+          (c::exec-stmt old-body compst old-fenv (1- limit)))
+         ((when (c::errorp old-sval)) nil)
+         ((mv new-sval new-compst)
+          (c::exec-stmt new-body compst new-fenv (1- limit)))
+         ((when (c::errorp new-sval)) nil)
+         ((when (c::stmt-value-case old-sval :return)) nil)
+         ((when (c::stmt-value-case new-sval :return)) nil)
+         ((unless (equal old-compst new-compst)) nil))
+      (while-induct old-test
+                    new-test
+                    old-body
+                    new-body
+                    old-fenv
+                    new-fenv
+                    old-compst
+                    (1- limit))))
+
+  (defund-sk while-hyp (old-test
+                        new-test
+                        old-body
+                        new-body
+                        old-fenv
+                        new-fenv
+                        types
+                        vartys)
+    (forall
+     (compst limit)
+     (b* ((old-test-result (c::exec-expr-pure old-test compst))
+          (new-test-result (c::exec-expr-pure new-test compst))
+          (old-test-value (c::expr-value->value old-test-result))
+          (new-test-value (c::expr-value->value new-test-result))
+          ((mv old-body-result old-body-compst)
+           (c::exec-stmt old-body compst old-fenv limit))
+          ((mv new-body-result new-body-compst)
+           (c::exec-stmt new-body compst new-fenv limit)))
+       (implies (and (> (c::compustate-frames-number compst) 0)
+                     (c::compustate-has-vars-with-types-p vartys compst))
+                (and (implies (not (c::errorp old-test-result))
+                              (and (not (c::errorp new-test-result))
+                                   (equal old-test-value new-test-value)
+                                   (c::type-nonchar-integerp
+                                    (c::type-of-value old-test-value))))
+                     (implies (not (c::errorp old-body-result))
+                              (and (not (c::errorp new-body-result))
+                                   (equal old-body-result new-body-result)
+                                   (equal old-body-compst new-body-compst)
+                                   (set::in
+                                    (c::type-option-of-stmt-value
+                                     old-body-result)
+                                    types)
+                                   (c::compustate-has-vars-with-types-p
+                                    vartys old-body-compst))))))))
+
+  (defruled stmt-while-loop-theorem
+    (b* (((mv old-result old-compst)
+          (c::exec-stmt-while old-test old-body compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-stmt-while new-test new-body compst new-fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (c::compustate-has-vars-with-types-p vartys compst)
+                    (while-hyp old-test
+                               new-test
+                               old-body
+                               new-body
+                               old-fenv
+                               new-fenv
+                               types
+                               vartys)
+                    (not (c::errorp old-result)))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil types))
+                    (c::compustate-has-vars-with-types-p vartys old-compst))))
+    :induct (while-induct old-test
+                          new-test
+                          old-body
+                          new-body
+                          old-fenv
+                          new-fenv
+                          compst
+                          limit)
+    :enable (while-induct
+             c::exec-stmt-while
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)
+    :hints ('(:use (:instance while-hyp-necc (limit (1- limit))))))
+
+  (defruled stmt-while-theorem
+    (b* ((old (c::stmt-while old-test old-body))
+         (new (c::stmt-while new-test new-body))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (c::compustate-has-vars-with-types-p vartys compst)
+                    (while-hyp old-test
+                               new-test
+                               old-body
+                               new-body
+                               old-fenv
+                               new-fenv
+                               types
+                               vartys)
+                    (not (c::errorp old-result)))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil types))
+                    (c::compustate-has-vars-with-types-p vartys old-compst))))
+    :expand ((c::exec-stmt
+              (c::stmt-while old-test old-body) compst old-fenv limit)
+             (c::exec-stmt
+              (c::stmt-while new-test new-body) compst new-fenv limit))
+    :use (:instance stmt-while-loop-theorem (limit (1- limit)))))
