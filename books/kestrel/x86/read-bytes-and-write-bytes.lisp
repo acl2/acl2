@@ -108,6 +108,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Not clear which argument should come first.  Putting BYTES first would make
+;; this more similar to READ-BYTES, but BYTES may sometimes be large.
 (defund write-bytes (addr bytes x86)
   (declare (xargs :stobjs x86
                   :guard (and (acl2::all-unsigned-byte-p 8 bytes)
