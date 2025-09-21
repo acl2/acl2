@@ -156,8 +156,8 @@
           (:byte-array (if (and (= 2 (len (fargs output-indicator)))
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
-                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld) ; note the order
-                                                                  ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                                  ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
                                                                   ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
 
