@@ -16,12 +16,11 @@
 (include-book "preprocess-file")
 (include-book "parsing")
 (include-book "disambiguation")
-(include-book "validation-information")
+(include-book "validation")
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
 (include-book "builtin")
-(include-book "validator")
 (include-book "printer")
 (include-book "input-files")
 (include-book "input-files-doc")
@@ -193,11 +192,10 @@
                     preprocessing
                     parsing
                     disambiguation
-                    validation-information
+                    validation
                     ascii-identifiers
                     standard
                     purity
-                    validator
                     printer
                     input-files
                     output-files

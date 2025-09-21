@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ validator
-  :parents (syntax-for-tools)
+  :parents (validation)
   :short "Validator of the C abstract syntax for tools."
   :long
   (xdoc::topstring

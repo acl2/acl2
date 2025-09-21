@@ -29,7 +29,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ validation-information
-  :parents (syntax-for-tools)
+  :parents (validation)
   :short "Information calculated and used by the validator."
   :long
   (xdoc::topstring
