@@ -36,22 +36,21 @@
 
 ;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
 ;; TODO: Consider putting the N parameter first
-(defund read-bytes (addr n x86)
+(defund read-bytes (n addr x86)
   (declare (xargs :guard (and (integerp addr)
                               (natp n))
                   :stobjs x86))
   (if (zp n)
       nil
     (cons (read-byte addr x86)
-          (read-bytes (+ 1 (mbe :logic (ifix addr) :exec addr)) (+ -1 n) x86))))
+          (read-bytes (+ -1 n) (+ 1 (mbe :logic (ifix addr) :exec addr)) x86))))
 
 (defthm car-of-read-bytes
   (implies (and (posp n)
                 (integerp addr))
-           (equal (car (read-bytes addr n x86))
+           (equal (car (read-bytes n addr x86))
                   (read-byte addr x86)))
-  :hints (("Goal" :expand
-           (read-bytes addr n x86))))
+  :hints (("Goal" :expand (read-bytes n addr x86))))
 
 (local
  (defun inc-dec-dec-induct (x y z)
@@ -64,29 +63,29 @@
                 (< n1 n2)
                 (natp n2)
                 (integerp addr))
-           (equal (nth n1 (read-bytes addr n2 x86))
+           (equal (nth n1 (read-bytes n2 addr x86))
                   (read-byte (+ addr n1) x86)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
            :in-theory (enable read-bytes))))
 
 (defthm len-of-read-bytes
-  (equal (len (read-bytes addr n x86))
+  (equal (len (read-bytes n addr x86))
          (nfix n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm consp-of-read-bytes
-  (equal (consp (read-bytes addr n x86))
+  (equal (consp (read-bytes n addr x86))
          (posp n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-iff
-  (iff (read-bytes addr n x86)
+  (iff (read-bytes n addr x86)
        (posp n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-equal-when-bvchops-equal
   (implies (equal (bvchop 48 ad1) (bvchop 48 ad2))
-           (equal (equal (read-bytes ad1 n x86) (read-bytes ad2 n x86))
+           (equal (equal (read-bytes n ad1 x86) (read-bytes n ad2 x86))
                   t))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
@@ -95,16 +94,16 @@
                 (<= 48 size)
                 (integerp size)
                 (integerp addr))
-           (equal (read-bytes (bvchop size addr) n x86)
-                  (read-bytes addr n x86)))
+           (equal (read-bytes n (bvchop size addr) x86)
+                  (read-bytes n addr x86)))
   :hints (("Goal" :cases ((equal 48 size))))
 )
 (defthm read-bytes-of-bvplus-tighten
   (implies (and (syntaxp (quotep size))
                 (< 48 size)
                 (integerp size))
-           (equal (read-bytes (bvplus size x y) n x86)
-                  (read-bytes (bvplus 48 x y) n x86)))
+           (equal (read-bytes n (bvplus size x y) x86)
+                  (read-bytes n (bvplus 48 x y) x86)))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,7 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm write-bytes-of-read-bytes-same
-  (equal (write-bytes addr (read-bytes addr n x86) x86)
+  (equal (write-bytes addr (read-bytes n addr x86) x86)
          x86)
   :hints (("Goal" :in-theory (enable read-bytes write-bytes))))
 
