@@ -16,6 +16,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -50,13 +51,6 @@
 (defruledl acl2-numberp-when-natp
   (implies (natp x)
            (acl2-numberp x)))
-
-(defruledl natp-of-logand
-  (implies (and (natp x)
-                (natp y))
-           (natp (logand x y)))
-  :enable natp
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (defruledl natp-of-ash
   (implies (natp x)
@@ -668,7 +662,6 @@
                                        rationalp-when-natp
                                        integerp-when-natp
                                        natp-when-bytep
-                                       natp-of-logand
                                        natp-of-ash))))
 
   ///
