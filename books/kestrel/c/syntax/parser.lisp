@@ -16,7 +16,6 @@
 (include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-;; (local (include-book "kestrel/utilities/strings/char-code-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -24,58 +23,6 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Library extensions.
-
-(defruledl natp-when-bytep
-  (implies (bytep x)
-           (natp x)))
-
-(defruledl rationalp-when-bytep
-  (implies (bytep x)
-           (rationalp x)))
-
-(defruledl acl2-numberp-when-bytep
-  (implies (bytep x)
-           (acl2-numberp x)))
-
-(defruledl integerp-when-natp
-  (implies (natp x)
-           (integerp x)))
-
-(defruledl rationalp-when-natp
-  (implies (natp x)
-           (rationalp x)))
-
-(defruledl acl2-numberp-when-natp
-  (implies (natp x)
-           (acl2-numberp x)))
-
-(defruledl natp-of-plus
-  (implies (and (natp x)
-                (natp y))
-           (natp (+ x y))))
-
-(defruledl natp-of-logand
-  (implies (and (natp x)
-                (natp y))
-           (natp (logand x y)))
-  :enable natp
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defruledl natp-of-ash
-  (implies (natp x)
-           (natp (ash x y)))
-  :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
-
-(defruledl update-nth-of-nth
-  (implies (< (nfix i) (len l))
-           (equal (update-nth i (nth i l) l)
-                  l))
-  :induct t
-  :enable (nth update-nth nfix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
