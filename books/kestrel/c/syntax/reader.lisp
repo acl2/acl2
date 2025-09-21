@@ -51,11 +51,6 @@
   (implies (natp x)
            (acl2-numberp x)))
 
-(defruledl natp-of-plus
-  (implies (and (natp x)
-                (natp y))
-           (natp (+ x y))))
-
 (defruledl natp-of-logand
   (implies (and (natp x)
                 (natp y))
@@ -673,7 +668,6 @@
                                        rationalp-when-natp
                                        integerp-when-natp
                                        natp-when-bytep
-                                       natp-of-plus
                                        natp-of-logand
                                        natp-of-ash))))
 
