@@ -16,6 +16,8 @@
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -2037,9 +2039,6 @@
                                            str::dec-digit-char-value
                                            posp
                                            fix)))
-  :prepwork
-  ((local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-   (local (include-book "kestrel/arithmetic-light/times" :dir :system)))
 
   ///
 
