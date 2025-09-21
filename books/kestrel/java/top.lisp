@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,18 +38,17 @@
    (xdoc::ul
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se21/html"
-              "Java language specification")
+     (xdoc::ahref "https://docs.oracle.com/javase/specs/jls/se21/html"
+                  "Java language specification")
      ", referenced as `[JLSe]' in the documentation of this library,
       where `e' is the Edition, e.g. `[JLS21]' for Java SE 21 Edition.
       Chapters and sections are referenced
       by appending their designations separated by colon,
-      e.g.
-      `[JLS21:4.2]' references Section 4.2 of [JLS21].")
+      e.g. `[JLS21:4.2]' references Section 4.2 of [JLS21].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se21/html"
-              "Java Virtual Machine specification")
+     (xdoc::ahref "https://docs.oracle.com/javase/specs/jvms/se21/html"
+                  "Java Virtual Machine specification")
      ", referenced as `[JVMSe]' in the documentation of this library,
       where `e' is the Edition, e.g. `[JVMS21]' for Java SE 21 Edition.
       Chapters and sections are referenced
@@ -57,8 +56,8 @@
       e.g. `[JVMS21:5.5]' references Section 5.5 of [JVMS21].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/en/java/javase/21/docs/api"
-              "Java API specification")
+     (xdoc::ahref "https://docs.oracle.com/en/java/javase/21/docs/api"
+                  "Java API specification")
      ", referenced as `[JAPISe]' in the documentation of this library
       where `e' is the Edition, e.g. `[JAPIS21]' for Java SE 21 Edition."))
    (xdoc::p
