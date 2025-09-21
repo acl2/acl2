@@ -14,6 +14,7 @@
 
 (include-book "kestrel/fty/byte-list" :dir :system)
 
+(local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
@@ -288,8 +289,7 @@
                     (and (char+position-p char)
                          (<= (nfix i) (len chars)))))
     :induct t
-    :enable (update-nth nfix zp len)
-    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+    :enable (update-nth nfix zp len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,8 +374,7 @@
                     (and (token+span-p token)
                          (<= (nfix i) (len tokens)))))
     :induct t
-    :enable (update-nth nfix zp len)
-    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+    :enable (update-nth nfix zp len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -723,8 +722,6 @@
   ;; needed for reader/writer proofs:
 
   (local (in-theory (enable parstate-fix)))
-
-  (local (include-book "arithmetic-3/top" :dir :system))
 
   ;; readers:
 
