@@ -12,7 +12,6 @@
 
 (include-book "lexer")
 (include-book "files")
-(include-book "keywords")
 (include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
