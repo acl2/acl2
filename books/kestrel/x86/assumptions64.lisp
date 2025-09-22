@@ -45,7 +45,7 @@
    (if bvp
        ;; essentially the same as the below PROGRAM-AT claim:
        ;; todo: huge arrays cause STP crashes (exclude these claims from SMT queries)?
-       (equal (read-bytes addr (len bytes) x86) bytes)
+       (equal (read-bytes (len bytes) addr x86) bytes)
      (program-at addr bytes x86))))
 
 ;; todo: add 64 to the name

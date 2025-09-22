@@ -410,27 +410,26 @@
 
 ;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
 ;; TODO: Consider putting the N parameter first
-(defund read-bytes (addr n stat)
-  (declare (xargs :guard (and (unsigned-byte-p 32 addr)
-                              (natp n)
+(defund read-bytes (n addr stat)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p 32 addr)
                               (stat32ip stat))))
   (if (zp n)
       nil
     (cons (read-byte addr stat)
-          (read-bytes (bvplus 32 1 addr) (+ -1 n) stat))))
+          (read-bytes (+ -1 n) (bvplus 32 1 addr) stat))))
 
 (defthm len-of-read-bytes
-  (equal (len (read-bytes addr n stat))
+  (equal (len (read-bytes n addr stat))
          (nfix n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm car-of-read-bytes
   (implies (and (posp n)
                 (integerp addr))
-           (equal (car (read-bytes addr n x86))
+           (equal (car (read-bytes n addr x86))
                   (read-byte addr x86)))
-  :hints (("Goal" :expand
-           (read-bytes addr n x86))))
+  :hints (("Goal" :expand (read-bytes n addr x86))))
 
 (local
  (defun inc-dec-dec-induct (x y z)
@@ -443,10 +442,10 @@
                 (natp n1)
                 (natp n2)
                 (integerp addr))
-           (equal (nth n1 (read-bytes addr n2 x86))
+           (equal (nth n1 (read-bytes n2 addr x86))
                   (read-byte (bvplus 32 addr n1) x86)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
-           :expand (read-bytes addr n2 x86)
+           :expand (read-bytes n2 addr x86)
            :in-theory (enable read-bytes
                               acl2::bvplus-of-+-arg3))))
 
@@ -465,10 +464,10 @@
                 (natp ad1)
                 (natp len)
                 (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
                   (read-byte (bvplus 32 ad1 ad2) stat)))
-  :hints (("Goal" :induct (dec-dec-inc-induct len ad1 ad2) ; (read-bytes ad2 len stat)
-           :expand (read-bytes ad2 len stat)
+  :hints (("Goal" :induct (dec-dec-inc-induct len ad1 ad2) ; (read-bytes len ad2 stat)
+           :expand (read-bytes len ad2 stat)
            ;(read-induct-two-sizes len ad1 ad2 stat)
            :in-theory (enable read-bytes read-byte-of-+
                               acl2::bvplus-of-+-arg2
@@ -479,7 +478,7 @@
 ;;   (implies (and (natp ad1)
 ;;                 (natp len)
 ;;                 (integerp ad2))
-;;            (equal (bv-array-read 8 len ad1 (read-bytes ad2 len stat))
+;;            (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
 ;;                   (if (< ad1 len)
 ;;                       (read-byte (bvplus 32 ad1 ad2) stat)
 ;;                     0)))
@@ -822,7 +821,7 @@
 
 ;; todo: think about whether the BYTES term will be a cons nest or bv-array-write nest
 (defthm read-when-equal-of-read-bytes-and-subregion32p
-  (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal bytes (read-bytes n2 ad2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (syntaxp (quotep bytes))
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
@@ -845,11 +844,11 @@
            :do-not '(generalize eliminate-destructors)
 ;           :expand (read n1 ad1 stat)
            :expand ((read n1 ad1 stat)
-                    (bv-array-read-chunk-little n1 8 n2 ad1 (read-bytes 0 n2 stat))
-                    (bv-array-read-chunk-little n1 8 n2 (+ (bvchop 32 ad1) (bvuminus 32 ad2)) (read-bytes ad2 n2 stat))
-                    (bv-array-read-chunk-little n1 8 n2 (bvchop 32 (+ ad1 (- ad2))) (read-bytes ad2 n2 stat))
-;                    (bv-array-read-chunk-little n1 8 ad1 (list-to-bv-array 8 (read-bytes 0 n2 stat)))
- ;                   (bv-array-read-chunk-little n1 8 (bvchop 32 (+ ad1 (- ad2))) (list-to-bv-array 8 (read-bytes ad2 n2 stat)))
+                    (bv-array-read-chunk-little n1 8 n2 ad1 (read-bytes n2 0 stat))
+                    (bv-array-read-chunk-little n1 8 n2 (+ (bvchop 32 ad1) (bvuminus 32 ad2)) (read-bytes n2 ad2 stat))
+                    (bv-array-read-chunk-little n1 8 n2 (bvchop 32 (+ ad1 (- ad2))) (read-bytes n2 ad2 stat))
+;                    (bv-array-read-chunk-little n1 8 ad1 (list-to-bv-array 8 (read-bytes n2 0 stat)))
+ ;                   (bv-array-read-chunk-little n1 8 (bvchop 32 (+ ad1 (- ad2))) (list-to-bv-array 8 (read-bytes n2 ad2 stat)))
                     )
            :induct (read n1 ad1 stat)
            :in-theory (e/d ((:i read)
@@ -891,7 +890,7 @@
                             )))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion32p-alt
-  (implies (and (equal (read-bytes ad2 n2 stat) bytes) ; ad2 and n2 and bytes are free vars
+  (implies (and (equal (read-bytes n2 ad2 stat) bytes) ; ad2 and n2 and bytes are free vars
                 (syntaxp (quotep bytes))
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (unsigned-byte-p 32 n1)
@@ -916,7 +915,7 @@
 ;; this version treats BYTES as a list and goes to bv-list-read-chunk-little
 
 (defthm read-when-equal-of-read-bytes
-  (implies (and (equal bytes (read-bytes ad2 n2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal bytes (read-bytes n2 ad2 stat)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
                 ;; (unsigned-byte-p 32 n1)
@@ -977,7 +976,7 @@
 
 ;; flips the equality in hyp 1
 (defthm read-when-equal-of-read-bytes-alt
-  (implies (and (equal (read-bytes ad2 n2 stat) bytes) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal (read-bytes n2 ad2 stat) bytes) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (subregion32p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
                 ;; (unsigned-byte-p 32 n1)
@@ -1543,7 +1542,7 @@
            (array (bv-array-write (* 8 bytes-per-element) num-elems index val array)))
       (read-array-aux bytes-per-element num-elems (+ 1 index) (bvplus 32 bytes-per-element addr) stat array))))
 
-;; Reads N array elements, each of bytes-per-element bytes, starting at ADDR.
+;; Reads LEN array elements, each of bytes-per-element bytes, starting at ADDR.
 ;; Unlike other similar functions this returns an array.
 (defund read-array (bytes-per-element len addr stat)
   (declare (xargs :guard (and (natp bytes-per-element)

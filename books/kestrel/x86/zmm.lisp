@@ -207,8 +207,8 @@
   :hints (("Goal" :in-theory (enable set-zmm))))
 
 (defthm read-bytes-of-set-zmm
-  (equal (read-bytes addr n (set-zmm reg val x86))
-         (read-bytes addr n x86))
+  (equal (read-bytes n addr (set-zmm reg val x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable set-zmm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

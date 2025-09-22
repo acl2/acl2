@@ -6,9 +6,9 @@
 ; Demo of Def-Semantics and Def-Projection
 
 ; This is not a book.  To replay these events do:
-; (ld "demo-of-cw15.lsp" :ld-pre-eval-print t)
+; (ld "basic-demo.lsp" :ld-pre-eval-print t)
 
-(include-book "cw15") ; codewalker source
+(include-book "codewalker") ; codewalker source
 (include-book "m1-version-3") ; stobj version of M1 model
 (set-verify-guards-eagerness 0)
 

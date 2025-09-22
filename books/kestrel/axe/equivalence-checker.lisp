@@ -9865,8 +9865,8 @@
               (and (integerp val)
                    (equal ''0 (aref1 dag-array-name dag-array val))))
           (cons (car entry)
-                (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array))
-        (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array)))))
+                (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array))
+        (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array)))))
 
 ;is this just make-alist?
 (defun cons-list (x y)

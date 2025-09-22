@@ -1,6 +1,6 @@
 ; A parser for XML files
 ;
-; Copyright (C) 2014-2023 Kestrel Institute
+; Copyright (C) 2014-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,9 @@
 (in-package "ACL2")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
-(include-book "misc/file-io" :dir :system) ; for write-list
 (include-book "xml")
+(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
 ;An XML parser sufficient for parsing manifests and layouts of Android
 ;apps.
@@ -22,21 +23,12 @@
 
 ;This could be of more general use, but:
 
+;; TODO: Thread through and return errors, instead of throwing hard errors
 ;; TODO: Consider Unicode
 ;; TODO: Consider character escapes
 ;; TODO: Prove that the parser always returns an xml-item-listp.
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
-
-;;; Library lemmas
-
-;dup?
-(defthm len-of-cdr-linear
-  (implies (consp x)
-           (< (len (cdr x)) (len x)))
-  :rule-classes :linear)
-
-;;; End of library lemmas
 
 (defconst *whitespace-chars*
   '(#\Space #\Tab #\Newline #\))
@@ -46,8 +38,8 @@
   (member char *whitespace-chars*))
 
 (defun all-whitespace-char-p (chars)
-  (declare (xargs :guard t))
-  (if (atom chars)
+  (declare (xargs :guard (character-listp chars)))
+  (if (endp chars)
       t
     (and (whitespace-char-p (first chars))
          (all-whitespace-char-p (rest chars)))))
@@ -61,10 +53,9 @@
   (declare (xargs :guard (character-listp chars)))
   (if (endp chars)
       nil
-    (let ((first-char (first chars)))
-      (if (whitespace-char-p first-char)
-          (skip-whitespace (rest chars))
-        chars))))
+    (if (whitespace-char-p (first chars))
+        (skip-whitespace (rest chars))
+      chars)))
 
 (defthm len-of-skip-whitespace-linear
   (<= (len (skip-whitespace chars)) (len chars))
@@ -95,18 +86,14 @@
                   nil))
   :hints (("Goal" :in-theory (enable skip-whitespace))))
 
-;dup?
-(defthm character-listp-of-cdr
-  (implies (character-listp chars)
-           (character-listp (cdr chars)))
-  :hints (("Goal" :in-theory (enable))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun next-char-is-whitespace-p (chars)
-  (declare (xargs :guard (and (character-listp chars)
-                              (consp chars))))
-  (if (endp chars)
-      (hard-error 'next-char-is-whitespace-p "No more chars!" nil)
-    (whitespace-char-p (first chars))))
+;; (defun next-char-is-whitespace-p (chars)
+;;   (declare (xargs :guard (and (character-listp chars)
+;;                               (consp chars))))
+;;   (if (endp chars)
+;;       (hard-error 'next-char-is-whitespace-p "No more chars!" nil)
+;;     (whitespace-char-p (first chars))))
 
 (defun non-whitespace-char-existsp (chars)
   (declare (xargs :guard (character-listp chars)))
@@ -208,15 +195,21 @@
                   chars)))
 
 (defun skip-through-two-chars (first-non-whitespace-char second-non-whitespace-char chars)
-  (declare (xargs :measure (len chars)))
+  (declare (xargs ;; :guard (and (characterp first-non-whitespace-char)
+                  ;;             (characterp second-non-whitespace-char)
+                  ;;             (character-listp chars))
+                  :measure (len chars)
+                  ;; :guard-hints (("Goal" :in-theory (enable two-non-whitespace-chars-existp skip-whitespace)))
+                  ))
   (if (or (endp chars) (endp (rest chars))) ;for termination (think about this)
-      (er hard 'skip-through-two-chars "Not enough chars" nil)
+      (er hard? 'skip-through-two-chars "Not enough chars" nil)
     (if (and (eql first-non-whitespace-char (next-non-whitespace-char chars))
              (eql second-non-whitespace-char (second-non-whitespace-char chars)))
         (skip-two-chars chars)
       (skip-through-two-chars first-non-whitespace-char second-non-whitespace-char (skip-char chars)))))
 
 (defun skip-xml-prolog (chars)
+;;  (declare (xargs :guard (character-listp chars)))
   (if (and (eql #\< (next-non-whitespace-char chars))
            (eql #\? (second-non-whitespace-char chars)))
       (let* ((chars (skip-two-chars chars))
@@ -386,9 +379,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable second-non-whitespace-char skip-whitespace))))
 
-(include-book "std/basic/two-nats-measure" :dir :system)
-;(include-book "std/lists/final-cdr" :dir :system)
-
 ;; (defthm skip-known-char-when-not-consp-of-cdr
 ;;   (implies (and (not (consp (cdr chars)))
 ;;                 (characterp char)
@@ -397,7 +387,7 @@
 ;;                   (final-cdr chars)))
 ;;   :hints (("Goal" :in-theory (enable skip-known-char parse-next-non-whitespace-char skip-whitespace))))
 
-(defun read-to-end-of-xml-comment (chars)
+(defund read-to-end-of-xml-comment (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (< (len chars) 3)
       (er hard? 'skip-xml-comment "Ran out of chars when parsing comment.")
@@ -407,6 +397,13 @@
         ;; Found the end of the comment, so skip past it and we're done:
         (rest (rest (rest chars)))
       (read-to-end-of-xml-comment (rest chars)))))
+
+(local
+  (defthm len-of-read-to-end-of-xml-comment-linear
+    (<= (len (read-to-end-of-xml-comment chars))
+        (len chars))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable read-to-end-of-xml-comment)))))
 
 ;; chars should begin with <!--
 (defun skip-xml-comment (chars)
@@ -440,10 +437,9 @@
  ;; chars).  The first character of CHARS should be <.  Whitespace within the
  ;; tag itself is not significant (but whitespace between tags is).
  (defun parse-xml-element (chars)
-   (declare (xargs :measure (two-nats-measure (len chars) 0)
-                   :mode :program ;;todo!
-;                   :guard (character-listp chars)
-                   :hints (("Goal" :induct t
+   (declare (xargs; :guard (character-listp chars)
+                   :measure (make-ord 1 (+ 1 (len chars)) 0)
+                   :hints (("Goal" ; :induct t
                             :in-theory (disable SKIP-char next-non-whitespace-char second-non-whitespace-char)
                             ;;:expand (PARSE-XML-ELEMENT CHARS) ;todo: illegal hint!
                             ))))
@@ -478,6 +474,8 @@
  ;; Parse and XML string up to an occurrence of '<' indicating the next tag.
  ;; Returns (mv string chars).
  (defun parse-xml-string (chars)
+   (declare (xargs; :guard (character-listp chars)
+                   :measure (len chars)))
    (if (endp chars)
        (mv "" nil)
      (let* ((chars (maybe-skip-xml-comment chars))
@@ -492,9 +490,8 @@
  ;; Parse the contents of an XML element, which may be strings and
  ;; sub-elements, up to a closing tag returns (mv elems chars)
  (defun parse-xml-elements-and-strings (chars)
-   (declare (xargs :measure (two-nats-measure (len chars) 1)
-;                   :guard (character-listp chars)
-                   ))
+   (declare (xargs; :guard (character-listp chars)
+                   :measure (make-ord 1 (+ 1 (len chars)) 1)))
    (if (not (consp chars))
        (mv nil nil)
      (let ((first-char (first chars))
@@ -531,7 +528,7 @@
 
 ;Returns a list of XML elements and strings
 (defun parse-xml-chars (chars)
-  (declare (xargs :mode :program ;;todo!
+  (declare (xargs ;; :guard (character-listp chars)
                   ))
   (let ((chars (skip-xml-prolog chars)))
     (mv-let (elem chars)
@@ -573,7 +570,9 @@
 ;;TODO: Must there be a single top-level element?  This is more general
 ;;Returns (mv elements-and-strings state)
 (defun parse-xml-file (input-xml-file drop-whitespace-stringsp state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :stobjs state ;;:mode :program
+                  :verify-guards nil ; todo
+                  ))
   (mv-let (erp bytes state) ; todo: read directly into a character list?
     (read-file-into-byte-list input-xml-file state)
     (if erp
@@ -585,23 +584,3 @@
                                (drop-whitespace-strings-from-parsed-xml-items parsed-items)
                              parsed-items)))
         (mv parsed-items state)))))
-
-(defun build-book-for-xml-file-fn (input-xml-file output-file-name defconst-name state)
-  (declare (xargs :stobjs state
-                  :mode :program
-                  :guard (and (stringp input-xml-file)
-                              (stringp output-file-name)
-                              (stringp defconst-name)))) ;todo: require stars at beginning and end
-  (mv-let (elements-and-strings state)
-    (parse-xml-file input-xml-file
-                    t ;todo: think about this
-                    state)
-    (write-list `(";; This file was automatically generated by build-book-for-xml-file."
-                  (in-package "ACL2")
-                  (defconst ,(intern defconst-name "ACL2") ',elements-and-strings))
-                output-file-name
-                'build-book-for-xml-file
-                state)))
-
-(defmacro build-book-for-xml-file (input-xml-file output-file-name defconst-name)
-  `(build-book-for-xml-file-fn ',input-xml-file ',output-file-name ',defconst-name state))
