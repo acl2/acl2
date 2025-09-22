@@ -1400,47 +1400,47 @@
 
 (defthm read-bytes-of-xw-irrel
   (implies (not (equal fld :mem))
-           (equal (read-bytes addr x (xw fld index val x86))
-                  (read-bytes addr x x86)))
+           (equal (read-bytes n addr (xw fld index val x86))
+                  (read-bytes n addr x86)))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
-(defthm read-bytes-of-set-rip (equal (read-bytes addr x (set-rip rip x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rax (equal (read-bytes addr x (set-rax rax x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rbx (equal (read-bytes addr x (set-rbx rbx x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rcx (equal (read-bytes addr x (set-rcx rcx x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rdx (equal (read-bytes addr x (set-rdx rdx x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rdi (equal (read-bytes addr x (set-rdi rdi x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rsi (equal (read-bytes addr x (set-rsi rsi x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r8 (equal (read-bytes addr x (set-r8 r8 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r9 (equal (read-bytes addr x (set-r9 r9 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r10 (equal (read-bytes addr x (set-r10 r10 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r11 (equal (read-bytes addr x (set-r11 r11 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r12 (equal (read-bytes addr x (set-r12 r12 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r13 (equal (read-bytes addr x (set-r13 r13 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r14 (equal (read-bytes addr x (set-r14 r14 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-r15 (equal (read-bytes addr x (set-r15 r15 x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rsp (equal (read-bytes addr x (set-rsp rsp x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
-(defthm read-bytes-of-set-rbp (equal (read-bytes addr x (set-rbp rbp x86)) (read-bytes addr x x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rip (equal (read-bytes n addr (set-rip rip x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rax (equal (read-bytes n addr (set-rax rax x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rbx (equal (read-bytes n addr (set-rbx rbx x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rcx (equal (read-bytes n addr (set-rcx rcx x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rdx (equal (read-bytes n addr (set-rdx rdx x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rdi (equal (read-bytes n addr (set-rdi rdi x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rsi (equal (read-bytes n addr (set-rsi rsi x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r8 (equal (read-bytes n addr (set-r8 r8 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r9 (equal (read-bytes n addr (set-r9 r9 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r10 (equal (read-bytes n addr (set-r10 r10 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r11 (equal (read-bytes n addr (set-r11 r11 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r12 (equal (read-bytes n addr (set-r12 r12 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r13 (equal (read-bytes n addr (set-r13 r13 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r14 (equal (read-bytes n addr (set-r14 r14 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-r15 (equal (read-bytes n addr (set-r15 r15 x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rsp (equal (read-bytes n addr (set-rsp rsp x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
+(defthm read-bytes-of-set-rbp (equal (read-bytes n addr (set-rbp rbp x86)) (read-bytes n addr x86)) :hints (("Goal" :in-theory (enable read-bytes))))
 
 ;; todo: add more for more state changers!
 (defthm read-bytes-of-set-flag
-  (equal (read-bytes addr x (set-flag flag val x86))
-         (read-bytes addr x x86))
+  (equal (read-bytes n addr (set-flag flag val x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-of-set-undef
-  (equal (read-bytes addr x (set-undef undef x86))
-         (read-bytes addr x x86))
+  (equal (read-bytes n addr (set-undef undef x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-of-set-mxcsr
-  (equal (read-bytes addr x (set-mxcsr mxcsr x86))
-         (read-bytes addr x x86))
+  (equal (read-bytes n addr (set-mxcsr mxcsr x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-of-!rflags
-  (equal (read-bytes addr x (!rflags rflags x86))
-         (read-bytes addr x x86))
+  (equal (read-bytes n addr (!rflags rflags x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
