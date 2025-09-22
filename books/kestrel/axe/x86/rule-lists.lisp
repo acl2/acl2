@@ -1435,7 +1435,7 @@
     x86isa::alignment-checking-enabled-p-of-if
     x86isa::64-bit-modep-of-if
     x86isa::ctri-of-if
-    x86isa::canonical-address-p-of-if
+    x86isa::canonical-address-p-of-if ; not always needed
     get-flag-of-if
     ;; feature-flag-of-if
     read-of-if
@@ -2053,17 +2053,18 @@
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
     ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
-    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp only when nothing else works
     canonical-regionp-of-+-arg2
-    unsigned-canonical-address-p-of-bvif
-    unsigned-canonical-address-p-of-if
-    unsigned-canonical-address-p-of-bvsx-64-48
+    unsigned-canonical-address-p-of-bvif ; lifts the if ; todo: go to boolif?
+    unsigned-canonical-address-p-of-if ; lifts the if ; todo: go to boolif?
+    unsigned-canonical-address-p-of-bvsx-64-48 ; always true
     unsigned-canonical-address-p-of-bvchop
-    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
     unsigned-canonical-address-p-constant-opener
-    write-of-logext-arg2 ; move?
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
+
+    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
+    write-of-logext-arg2 ; move?
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
     bvsx-when-unsigned-canonical-address-p))
 
