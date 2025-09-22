@@ -1,6 +1,6 @@
 ; A parser for XML files
 ;
-; Copyright (C) 2014-2023 Kestrel Institute
+; Copyright (C) 2014-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "misc/file-io" :dir :system) ; for write-list
 (include-book "xml")
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;An XML parser sufficient for parsing manifests and layouts of Android
 ;apps.
@@ -27,16 +28,6 @@
 ;; TODO: Prove that the parser always returns an xml-item-listp.
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
-
-;;; Library lemmas
-
-;dup?
-(defthm len-of-cdr-linear
-  (implies (consp x)
-           (< (len (cdr x)) (len x)))
-  :rule-classes :linear)
-
-;;; End of library lemmas
 
 (defconst *whitespace-chars*
   '(#\Space #\Tab #\Newline #\))
@@ -386,9 +377,6 @@
                   nil))
   :hints (("Goal" :in-theory (enable second-non-whitespace-char skip-whitespace))))
 
-(include-book "std/basic/two-nats-measure" :dir :system)
-;(include-book "std/lists/final-cdr" :dir :system)
-
 ;; (defthm skip-known-char-when-not-consp-of-cdr
 ;;   (implies (and (not (consp (cdr chars)))
 ;;                 (characterp char)
@@ -440,7 +428,7 @@
  ;; chars).  The first character of CHARS should be <.  Whitespace within the
  ;; tag itself is not significant (but whitespace between tags is).
  (defun parse-xml-element (chars)
-   (declare (xargs :measure (two-nats-measure (len chars) 0)
+   (declare (xargs :measure (make-ord 1 (len chars) 0)
                    :mode :program ;;todo!
 ;                   :guard (character-listp chars)
                    :hints (("Goal" :induct t
@@ -492,7 +480,7 @@
  ;; Parse the contents of an XML element, which may be strings and
  ;; sub-elements, up to a closing tag returns (mv elems chars)
  (defun parse-xml-elements-and-strings (chars)
-   (declare (xargs :measure (two-nats-measure (len chars) 1)
+   (declare (xargs :measure (make-ord 1 (len chars) 1)
 ;                   :guard (character-listp chars)
                    ))
    (if (not (consp chars))
