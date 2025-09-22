@@ -54,3 +54,10 @@ examples/eval-poly-support.lisp.
 Consider improving matching by modifying generated rules to improve
 matching, as suggested in theorem HOL{SUM_POLYS}0-alt in
 examples/eval-poly-support.lisp.
+
+============================================================
+
+Move lemmas as appropriate from acl2/lemmas.lisp to books under
+../set-theory/.
+
+============================================================
