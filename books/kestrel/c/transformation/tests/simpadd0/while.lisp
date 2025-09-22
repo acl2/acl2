@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("while.c")
+(c$::input-files :files '("while.c")
                  :path "old"
                  :const *old-code*)
 
