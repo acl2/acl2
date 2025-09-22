@@ -24,6 +24,8 @@
 (local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
 
+; cert_param: (non-acl2r)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Library extensions.
