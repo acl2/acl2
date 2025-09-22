@@ -184,6 +184,6 @@
   ;; OLD: We start by stepping once.  This increases the stack height.  Then we run
   ;; until the stack height decreases again.  Finally, we step one more time to
   ;; do the RET.
-  ;;(step32 (run-until-return (step32 stat)))x
+  ;;(step32 (run-until-return (step32 stat)))
   (run-until-return stat)
   )

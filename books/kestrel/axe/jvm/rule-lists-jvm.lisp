@@ -1511,7 +1511,7 @@
             sbvlt-of-myif-arg2-safe
             sbvlt-of-myif-arg3-safe
             integerp-when-unsigned-byte-p-free ;needed for update-nth reasoning for object arrays (but we may change that)
-            <-of-constant-when-usb ;needed for update-nth reasoning for object arrays (but we may change that)a
+            <-of-constant-when-usb ;needed for update-nth reasoning for object arrays (but we may change that)
             max                    ;used in object array reasoning
             SBVLT-OF-+-ARG2        ;used in object array reasoning
             ;;SBVLT-OF-+-ARG3
