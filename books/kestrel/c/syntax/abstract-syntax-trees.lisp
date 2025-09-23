@@ -2533,9 +2533,9 @@
        we also include an empty external declaration,
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
-              (specqual spec/qual-list)
-              (declor struct-declor-list)
-              (attrib attrib-spec-list))) ; GCC extension
+              (specquals spec/qual-list)
+              (declors struct-declor-list)
+              (attribs attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp

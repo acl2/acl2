@@ -1671,7 +1671,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             ,new-compst))
+                             (mv nil ,new-compst)))
        (expr-formula (atc-contextualize expr-formula
                                         gin.context
                                         gin.fn
@@ -1725,7 +1725,10 @@
                                ,expr-thm-name
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-update-static-var))))
+                               compustatep-of-update-static-var
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5152,7 +5155,7 @@
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
        (call-limit `(binary-+ '2 ,limit))
-       ((mv & new-compst)
+       ((mv result new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
                                           gin.inscope
@@ -5162,7 +5165,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             ,new-compst))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -5362,7 +5365,10 @@
                                ,call-thm-name
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-update-static-var))))
+                               compustatep-of-update-static-var
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints

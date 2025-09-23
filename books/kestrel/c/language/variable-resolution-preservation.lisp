@@ -454,8 +454,8 @@
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-asg)
     (defthm var-resolve-preservep-of-exec-expr-call-or-asg
-      (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
+      (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
+        (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-call-or-asg)
     (defthm var-resolve-preservep-of-exec-fun
@@ -588,15 +588,16 @@
              peel-scopes))
 
   (defruled var-resolve-of-exec-call-or-asg
-    (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
+    (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
+      (implies (and (not (errorp result))
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
                       (objdesign-of-var var compst))))
     :use (var-resolve-preservep-of-exec-expr-call-or-asg
           (:instance var-resolve-preservep-necc
                      (var (ident-fix var))
-                     (compst1 (exec-expr-call-or-asg e compst fenv limit))
+                     (compst1
+                      (mv-nth 1 (exec-expr-call-or-asg e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

@@ -55,12 +55,14 @@
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :expr)
                   (not (zp limit))
-                  (equal compst1
+                  (equal result+compst1
                          (exec-expr-call-or-asg (stmt-expr->get s)
                                                 compst
                                                 fenv
                                                 (1- limit)))
-                  (compustatep compst1))
+                  (equal result (mv-nth 0 result+compst1))
+                  (equal compst1 (mv-nth 1 result+compst1))
+                  (value-optionp result))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-none) compst1)))
     :enable exec-stmt)
