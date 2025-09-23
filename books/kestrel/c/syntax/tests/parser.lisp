@@ -27,12 +27,14 @@
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
-  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST.
+  ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
   `(assert!-stobj
     (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
-         (,(if (eq fn 'parse-external-declaration-list)
-               '(mv erp ?ast ?span ?eofpos parstate)
-             '(mv erp ?ast ?span parstate))
+         (,(cond ((eq fn 'parse-*-external-declaration)
+                  '(mv erp ?ast ?span ?eofpos parstate))
+                 ((eq fn 'parse-translation-unit)
+                  '(mv erp ?ast parstate))
+                 (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate)))))
@@ -50,9 +52,11 @@
   ;; GCC flag says whether GCC extensions are enabled.
   `(assert!-stobj
     (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
-         (,(if (eq fn 'parse-external-declaration-list)
-               '(mv erp ?ast ?span ?eofpos parstate)
-             '(mv erp ?ast ?span parstate))
+         (,(cond ((eq fn 'parse-*-external-declaration)
+                  '(mv erp ?ast ?span ?eofpos parstate))
+                 ((eq fn 'parse-translation-unit)
+                  '(mv erp ?ast parstate))
+                 (t '(mv erp ?ast ?span parstate)))
           (,fn ,@more-inputs parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate)))))
@@ -700,17 +704,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; parse-external-declaration-list
+; parse-*-external-declaration
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "struct mystruct
 {
    int *val;
 };")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "typedef void foo;
 struct bar
 {
@@ -718,57 +722,57 @@ struct bar
 };")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int ith(int *a) {
  return a[0];
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int ith(int a[]) {
  return a[0];
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int main() { }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo (unsigned int v)
 {
  return (v >> 1);
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void encrypt (uint32_t* v) {
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void encrypt () {
   uint32_t v0=1;
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo () {
   gen_config_t gen_config = {100};
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int A [] = {0,1,2,3};")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int spec_int(unsigned int v)
 {
   unsigned int c;
@@ -778,7 +782,7 @@ struct bar
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int sum(int a[], int n) {
   int s = 0;
   for (int i = 1; i <= n; ++i)
@@ -787,19 +791,19 @@ struct bar
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo (char x, char y) { return x < y && y < x; }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo (int x, int y) { return x < y || y < x; }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo (int x) { int z = 0 ; z &= x; }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo () {
   while (x > y) {
     x++;
@@ -807,94 +811,94 @@ struct bar
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo () {
   int i = 0;
   i--;
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int main() {
  int a = 10, b = 5;
  a %= b;
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "char string[] = \"\";")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo () {
   managedtask * newtask = (managedtask *) malloc(sizeof(managedtask));
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo () {
  idx = (arr)[3];
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void test(int i)
 {
     y[i] = (i ? inv : src)[i];
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern char *tmpnam (char[20]);")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern int __uflow (FILE *);")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int c[1][2];")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "struct A
 {
   int c1, c2;
 };")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "long long foo () {
   return 1LL;
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern int sscanf (const char *__s, const char *__format, ...);")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern int remove (const char *__filename) __attribute__ ((__nothrow__ , __leaf__));"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "typedef int register_t __attribute__ ((__mode__ (__word__)));"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern int fscanf (FILE *__restrict __stream, const char *__restrict __format, ...) __asm__ (\"\" \"__isoc99_fscanf\") ;"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void foo() {
   for (size_t bar; ; ) {}
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "static int func_1(void)
 {
    int i;
@@ -903,7 +907,7 @@ lbl_15:
 }")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern __inline __attribute__ ((__always_inline__)) __attribute__ ((__gnu_inline__)) void
 error (int __status, int __errnum, const char *__format, ...)
 {
@@ -915,32 +919,32 @@ error (int __status, int __errnum, const char *__format, ...)
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo asm (\"myfoo\") = 2;"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "__declspec(thread) int nevents = 0;"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :gcc t)
 
@@ -955,7 +959,7 @@ error (int __status, int __errnum, const char *__format, ...)
  :cond (equal (len ast) 2))
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "const void *x = 0;
   // foo
   void *y = (void *) x;
@@ -963,7 +967,7 @@ error (int __status, int __errnum, const char *__format, ...)
 ")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "void * foo(void) {
   const void *x = 0;
 #pragma GCC diagnostic push
@@ -974,7 +978,7 @@ error (int __status, int __errnum, const char *__format, ...)
 ")
 
 (test-parse-fail
- parse-external-declaration-list
+ parse-*-external-declaration
  "void * foo(void) {
   const #pragma GCC diagnostic push
     void *x = 0;
@@ -985,31 +989,31 @@ error (int __status, int __errnum, const char *__format, ...)
 ")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "#pragma once
   int x;
 ")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  " #pragma once
   int x;
 ")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "#pragma once
   int x;
 ")
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "#pragma onceint x;
 "
  :cond (equal (len ast) 1))
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo (int arg __attribute__((unused))) {
   return 0;
 }
@@ -1017,13 +1021,13 @@ error (int __status, int __errnum, const char *__format, ...)
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "struct s x = {};
 "
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "double __cabs (_Complex double z) {
   return __hypot (__real__ z, __imag__ z);
 }
@@ -1031,10 +1035,23 @@ error (int __status, int __errnum, const char *__format, ...)
  :gcc t)
 
 (test-parse
- parse-external-declaration-list
+ parse-*-external-declaration
  "int foo(void) {
   my_label: __attribute__((unused))
   return 1;
 }
 "
+ :gcc t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-translation-unit
+
+(test-parse-fail
+ parse-translation-unit
+ "")
+
+(test-parse
+ parse-translation-unit
+ ""
  :gcc t)

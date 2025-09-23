@@ -4289,15 +4289,7 @@
               (transunit-aidentp tunit (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that there is at least one external declaration,
-     as required by the grammar."))
-  (b* (((transunit tunit) tunit)
-       ((unless tunit.decls)
-        (raise "Misusage error: empty translation unit.")
-        (pristate-fix pstate)))
+  (b* (((transunit tunit) tunit))
     (print-extdecl-list tunit.decls pstate))
   :hooks (:fix)
 

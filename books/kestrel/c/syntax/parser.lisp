@@ -11325,13 +11325,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-external-declaration-list ((parstate parstatep))
+(define parse-*-external-declaration ((parstate parstatep))
   :returns (mv erp
                (extdecls extdecl-listp)
                (span spanp)
                (eof-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of one or more external declarations."
+  :short "Parse a list of zero or more external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -11340,40 +11340,32 @@
      If successful, we return the list of external declarations.")
    (xdoc::p
     "We also return the position just past the end of the file.
-     The latter is used for a check performed by the caller.")
-   (xdoc::p
-    "We parse the first external declaration, which must be present.
-     Then, unless we have reached the end of the file,
-     we recursively parse more external declarations."))
+     The latter is used for a check performed by the caller."))
   (b* (((reterr) nil (irr-span) (irr-position) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((when (not token)) ; EOF
+        (retok nil span (span->start span) parstate))
+       (parstate (unread-token parstate))
        ((erp extdecl first-span parstate) ; extdecl
         (parse-external-declaration parstate))
-       ((erp token span parstate) (read-token parstate))
-       ((when (not token)) ; extdecl EOF
-        (retok (list extdecl) first-span (span->start span) parstate))
-       ;; extdecl other
-       (parstate (unread-token parstate)) ; extdecl
-       ((erp extdecls last-span eof-pos parstate) ; extdecl extdecls
-        (parse-external-declaration-list parstate)))
+       ((erp extdecls last-span eof-pos parstate) ; extdecl [extdecls]
+        (parse-*-external-declaration parstate)))
     (retok (cons extdecl extdecls)
            (span-join first-span last-span)
            eof-pos
            parstate))
   :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable fix)))
   :verify-guards :after-returns
 
   ///
 
+  (more-returns
+   (extdecls true-listp :rule-classes :type-prescription))
+
   (defret parsize-of-parse-external-declaration-list-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-external-declaration-list-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -11390,8 +11382,10 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     We parse one or more external declarations,
-     consistently with the grammar.")
+     We parse zero or more external declarations,
+     consistently with the grammar.
+     But unless GCC extensions are enabled,
+     we reject input with zero external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/2].
@@ -11403,7 +11397,11 @@
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
        ((erp extdecls & eof-pos parstate)
-        (parse-external-declaration-list parstate))
+        (parse-*-external-declaration parstate))
+       ((when (and (endp extdecls)
+                   (not (parstate->gcc parstate))))
+        (reterr (msg "The translation unit has no external declarations, ~
+                      but GCC extensions (which allow that) are not enabled.")))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
     (retok (make-transunit :decls extdecls :info nil) parstate))
@@ -11413,12 +11411,6 @@
   (defret parsize-of-parse-translation-unit-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-translation-unit-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

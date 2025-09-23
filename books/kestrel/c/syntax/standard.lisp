@@ -205,4 +205,5 @@
                 (decl-list-standardp (fundef->decls fundef))
                 (block-item-list-standardp (fundef->body fundef))))
    (extdecl :empty nil)
-   (extdecl :asm nil)))
+   (extdecl :asm nil)
+   (transunit (consp (transunit->decls transunit)))))

@@ -1560,8 +1560,15 @@ jump-statement = %s"goto" identifier ";"
 ; assembler statements can occur at the top level,
 ; but we encountered that in practical code.
 
-translation-unit = external-declaration
-                 / translation-unit external-declaration
+; As a GCC extension, we allow empty translation units,
+; i.e. with no external declarations.
+; We combine this requirement with the rule from [C17]
+; by using a simpler ABNF rule.
+; We could not find a specific place in the GCC documentation
+; that explicitly says that empty translation units are allowed,
+; but we found that they are allowed when running GCC on them.
+
+translation-unit = *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration
