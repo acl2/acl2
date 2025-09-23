@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   ;; TODO: transformation should define the const
@@ -51,7 +51,7 @@ int bar(int y, int z) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("fib.c")
+  (c$::input-files :files '("fib.c")
                    :const *old*)
 
   (defconst *new*
@@ -89,7 +89,7 @@ int fib(int x) {
 ;; should not be renamed.
 
 (acl2::must-succeed*
-  (c$::input-files :files ("generic-selection.c")
+  (c$::input-files :files '("generic-selection.c")
                    :gcc t
                    :const *old*)
 
