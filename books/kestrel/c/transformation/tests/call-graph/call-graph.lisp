@@ -23,7 +23,7 @@
 (acl2::must-succeed*
   (c$::input-files
     :const *test*
-    :files ("main.c" "file1.c"))
+    :files '("main.c" "file1.c"))
 
   (defconst *call-graph*
     (call-graph-transunit-ensemble
@@ -73,7 +73,7 @@
 (acl2::must-succeed*
   (c$::input-files
     :const *test*
-    :files ("main2.c" "file1.c"))
+    :files '("main2.c" "file1.c"))
 
   (defconst *call-graph*
     (call-graph-transunit-ensemble

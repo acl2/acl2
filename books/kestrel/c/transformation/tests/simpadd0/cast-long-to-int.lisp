@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("cast_long_to_int.c")
+(c$::input-files :files '("cast_long_to_int.c")
                  :path "old"
                  :const *old-code*)
 

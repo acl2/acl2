@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("nonint_const.c")
+(c$::input-files :files '("nonint_const.c")
                  :path "old"
                  :const *old-code*)
 

@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (defconst *new*
@@ -46,7 +46,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :process :parse
                    :const *old*)
 
@@ -72,7 +72,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test3.c")
+  (c$::input-files :files '("test3.c")
                    :const *old*)
 
   (defconst *new*
