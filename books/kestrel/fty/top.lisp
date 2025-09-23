@@ -21,6 +21,7 @@
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")
+(include-book "character-set")
 (include-book "database")
 (include-book "dec-digit-char-list")
 (include-book "defbyte")
