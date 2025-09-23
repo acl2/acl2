@@ -831,7 +831,7 @@
                 (consp structdeclon.declors)
                 (endp (cdr structdeclon.declors))
                 (struct-declor-formalp (car structdeclon.declors))
-                (endp structdeclon.attrib))
+                (endp structdeclon.attribs))
    :statassert nil
    :empty nil)
   :hooks (:fix))

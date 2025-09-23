@@ -2535,7 +2535,7 @@
     (:member ((extension bool) ; GCC extension
               (specquals spec/qual-list)
               (declors struct-declor-list)
-              (attrib attrib-spec-list))) ; GCC extension
+              (attribs attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp

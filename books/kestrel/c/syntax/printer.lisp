@@ -3196,9 +3196,9 @@
                                                       pstate)))
                         pstate)
                     pstate))
-          (pstate (if structdeclon.attrib
+          (pstate (if structdeclon.attribs
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-attrib-spec-list structdeclon.attrib
+                           (pstate (print-attrib-spec-list structdeclon.attribs
                                                            pstate)))
                         pstate)
                     pstate))

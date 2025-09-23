@@ -623,7 +623,7 @@
               (free-vars-struct-declor-list struct-declon.declors bound-vars)))
           (mv (union free-vars0
                      (union free-vars1
-                            (free-vars-attrib-spec-list struct-declon.attrib
+                            (free-vars-attrib-spec-list struct-declon.attribs
                                                         bound-vars)))
               bound-vars))
         :statassert (mv (free-vars-statassert struct-declon.unwrap bound-vars)

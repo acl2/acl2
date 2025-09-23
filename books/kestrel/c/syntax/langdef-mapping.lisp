@@ -915,8 +915,8 @@
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
        ((erp objdeclor) (ldm-declor-obj declor.declor?))
-       (attrib (struct-declon-member->attrib structdeclon))
-       ((when attrib)
+       (attribs (struct-declon-member->attribs structdeclon))
+       ((when attribs)
         (reterr (msg "Unsupporte GCC attributes ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon)))))

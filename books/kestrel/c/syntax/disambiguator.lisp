@@ -2488,7 +2488,7 @@
          (retok (make-struct-declon-member :extension structdeclon.extension
                                            :specquals new-specquals
                                            :declors new-declors
-                                           :attrib structdeclon.attrib)
+                                           :attribs structdeclon.attribs)
                 table))
        :statassert
        (b* (((erp new-statassert table)

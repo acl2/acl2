@@ -6538,7 +6538,7 @@
               (retok (make-struct-declon-member :extension extension
                                                 :specquals specquals
                                                 :declors structdeclors
-                                                :attrib attrspecs)
+                                                :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is the keyword '__attribute__',
@@ -6559,7 +6559,7 @@
               (retok (make-struct-declon-member :extension extension
                                                 :specquals specquals
                                                 :declors nil
-                                                :attrib attrspecs)
+                                                :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon,
@@ -6568,7 +6568,7 @@
             (retok (make-struct-declon-member :extension extension
                                               :specquals specquals
                                               :declors nil
-                                              :attrib nil)
+                                              :attribs nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.

@@ -942,7 +942,7 @@
             specquals
             declors
             (attrib-spec-list-subst-free
-             (c$::struct-declon-member->attrib struct-declon)
+             (c$::struct-declon-member->attribs struct-declon)
              subst bound-vars))
            (ident-set-fix bound-vars)))
      :statassert

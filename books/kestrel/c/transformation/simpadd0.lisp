@@ -3666,7 +3666,7 @@
                       :extension structdeclon.extension
                       :specquals new-specquals
                       :declors new-declors
-                      :attrib structdeclon.attrib)
+                      :attribs structdeclon.attribs)
                      (simpadd0-gout-no-thm gin)))
        :statassert (b* (((mv new-structdeclon (simpadd0-gout gout-structdeclon))
                          (simpadd0-statassert structdeclon.unwrap gin))

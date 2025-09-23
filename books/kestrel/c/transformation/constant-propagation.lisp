@@ -1503,7 +1503,7 @@
                         :extension struct-declon.extension
                         :specquals specquals
                         :declors declors
-                        :attrib struct-declon.attrib)
+                        :attribs struct-declon.attribs)
                       env))
         :statassert (b* (((mv unwrap env)
                           (const-prop-statassert struct-declon.unwrap env)))
