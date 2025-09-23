@@ -6536,9 +6536,9 @@
                   ;; [__extension__] specquals structdeclors [attrspecs] ;
                   (read-punctuator ";" parstate)))
               (retok (make-struct-declon-member :extension extension
-                                                :specqual specquals
-                                                :declor structdeclors
-                                                :attrib attrspecs)
+                                                :specquals specquals
+                                                :declors structdeclors
+                                                :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is the keyword '__attribute__',
@@ -6557,18 +6557,18 @@
                   ;; [__extension__] specquals [attrspecs] ;
                   (read-punctuator ";" parstate)))
               (retok (make-struct-declon-member :extension extension
-                                                :specqual specquals
-                                                :declor nil
-                                                :attrib attrspecs)
+                                                :specquals specquals
+                                                :declors nil
+                                                :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon,
            ;; we have reached the end of the structure declaration.
            ((token-punctuatorp token2 ";") ; specquals ;
             (retok (make-struct-declon-member :extension extension
-                                              :specqual specquals
-                                              :declor nil
-                                              :attrib nil)
+                                              :specquals specquals
+                                              :declors nil
+                                              :attribs nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.

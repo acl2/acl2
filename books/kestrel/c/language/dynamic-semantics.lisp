@@ -1050,7 +1050,8 @@
                                  (compst compustatep)
                                  (fenv fun-envp)
                                  (limit natp))
-    :returns (new-compst compustate-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a function call or assignment expression."
     :long
@@ -1059,17 +1060,17 @@
       "This is used for expressions used as expression statements.
        Thus, in the case of a function call,
        we discard the returned value, if any."))
-    (b* (((when (zp limit)) (error :limit)))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (if (expr-case e :call)
-          (b* (((mv result compst)
-                (exec-expr-call (expr-call->fun e)
-                                (expr-call->args e)
-                                compst
-                                fenv
-                                (1- limit)))
-               ((when (errorp result)) result))
-            compst)
-        (exec-expr-asg e compst fenv (1- limit))))
+          (exec-expr-call (expr-call->fun e)
+                          (expr-call->args e)
+                          compst
+                          fenv
+                          (1- limit))
+        (b* ((compst/error (exec-expr-asg e compst fenv (1- limit))))
+          (if (errorp compst/error)
+              (mv compst/error (compustate-fix compst))
+            (mv nil compst/error)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1149,13 +1150,12 @@
                       ((mv sval compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv sval (exit-scope compst)))
-       :expr (b* ((compst/error (exec-expr-call-or-asg s.get
-                                                       compst
-                                                       fenv
-                                                       (1- limit)))
-                  ((when (errorp compst/error))
-                   (mv compst/error (compustate-fix compst))))
-               (mv (stmt-value-none) compst/error))
+       :expr (b* (((mv result compst) (exec-expr-call-or-asg s.get
+                                                             compst
+                                                             fenv
+                                                             (1- limit)))
+                  ((when (errorp result)) (mv result compst)))
+               (mv (stmt-value-none) compst))
        :null (mv (stmt-value-none) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst)))
@@ -1408,9 +1408,8 @@
                       (compustate-frames-number compst)))
       :fn exec-expr-asg)
     (defret compustate-frames-number-of-exec-expr-call-or-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-frames-number new-compst)
-                      (compustate-frames-number compst)))
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
       :fn exec-expr-call-or-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
@@ -1477,9 +1476,8 @@
                       (compustate-scopes-numbers compst)))
       :fn exec-expr-asg)
     (defret compustate-scopes-numbers-of-exec-expr-call-or-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-scopes-numbers new-compst)
-                      (compustate-scopes-numbers compst)))
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
       :fn exec-expr-call-or-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)

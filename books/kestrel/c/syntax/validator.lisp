@@ -4884,15 +4884,15 @@
       (struct-declon-case
        structdeclon
        :member
-       (b* (((erp new-specqual type types table)
-             (valid-spec/qual-list structdeclon.specqual nil nil table ienv))
-            ((erp new-declor previous more-types table)
+       (b* (((erp new-specquals type types table)
+             (valid-spec/qual-list structdeclon.specquals nil nil table ienv))
+            ((erp new-declors previous more-types table)
              (valid-struct-declor-list
-              structdeclon.declor previous type table ienv)))
+              structdeclon.declors previous type table ienv)))
          (retok (make-struct-declon-member :extension structdeclon.extension
-                                           :specqual new-specqual
-                                           :declor new-declor
-                                           :attrib structdeclon.attrib)
+                                           :specquals new-specquals
+                                           :declors new-declors
+                                           :attribs structdeclon.attribs)
                 previous
                 (set::union types more-types)
                 table))
