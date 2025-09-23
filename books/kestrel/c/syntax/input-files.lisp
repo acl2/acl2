@@ -19,6 +19,7 @@
 (include-book "clause-processors/magic-ev" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
+(include-book "kestrel/fty/string-stringlist-map" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
@@ -182,7 +183,7 @@
                (new-preprocess-args-presentp booleanp)
                (preprocess-extra-args
                  (or (string-listp preprocess-extra-args)
-                     (string-string-list-mapp preprocess-extra-args))))
+                     (acl2::string-stringlist-mapp preprocess-extra-args))))
   :short "Process the @(':preprocess-args') input."
   :long
   (xdoc::topstring
@@ -204,7 +205,7 @@
                       but it is ~x0 instead."
                      preprocess-args)))
        ((unless (or (string-listp preprocess-args)
-                    (string-string-list-mapp preprocess-args)))
+                    (acl2::string-stringlist-mapp preprocess-args)))
         (reterr (msg "The :PREPROCESS-ARGS input must evaluate to ~
                       a list of strings ~
                       or an omap associating strings to lists of strings, ~
@@ -215,15 +216,15 @@
   ///
 
   (defret string-listp-of-input-files-process-preprocess-args.preprocess-extra-args
-    (implies (not (string-string-list-mapp preprocess-extra-args))
+    (implies (not (acl2::string-stringlist-mapp preprocess-extra-args))
              (string-listp preprocess-extra-args))
     :hints
     (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
              :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args))))
 
-  (defret string-string-list-mapp-of-input-files-process-preprocess-args.preprocess-extra-args
+  (defret string-stringlist-mapp-of-input-files-process-preprocess-args.preprocess-extra-args
     (implies (not (string-listp preprocess-extra-args))
-             (string-string-list-mapp preprocess-extra-args))
+             (acl2::string-stringlist-mapp preprocess-extra-args))
     :hints
     (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
              :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args)))))
@@ -380,7 +381,7 @@
                (new-preprocess-args-presentp booleanp)
                (preprocess-extra-args
                  (or (string-listp preprocess-extra-args)
-                     (string-string-list-mapp preprocess-extra-args)))
+                     (acl2::string-stringlist-mapp preprocess-extra-args)))
                (new-process input-files-process-inputp)
                (new-const symbolp)
                (ienv ienvp))
@@ -426,15 +427,15 @@
   ///
 
   (defret string-listp-of-input-files-process-inputs.preprocess-extra-args
-    (implies (not (string-string-list-mapp preprocess-extra-args))
+    (implies (not (acl2::string-stringlist-mapp preprocess-extra-args))
              (string-listp preprocess-extra-args))
     :hints
     (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
              :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
 
-  (defret string-string-list-mapp-of-input-files-process-inputs.preprocess-extra-args
+  (defret string-stringlist-mapp-of-input-files-process-inputs.preprocess-extra-args
     (implies (not (string-listp preprocess-extra-args))
-             (string-string-list-mapp preprocess-extra-args))
+             (acl2::string-stringlist-mapp preprocess-extra-args))
     :hints
     (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
              :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
@@ -484,7 +485,7 @@
                                 (preprocessor string-optionp)
                                 (preprocess-args-presentp booleanp)
                                 (preprocess-extra-args
-                                  (or (string-string-list-mapp preprocess-extra-args)
+                                  (or (acl2::string-stringlist-mapp preprocess-extra-args)
                                       (string-listp preprocess-extra-args)))
                                 (process input-files-process-inputp)
                                 (const symbolp)
