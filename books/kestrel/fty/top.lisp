@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "any-nat-map")
 (include-book "bag")
 (include-book "bin-digit-char-list")
 (include-book "bit-list")
@@ -21,6 +22,8 @@
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")
+(include-book "character-set")
+(include-book "character-any-map")
 (include-book "database")
 (include-book "dec-digit-char-list")
 (include-book "defbyte")
