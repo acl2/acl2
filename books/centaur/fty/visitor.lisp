@@ -1257,20 +1257,42 @@
 ;; Instead of returning the action, we return the list of types to recur on
 ;; (either one or none), and the leaf-p flag (which applies to the containing
 ;; type, not the member type).
+
+;; It takes some care here to account for all the possibilities.
+;;  - If there is no type-fn, then it is not a leaf but we do want to recur
+;;    over its member types in case it contains leaf elements.
+;;  - If the type-fn is :skip, then it is not a leaf and we don't recur over
+;;    its member types.
+;;  - If it has a type-fn and no rename, then we assume the type-fn is defined
+;;    elsewhere (either already defined or will be in the mutual-recursion, but
+;;    defvisitors doesn't need to create it). Therefore, this is a leaf type and
+;;    we don't need to traverse its member types.
+;;  - If it has a type-fn and a rename, we assume the type-fn is defined elsewhere
+;;    (again, either already defined or will be in the mutual-recursion), but
+;;    defvisitors should still generate the renamed function for this type -- unless it
+;;    is already defined, in which case it is, again, a leaf type that
 (define visitor-membertype-collect-member-types (type x wrld)
   :returns (mv subtypes is-leaf-p)
   (b* (((visitorspec x))
        (type (visitor-normalize-fixtype type wrld))
        (type-entry (assoc type x.type-fns))
-       ((when type-entry)
-        ;; Leaf type or skipped.
-        (mv nil (and (cdr type-entry)
-                     (not (eq (cdr type-entry) :skip)))))
+       ((when (eq (cdr type-entry) :skip))
+        (mv nil nil))
+       (rename-entry (assoc type x.renames))
+       (leafp (and (cdr type-entry) t))
+       ((when (and leafp
+                   ;; Either there is no rename entry, or there is one but it
+                   ;; has already been defined:
+                   (or (not rename-entry)
+                       (not (eq t (getpropc (cadr rename-entry) 'acl2::formals t wrld)))
+                       (not (eq t (getpropc (cadr rename-entry) 'acl2::macro-args t wrld))))))
+        ;; Leaf type, and no need to traverse.
+        (mv nil t))
        ;; Otherwise, check whether it's a fixtype; if so, it's a subtype (but not a leaf-type).
        ((mv fty ?ftype) (search-deftypes-table type (table-alist 'flextypes-table wrld)))
        ((when fty)
-        (mv (list type) nil)))
-    (mv nil nil)))
+        (mv (list type) leafp)))
+    (mv nil leafp)))
 
 (define visitor-field-collect-member-types (field x prod-entry wrld)
   :returns (mv subtypes is-leaf-p)
