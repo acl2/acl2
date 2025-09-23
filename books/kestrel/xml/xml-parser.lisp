@@ -12,6 +12,7 @@
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "xml")
+(include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
@@ -540,12 +541,6 @@
                 (prog2$ (cw "Chars left: ~x0" chars)
                         (hard-error 'parse-xml-chars "Unexpected chars found." nil)))))))
 
-(defun code-char-list (codes)
-  (if (endp codes)
-      nil
-    (cons (code-char (first codes))
-          (code-char-list (rest codes)))))
-
 (mutual-recursion
  (defun drop-whitespace-strings-from-parsed-xml-element (item)
    (if (not (consp item))
@@ -578,7 +573,7 @@
     (if erp
         (prog2$ (er hard? 'parse-xml-file "Error reading from ~x0." input-xml-file)
                 (mv nil state))
-      (let* ((chars (code-char-list bytes))
+      (let* ((chars (map-code-char bytes))
              (parsed-items (parse-xml-chars chars))
              (parsed-items (if drop-whitespace-stringsp
                                (drop-whitespace-strings-from-parsed-xml-items parsed-items)
