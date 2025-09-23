@@ -547,8 +547,8 @@
                  (object-type-preservep compst compst1)))
       :flag exec-expr-asg)
     (defthm object-type-preservep-of-exec-expr-call-or-asg
-      (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
+      (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
+        (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-expr-call-or-asg)
     (defthm object-type-preservep-of-exec-fun
@@ -686,8 +686,8 @@
              peel-scopes))
 
   (defruled object-type-of-exec-call-or-asg
-    (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
+    (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
+      (implies (and (not (errorp result))
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
                     (not (errorp (read-object objdes compst))))
@@ -697,7 +697,8 @@
     :use (object-type-preservep-of-exec-expr-call-or-asg
           (:instance object-type-preservep-necc
                      (objdes (objdesign-fix objdes))
-                     (compst1 (exec-expr-call-or-asg e compst fenv limit))
+                     (compst1
+                      (mv-nth 1 (exec-expr-call-or-asg e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
