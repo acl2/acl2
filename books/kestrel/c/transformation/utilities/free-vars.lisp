@@ -618,7 +618,7 @@
         struct-declon
         :member
         (b* ((free-vars0
-               (free-vars-spec/qual-list struct-declon.specqual bound-vars))
+               (free-vars-spec/qual-list struct-declon.specquals bound-vars))
              ((mv free-vars1 bound-vars)
               (free-vars-struct-declor-list struct-declon.declor bound-vars)))
           (mv (union free-vars0

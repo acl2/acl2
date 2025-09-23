@@ -892,7 +892,7 @@
         (reterr (msg "Unsupported GCC extension keyword ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
-       (specquals (struct-declon-member->specqual structdeclon))
+       (specquals (struct-declon-member->specquals structdeclon))
        (declors (struct-declon-member->declor structdeclon))
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)

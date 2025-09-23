@@ -1495,13 +1495,13 @@
     (b* ((env (env-fix env)))
       (struct-declon-case
         struct-declon
-        :member (b* (((mv specqual env)
-                      (const-prop-spec/qual-list struct-declon.specqual env))
+        :member (b* (((mv specquals env)
+                      (const-prop-spec/qual-list struct-declon.specquals env))
                      ((mv declor env)
                       (const-prop-struct-declor-list struct-declon.declor env)))
                   (mv (make-struct-declon-member
                         :extension struct-declon.extension
-                        :specqual specqual
+                        :specquals specquals
                         :declor declor
                         :attrib struct-declon.attrib)
                       env))

@@ -2481,12 +2481,12 @@
       (struct-declon-case
        structdeclon
        :member
-       (b* (((erp new-specqual table)
-             (dimb-spec/qual-list structdeclon.specqual table))
+       (b* (((erp new-specquals table)
+             (dimb-spec/qual-list structdeclon.specquals table))
             ((erp new-declor table)
              (dimb-struct-declor-list structdeclon.declor table)))
          (retok (make-struct-declon-member :extension structdeclon.extension
-                                           :specqual new-specqual
+                                           :specquals new-specquals
                                            :declor new-declor
                                            :attrib structdeclon.attrib)
                 table))

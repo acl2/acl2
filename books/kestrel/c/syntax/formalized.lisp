@@ -825,7 +825,7 @@
    :member (and (not structdeclon.extension)
                 (b* (((mv okp tyspecs)
                       (check-spec/qual-list-all-typespec
-                       structdeclon.specqual)))
+                       structdeclon.specquals)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
                 (consp structdeclon.declor)

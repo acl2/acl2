@@ -3185,10 +3185,10 @@
      (b* ((pstate (if structdeclon.extension
                       (print-astring "__extension__ " pstate)
                     (pristate-fix pstate)))
-          ((unless structdeclon.specqual)
+          ((unless structdeclon.specquals)
            (raise "Misusage error: empty specifier/qualifier list.")
            pstate)
-          (pstate (print-spec/qual-list structdeclon.specqual pstate))
+          (pstate (print-spec/qual-list structdeclon.specquals pstate))
           (pstate (if structdeclon.declor
                       (b* ((pstate (print-astring " " pstate))
                            (pstate (print-struct-declor-list structdeclon.declor
