@@ -84,7 +84,7 @@
                    )
                 (mv nil ; no error
                     `(;; Assert that the chunk is loaded into memory:
-                      (equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
+                      (equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes)
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       ,@(if (posp existing-stack-slots)
@@ -106,7 +106,7 @@
                   (mv :bad-address nil)))
               (mv nil ; no error
                   `(;; Assert that the chunk is loaded into memory:
-                    (equal (read-bytes ',first-addr ',(len bytes) ,state-var) ',bytes)
+                    (equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)
                     ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                     ;; TODO: Do this only for writable chunks?
                     ,@(if (posp existing-stack-slots)

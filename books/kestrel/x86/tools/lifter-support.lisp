@@ -107,10 +107,10 @@
                     (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
           (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
-                                (posp (farg2 output-indicator)) ; number of bytes to read
+                                (posp (farg2 output-indicator)) ; number of bytes to read ; todo: reoder!
                                 )
-                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ',(farg2 output-indicator)
+                           `(acl2::list-to-byte-array (read-bytes ',(farg2 output-indicator)
+                                                                  ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
                                                                   ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args

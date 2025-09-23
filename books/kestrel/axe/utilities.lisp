@@ -249,7 +249,7 @@
 ;; (defun make-bit-blasted-array-expression (length name)
 ;; ;;   (declare (xargs :guard (and (symbolp name)
 ;; ;;                               (natp length))))
-;;   (make-bit-blasted-array-expression-aux 0 length name))b
+;;   (make-bit-blasted-array-expression-aux 0 length name))
 
 ;BBOZO this largely duplicates the above?
 (defun make-bit-var-list-for-byte (bit-index name)
