@@ -892,8 +892,8 @@
         (reterr (msg "Unsupported GCC extension keyword ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
-       (specquals (struct-declon-member->specqual structdeclon))
-       (declors (struct-declon-member->declor structdeclon))
+       (specquals (struct-declon-member->specquals structdeclon))
+       (declors (struct-declon-member->declors structdeclon))
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
@@ -915,8 +915,8 @@
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
        ((erp objdeclor) (ldm-declor-obj declor.declor?))
-       (attrib (struct-declon-member->attrib structdeclon))
-       ((when attrib)
+       (attribs (struct-declon-member->attribs structdeclon))
+       ((when attribs)
         (reterr (msg "Unsupporte GCC attributes ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon)))))

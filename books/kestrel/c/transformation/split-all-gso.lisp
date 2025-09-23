@@ -43,7 +43,7 @@
    ;; TODO: properly handle struct declarations with multiple declarators
    ;;   instead of returning error.
    :member (b* (((mv erp ident)
-                 (struct-declor-list-get-ident struct-declon.declor)))
+                 (struct-declor-list-get-ident struct-declon.declors)))
              (if erp
                  nil
                ident))

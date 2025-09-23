@@ -3664,17 +3664,17 @@
     (b* (((simpadd0-gin gin) gin))
       (struct-declon-case
        structdeclon
-       :member (b* (((mv new-specqual (simpadd0-gout gout-specqual))
-                     (simpadd0-spec/qual-list structdeclon.specqual gin))
+       :member (b* (((mv new-specquals (simpadd0-gout gout-specqual))
+                     (simpadd0-spec/qual-list structdeclon.specquals gin))
                     (gin (simpadd0-gin-update gin gout-specqual))
-                    ((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-struct-declor-list structdeclon.declor gin))
+                    ((mv new-declors (simpadd0-gout gout-declor))
+                     (simpadd0-struct-declor-list structdeclon.declors gin))
                     (gin (simpadd0-gin-update gin gout-declor)))
                  (mv (make-struct-declon-member
                       :extension structdeclon.extension
-                      :specqual new-specqual
-                      :declor new-declor
-                      :attrib structdeclon.attrib)
+                      :specquals new-specquals
+                      :declors new-declors
+                      :attribs structdeclon.attribs)
                      (simpadd0-gout-no-thm gin)))
        :statassert (b* (((mv new-structdeclon (simpadd0-gout gout-structdeclon))
                          (simpadd0-statassert structdeclon.unwrap gin))
