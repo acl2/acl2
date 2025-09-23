@@ -15,7 +15,7 @@ File ../hol4/eval-poly.sml is the code for translating a simple
 formalizatino of a HOL4 polynomial evaluator and associated goal
 theorem, and eval-poly-thy.lisp is the result of that translation.
 The book eval-poly-acl2.lisp is a corresponding ACL2 formalization.
-We hope to add a proof of the HOL4 goal theorem that uses that ACL2
-formalization.
+In the book eval-poly-proof.lisp is a proof of the HOL4 goal theorem
+that uses that ACL2 formalization.
 
 The book example-simple.lisp is an early demonstration of defhol.
