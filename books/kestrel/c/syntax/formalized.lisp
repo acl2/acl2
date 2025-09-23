@@ -828,9 +828,9 @@
                        structdeclon.specquals)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp structdeclon.declor)
-                (endp (cdr structdeclon.declor))
-                (struct-declor-formalp (car structdeclon.declor))
+                (consp structdeclon.declors)
+                (endp (cdr structdeclon.declors))
+                (struct-declor-formalp (car structdeclon.declors))
                 (endp structdeclon.attrib))
    :statassert nil
    :empty nil)

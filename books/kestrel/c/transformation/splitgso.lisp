@@ -243,7 +243,7 @@
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
       :member (b* (((erp ident)
-                    (struct-declor-list-get-ident struct-declon.declor)))
+                    (struct-declor-list-get-ident struct-declon.declors)))
                 (retok (and (member-equal ident names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"

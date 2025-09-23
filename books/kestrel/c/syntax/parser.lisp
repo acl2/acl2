@@ -6537,7 +6537,7 @@
                   (read-punctuator ";" parstate)))
               (retok (make-struct-declon-member :extension extension
                                                 :specquals specquals
-                                                :declor structdeclors
+                                                :declors structdeclors
                                                 :attrib attrspecs)
                      (span-join span last-span)
                      parstate)))
@@ -6558,7 +6558,7 @@
                   (read-punctuator ";" parstate)))
               (retok (make-struct-declon-member :extension extension
                                                 :specquals specquals
-                                                :declor nil
+                                                :declors nil
                                                 :attrib attrspecs)
                      (span-join span last-span)
                      parstate)))
@@ -6567,7 +6567,7 @@
            ((token-punctuatorp token2 ";") ; specquals ;
             (retok (make-struct-declon-member :extension extension
                                               :specquals specquals
-                                              :declor nil
+                                              :declors nil
                                               :attrib nil)
                    (span-join span span2)
                    parstate))

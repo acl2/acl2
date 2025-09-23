@@ -893,7 +893,7 @@
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
        (specquals (struct-declon-member->specquals structdeclon))
-       (declors (struct-declon-member->declor structdeclon))
+       (declors (struct-declon-member->declors structdeclon))
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~

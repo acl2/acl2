@@ -2483,11 +2483,11 @@
        :member
        (b* (((erp new-specquals table)
              (dimb-spec/qual-list structdeclon.specquals table))
-            ((erp new-declor table)
-             (dimb-struct-declor-list structdeclon.declor table)))
+            ((erp new-declors table)
+             (dimb-struct-declor-list structdeclon.declors table)))
          (retok (make-struct-declon-member :extension structdeclon.extension
                                            :specquals new-specquals
-                                           :declor new-declor
+                                           :declors new-declors
                                            :attrib structdeclon.attrib)
                 table))
        :statassert

@@ -3189,10 +3189,11 @@
            (raise "Misusage error: empty specifier/qualifier list.")
            pstate)
           (pstate (print-spec/qual-list structdeclon.specquals pstate))
-          (pstate (if structdeclon.declor
+          (pstate (if structdeclon.declors
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-struct-declor-list structdeclon.declor
-                                                             pstate)))
+                           (pstate
+                            (print-struct-declor-list structdeclon.declors
+                                                      pstate)))
                         pstate)
                     pstate))
           (pstate (if structdeclon.attrib

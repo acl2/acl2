@@ -933,14 +933,14 @@
      (b* ((specquals (spec/qual-list-subst-free
                       (c$::struct-declon-member->specquals struct-declon)
                       subst bound-vars))
-          ((mv declor bound-vars)
+          ((mv declors bound-vars)
            (struct-declor-list-subst-free
-            (c$::struct-declon-member->declor struct-declon)
+            (c$::struct-declon-member->declors struct-declon)
             subst bound-vars)))
        (mv (c$::struct-declon-member
             (c$::struct-declon-member->extension struct-declon)
             specquals
-            declor
+            declors
             (attrib-spec-list-subst-free
              (c$::struct-declon-member->attrib struct-declon)
              subst bound-vars))

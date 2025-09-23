@@ -1497,12 +1497,12 @@
         struct-declon
         :member (b* (((mv specquals env)
                       (const-prop-spec/qual-list struct-declon.specquals env))
-                     ((mv declor env)
-                      (const-prop-struct-declor-list struct-declon.declor env)))
+                     ((mv declors env)
+                      (const-prop-struct-declor-list struct-declon.declors env)))
                   (mv (make-struct-declon-member
                         :extension struct-declon.extension
                         :specquals specquals
-                        :declor declor
+                        :declors declors
                         :attrib struct-declon.attrib)
                       env))
         :statassert (b* (((mv unwrap env)

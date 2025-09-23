@@ -2534,7 +2534,7 @@
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specquals spec/qual-list)
-              (declor struct-declor-list)
+              (declors struct-declor-list)
               (attrib attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
