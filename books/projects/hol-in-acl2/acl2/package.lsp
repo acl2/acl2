@@ -9,7 +9,7 @@
 (defconst *hol-symbols*
   '(include-book
     open-theory close-theory
-    defhol hpp hap* type-match hol-typep typ hol-type-lookup hp-type
+    defhol hpp hap* type-match hol-typep typ hol-type-lookup hp-type hp-value
 ; From *hol-arities* in terms.lisp:
     equal hp-comma hp-none hp-some hp-nil
     hp-cons hp+ hp* hp-implies hp-and hp-or

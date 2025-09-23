@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (splitgso *old*
@@ -58,7 +58,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (splitgso *old*
@@ -90,7 +90,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (splitgso *old*
@@ -118,7 +118,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (splitgso *old*
@@ -154,7 +154,7 @@ int main(void) {
 ;; Test an ensemble
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)
@@ -216,7 +216,7 @@ struct S2 s2 = {.x = 0};
 ;; Same as above, but with the :object-filepath
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)
@@ -276,7 +276,7 @@ struct S2 s2 = {.x = 0};
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)
@@ -333,7 +333,7 @@ struct S s = {.x = 0};
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)
@@ -388,7 +388,7 @@ struct S_1 s_1 = {.x = 0};
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("typedef1.c")
+  (c$::input-files :files '("typedef1.c")
                    :const *old*)
 
   (splitgso *old*
@@ -418,7 +418,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("typedef2.c")
+  (c$::input-files :files '("typedef2.c")
                    :const *old*)
 
   (splitgso *old*
@@ -450,7 +450,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    ;; Not validating
                    :process :disambiguate
                    :const *old*)
@@ -470,7 +470,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test3.c")
+  (c$::input-files :files '("test3.c")
                    :const *old*)
 
   ;; Global struct object occurs outside of field access.
@@ -490,7 +490,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("weird_initializer.c")
+  (c$::input-files :files '("weird_initializer.c")
                    :process :validate
                    :const *old*)
 
@@ -512,7 +512,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static_assert_struct_declaration.c")
+  (c$::input-files :files '("static_assert_struct_declaration.c")
                    :process :validate
                    :const *old*)
 
@@ -534,7 +534,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("simultaneous_struct_fields.c")
+  (c$::input-files :files '("simultaneous_struct_fields.c")
                    :process :validate
                    :const *old*)
 
@@ -556,7 +556,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("simultaneous_init_declors.c")
+  (c$::input-files :files '("simultaneous_init_declors.c")
                    :process :validate
                    :const *old*)
 
@@ -578,7 +578,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)

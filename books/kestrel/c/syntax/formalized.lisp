@@ -825,13 +825,13 @@
    :member (and (not structdeclon.extension)
                 (b* (((mv okp tyspecs)
                       (check-spec/qual-list-all-typespec
-                       structdeclon.specqual)))
+                       structdeclon.specquals)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp structdeclon.declor)
-                (endp (cdr structdeclon.declor))
-                (struct-declor-formalp (car structdeclon.declor))
-                (endp structdeclon.attrib))
+                (consp structdeclon.declors)
+                (endp (cdr structdeclon.declors))
+                (struct-declor-formalp (car structdeclon.declors))
+                (endp structdeclon.attribs))
    :statassert nil
    :empty nil)
   :hooks (:fix))

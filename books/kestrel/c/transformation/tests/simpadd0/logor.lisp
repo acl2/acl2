@@ -21,11 +21,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("logor.c")
+(c$::input-files :files '("logor.c")
                  :path "old"
                  :const *old-code*)
 
-(simpadd0 *old-code* *new-code*)
+(simpadd0 :const-old *old-code*
+          :const-new *new-code*)
 
 (c$::output-files :const *new-code*
                   :path "new")

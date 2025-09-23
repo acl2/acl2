@@ -112,22 +112,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-process-inputs (const-old const-new (wrld plist-worldp))
+(define simpadd0-process-inputs (const-old
+                                 const-old-present
+                                 const-new
+                                 const-new-present
+                                 (wrld plist-worldp))
   :returns (mv erp
                (code-old code-ensemblep)
                (const-new$ symbolp))
   :short "Process all the inputs."
   (b* (((reterr) (irr-code-ensemble) nil)
+       ((unless const-old-present)
+        (reterr (msg "The :CONST-OLD input must be supplied.")))
        ((unless (symbolp const-old))
-        (reterr (msg "The first input must be a symbol, ~
+        (reterr (msg "The :CONST-OLD must be a symbol, ~
                       but it is ~x0 instead."
                      const-old)))
+       ((unless const-new-present)
+        (reterr (msg "The :CONST-NEW input must be supplied.")))
        ((unless (symbolp const-new))
-        (reterr (msg "The second input must be a symbol, ~
+        (reterr (msg "The :CONST-NEW must be a symbol, ~
                       but it is ~x0 instead."
                      const-new)))
        ((unless (constant-symbolp const-old wrld))
-        (reterr (msg "The first input, ~x0, must be a named constant, ~
+        (reterr (msg "The :CONST-OLD input, ~x0, must be a named constant, ~
                       but it is not."
                      const-old)))
        (code-old (constant-value const-old wrld))
@@ -3656,17 +3664,17 @@
     (b* (((simpadd0-gin gin) gin))
       (struct-declon-case
        structdeclon
-       :member (b* (((mv new-specqual (simpadd0-gout gout-specqual))
-                     (simpadd0-spec/qual-list structdeclon.specqual gin))
+       :member (b* (((mv new-specquals (simpadd0-gout gout-specqual))
+                     (simpadd0-spec/qual-list structdeclon.specquals gin))
                     (gin (simpadd0-gin-update gin gout-specqual))
-                    ((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-struct-declor-list structdeclon.declor gin))
+                    ((mv new-declors (simpadd0-gout gout-declor))
+                     (simpadd0-struct-declor-list structdeclon.declors gin))
                     (gin (simpadd0-gin-update gin gout-declor)))
                  (mv (make-struct-declon-member
                       :extension structdeclon.extension
-                      :specqual new-specqual
-                      :declor new-declor
-                      :attrib structdeclon.attrib)
+                      :specquals new-specquals
+                      :declors new-declors
+                      :attribs structdeclon.attribs)
                      (simpadd0-gout-no-thm gin)))
        :statassert (b* (((mv new-structdeclon (simpadd0-gout gout-structdeclon))
                          (simpadd0-statassert structdeclon.unwrap gin))
@@ -5527,25 +5535,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs-and-gen-everything (const-old
+                                                    const-old-present
                                                     const-new
+                                                    const-new-present
                                                     state)
   :returns (mv erp (event pseudo-event-formp))
   :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        ((erp code-old const-new)
-        (simpadd0-process-inputs const-old const-new (w state))))
+        (simpadd0-process-inputs const-old
+                                 const-old-present
+                                 const-new
+                                 const-new-present
+                                 (w state))))
     (simpadd0-gen-everything code-old const-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-fn (const-old const-new (ctx ctxp) state)
+(define simpadd0-fn (const-old
+                     const-old-present
+                     const-new
+                     const-new-present
+                     (ctx ctxp)
+                     state)
   :returns (mv erp (event pseudo-event-formp) state)
   :parents (simpadd0-implementation)
   :short "Event expansion of @(tsee simpadd0)."
   (b* (((mv erp event)
         (simpadd0-process-inputs-and-gen-everything const-old
+                                                    const-old-present
                                                     const-new
+                                                    const-new-present
                                                     state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -5555,6 +5576,12 @@
 (defsection simpadd0-macro-definition
   :parents (simpadd0-implementation)
   :short "Definition of the @(tsee simpadd0) macro."
-  (defmacro simpadd0 (const-old const-new)
+  (defmacro simpadd0 (&key (const-old 'irrelevant const-old-present)
+                           (const-new 'irrelevant const-new-present))
     `(make-event
-      (simpadd0-fn ',const-old ',const-new 'simpadd0 state))))
+      (simpadd0-fn ',const-old
+                   ',const-old-present
+                   ',const-new
+                   ',const-new-present
+                   'simpadd0
+                   state))))

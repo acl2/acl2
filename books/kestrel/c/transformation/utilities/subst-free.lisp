@@ -930,19 +930,19 @@
     (struct-declon-case
      struct-declon
      :member
-     (b* ((specqual (spec/qual-list-subst-free
-                     (c$::struct-declon-member->specqual struct-declon)
-                     subst bound-vars))
-          ((mv declor bound-vars)
+     (b* ((specquals (spec/qual-list-subst-free
+                      (c$::struct-declon-member->specquals struct-declon)
+                      subst bound-vars))
+          ((mv declors bound-vars)
            (struct-declor-list-subst-free
-            (c$::struct-declon-member->declor struct-declon)
+            (c$::struct-declon-member->declors struct-declon)
             subst bound-vars)))
        (mv (c$::struct-declon-member
             (c$::struct-declon-member->extension struct-declon)
-            specqual
-            declor
+            specquals
+            declors
             (attrib-spec-list-subst-free
-             (c$::struct-declon-member->attrib struct-declon)
+             (c$::struct-declon-member->attribs struct-declon)
              subst bound-vars))
            (ident-set-fix bound-vars)))
      :statassert

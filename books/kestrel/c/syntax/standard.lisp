@@ -157,10 +157,10 @@
    (struct-declon :member
                   (and (not (struct-declon-member->extension struct-declon))
                        (spec/qual-list-standardp
-                        (struct-declon-member->specqual struct-declon))
+                        (struct-declon-member->specquals struct-declon))
                        (struct-declor-list-standardp
-                        (struct-declon-member->declor struct-declon))
-                       (endp (struct-declon-member->attrib struct-declon))))
+                        (struct-declon-member->declors struct-declon))
+                       (endp (struct-declon-member->attribs struct-declon))))
    (struct-declon :empty nil)
    (attrib nil)
    (attrib-spec nil)

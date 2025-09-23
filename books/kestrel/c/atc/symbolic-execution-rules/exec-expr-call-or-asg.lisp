@@ -27,27 +27,24 @@
   (defruled exec-expr-call-or-asg-when-call
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :call)
-                  (not (zp limit))
-                  (equal val?+compst1
-                         (exec-expr-call (expr-call->fun e)
-                                         (expr-call->args e)
-                                         compst
-                                         fenv
-                                         (1- limit)))
-                  (equal val? (mv-nth 0 val?+compst1))
-                  (equal compst1 (mv-nth 1 val?+compst1))
-                  (value-optionp val?))
+                  (not (zp limit)))
              (equal (exec-expr-call-or-asg e compst fenv limit)
-                    compst1))
+                    (exec-expr-call (expr-call->fun e)
+                                    (expr-call->args e)
+                                    compst
+                                    fenv
+                                    (1- limit))))
     :enable exec-expr-call-or-asg)
 
   (defruled exec-expr-call-or-asg-when-asg
     (implies (and (syntaxp (quotep e))
                   (not (equal (expr-kind e) :call))
                   (not (zp limit))
-                  (compustatep compst))
+                  (equal compst1
+                         (exec-expr-asg e compst fenv (1- limit)))
+                  (compustatep compst1))
              (equal (exec-expr-call-or-asg e compst fenv limit)
-                    (exec-expr-asg e compst fenv (1- limit))))
+                    (mv nil compst1)))
     :enable exec-expr-call-or-asg)
 
   (defval *atc-exec-expr-call-or-asg-rules*
