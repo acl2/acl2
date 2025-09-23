@@ -51,7 +51,7 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(output-files :const           ...  ; required"
+     "(output-files :const           ...  ; required, no default"
      "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
      "  )"))
@@ -61,7 +61,7 @@
    (xdoc::evmac-section-inputs
 
     (xdoc::desc
-     "@(':const')"
+     "@(':const') &mdash; required, no default"
      (xdoc::p
       "Name of the existing ACL2 constant that contains
        the representation of the C code to write to the file system.")
