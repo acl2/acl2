@@ -1004,10 +1004,11 @@
      @('++') (prefix),
      @('--') (prefix),
      @('++') (postfix),
-     @('--') (postfix), and
-     @('sizeof').
-     The latter is the variant on expressions;
-     see @(tsee expr)."))
+     @('--') (postfix),
+     @('sizeof') (the variant on expressions; see @(tsee expr)),
+     @('__real__'), and
+     @('__imag__').
+     The latter two are GCC extensions; see the ABNF grammar."))
   (:address ())
   (:indir ())
   (:plus ())
@@ -1019,6 +1020,8 @@
   (:postinc ())
   (:postdec ())
   (:sizeof ())
+  (:real ()) ; GCC extension
+  (:imag ()) ; GCC extension
   :pred unopp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2408,7 +2411,7 @@
        as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
      (declor param-declor)
-     (attribs attrib-spec-list))
+     (attribs attrib-spec-list)) ; GCC extension
     :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 

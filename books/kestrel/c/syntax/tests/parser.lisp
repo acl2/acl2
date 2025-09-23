@@ -1021,3 +1021,11 @@ error (int __status, int __errnum, const char *__format, ...)
  "struct s x = {};
 "
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "double __cabs (_Complex double z) {
+  return __hypot (__real__ z, __imag__ z);
+}
+"
+ :gcc t)

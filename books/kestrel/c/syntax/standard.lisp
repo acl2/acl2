@@ -98,6 +98,8 @@
   :combine and
   :override
   ((simple-escape :percent nil)
+   (unop :real nil)
+   (unop :imag nil)
    (type-qual :restrict (keyword-uscores-case
                          (type-qual-restrict->uscores type-qual) :none))
    (type-qual :volatile (keyword-uscores-case
@@ -154,6 +156,11 @@
    (dirabsdeclor :dummy-base (raise "Internal error: ~
                                      dummy base case of ~
                                      direct abstract declarator."))
+   (param-declon (and (decl-spec-list-standardp
+                       (param-declon->specs param-declon))
+                      (param-declor-standardp
+                       (param-declon->declor param-declon))
+                      (endp (param-declon->attribs param-declon))))
    (struct-declon :member
                   (and (not (struct-declon-member->extension struct-declon))
                        (spec/qual-list-standardp

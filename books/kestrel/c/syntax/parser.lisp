@@ -747,7 +747,9 @@
       (token-keywordp token? "sizeof")
       (token-keywordp token? "_Alignof")
       (token-keywordp token? "__alignof")
-      (token-keywordp token? "__alignof__"))
+      (token-keywordp token? "__alignof__")
+      (token-keywordp token? "__real__")
+      (token-keywordp token? "__imag__"))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
@@ -1715,7 +1717,7 @@
        otherwise,
        the expression we parsed is not an assignment expression proper,
        and instead it is a unary expression,
-       which includes unary expressions propers
+       which includes unary expressions proper
        but also other kinds of expressions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
@@ -3015,6 +3017,24 @@
                                   (keyword-uscores-both))))
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '__real__', which can only happen with GCC extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__real__") ; __real__
+        (b* (((erp expr last-span parstate) ; __real__ expr
+              (parse-cast-expression parstate))
+             (unop (unop-real)))
+          (retok (make-expr-unary :op unop :arg expr :info nil)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is '__imag__', which can only happen with GCC extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__imag__") ; __imag__
+        (b* (((erp expr last-span parstate) ; __imag__ expr
+              (parse-cast-expression parstate))
+             (unop (unop-imag)))
+          (retok (make-expr-unary :op unop :arg expr :info nil)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
@@ -3024,7 +3044,9 @@
                                or a keyword in {~
                                _Alignof, ~
                                _Generic, ~
-                               sizeof~
+                               sizeof,~
+                               __real__,~
+                               __imag__~
                                } ~
                                or a punctuator in {~
                                \"++\", ~

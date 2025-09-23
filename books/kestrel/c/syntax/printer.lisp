@@ -1589,7 +1589,9 @@
    :predec (print-astring "--" pstate)
    :postinc (print-astring "++" pstate)
    :postdec (print-astring "--" pstate)
-   :sizeof (print-astring "sizeof" pstate))
+   :sizeof (print-astring "sizeof" pstate)
+   :real (print-astring "__real__" pstate)
+   :imag (print-astring "__imag__" pstate))
   :hooks (:fix)
 
   ///

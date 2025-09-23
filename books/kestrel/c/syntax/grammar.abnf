@@ -530,9 +530,11 @@ gcc-keyword = %s"__alignof"
             / %s"_Float64x"
             / %s"_Float128"
             / %s"_Float128x"
+            / %s"__imag__"
             / %s"__inline"
             / %s"__inline__"
             / %s"__int128"
+            / %s"__real__"
             / %s"__restrict"
             / %s"__restrict__"
             / %s"__signed"
@@ -916,6 +918,15 @@ lexeme = token
 ; if there are parentheses, they below to the expression,
 ; which is therefore a parenthesized expression.
 
+; As a GCC extension, we include '__real__' and '__imag__'
+; (see https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
+; as addtitional unary operators.
+; But we add them as separate alternatives to unary expressions,
+; instead of adding them to the grammar rule for unary operators.
+; The GCC documentation is not clear on the exact form
+; of the implied grammar extension,
+; but some experimentation confirms our interpretation.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -971,6 +982,8 @@ unary-expression = postfix-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
                  / alignof-keyword "(" type-name ")"
+                 / %s"__real__" cast-expression ; GCC extension
+                 / %s"__imag__" cast-expression ; GCC extension
 
 unary-operator = "&"
                / "*"

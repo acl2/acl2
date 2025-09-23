@@ -1369,7 +1369,12 @@
      The type of the result is the same as the operand
      [C17:6.5.2.4/2] [C17:6.5.2.4/3].
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C17:6.5.2.4/1]."))
+     because those result in pointers, not lvalues as required [C17:6.5.2.4/1].")
+   (xdoc::p
+    "The @('__real__') and @('__imag__') operators (GCC extensions)
+     require a complex operand and return a corresponding real operand.
+     This is what the GCC documentation seems to suggest,
+     although the description is not as precise as in [C17]."))
   (b* (((reterr) (irr-type))
        (msg (msg$ "In the unary expression ~x0, ~
                    the sub-expression has type ~x1."
@@ -1409,6 +1414,18 @@
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
                  (retok (type-unknown))))
+      (:real (type-case type-arg
+                        :floatc (retok (type-float))
+                        :doublec (retok (type-double))
+                        :ldoublec (retok (type-ldouble))
+                        :unknown (retok (type-unknown))
+                        :otherwise (reterr msg)))
+      (:imag (type-case type-arg
+                        :floatc (retok (type-float))
+                        :doublec (retok (type-double))
+                        :ldoublec (retok (type-ldouble))
+                        :unknown (retok (type-unknown))
+                        :otherwise (reterr msg)))
       (t (prog2$ (impossible) (retmsg$ "")))))
   :hooks (:fix))
 
