@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "any-nat-map")
 (include-book "bag")
 (include-book "bin-digit-char-list")
 (include-book "bit-list")
