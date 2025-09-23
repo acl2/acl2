@@ -1,4 +1,4 @@
-; FGL - A Symbolic Simulation Framework for ACL2
+; FGL Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -116,6 +116,8 @@
 (def-fgl-rewrite fgl-lognot
   (equal (lognot x)
          (b* ((x (int x))
+              ((unless (syntax-bind int-syntax (fgl-object-case x :g-integer)))
+               (abort-rewrite (lognot x)))
               ((when (check-int-endp! x-endp x)) (endint (not (intcar x)))))
            (intcons (not (intcar x))
                     (lognot (intcdr x)))))
@@ -128,6 +130,10 @@
   (equal (logand x y)
          (b* ((x (int x))
               (y (int y))
+              ((unless (syntax-bind int-syntax
+                                         (or (fgl-object-case x :g-integer)
+                                             (fgl-object-case y :g-integer))))
+               (abort-rewrite (logand x y)))
               ((when (check-int-endp! x-endp x)) (if (intcar x) y 0))
               ((when (check-int-endp! y-endp y)) (if (intcar y) x 0)))
            (intcons (and (intcar x)
@@ -141,6 +147,10 @@
   (equal (logior x y)
          (b* ((x (int x))
               (y (int y))
+              ((unless (syntax-bind int-syntax
+                                         (or (fgl-object-case x :g-integer)
+                                             (fgl-object-case y :g-integer))))
+               (abort-rewrite (logior x y)))
               ((when (check-int-endp! x-endp x)) (if (intcar x) -1 y))
               ((when (check-int-endp! y-endp y)) (if (intcar y) -1 x)))
            (intcons (or (intcar! x)
@@ -154,6 +164,10 @@
   (equal (logxor x y)
          (b* ((x (int x))
               (y (int y))
+              ((unless (syntax-bind int-syntax
+                                         (or (fgl-object-case x :g-integer)
+                                             (fgl-object-case y :g-integer))))
+               (abort-rewrite (logxor x y)))
               ((when (check-int-endp! x-endp x)) (if (intcar x) (lognot y) y))
               ((when (check-int-endp! y-endp y)) (if (intcar y) (lognot x) x)))
            (intcons (xor (intcar x)
@@ -168,6 +182,10 @@
   (equal (logeqv x y)
          (b* ((x (int x))
               (y (int y))
+              ((unless (syntax-bind int-syntax
+                                         (or (fgl-object-case x :g-integer)
+                                             (fgl-object-case y :g-integer))))
+               (abort-rewrite (logeqv x y)))
               ((when (check-int-endp! x-endp x)) (if (intcar x) y (lognot y)))
               ((when (check-int-endp! y-endp y)) (if (intcar y) x (lognot x))))
            (intcons (iff (intcar x)
@@ -798,7 +816,7 @@
                            (cdry (intcdr y))
                            (cdrx-is-logcdr (syntax-bind
                                             cdrx-is-logcdr
-                                            (fgl::fgl-object-case cdrx
+                                            (fgl-object-case cdrx
                                               :g-apply (and (eq cdrx.fn 'intcdr)
                                                             (equal (car cdrx.args) x))
                                               :otherwise nil)))
@@ -806,7 +824,7 @@
                             (abort-rewrite (+carry carry cdrx cdry)))
                            (cdry-is-logcdr (syntax-bind
                                             cdry-is-logcdr
-                                            (fgl::fgl-object-case cdry
+                                            (fgl-object-case cdry
                                               :g-apply (and (eq cdry.fn 'intcdr)
                                                             (equal (car cdry.args) y))
                                               :otherwise nil)))
@@ -818,17 +836,22 @@
                                       bitops::logxor** b-not))))
 
   (def-fgl-rewrite +-to-+carry
-    (implies (and (integerp x) (integerp y))
+    (implies (and (syntaxp (and (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)
+                                (fgl-object-case y :g-concrete t :g-integer t :otherwise nil)))
+                  (integerp x) (integerp y))
              (equal (+ x y) (+carry nil x y))))
 
   (def-fgl-rewrite minus-to-+carry
-    (implies (integerp x)
+    (implies (and (syntaxp (fgl-object-case x :g-integer))
+                  (integerp x))
              (equal (- x) (+carry t 0 (lognot x))))
     :hints(("Goal" :in-theory (enable lognot))))
 
   (def-fgl-rewrite binary-minus-to-+carry
-    (equal (binary-minus x y)
-           (+carry 1 x (lognot y)))
+    (implies (syntaxp (and (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)
+                           (fgl-object-case y :g-concrete t :g-integer t :otherwise nil)))
+             (equal (binary-minus x y)
+                    (+carry 1 x (lognot y))))
     :hints(("Goal" :in-theory (enable binary-minus lognot)))))
 
 (encapsulate nil
@@ -844,7 +867,9 @@
                     :in-theory (disable associativity-of-*)))))
 
   (def-fgl-rewrite fgl-*
-    (implies (and (integerp x) (integerp y))
+    (implies (and (syntaxp (and (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)
+                                (fgl-object-case y :g-concrete t :g-integer t :otherwise nil)))
+                  (integerp x) (integerp y))
              (equal (* x y)
                     (if (check-int-endp! x-endp x)
                         (if (intcar x) (- y) 0)
@@ -873,6 +898,10 @@
     (equal (</= x y)
            (b* ((x (int x))
                 (y (int y))
+                ((unless (syntax-bind int-syntax
+                                      (and (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)
+                                           (fgl-object-case y :g-concrete t :g-integer t :otherwise nil))))
+                 (abort-rewrite (</= x y)))
                 ((when (and (check-int-endp! x-endp x)
                             (check-int-endp! y-endp y)))
                  (b* ((less (and (intcar x) (not (intcar y)))))
@@ -882,17 +911,17 @@
                 (cdry (intcdr y))
                 (cdrx-is-logcdr (syntax-bind
                                  cdrx-is-logcdr
-                                 (fgl::fgl-object-case cdrx
+                                 (fgl-object-case cdrx
                                    :g-apply (and (eq cdrx.fn 'intcdr)
                                                  (equal (car cdrx.args) x))
                                    :otherwise nil)))
                 ((when cdrx-is-logcdr)
-                 ;; (fgl::fgl-prog2 (fgl::fgl-error! :msg "bad x in </=-impl2"
+                 ;; (fgl-prog2 (fgl-error! :msg "bad x in </=-impl2"
                  ;;                                  :debug-obj (list x y))
                  (abort-rewrite (</= x y)))
                 (cdry-is-logcdr (syntax-bind
                                  cdry-is-logcdr
-                                 (fgl::fgl-object-case cdry
+                                 (fgl-object-case cdry
                                    :g-apply (and (eq cdry.fn 'intcdr)
                                                  (equal (car cdry.args) y))
                                    :otherwise nil)))
@@ -924,7 +953,9 @@
            ))
 
   (def-fgl-rewrite <-impl
-    (implies (and (integerp x) (integerp y))
+    (implies (and (syntaxp (and (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)
+                                (fgl-object-case y :g-concrete t :g-integer t :otherwise nil)))
+                  (integerp x) (integerp y))
              (equal (< x y)
                     (if (and (syntax-bind y-0 (eql y 0))
                              (equal y 0))
@@ -942,10 +973,20 @@
   (equal (equal x y)
          (cond ((check-integerp x-intp x)
                 (cond ((check-integerp y-intp y)
-                       (and (iff (intcar x) (intcar y))
-                            (or (and (check-int-endp x-endp x)
-                                     (check-int-endp y-endp y))
-                                (equal (intcdr x) (intcdr y)))))
+                       (b* ((x-syn (syntax-bind x-int-syntax (fgl-object-case x :g-concrete t :g-integer t :otherwise nil)))
+                            (y-syn (syntax-bind y-int-syntax (fgl-object-case y :g-concrete t :g-integer t :otherwise nil)))
+                            (x-end (check-int-endp x-endp x))
+                            (y-end (check-int-endp y-endp y)))
+                         (if (or x-syn y-syn)
+                             (and (iff (intcar x) (intcar y))
+                                  (cond ((and x-end y-end) t)
+                                        ((or (and x-syn (not x-end))
+                                             (and y-syn (not y-end)))
+                                         (equal (intcdr x) (intcdr y)))
+                                        (t (let ((xcdr (intcdr x))
+                                                 (ycdr (intcdr y)))
+                                             (fgl::fgl-hide (equal xcdr ycdr))))))
+                           (abort-rewrite (equal x y)))))
                       ((check-non-integerp y-non-intp y) nil)
                       (t (abort-rewrite (equal x y)))))
                ((check-booleanp x-boolp x)

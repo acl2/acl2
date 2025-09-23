@@ -4542,7 +4542,7 @@
 
               ((fgl-interp-recursive-call failed-hyp)
                (fgl-rewrite-relieve-hyps rule fn hyps tracep interp-st state)))
-
+             
              ((when (or** failed-hyp (interp-st->errmsg interp-st)))
               (b* (((mv interp-st state)
                     (fgl-trace-failure-output failed-hyp rule fn bindings tracep interp-st state))
@@ -4676,7 +4676,8 @@
         :returns (mv (failed-hyp acl2::maybe-natp :rule-classes :type-prescription)
                      new-interp-st new-state)
         (b* (((when (atom hyps))
-              (fgl-interp-value nil))
+              (b* ((interp-st (interp-st-set-phase nil interp-st)))
+                (fgl-interp-value nil)))
              ((fgl-interp-recursive-call ok)
               (fgl-rewrite-relieve-hyp (car hyps) interp-st state))
              (hypnum (or (interp-st-phase interp-st) 0))
