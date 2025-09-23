@@ -17,10 +17,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(include-book "centaur/fty/baselists" :dir :system)
-(include-book "centaur/fty/deftypes" :dir :system)
-
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "kestrel/fty/string-stringlist-map" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 
@@ -81,22 +79,6 @@
 (defrulel byte-listp-of-read-file-into-byte-list
   (byte-listp (mv-nth 1 (acl2::read-file-into-byte-list filename state)))
   :enable (byte-listp-becomes-unsigned-byte-listp-8))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defomap string-string-list-map
-  :key-type string
-  :val-type str::string-list
-  :pred string-string-list-mapp)
-
-(in-theory (disable string-listp-of-cdr-of-assoc-string-string-list-mapp))
-
-(defruled string-listp-of-cdr-of-assoc-when-string-string-list-map
-  (implies (string-string-list-mapp map)
-           (string-listp (cdr (omap::assoc key map))))
-  :induct t
-  :enable (string-string-list-mapp
-           omap::assoc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,7 +231,7 @@
                    \"clang\", \"cc\", etc.")
     '"gcc")
    ((extra-args (or (string-listp extra-args)
-                    (string-string-list-mapp extra-args))
+                    (acl2::string-stringlist-mapp extra-args))
                 "Arguments to pass to the C preprocessor, in addition to
                  \"-E\". This may be either a string list, representing the
                  list of preprocessing arguments providing for every file,
@@ -314,6 +296,8 @@
                                   filedata
                                   fileset.unwrap))
            state))
-  :guard-hints (("Goal" :in-theory (enable string-string-list-mapp
-                                           string-listp-of-cdr-of-assoc-when-string-string-list-map)))
+  :guard-hints
+  (("Goal" :in-theory
+           (enable acl2::string-stringlist-mapp
+                   acl2::string-listp-of-cdr-of-assoc-when-string-stringlist-map)))
   :verify-guards :after-returns)

@@ -87,6 +87,7 @@
 (include-book "oct-digit-char")
 (include-book "bin-digit-char")
 (include-book "string-stringlist-alist")
+(include-book "string-stringlist-map")
 (include-book "symbol-pseudoeventform-alist")
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
