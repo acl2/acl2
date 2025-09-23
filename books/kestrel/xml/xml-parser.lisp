@@ -31,24 +31,6 @@
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
 
-(defconst *whitespace-chars*
-  '(#\Space #\Tab #\Newline #\))
-
-(defund whitespace-char-p (char)
-  (declare (xargs :guard t))
-  (member char *whitespace-chars*))
-
-(defun all-whitespace-char-p (chars)
-  (declare (xargs :guard (character-listp chars)))
-  (if (endp chars)
-      t
-    (and (whitespace-char-p (first chars))
-         (all-whitespace-char-p (rest chars)))))
-
-(defun whitespace-string-p (str)
-  (declare (xargs :guard (stringp str)))
-  (all-whitespace-char-p (coerce str 'list)))
-
 ;; Discard leading whitespace characters from the front of CHARS
 (defund skip-whitespace (chars)
   (declare (xargs :guard (character-listp chars)))
@@ -80,9 +62,7 @@
   :hints (("Goal" :in-theory (enable skip-whitespace))))
 
 (defthm skip-whitespace-when-not-consp
-  (implies (and (not (consp chars))
-                ;(true-listp chars)
-                )
+  (implies (not (consp chars))
            (equal (skip-whitespace chars)
                   nil))
   :hints (("Goal" :in-theory (enable skip-whitespace))))
@@ -436,7 +416,7 @@
  ;; subelements, of the form <elementname attrib1="val" attrib2="val2" ... >
  ;; ... characters and sub elements ... </elementname>.  Returns (mv elem
  ;; chars).  The first character of CHARS should be <.  Whitespace within the
- ;; tag itself is not significant (but whitespace between tags is).
+ ;; tag itself is not significant (todo: clarify), but whitespace between tags is.
  (defun parse-xml-element (chars)
    (declare (xargs; :guard (character-listp chars)
                    :measure (make-ord 1 (+ 1 (len chars)) 0)
@@ -540,27 +520,6 @@
                 ;cannot happen?
                 (prog2$ (cw "Chars left: ~x0" chars)
                         (hard-error 'parse-xml-chars "Unexpected chars found." nil)))))))
-
-(mutual-recursion
- (defun drop-whitespace-strings-from-parsed-xml-element (item)
-   (if (not (consp item))
-       (er hard? 'drop-whitespace-strings-from-parsed-xml-items "Bad XML item: ~x0" item)
-     (let* ((name (car item))
-            (attribs (get-xml-attributes (cdr item)))
-            (sub-items (skip-xml-attributes (cdr item))))
-       `(,name ,@attribs ,@(drop-whitespace-strings-from-parsed-xml-items sub-items)))))
-
- (defun drop-whitespace-strings-from-parsed-xml-items (items)
-   (declare (xargs :measure (acl2-count items)))
-   (if (endp items)
-       nil
-     (let ((item (first items)))
-       (if (stringp item)
-           (if (whitespace-string-p item)
-               (drop-whitespace-strings-from-parsed-xml-items (rest items))
-             (cons item (drop-whitespace-strings-from-parsed-xml-items (rest items))))
-         (cons (drop-whitespace-strings-from-parsed-xml-element item)
-               (drop-whitespace-strings-from-parsed-xml-items (rest items))))))))
 
 ;;TODO: Must there be a single top-level element?  This is more general
 ;;Returns (mv elements-and-strings state)

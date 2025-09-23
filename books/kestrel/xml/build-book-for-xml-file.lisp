@@ -14,12 +14,13 @@
 (include-book "misc/file-io" :dir :system) ; for write-list
 
 (defun build-book-for-xml-file-fn (input-xml-file output-file-name defconst-name state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo: because of write-list
-                  :verify-guards nil ; todo
-                  :guard (and (stringp input-xml-file)
+  (declare (xargs :guard (and (stringp input-xml-file)
                               (stringp output-file-name)
-                              (stringp defconst-name)))) ;todo: require stars at beginning and end
+                              (stringp defconst-name))
+                  :stobjs state
+                  :mode :program ; todo: because of write-list
+                  ;; :verify-guards nil ; todo
+                  )) ;todo: require stars at beginning and end
   (mv-let (elements-and-strings state)
     (parse-xml-file input-xml-file
                     t ;todo: think about this
