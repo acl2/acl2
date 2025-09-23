@@ -17,11 +17,11 @@
 (include-book "parsing")
 (include-book "disambiguation")
 (include-book "validation")
+(include-book "printing")
 (include-book "ascii-identifiers")
 (include-book "standard")
 (include-book "purity")
 (include-book "builtin")
-(include-book "printer")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")
@@ -193,10 +193,10 @@
                     parsing
                     disambiguation
                     validation
+                    printing
                     ascii-identifiers
                     standard
                     purity
-                    printer
                     input-files
                     output-files
                     mapping-to-language-definition

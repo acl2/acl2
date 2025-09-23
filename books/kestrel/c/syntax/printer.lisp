@@ -51,7 +51,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer
-  :parents (syntax-for-tools)
+  :parents (printing)
   :short "A printer of C from the abstract syntax."
   :long
   (xdoc::topstring
