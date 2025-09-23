@@ -149,8 +149,8 @@
        only the @('-E') argument is provided.
        If @(':preprocess-args') is @('nil'),
        it is technically both a string list and
-       an omap from strings to string lists.
-       The behavior is the same under either interpretation:
+       an omap from strings to string lists;
+       the behavior is the same under either interpretation:
        only the argument @('-E') is provided for each file.")
      (xdoc::p
       "See the preprocessor documentation for information about

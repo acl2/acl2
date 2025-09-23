@@ -112,7 +112,7 @@
                       but it was not supplied.")))
        ((unless (string-listp files))
         (reterr (msg "The :FILES input must evaluate to a list of strings, ~
-                      but it is ~x0 instead."
+                      but it evaluates to ~x0 instead."
                      files)))
        ((unless (no-duplicatesp-equal files))
         (reterr (msg "The :FILES input must be a list without duplicates, ~
@@ -208,7 +208,7 @@
         (reterr (msg "The :PREPROCESS-ARGS input must evaluate to ~
                       a list of strings ~
                       or an omap associating strings to lists of strings, ~
-                      but it is ~x0 instead."
+                      but it evaluates to ~x0 instead."
                      preprocess-args))))
     (retok t preprocess-args))
 

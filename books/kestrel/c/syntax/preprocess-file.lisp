@@ -251,7 +251,7 @@
    ((extra-args (or (string-listp extra-args)
                     (string-string-list-mapp extra-args))
                 "Arguments to pass to the C preprocessor, in addition to
-                 \"-E\". This may either be a string list, representing the
+                 \"-E\". This may be either a string list, representing the
                  list of preprocessing arguments providing for every file,
                  or an omap from strings to string lists, associating a list of
                  preprocessing arguments to each file independently.
