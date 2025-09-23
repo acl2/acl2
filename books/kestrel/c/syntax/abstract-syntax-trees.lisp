@@ -2865,11 +2865,16 @@
        There are three possible kinds of labels:
        names (identifiers),
        constant expressions in @('case'),
-       and the @('default') label.
-       As a GCC extension,
+       and the @('default') label.")
+     (xdoc::p
+      "As a GCC extension,
+       we allow label attributes (see ABNF grammar).")
+     (xdoc::p
+      "As a GCC extension,
        we allow an optional additional constant expression in @('case'),
        to capture ranges (see ABNF grammar)."))
-    (:name ((unwrap ident)))
+    (:name ((name ident)
+            (attribs attrib-spec-list)))
     (:casexpr ((expr const-expr)
                (range? const-expr-option)))
     (:default ())

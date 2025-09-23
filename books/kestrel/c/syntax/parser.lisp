@@ -8648,9 +8648,16 @@
            ;; If token2 is a colon,
            ;; we must have a labeled statement.
            ((token-punctuatorp token2 ":") ; ident :
-            (b* (((erp stmt last-span parstate) ; ident : stmt
+            (b* ((psize (parsize parstate))
+                 ((erp attrspecs & parstate) ; ident : [attrspecs]
+                  (parse-*-attribute-specifier parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 ((erp stmt last-span parstate) ; ident : stmt
                   (parse-statement parstate)))
-              (retok (make-stmt-labeled :label (label-name ident)
+              (retok (make-stmt-labeled :label (make-label-name
+                                                :name ident
+                                                :attribs attrspecs)
                                         :stmt stmt)
                      (span-join span last-span)
                      parstate)))

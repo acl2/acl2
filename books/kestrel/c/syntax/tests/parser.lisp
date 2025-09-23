@@ -1029,3 +1029,12 @@ error (int __status, int __errnum, const char *__format, ...)
 }
 "
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "int foo(void) {
+  my_label: __attribute__((unused))
+  return 1;
+}
+"
+ :gcc t)

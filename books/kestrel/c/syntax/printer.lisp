@@ -3588,7 +3588,14 @@
     :short "Print a label."
     (label-case
      label
-     :name (print-ident label.unwrap pstate)
+     :name (b* ((pstate (print-ident label.name pstate))
+                (pstate (if (consp label.attribs)
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate (print-attrib-spec-list label.attribs
+                                                                 pstate)))
+                              pstate)
+                          pstate)))
+             pstate)
      :casexpr (b* ((pstate (print-astring "case " pstate))
                    (pstate (print-const-expr label.expr pstate)))
                 (const-expr-option-case

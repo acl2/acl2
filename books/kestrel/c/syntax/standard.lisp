@@ -178,6 +178,7 @@
    (decl :decl (and (not (decl-decl->extension decl))
                     (decl-spec-list-standardp (decl-decl->specs decl))
                     (initdeclor-list-standardp (decl-decl->init decl))))
+   (label :name (endp (label-name->attribs label)))
    (label :casexpr (and (const-expr-standardp (label-casexpr->expr label))
                         (const-expr-option-case
                          (label-casexpr->range? label) :none)))

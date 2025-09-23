@@ -1492,7 +1492,10 @@
   (b* (((reterr) (c::label-default)))
     (label-case
      label
-     :name (b* (((erp ident1) (ldm-ident label.unwrap)))
+     :name (b* (((erp ident1) (ldm-ident label.name))
+                ((unless (endp label.attribs))
+                 (reterr (msg "Unsupported label with attributes ~x0."
+                              (label-fix label)))))
              (retok (c::label-name ident1)))
      :casexpr (b* (((erp expr) (ldm-expr (const-expr->expr label.expr)))
                    ((when label.range?)

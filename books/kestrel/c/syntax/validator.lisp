@@ -5608,7 +5608,7 @@
       (label-case
        label
        :name
-       (retok (label-name label.unwrap) nil (valid-table-fix table))
+       (retok (label-fix label) nil (valid-table-fix table))
        :casexpr
        (b* (((erp new-expr type types table)
              (valid-const-expr label.expr table ienv))
