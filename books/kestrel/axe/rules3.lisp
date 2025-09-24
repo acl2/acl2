@@ -11500,49 +11500,6 @@
   :hints (("Goal" :use (:instance equal-of-myif-and-bvif-same)
            :in-theory (disable equal-of-myif-and-bvif-same))))
 
-;yuck?
-;needed for the below
-(defthm equal-of-bv-array-read-and-bv-array-read-lens-differ
-  (implies (and (< index len1)
-                (< index len2)
-                (natp len1)
-                (natp len2)
-                (natp index)
-                )
-           (equal (equal (bv-array-read width len1 index data) (bv-array-read width len2 index data))
-                  t))
-  :hints (("Goal" :cases ((< len1 len2))
-           :in-theory (enable bv-array-read-opener))))
-
-(defthmd bv-array-read-shorten-when-bvlt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep len)))
-                (bvlt isize index k) ; k is a free var
-                (syntaxp (and (quotep k)
-                              (quotep isize)))
-                (< k len) ; avoid loops
-                (< k (expt 2 isize)) ; so the chop on k goes away
-                (natp k)
-                (natp len))
-           (equal (bv-array-read element-size len (bvchop isize index) data)
-                  (bv-array-read element-size k (bvchop isize index) (take k data))))
-  :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
-
-(defthmd bv-array-read-shorten-when-not-bvlt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep len)))
-                (not (bvlt isize k index)) ; k is a free var
-                (syntaxp (and (quotep k)
-                              (quotep isize)))
-                (< (+ 1 k) len) ; avoid loops
-                (< (+ 1 k) (expt 2 isize)) ; so the chop on k goes away
-                (natp index)
-                (natp k)
-                (natp len))
-           (equal (bv-array-read element-size len (bvchop isize index) data)
-                  (bv-array-read element-size (+ 1 k) (bvchop isize index) (take (+ 1 k) data))))
-  :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme not equal when < of lens
