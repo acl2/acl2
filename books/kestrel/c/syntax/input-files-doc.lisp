@@ -53,12 +53,12 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; required"
+     "(input-files :files             ...  ; required, no default"
      "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
-     "             :const             ...  ; required"
+     "             :const             ...  ; required, no default"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -72,7 +72,7 @@
    (xdoc::evmac-section-inputs
 
     (xdoc::desc
-     "@(':files')"
+     "@(':files') &mdash; required, no default"
      (xdoc::p
       "Term evaluating to a list of one or more file paths
        that specify the files to be read.")
@@ -203,7 +203,7 @@
        either the original or the preprocessed files."))
 
     (xdoc::desc
-     "@(':const')"
+     "@(':const') &mdash; required, no default"
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
        the result of processing (and possibly preprocessing)

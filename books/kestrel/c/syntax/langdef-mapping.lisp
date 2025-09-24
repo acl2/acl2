@@ -754,7 +754,9 @@
           :predec (retok (c::expr-predec arg))
           :postinc (retok (c::expr-postinc arg))
           :postdec (retok (c::expr-postdec arg))
-          :sizeof (reterr (msg "Unsupported sizeof operator."))))
+          :sizeof (reterr (msg "Unsupported sizeof operator."))
+          :real (reterr (msg "Unsupported __real__ operator."))
+          :imag (reterr (msg "Unsupported __imag__ operator."))))
        :sizeof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :sizeof-ambig (prog2$ (impossible) (reterr t))
        :alignof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
@@ -1490,7 +1492,10 @@
   (b* (((reterr) (c::label-default)))
     (label-case
      label
-     :name (b* (((erp ident1) (ldm-ident label.unwrap)))
+     :name (b* (((erp ident1) (ldm-ident label.name))
+                ((unless (endp label.attribs))
+                 (reterr (msg "Unsupported label with attributes ~x0."
+                              (label-fix label)))))
              (retok (c::label-name ident1)))
      :casexpr (b* (((erp expr) (ldm-expr (const-expr->expr label.expr)))
                    ((when label.range?)

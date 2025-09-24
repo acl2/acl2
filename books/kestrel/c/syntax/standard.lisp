@@ -98,6 +98,8 @@
   :combine and
   :override
   ((simple-escape :percent nil)
+   (unop :real nil)
+   (unop :imag nil)
    (type-qual :restrict (keyword-uscores-case
                          (type-qual-restrict->uscores type-qual) :none))
    (type-qual :volatile (keyword-uscores-case
@@ -154,6 +156,11 @@
    (dirabsdeclor :dummy-base (raise "Internal error: ~
                                      dummy base case of ~
                                      direct abstract declarator."))
+   (param-declon (and (decl-spec-list-standardp
+                       (param-declon->specs param-declon))
+                      (param-declor-standardp
+                       (param-declon->declor param-declon))
+                      (endp (param-declon->attribs param-declon))))
    (struct-declon :member
                   (and (not (struct-declon-member->extension struct-declon))
                        (spec/qual-list-standardp
@@ -171,6 +178,7 @@
    (decl :decl (and (not (decl-decl->extension decl))
                     (decl-spec-list-standardp (decl-decl->specs decl))
                     (initdeclor-list-standardp (decl-decl->init decl))))
+   (label :name (endp (label-name->attribs label)))
    (label :casexpr (and (const-expr-standardp (label-casexpr->expr label))
                         (const-expr-option-case
                          (label-casexpr->range? label) :none)))
@@ -197,4 +205,5 @@
                 (decl-list-standardp (fundef->decls fundef))
                 (block-item-list-standardp (fundef->body fundef))))
    (extdecl :empty nil)
-   (extdecl :asm nil)))
+   (extdecl :asm nil)
+   (transunit (consp (transunit->decls transunit)))))

@@ -340,7 +340,9 @@
            :predec nil
            :postinc nil
            :postdec nil
-           :sizeof nil)
+           :sizeof nil
+           :real nil
+           :imag nil)
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil

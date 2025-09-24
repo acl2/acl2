@@ -747,7 +747,9 @@
       (token-keywordp token? "sizeof")
       (token-keywordp token? "_Alignof")
       (token-keywordp token? "__alignof")
-      (token-keywordp token? "__alignof__"))
+      (token-keywordp token? "__alignof__")
+      (token-keywordp token? "__real__")
+      (token-keywordp token? "__imag__"))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
@@ -1715,7 +1717,7 @@
        otherwise,
        the expression we parsed is not an assignment expression proper,
        and instead it is a unary expression,
-       which includes unary expressions propers
+       which includes unary expressions proper
        but also other kinds of expressions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          (psize (parsize parstate))
@@ -3015,6 +3017,24 @@
                                   (keyword-uscores-both))))
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '__real__', which can only happen with GCC extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__real__") ; __real__
+        (b* (((erp expr last-span parstate) ; __real__ expr
+              (parse-cast-expression parstate))
+             (unop (unop-real)))
+          (retok (make-expr-unary :op unop :arg expr :info nil)
+                 (span-join span last-span)
+                 parstate)))
+       ;; If token is '__imag__', which can only happen with GCC extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__imag__") ; __imag__
+        (b* (((erp expr last-span parstate) ; __imag__ expr
+              (parse-cast-expression parstate))
+             (unop (unop-imag)))
+          (retok (make-expr-unary :op unop :arg expr :info nil)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
@@ -3024,7 +3044,9 @@
                                or a keyword in {~
                                _Alignof, ~
                                _Generic, ~
-                               sizeof~
+                               sizeof,~
+                               __real__,~
+                               __imag__~
                                } ~
                                or a punctuator in {~
                                \"++\", ~
@@ -8626,9 +8648,16 @@
            ;; If token2 is a colon,
            ;; we must have a labeled statement.
            ((token-punctuatorp token2 ":") ; ident :
-            (b* (((erp stmt last-span parstate) ; ident : stmt
+            (b* ((psize (parsize parstate))
+                 ((erp attrspecs & parstate) ; ident : [attrspecs]
+                  (parse-*-attribute-specifier parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 ((erp stmt last-span parstate) ; ident : stmt
                   (parse-statement parstate)))
-              (retok (make-stmt-labeled :label (label-name ident)
+              (retok (make-stmt-labeled :label (make-label-name
+                                                :name ident
+                                                :attribs attrspecs)
                                         :stmt stmt)
                      (span-join span last-span)
                      parstate)))
@@ -11296,13 +11325,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-external-declaration-list ((parstate parstatep))
+(define parse-*-external-declaration ((parstate parstatep))
   :returns (mv erp
                (extdecls extdecl-listp)
                (span spanp)
                (eof-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of one or more external declarations."
+  :short "Parse a list of zero or more external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -11311,40 +11340,32 @@
      If successful, we return the list of external declarations.")
    (xdoc::p
     "We also return the position just past the end of the file.
-     The latter is used for a check performed by the caller.")
-   (xdoc::p
-    "We parse the first external declaration, which must be present.
-     Then, unless we have reached the end of the file,
-     we recursively parse more external declarations."))
+     The latter is used for a check performed by the caller."))
   (b* (((reterr) nil (irr-span) (irr-position) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((when (not token)) ; EOF
+        (retok nil span (span->start span) parstate))
+       (parstate (unread-token parstate))
        ((erp extdecl first-span parstate) ; extdecl
         (parse-external-declaration parstate))
-       ((erp token span parstate) (read-token parstate))
-       ((when (not token)) ; extdecl EOF
-        (retok (list extdecl) first-span (span->start span) parstate))
-       ;; extdecl other
-       (parstate (unread-token parstate)) ; extdecl
-       ((erp extdecls last-span eof-pos parstate) ; extdecl extdecls
-        (parse-external-declaration-list parstate)))
+       ((erp extdecls last-span eof-pos parstate) ; extdecl [extdecls]
+        (parse-*-external-declaration parstate)))
     (retok (cons extdecl extdecls)
            (span-join first-span last-span)
            eof-pos
            parstate))
   :measure (parsize parstate)
+  :hints (("Goal" :in-theory (enable fix)))
   :verify-guards :after-returns
 
   ///
 
-  (defret parsize-of-parse-external-declaration-list-uncond
+  (more-returns
+   (extdecls true-listp :rule-classes :type-prescription))
+
+  (defret parsize-of-parse-*-external-declaration-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret parsize-of-parse-external-declaration-list-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -11361,20 +11382,26 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     We parse one or more external declarations,
-     consistently with the grammar.")
+     We parse zero or more external declarations,
+     consistently with the grammar.
+     But unless GCC extensions are enabled,
+     we reject input with zero external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/2].
      We check that the end-of-file position,
-     returned by @(tsee parse-external-declaration-list),
+     returned by @(tsee parse-*-external-declaration),
      is at column 0:
      this means that, since the file is not empty,
      the last character is a new-line,
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
        ((erp extdecls & eof-pos parstate)
-        (parse-external-declaration-list parstate))
+        (parse-*-external-declaration parstate))
+       ((when (and (endp extdecls)
+                   (not (parstate->gcc parstate))))
+        (reterr (msg "The translation unit has no external declarations, ~
+                      but GCC extensions (which allow that) are not enabled.")))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
     (retok (make-transunit :decls extdecls :info nil) parstate))
@@ -11384,12 +11411,6 @@
   (defret parsize-of-parse-translation-unit-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-translation-unit-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -12,6 +12,7 @@
 
 (include-book "proof-generation")
 (include-book "proof-generation-theorems")
+(include-book "input-processing")
 
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/ascii-identifiers")
@@ -52,27 +53,7 @@
 
  :additional
 
- ("This transformation is implemented as a collection of ACL2 functions
-   that operate on the abstract syntax,
-   following the recursive structure of the abstract syntax.
-   This is a typical pattern for C-to-C transformations,
-   which we may want to partially automate,
-   via things like generalized `folds' over the abstract syntax."
-
-  "These functions also return correctness theorems in a bottom-up fashion,
-   for a growing subset of constructs currently supported.
-   This is one of a few different or slightly different approaches
-   to proof generation, which we are exploring."
-
-  "The generated theorems have names obtained by
-   combining @('const-new') with an increasing numeric index,
-   which is threaded through the transformation functions.
-   The generated theorem events are accumulated into a list
-   that is threaded through the transformation functions;
-   the list is accumulated in reverse order,
-   so that each new generated event is @(tsee cons)ed,
-   but the list is reversed to the right order
-   in the top-level generated event that is submitted to ACL2."
+ ("See @(see transformation-tools) first, for general transformation."
 
   "For a growing number of constructs,
    we have ACL2 functions that perform
@@ -113,49 +94,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs (const-old
-                                 const-old-present
+                                 (const-old-present booleanp)
                                  const-new
-                                 const-new-present
+                                 (const-new-present booleanp)
                                  (wrld plist-worldp))
   :returns (mv erp
                (code-old code-ensemblep)
                (const-new$ symbolp))
   :short "Process all the inputs."
   (b* (((reterr) (irr-code-ensemble) nil)
-       ((unless const-old-present)
-        (reterr (msg "The :CONST-OLD input must be supplied.")))
-       ((unless (symbolp const-old))
-        (reterr (msg "The :CONST-OLD must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-old)))
-       ((unless const-new-present)
-        (reterr (msg "The :CONST-NEW input must be supplied.")))
-       ((unless (symbolp const-new))
-        (reterr (msg "The :CONST-NEW must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-new)))
-       ((unless (constant-symbolp const-old wrld))
-        (reterr (msg "The :CONST-OLD input, ~x0, must be a named constant, ~
-                      but it is not."
-                     const-old)))
-       (code-old (constant-value const-old wrld))
-       ((unless (code-ensemblep code-old))
-        (reterr (msg "The value of the constant ~x0 ~
-                      must be a code ensemble, ~
-                      but it is ~x1 instead."
-                     const-old code-old)))
-       ((unless (code-ensemble-unambp code-old))
-        (reterr (msg "The code ensemble ~x0 ~
-                      that is the value of the constant ~x1 ~
-                      must be unambiguous, ~
-                      but it is not."
-                     code-old const-old)))
-       ((unless (code-ensemble-annop code-old))
-        (reterr (msg "The code ensemble ~x0 ~
-                      that is the value of the constant ~x1 ~
-                      must contains validation information, ~
-                      but it does not."
-                     code-old const-old))))
+       ((erp code-old) (process-const-old const-old const-old-present wrld))
+       ((erp const-new) (process-const-new const-new const-new-present)))
     (retok code-old const-new))
 
   ///
@@ -338,13 +287,13 @@
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
-     (see @(tsee simpadd0-tyspecseq-to-type)),
+     (see @(tsee tyspecseq-to-type)),
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type) (simpadd0-tyspecseq-to-type param.tyspec))
+       ((mv okp type) (tyspecseq-to-type param.tyspec))
        ((unless okp) (mv nil nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil nil))
@@ -5535,9 +5484,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs-and-gen-everything (const-old
-                                                    const-old-present
+                                                    (const-old-present booleanp)
                                                     const-new
-                                                    const-new-present
+                                                    (const-new-present booleanp)
                                                     state)
   :returns (mv erp (event pseudo-event-formp))
   :parents (simpadd0-implementation)
@@ -5554,9 +5503,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fn (const-old
-                     const-old-present
+                     (const-old-present booleanp)
                      const-new
-                     const-new-present
+                     (const-new-present booleanp)
                      (ctx ctxp)
                      state)
   :returns (mv erp (event pseudo-event-formp) state)

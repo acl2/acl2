@@ -192,7 +192,7 @@
   (defruled label-unambp-when-name
     (implies (label-case label :name)
              (label-unambp label))
-    :enable label-unambp)
+    :expand (label-unambp label))
 
   (defruled stmt-unambp-of-when-goto
     (implies (stmt-case stmt :goto)
@@ -204,7 +204,7 @@
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
 
-  ;; This are variants that negate the cases.
+  ;; These are variants that negate the cases.
   ;; Attempting to replace these with theorems of the form above
   ;; causes some disambiguator proofs to fail.
 

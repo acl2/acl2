@@ -373,6 +373,7 @@
     label-fix
     label-count
     label-case
+    make-label-name
     make-label-casexpr
 
     stmtp
