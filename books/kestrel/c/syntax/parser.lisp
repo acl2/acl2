@@ -11390,7 +11390,7 @@
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/2].
      We check that the end-of-file position,
-     returned by @(tsee parse-external-declaration-list),
+     returned by @(tsee parse-*-external-declaration),
      is at column 0:
      this means that, since the file is not empty,
      the last character is a new-line,
