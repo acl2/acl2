@@ -1589,7 +1589,9 @@
    :predec (print-astring "--" pstate)
    :postinc (print-astring "++" pstate)
    :postdec (print-astring "--" pstate)
-   :sizeof (print-astring "sizeof" pstate))
+   :sizeof (print-astring "sizeof" pstate)
+   :real (print-astring "__real__" pstate)
+   :imag (print-astring "__imag__" pstate))
   :hooks (:fix)
 
   ///
@@ -3586,7 +3588,14 @@
     :short "Print a label."
     (label-case
      label
-     :name (print-ident label.unwrap pstate)
+     :name (b* ((pstate (print-ident label.name pstate))
+                (pstate (if (consp label.attribs)
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate (print-attrib-spec-list label.attribs
+                                                                 pstate)))
+                              pstate)
+                          pstate)))
+             pstate)
      :casexpr (b* ((pstate (print-astring "case " pstate))
                    (pstate (print-const-expr label.expr pstate)))
                 (const-expr-option-case
@@ -4280,15 +4289,7 @@
               (transunit-aidentp tunit (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that there is at least one external declaration,
-     as required by the grammar."))
-  (b* (((transunit tunit) tunit)
-       ((unless tunit.decls)
-        (raise "Misusage error: empty translation unit.")
-        (pristate-fix pstate)))
+  (b* (((transunit tunit) tunit))
     (print-extdecl-list tunit.decls pstate))
   :hooks (:fix)
 

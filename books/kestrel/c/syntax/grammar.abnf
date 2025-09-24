@@ -530,9 +530,11 @@ gcc-keyword = %s"__alignof"
             / %s"_Float64x"
             / %s"_Float128"
             / %s"_Float128x"
+            / %s"__imag__"
             / %s"__inline"
             / %s"__inline__"
             / %s"__int128"
+            / %s"__real__"
             / %s"__restrict"
             / %s"__restrict__"
             / %s"__signed"
@@ -916,6 +918,15 @@ lexeme = token
 ; if there are parentheses, they below to the expression,
 ; which is therefore a parenthesized expression.
 
+; As a GCC extension, we include '__real__' and '__imag__'
+; (see https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
+; as addtitional unary operators.
+; But we add them as separate alternatives to unary expressions,
+; instead of adding them to the grammar rule for unary operators.
+; The GCC documentation is not clear on the exact form
+; of the implied grammar extension,
+; but some experimentation confirms our interpretation.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -971,6 +982,8 @@ unary-expression = postfix-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
                  / alignof-keyword "(" type-name ")"
+                 / %s"__real__" cast-expression ; GCC extension
+                 / %s"__imag__" cast-expression ; GCC extension
 
 unary-operator = "&"
                / "*"
@@ -1469,6 +1482,9 @@ static-assert-declaration =
 
 ; Statements [C17:A.2.3]
 
+; As a GCC extension, we allow label attributes
+; (https://gcc.gnu.org/onlinedocs/gcc/Label-Attributes.html).
+
 ; As a GCC extension, we allow case ranges
 ; (https://gcc.gnu.org/onlinedocs/gcc/Case-Ranges.html).
 ; That is, instead of a single constant expression just after 'case',
@@ -1483,7 +1499,9 @@ statement = labeled-statement
           / jump-statement
           / asm-statement ; GCC extension
 
-labeled-statement = identifier ":" statement
+labeled-statement = identifier ":"
+                    *attribute-specifier ; GCC extension
+                    statement
                   / %s"case" constant-expression
                     [ "..." constant-expression ] ; GCC extension
                     ":" statement
@@ -1542,8 +1560,15 @@ jump-statement = %s"goto" identifier ";"
 ; assembler statements can occur at the top level,
 ; but we encountered that in practical code.
 
-translation-unit = external-declaration
-                 / translation-unit external-declaration
+; As a GCC extension, we allow empty translation units,
+; i.e. with no external declarations.
+; We combine this requirement with the rule from [C17]
+; by using a simpler ABNF rule.
+; We could not find a specific place in the GCC documentation
+; that explicitly says that empty translation units are allowed,
+; but we found that they are allowed when running GCC on them.
+
+translation-unit = *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration

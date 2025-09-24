@@ -642,7 +642,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-tyspecseq-to-type ((tyspecseq c::tyspecseqp))
+(define tyspecseq-to-type ((tyspecseq c::tyspecseqp))
   :returns (mv (okp booleanp) (type c::typep))
   :short "Map a type specifier sequence from the language formalization
           to the corresponding type."
