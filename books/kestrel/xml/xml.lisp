@@ -12,9 +12,11 @@
 
 ;; This book describes a quick-and-dirty ACL2 encoding of XML as S-expressions.
 
-;TODO: Handle Unicode (in strings, in tags?)
+;; TODO: Handle Unicode (in strings, in tags?)
+;; TODO: Handle character entities like &lt; and &gt;.
 
 ;recognizes a binding from an attribute name to a value.  Example: (= "package" "edu.kestrel.examples.app2")
+;; TODO: Consider not storing the equal sign.
 (defun xml-attributep (x)
   (declare (xargs :guard t))
   (and (true-listp x)
@@ -135,11 +137,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-xml-element (tag attributes child-items)
+(defund make-xml-element (tag attributes child-items)
   (declare (xargs :guard (and (stringp tag)
                               (xml-attribute-listp attributes)
                               (xml-item-listp child-items))))
   (cons tag (append attributes child-items)))
+
+;move
+(defthm xml-element-argsp-of-append
+  (implies (and (xml-attribute-listp attributes)
+                (xml-item-listp child-items))
+           (xml-element-argsp (append attributes child-items)))
+  :hints (("Goal" :in-theory (enable xml-element-argsp skip-xml-attributes xml-attribute-listp))))
+
+(defthm xml-elementp-of-make-xml-element
+  (implies (and (stringp tag)
+                (xml-attribute-listp attributes)
+                (xml-item-listp child-items))
+           (xml-elementp (make-xml-element tag attributes child-items)))
+  :hints (("Goal" :in-theory (enable make-xml-element))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
