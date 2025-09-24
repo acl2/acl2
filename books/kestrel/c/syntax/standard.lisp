@@ -134,6 +134,8 @@
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))
    (type-spec :int128 nil)
+   (type-spec :float16 nil)
+   (type-spec :float16x nil)
    (type-spec :float32 nil)
    (type-spec :float32x nil)
    (type-spec :float64 nil)

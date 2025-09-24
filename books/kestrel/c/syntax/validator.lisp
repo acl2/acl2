@@ -3024,6 +3024,20 @@
                       ext-tyspecs
                       nil
                       same-table)
+       :float16 (if (endp tyspecs)
+                    (retok (type-spec-float16)
+                           (type-unknown)
+                           nil
+                           nil
+                           same-table)
+                  (reterr msg-bad-preceding))
+       :float16x (if (endp tyspecs)
+                     (retok (type-spec-float16x)
+                            (type-unknown)
+                            nil
+                            nil
+                            same-table)
+                   (reterr msg-bad-preceding))
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)

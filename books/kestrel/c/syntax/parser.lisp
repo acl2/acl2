@@ -419,6 +419,8 @@
     "We similarly include the GCC extension types
      @('__int128'),
      @('__int128_t'),
+     @('_Float16'),
+     @('_Float16x'),
      @('_Float32'),
      @('_Float32x'),
      @('_Float64'),
@@ -442,6 +444,8 @@
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
       (token-keywordp token? "__int128_t")
+      (token-keywordp token? "_Float16")
+      (token-keywordp token? "_Float16x")
       (token-keywordp token? "_Float32")
       (token-keywordp token? "_Float32x")
       (token-keywordp token? "_Float64")
@@ -482,6 +486,8 @@
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
+        ((token-keywordp token "_Float16") (type-spec-float16))
+        ((token-keywordp token "_Float16x") (type-spec-float16x))
         ((token-keywordp token "_Float32") (type-spec-float32))
         ((token-keywordp token "_Float32x") (type-spec-float32x))
         ((token-keywordp token "_Float64") (type-spec-float64))

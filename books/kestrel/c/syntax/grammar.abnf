@@ -524,6 +524,8 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_va_list"
             / %s"__declspec"
             / %s"__extension__"
+            / %s"_Float16"
+            / %s"_Float16x"
             / %s"_Float32"
             / %s"_Float32x"
             / %s"_Float64"
@@ -1239,6 +1241,8 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As GCC extensions, we include the type specifiers
 ; '__int128',
+; '_Float16',
+; '_Float16x',
 ; '_Float32',
 ; '_Float32x',
 ; '_Float64',
@@ -1324,6 +1328,8 @@ type-specifier = %s"void"
                / typedef-name
                ; GCC extensions:
                / %s"__int128"
+               / %s"_Float16"
+               / %s"_Float16x"
                / %s"_Float32"
                / %s"_Float32x"
                / %s"_Float64"

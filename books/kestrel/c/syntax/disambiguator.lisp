@@ -1607,6 +1607,8 @@
                                        (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       (dimb-table-fix table))
+       :float16 (retok (type-spec-float16) (dimb-table-fix table))
+       :float16x (retok (type-spec-float16x) (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
        :float32x (retok (type-spec-float32x) (dimb-table-fix table))
        :float64 (retok (type-spec-float64) (dimb-table-fix table))

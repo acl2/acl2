@@ -2932,6 +2932,8 @@
                    (simpadd0-gout-no-thm gin)))
        :typedef (mv (type-spec-fix tyspec) gout0)
        :int128 (mv (type-spec-fix tyspec) gout0)
+       :float16 (mv (type-spec-fix tyspec) gout0)
+       :float16x (mv (type-spec-fix tyspec) gout0)
        :float32 (mv (type-spec-fix tyspec) gout0)
        :float32x (mv (type-spec-fix tyspec) gout0)
        :float64 (mv (type-spec-fix tyspec) gout0)

@@ -968,6 +968,8 @@
                 (mv (type-spec-enum spec) env))
         :typedef (mv (type-spec-fix tyspec) env)
         :int128 (mv (type-spec-fix tyspec) env)
+        :float16 (mv (type-spec-fix tyspec) env)
+        :float16x (mv (type-spec-fix tyspec) env)
         :float32 (mv (type-spec-fix tyspec) env)
         :float32x (mv (type-spec-fix tyspec) env)
         :float64 (mv (type-spec-fix tyspec) env)

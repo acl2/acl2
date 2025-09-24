@@ -192,6 +192,8 @@
                 nil
               (insert type-spec.name nil))
      :int128 nil
+     :float16 nil
+     :float16x nil
      :float32 nil
      :float32x nil
      :float64 nil

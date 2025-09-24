@@ -355,6 +355,8 @@
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
+     :float16 (type-spec-fix type-spec)
+     :float16x (type-spec-fix type-spec)
      :float32 (type-spec-fix type-spec)
      :float32x (type-spec-fix type-spec)
      :float64 (type-spec-fix type-spec)
