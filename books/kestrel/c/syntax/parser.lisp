@@ -11363,7 +11363,7 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription))
 
-  (defret parsize-of-parse-external-declaration-list-uncond
+  (defret parsize-of-parse-*-external-declaration-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear
