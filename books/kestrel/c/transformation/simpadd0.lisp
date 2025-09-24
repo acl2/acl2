@@ -12,6 +12,7 @@
 
 (include-book "proof-generation")
 (include-book "proof-generation-theorems")
+(include-book "input-processing")
 
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/ascii-identifiers")
@@ -113,49 +114,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs (const-old
-                                 const-old-present
+                                 (const-old-present booleanp)
                                  const-new
-                                 const-new-present
+                                 (const-new-present booleanp)
                                  (wrld plist-worldp))
   :returns (mv erp
                (code-old code-ensemblep)
                (const-new$ symbolp))
   :short "Process all the inputs."
   (b* (((reterr) (irr-code-ensemble) nil)
-       ((unless const-old-present)
-        (reterr (msg "The :CONST-OLD input must be supplied.")))
-       ((unless (symbolp const-old))
-        (reterr (msg "The :CONST-OLD must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-old)))
-       ((unless const-new-present)
-        (reterr (msg "The :CONST-NEW input must be supplied.")))
-       ((unless (symbolp const-new))
-        (reterr (msg "The :CONST-NEW must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-new)))
-       ((unless (constant-symbolp const-old wrld))
-        (reterr (msg "The :CONST-OLD input, ~x0, must be a named constant, ~
-                      but it is not."
-                     const-old)))
-       (code-old (constant-value const-old wrld))
-       ((unless (code-ensemblep code-old))
-        (reterr (msg "The value of the constant ~x0 ~
-                      must be a code ensemble, ~
-                      but it is ~x1 instead."
-                     const-old code-old)))
-       ((unless (code-ensemble-unambp code-old))
-        (reterr (msg "The code ensemble ~x0 ~
-                      that is the value of the constant ~x1 ~
-                      must be unambiguous, ~
-                      but it is not."
-                     code-old const-old)))
-       ((unless (code-ensemble-annop code-old))
-        (reterr (msg "The code ensemble ~x0 ~
-                      that is the value of the constant ~x1 ~
-                      must contains validation information, ~
-                      but it does not."
-                     code-old const-old))))
+       ((erp code-old) (process-const-old const-old const-old-present wrld))
+       ((erp const-new) (process-const-new const-new const-new-present)))
     (retok code-old const-new))
 
   ///
@@ -5535,9 +5504,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs-and-gen-everything (const-old
-                                                    const-old-present
+                                                    (const-old-present booleanp)
                                                     const-new
-                                                    const-new-present
+                                                    (const-new-present booleanp)
                                                     state)
   :returns (mv erp (event pseudo-event-formp))
   :parents (simpadd0-implementation)
@@ -5554,9 +5523,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fn (const-old
-                     const-old-present
+                     (const-old-present booleanp)
                      const-new
-                     const-new-present
+                     (const-new-present booleanp)
                      (ctx ctxp)
                      state)
   :returns (mv erp (event pseudo-event-formp) state)
