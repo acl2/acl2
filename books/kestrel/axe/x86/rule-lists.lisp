@@ -2706,7 +2706,7 @@
             x86isa::!ms ; todo: use set-ms?
             x86isa::!ms$a
 
-            acl2::bv-array-read-shorten-axe
+            acl2::bv-array-read-shorten-axe ; i suppose this could lead to making several arrays, each with the same prefix...
             ;; these can discard bytes from large executable segments:
             acl2::bv-array-read-shorten-when-bvlt
             acl2::bv-array-read-shorten-when-not-bvlt
