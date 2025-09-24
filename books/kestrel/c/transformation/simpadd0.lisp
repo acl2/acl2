@@ -53,27 +53,7 @@
 
  :additional
 
- ("This transformation is implemented as a collection of ACL2 functions
-   that operate on the abstract syntax,
-   following the recursive structure of the abstract syntax.
-   This is a typical pattern for C-to-C transformations,
-   which we may want to partially automate,
-   via things like generalized `folds' over the abstract syntax."
-
-  "These functions also return correctness theorems in a bottom-up fashion,
-   for a growing subset of constructs currently supported.
-   This is one of a few different or slightly different approaches
-   to proof generation, which we are exploring."
-
-  "The generated theorems have names obtained by
-   combining @('const-new') with an increasing numeric index,
-   which is threaded through the transformation functions.
-   The generated theorem events are accumulated into a list
-   that is threaded through the transformation functions;
-   the list is accumulated in reverse order,
-   so that each new generated event is @(tsee cons)ed,
-   but the list is reversed to the right order
-   in the top-level generated event that is submitted to ACL2."
+ ("See @(see transformation-tools) first, for general transformation."
 
   "For a growing number of constructs,
    we have ACL2 functions that perform
