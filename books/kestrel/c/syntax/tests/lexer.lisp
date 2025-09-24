@@ -862,6 +862,118 @@
  "other"
  :cond (equal ast nil))
 
+(test-lex
+ lex-?-floating-suffix
+ "f16"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f16 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f64"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f64 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f128"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f128 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f16x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f16 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f64x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f64 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f128x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f128 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F16"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f16 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F32"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f32 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F64"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f64 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F128"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f128 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F16x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f16 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F32x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f32 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F64x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f64 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F128x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f128 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32y"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 nil)))
+
+(test-lex-fail
+ lex-?-floating-suffix
+ "f33"
+ :gcc t)
+
+(test-lex-fail
+ lex-?-floating-suffix
+ "f168"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-lex

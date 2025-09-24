@@ -623,6 +623,10 @@ hex-quad =
 ; we encountered it in practical code, and we found this web page:
 ; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 
+; As a GCC extension, we allow floating suffixes
+; for the additional floating types of size 16, 32, 64, and 128
+; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html).
+
 constant = integer-constant
          / floating-constant
          / enumeration-constant
@@ -694,7 +698,9 @@ binary-exponent-part = %i"p" [ sign ] digit-sequence
 hexadecimal-digit-sequence = hexadecimal-digit
                            / hexadecimal-digit-sequence hexadecimal-digit
 
-floating-suffix = %i"f" / %i"l"
+floating-suffix = %i"f"
+                / %i"l"
+                / %i"f" ( "16" / "32" / "64" / "128" ) %s"x" ; GCC extensions
 
 enumeration-constant = identifier
 
@@ -1250,6 +1256,8 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; '_Float128',
 ; '_Float128x',
 ; and '__builtin_va_list'.
+; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
+; for the '_Float...' types.
 
 ; We include the GCC extension for the 'typeof' operator,
 ; along with its '__typeof' and '__typeof__' variants.

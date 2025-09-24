@@ -381,12 +381,26 @@
    (xdoc::p
     "This corresponds to <i>floating-suffix</i> in the grammar in [C17].
      This captures the four possible suffixes
-     @('f'), @('F'), @('l'), and @('L')."))
+     @('f'), @('F'), @('l'), and @('L').")
+   (xdoc::p
+    "As a GCC extension, we also allow
+     @('f<n>'), @('F<n>'), @('f<n>x'), and @('F<n>x'),
+     with @('<n>') being @('16'), @('32'), @('64'), or @('128').
+     See the ABNF grammar."))
   (:locase-f ())
   (:upcase-f ())
   (:locase-l ())
   (:upcase-l ())
-  :pred fsuffixp)
+  (:locase-f16 ((x bool)))
+  (:locase-f32 ((x bool)))
+  (:locase-f64 ((x bool)))
+  (:locase-f128 ((x bool)))
+  (:upcase-f16 ((x bool)))
+  (:upcase-f32 ((x bool)))
+  (:upcase-f64 ((x bool)))
+  (:upcase-f128 ((x bool)))
+  :pred fsuffixp
+  :xvar f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
