@@ -38,8 +38,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide tools to transform C code into (different) C code.
-     The transformations may have different purposes.")
+    "We provide tools to transform C code into (different) C code,
+     according to various purposes and criteria.
+     The transformations are invoked as event macros,
+     normally after using @(tsee c$::input-files) to ingest code,
+     and normally using @(tsee c$::output-files) on the transformed code.")
    (xdoc::p
     "These transformation tools operate on the abstract syntax
-     defined in @(see c$::syntax-for-tools).")))
+     defined in @(see c$::syntax-for-tools).
+     The transformations are implemented as
+     collections of ACL2 functions that operate on the ASTs,
+     following their recursive structure.
+     For a growing subset of transformations and C constructs,
+     we also generate correctness theorems.")))
