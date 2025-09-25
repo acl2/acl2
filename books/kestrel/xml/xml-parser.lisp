@@ -30,6 +30,7 @@
 ;; TODO: Consider Unicode
 ;; TODO: Consider character escapes
 ;; TODO: Prove that the parser always returns an xml-item-listp.
+;; TODO: Remove/replace all #xD characters at the very start
 
 ;; See also books/xdoc/parse-xml.lisp (not sure how that compares to this)
 
@@ -357,7 +358,8 @@
 (defund parse-attribute-name (chars)
   (declare (xargs :guard (character-listp chars)))
   (b* (((mv erp name-chars chars)
-        (parse-until-delim #\= chars))
+        (parse-until-delim #\= chars) ; todo: use only allowed chars
+        )
        ((when erp) (mv erp "" nil)))
     (mv nil (coerce name-chars 'string) chars)))
 
@@ -379,6 +381,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp string chars).
+;deprecate?
 (defund parse-quoted-string (chars)
   (declare (xargs :guard (character-listp chars)))
   (b* ((chars (skip-known-char #\" chars))
@@ -402,6 +405,42 @@
   (<= (len (mv-nth 2 (parse-quoted-string chars))) (len chars))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable parse-quoted-string))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp string-value chars).
+(defund parse-attribute-value (chars)
+  (declare (xargs :guard (character-listp chars)))
+  (b* (((when (endp chars))
+        (mv :missing-attribute-value "" nil))
+       (char (first chars))
+       (chars (rest chars)))
+    (if (or (eql char #\")
+            (eql char #\'))
+        (b* (((mv erp string-chars chars)
+              ;; Look for the matching double or single quote:
+              (parse-until-delim char chars)) ; todo: allow char refs and exclude < and & (except & for a char ref)
+             ((when erp) (mv erp "" nil))
+             ;; move past the closing quote:
+             (chars (rest chars)))
+          (mv nil (coerce string-chars 'string) chars))
+      (mv :bad-attribute-value "" nil))))
+
+(defthm character-listp-of-mv-nth-2-of-parse-attribute-value
+  (implies (character-listp chars)
+           (character-listp (mv-nth 2 (parse-attribute-value chars))))
+  :hints (("Goal" :in-theory (enable parse-attribute-value))))
+
+(defthm stringp-of-mv-nth-1-of-parse-attribute-value
+  (implies (character-listp chars)
+           (stringp (mv-nth 1 (parse-attribute-value chars))))
+  :hints (("Goal" :in-theory (enable parse-attribute-value))))
+
+(defthm <=-of-len-of-mv-nth-2-of-parse-attribute-value
+  (<= (len (mv-nth 2 (parse-attribute-value chars))) (len chars))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable parse-attribute-value))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
