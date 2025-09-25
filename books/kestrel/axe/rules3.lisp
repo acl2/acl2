@@ -11524,17 +11524,6 @@
                     y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases bvuminus bvminus bvlt))))
 
-;move
-;shouldn't this get commuted?
-(defthm equal-of-+-of-minus-same
-  (equal (+ (- x) x)
-         0))
-
-;move
-(defthm equal-of-fix-same
-  (equal (equal (fix x) x) ;fixme why didn't this get reordered in the rc4 proof?
-         (acl2-numberp x)))
-
 (defthm bvcat-of-slice-and-constant-when-equal-of-bvchop-and-constant
   (implies (and (syntaxp (quotep k1))
                 (equal k2 (bvchop 7 x)))
@@ -12010,11 +11999,6 @@
                   1))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthm <-of-constant-and-+-of-constant
-  (implies (syntaxp (and (quotep k1) (quotep k2)))
-           (equal (< k1 (+ k2 X))
-                  (< (- k1 k2) x))))
-
 (defthm <-of-constant-when-usb
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
@@ -12161,8 +12145,7 @@
   :HINTS
   (("Goal"
     :IN-THEORY (E/D (GETBIT SLICE)
-                    (
-                      ANTI-SLICE)))))
+                    (ANTI-SLICE)))))
 
 ;gen!
 (defthmd bvlt-of-64
@@ -12201,8 +12184,7 @@
          (equal 0 (getbit 1 x)))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x)))
-           :in-theory (e/d (bvlt getbit) (
-                                                               EQUAL-OF-BVCHOP-EXTEND)))))
+           :in-theory (e/d (bvlt getbit) (EQUAL-OF-BVCHOP-EXTEND)))))
 
 
 ;gen
