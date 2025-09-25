@@ -332,7 +332,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *whitespace-chars*
-  '(#\Space #\Tab #\Newline #\))
+  '(#\Space #\Tab #\Return #\Newline))
 
 (defund whitespace-char-p (char)
   (declare (xargs :guard t))
