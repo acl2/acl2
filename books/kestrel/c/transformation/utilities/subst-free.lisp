@@ -113,6 +113,7 @@
                      (expr-subst-free (c$::expr-unary->arg expr)
                                       subst bound-vars)
                      (c$::expr-unary->info expr))
+     :label-addr (expr-fix expr)
      :sizeof
      (expr-sizeof
        (tyname-subst-free (c$::expr-sizeof->type expr)
@@ -191,6 +192,13 @@
        (c$::expr-cast/and-ambig->inc/dec expr)
        (expr-subst-free (c$::expr-cast/and-ambig->arg/arg2 expr)
                         subst bound-vars))
+     :cast/logand-ambig
+     (c$::expr-cast/logand-ambig
+       (amb-expr/tyname-subst-free
+         (c$::expr-cast/logand-ambig->type/arg1 expr)
+         subst bound-vars)
+       (c$::expr-cast/logand-ambig->inc/dec expr)
+       (c$::expr-cast/logand-ambig->arg/arg2 expr))
      ;; Interesting case
      :stmt
      (b* (((mv items -)

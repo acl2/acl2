@@ -75,6 +75,7 @@
      :memberp (free-vars-expr expr.arg bound-vars)
      :complit (free-vars-desiniter-list expr.elems bound-vars)
      :unary (free-vars-expr expr.arg bound-vars)
+     :label-addr nil
      :sizeof (free-vars-tyname expr.type bound-vars)
      :alignof (free-vars-tyname expr.type bound-vars)
      :cast (free-vars-expr expr.arg bound-vars)
@@ -99,7 +100,8 @@
      :cast/mul-ambig (raise "Unexpected ambiguous expression")
      :cast/add-ambig (raise "Unexpected ambiguous expression")
      :cast/sub-ambig (raise "Unexpected ambiguous expression")
-     :cast/and-ambig (raise "Unexpected ambiguous expression"))
+     :cast/and-ambig (raise "Unexpected ambiguous expression")
+     :cast/logand-ambig (raise "Unexpected ambiguous expression"))
     :no-function nil
     :measure (expr-count expr))
 

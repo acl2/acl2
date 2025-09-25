@@ -60,8 +60,9 @@
     "We override predicates for types that may involve GCC extensions.
      We exclude the @('\\%') simple escape,
      the variant keywords with underscores,
+     the unary @('&&') operator,
      absent `then' branchs in conditional expressions,
-     statement epxressions,
+     statement expressions,
      built-in functions that take type names as inputs,
      expressions preceded by @('__extension__'),
      the GCC type specifiers,
@@ -106,6 +107,7 @@
                          (type-qual-volatile->uscores type-qual) :none))
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
+   (expr :label-addr nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :alignof (and (tyname-standardp (expr-alignof->type expr))
@@ -126,6 +128,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (expr :stmt nil)
    (expr :tycompat nil)
    (expr :offsetof nil)

@@ -2392,6 +2392,9 @@
        the number of scopes in the validation table is 1 or not
        (recall that this number is never 0).")
      (xdoc::p
+      "A unary @('&&') expression has type @('void *'),
+       according to the GCC documentation.")
+     (xdoc::p
       "In a conditional expression, the second operand may be absent;
        this is a GCC extension.
        However, for validation, we normalize the situation
@@ -2514,6 +2517,10 @@
                        type
                        types-arg
                        table))
+       :label-addr (retok (expr-label-addr expr.arg)
+                          (type-pointer (type-void))
+                          nil
+                          (valid-table-fix table))
        :sizeof (b* (((erp new-type type types table)
                      (valid-tyname expr.type table ienv))
                     ((erp type1) (valid-sizeof/alignof expr type)))
