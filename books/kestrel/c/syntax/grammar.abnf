@@ -524,6 +524,8 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_va_list"
             / %s"__declspec"
             / %s"__extension__"
+            / %s"_Float16"
+            / %s"_Float16x"
             / %s"_Float32"
             / %s"_Float32x"
             / %s"_Float64"
@@ -621,6 +623,10 @@ hex-quad =
 ; we encountered it in practical code, and we found this web page:
 ; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 
+; As a GCC extension, we allow floating suffixes
+; for the additional floating types of size 16, 32, 64, and 128
+; (https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html).
+
 constant = integer-constant
          / floating-constant
          / enumeration-constant
@@ -692,7 +698,9 @@ binary-exponent-part = %i"p" [ sign ] digit-sequence
 hexadecimal-digit-sequence = hexadecimal-digit
                            / hexadecimal-digit-sequence hexadecimal-digit
 
-floating-suffix = %i"f" / %i"l"
+floating-suffix = %i"f"
+                / %i"l"
+                / %i"f" ( "16" / "32" / "64" / "128" ) %s"x" ; GCC extensions
 
 enumeration-constant = identifier
 
@@ -927,6 +935,10 @@ lexeme = token
 ; of the implied grammar extension,
 ; but some experimentation confirms our interpretation.
 
+; As a GCC extension, we include the unary '&&' operator applied to labels
+; (https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html),
+; which syntactically are identifiers (cf. the rule for labeled statements).
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -984,6 +996,7 @@ unary-expression = postfix-expression
                  / alignof-keyword "(" type-name ")"
                  / %s"__real__" cast-expression ; GCC extension
                  / %s"__imag__" cast-expression ; GCC extension
+                 / "&&" identifier ; GCC extension
 
 unary-operator = "&"
                / "*"
@@ -1239,6 +1252,8 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As GCC extensions, we include the type specifiers
 ; '__int128',
+; '_Float16',
+; '_Float16x',
 ; '_Float32',
 ; '_Float32x',
 ; '_Float64',
@@ -1246,6 +1261,8 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; '_Float128',
 ; '_Float128x',
 ; and '__builtin_va_list'.
+; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
+; for the '_Float...' types.
 
 ; We include the GCC extension for the 'typeof' operator,
 ; along with its '__typeof' and '__typeof__' variants.
@@ -1324,6 +1341,8 @@ type-specifier = %s"void"
                / typedef-name
                ; GCC extensions:
                / %s"__int128"
+               / %s"_Float16"
+               / %s"_Float16x"
                / %s"_Float32"
                / %s"_Float32x"
                / %s"_Float64"

@@ -105,6 +105,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (type-spec :struct nil)
    (type-spec :union nil)
    (type-spec :enum nil)

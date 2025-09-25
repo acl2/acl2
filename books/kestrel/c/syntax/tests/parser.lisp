@@ -104,6 +104,18 @@
 
 (test-parse
  parse-cast-expression
+ "(T) && x"
+ :cond (and (expr-case ast :paren)
+            (expr-case (expr-paren->inner ast) :ident)))
+
+(test-parse
+ parse-cast-expression
+ "(T) && x"
+ :gcc t
+ :cond (expr-case ast :cast/logand-ambig))
+
+(test-parse
+ parse-cast-expression
  "(A(B)) ++ (C) [3]"
  :cond (and (expr-case ast :cast/call-ambig)
             (equal (expr-cast/call-ambig->inc/dec ast)
@@ -160,6 +172,16 @@
  "sizeof(x)->m"
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :memberp)))
+
+(test-parse-fail
+ parse-unary-expression
+ "&&label")
+
+(test-parse
+ parse-unary-expression
+ "&&label"
+ :gcc t
+ :cond (expr-case ast :label-addr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

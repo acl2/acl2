@@ -94,6 +94,7 @@
    (expr :cast/add-ambig nil)
    (expr :cast/sub-ambig nil)
    (expr :cast/and-ambig nil)
+   (expr :cast/logand-ambig nil)
    (type-spec :typeof-ambig nil)
    (align-spec :alignas-ambig nil)
    (dirabsdeclor :dummy-base nil)
@@ -141,6 +142,11 @@
 
   (defruled expr-unambp-when-string
     (implies (expr-case expr :string)
+             (expr-unambp expr))
+    :enable expr-unambp)
+
+  (defruled expr-unambp-when-label-addr
+    (implies (expr-case expr :label-addr)
              (expr-unambp expr))
     :enable expr-unambp)
 
@@ -258,6 +264,12 @@
     :rule-classes :forward-chaining
     :enable expr-unambp)
 
+  (defruled expr-not-cast/logand-ambig-when-unambp
+    (implies (expr-unambp expr)
+             (not (equal (expr-kind expr) :cast/logand-ambig)))
+    :rule-classes :forward-chaining
+    :enable expr-unambp)
+
   (defruled type-spec-not-typeof-ambig-when-unambp
     (implies (type-spec-unambp tyspec)
              (not (equal (type-spec-kind tyspec) :typeof-ambig)))
@@ -317,6 +329,7 @@
                   '(expr-unambp-when-ident
                     expr-unambp-when-const
                     expr-unambp-when-string
+                    expr-unambp-when-label-addr
                     member-designor-unambp-when-ident
                     type-spec-unambp-when-signed
                     type-spec-unambp-when-typedef
@@ -337,6 +350,7 @@
                     expr-not-cast/add-ambig-when-unambp
                     expr-not-cast/sub-ambig-when-unambp
                     expr-not-cast/and-ambig-when-unambp
+                    expr-not-cast/logand-ambig-when-unambp
                     type-spec-not-typeof-ambig-when-unambp
                     align-spec-not-alignas-ambig-when-unambp
                     param-declor-not-ambig-when-unambp

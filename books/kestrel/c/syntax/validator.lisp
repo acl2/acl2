@@ -629,7 +629,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (prog2$ (impossible) (irr-type)))))
+          (t (type-unknown))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2392,6 +2392,9 @@
        the number of scopes in the validation table is 1 or not
        (recall that this number is never 0).")
      (xdoc::p
+      "A unary @('&&') expression has type @('void *'),
+       according to the GCC documentation.")
+     (xdoc::p
       "In a conditional expression, the second operand may be absent;
        this is a GCC extension.
        However, for validation, we normalize the situation
@@ -2514,6 +2517,10 @@
                        type
                        types-arg
                        table))
+       :label-addr (retok (expr-label-addr expr.arg)
+                          (type-pointer (type-void))
+                          nil
+                          (valid-table-fix table))
        :sizeof (b* (((erp new-type type types table)
                      (valid-tyname expr.type table ienv))
                     ((erp type1) (valid-sizeof/alignof expr type)))
@@ -3024,6 +3031,20 @@
                       ext-tyspecs
                       nil
                       same-table)
+       :float16 (if (endp tyspecs)
+                    (retok (type-spec-float16)
+                           (type-unknown)
+                           nil
+                           nil
+                           same-table)
+                  (reterr msg-bad-preceding))
+       :float16x (if (endp tyspecs)
+                     (retok (type-spec-float16x)
+                            (type-unknown)
+                            nil
+                            nil
+                            same-table)
+                   (reterr msg-bad-preceding))
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
