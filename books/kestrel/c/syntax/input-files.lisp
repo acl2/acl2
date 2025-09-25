@@ -278,6 +278,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define input-files-process-keep-going (keep-going)
+  :returns (mv erp (new-keep-going booleanp))
+  :short "Process the @(':keep-going') input."
+  (b* (((reterr) nil)
+       ((unless (booleanp keep-going))
+        (reterr (msg "The :KEEP-GOING input must be a boolean ~
+                      but it is ~x0 instead."
+                     keep-going))))
+    (retok keep-going)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-process-ienv (gcc
                                   short-bytes
                                   int-bytes
@@ -366,6 +378,7 @@
                                     process
                                     (const-presentp booleanp)
                                     const
+                                    keep-going
                                     gcc
                                     short-bytes
                                     int-bytes
@@ -384,6 +397,7 @@
                      (acl2::string-stringlist-mapp preprocess-extra-args)))
                (new-process input-files-process-inputp)
                (new-const symbolp)
+               (keep-going booleanp)
                (ienv ienvp))
   :short "Process the inputs."
   :long
@@ -396,7 +410,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil nil :parse nil (ienv-default))
+  (b* (((reterr) nil "" nil nil nil :parse nil nil (ienv-default))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
        ((erp path) (input-files-process-path path))
@@ -408,6 +422,7 @@
                                              state))
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
+       ((erp keep-going) (input-files-process-keep-going keep-going))
        ((erp ienv) (input-files-process-ienv gcc
                                              short-bytes
                                              int-bytes
@@ -421,6 +436,7 @@
            preprocess-extra-args
            process
            const
+           keep-going
            ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
 
@@ -489,6 +505,7 @@
                                       (string-listp preprocess-extra-args)))
                                 (process input-files-process-inputp)
                                 (const symbolp)
+                                (keep-going booleanp)
                                 (ienv ienvp)
                                 (progp booleanp)
                                 state)
@@ -523,7 +540,7 @@
                                  :preprocessor preprocessor))
                             (input-files-read-files files path state)))
        ;; Parsing is always required.
-       ((erp tunits) (parse-fileset files (ienv->gcc ienv)))
+       ((erp tunits) (parse-fileset files (ienv->gcc ienv) keep-going))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
@@ -533,7 +550,8 @@
                        events)))
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
-       ((erp tunits) (dimb-transunit-ensemble tunits (ienv->gcc ienv)))
+       ((erp tunits)
+        (dimb-transunit-ensemble tunits (ienv->gcc ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
@@ -543,7 +561,7 @@
                        events)))
           (retok events code state)))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-transunit-ensemble tunits ienv))
+       ((erp tunits) (valid-transunit-ensemble tunits ienv keep-going))
        (code (make-code-ensemble :transunits tunits :ienv ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
@@ -571,6 +589,7 @@
                                                    process
                                                    (const-presentp booleanp)
                                                    const
+                                                   keep-going
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -599,6 +618,7 @@
              preprocess-extra-args
              process
              const
+             keep-going
              ienv)
         (input-files-process-inputs files-presentp
                                     files
@@ -609,6 +629,7 @@
                                     process
                                     const-presentp
                                     const
+                                    keep-going
                                     gcc
                                     short-bytes
                                     int-bytes
@@ -625,6 +646,7 @@
                                 preprocess-extra-args
                                 process
                                 const
+                                keep-going
                                 ienv
                                 progp
                                 state)))
@@ -653,6 +675,7 @@
                         process
                         (const-presentp booleanp)
                         const
+                        keep-going
                         gcc
                         short-bytes
                         int-bytes
@@ -678,6 +701,7 @@
                                                    process
                                                    const-presentp
                                                    const
+                                                   keep-going
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -699,6 +723,7 @@
                               (preprocess-args 'nil preprocess-args-presentp)
                               (process ':validate)
                               (const 'nil const-presentp)
+                              (keep-going 'nil)
                               (gcc 'nil)
                               (short-bytes '2)
                               (int-bytes '4)
@@ -715,6 +740,7 @@
                        ',process
                        ',const-presentp
                        ',const
+                       ',keep-going
                        ',gcc
                        ',short-bytes
                        ',int-bytes
@@ -741,6 +767,7 @@
     "                  :preprocess        ...  ; default nil"
     "                  :preprocess-args   ...  ; no default"
     "                  :process           ...  ; default :validate"
+    "                  :keep-going        ...  ; default nil"
     "                  :gcc               ...  ; default nil"
     "                  :short-bytes       ...  ; default 2"
     "                  :int-bytes         ...  ; default 4"
@@ -787,6 +814,7 @@
                              process
                              (const-presentp booleanp)
                              const
+                             keep-going
                              gcc
                              short-bytes
                              int-bytes
@@ -813,6 +841,7 @@
                                                    process
                                                    const-presentp
                                                    const
+                                                   keep-going
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -841,6 +870,7 @@
                                    (preprocess-args 'nil preprocess-args-presentp)
                                    (process ':validate)
                                    (const 'nil const-presentp)
+                                   (keep-going 'nil)
                                    (gcc 'nil)
                                    (short-bytes '2)
                                    (int-bytes '4)
@@ -856,6 +886,7 @@
                           ',process
                           ',const-presentp
                           ',const
+                          ',keep-going
                           ',gcc
                           ',short-bytes
                           ',int-bytes
