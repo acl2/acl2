@@ -11559,13 +11559,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-fileset ((fileset filesetp) (gcc booleanp))
+(define parse-fileset ((fileset filesetp) (gcc booleanp) (keep-going booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass a flag saying whether GCC extensions should be accepted.")
+    "We pass a flag saying whether GCC extensions should be accepted,
+     and a flag saying whether to keep parsing other translation units
+     after a parsing failure.")
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
@@ -11576,25 +11578,42 @@
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
-       ((erp tunitmap) (parse-fileset-loop filemap gcc)))
+       ((erp tunitmap) (parse-fileset-loop filemap gcc keep-going))
+       (- (if keep-going
+              (b* ((len-filemap (omap::size filemap))
+                   (len-tunitmap (omap::size tunitmap))
+                   (diff (- len-filemap len-tunitmap)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Parsed ~x0/~x1 files." len-tunitmap len-filemap)))
+            nil)))
     (retok (transunit-ensemble tunitmap)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
-                               (gcc booleanp))
+                               (gcc booleanp)
+                               (keep-going booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
-          ((erp tunit) (parse-file filepath (filedata->unwrap filedata) gcc))
-          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap) gcc)))
+          ((mv erp tunit)
+           (parse-file filepath (filedata->unwrap filedata) gcc))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "~@0" erp)
+                       (parse-fileset-loop (omap::tail filemap) gcc keep-going))
+             (reterr erp)))
+          ((erp tunitmap)
+           (parse-fileset-loop (omap::tail filemap) gcc keep-going)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
      :verify-guards :after-returns
 
      ///
 
      (defret keys-of-parse-fileset-loop
-       (implies (not erp)
+       (implies (and (not keep-going)
+                     (not erp))
                 (equal (omap::keys tunitmap)
                        (omap::keys filemap)))
        :hyp (filepath-filedata-mapp filemap)
@@ -11603,6 +11622,7 @@
   ///
 
   (defret filepaths-of-parse-fileset
-    (implies (not erp)
+    (implies (and (not keep-going)
+                  (not erp))
              (equal (omap::keys (transunit-ensemble->unwrap tunits))
                     (omap::keys (fileset->unwrap fileset))))))
