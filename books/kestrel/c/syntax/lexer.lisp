@@ -1278,22 +1278,90 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If a suffix is found, the @('last/next-pos') output is its position.
+    "If a suffix is found,
+     the @('last/next-pos') output is the position of its last character.
      Otherwise, it is the position where the suffix would be.")
    (xdoc::p
     "If there is no next character, there is no suffix.
      Otherwise, there are four possibilities for suffixes.
      If the next character is not part of any suffix,
-     we unread the character and return no suffix."))
+     we unread the character and return no suffix.")
+   (xdoc::p
+    "If GCC extensions are enabled,
+     we allow the @('f') or @('F') suffix
+     to be followed by @('<n>') or @('<n>x'),
+     with @('<n>') among @('16'), @('32'), @('64'), or @('128')."))
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
-     ((not char)
+     ((not char) ; EOF
       (retok nil pos parstate))
      ((= char (char-code #\f)) ; f
-      (retok (fsuffix-locase-f) pos parstate))
+      (b* (((unless (parstate->gcc parstate))
+            (retok (fsuffix-locase-f) pos parstate))
+           ((erp digits digits-last-pos & parstate) ; f [digits]
+            (lex-*-digit pos parstate)))
+        (cond
+         (digits ; f digits
+          (b* ((n (str::dec-digit-chars-value digits))
+               ((unless (member-equal n '(16 32 64 128)))
+                (reterr-msg :where (position-to-msg pos)
+                            :expected "one of ~
+                                       f16, f32, f64, f128, ~
+                                       f16x, f32x, f64x, f128x"
+                            :found (msg "f~x0" n)))
+               ((erp charx posx parstate) (read-char parstate)))
+            (cond
+             ((eql charx (char-code #\x)) ; f digits x
+              (b* ((fsuffix (case n
+                              (16 (fsuffix-locase-f16 t))
+                              (32 (fsuffix-locase-f32 t))
+                              (64 (fsuffix-locase-f64 t))
+                              (128 (fsuffix-locase-f128 t)))))
+                (retok fsuffix posx parstate)))
+             (t ; f digits other
+              (b* ((parstate (if charx (unread-char parstate) parstate))
+                   (fsuffix (case n
+                              (16 (fsuffix-locase-f16 nil))
+                              (32 (fsuffix-locase-f32 nil))
+                              (64 (fsuffix-locase-f64 nil))
+                              (128 (fsuffix-locase-f128 nil)))))
+                (retok fsuffix digits-last-pos parstate))))))
+         (t ; f nondigits
+          (retok (fsuffix-locase-f) pos parstate)))))
      ((= char (char-code #\F)) ; F
-      (retok (fsuffix-upcase-f) pos parstate))
+      (b* (((unless (parstate->gcc parstate))
+            (retok (fsuffix-upcase-f) pos parstate))
+           ((erp digits digits-last-pos & parstate) ; f [digits]
+            (lex-*-digit pos parstate)))
+        (cond
+         (digits ; F digits
+          (b* ((n (str::dec-digit-chars-value digits))
+               ((unless (member-equal n '(16 32 64 128)))
+                (reterr-msg :where (position-to-msg pos)
+                            :expected "one of ~
+                                       f16, f32, f64, f128, ~
+                                       f16x, f32x, f64x, f128x"
+                            :found (msg "f~x0" n)))
+               ((erp charx posx parstate) (read-char parstate)))
+            (cond
+             ((eql charx (char-code #\x)) ; F digits x
+              (b* ((fsuffix (case n
+                              (16 (fsuffix-upcase-f16 t))
+                              (32 (fsuffix-upcase-f32 t))
+                              (64 (fsuffix-upcase-f64 t))
+                              (128 (fsuffix-upcase-f128 t)))))
+                (retok fsuffix posx parstate)))
+             (t ; F digits other
+              (b* ((parstate (if charx (unread-char parstate) parstate))
+                   (fsuffix (case n
+                              (16 (fsuffix-upcase-f16 nil))
+                              (32 (fsuffix-upcase-f32 nil))
+                              (64 (fsuffix-upcase-f64 nil))
+                              (128 (fsuffix-upcase-f128 nil)))))
+                (retok fsuffix digits-last-pos parstate))))))
+         (t ; F nondigits
+          (retok (fsuffix-upcase-f) pos parstate)))))
      ((= char (char-code #\l)) ; l
       (retok (fsuffix-locase-l) pos parstate))
      ((= char (char-code #\L)) ; L

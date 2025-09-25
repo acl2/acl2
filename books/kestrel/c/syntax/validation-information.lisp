@@ -700,6 +700,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                    (type-spec-fix type-spec)))
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -1029,6 +1031,7 @@
    :memberp (type-unknown)
    :complit (type-unknown)
    :unary (expr-unary-info->type expr.info)
+   :label-addr (type-pointer (type-void))
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (tyname-info->type (tyname->info expr.type))

@@ -1022,6 +1022,67 @@
     :hyp (and (expr-unambp arg1)
               (expr-unambp arg2))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/logand-to-cast ((tyname tynamep)
+                                  (inc/dec inc/dec-op-listp)
+                                  (arg identp))
+  :guard (tyname-unambp tyname)
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or logical conjunction expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
+     but for a different kind of ambiguous expression.
+     Note that the @('&&'), which is unary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression.")
+   (xdoc::p
+    "Since the @('arg') component is an identifier here,
+     we can use the plain cast expression constructor,
+     instead of @(tsee dimb-make/adjust-expr-binary)."))
+  (make-expr-cast :type tyname
+                  :arg (apply-pre-inc/dec-ops inc/dec (expr-label-addr arg)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/logand-to-cast
+    (expr-unambp expr)
+    :hyp (tyname-unambp tyname)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/logand-to-logand ((arg1 exprp)
+                                    (inc/dec inc/dec-op-listp)
+                                    (arg2 identp))
+  :guard (expr-unambp arg1)
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or logical conjunction expression
+          to be a logical conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
+     but for a different kind of ambiguous expression.
+     Note that the @('&&'), which is binary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression.")
+   (xdoc::p
+    "Since the @('arg') component is an identifier here,
+     we can use the plain binary expression constructor,
+     instead of @(tsee dimb-make/adjust-expr-binary)."))
+  (make-expr-binary :op (binop-logand)
+                    :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
+                    :arg2 (make-expr-ident :ident arg2 :info nil))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/logand-to-logand
+    (expr-unambp expr)
+    :hyp (expr-unambp arg1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-params-to-names ((params param-declon-listp)
@@ -1251,6 +1312,8 @@
          (retok (dimb-make/adjust-expr-unary expr.op
                                              new-arg)
                 table))
+       :label-addr
+       (retok (expr-fix expr) (dimb-table-fix table))
        :sizeof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
          (retok (expr-sizeof new-tyname) table))
@@ -1385,6 +1448,23 @@
            (dimb-cast/and-to-and (expr/tyname-expr->unwrap expr/tyname)
                                  expr.inc/dec
                                  new-arg/arg2)
+           table)))
+       :cast/logand-ambig
+       (b* (((erp expr/tyname table)
+             (dimb-amb-expr/tyname expr.type/arg1 t table)))
+         (expr/tyname-case
+          expr/tyname
+          :tyname
+          (retok
+           (dimb-cast/logand-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+                                     expr.inc/dec
+                                     expr.arg/arg2)
+           table)
+          :expr
+          (retok
+           (dimb-cast/logand-to-logand (expr/tyname-expr->unwrap expr/tyname)
+                                       expr.inc/dec
+                                       expr.arg/arg2)
            table)))
        :stmt
        (b* (((erp items table) (dimb-block-item-list expr.items table)))
@@ -1607,6 +1687,8 @@
                                        (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       (dimb-table-fix table))
+       :float16 (retok (type-spec-float16) (dimb-table-fix table))
+       :float16x (retok (type-spec-float16x) (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
        :float32x (retok (type-spec-float32x) (dimb-table-fix table))
        :float64 (retok (type-spec-float64) (dimb-table-fix table))
