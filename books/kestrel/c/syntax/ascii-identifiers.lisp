@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ascii-identifiers
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "ASCII identifiers in the C abstract syntax of tools."
   :long
   (xdoc::topstring

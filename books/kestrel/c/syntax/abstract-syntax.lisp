@@ -12,10 +12,13 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-irrelevants")
-(include-book "abstract-syntax-operations")
-(include-book "abstraction-mapping")
 (include-book "code-ensembles")
 (include-book "abstract-syntax-make-self")
+(include-book "abstract-syntax-operations")
+(include-book "purity")
+(include-book "standard")
+(include-book "ascii-identifiers")
+(include-book "abstraction-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,7 +48,10 @@
      for code ensembles and contained ASTs."))
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-irrelevants
-                    abstract-syntax-operations
-                    abstraction-mapping
                     code-ensembles
-                    make-self-code-ensemble))
+                    make-self-code-ensemble
+                    abstract-syntax-operations
+                    purity
+                    standard
+                    ascii-identifiers
+                    abstraction-mapping))

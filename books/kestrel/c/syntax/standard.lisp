@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ standard
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Standard syntax (i.e. without GCC extensions)."
   :long
   (xdoc::topstring
