@@ -18,6 +18,6 @@
 
 ; (depends-on "BinarySearch.class")
 
-(include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
+(include-book "kestrel/axe/jvm/tester" :dir :system)
 
 (test-file "BinarySearch.java")

@@ -18,7 +18,7 @@
 
 ; (depends-on "BinarySearchBuggy.class")
 
-(include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
+(include-book "kestrel/axe/jvm/tester" :dir :system)
 
 ;; The test fails as follows (with my version of STP):
 ;; (Counterexample:
