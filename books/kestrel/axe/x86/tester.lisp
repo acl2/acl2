@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; See also the Formal Unit Tester for Java.
+;; See also ../jvm/tester.lisp, the Formal Unit Tester for Java.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
@@ -46,7 +46,7 @@
 
 ;; TODO: Parens in output may not be balanced?
 
-(acl2::def-constant-opener alistp) ; why?
+;(acl2::def-constant-opener alistp) ; why?
 
 ;; todo: use these
 (defund get-x86-tester-table (state)
@@ -377,7 +377,7 @@
                     acl2::maybe-get-mach-o-segment-constant-opener
                     acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
                     acl2::maybe-get-mach-o-section-constant-opener
-                    acl2::alistp-constant-opener
+                    ;acl2::alistp-constant-opener
                     ;;acl2::const-assumptions-mach-o-64
                     ;;acl2::data-assumptions-mach-o-64
                     ;;acl2::get-mach-o-constants-address-constant-opener
