@@ -661,6 +661,7 @@
                        (make-expr-unary :op expr.op :arg arg :info nil))
                      value?
                      env))
+        :label-addr (mv (expr-fix  expr) nil env)
         :sizeof (b* (((mv type env)
                       (const-prop-tyname expr.type env)))
                   (mv (expr-sizeof type)
@@ -776,6 +777,10 @@
                                     (expr-fix expr))
                             nil
                             env)
+        :cast/logand-ambig (mv (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                                       (expr-fix expr))
+                               nil
+                               env)
         :stmt (b* (((mv items env)
                     (const-prop-block-item-list expr.items (push-scope-env env))))
                 (mv (expr-stmt items)

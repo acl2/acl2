@@ -1484,6 +1484,13 @@
        we preserve the information about adjacent string literals,
        as opposed to concatenating them into one.")
      (xdoc::p
+      "As a GCC extension, we allow @('&&') to be used as a unary operator
+       applied to an identifier (which should be a label);
+       see the ABNF grammar.
+       We make this a new kind of expression
+       due to the restricted nature of its operand,
+       compared to the kind of unary expressions in this fixtype.")
+     (xdoc::p
       "The @(':sizeof') case of this fixtype
        captures @('sizeof') applied to a type name.
        The @('sizeof') applied to an expression is instead captured
@@ -1528,20 +1535,24 @@
        a list of expressions (it associates to the left).
        But for now the current model is adequate.")
      (xdoc::p
-      "The last five kinds of expressions capture
+      "The six kinds @(':cast/...-ambig') of expressions capture
        syntactically ambiguous expressions of the forms")
      (xdoc::codeblock
       "( X ) IncDec ( E ) Pr"
       "( X ) IncDec * E"
       "( X ) IncDec + E"
       "( X ) IncDec - E"
-      "( X ) IncDec & E")
+      "( X ) IncDec & E"
+      "( X ) IncDec && I")
      (xdoc::p
       "where @('X') is an ambiguous expression or type name,
        @('IncDec') is a sequence of zero or more
        increment and decrement operators @('++') and @('--'),
        @('E') is an expression,
-       and @('Pr') is a possibly empty rest of a postfix expression.
+       @('I') is an identifier,
+       @('Pr') is a possibly empty rest of a postfix expression,
+       and the last one is ambiguous only if
+       GCC extensions are enabled,
        All of this is now explained in detail.")
      (xdoc::p
       "If @('X') is an ambiguous expression or type name
@@ -1564,7 +1575,7 @@
        we capture the ambiguous constructs explicitly in our abstract syntax.
        But for these ambiguous casts, the situation is more complex.")
      (xdoc::p
-      "In the five patterns shown above,
+      "In the six patterns shown above,
        it is easier to ignore the @('IncDec') part at first,
        pretending it is not there.
        In the first pattern, the @('Pr') is either empty
@@ -1613,34 +1624,40 @@
        includes, between the components for @('X') and @('(E)Pr'),
        a list of zero or more increment and decrement operators.")
      (xdoc::p
-      "The other four of the five patterns shown earlier
+      "The other five of the six patterns shown earlier
        are more uniform with each other.
        Again, ignore @('IncDec') initially.
-       The issue here is that the operators @('*'), @('+'), @('-'), @('&')
-       are both unary and binary.
+       The issue here is that the operators
+       @('*'), @('+'), @('-'), @('&'), and @('&&')
+       are both unary and binary
+       (the last one only if GCC extensions are enabled).
        Thus, if @('X') is a type name,
-       the @('* E') or @('+ E') or @('- E') or @('& E')
+       the @('* E') or @('+ E') or @('- E') or @('& E') or @('&& I')
        is a unary expression that is the argument of the cast;
        the operator is unary.
        If instead @('X') is an expression,
-       the operator is binary with operands @('(X)') and @('E').
+       the operator is binary with operands @('(X)') and @('E'),
+       or @('X') and @('I') in the case of @('&&').
        The cases
        @(':cast/mul-ambig'),
        @(':cast/add-ambig'),
-       @(':cast/sub-ambig'), and
-       @(':cast/and-ambig') of this fixtype
+       @(':cast/sub-ambig'),
+       @(':cast/and-ambig'), and
+       @(':cast/logand-ambig')
+       of this fixtype
        capture these ambiguous situations.
        They are either casts or
-       multiplications/additions/subtractions/conjunctions.
+       multiplications/additions/subtractions/conjunctions
+       (the latter strict or conditional).
        Their first component is @('X'),
-       and their last component is @('E').
+       and their last component is @('E') or @('I').
        Their middle component is a list of zero or more
        increment and decrement operators that may be in between,
        i.e. @('IncDec') in the patterns shown earlier.
        Their presence maintain the ambiguity:
        if @('X') is a type name,
        they are pre-increment and pre-decrement operators
-       applied to @('* E') or @('+ E') or @('- E') or @('& E');
+       applied to @('* E') or @('+ E') or @('- E') or @('& E') or @('&& I');
        if @('X') is an expression,
        they are post-increment and post-decrement operators applied to @('X'),
        forming the left operand of the binary operators.")
@@ -1717,10 +1734,11 @@
     (:unary ((op unop)
              (arg expr)
              (info any)))
+    (:label-addr ((arg ident))) ; GCC extension
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
-               (uscores keyword-uscores)))
+               (uscores keyword-uscores))) ; GCC extension
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
@@ -1728,7 +1746,7 @@
               (arg2 expr)
               (info any)))
     (:cond ((test expr)
-            (then expr-option)
+            (then expr-option) ; absence is GCC extension
             (else expr)))
     (:comma ((first expr)
              (next expr)))
@@ -1747,7 +1765,11 @@
     (:cast/and-ambig ((type/arg1 amb-expr/tyname)
                       (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
+    (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
+                         (inc/dec inc/dec-op-list)
+                         (arg/arg2 ident)))
     (:stmt ((items block-item-list)))
+    ;; GCC extensions:
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)

@@ -1,5 +1,4 @@
 ; C Library
-
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;

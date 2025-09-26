@@ -2202,6 +2202,10 @@
                                   (expr-priority-cast)))
                   (pstate (print-expr expr.arg arg-priority pstate)))
                pstate))
+           :label-addr
+           (b* ((pstate (print-astring "&&" pstate))
+                (pstate (print-ident expr.arg pstate)))
+             pstate)
            :sizeof
            (b* ((pstate (print-astring "sizeof(" pstate))
                 (pstate (print-tyname expr.type pstate))
@@ -2265,6 +2269,7 @@
            :cast/add-ambig (prog2$ (impossible) (pristate-fix pstate))
            :cast/sub-ambig (prog2$ (impossible) (pristate-fix pstate))
            :cast/and-ambig (prog2$ (impossible) (pristate-fix pstate))
+           :cast/logand-ambig (prog2$ (impossible) (pristate-fix pstate))
            :stmt
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-block expr.items pstate))

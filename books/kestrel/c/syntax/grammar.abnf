@@ -935,6 +935,10 @@ lexeme = token
 ; of the implied grammar extension,
 ; but some experimentation confirms our interpretation.
 
+; As a GCC extension, we include the unary '&&' operator applied to labels
+; (https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html),
+; which syntactically are identifiers (cf. the rule for labeled statements).
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -992,6 +996,7 @@ unary-expression = postfix-expression
                  / alignof-keyword "(" type-name ")"
                  / %s"__real__" cast-expression ; GCC extension
                  / %s"__imag__" cast-expression ; GCC extension
+                 / "&&" identifier ; GCC extension
 
 unary-operator = "&"
                / "*"

@@ -2603,6 +2603,7 @@
                               gout-arg.thm-name
                               expr.info
                               gin))
+       :label-addr (mv (expr-fix expr) (simpadd0-gout-no-thm gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin))
