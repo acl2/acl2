@@ -515,6 +515,7 @@
               (mv nil nil nil))
              (formula-member
               `(implies (and (syntaxp (quotep e))
+                             (compustatep compst)
                              (equal (expr-kind e) :binary)
                              (equal (binop-kind (expr-binary->op e)) :asg)
                              (equal left (expr-binary->arg1 e))
@@ -531,13 +532,17 @@
                              (equal eval (exec-expr-pure right compst))
                              (expr-valuep eval)
                              (equal val (expr-value->value eval))
-                             (,typep val))
+                             (,typep val)
+                             (equal compst1
+                                    (write-var var
+                                               (,writer val struct)
+                                               compst))
+                             (compustatep compst1))
                         (equal (exec-expr-asg e compst fenv limit)
-                               (write-var var
-                                          (,writer val struct)
-                                          compst))))
+                               (mv val compst1))))
              (formula-memberp
               `(implies (and (syntaxp (quotep e))
+                             (compustatep compst)
                              (equal (expr-kind e) :binary)
                              (equal (binop-kind (expr-binary->op e)) :asg)
                              (equal left (expr-binary->arg1 e))
@@ -562,11 +567,15 @@
                              (equal eval (exec-expr-pure right compst))
                              (expr-valuep eval)
                              (equal val (expr-value->value eval))
-                             (,typep val))
+                             (,typep val)
+                             (equal compst1
+                                    (write-object (value-pointer->designator
+                                                   ptr)
+                                                  (,writer val struct)
+                                                  compst))
+                             (compustatep compst1))
                         (equal (exec-expr-asg e compst fenv limit)
-                               (write-object (value-pointer->designator ptr)
-                                             (,writer val struct)
-                                             compst))))
+                               (mv val compst1))))
              (valuep-when-typep (pack 'valuep-when- typep))
              (value-kind-when-typep (pack 'value-kind-when- typep))
              (consp-when-typep (pack 'consp-when- typep))
@@ -610,7 +619,9 @@
                    ,valuep-thm
                    ,value-kind-thm
                    ,reader
-                   ,writer)
+                   ,writer
+                   compustate-fix-when-compustatep
+                   not-errorp-when-compustatep)
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-var (expr-ident->get
@@ -662,7 +673,9 @@
                    ,fixer-recognizer-thm
                    ,reader
                    ,writer
-                   ,recognizer)
+                   ,recognizer
+                   compustate-fix-when-compustatep
+                   not-errorp-when-compustatep)
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-object
@@ -763,7 +776,8 @@
         (pack 'return-type-of-type- elemfixtype))
        (formula-member
         `(implies
-          (and (equal (expr-kind e) :binary)
+          (and (compustatep compst)
+               (equal (expr-kind e) :binary)
                (equal (binop-kind (expr-binary->op e)) :asg)
                (equal left (expr-binary->arg1 e))
                (equal right (expr-binary->arg2 e))
@@ -789,14 +803,18 @@
                (equal eval (exec-expr-pure right compst))
                (expr-valuep eval)
                (equal val (expr-value->value eval))
-               (,elemfixtypep val))
+               (,elemfixtypep val)
+               (equal compst1
+                      (write-var var
+                                 (,writer-element idx val struct)
+                                 compst))
+               (compustatep compst1))
           (equal (exec-expr-asg e compst fenv limit)
-                 (write-var var
-                            (,writer-element idx val struct)
-                            compst))))
+                 (mv val compst1))))
        (formula-memberp
         `(implies
-          (and (equal (expr-kind e) :binary)
+          (and (compustatep compst)
+               (equal (expr-kind e) :binary)
                (equal (binop-kind (expr-binary->op e)) :asg)
                (equal left (expr-binary->arg1 e))
                (equal right (expr-binary->arg2 e))
@@ -832,11 +850,14 @@
                (equal eval1 (apconvert-expr-value eval))
                (expr-valuep eval1)
                (equal val (expr-value->value eval1))
-               (,elemfixtypep val))
+               (,elemfixtypep val)
+               (equal compst1
+                      (write-object (value-pointer->designator ptr)
+                                    (,writer-element idx val struct)
+                                    compst))
+               (compustatep compst1))
           (equal (exec-expr-asg e compst fenv limit)
-                 (write-object (value-pointer->designator ptr)
-                               (,writer-element idx val struct)
-                               compst))))
+                 (mv val compst1))))
        (theory-member
         `(exec-expr-asg
           exec-expr-pure-when-arrsub-of-member-no-syntaxp
@@ -910,7 +931,9 @@
           ,writer-element
           ,recognizer
           ,checker
-          ,@(and length (list length))))
+          ,@(and length (list length))
+          compustate-fix-when-compustatep
+          not-errorp-when-compustatep))
        (hints-member
         `(("Goal"
            :use
@@ -1015,7 +1038,9 @@
           value-struct-write
           (:e ident)
           (:e ident-fix)
-          ,@(and length (list length))))
+          ,@(and length (list length))
+          compustate-fix-when-compustatep
+          not-errorp-when-compustatep))
        (hints-memberp
         `(("Goal"
            :use

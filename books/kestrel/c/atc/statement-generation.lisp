@@ -266,7 +266,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in generation of type assertions in modular proofs,
+    "This is used in the generation of type assertions in modular proofs,
      precisely in @(tsee atc-gen-term-type-formula).
      A term may return one or more results, in general.
      For terms that represent C constructs, each result has a C type,
@@ -325,12 +325,15 @@
               (raise "Internal error: malformed LET or LET* ~x0." uterm)
               (mv nil nil nil))
              (bindings (cadr uterm))
-             ((unless (and (alistp bindings) ; really a doublet list
-                           (symbol-listp (strip-cars bindings))))
+             ((unless (alistp bindings)) ; really a doublet list
               (raise "Internal error: malformed LET or LET* bindings ~x0."
                      bindings)
               (mv nil nil nil))
              (vars (strip-cars bindings))
+             ((unless (symbol-listp vars))
+              (raise "Internal error: malformed LET or LET* bindings ~x0."
+                     bindings)
+              (mv nil nil nil))
              (body-uterm (caddr uterm))
              ((mv body-uterms varsp body-bound-vars)
               (atc-uterm-to-components body-uterm comps)))
@@ -738,12 +741,6 @@
 
 (fty::defprod stmt-gout
   :short "Outputs for C statement generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We actually generate a list of block items.
-     These can be regarded as forming a compound statement,
-     but lists of block items are compositional (via concatenation)."))
   ((items block-item-list
           "We actually generate a list of block items.
            These can be regarded as forming a compound statement,
@@ -752,8 +749,8 @@
          "The type returned by the block items.
           It may be @('void').")
    (term pseudo-termp
-         "The term from which the block items are generated.
-          The term is transformed by replacing @(tsee if) with @(tsee if*)
+         "The term from which the block items are generated,
+          transformed by replacing @(tsee if) with @(tsee if*)
           and a few other changes.")
    (context atc-context
             "Described in @(see atc-implementation).
@@ -1642,6 +1639,8 @@
                                 (asg-limit pseudo-termp)
                                 (asg-events pseudo-event-form-listp)
                                 (asg-thm-name symbolp)
+                                (val-uterm "An untranslated term.")
+                                (val-type typep)
                                 (new-compst "An untranslated term.")
                                 (gin stmt-ginp)
                                 state)
@@ -1658,7 +1657,11 @@
    (xdoc::p
     "This lifts an assignment to a block item with the assignment.
      It also lifts the theorem about the assignment
-     to a theorem about the block item."))
+     to a theorem about the block item.")
+   (xdoc::p
+    "The @('val-uterm') input is the untranslated term denoting
+     the C value that is being assigned.
+     The @('val-type') is its type."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (expr-thm-name (pack gin.fn '-correct- gin.thm-index))
@@ -1667,12 +1670,12 @@
          expr-thm-name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
        (expr-limit `(binary-+ '1 ,asg-limit))
-       (expr-formula `(equal (exec-expr-call-or-asg ',asg
+       (exec-formula `(equal (exec-expr-call-or-asg ',asg
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             (mv nil ,new-compst)))
-       (expr-formula (atc-contextualize expr-formula
+                             (mv ,val-uterm ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
                                         gin.fn-guard
@@ -1681,6 +1684,18 @@
                                         expr-limit
                                         t
                                         wrld))
+       (pred (atc-type-to-recognizer val-type gin.prec-tags))
+       (type-formula `(,pred ,val-uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (expr-formula `(and ,exec-formula ,type-formula))
        (expr-hints
         `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
                                (:e expr-kind)
@@ -1728,7 +1743,18 @@
                                compustatep-of-update-static-var
                                mv-nth-of-cons
                                (:e zp)
-                               (:e value-optionp)))))
+                               (:e value-optionp)
+                               valuep-when-ucharp
+                               valuep-when-scharp
+                               valuep-when-ushortp
+                               valuep-when-sshortp
+                               valuep-when-uintp
+                               valuep-when-sintp
+                               valuep-when-ulongp
+                               valuep-when-slongp
+                               valuep-when-ullongp
+                               valuep-when-sllongp
+                               value-optionp-when-valuep))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -1796,7 +1822,7 @@
        ((erp rhs.expr
              rhs.type
              rhs.term
-             & ; rhs.result
+             rhs.result
              & ; rhs.new-compst
              rhs.limit
              rhs.events
@@ -1862,20 +1888,32 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil rhs.names-to-avoid wrld))
        (thm-index (1+ rhs.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (exec-formula `(equal (exec-expr-asg ',asg
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                             (mv ,rhs.result ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        asg-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer rhs.type gin.prec-tags))
+       (type-formula `(,pred ,rhs.result))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type (atc-type-to-valuep-thm rhs.type gin.prec-tags))
        (type-of-value-when-type
         (atc-type-to-type-of-value-thm rhs.type gin.prec-tags))
@@ -1923,7 +1961,9 @@
                         write-static-var-okp-of-enter-scope
                         write-static-var-okp-of-add-frame
                         write-static-var-okp-when-valuep-of-read-static-var
-                        read-object-of-objdesign-static))))
+                        read-object-of-objdesign-static
+                        compustatep-of-update-var
+                        compustatep-of-update-static-var))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -1934,6 +1974,8 @@
                                 (append rhs.events
                                         (list asg-event))
                                 asg-thm-name
+                                rhs.result
+                                rhs.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -2187,20 +2229,33 @@
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (uterm (untranslate$ elem.term nil state))
+       (exec-formula `(equal (exec-expr-asg ',asg
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                             (mv ,uterm ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        asg-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer elem.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
         (pack 'exec-expr-asg-arrsub-when-
               elem-fixtype
@@ -2292,7 +2347,9 @@
              ident-fix-when-identp
              identp-of-ident
              equal-of-ident-and-ident
-             (:e str-fix)))))
+             (:e str-fix)
+             compustatep-of-update-object
+             compustatep-of-update-static-var))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2311,6 +2368,8 @@
                                         (list okp-lemma-event
                                               asg-event))
                                 asg-thm-name
+                                uterm
+                                elem.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -2564,20 +2623,33 @@
                                            member.names-to-avoid
                                            wrld))
        (thm-index (1+ member.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (uterm (untranslate$ member.term nil state))
+       (exec-formula `(equal (exec-expr-asg ',asg
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                             (mv ,uterm ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        asg-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer member.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (type-of-value-thms
@@ -2620,7 +2692,9 @@
                  write-object-okp-when-valuep-of-read-object-no-syntaxp
                  ,@valuep-thms
                  ,@type-of-value-thms
-                 ,@writer-return-thms)))
+                 ,@writer-return-thms
+                 compustatep-of-add-var
+                 compustatep-of-update-object)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-asg-thms
@@ -2657,7 +2731,9 @@
                identp-of-ident
                equal-of-ident-and-ident
                compustate-frames-number-of-update-var
-               write-var-okp-of-update-var)))))
+               write-var-okp-of-update-var
+               compustatep-of-add-var
+               compustatep-of-update-var)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2674,6 +2750,8 @@
                                         member.events
                                         (list asg-event))
                                 asg-thm-name
+                                uterm
+                                member.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -2986,20 +3064,33 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (uterm (untranslate$ elem.term nil state))
+       (exec-formula `(equal (exec-expr-asg ',asg
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                             (mv ,uterm ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        asg-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer elem.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (valuep-when-elem-type-pred
@@ -3059,7 +3150,9 @@
                  write-object-okp-when-valuep-of-read-object-no-syntaxp
                  ,@valuep-thms
                  ,@type-of-value-thms
-                 ,@writer-return-thms)))
+                 ,@writer-return-thms
+                 compustatep-of-add-var
+                 compustatep-of-update-object)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-asg-thms
@@ -3104,7 +3197,9 @@
                identp-of-ident
                equal-of-ident-and-ident
                compustate-frames-number-of-update-var
-               write-var-okp-of-update-var)))))
+               write-var-okp-of-update-var
+               compustatep-of-add-var
+               compustatep-of-update-var)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3123,6 +3218,8 @@
                                         (list okp-lemma-event
                                               asg-event))
                                 asg-thm-name
+                                uterm
+                                elem.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -3354,20 +3451,33 @@
                                            int.names-to-avoid
                                            wrld))
        (thm-index (1+ int.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (uterm (untranslate$ int.term nil state))
+       (exec-formula `(equal (exec-expr-asg ',asg
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                             (mv ,uterm ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        asg-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer int.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (exec-expr-asg-thm
         (pack 'exec-expr-asg-indir-when- type-pred '-for-modular-proofs))
@@ -3406,7 +3516,8 @@
                         write-object-okp-of-add-frame
                         write-object-okp-when-valuep-of-read-object-no-syntaxp
                         ,type-of-value-thm
-                        ,type-pred-of-integer-write-fn))))
+                        ,type-pred-of-integer-write-fn
+                        compustatep-of-update-object))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3423,6 +3534,8 @@
                                         int.events
                                         (list asg-event))
                                 asg-thm-name
+                                uterm
+                                int.type
                                 new-compst
                                 (change-stmt-gin
                                  gin

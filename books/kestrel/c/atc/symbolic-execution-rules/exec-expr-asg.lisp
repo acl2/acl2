@@ -58,11 +58,13 @@
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (valuep (read-var (expr-ident->get e1) compst1)))
+                  (valuep (read-var (expr-ident->get e1) compst1))
+                  (equal compst2 (write-var (expr-ident->get e1) val compst1))
+                  (compustatep compst2))
              (equal (exec-expr-asg e compst fenv limit)
-                    (write-var (expr-ident->get e1) val compst1)))
-    :enable (exec-expr-asg
-             exec-expr-pure
+                    (mv val compst2)))
+    :expand (exec-expr-asg e compst fenv limit)
+    :enable (exec-expr-pure
              exec-ident
              write-object-of-objdesign-of-var-to-write-var))
 
@@ -82,11 +84,13 @@
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
                   (equal objdes (objdesign-of-var (expr-ident->get e1) compst1))
-                  objdes)
+                  objdes
+                  (equal compst2 (write-object objdes val compst1))
+                  (compustatep compst2))
              (equal (exec-expr-asg e compst fenv limit)
-                    (write-object objdes val compst1)))
-    :enable (exec-expr-asg
-             exec-expr-pure
+                    (mv val compst2)))
+    :expand (exec-expr-asg e compst fenv limit)
+    :enable (exec-expr-pure
              exec-ident))
 
   (defval *atc-exec-expr-asg-ident-rules*
@@ -142,11 +146,14 @@
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
                  (,pred val)
-                 (valuep (read-object (value-pointer->designator ptr) compst)))
+                 (valuep (read-object (value-pointer->designator ptr) compst))
+                 (equal compst1
+                        (write-object (value-pointer->designator ptr)
+                                      val
+                                      compst))
+                 (compustatep compst1))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->designator ptr)
-                                 val
-                                 compst))))
+                   (mv val compst1))))
          (formula-mod-proofs
           `(implies
             (and (syntaxp (quotep e))
@@ -171,11 +178,14 @@
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
                  (,pred val)
-                 (valuep (read-object (value-pointer->designator ptr) compst)))
+                 (valuep (read-object (value-pointer->designator ptr) compst))
+                 (equal compst1
+                        (write-object (value-pointer->designator ptr)
+                                      (,writer val)
+                                      compst))
+                 (compustatep compst1))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->designator ptr)
-                                 (,writer val)
-                                 compst))))
+                   (mv val compst1))))
          (events `((defruled ,name
                      ,formula
                      :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
@@ -310,11 +320,14 @@
                  (equal eval1 (apconvert-expr-value eval))
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
-                 (,epred val))
+                 (,epred val)
+                 (equal compst1
+                        (write-object (value-pointer->designator ptr)
+                                      (,atype-array-write array index val)
+                                      compst))
+                 (compustatep compst1))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->designator ptr)
-                                 (,atype-array-write array index val)
-                                 compst))))
+                   (mv val compst1))))
          (event
           `(defruled ,name
              ,formula
@@ -380,11 +393,14 @@
                  (equal eval (apconvert-expr-value right-eval))
                  (expr-valuep eval)
                  (equal val (expr-value->value eval))
-                 (,epred val))
+                 (,epred val)
+                 (equal compst1
+                        (write-object (value-pointer->designator ptr)
+                                      (,atype-array-write array index val)
+                                      compst))
+                 (compustatep compst1))
             (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->designator ptr)
-                                 (,atype-array-write array index val)
-                                 compst))))
+                   (mv val compst1))))
          (event-mod-prf
           `(defruled ,name-mod-prf
              ,formula-mod-prf

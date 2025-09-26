@@ -83,8 +83,9 @@
    (type type
          "The type returned by the expression. Never @('void').")
    (term pseudo-termp
-         "The term from which the expression is generated.
-          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+         "The term from which the expression is generated,
+          transformed by replacing @(tsee if) with @(tsee if*)
+          and a few other changes.")
    (events pseudo-event-form-list
            "All the events generated for the expression.")
    (thm-name symbol
