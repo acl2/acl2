@@ -1606,6 +1606,10 @@
       memory-regionp
       memory-regionsp
       memory-region-addresses-and-lens
+
+      ;; formal unit tester common stuff:
+      print-test-summary
+      any-result-unexpectedp
       )
     *axe-functions*))
 
