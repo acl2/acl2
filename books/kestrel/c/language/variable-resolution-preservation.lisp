@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection variable-resolution-preservation
+(defxdoc+ variable-resolution-preservation
   :parents (dynamic-semantics)
   :short "Preservation of variable resolution under execution."
   :long
