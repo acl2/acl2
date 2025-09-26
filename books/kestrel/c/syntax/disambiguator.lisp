@@ -3729,7 +3729,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit-ensemble ((tuens transunit-ensemblep) (gcc booleanp))
+(define dimb-transunit-ensemble ((tuens transunit-ensemblep)
+                                 (gcc booleanp)
+                                 (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
@@ -3741,14 +3743,24 @@
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->unwrap tuens))
-       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc)))
+       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc keep-going))
+       (- (if keep-going
+              (b* ((len-tumap (omap::size tumap))
+                   (len-new-tumap (omap::size new-tumap))
+                   (diff (- len-tumap len-new-tumap)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Disambiguated ~x0/~x1 translation units."
+                      len-new-tumap len-tumap)))
+            nil)))
     (retok (transunit-ensemble new-tumap)))
   :hooks (:fix)
 
   :prepwork
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (gcc booleanp))
+                                         (gcc booleanp)
+                                         (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-transunit-mapp
                              :hyp (filepath-transunit-mapp tumap)))
@@ -3756,16 +3768,24 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((erp new-tunit) (dimb-transunit tunit gcc))
+          ((mv erp new-tunit) (dimb-transunit tunit gcc))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "~@0" erp)
+                       (dimb-transunit-ensemble-loop (omap::tail tumap)
+                                                     gcc
+                                                     keep-going))
+             (reterr erp)))
           ((erp new-tumap)
-           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc)))
+           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((gcc booleanp)))
+       :args ((gcc booleanp)
+              (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
        (implies (not erp)

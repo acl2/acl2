@@ -59,6 +59,7 @@
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
      "             :const             ...  ; required, no default"
+     "             :keep-going        ...  ; default nil"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -244,6 +245,20 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
+
+    (xdoc::desc
+     "@(':keep-going') &mdash; default @('nil')"
+     (xdoc::p
+      "Boolean flag saying whether to keep going after failing to input a file.
+       When @('t'), files which fail parsing, disambiguation, or validation
+       are dropped and the relevant error is printed.
+       Furthermore, at the end of each stage, if any file has failed,
+       then the fraction of successful files is also printed.")
+     (xdoc::p
+      "This flag is provided primarily for debugging purposes.
+       Successful validation of later files following the first failure
+       may be erroneous due to the inability to perform certain cross-checks
+       against the dropped files."))
 
     (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
