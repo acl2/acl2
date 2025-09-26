@@ -11500,49 +11500,6 @@
   :hints (("Goal" :use (:instance equal-of-myif-and-bvif-same)
            :in-theory (disable equal-of-myif-and-bvif-same))))
 
-;yuck?
-;needed for the below
-(defthm equal-of-bv-array-read-and-bv-array-read-lens-differ
-  (implies (and (< index len1)
-                (< index len2)
-                (natp len1)
-                (natp len2)
-                (natp index)
-                )
-           (equal (equal (bv-array-read width len1 index data) (bv-array-read width len2 index data))
-                  t))
-  :hints (("Goal" :cases ((< len1 len2))
-           :in-theory (enable bv-array-read-opener))))
-
-(defthmd bv-array-read-shorten-when-bvlt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep len)))
-                (bvlt isize index k) ; k is a free var
-                (syntaxp (and (quotep k)
-                              (quotep isize)))
-                (< k len) ; avoid loops
-                (< k (expt 2 isize)) ; so the chop on k goes away
-                (natp k)
-                (natp len))
-           (equal (bv-array-read element-size len (bvchop isize index) data)
-                  (bv-array-read element-size k (bvchop isize index) (take k data))))
-  :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
-
-(defthmd bv-array-read-shorten-when-not-bvlt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep len)))
-                (not (bvlt isize k index)) ; k is a free var
-                (syntaxp (and (quotep k)
-                              (quotep isize)))
-                (< (+ 1 k) len) ; avoid loops
-                (< (+ 1 k) (expt 2 isize)) ; so the chop on k goes away
-                (natp index)
-                (natp k)
-                (natp len))
-           (equal (bv-array-read element-size len (bvchop isize index) data)
-                  (bv-array-read element-size (+ 1 k) (bvchop isize index) (take (+ 1 k) data))))
-  :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme not equal when < of lens
@@ -11566,17 +11523,6 @@
                       (bvplus 32 2147483648 Y)
                     y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases bvuminus bvminus bvlt))))
-
-;move
-;shouldn't this get commuted?
-(defthm equal-of-+-of-minus-same
-  (equal (+ (- x) x)
-         0))
-
-;move
-(defthm equal-of-fix-same
-  (equal (equal (fix x) x) ;fixme why didn't this get reordered in the rc4 proof?
-         (acl2-numberp x)))
 
 (defthm bvcat-of-slice-and-constant-when-equal-of-bvchop-and-constant
   (implies (and (syntaxp (quotep k1))
@@ -12053,11 +11999,6 @@
                   1))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthm <-of-constant-and-+-of-constant
-  (implies (syntaxp (and (quotep k1) (quotep k2)))
-           (equal (< k1 (+ k2 X))
-                  (< (- k1 k2) x))))
-
 (defthm <-of-constant-when-usb
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
@@ -12204,8 +12145,7 @@
   :HINTS
   (("Goal"
     :IN-THEORY (E/D (GETBIT SLICE)
-                    (
-                      ANTI-SLICE)))))
+                    (ANTI-SLICE)))))
 
 ;gen!
 (defthmd bvlt-of-64
@@ -12244,8 +12184,7 @@
          (equal 0 (getbit 1 x)))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x)))
-           :in-theory (e/d (bvlt getbit) (
-                                                               EQUAL-OF-BVCHOP-EXTEND)))))
+           :in-theory (e/d (bvlt getbit) (EQUAL-OF-BVCHOP-EXTEND)))))
 
 
 ;gen

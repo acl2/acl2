@@ -283,7 +283,7 @@
 (defthm write-byte-of-bvchop-32
   (equal (write-byte (bvchop 32 addr) val stat)
          (write-byte addr val stat))
-  :hints (("Goal" :in-theory (e/d (write-byte) ()))))
+  :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthm stat32ip-of-write-byte
   (implies (stat32ip stat)
@@ -1051,7 +1051,7 @@
                   (write n addr val stat)))
   :hints (("Goal" :expand (write n addr (bvchop size val) stat)
            :induct (write-sub8-induct n addr val stat size)
-           :in-theory (e/d (write acl2::logtail-of-bvchop) ()))))
+           :in-theory (enable write acl2::logtail-of-bvchop))))
 
 (defthm write-of-logext-arg3
   (implies (and (<= (* 8 n) size)
@@ -1066,7 +1066,7 @@
   (equal (write n (bvchop 32 addr) val stat)
          (write n addr val stat))
   :hints (("Goal" :expand (write n (bvchop 32 addr) val stat)
-           :in-theory (e/d (write) ()))))
+           :in-theory (enable write))))
 
 (defthmd write-of-1-becomes-write-byte
   (equal (write 1 addr val stat)

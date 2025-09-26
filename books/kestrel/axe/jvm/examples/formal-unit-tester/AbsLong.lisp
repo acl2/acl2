@@ -19,6 +19,6 @@
 
 ; (depends-on "AbsLong.class")
 
-(include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
+(include-book "kestrel/axe/jvm/tester" :dir :system)
 
 (test-file "AbsLong.java")

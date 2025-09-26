@@ -1,4 +1,4 @@
-acl2-with-fut
-acl2-with-fut.lx86cl64
-acl2-with-fut.dx86cl64
-acl2-with-fut.core
+acl2-with-tester
+acl2-with-tester.lx86cl64
+acl2-with-tester.dx86cl64
+acl2-with-tester.core
