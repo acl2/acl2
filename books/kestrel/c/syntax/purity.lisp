@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ purity
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Pure (i.e. side-effect-free) constructs."
   :long
   (xdoc::topstring
