@@ -265,6 +265,8 @@
     (equal (rsp-high x86) 0)
     (equal (rbp-high x86) 0)))
 
+
+;; This simplifies the assumptions (if there are any extra-assumptions).
 ;; Returns (mv erp assumptions untranslated-assumptions assumption-rules input-assumption-vars state).
 (defun assumptions-new (target
                         parsed-executable
