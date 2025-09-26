@@ -964,7 +964,8 @@
                          (compst compustatep)
                          (fenv fun-envp)
                          (limit natp))
-    :returns (new-compst compustate-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute an assignment expression."
     :long
@@ -973,9 +974,8 @@
       "This is only used for expressions that must be assignments:
        we check that the expression is an assignment.")
      (xdoc::p
-      "The left-hand side must be a pure lvalue expressions,
-       i.e. its evaluation must return
-       an expression value with an object designator.
+      "The left-hand side must be a pure lvalue expressions;
+       its evaluation must return an expression value with an object designator.
        The right-hand side must be a pure expression (lvalue or not),
        but if the left-hand side is just an identifier,
        then we allow the right-hand side to be also a function call.")
@@ -990,7 +990,7 @@
        The case of a left-hand side that is an identifier (i.e. variable)
        and a right-hand side that is a function call
        is allowed here because,
-       even though the function call could modify the variable,
+       even though the function call could modify the value of the variable,
        its value is not actually used to perform the assignment:
        it is overwritten by the result of the function call.
        A function call cannot put a named variable into of out of existence,
@@ -1013,19 +1013,17 @@
        we require it to return a value,
        i.e. not @('nil'), i.e. the function cannot return @('void').")
      (xdoc::p
-      "We allow these assignment expressions
-       as the full expressions [C17:6.8/4] of expression statements.
-       Thus, we discard the value of the assignment
-       (which is the value written to the variable);
-       this ACL2 function just returns an updated computation state."))
-    (b* (((when (zp limit)) (error :limit))
+      "The assignment itself is not an lvalue:
+       its result is the value assigned by the assignment."))
+    (b* ((compst (compustate-fix compst))
+         ((when (zp limit)) (mv (error :limit) compst))
          ((unless (expr-case e :binary))
-          (error (list :expr-asg-not-binary (expr-fix e))))
+          (mv (error (list :expr-asg-not-binary (expr-fix e))) compst))
          (op (expr-binary->op e))
          (left (expr-binary->arg1 e))
          (right (expr-binary->arg2 e))
          ((unless (binop-case op :asg))
-          (error (list :expr-asg-not-asg op)))
+          (mv (error (list :expr-asg-not-asg op)) compst))
          ((mv val? compst)
           (if (expr-case left :ident)
               (exec-expr-call-or-pure right compst fenv (1- limit))
@@ -1034,14 +1032,17 @@
                  (eval (apconvert-expr-value eval))
                  ((when (errorp eval)) (mv eval compst)))
               (mv (expr-value->value eval) compst))))
-         ((when (errorp val?)) val?)
-         ((when (not val?)) (error (list :asg-void-expr right)))
+         ((when (errorp val?)) (mv val? compst))
+         ((when (not val?)) (mv (error (list :asg-void-expr right)) compst))
          (val val?)
          (eval (exec-expr-pure left compst))
-         ((when (errorp eval)) eval)
+         ((when (errorp eval)) (mv eval compst))
          (objdes (expr-value->object eval))
-         ((unless objdes) (error (list :not-lvalue left))))
-      (write-object objdes val compst))
+         ((unless objdes) (mv (error (list :not-lvalue left)) compst))
+         (compst/error (write-object objdes val compst))
+         ((when (errorp compst/error)) (mv compst/error compst))
+         (compst compst/error))
+      (mv val compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1067,10 +1068,7 @@
                           compst
                           fenv
                           (1- limit))
-        (b* ((compst/error (exec-expr-asg e compst fenv (1- limit))))
-          (if (errorp compst/error)
-              (mv compst/error (compustate-fix compst))
-            (mv nil compst/error)))))
+        (exec-expr-asg e compst fenv (1- limit))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1403,9 +1401,8 @@
              (compustate-frames-number compst))
       :fn exec-expr-call-or-pure)
     (defret compustate-frames-number-of-exec-expr-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-frames-number new-compst)
-                      (compustate-frames-number compst)))
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
       :fn exec-expr-asg)
     (defret compustate-frames-number-of-exec-expr-call-or-asg
       (equal (compustate-frames-number new-compst)
@@ -1471,9 +1468,8 @@
              (compustate-scopes-numbers compst))
       :fn exec-expr-call-or-pure)
     (defret compustate-scopes-numbers-of-exec-expr-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-scopes-numbers new-compst)
-                      (compustate-scopes-numbers compst)))
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
       :fn exec-expr-asg)
     (defret compustate-scopes-numbers-of-exec-expr-call-or-asg
       (equal (compustate-scopes-numbers new-compst)
