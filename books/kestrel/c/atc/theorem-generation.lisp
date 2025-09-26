@@ -87,9 +87,7 @@
      this is the object designator that the expression denotes, if any.
      The terms are untranslated, to make them more readable,
      in particular to eliminate quotes before numbers.
-     Terms, expression, and type are passed as inputs.
-     The theorem is contextualized,
-     and further conditioned by the satisfaction of the guard of @('fn').")
+     Terms, expression, and type are passed as inputs.")
    (xdoc::p
     "The hints or instructions to prove the theorem are passed as input,
      because they depend on the specifics of the expression."))
