@@ -48,7 +48,6 @@
 
 ;(acl2::def-constant-opener alistp) ; why?
 
-;; todo: use these
 (defund get-x86-tester-table (state)
   (declare (xargs :stobjs state))
   (table-alist 'x86-tester-table (w state)))
