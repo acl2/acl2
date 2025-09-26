@@ -629,7 +629,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (prog2$ (impossible) (irr-type)))))
+          (t (type-unknown))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2392,6 +2392,9 @@
        the number of scopes in the validation table is 1 or not
        (recall that this number is never 0).")
      (xdoc::p
+      "A unary @('&&') expression has type @('void *'),
+       according to the GCC documentation.")
+     (xdoc::p
       "In a conditional expression, the second operand may be absent;
        this is a GCC extension.
        However, for validation, we normalize the situation
@@ -2514,6 +2517,10 @@
                        type
                        types-arg
                        table))
+       :label-addr (retok (expr-label-addr expr.arg)
+                          (type-pointer (type-void))
+                          nil
+                          (valid-table-fix table))
        :sizeof (b* (((erp new-type type types table)
                      (valid-tyname expr.type table ienv))
                     ((erp type1) (valid-sizeof/alignof expr type)))
@@ -3024,6 +3031,20 @@
                       ext-tyspecs
                       nil
                       same-table)
+       :float16 (if (endp tyspecs)
+                    (retok (type-spec-float16)
+                           (type-unknown)
+                           nil
+                           nil
+                           same-table)
+                  (reterr msg-bad-preceding))
+       :float16x (if (endp tyspecs)
+                     (retok (type-spec-float16x)
+                            (type-unknown)
+                            nil
+                            nil
+                            same-table)
+                   (reterr msg-bad-preceding))
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
@@ -6649,7 +6670,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
+(define valid-transunit-ensemble ((tunits transunit-ensemblep)
+                                  (ienv ienvp)
+                                  (keep-going booleanp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (mv (erp maybe-msgp) (new-tunits transunit-ensemblep))
   :short "Validate a translation unit ensemble."
@@ -6664,16 +6687,26 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
+       (map (transunit-ensemble->unwrap tunits))
        ((erp new-map)
-        (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) nil (uid 0) ienv)))
+        (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
+       (- (if keep-going
+              (b* ((len-map (omap::size map))
+                   (len-new-map (omap::size new-map))
+                   (diff (- len-map len-new-map)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Validated ~x0/~x1 translation units."
+                      len-new-map len-map)))
+            nil)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (externals valid-externalsp)
                                           (next-uid uidp)
-                                          (ienv ienvp))
+                                          (ienv ienvp)
+                                          (keep-going booleanp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
@@ -6682,20 +6715,31 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit table)
+          ((mv erp new-tunit table)
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "~@0" erp)
+                       (valid-transunit-ensemble-loop (omap::tail map)
+                                                      externals
+                                                      next-uid
+                                                      ienv
+                                                      keep-going))
+             (reterr erp)))
           ((valid-table table) table)
           ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
                                                         table.externals
                                                         table.next-uid
-                                                        ienv)))
+                                                        ienv
+                                                        keep-going)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((ienv ienvp)))
+       :args ((ienv ienvp)
+              (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
        (implies (not erp)

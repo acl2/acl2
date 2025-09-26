@@ -94,6 +94,7 @@
                     :memberp
                     :complit
                     :unary
+                    :label-addr
                     :sizeof
                     :sizeof-ambig
                     :alignof
@@ -207,6 +208,7 @@
    :memberp (expr-priority-postfix)
    :complit (expr-priority-postfix)
    :unary (expr-priority-unary)
+   :label-addr (expr-priority-unary)
    :sizeof (expr-priority-unary)
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
@@ -219,6 +221,7 @@
    :cast/add-ambig (expr-priority-cast)
    :cast/sub-ambig (expr-priority-cast)
    :cast/and-ambig (expr-priority-cast)
+   :cast/logand-ambig (expr-priority-cast)
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)

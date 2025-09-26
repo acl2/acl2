@@ -61,7 +61,6 @@
                   (make-dummy-filepath-filedata-map (rest filepath-names)
                                                     (rest input)))))
 
-
 (define make-dummy-fileset (input)
   :returns (fileset fileset)
   (fileset (make-dummy-filepath-filedata-map
@@ -91,9 +90,9 @@
                         :gcc gcc))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -122,9 +121,9 @@
                         :gcc gcc))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))

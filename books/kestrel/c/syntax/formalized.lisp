@@ -343,6 +343,7 @@
            :sizeof nil
            :real nil
            :imag nil)
+   :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
@@ -365,6 +366,7 @@
    :cast/add-ambig (impossible)
    :cast/sub-ambig (impossible)
    :cast/and-ambig (impossible)
+   :cast/logand-ambig (impossible)
    :stmt nil
    :tycompat nil
    :offsetof nil

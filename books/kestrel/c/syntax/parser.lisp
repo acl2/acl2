@@ -419,6 +419,8 @@
     "We similarly include the GCC extension types
      @('__int128'),
      @('__int128_t'),
+     @('_Float16'),
+     @('_Float16x'),
      @('_Float32'),
      @('_Float32x'),
      @('_Float64'),
@@ -442,6 +444,8 @@
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
       (token-keywordp token? "__int128_t")
+      (token-keywordp token? "_Float16")
+      (token-keywordp token? "_Float16x")
       (token-keywordp token? "_Float32")
       (token-keywordp token? "_Float32x")
       (token-keywordp token? "_Float64")
@@ -482,6 +486,8 @@
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
+        ((token-keywordp token "_Float16") (type-spec-float16))
+        ((token-keywordp token "_Float16x") (type-spec-float16x))
         ((token-keywordp token "_Float32") (type-spec-float32))
         ((token-keywordp token "_Float32x") (type-spec-float32x))
         ((token-keywordp token "_Float64") (type-spec-float64))
@@ -708,7 +714,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-unary-expression-start-p ((token? token-optionp))
+(define token-unary-expression-start-p ((token? token-optionp)
+                                        (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a unary expression."
   :long
@@ -734,7 +741,14 @@
      So the comparison here with that variant keyword
      will always fail if GCC extensions are not supported,
      because in that case both @('__alignof__')
-     would be an identifier token, not a keyword token."))
+     would be an identifier token, not a keyword token.")
+   (xdoc::p
+    "We also include, in the comparison,
+     the @('__real__') and @('__imag__') operators,
+     which are keyword tokens only if GCC extensions are enabled.")
+   (xdoc::p
+    "If GCC extensions are enabled,
+     we also include the unary operator @('&&') in the comparison."))
   (or (token-primary-expression-start-p token?)
       (token-punctuatorp token? "++")
       (token-punctuatorp token? "--")
@@ -749,17 +763,18 @@
       (token-keywordp token? "__alignof")
       (token-keywordp token? "__alignof__")
       (token-keywordp token? "__real__")
-      (token-keywordp token? "__imag__"))
+      (token-keywordp token? "__imag__")
+      (and gcc (token-punctuatorp token? "&&")))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
-    (implies (token-unary-expression-start-p token?)
+    (implies (token-unary-expression-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-expression-start-p ((token? token-optionp))
+(define token-expression-start-p ((token? token-optionp) (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start an expression."
   :long
@@ -778,13 +793,13 @@
      a synonym of @(tsee token-unary-expression-start-p),
      to make it clearer that we are talking about
      all expressions and not just unary expressions."))
-  (token-unary-expression-start-p token?)
+  (token-unary-expression-start-p token? gcc)
   ///
 
   (defrule non-nil-when-token-expression-start-p
-    (implies (token-expression-start-p token?)
+    (implies (token-expression-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1081,7 +1096,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-initializer-start-p ((token? token-optionp))
+(define token-initializer-start-p ((token? token-optionp) (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start an initializer."
   :long
@@ -1089,18 +1104,19 @@
    (xdoc::p
     "An initializer is either an expression
      or something between curly braces."))
-  (or (token-expression-start-p token?)
+  (or (token-expression-start-p token? gcc)
       (token-punctuatorp token? "{"))
   ///
 
   (defrule non-nil-when-token-initializer-start-p
-    (implies (token-initializer-start-p token?)
+    (implies (token-initializer-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-designation?-initializer-start-p ((token? token-optionp))
+(define token-designation?-initializer-start-p ((token? token-optionp)
+                                                (gcc booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start
           an initializer optionally preceded by a designation."
@@ -1110,13 +1126,13 @@
     "Since the designation is optional,
      we put together the starts of initializers and designations."))
   (or (token-designation-start-p token?)
-      (token-initializer-start-p token?))
+      (token-initializer-start-p token? gcc))
   ///
 
   (defrule non-nil-when-token-designation?-initializer-start-p
-    (implies (token-designation?-initializer-start-p token?)
+    (implies (token-designation?-initializer-start-p token? gcc)
              token?)
-    :rule-classes :compound-recognizer))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2632,7 +2648,7 @@
              ;; If we do not have an open curly brace,
              ;; or if GCC extensions are not supported,
              ;; we need to parse a possibly ambiguous expression or type name.
-             ;; We first need to puth back token2, if not NIL.
+             ;; We first need to put back token2, if not NIL.
              (parstate (if token2 (unread-token parstate) parstate)) ; (
              (checkpoint (parstate->tokens-read parstate))
              (psize (parsize parstate))
@@ -2830,6 +2846,61 @@
                          :arg/arg2 expr)
                         (span-join span last-span)
                         parstate)))
+              ;; If token2 is a double ampersand,
+              ;; and GCC extensions are enabled,
+              ;; we have an ambiguity if an identifier follows the '&&'.
+              ;; With GCC extensions, '&&' is a unary operator
+              ;; only if followed by an identifier,
+              ;; and not other kinds of expressions.
+              ;; If the '&&' is not followed by an identifier,
+              ;; there is no ambiguity:
+              ;; the ambiguous expression or type name
+              ;; is in fact an expression,
+              ;; and the increment and decrement operators, if any,
+              ;; are postfix operators.
+              ;; Furthermore, there may be further postfix constructs,
+              ;; e.g. an array access.
+              ;; In this case we backtrack all the way
+              ;; to the initial open parenthesis,
+              ;; we put back that one too,
+              ;; and we parse a postfix expression.
+              ;; It must be a postfix expression,
+              ;; because it starts with an open parenthesis,
+              ;; and we are expecting either a cast expression proper
+              ;; (which has been excluded at this point)
+              ;; or a unary expression that starts with an open parenthesis,
+              ;; so in fact it is a primary parenthesized expression,
+              ;; or a postfix expression starting with
+              ;; a primary parenthesized expression.
+              ((and (token-punctuatorp token2 "&&") ; ( expr/tyname) [ops] &&
+                    (parstate->gcc parstate))
+               (b* (((erp token3 last-span parstate) (read-token parstate)))
+                 (cond
+                  ((and token3 (token-case token3 :ident))
+                   ;; ( expr/tyname ) [ops] && ident
+                   (retok (make-expr-cast/logand-ambig
+                           :type/arg1 expr/tyname.unwrap
+                           :inc/dec incdecops
+                           :arg/arg2 (token-ident->unwrap token3))
+                          (span-join span last-span)
+                          parstate))
+                  (t ; ( expr/tyname ) [ops] && other
+                   (b* ((parstate (unread-to-token checkpoint parstate)) ; (
+                        ((unless (<= (parsize parstate) psize))
+                         (raise "Internal error: ~
+                                 size ~x0 after backtracking exceeds ~
+                                 size ~x1 before backtracking."
+                                (parsize parstate) psize)
+                         ;; Here we have (> (parsize parstate) psize),
+                         ;; but we need to return a parser state
+                         ;; no larger than the initial one,
+                         ;; so we just return the empty parser state.
+                         ;; This is just logical:
+                         ;; execution stops at the RAISE above.
+                         (b* ((parstate (init-parstate nil nil parstate)))
+                           (reterr t)))
+                        (parstate (unread-token parstate))) ;
+                     (parse-postfix-expression parstate))))))
               ;; If token2 may start a unary expression,
               ;; given that we have already covered the cases of
               ;; open parenthesis, star, plus, minus, and ampersand,
@@ -2844,8 +2915,8 @@
               ;; we parse a unary expression,
               ;; we apply any increment and decrement operators to it,
               ;; and we form and return the cast expression.
-              ((token-unary-expression-start-p
-                token2) ; ( expr/tyname ) [ops] unaryexpr...
+              ((token-unary-expression-start-p token2 (parstate->gcc parstate))
+               ;; ( expr/tyname ) [ops] unaryexpr...
                (b* ((parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
                     ((erp expr last-span parstate) ; ( expr/tyname ) [ops] expr
                      (parse-unary-expression parstate))
@@ -2956,6 +3027,20 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '&&' and GCC extensions are enabled,
+       ;; there must be an identifier after that.
+       ((and (token-punctuatorp token "&&") ; &&
+             (parstate->gcc parstate))
+        (b* (((erp token2 last-span parstate) (read-token parstate)))
+          (cond
+           ((and token2 (token-case token2 :ident)) ; && ident
+            (retok (expr-label-addr (token-ident->unwrap token2))
+                   (span-join span last-span)
+                   parstate))
+           (t ; && other
+            (reterr-msg :where (position-to-msg (span->start last-span))
+                        :expected "an identifier"
+                        :found (token-to-msg token2))))))
        ;; If token is 'sizeof', we need to read another token.
        ((token-keywordp token "sizeof") ; sizeof
         (b* (((erp token2 & parstate) (read-token parstate)))
@@ -3431,7 +3516,7 @@
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token & parstate) (read-token parstate)))
       (cond
-       ((token-expression-start-p token) ; expr...
+       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
         (b* ((parstate (unread-token parstate))
              (psize (parsize parstate))
              ((erp expr span parstate) ; expr
@@ -4130,7 +4215,7 @@
     (b* (((reterr) (irr-initer) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
-       ((token-expression-start-p token) ; expr...
+       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) ; expr
               (parse-assignment-expression parstate)))
@@ -4213,7 +4298,8 @@
           (retok (make-desiniter :designors designors :initer initer)
                  (span-join span last-span)
                  parstate)))
-       ((token-initializer-start-p token) ; initializer...
+       ((token-initializer-start-p token (parstate->gcc parstate))
+        ;; initializer...
         (b* ((parstate (unread-token parstate))
              ((erp initer span parstate) ; initializer
               (parse-initializer parstate)))
@@ -4294,8 +4380,9 @@
                      t ; final-comma
                      (span-join span span2)
                      parstate)))
-           ((token-designation?-initializer-start-p
-             token2) ; initializer , initializer...
+           ((token-designation?-initializer-start-p token2
+                                                    (parstate->gcc parstate))
+            ;; initializer , initializer...
             (b* ((parstate (unread-token parstate)) ; initializer ,
                  ((erp desiniters final-comma last-span parstate)
                   ;; initializer , initializers
@@ -6054,7 +6141,8 @@
                ;; we parse it, and we have determined the array variant.
                ;; We have already considered the case of a star above,
                ;; so this can only be an expression at this point.
-               ((token-expression-start-p token3) ; [ qualspecs expr...
+               ((token-expression-start-p token3 (parstate->gcc parstate))
+                ;; [ qualspecs expr...
                 (b* ((parstate (unread-token parstate)) ; [ qualspecs
                      ((erp expr & parstate) ; [ qualspecs expr
                       (parse-assignment-expression parstate))
@@ -6125,7 +6213,8 @@
            ;; If token2 may start an assignment expression,
            ;; we have determined the variant.
            ;; Note that we have already considered the case of a star above.
-           ((token-expression-start-p token2) ; [ expr...
+           ((token-expression-start-p token2 (parstate->gcc parstate))
+            ;; [ expr...
             (b* ((parstate (unread-token parstate)) ; [
                  ((erp expr & parstate) ; [ expr
                   (parse-assignment-expression parstate))
@@ -7148,7 +7237,7 @@
        ;; If token may start an expression, we must have an expression,
        ;; because we have already handled the case of an identifier above.
        ;; We parenthesize the expression if ADD-PARENS-P is T.
-       ((token-expression-start-p token) ; expr...
+       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) (parse-expression parstate)) ; expr
              (expr (if add-parens-p
@@ -8779,7 +8868,8 @@
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
            ;; If token2 may start an expression, we must have an expression.
-           ((token-expression-start-p token2) ; return expr...
+           ((token-expression-start-p token2 (parstate->gcc parstate))
+            ;; return expr...
             (b* ((parstate (unread-token parstate)) ; return
                  ((erp expr & parstate)
                   (parse-expression parstate)) ; return expr
@@ -8895,7 +8985,8 @@
               (cond
                ;; If token3 may start an expression,
                ;; we must have a test expression.
-               ((token-expression-start-p token3) ; for ( ; expr...
+               ((token-expression-start-p token3 (parstate->gcc parstate))
+                ;; for ( ; expr...
                 (b* ((parstate (unread-token parstate)) ; for ( ;
                      (psize (parsize parstate))
                      ((erp test-expr & parstate) ; for ( ; expr
@@ -8908,7 +8999,8 @@
                   (cond
                    ;; If token4 may start an expression,
                    ;; we must have an update expression.
-                   ((token-expression-start-p token4) ; for ( ; expr ; expr...
+                   ((token-expression-start-p token4 (parstate->gcc parstate))
+                    ;; for ( ; expr ; expr...
                     (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                          (psize (parsize parstate))
                          ((erp next-expr & parstate) ; for ( ; expr ; expr
@@ -8949,7 +9041,8 @@
                   (cond
                    ;; If token4 may start an expression,
                    ;; we must have an update expression.
-                   ((token-expression-start-p token4) ; for ( ; ; expr...
+                   ((token-expression-start-p token4 (parstate->gcc parstate))
+                    ;; for ( ; ; expr...
                     (b* ((parstate (unread-token parstate)) ; for ( ; ;
                          (psize (parsize parstate))
                          ((erp next-expr & parstate) ; for ( ; ; expr
@@ -9012,7 +9105,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
+                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                   ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
                         ((erp test-expr & parstate) ; for ( ; expr
@@ -9025,7 +9119,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4)
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9068,7 +9163,9 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
+                       ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
                             ((erp next-expr & parstate) ; for ( ; ; expr
@@ -9117,7 +9214,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
+                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                   ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
                         ((erp test-expr & parstate) ; for ( ; expr
@@ -9130,7 +9228,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4)
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9173,7 +9272,9 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
+                       ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
                             ((erp next-expr & parstate) ; for ( ; ; expr
@@ -9222,7 +9323,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3) ; for ( ; expr...
+                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                   ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
                         ((erp test-expr & parstate) ; for ( ; expr
@@ -9235,7 +9337,8 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4)
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9278,7 +9381,9 @@
                      (cond
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
-                      ((token-expression-start-p token4) ; for ( ; ; expr...
+                      ((token-expression-start-p token4
+                                                 (parstate->gcc parstate))
+                       ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
                             ((erp next-expr & parstate) ; for ( ; ; expr
@@ -9321,7 +9426,7 @@
                                :found (token-to-msg token3)))))))))))
        ;; If token may start an expression,
        ;; we must have an expression statement.
-       ((token-expression-start-p token) ; expr...
+       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) (parse-expression parstate)) ; expr
              ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
@@ -11454,13 +11559,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-fileset ((fileset filesetp) (gcc booleanp))
+(define parse-fileset ((fileset filesetp) (gcc booleanp) (keep-going booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass a flag saying whether GCC extensions should be accepted.")
+    "We pass a flag saying whether GCC extensions should be accepted,
+     and a flag saying whether to keep parsing other translation units
+     after a parsing failure.")
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
@@ -11471,25 +11578,42 @@
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
-       ((erp tunitmap) (parse-fileset-loop filemap gcc)))
+       ((erp tunitmap) (parse-fileset-loop filemap gcc keep-going))
+       (- (if keep-going
+              (b* ((len-filemap (omap::size filemap))
+                   (len-tunitmap (omap::size tunitmap))
+                   (diff (- len-filemap len-tunitmap)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Parsed ~x0/~x1 files." len-tunitmap len-filemap)))
+            nil)))
     (retok (transunit-ensemble tunitmap)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
-                               (gcc booleanp))
+                               (gcc booleanp)
+                               (keep-going booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
-          ((erp tunit) (parse-file filepath (filedata->unwrap filedata) gcc))
-          ((erp tunitmap) (parse-fileset-loop (omap::tail filemap) gcc)))
+          ((mv erp tunit)
+           (parse-file filepath (filedata->unwrap filedata) gcc))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "~@0" erp)
+                       (parse-fileset-loop (omap::tail filemap) gcc keep-going))
+             (reterr erp)))
+          ((erp tunitmap)
+           (parse-fileset-loop (omap::tail filemap) gcc keep-going)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
      :verify-guards :after-returns
 
      ///
 
      (defret keys-of-parse-fileset-loop
-       (implies (not erp)
+       (implies (and (not keep-going)
+                     (not erp))
                 (equal (omap::keys tunitmap)
                        (omap::keys filemap)))
        :hyp (filepath-filedata-mapp filemap)
@@ -11498,6 +11622,7 @@
   ///
 
   (defret filepaths-of-parse-fileset
-    (implies (not erp)
+    (implies (and (not keep-going)
+                  (not erp))
              (equal (omap::keys (transunit-ensemble->unwrap tunits))
                     (omap::keys (fileset->unwrap fileset))))))
