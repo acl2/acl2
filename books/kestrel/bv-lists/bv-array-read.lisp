@@ -20,11 +20,11 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-;; Readd the element at position INDEX of the array DATA, which should be a
+;; Read the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
 ;; ELEMENT-SIZE.  The INDEX should be less than LEN.  This function chops the
 ;; index, to follow the convention that BV functions chop their arguments. This
-;; function now returns 0 if the trimmed index is too long.  Don't change that
+;; function now returns 0 if the chopped index is too long.  Don't change that
 ;; behavior without also changing how calls to bv-array-read are translated to
 ;; STP.
 (defund bv-array-read (element-size len index data)
@@ -161,6 +161,7 @@
          0)
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; If the index fits in ISIZE bits, we only need 2^ISIZE elements.
 (defthmd bv-array-read-shorten-core
   (implies (and (unsigned-byte-p isize index)
                 (< (expt 2 isize) len)
@@ -258,7 +259,7 @@
 (defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
   (implies (and (natp len)
                 (natp index))
-           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
+           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len))) data)
                   (bv-array-read element-width len index data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 

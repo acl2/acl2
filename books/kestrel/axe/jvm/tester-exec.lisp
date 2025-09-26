@@ -16,5 +16,5 @@
 (include-book "tools/with-supporters" :dir :system)
 
 (with-supporters
- (local (include-book "formal-unit-tester" :ttags :all))
+ (local (include-book "tester" :ttags :all))
  :names (test-file-and-exit))

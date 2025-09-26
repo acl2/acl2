@@ -45,4 +45,5 @@
 (include-book "lifter")
 (include-book "lifter2")
 
-(include-book "formal-unit-tester")
+;; The Format Unit Tester:
+(include-book "tester")

@@ -138,7 +138,7 @@
      acl2::unsigned-byte-listp-of-cons
      acl2::unsigned-byte-listp-constant-opener
 
-     bv-array-read-shorten-8
+     ;;bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
      acl2::not-equal-of-constant-and-bv-term-alt-axe

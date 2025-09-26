@@ -16,7 +16,7 @@ set -e # Exit on first error
 # Check the number of arguments supplied:
 if [ $# -ne 1 ]
 then
-    echo "formal-unit-tester.sh: Error: Must be given one argument (path to a .java file)."
+    echo "tester.sh: Error: Must be given one argument (path to a .java file)."
     exit 1
 fi
 
@@ -32,10 +32,10 @@ export ACL2_CUSTOMIZATION=NONE
 
 #old (no saved image, slow to do the include-book):
 #acl2executable=${ACL2}
-# (echo '(with-output :off :all (include-book "'${THISSCRIPTDIR}'portcullis")) (with-output :off :all (include-book "'${THISSCRIPTDIR}'/formal-unit-tester" :ttags :all)) (test-file "'${JAVA_FILE}'")' | ${acl2executable})
+# (echo '(with-output :off :all (include-book "'${THISSCRIPTDIR}'portcullis")) (with-output :off :all (include-book "'${THISSCRIPTDIR}'/tester" :ttags :all)) (test-file "'${JAVA_FILE}'")' | ${acl2executable})
 
-${THISSCRIPTDIR}/save-exec-for-fut.sh # very fast if it already exists
+${THISSCRIPTDIR}/save-exec-for-tester.sh # very fast if it already exists
 
 ${KESTREL_ACL2}/jvm/compile-file-if-needed.sh ${JAVA_FILE}
 
-(echo '(test-file-and-exit "'${JAVA_FILE}'")' | ${THISSCRIPTDIR}/acl2-with-fut)
+(echo '(test-file-and-exit "'${JAVA_FILE}'")' | ${THISSCRIPTDIR}/acl2-with-tester)

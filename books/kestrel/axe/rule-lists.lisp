@@ -3253,7 +3253,7 @@
              prefixp-of-add-to-end
              prefixp-of-nil-arg2
              prefixp-of-nil-arg1
-             equal-of-+-of-minus-same
+             ;equal-of-+-of-minus-same
              equal-of-fix-same ;reorder?
              <-of-256
 
