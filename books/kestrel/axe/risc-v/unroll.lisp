@@ -1,4 +1,4 @@
-; An unrolling lifter xfor x86 code (based on Axe)
+; An unrolling lifter for RISC-V code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute

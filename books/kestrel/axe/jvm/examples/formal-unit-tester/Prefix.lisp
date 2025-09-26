@@ -19,7 +19,7 @@
 
 ; (depends-on "Prefix.class")
 
-(include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
+(include-book "kestrel/axe/jvm/tester" :dir :system)
 
 ;; TODO: BV-ARRAY-READ-OF-BV-ARRAY-WRITE introduces <
 (test-file "Prefix.java")
