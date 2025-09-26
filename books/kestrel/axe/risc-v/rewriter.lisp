@@ -14,7 +14,7 @@
 
 (include-book "../make-rewriter-simple")
 (include-book "evaluator")
-(include-book "syntax-evaluator")
+(include-book "syntaxp-evaluator")
 (include-book "../axe-syntaxp-evaluator-basic") ;; (include-book "syntaxp-evaluator-risc-v")
 (include-book "../axe-bind-free-evaluator-basic") ;; (include-book "bind-free-evaluator-risc-v")
 
