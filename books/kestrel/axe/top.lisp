@@ -110,7 +110,6 @@
 (include-book "largest-non-quotep")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "lenconsmeta")
-(include-book "lifter-common")
 (include-book "make-assumption-array")
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules")
@@ -301,3 +300,7 @@
 
 ;; The r1cs-specific Axe tools:
 (include-book "r1cs/top")
+
+;; Utilities used by multiple tools:
+(include-book "lifter-common")
+(include-book "tester-common")
