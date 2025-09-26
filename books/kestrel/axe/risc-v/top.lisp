@@ -31,7 +31,7 @@
 ;(include-book "tester-rules-bv")
 (include-book "evaluator")
 (include-book "syntax-functions")
-(include-book "syntax-evaluator") ; todo: rename
+(include-book "syntaxp-evaluator")
 ;(include-book "bind-free-evaluator")
 (include-book "rewriter")
 
