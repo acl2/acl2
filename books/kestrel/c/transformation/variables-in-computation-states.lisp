@@ -169,7 +169,9 @@
          (var-expr (c::expr-binary->arg1 asg))
          (var (c::expr-ident->get var-expr))
          (expr (c::expr-binary->arg2 asg))
-         (compst1 (c::exec-expr-asg asg compst fenv limit))
+         (result+compst1 (c::exec-expr-asg asg compst fenv limit))
+         (result (mv-nth 0 result+compst1))
+         (compst1 (mv-nth 1 result+compst1))
          (type-var (c::type-of-value
                     (c::read-object
                      (c::objdesign-of-var var compst)
@@ -181,7 +183,7 @@
                     (equal op (c::binop-asg))
                     (equal (c::expr-kind var-expr) :ident)
                     (not (equal (c::expr-kind expr) :call))
-                    (not (c::errorp compst1))
+                    (not (c::errorp result))
                     (equal type-var type-expr)
                     (c::type-nonchar-integerp type-expr)
                     (c::compustate-has-var-with-type-p var1 type compst))
@@ -229,7 +231,7 @@
 
   (defruled stmt-expr-asg-compustate-vars
     (b* ((expr (c::stmt-expr->get stmt))
-         (compst0 (c::exec-expr-asg expr compst fenv (- limit 2)))
+         (compst0 (mv-nth 1 (c::exec-expr-asg expr compst fenv (- limit 2))))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (equal (c::stmt-kind stmt) :expr)
                     (not (equal (c::expr-kind expr) :call))

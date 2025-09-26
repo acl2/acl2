@@ -367,11 +367,14 @@
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
-              (old-compst (c::exec-expr-asg old-expr compst old-fenv limit))
-              (new-compst (c::exec-expr-asg new-expr compst new-fenv limit)))
+              ((mv old-result old-compst)
+               (c::exec-expr-asg old-expr compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-expr-asg new-expr compst new-fenv limit)))
            (implies (and ,@vars-pre
-                         (not (c::errorp old-compst)))
-                    (and (not (c::errorp new-compst))
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
                          (equal old-compst new-compst)
                          ,@vars-post))))
        (thm-event `(defrule ,thm-name
