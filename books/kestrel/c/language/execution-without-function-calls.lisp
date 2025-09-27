@@ -48,6 +48,10 @@
      given any two arbitrary function environments."))
 
   (defthm-exec-flag
+    (defthm exec-fun-without-calls
+      t
+      :rule-classes nil
+      :flag exec-fun)
     (defthm exec-expr-call-without-calls
       t
       :rule-classes nil
@@ -71,10 +75,6 @@
                       (exec-expr-call-or-asg e compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-call-or-asg)
-    (defthm exec-fun-without-calls
-      t
-      :rule-classes nil
-      :flag exec-fun)
     (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)

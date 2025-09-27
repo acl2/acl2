@@ -438,6 +438,11 @@
      by going back to the previous scope or frame."))
 
   (defthm-exec-flag
+    (defthm var-resolve-preservep-of-exec-fun
+      (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
+        (implies (not (errorp result))
+                 (var-resolve-preservep compst compst1)))
+      :flag exec-fun)
     (defthm var-resolve-preservep-of-exec-expr-call
       (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
         (implies (not (errorp result))
@@ -458,11 +463,6 @@
         (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-call-or-asg)
-    (defthm var-resolve-preservep-of-exec-fun
-      (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
-        (implies (not (errorp result))
-                 (var-resolve-preservep compst compst1)))
-      :flag exec-fun)
     (defthm var-resolve-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -506,11 +506,11 @@
              :expand (exec-expr-asg left right compst fenv limit)
              :in-theory
              (enable
+              exec-fun
               exec-expr-call
               exec-expr-asg
               exec-expr-call-or-pure
               exec-expr-call-or-asg
-              exec-fun
               exec-stmt
               exec-stmt-while
               exec-initer
@@ -524,11 +524,11 @@
               var-resolve-preservep-of-write-object
               len))))
 
-  (in-theory (disable var-resolve-preservep-of-exec-expr-call
+  (in-theory (disable var-resolve-preservep-of-exec-fun
+                      var-resolve-preservep-of-exec-expr-call
                       var-resolve-preservep-of-exec-expr-asg
                       var-resolve-preservep-of-exec-expr-call-or-pure
                       var-resolve-preservep-of-exec-expr-call-or-asg
-                      var-resolve-preservep-of-exec-fun
                       var-resolve-preservep-of-exec-stmt
                       var-resolve-preservep-of-exec-stmt-while
                       var-resolve-preservep-of-exec-initer
@@ -540,6 +540,21 @@
 
 (defsection var-resolve-of-exec
   :short "Preservation of variable visibility under execution."
+
+  (defruled var-resolve-of-exec-fun
+    (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (objdesign-of-var var compst))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :use (var-resolve-preservep-of-exec-fun
+          (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
+                     (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
 
   (defruled var-resolve-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
@@ -600,21 +615,6 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr-call-or-asg e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled var-resolve-of-exec-fun
-    (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (objdesign-of-var var compst))
-               (equal (objdesign-of-var var compst1)
-                      (objdesign-of-var var compst))))
-    :use (var-resolve-preservep-of-exec-fun
-          (:instance var-resolve-preservep-necc
-                     (var (ident-fix var))
-                     (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

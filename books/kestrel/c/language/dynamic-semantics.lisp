@@ -895,6 +895,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-fun ((fun identp)
+                    (args value-listp)
+                    (compst compustatep)
+                    (fenv fun-envp)
+                    (limit natp))
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute a function on argument values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We retrieve the information about the function from the environment.
+       We initialize a scope with the argument values,
+       and we push a frame onto the call stack.
+       We execute the function body,
+       which must return a result that matches the function's result type.
+       We pop the frame and return the value of the function call as result."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (info (fun-env-lookup fun fenv))
+         ((when (not info))
+          (mv (error (list :function-undefined (ident-fix fun)))
+              (compustate-fix compst)))
+         ((fun-info info) info)
+         (scope (init-scope info.params args))
+         ((when (errorp scope)) (mv scope (compustate-fix compst)))
+         (frame (make-frame :function fun :scopes (list scope)))
+         (compst (push-frame frame compst))
+         ((mv sval compst) (exec-block-item-list info.body
+                                                  compst
+                                                  fenv
+                                                  (1- limit)))
+         (compst (pop-frame compst))
+         ((when (errorp sval)) (mv sval compst))
+         (val? (stmt-value-case
+                sval
+                :none nil
+                :return sval.value?))
+         ((unless (equal (type-of-value-option val?)
+                         (tyname-to-type info.result)))
+          (mv (error (list :return-value-mistype
+                           :required info.result
+                           :supplied (type-of-value-option val?)))
+              compst)))
+      (mv val? compst))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-expr-call ((fun identp)
                           (args expr-listp)
                           (compst compustatep)
@@ -1069,55 +1118,6 @@
                             (1- limit)))
             (t (mv (error (list :not-call-or-asg (expr-fix e)))
                    (compustate-fix compst)))))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-fun ((fun identp)
-                    (args value-listp)
-                    (compst compustatep)
-                    (fenv fun-envp)
-                    (limit natp))
-    :returns (mv (result value-option-resultp)
-                 (new-compst compustatep))
-    :parents (dynamic-semantics exec)
-    :short "Execute a function on argument values."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We retrieve the information about the function from the environment.
-       We initialize a scope with the argument values,
-       and we push a frame onto the call stack.
-       We execute the function body,
-       which must return a result that matches the function's result type.
-       We pop the frame and return the value of the function call as result."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (info (fun-env-lookup fun fenv))
-         ((when (not info))
-          (mv (error (list :function-undefined (ident-fix fun)))
-              (compustate-fix compst)))
-         ((fun-info info) info)
-         (scope (init-scope info.params args))
-         ((when (errorp scope)) (mv scope (compustate-fix compst)))
-         (frame (make-frame :function fun :scopes (list scope)))
-         (compst (push-frame frame compst))
-         ((mv sval compst) (exec-block-item-list info.body
-                                                  compst
-                                                  fenv
-                                                  (1- limit)))
-         (compst (pop-frame compst))
-         ((when (errorp sval)) (mv sval compst))
-         (val? (stmt-value-case
-                sval
-                :none nil
-                :return sval.value?))
-         ((unless (equal (type-of-value-option val?)
-                         (tyname-to-type info.result)))
-          (mv (error (list :return-value-mistype
-                           :required info.result
-                           :supplied (type-of-value-option val?)))
-              compst)))
-      (mv val? compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1392,6 +1392,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
+    (defret compustate-frames-number-of-exec-fun
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-fun)
     (defret compustate-frames-number-of-exec-expr-call
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1408,10 +1412,6 @@
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-expr-call-or-asg)
-    (defret compustate-frames-number-of-exec-fun
-      (equal (compustate-frames-number new-compst)
-             (compustate-frames-number compst))
-      :fn exec-fun)
     (defret compustate-frames-number-of-exec-stmt
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1445,11 +1445,11 @@
       :fn exec-block-item-list)
     :hints (("Goal"
              :in-theory (enable len)
-             :expand ((exec-expr-call fun args compst fenv limit)
+             :expand ((exec-fun fun args compst fenv limit)
+                      (exec-expr-call fun args compst fenv limit)
                       (exec-expr-asg left right compst fenv limit)
                       (exec-expr-call-or-pure e compst fenv limit)
                       (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-fun fun args compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
                       (exec-obj-declon declon compst fenv limit)
@@ -1459,6 +1459,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
+    (defret compustate-scopes-numbers-of-exec-fun
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :rule-classes nil
+      :fn exec-fun)
     (defret compustate-scopes-numbers-of-exec-expr-call
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1475,11 +1480,6 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :fn exec-expr-call-or-asg)
-    (defret compustate-scopes-numbers-of-exec-fun
-      (equal (compustate-scopes-numbers new-compst)
-             (compustate-scopes-numbers compst))
-      :rule-classes nil
-      :fn exec-fun)
     (defret compustate-scopes-numbers-of-exec-stmt
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1513,11 +1513,11 @@
       :fn exec-block-item-list)
     :hints (("Goal"
              :in-theory (enable len)
-             :expand ((exec-expr-call fun args compst fenv limit)
+             :expand ((exec-fun fun args compst fenv limit)
+                      (exec-expr-call fun args compst fenv limit)
                       (exec-expr-asg left right compst fenv limit)
                       (exec-expr-call-or-pure e compst fenv limit)
                       (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-fun fun args compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
                       (exec-initer initer compst fenv limit)

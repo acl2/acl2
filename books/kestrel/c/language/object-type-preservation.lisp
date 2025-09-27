@@ -531,6 +531,11 @@
      and the computation state after execution."))
 
   (defthm-exec-flag
+    (defthm object-type-preservep-of-exec-fun
+      (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
+        (implies (not (errorp result))
+                 (object-type-preservep compst compst1)))
+      :flag exec-fun)
     (defthm object-type-preservep-of-exec-expr-call
       (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
         (implies (not (errorp result))
@@ -551,11 +556,6 @@
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-expr-call-or-asg)
-    (defthm object-type-preservep-of-exec-fun
-      (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
-        (implies (not (errorp result))
-                 (object-type-preservep compst compst1)))
-      :flag exec-fun)
     (defthm object-type-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -596,11 +596,11 @@
              :expand (exec-expr-asg left right compst fenv limit)
              :in-theory
              (enable
+              exec-fun
               exec-expr-call
               exec-expr-asg
               exec-expr-call-or-pure
               exec-expr-call-or-asg
-              exec-fun
               exec-stmt
               exec-stmt-while
               exec-initer
@@ -613,11 +613,11 @@
               object-type-preservep-of-write-object
               len))))
 
-  (in-theory (disable object-type-preservep-of-exec-expr-call
+  (in-theory (disable object-type-preservep-of-exec-fun
+                      object-type-preservep-of-exec-expr-call
                       object-type-preservep-of-exec-expr-asg
                       object-type-preservep-of-exec-expr-call-or-pure
                       object-type-preservep-of-exec-expr-call-or-asg
-                      object-type-preservep-of-exec-fun
                       object-type-preservep-of-exec-stmt
                       object-type-preservep-of-exec-stmt-while
                       object-type-preservep-of-exec-initer
@@ -629,6 +629,24 @@
 
 (defsection object-type-of-exec
   :short "Preservation of object types under execution."
+
+  (defruled object-type-of-exec-fun
+    (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :use (object-type-preservep-of-exec-fun
+          (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
+                     (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
 
   (defruled object-type-of-exec-expr-call
     (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
@@ -701,24 +719,6 @@
                      (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-expr-call-or-asg e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled object-type-of-exec-fun
-    (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-fun
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
