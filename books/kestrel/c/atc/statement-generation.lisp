@@ -1699,6 +1699,10 @@
        (expr-hints
         `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
                                (:e expr-kind)
+                               (:e expr-binary->op)
+                               (:e expr-binary->arg1)
+                               (:e expr-binary->arg2)
+                               (:e binop-kind)
                                not-zp-of-limit-variable
                                compustatep-of-add-frame
                                compustatep-of-add-var
@@ -1888,7 +1892,8 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil rhs.names-to-avoid wrld))
        (thm-index (1+ rhs.thm-index))
-       (exec-formula `(equal (exec-expr-asg ',asg
+       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
+                                            ',(expr-binary->arg2 asg)
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
@@ -2230,7 +2235,8 @@
         (fresh-logical-name-with-$s-suffix asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
        (uterm (untranslate$ elem.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',asg
+       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
+                                            ',(expr-binary->arg2 asg)
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
@@ -2624,7 +2630,8 @@
                                            wrld))
        (thm-index (1+ member.thm-index))
        (uterm (untranslate$ member.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',asg
+       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
+                                            ',(expr-binary->arg2 asg)
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
@@ -3065,7 +3072,8 @@
          asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
        (uterm (untranslate$ elem.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',asg
+       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
+                                            ',(expr-binary->arg2 asg)
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
@@ -3452,7 +3460,8 @@
                                            wrld))
        (thm-index (1+ int.thm-index))
        (uterm (untranslate$ int.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',asg
+       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
+                                            ',(expr-binary->arg2 asg)
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)

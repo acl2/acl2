@@ -44,52 +44,43 @@
     "The second one is for the new modular proof approach."))
 
   (defruled exec-expr-asg-ident
-    (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :binary)
-                  (equal (binop-kind (expr-binary->op e)) :asg)
+    (implies (and (syntaxp (and (quotep left)
+                                (quotep right)))
                   (not (zp limit))
-                  (equal e1 (expr-binary->arg1 e))
-                  (equal (expr-kind e1) :ident)
+                  (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+                         (exec-expr-call-or-pure right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (valuep (read-var (expr-ident->get e1) compst1))
-                  (equal compst2 (write-var (expr-ident->get e1) val compst1))
+                  (valuep (read-var (expr-ident->get left) compst1))
+                  (equal compst2 (write-var (expr-ident->get left) val compst1))
                   (compustatep compst2))
-             (equal (exec-expr-asg e compst fenv limit)
+             (equal (exec-expr-asg left right compst fenv limit)
                     (mv val compst2)))
-    :expand (exec-expr-asg e compst fenv limit)
+    :expand (exec-expr-asg left right compst fenv limit)
     :enable (exec-expr-pure
              exec-ident
              write-object-of-objdesign-of-var-to-write-var))
 
   (defruled exec-expr-asg-ident-via-object
-    (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :binary)
-                  (equal (binop-kind (expr-binary->op e)) :asg)
+    (implies (and (syntaxp (and (quotep left)
+                                (quotep right)))
                   (not (zp limit))
-                  (equal e1 (expr-binary->arg1 e))
-                  (equal (expr-kind e1) :ident)
+                  (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr-call-or-pure (expr-binary->arg2 e)
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+                         (exec-expr-call-or-pure right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
-                  (equal objdes (objdesign-of-var (expr-ident->get e1) compst1))
+                  (equal objdes
+                         (objdesign-of-var (expr-ident->get left) compst1))
                   objdes
                   (equal compst2 (write-object objdes val compst1))
                   (compustatep compst2))
-             (equal (exec-expr-asg e compst fenv limit)
+             (equal (exec-expr-asg left right compst fenv limit)
                     (mv val compst2)))
-    :expand (exec-expr-asg e compst fenv limit)
+    :expand (exec-expr-asg left right compst fenv limit)
     :enable (exec-expr-pure
              exec-ident))
 
@@ -124,11 +115,8 @@
          (name-mod-proofs (pack name '-for-modular-proofs))
          (formula
           `(implies
-            (and (syntaxp (quotep e))
-                 (equal (expr-kind e) :binary)
-                 (equal (binop-kind (expr-binary->op e)) :asg)
-                 (equal left (expr-binary->arg1 e))
-                 (equal right (expr-binary->arg2 e))
+            (and (syntaxp (and (quotep left)
+                               (quotep right)))
                  (equal (expr-kind left) :unary)
                  (equal (unop-kind (expr-unary->op left)) :indir)
                  (equal arg (expr-unary->arg left))
@@ -152,15 +140,12 @@
                                       val
                                       compst))
                  (compustatep compst1))
-            (equal (exec-expr-asg e compst fenv limit)
+            (equal (exec-expr-asg left right compst fenv limit)
                    (mv val compst1))))
          (formula-mod-proofs
           `(implies
-            (and (syntaxp (quotep e))
-                 (equal (expr-kind e) :binary)
-                 (equal (binop-kind (expr-binary->op e)) :asg)
-                 (equal left (expr-binary->arg1 e))
-                 (equal right (expr-binary->arg2 e))
+            (and (syntaxp (and (quotep left)
+                               (quotep right)))
                  (equal (expr-kind left) :unary)
                  (equal (unop-kind (expr-unary->op left)) :indir)
                  (equal arg (expr-unary->arg left))
@@ -184,13 +169,12 @@
                                       (,writer val)
                                       compst))
                  (compustatep compst1))
-            (equal (exec-expr-asg e compst fenv limit)
+            (equal (exec-expr-asg left right compst fenv limit)
                    (mv val compst1))))
          (events `((defruled ,name
                      ,formula
-                     :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
-                              (exec-expr-pure (expr-unary->arg
-                                               (expr-binary->arg1 e)) compst))
+                     :expand ((exec-expr-pure left compst)
+                              (exec-expr-pure (expr-unary->arg left) compst))
                      :enable (exec-expr-asg
                               exec-unary
                               exec-indir
@@ -284,11 +268,7 @@
          (name (pack 'exec-expr-asg-arrsub-when- apred))
          (formula
           `(implies
-            (and (equal (expr-kind e) :binary)
-                 (equal (binop-kind (expr-binary->op e)) :asg)
-                 (equal left (expr-binary->arg1 e))
-                 (equal right (expr-binary->arg2 e))
-                 (equal (expr-kind left) :arrsub)
+            (and (equal (expr-kind left) :arrsub)
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
@@ -326,14 +306,13 @@
                                       (,atype-array-write array index val)
                                       compst))
                  (compustatep compst1))
-            (equal (exec-expr-asg e compst fenv limit)
+            (equal (exec-expr-asg left right compst fenv limit)
                    (mv val compst1))))
          (event
           `(defruled ,name
              ,formula
-             :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
-                      (exec-expr-pure (expr-arrsub->arr
-                                       (expr-binary->arg1 e)) compst))
+             :expand ((exec-expr-pure left compst)
+                      (exec-expr-pure (expr-arrsub->arr left) compst))
              :enable (exec-expr-asg
                       exec-ident
                       exec-arrsub
@@ -360,11 +339,7 @@
          (name-mod-prf (pack name '-for-modular-proofs))
          (formula-mod-prf
           `(implies
-            (and (equal (expr-kind e) :binary)
-                 (equal (binop-kind (expr-binary->op e)) :asg)
-                 (equal left (expr-binary->arg1 e))
-                 (equal right (expr-binary->arg2 e))
-                 (equal (expr-kind left) :arrsub)
+            (and (equal (expr-kind left) :arrsub)
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
@@ -399,7 +374,7 @@
                                       (,atype-array-write array index val)
                                       compst))
                  (compustatep compst1))
-            (equal (exec-expr-asg e compst fenv limit)
+            (equal (exec-expr-asg left right compst fenv limit)
                    (mv val compst1))))
          (event-mod-prf
           `(defruled ,name-mod-prf
