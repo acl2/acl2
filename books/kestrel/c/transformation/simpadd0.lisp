@@ -1497,14 +1497,22 @@
                             (:e c::stmt-expr)
                             (:e c::expr-kind)
                             (:e set::insert)
+                            (:e c::expr-binary->op)
+                            (:e c::expr-binary->arg1)
+                            (:e c::expr-binary->arg2)
+                            (:e c::binop-kind)
+                            (:e c::binop-asg)
+                            (:e c::expr-binary)
                             stmt-expr-asg-compustate-vars)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
                      (:instance
                       stmt-expr-asg-congruence
-                      (old-expr ',old-expr?)
-                      (new-expr ',new-expr?))
+                      (old-left (c::expr-binary->arg1 ',old-expr?))
+                      (new-left (c::expr-binary->arg1 ',new-expr?))
+                      (old-right (c::expr-binary->arg2 ',old-expr?))
+                      (new-right (c::expr-binary->arg2 ',new-expr?)))
                      (:instance
                       stmt-expr-asg-errors
                       (expr ',old-expr?)

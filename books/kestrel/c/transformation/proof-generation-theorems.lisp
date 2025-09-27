@@ -374,16 +374,14 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-asg-congruence
-    (b* ((old (c::expr-binary (c::binop-asg) (c::expr-ident var) old-arg))
-         (new (c::expr-binary (c::binop-asg) (c::expr-ident var) new-arg))
-         (old-arg-result (c::exec-expr-pure old-arg compst))
+    (b* ((old-arg-result (c::exec-expr-pure old-arg compst))
          (new-arg-result (c::exec-expr-pure new-arg compst))
          (old-arg-value (c::expr-value->value old-arg-result))
          (new-arg-value (c::expr-value->value new-arg-result))
          ((mv old-result old-compst)
-          (c::exec-expr-asg old compst old-fenv limit))
+          (c::exec-expr-asg (c::expr-ident var) old-arg compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-expr-asg new compst new-fenv limit))
+          (c::exec-expr-asg (c::expr-ident var) new-arg compst new-fenv limit))
          (val (c::read-object (c::objdesign-of-var var compst) compst))
          (type (c::type-of-value val)))
       (implies (and (not (equal (c::expr-kind old-arg) :call))
@@ -398,11 +396,9 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst))))
     :expand ((c::exec-expr-asg
-              (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
-              compst old-fenv limit)
+              (c::expr-ident var) old-arg compst old-fenv limit)
              (c::exec-expr-asg
-              (c::expr-binary '(:asg) (c::expr-ident var) new-arg)
-              compst new-fenv limit))
+              (c::expr-ident var) new-arg compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp)
@@ -545,17 +541,17 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-expr-asg-congruence
-    (b* ((old (c::stmt-expr old-expr))
+    (b* ((old-expr (c::expr-binary (c::binop-asg) old-left old-right))
+         (new-expr (c::expr-binary (c::binop-asg) new-left new-right))
+         (old (c::stmt-expr old-expr))
          (new (c::stmt-expr new-expr))
          ((mv old-expr-result old-expr-compst)
-          (c::exec-expr-asg old-expr compst old-fenv (- limit 2)))
+          (c::exec-expr-asg old-left old-right compst old-fenv (- limit 2)))
          ((mv new-expr-result new-expr-compst)
-          (c::exec-expr-asg new-expr compst new-fenv (- limit 2)))
+          (c::exec-expr-asg new-left new-right compst new-fenv (- limit 2)))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
          ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
-      (implies (and (not (equal (c::expr-kind old-expr) :call))
-                    (not (equal (c::expr-kind new-expr) :call))
-                    (not (c::errorp old-result))
+      (implies (and (not (c::errorp old-result))
                     (equal old-expr-result new-expr-result)
                     (equal old-expr-compst new-expr-compst))
                (and (not (c::errorp new-result))
@@ -563,8 +559,12 @@
                     (equal old-compst new-compst)
                     (set::in (c::type-option-of-stmt-value old-result)
                              (set::insert nil nil)))))
-    :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
-             (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
+    :expand ((c::exec-stmt
+              (c::stmt-expr (c::expr-binary '(:asg) old-left old-right))
+              compst old-fenv limit)
+             (c::exec-stmt
+              (c::stmt-expr (c::expr-binary '(:asg) new-left new-right))
+              compst new-fenv limit))
     :enable (c::exec-expr-call-or-asg))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1056,12 +1056,9 @@
                   (or (c::errorp (c::exec-expr-pure (c::expr-ident var) compst))
                       (c::errorp (c::exec-expr-pure expr compst))))
              (c::errorp
-              (mv-nth 0 (c::exec-expr-asg (c::expr-binary (c::binop-asg)
-                                                          (c::expr-ident var)
-                                                          expr)
+              (mv-nth 0 (c::exec-expr-asg (c::expr-ident var) expr
                                           compst fenv limit))))
-    :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
-                              compst fenv limit)
+    :expand (c::exec-expr-asg (c::expr-ident var) expr compst fenv limit)
     :enable c::exec-expr-call-or-pure)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1118,9 +1115,14 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-expr-asg-errors
-    (implies (and (not (equal (c::expr-kind expr) :call))
+    (implies (and (equal (c::expr-kind expr) :binary)
+                  (equal (c::binop-kind (c::expr-binary->op expr)) :asg)
                   (c::errorp
-                   (mv-nth 0 (c::exec-expr-asg expr compst fenv (- limit 2)))))
+                   (mv-nth 0 (c::exec-expr-asg (c::expr-binary->arg1 expr)
+                                               (c::expr-binary->arg2 expr)
+                                               compst
+                                               fenv
+                                               (- limit 2)))))
              (c::errorp
               (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)

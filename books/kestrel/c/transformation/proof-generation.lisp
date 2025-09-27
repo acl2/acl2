@@ -367,10 +367,14 @@
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
+              (old-left (c::expr-binary->arg1 old-expr))
+              (new-left (c::expr-binary->arg1 new-expr))
+              (old-right (c::expr-binary->arg2 old-expr))
+              (new-right (c::expr-binary->arg2 new-expr))
               ((mv old-result old-compst)
-               (c::exec-expr-asg old-expr compst old-fenv limit))
+               (c::exec-expr-asg old-left old-right compst old-fenv limit))
               ((mv new-result new-compst)
-               (c::exec-expr-asg new-expr compst new-fenv limit)))
+               (c::exec-expr-asg new-left new-right compst new-fenv limit)))
            (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
