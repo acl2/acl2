@@ -3,19 +3,31 @@ The Axe Toolkit
 
 This directory contains Kestrel's open-source Axe toolkit.
 
-Tools of interest may include rewriter-basic.lisp and prover-basic.lisp.
+General purpose Axe tools are in this axe/ directory.  Tools of
+interest may include rewriter-basic, prover-basic,
+def-simplified-basic, and unroll-spec-basic.  See
+[top.lisp/](top.lisp) for more information about the files in this
+directory.
 
-The [jvm/](jvm) directory contains Axe lifters for JVM bytecode programs.
+The [jvm/](jvm) subdirectory contains Axe tools for JVM bytecode programs.
 
-The [x86/](x86) directory contains Axe lifters for x86 binary programs.
+The [x86/](x86) subdirectory contains Axe tools for x86 binary programs.
 
-The [risc-v/](risc-v) directory contains Axe lifters for RISC-V binary programs.
+The [risc-v/](risc-v) subdirectory contains Axe tools for RISC-V binary programs.
 
-The [r1cs/](r1cs) directory contains Axe lifters for Rank-1 Constraint Systems.
+The [r1cs/](r1cs) subdirectory contains Axe tools for Rank-1 Constraint Systems.
+
+See also the examples in:
+
+[jvm/examples/](jvm/examples)
+
+[x86/examples/](x86/examples)
+
+[risc-v/examples/](risc-v/examples)
 
 For more information, see the [Axe Webpage][Axe] and the [Axe
-Docmentation][Axe-doc].  Much more documenation is available in the
-source files themselves.
+Documentation][Axe-doc].  Much more documenation is available as
+comments in the source files themselves.
 
 [Axe]: https://kestrel.edu/research/axe/
 
