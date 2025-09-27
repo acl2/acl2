@@ -59,9 +59,10 @@
       :rule-classes nil
       :flag exec-expr-call-or-pure)
     (defthm exec-expr-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-asg e compst fenv limit)
-                      (exec-expr-asg e compst fenv1 limit)))
+      (implies (and (expr-nocallsp left)
+                    (expr-nocallsp right))
+               (equal (exec-expr-asg left right compst fenv limit)
+                      (exec-expr-asg left right compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-asg)
     (defthm exec-expr-call-or-asg-without-calls
@@ -112,6 +113,8 @@
       :rule-classes nil
       :flag exec-block-item-list)
     :hints (("Goal"
+             :expand ((exec-expr-asg left right compst fenv limit)
+                      (exec-expr-asg left right compst fenv1 limit))
              :in-theory (enable exec-expr-call
                                 exec-expr-call-or-pure
                                 exec-expr-asg

@@ -960,7 +960,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr-asg ((e exprp)
+  (define exec-expr-asg ((left exprp)
+                         (right exprp)
                          (compst compustatep)
                          (fenv fun-envp)
                          (limit natp))
@@ -970,9 +971,6 @@
     :short "Execute an assignment expression."
     :long
     (xdoc::topstring
-     (xdoc::p
-      "This is only used for expressions that must be assignments:
-       we check that the expression is an assignment.")
      (xdoc::p
       "The left-hand side must be a pure lvalue expressions;
        its evaluation must return an expression value with an object designator.
@@ -1017,13 +1015,6 @@
        its result is the value assigned by the assignment."))
     (b* ((compst (compustate-fix compst))
          ((when (zp limit)) (mv (error :limit) compst))
-         ((unless (expr-case e :binary))
-          (mv (error (list :expr-asg-not-binary (expr-fix e))) compst))
-         (op (expr-binary->op e))
-         (left (expr-binary->arg1 e))
-         (right (expr-binary->arg2 e))
-         ((unless (binop-case op :asg))
-          (mv (error (list :expr-asg-not-asg op)) compst))
          ((mv val? compst)
           (if (expr-case left :ident)
               (exec-expr-call-or-pure right compst fenv (1- limit))
@@ -1033,12 +1024,14 @@
                  ((when (errorp eval)) (mv eval compst)))
               (mv (expr-value->value eval) compst))))
          ((when (errorp val?)) (mv val? compst))
-         ((when (not val?)) (mv (error (list :asg-void-expr right)) compst))
+         ((when (not val?))
+          (mv (error (list :asg-void-expr (expr-fix right))) compst))
          (val val?)
          (eval (exec-expr-pure left compst))
          ((when (errorp eval)) (mv eval compst))
          (objdes (expr-value->object eval))
-         ((unless objdes) (mv (error (list :not-lvalue left)) compst))
+         ((unless objdes)
+          (mv (error (list :not-lvalue (expr-fix left))) compst))
          (compst/error (write-object objdes val compst))
          ((when (errorp compst/error)) (mv compst/error compst))
          (compst compst/error))
@@ -1062,13 +1055,21 @@
        Thus, in the case of a function call,
        we discard the returned value, if any."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
-      (if (expr-case e :call)
-          (exec-expr-call (expr-call->fun e)
-                          (expr-call->args e)
-                          compst
-                          fenv
-                          (1- limit))
-        (exec-expr-asg e compst fenv (1- limit))))
+      (cond ((expr-case e :call)
+             (exec-expr-call (expr-call->fun e)
+                             (expr-call->args e)
+                             compst
+                             fenv
+                             (1- limit)))
+            ((and (expr-case e :binary)
+                  (binop-case (expr-binary->op e) :asg))
+             (exec-expr-asg (expr-binary->arg1 e)
+                            (expr-binary->arg2 e)
+                            compst
+                            fenv
+                            (1- limit)))
+            (t (mv (error (list :not-call-or-asg (expr-fix e)))
+                   (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1447,7 +1448,7 @@
              :in-theory (enable len)
              :expand ((exec-expr-call fun args compst fenv limit)
                       (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-asg left right compst fenv limit)
                       (exec-expr-call-or-asg e compst fenv limit)
                       (exec-fun fun args compst fenv limit)
                       (exec-stmt s compst fenv limit)
@@ -1515,7 +1516,7 @@
              :in-theory (enable len)
              :expand ((exec-expr-call fun args compst fenv limit)
                       (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-asg e compst fenv limit)
+                      (exec-expr-asg left right compst fenv limit)
                       (exec-expr-call-or-asg e compst fenv limit)
                       (exec-fun fun args compst fenv limit)
                       (exec-stmt s compst fenv limit)

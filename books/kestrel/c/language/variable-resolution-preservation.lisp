@@ -449,7 +449,7 @@
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-call-or-pure)
     (defthm var-resolve-preservep-of-exec-expr-asg
-      (b* (((mv result compst1) (exec-expr-asg e compst fenv limit)))
+      (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
         (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-asg)
@@ -503,6 +503,7 @@
                                         (prev-scope/frame compst1))))
       :flag exec-block-item-list)
     :hints (("Goal"
+             :expand (exec-expr-asg left right compst fenv limit)
              :in-theory
              (enable
               exec-expr-call
@@ -573,7 +574,7 @@
              peel-scopes))
 
   (defruled var-resolve-of-exec-expr-asg
-    (b* (((mv result compst1) (exec-expr-asg e compst fenv limit)))
+    (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
       (implies (and (not (errorp result))
                     (objdesign-of-var var compst))
                (equal (objdesign-of-var var compst1)
@@ -582,7 +583,7 @@
           (:instance var-resolve-preservep-necc
                      (var (ident-fix var))
                      (compst1
-                      (mv-nth 1 (exec-expr-asg e compst fenv limit)))
+                      (mv-nth 1 (exec-expr-asg left right compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
