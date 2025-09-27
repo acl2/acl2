@@ -536,16 +536,16 @@
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-expr-call)
-    (defthm object-type-preservep-of-exec-expr-call-or-pure
-      (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-        (implies (not (errorp result))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-call-or-pure)
     (defthm object-type-preservep-of-exec-expr-asg
       (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-expr-asg)
+    (defthm object-type-preservep-of-exec-expr-call-or-pure
+      (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
+        (implies (not (errorp result))
+                 (object-type-preservep compst compst1)))
+      :flag exec-expr-call-or-pure)
     (defthm object-type-preservep-of-exec-expr-call-or-asg
       (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
         (implies (not (errorp result))
@@ -597,8 +597,8 @@
              :in-theory
              (enable
               exec-expr-call
-              exec-expr-call-or-pure
               exec-expr-asg
+              exec-expr-call-or-pure
               exec-expr-call-or-asg
               exec-fun
               exec-stmt
@@ -614,8 +614,8 @@
               len))))
 
   (in-theory (disable object-type-preservep-of-exec-expr-call
-                      object-type-preservep-of-exec-expr-call-or-pure
                       object-type-preservep-of-exec-expr-asg
+                      object-type-preservep-of-exec-expr-call-or-pure
                       object-type-preservep-of-exec-expr-call-or-asg
                       object-type-preservep-of-exec-fun
                       object-type-preservep-of-exec-stmt
@@ -649,25 +649,6 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled object-type-of-exec-expr-call-or-pure
-    (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call-or-pure
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
   (defruled object-type-of-exec-expr-asg
     (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
       (implies (and (not (errorp result))
@@ -682,6 +663,25 @@
                      (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-expr-asg left right compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled object-type-of-exec-expr-call-or-pure
+    (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :use (object-type-preservep-of-exec-expr-call-or-pure
+          (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
+                     (compst1
+                      (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

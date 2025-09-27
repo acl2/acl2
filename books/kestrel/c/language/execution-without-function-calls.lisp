@@ -52,12 +52,6 @@
       t
       :rule-classes nil
       :flag exec-expr-call)
-    (defthm exec-expr-call-or-pure-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-pure)
     (defthm exec-expr-asg-without-calls
       (implies (and (expr-nocallsp left)
                     (expr-nocallsp right))
@@ -65,6 +59,12 @@
                       (exec-expr-asg left right compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-asg)
+    (defthm exec-expr-call-or-pure-without-calls
+      (implies (expr-nocallsp e)
+               (equal (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-call-or-pure)
     (defthm exec-expr-call-or-asg-without-calls
       (implies (expr-nocallsp e)
                (equal (exec-expr-call-or-asg e compst fenv limit)
@@ -116,8 +116,8 @@
              :expand ((exec-expr-asg left right compst fenv limit)
                       (exec-expr-asg left right compst fenv1 limit))
              :in-theory (enable exec-expr-call
-                                exec-expr-call-or-pure
                                 exec-expr-asg
+                                exec-expr-call-or-pure
                                 exec-expr-call-or-asg
                                 exec-stmt
                                 exec-stmt-while
