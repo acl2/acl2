@@ -556,15 +556,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-congruence
-    (b* ((old-expr (c::expr-binary (c::binop-asg) old-left old-right))
-         (new-expr (c::expr-binary (c::binop-asg) new-left new-right))
-         (old (c::stmt-expr old-expr))
+  (defruled stmt-expr-congruence
+    (b* ((old (c::stmt-expr old-expr))
          (new (c::stmt-expr new-expr))
          ((mv old-expr-result old-expr-compst)
-          (c::exec-expr-asg old-left old-right compst old-fenv (- limit 2)))
+          (c::exec-expr old-expr compst old-fenv (- limit 1)))
          ((mv new-expr-result new-expr-compst)
-          (c::exec-expr-asg new-left new-right compst new-fenv (- limit 2)))
+          (c::exec-expr new-expr compst new-fenv (- limit 1)))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
          ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
       (implies (and (not (c::errorp old-result))
@@ -575,13 +573,8 @@
                     (equal old-compst new-compst)
                     (set::in (c::type-option-of-stmt-value old-result)
                              (set::insert nil nil)))))
-    :expand ((c::exec-stmt
-              (c::stmt-expr (c::expr-binary '(:asg) old-left old-right))
-              compst old-fenv limit)
-             (c::exec-stmt
-              (c::stmt-expr (c::expr-binary '(:asg) new-left new-right))
-              compst new-fenv limit))
-    :enable c::exec-expr)
+    :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
+             (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1144,15 +1137,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-errors
-    (implies (and (equal (c::expr-kind expr) :binary)
-                  (equal (c::binop-kind (c::expr-binary->op expr)) :asg)
-                  (c::errorp
-                   (mv-nth 0 (c::exec-expr-asg (c::expr-binary->arg1 expr)
-                                               (c::expr-binary->arg2 expr)
-                                               compst
-                                               fenv
-                                               (- limit 2)))))
+  (defruled stmt-expr-errors
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-expr expr compst fenv (- limit 1))))
              (c::errorp
               (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
     :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)

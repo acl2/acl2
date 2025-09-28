@@ -1506,18 +1506,19 @@
                             (:e c::binop-kind)
                             (:e c::binop-asg)
                             (:e c::expr-binary)
-                            stmt-expr-asg-compustate-vars)
+                            stmt-expr-compustate-vars
+                            c::exec-expr
+                            simpadd0-stmt-expr-arith-lemma
+                            c::errorp-of-error)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
                      (:instance
-                      stmt-expr-asg-congruence
-                      (old-left (c::expr-binary->arg1 ',old-expr?))
-                      (new-left (c::expr-binary->arg1 ',new-expr?))
-                      (old-right (c::expr-binary->arg2 ',old-expr?))
-                      (new-right (c::expr-binary->arg2 ',new-expr?)))
+                      stmt-expr-congruence
+                      (old-expr ',old-expr?)
+                      (new-expr ',new-expr?))
                      (:instance
-                      stmt-expr-asg-errors
+                      stmt-expr-errors
                       (expr ',old-expr?)
                       (fenv old-fenv)))))
           `(("Goal"
@@ -1543,6 +1544,10 @@
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
   ///
+
+  (defruled simpadd0-stmt-expr-arith-lemma
+    (equal (+ -1 -1 limit)
+           (+ -2 limit)))
 
   (defret stmt-unambp-of-simpadd0-stmt-expr
     (stmt-unambp stmt)

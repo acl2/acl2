@@ -224,22 +224,15 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-compustate-vars
+  (defruled stmt-expr-compustate-vars
     (b* ((expr (c::stmt-expr->get stmt))
-         (op (c::expr-binary->op expr))
-         (left (c::expr-binary->arg1 expr))
-         (right (c::expr-binary->arg2 expr))
-         (compst0
-          (mv-nth 1 (c::exec-expr-asg left right compst fenv (- limit 2))))
+         (compst0 (mv-nth 1 (c::exec-expr expr compst fenv (- limit 1))))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (equal (c::stmt-kind stmt) :expr)
-                    (equal (c::expr-kind expr) :binary)
-                    (equal (c::binop-kind op) :asg)
                     (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit)
-    :enable c::exec-expr)
+    :expand (c::exec-stmt stmt compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
