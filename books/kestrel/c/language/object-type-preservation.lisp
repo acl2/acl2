@@ -546,16 +546,11 @@
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-expr-asg)
-    (defthm object-type-preservep-of-exec-expr-call-or-pure
-      (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
+    (defthm object-type-preservep-of-exec-expr
+      (b* (((mv result compst1) (exec-expr e compst fenv limit)))
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
-      :flag exec-expr-call-or-pure)
-    (defthm object-type-preservep-of-exec-expr-call-or-asg
-      (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
-        (implies (not (errorp result))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-call-or-asg)
+      :flag exec-expr)
     (defthm object-type-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -599,8 +594,7 @@
               exec-fun
               exec-expr-call
               exec-expr-asg
-              exec-expr-call-or-pure
-              exec-expr-call-or-asg
+              exec-expr
               exec-stmt
               exec-stmt-while
               exec-initer
@@ -616,8 +610,7 @@
   (in-theory (disable object-type-preservep-of-exec-fun
                       object-type-preservep-of-exec-expr-call
                       object-type-preservep-of-exec-expr-asg
-                      object-type-preservep-of-exec-expr-call-or-pure
-                      object-type-preservep-of-exec-expr-call-or-asg
+                      object-type-preservep-of-exec-expr
                       object-type-preservep-of-exec-stmt
                       object-type-preservep-of-exec-stmt-while
                       object-type-preservep-of-exec-initer
@@ -686,8 +679,8 @@
     :enable (peel-frames
              peel-scopes))
 
-  (defruled object-type-of-exec-expr-call-or-pure
-    (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
+  (defruled object-type-of-exec-expr
+    (b* (((mv result compst1) (exec-expr e compst fenv limit)))
       (implies (and (not (errorp result))
                     (member-equal (objdesign-kind objdes)
                                   '(:auto :static :alloc))
@@ -695,30 +688,11 @@
                (and (not (errorp (read-object objdes compst1)))
                     (equal (type-of-value (read-object objdes compst1))
                            (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call-or-pure
+    :use (object-type-preservep-of-exec-expr
           (:instance object-type-preservep-necc
                      (objdes (objdesign-fix objdes))
                      (compst1
-                      (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled object-type-of-exec-call-or-asg
-    (b* (((mv result compst1) (exec-expr-call-or-asg e compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call-or-asg
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call-or-asg e compst fenv limit)))
+                      (mv-nth 1 (exec-expr e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

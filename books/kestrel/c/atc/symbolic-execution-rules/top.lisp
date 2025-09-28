@@ -27,8 +27,7 @@
 (include-book "exec-expr-pure")
 (include-book "exec-expr-call")
 (include-book "exec-expr-asg")
-(include-book "exec-expr-call-or-pure")
-(include-book "exec-expr-call-or-asg")
+(include-book "exec-expr")
 (include-book "exec-fun")
 (include-book "exec-stmt")
 (include-book "exec-initer")
@@ -163,8 +162,7 @@
           *atc-exec-expr-pure-list-rules*
           *atc-exec-expr-call-rules*
           *atc-exec-expr-asg-rules*
-          *atc-exec-expr-call-or-pure-rules*
-          *atc-exec-expr-call-or-asg-rules*
+          *atc-exec-expr-rules*
           *atc-exec-fun-rules*
           *atc-exec-stmt-rules*
           *atc-exec-initer-rules*

@@ -18,43 +18,62 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-call-or-asg-rules
-  :short "Rules for @(tsee exec-expr-call-or-asg)."
+(defsection atc-exec-expr-rules
+  :short "Rules for @(tsee exec-expr)."
 
-  (defruled exec-expr-call-or-asg-when-call
+  (defruled exec-expr-when-call
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :call)
                   (not (zp limit)))
-             (equal (exec-expr-call-or-asg e compst fenv limit)
+             (equal (exec-expr e compst fenv limit)
                     (exec-expr-call (expr-call->fun e)
                                     (expr-call->args e)
                                     compst
                                     fenv
                                     (1- limit))))
-    :enable exec-expr-call-or-asg)
+    :enable exec-expr)
 
-  (defruled exec-expr-call-or-asg-when-asg
+  (defruled exec-expr-when-asg
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :binary)
                   (equal (binop-kind (expr-binary->op e)) :asg)
                   (not (zp limit)))
-             (equal (exec-expr-call-or-asg e compst fenv limit)
+             (equal (exec-expr e compst fenv limit)
                     (exec-expr-asg (expr-binary->arg1 e)
                                    (expr-binary->arg2 e)
                                    compst
                                    fenv
                                    (1- limit))))
-    :enable exec-expr-call-or-asg)
+    :enable exec-expr)
 
-  (defval *atc-exec-expr-call-or-asg-rules*
-    '(exec-expr-call-or-asg-when-call
-      exec-expr-call-or-asg-when-asg
+  (defruled exec-expr-when-pure
+    (implies (and (syntaxp (quotep e))
+                  (not (equal (expr-kind e) :call))
+                  (not (and (equal (expr-kind e) :binary)
+                            (equal (binop-kind (expr-binary->op e)) :asg)))
+                  (not (zp limit))
+                  (compustatep compst)
+                  (equal eval (exec-expr-pure e compst))
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
+             (equal (exec-expr e compst fenv limit)
+                    (mv (expr-value->value eval1)
+                        compst)))
+    :enable exec-expr)
+
+  (defval *atc-exec-expr-rules*
+    '(exec-expr-when-call
+      exec-expr-when-asg
+      exec-expr-when-pure
       (:e expr-kind)
       (:e expr-call->fun)
       (:e expr-call->args)
       (:e expr-binary->op)
       (:e expr-binary->arg1)
-      (:e expr-binary->arg2))))
+      (:e expr-binary->arg2)
+      (:e binop-kind))))

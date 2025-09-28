@@ -49,7 +49,7 @@
                   (not (zp limit))
                   (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr-call-or-pure right compst fenv (1- limit)))
+                         (exec-expr right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
@@ -69,7 +69,7 @@
                   (not (zp limit))
                   (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr-call-or-pure right compst fenv (1- limit)))
+                         (exec-expr right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)

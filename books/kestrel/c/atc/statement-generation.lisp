@@ -844,7 +844,7 @@
      the transformed term,
      the term for the C result of the expression,
      the term for the C computation state after the execution of the expression,
-     a limit that suffices for @(tsee exec-expr-call-or-pure)
+     a limit that suffices for @(tsee exec-expr)
      to execute the expression completely,
      and then the usual outputs.")
    (xdoc::p
@@ -857,7 +857,7 @@
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
      we add 2 to it, to take into account the decrementing of the limit
-     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
+     to go from @(tsee exec-expr) to @(tsee exec-expr-call)
      and from there to @(tsee exec-fun).
      If the called function affects no objects,
      the @('result') term is essentially the untranslation of the input term,
@@ -869,7 +869,7 @@
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
+     As limit we return 1, which suffices for @(tsee exec-expr-call)
      to not stop right away due to the limit being 0.
      In this case, @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
@@ -1004,10 +1004,10 @@
                                                 gin.inscope
                                                 gin.compst-var
                                                 uterm))
-             (exec-formula `(equal (exec-expr-call-or-pure ',expr
-                                                           ,gin.compst-var
-                                                           ,gin.fenv-var
-                                                           ,gin.limit-var)
+             (exec-formula `(equal (exec-expr ',expr
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
                                    (mv ,result ,new-compst)))
              (exec-formula (atc-contextualize exec-formula
                                               gin.context
@@ -1037,7 +1037,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-call-or-pure-when-call
+                 '(exec-expr-when-call
                    exec-expr-call-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
@@ -1164,10 +1164,10 @@
        (value-kind-when-type-pred
         (atc-type-to-value-kind-thm pure.type gin.prec-tags))
        (uterm* (untranslate$ pure.term nil state))
-       (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
-                                                 ,gin.compst-var
-                                                 ,gin.fenv-var
-                                                 ,gin.limit-var)
+       (formula1 `(equal (exec-expr ',pure.expr
+                                    ,gin.compst-var
+                                    ,gin.fenv-var
+                                    ,gin.limit-var)
                          (mv ,uterm* ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
        (formula1 (atc-contextualize formula1
@@ -1196,8 +1196,10 @@
                                      compustatep-of-update-object
                                      compustatep-of-exit-scope
                                      compustatep-of-if*-when-both-compustatep
-                                     exec-expr-call-or-pure-when-pure
+                                     exec-expr-when-pure
                                      (:e expr-kind)
+                                     (:e expr-binary->op)
+                                     (:e binop-kind)
                                      not-zp-of-limit-variable
                                      ,pure.thm-name
                                      expr-valuep-of-expr-value
@@ -1670,10 +1672,10 @@
          expr-thm-name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
        (expr-limit `(binary-+ '1 ,asg-limit))
-       (exec-formula `(equal (exec-expr-call-or-asg ',asg
-                                                    ,gin.compst-var
-                                                    ,gin.fenv-var
-                                                    ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,val-uterm ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -1697,7 +1699,7 @@
                                         wrld))
        (expr-formula `(and ,exec-formula ,type-formula))
        (expr-hints
-        `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
+        `(("Goal" :in-theory '(exec-expr-when-asg
                                (:e expr-kind)
                                (:e expr-binary->op)
                                (:e expr-binary->arg1)
@@ -1805,17 +1807,17 @@
     "We increase the limit by one
      for the theorem about @(tsee exec-expr-asg),
      because that is what it takes, in @(tsee exec-expr-asg),
-     to go to @(tsee exec-expr-call-or-pure).")
+     to go to @(tsee exec-expr).")
    (xdoc::p
     "We further increase the limit by one
-     for the theorem about @(tsee exec-expr-call-or-asg),
-     because that is what it takes, in  @(tsee exec-expr-call-or-asg),
+     for the theorem about @(tsee exec-expr),
+     because that is what it takes, in  @(tsee exec-expr),
      to go to @(tsee exec-expr-asg).")
    (xdoc::p
     "We further increase the limit by one
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
-     to go to @(tsee exec-expr-call-or-asg)."))
+     to go to @(tsee exec-expr)."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -4299,7 +4301,7 @@
     "The limit for the @(tsee exec-stmt) theorem is set to
      1 more than the limit for the expression theorem,
      because we need 1 to go from @(tsee exec-stmt)
-     to the @(':return') case and @(tsee exec-expr-call-or-pure).
+     to the @(':return') case and @(tsee exec-expr).
      The limit for the @(tsee exec-block-item) theorem is set to
      1 more than the limit for the previous theorem,
      because we need 1 to go from @(tsee exec-block-item)
@@ -5168,10 +5170,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also generate a theorem about @(tsee exec-expr-call-or-asg)
+    "We also generate a theorem about @(tsee exec-expr)
      applied to the call expression.
      The limit is 2 more than the function's limit:
-     it takes 1 to go from @(tsee exec-expr-call-or-asg)
+     it takes 1 to go from @(tsee exec-expr)
      to @(tsee exec-expr-call),
      and another 1 to go from there to @(tsee exec-expr-pure-list).
      Since the limit term for the function is over the function's formal,
@@ -5283,10 +5285,10 @@
                                           gin.inscope
                                           gin.compst-var
                                           uterm))
-       (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
-                                                    ,gin.compst-var
-                                                    ,gin.fenv-var
-                                                    ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',call-expr
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -5316,7 +5318,7 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-call-or-asg-when-call
+           '(exec-expr-when-call
              exec-expr-call-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
@@ -5760,14 +5762,14 @@
      for why we take the sum instead).
      The first block item is a declaration, an assignment, or a function call.
      If it is a declaration, we need 1 to go from @(tsee exec-block-item)
-     to the @(':declon') case and to @(tsee exec-expr-call-or-pure),
+     to the @(':declon') case and to @(tsee exec-expr),
      for which we get the limit.
      If it is an assignment, we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
-     and to @(tsee exec-expr-call-or-asg),
+     and to @(tsee exec-expr),
      another 1 to fo from there to @(tsee exec-expr-asg),
-     and another 1 to go from there to @(tsee exec-expr-call-or-pure),
+     and another 1 to go from there to @(tsee exec-expr),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
      to go from @(tsee exec-block-item-list) to its recursive call.")
@@ -5828,7 +5830,7 @@
      so we need to add 1 to go from @(tsee exec-block-item-list)
      to the call of @(tsee exec-block-item),
      another 1 to go from there to the call of @(tsee exec-stmt),
-     another 1 to go from there to the call of @(tsee exec-expr-call-or-asg),
+     another 1 to go from there to the call of @(tsee exec-expr),
      another 1 to go from there to the call of @(tsee exec-expr-call),
      and another 1 to go from there to the call of @(tsee exec-fun).")
    (xdoc::p
@@ -5841,7 +5843,7 @@
      to @(tsee exec-block-item),
      another 1 to go from there to the @(':stmt') case and @(tsee exec-stmt),
      another 1 to go from there to the @(':return') case
-     and @(tsee exec-expr-call-or-pure),
+     and @(tsee exec-expr),
      for which we use the recursively calculated limit."))
   (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))

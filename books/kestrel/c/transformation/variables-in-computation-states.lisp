@@ -239,7 +239,7 @@
                     (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
     :expand (c::exec-stmt stmt compst fenv limit)
-    :enable (c::exec-expr-call-or-asg))
+    :enable c::exec-expr)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
