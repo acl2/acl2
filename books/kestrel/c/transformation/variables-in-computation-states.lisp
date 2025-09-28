@@ -164,28 +164,16 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-binary-asg-compustate-vars
-    (b* ((var (c::expr-ident->get var-expr))
-         (result+compst1 (c::exec-expr-asg var-expr expr compst fenv limit))
+  (defruled expr-compustate-vars
+    (b* ((result+compst1 (c::exec-expr expr compst fenv limit))
          (result (mv-nth 0 result+compst1))
-         (compst1 (mv-nth 1 result+compst1))
-         (type-var (c::type-of-value
-                    (c::read-object
-                     (c::objdesign-of-var var compst)
-                     compst)))
-         (type-expr (c::type-of-value
-                     (c::expr-value->value
-                      (c::exec-expr-pure expr compst)))))
-      (implies (and (equal (c::expr-kind var-expr) :ident)
-                    (not (equal (c::expr-kind expr) :call))
-                    (not (c::errorp result))
-                    (equal type-var type-expr)
-                    (c::type-nonchar-integerp type-expr)
+         (compst1 (mv-nth 1 result+compst1)))
+      (implies (and (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var1 type compst))
                (c::compustate-has-var-with-type-p var1 type compst1)))
     :enable (c::compustate-has-var-with-type-p
-             c::var-resolve-of-exec-expr-asg
-             c::object-type-of-exec-expr-asg
+             c::var-resolve-of-exec-expr
+             c::object-type-of-exec-expr
              c::not-errorp-when-valuep
              c::valuep-of-read-object-of-objdesign-of-var))
 
