@@ -217,6 +217,14 @@
   (defthm min-helper
     (<= (min x y) x)))
 
+(defconst *no-warn-ground-functions-jvm*
+  '(th
+    jvm::update-nth-local
+    jvm::no-locked-object
+    jvm::empty-operand-stack
+    ))
+
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
@@ -250,15 +258,12 @@
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
                               (natp total-steps))
-;                  :mode :program ;; because we call untranslate
                   :measure (nfix steps-left)
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (true-listp-when-symbol-listp-rewrite-unlimited)
                                                         (myquotep ;looped
                                                          quotep
-                                                         min
-                                                         ))))
-                  )
+                                                         min)))))
            (irrelevant print-interval) ; todo
            )
   (if (or (zp steps-left)
@@ -298,7 +303,7 @@
                                                    (print-level-at-least-verbosep print) ; count-hits ; todo: pass in separately
                                                    (reduce-print-level print)
                                                    rules-to-monitor
-                                                   nil ; no-warn-ground-functions
+                                                   *no-warn-ground-functions-jvm*
                                                    '(program-at) ; fns-to-elide
                                                    ))
          ((when erp) (mv erp dag state))
