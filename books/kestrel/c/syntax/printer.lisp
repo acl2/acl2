@@ -3550,7 +3550,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Here `inline' means that we print is as part of the current line,
+      "Here `inline' means that we print it as part of the current line,
        without adding new lines or indentation.")
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
