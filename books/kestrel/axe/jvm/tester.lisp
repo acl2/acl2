@@ -410,10 +410,52 @@
     ;; We have an explicit list of the names of methds that should fail:
     (member-equal method-name methods-expected-to-fail)))
 
+;; The result of a FUT call
+(defun fut-resultp (res)
+  (declare (xargs :guard t))
+  (and (consp res)
+       (jvm::method-idp (car res))
+       (member-equal (cdr res) '("FAILED" "PASSED"))))
+
+(defun fut-result-listp (results)
+  (declare (xargs :guard t))
+  (if (atom results)
+      (null results)
+    (and (fut-resultp (first results))
+         (fut-result-listp (rest results)))))
+
+(defun print-test-results (results methods-expected-to-fail)
+  (declare (xargs :guard (and (fut-result-listp results)
+                              (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail) ;these are just bare names, for now
+                                  ))
+                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))))
+  (if (endp results)
+      nil
+    (let* ((result (first results))
+           (method-id (car result))
+           (method-name (jvm::method-id-name method-id))
+           ;; (method-descriptor (cdr method-id))
+           (res (cdr result)))
+      (progn$ (cw "The test for method ")
+              (print-string-left-aligned-in-field method-name ;todo: include the descriptor if needed to disambiguate: (concatenate 'string method-name method-descriptor)
+                                                  20)
+              (if (eq :any methods-expected-to-fail)
+                  ;; We don't know if the failure was expected, so just print the result:
+                  (cw " ~s0.~%" res)
+                ;; Print the result and whether it is as expected:
+                (let ((expected-res (if (method-should-failp method-name methods-expected-to-fail) "FAILED" "PASSED")))
+                  (if (equal res expected-res)
+                      (cw " ~s0, as expected.~%" res)
+                    (cw " ~s0 -- UNEXPECTED!~%" res))))
+              (print-test-results (rest results) methods-expected-to-fail)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp failedp state)
 (defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
-  (declare (xargs :stobjs state
-                  :guard (and (jvm::method-idp method-id)
+  (declare (xargs :guard (and (jvm::method-idp method-id)
                               (or (eq :any methods-expected-to-fail)
                                   (eq :auto methods-expected-to-fail)
                                   (string-listp methods-expected-to-fail))
@@ -427,7 +469,8 @@
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
                               (symbol-listp monitor))
-                  :mode :program ;; for several reasons
+                  :stobjs state
+                  :mode :program ;; for submit-event-quiet, simp-dag-fn, and apply-tactic-prover
                   ))
   (b* ((method-name (car method-id))
        (method-descriptor (cdr method-id))
@@ -598,19 +641,6 @@
                   t ;failed
                   state)))))
 
-;; The result of a FUT call
-(defun fut-resultp (res)
-  (declare (xargs :guard t))
-  (and (consp res)
-       (jvm::method-idp (car res))
-       (member-equal (cdr res) '("FAILED" "PASSED"))))
-
-(defun fut-result-listp (results)
-  (declare (xargs :guard t))
-  (if (atom results)
-      (null results)
-    (and (fut-resultp (first results))
-         (fut-result-listp (rest results)))))
 
 ;; Returns (mv erp results state).
 (defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
@@ -635,33 +665,6 @@
                                        methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
-
-(defun print-test-results (results methods-expected-to-fail)
-  (declare (xargs :guard (and (fut-result-listp results)
-                              (or (eq :any methods-expected-to-fail)
-                                  (eq :auto methods-expected-to-fail)
-                                  (string-listp methods-expected-to-fail) ;these are just bare names, for now
-                                  ))
-                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))))
-  (if (endp results)
-      nil
-    (let* ((result (first results))
-           (method-id (car result))
-           (method-name (jvm::method-id-name method-id))
-           ;; (method-descriptor (cdr method-id))
-           (res (cdr result)))
-      (progn$ (cw "The test for method ")
-              (print-string-left-aligned-in-field method-name ;todo: include the descriptor if needed to disambiguate: (concatenate 'string method-name method-descriptor)
-                                                  20)
-              (if (eq :any methods-expected-to-fail)
-                  ;; We don't know if the failure was expected, so just print the result:
-                  (cw " ~s0.~%" res)
-                ;; Print the result and whether it is as expected:
-                (let ((expected-res (if (method-should-failp method-name methods-expected-to-fail) "FAILED" "PASSED")))
-                  (if (equal res expected-res)
-                      (cw " ~s0, as expected.~%" res)
-                    (cw " ~s0 -- UNEXPECTED!~%" res))))
-              (print-test-results (rest results) methods-expected-to-fail)))))
 
 ;; Returns (mv erp event state constant-pool), but the event is always an
 ;; empty progn.  This may need to be called inside a make-event.
