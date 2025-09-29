@@ -237,7 +237,7 @@
                                         ;; One-dimensional array of BVS of unknown length:
                                         (prog2$
                                           (and vars-for-array-elements
-                                               (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1)." parameter-name vars-for-array-elements))
+                                               (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1).~%" parameter-name vars-for-array-elements))
                                           ;; todo: error here id vars-for-array-elements is not nil?
                                           `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
                                             (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p ?
