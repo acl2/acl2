@@ -34,15 +34,15 @@
     "We collect some proof generation utilities
      that should be of general use.")
    (xdoc::p
-    "The functions to generate theorems for expression, statements, etc.
-     take the old and new constructs as inputs,
+    "We provide functions to generate theorems for expression, statements, etc.
+     These functions take the old and new constructs as inputs,
      which must be in the formalized subset,
      and in some cases must satisfy additional restrictions.
      The callers check these conditions,
      but they are double-checked here,
      throwing hard errors if not satisfied, which should never happen.")
    (xdoc::p
-    "The theorems for the various constructs say that:")
+    "The theorems generated for the various constructs say that:")
    (xdoc::ul
     (xdoc::li
      "If the execution of the old construct does not yield an error,
