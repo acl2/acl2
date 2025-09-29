@@ -37,19 +37,6 @@
                                     (1- limit))))
     :enable exec-expr)
 
-  (defruled exec-expr-when-asg
-    (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :binary)
-                  (equal (binop-kind (expr-binary->op e)) :asg)
-                  (not (zp limit)))
-             (equal (exec-expr e compst fenv limit)
-                    (exec-expr-asg (expr-binary->arg1 e)
-                                   (expr-binary->arg2 e)
-                                   compst
-                                   fenv
-                                   (1- limit))))
-    :enable exec-expr)
-
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
                   (not (equal (expr-kind e) :call))
@@ -68,7 +55,6 @@
 
   (defval *atc-exec-expr-rules*
     '(exec-expr-when-call
-      exec-expr-when-asg
       exec-expr-when-pure
       (:e expr-kind)
       (:e expr-call->fun)
