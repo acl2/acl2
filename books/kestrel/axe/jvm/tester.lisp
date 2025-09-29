@@ -512,11 +512,13 @@
                                  (append (formal-unit-tester-extra-lifting-rules)
                                          extra-rules)
                                  ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
+                                 ;; todo: commenting these out caused a loop:
                                  (append '(MYIF-BECOMES-BOOLIF-T-ARG1
                                            MYIF-BECOMES-BOOLIF-T-ARG2
                                            MYIF-BECOMES-BOOLIF-NIL-ARG1
                                            MYIF-BECOMES-BOOLIF-NIL-ARG2
-                                           MYIF-BECOMES-BOOLIF-AXE)
+                                           MYIF-BECOMES-BOOLIF-AXE
+                                           )
                                          (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
                                          remove-rules)
                                  nil ;rule-alists
