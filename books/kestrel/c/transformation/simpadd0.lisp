@@ -19,6 +19,7 @@
 (include-book "../syntax/purity")
 (include-book "../syntax/langdef-mapping")
 (include-book "../representation/shallow-deep-relation")
+(include-book "../atc/symbolic-execution-rules/top")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "std/lists/index-of" :dir :system)

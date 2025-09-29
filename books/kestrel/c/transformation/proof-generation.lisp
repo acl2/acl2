@@ -15,7 +15,6 @@
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
 (include-book "../syntax/validation-information")
-(include-book "../atc/symbolic-execution-rules/top")
 
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 
