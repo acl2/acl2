@@ -30,7 +30,7 @@
                   (not (zp limit))
                   (equal expr (initer-single->get initer))
                   (equal val+compst1
-                         (exec-expr-call-or-pure expr compst fenv (1- limit)))
+                         (exec-expr expr compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))

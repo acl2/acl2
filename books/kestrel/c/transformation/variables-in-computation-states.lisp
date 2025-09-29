@@ -165,11 +165,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-asg-compustate-vars
-    (b* ((op (c::expr-binary->op asg))
-         (var-expr (c::expr-binary->arg1 asg))
-         (var (c::expr-ident->get var-expr))
-         (expr (c::expr-binary->arg2 asg))
-         (compst1 (c::exec-expr-asg asg compst fenv limit))
+    (b* ((var (c::expr-ident->get var-expr))
+         (result+compst1 (c::exec-expr-asg var-expr expr compst fenv limit))
+         (result (mv-nth 0 result+compst1))
+         (compst1 (mv-nth 1 result+compst1))
          (type-var (c::type-of-value
                     (c::read-object
                      (c::objdesign-of-var var compst)
@@ -177,11 +176,9 @@
          (type-expr (c::type-of-value
                      (c::expr-value->value
                       (c::exec-expr-pure expr compst)))))
-      (implies (and (equal (c::expr-kind asg) :binary)
-                    (equal op (c::binop-asg))
-                    (equal (c::expr-kind var-expr) :ident)
+      (implies (and (equal (c::expr-kind var-expr) :ident)
                     (not (equal (c::expr-kind expr) :call))
-                    (not (c::errorp compst1))
+                    (not (c::errorp result))
                     (equal type-var type-expr)
                     (c::type-nonchar-integerp type-expr)
                     (c::compustate-has-var-with-type-p var1 type compst))
@@ -227,17 +224,15 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-expr-asg-compustate-vars
+  (defruled stmt-expr-compustate-vars
     (b* ((expr (c::stmt-expr->get stmt))
-         (compst0 (c::exec-expr-asg expr compst fenv (- limit 2)))
+         (compst0 (mv-nth 1 (c::exec-expr expr compst fenv (- limit 1))))
          ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (equal (c::stmt-kind stmt) :expr)
-                    (not (equal (c::expr-kind expr) :call))
                     (not (c::errorp result))
                     (c::compustate-has-var-with-type-p var type compst0))
                (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit)
-    :enable (c::exec-expr-call-or-asg))
+    :expand (c::exec-stmt stmt compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

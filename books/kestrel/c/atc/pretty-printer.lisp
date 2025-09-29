@@ -21,6 +21,7 @@
 (include-book "std/strings/hex" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -94,9 +95,7 @@
     Thus, we return a string (which is also a message)
     consisting of a number of spaces equal to 4 times the level.")
   (implode (repeat (* 4 (lnfix level)) #\Space))
-  :hooks (:fix)
-  :prepwork
-  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

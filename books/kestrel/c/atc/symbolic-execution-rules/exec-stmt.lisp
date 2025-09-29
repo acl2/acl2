@@ -56,10 +56,7 @@
                   (equal (stmt-kind s) :expr)
                   (not (zp limit))
                   (equal result+compst1
-                         (exec-expr-call-or-asg (stmt-expr->get s)
-                                                compst
-                                                fenv
-                                                (1- limit)))
+                         (exec-expr (stmt-expr->get s) compst fenv (1- limit)))
                   (equal result (mv-nth 0 result+compst1))
                   (equal compst1 (mv-nth 1 result+compst1))
                   (value-optionp result))
@@ -181,7 +178,7 @@
                   (equal e (stmt-return->value s))
                   e
                   (equal val+compst1
-                         (exec-expr-call-or-pure e compst fenv (1- limit)))
+                         (exec-expr e compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val))

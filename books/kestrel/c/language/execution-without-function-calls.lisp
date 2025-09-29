@@ -48,32 +48,27 @@
      given any two arbitrary function environments."))
 
   (defthm-exec-flag
-    (defthm exec-expr-call-without-calls
-      t
-      :rule-classes nil
-      :flag exec-expr-call)
-    (defthm exec-expr-call-or-pure-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-pure)
-    (defthm exec-expr-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-asg e compst fenv limit)
-                      (exec-expr-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-asg)
-    (defthm exec-expr-call-or-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-expr-call-or-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-asg)
     (defthm exec-fun-without-calls
       t
       :rule-classes nil
       :flag exec-fun)
+    (defthm exec-expr-call-without-calls
+      t
+      :rule-classes nil
+      :flag exec-expr-call)
+    (defthm exec-expr-asg-without-calls
+      (implies (and (expr-nocallsp left)
+                    (expr-nocallsp right))
+               (equal (exec-expr-asg left right compst fenv limit)
+                      (exec-expr-asg left right compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-asg)
+    (defthm exec-expr-without-calls
+      (implies (expr-nocallsp e)
+               (equal (exec-expr e compst fenv limit)
+                      (exec-expr e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr)
     (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)
@@ -112,10 +107,11 @@
       :rule-classes nil
       :flag exec-block-item-list)
     :hints (("Goal"
+             :expand ((exec-expr-asg left right compst fenv limit)
+                      (exec-expr-asg left right compst fenv1 limit))
              :in-theory (enable exec-expr-call
-                                exec-expr-call-or-pure
                                 exec-expr-asg
-                                exec-expr-call-or-asg
+                                exec-expr
                                 exec-stmt
                                 exec-stmt-while
                                 exec-initer

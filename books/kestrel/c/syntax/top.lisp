@@ -18,9 +18,6 @@
 (include-book "disambiguation")
 (include-book "validation")
 (include-book "printing")
-(include-book "ascii-identifiers")
-(include-book "standard")
-(include-book "purity")
 (include-book "builtin")
 (include-book "input-files")
 (include-book "input-files-doc")
@@ -194,9 +191,6 @@
                     disambiguation
                     validation
                     printing
-                    ascii-identifiers
-                    standard
-                    purity
                     input-files
                     output-files
                     mapping-to-language-definition

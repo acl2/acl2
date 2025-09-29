@@ -52,8 +52,7 @@
   :elt-type atc-var-info
   :true-listp t
   :elementp-of-nil nil
-  :pred atc-var-info-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred atc-var-info-listp)
 
 ;;;;;;;;;;
 
@@ -86,7 +85,6 @@
   :true-listp t
   :elementp-of-nil t
   :pred atc-var-info-option-listp
-  :prepwork ((local (in-theory (enable nfix))))
   ///
 
   (defruled true-listp-when-atc-var-info-option-listp-rewrite
@@ -146,7 +144,6 @@
   :true-listp t
   :elementp-of-nil t
   :pred atc-symbol-varinfo-alist-listp
-  :prepwork ((local (in-theory (enable nfix))))
   ///
 
   (defruled true-listp-when-atc-symbol-varinfo-alist-listp-rewrite

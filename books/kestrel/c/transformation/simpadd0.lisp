@@ -1163,6 +1163,7 @@
                  (:e c::expr-binary->arg1)
                  (:e c::expr-binary->arg2)
                  (:e c::expr-binary)
+                 (:e c::binop-kind)
                  (:e c::binop-asg)
                  (:e c::ident)
                  (:e c::type-nonchar-integerp)
@@ -1410,6 +1411,8 @@
                         (:e c::initer-single)
                         (:e c::initer-single->get)
                         (:e c::expr-kind)
+                        (:e c::expr-binary->op)
+                        (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
                         initer-single-pure-compustate-vars)
            :use ((:instance ,expr-thm-name)
@@ -1497,16 +1500,25 @@
                             (:e c::stmt-expr)
                             (:e c::expr-kind)
                             (:e set::insert)
-                            stmt-expr-asg-compustate-vars)
+                            (:e c::expr-binary->op)
+                            (:e c::expr-binary->arg1)
+                            (:e c::expr-binary->arg2)
+                            (:e c::binop-kind)
+                            (:e c::binop-asg)
+                            (:e c::expr-binary)
+                            stmt-expr-compustate-vars
+                            c::exec-expr
+                            simpadd0-stmt-expr-arith-lemma
+                            c::errorp-of-error)
                :use ((:instance
                       ,expr?-thm-name
                       (limit (- limit 2)))
                      (:instance
-                      stmt-expr-asg-congruence
+                      stmt-expr-congruence
                       (old-expr ',old-expr?)
                       (new-expr ',new-expr?))
                      (:instance
-                      stmt-expr-asg-errors
+                      stmt-expr-errors
                       (expr ',old-expr?)
                       (fenv old-fenv)))))
           `(("Goal"
@@ -1532,6 +1544,10 @@
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
   ///
+
+  (defruled simpadd0-stmt-expr-arith-lemma
+    (equal (+ -1 -1 limit)
+           (+ -2 limit)))
 
   (defret stmt-unambp-of-simpadd0-stmt-expr
     (stmt-unambp stmt)
@@ -1599,6 +1615,8 @@
                             (:e c::stmt-return)
                             (:e c::stmt-return->value)
                             (:e c::expr-kind)
+                            (:e c::expr-binary->op)
+                            (:e c::binop-kind)
                             (:e c::type-nonchar-integerp)
                             stmt-return-compustate-vars)
                :use (,expr?-thm-name

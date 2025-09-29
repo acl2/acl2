@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ omaps
-  :parents (acl2::kestrel-utilities set::std/osets acl2::alists)
+  :parents (std::std)
   :short "A library of omaps (ordered maps),
           i.e. finite maps represented as strictly ordered alists."
   :long

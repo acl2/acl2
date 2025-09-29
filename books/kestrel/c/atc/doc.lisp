@@ -50,7 +50,7 @@
     (xdoc::codeblock
      "(atc t1 ... tp"
      "     :output-dir      ...  ; default \".\""
-     "     :file-name       ...  ; no default"
+     "     :file-name       ...  ; required, no default"
      "     :header          ...  ; default nil"
      "     :pretty-printing ...  ; default nil"
      "     :proofs          ...  ; default t"
@@ -115,7 +115,7 @@
       ". The default is the connected book directory."))
 
     (xdoc::desc
-     "@(':file-name') &mdash; no default"
+     "@(':file-name') &mdash; required, no default"
      (xdoc::p
       "Name of the files that contain the generated C code,
        without the @('.h') or @('.c') extension.")
@@ -144,7 +144,7 @@
       (xdoc::li
        "@('nil'), to not generate a header."))
      (xdoc::p
-      "A source file (i.e. a @('.c') file is always generated;
+      "A source file (i.e. a @('.c') file) is always generated;
        the @(':header') input only affects the generation of the header.")
      (xdoc::p
       "If ATC is used to generate C code that is not standalone
@@ -153,7 +153,7 @@
        so that the external C code can include the header.
        If ATC is used to generate standalone C code,
        presumably including a function called @('main') with appropriate types,
-       then @(':header') input should be @('nil')."))
+       then the @(':header') input should be @('nil')."))
 
     (xdoc::desc
      "@(':pretty-printing') &mdash; default @('nil')"
@@ -224,8 +224,7 @@
        "Any other symbol, to use as the name of the constant."))
      (xdoc::p
       "In the rest of this documentation page,
-       let @('*program*') be the symbol specified by this input,
-       if applicable (i.e. when @(':proofs') is @('t'))."))
+       let @('*program*') be the symbol specified by this input."))
 
     (xdoc::desc
      "@(':print') &mdash; default @(':result')"
@@ -320,7 +319,7 @@
       represent loops in the C functions instead, as explained below.")
 
     (xdoc::p
-     "The order of the C structure types and external objects and functions
+     "The order of the C functions and structure types and external objects
       in the files
       is the same as the order of the corresponding targets
       in the list @('(t1 ... tp)') passed to ATC.")
@@ -344,7 +343,7 @@
       the symbol names of the recursive target functions:
       these represent C loops, not C functions;
       the names of the recursive target functions
-      are not represented at all in the C code.")
+      are not represented in the C code.")
 
     (xdoc::p
      "The symbol name of each formal parameter of each function target @('fn'),
