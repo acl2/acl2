@@ -159,12 +159,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Getters for the tag, attributes, and child-elements:
+
+;; Returns the tag of an XML element.
 (defund xml-element-tag (elem)
   (declare (xargs :guard (xml-elementp elem)))
   (car elem))
 
 ;; Also used by the xml-parser
-(defun get-xml-attributes (items)
+(defund get-xml-attributes (items)
   (declare (xargs :guard (true-listp items))) ; todo
   (if (endp items)
       nil
@@ -173,9 +176,21 @@
       ;; we've reached the end of the attributes
       nil)))
 
+(defthm xml-attribute-listp-of-get-xml-attributes
+  (xml-attribute-listp (get-xml-attributes elem))
+  :hints (("Goal" :in-theory (enable xml-attribute-listp
+                                     get-xml-attributes))))
+
+;; Returns the attributes of an XML element.
 (defund xml-element-attributes (elem)
   (declare (xargs :guard (xml-elementp elem)))
   (get-xml-attributes (cdr elem)))
+
+(defthm xml-attribute-listp-of-xml-element-attributes
+  (implies (xml-elementp elem)
+           (xml-attribute-listp (xml-element-attributes elem)))
+  :hints (("Goal" :in-theory (enable xml-elementp xml-element-attributes
+                                     xml-element-argsp))))
 
 (defund xml-element-sub-items (elem)
   (declare (xargs :guard (xml-elementp elem)))
@@ -201,8 +216,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;can the items include attrbutes as well as child elements?
+;; From the ITEMS (elements and strings) keep the ones that are elements whose tag is NAME.
 (defun filter-elements-with-name (name items)
   (declare (xargs :guard (xml-item-listp items)))
   (if (not (consp items))
@@ -213,7 +227,7 @@
           (cons item (filter-elements-with-name name (rest items)))
         (filter-elements-with-name name (rest items))))))
 
-;keep the members of ITEMS that are XML elemenet, not strings
+;keep the members of ITEMS that are XML elements, not strings
 (defun filter-xml-elements (items)
   (declare (xargs :guard (xml-item-listp items)))
   (if (not (consp items))
@@ -309,7 +323,6 @@
   (defun gather-element-names-from-items (items)
     (declare (xargs :guard (xml-item-listp items)
                     :measure (acl2-count items)
-;                    :guard-hints (("Goal" :in-theory (enable XML-ITEM-LISTP)))
                     :verify-guards nil ; done below
                     ))
     (if (endp items)
