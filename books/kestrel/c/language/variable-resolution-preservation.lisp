@@ -448,11 +448,6 @@
         (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
       :flag exec-expr-call)
-    (defthm var-resolve-preservep-of-exec-expr-asg
-      (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
-        (implies (not (errorp result))
-                 (var-resolve-preservep compst compst1)))
-      :flag exec-expr-asg)
     (defthm var-resolve-preservep-of-exec-expr
       (b* (((mv result compst1) (exec-expr e compst fenv limit)))
         (implies (not (errorp result))
@@ -498,12 +493,10 @@
                                         (prev-scope/frame compst1))))
       :flag exec-block-item-list)
     :hints (("Goal"
-             :expand (exec-expr-asg left right compst fenv limit)
              :in-theory
              (enable
               exec-fun
               exec-expr-call
-              exec-expr-asg
               exec-expr
               exec-stmt
               exec-stmt-while
@@ -520,7 +513,6 @@
 
   (in-theory (disable var-resolve-preservep-of-exec-fun
                       var-resolve-preservep-of-exec-expr-call
-                      var-resolve-preservep-of-exec-expr-asg
                       var-resolve-preservep-of-exec-expr
                       var-resolve-preservep-of-exec-stmt
                       var-resolve-preservep-of-exec-stmt-while
@@ -560,22 +552,6 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled var-resolve-of-exec-expr-asg
-    (b* (((mv result compst1) (exec-expr-asg left right compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (objdesign-of-var var compst))
-               (equal (objdesign-of-var var compst1)
-                      (objdesign-of-var var compst))))
-    :use (var-resolve-preservep-of-exec-expr-asg
-          (:instance var-resolve-preservep-necc
-                     (var (ident-fix var))
-                     (compst1
-                      (mv-nth 1 (exec-expr-asg left right compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

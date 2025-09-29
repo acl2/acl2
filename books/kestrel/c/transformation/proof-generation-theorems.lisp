@@ -408,15 +408,8 @@
               compst old-fenv limit)
              (c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) new-arg)
-              compst old-fenv limit)
-             (c::exec-expr-asg (c::expr-ident var)
-                               old-arg
-                               compst old-fenv (+ -1 limit))
-             (c::exec-expr-asg (c::expr-ident var)
-                               new-arg
-                               compst new-fenv (+ -1 limit)))
+              compst new-fenv limit))
     :enable (c::exec-expr
-             c::exec-expr-asg
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp)
     :use (:instance
@@ -1089,9 +1082,8 @@
                          (c::expr-binary
                           (c::binop-asg) (c::expr-ident var) expr)
                          compst fenv limit))))
-    :expand ((c::exec-expr (c::expr-binary '(:asg) (c::expr-ident var) expr)
-                           compst fenv limit)
-             (c::exec-expr-asg (c::expr-ident var) expr compst fenv (1- limit)))
+    :expand (c::exec-expr (c::expr-binary '(:asg) (c::expr-ident var) expr)
+                          compst fenv limit)
     :enable c::exec-expr)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

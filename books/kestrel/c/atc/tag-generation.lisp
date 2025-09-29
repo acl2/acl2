@@ -586,7 +586,6 @@
               `(("Goal"
                  :in-theory
                  '(exec-expr
-                   exec-expr-asg
                    exec-expr-pure-when-member-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -644,7 +643,6 @@
               `(("Goal"
                  :in-theory
                  '(exec-expr
-                   exec-expr-asg
                    exec-expr-pure-when-memberp-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -862,7 +860,6 @@
                  (mv val compst1))))
        (theory-member
         `(exec-expr
-          exec-expr-asg
           exec-expr-pure-when-arrsub-of-member-no-syntaxp
           exec-expr-pure-when-ident-no-syntaxp
           exec-ident-open-via-object
@@ -972,7 +969,6 @@
            :in-theory ',theory-member)))
        (theory-memberp
         `(exec-expr
-          exec-expr-asg
           not-errorp-when-expr-valuep
           expr-valuep-of-expr-value
           mv-nth-of-cons

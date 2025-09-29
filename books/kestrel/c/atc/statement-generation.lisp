@@ -5692,7 +5692,6 @@
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
      and to @(tsee exec-expr),
-     another 1 to fo from there to @(tsee exec-expr-asg),
      and another 1 to go from there to @(tsee exec-expr),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1

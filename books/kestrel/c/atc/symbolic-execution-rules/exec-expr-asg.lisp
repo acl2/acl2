@@ -52,7 +52,7 @@
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr right compst fenv (- limit 2)))
+                         (exec-expr right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
@@ -61,9 +61,6 @@
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
                     (mv val compst2)))
-    :expand (exec-expr-asg (expr-binary->arg1 expr)
-                           (expr-binary->arg2 expr)
-                           compst fenv (+ -1 limit))
     :enable (exec-expr
              exec-expr-pure
              exec-ident
@@ -78,7 +75,7 @@
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
                   (equal val+compst1
-                         (exec-expr right compst fenv (- limit 2)))
+                         (exec-expr right compst fenv (1- limit)))
                   (equal val (mv-nth 0 val+compst1))
                   (equal compst1 (mv-nth 1 val+compst1))
                   (valuep val)
@@ -89,9 +86,6 @@
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
                     (mv val compst2)))
-    :expand (exec-expr-asg (expr-binary->arg1 expr)
-                           (expr-binary->arg2 expr)
-                           compst fenv (+ -1 limit))
     :enable (exec-expr
              exec-expr-pure
              exec-ident))
@@ -138,7 +132,6 @@
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
                  (not (zp limit))
-                 (not (zp (1- limit)))
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -171,7 +164,6 @@
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
                  (not (zp limit))
-                 (not (zp (1- limit)))
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -198,7 +190,6 @@
                                (expr-unary->arg (expr-binary->arg1 expr))
                                compst))
                      :enable (exec-expr
-                              exec-expr-asg
                               exec-unary
                               exec-indir
                               exec-ident
@@ -301,7 +292,6 @@
                  (equal (expr-kind arr) :ident)
                  (equal var (expr-ident->get arr))
                  (not (zp limit))
-                 (not (zp (1- limit)))
                  (equal arr-val (read-var var compst))
                  (valuep arr-val)
                  (equal eptr
@@ -344,7 +334,6 @@
                        (expr-arrsub->arr (expr-binary->arg1 expr))
                        compst))
              :enable (exec-expr
-                      exec-expr-asg
                       exec-ident
                       exec-arrsub
                       apconvert-expr-value-when-not-value-array-alt
@@ -379,7 +368,6 @@
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
                  (not (zp limit))
-                 (not (zp (1- limit)))
                  (equal arr-eval (exec-expr-pure arr compst))
                  (expr-valuep arr-eval)
                  (equal ptr-eval (apconvert-expr-value arr-eval))
