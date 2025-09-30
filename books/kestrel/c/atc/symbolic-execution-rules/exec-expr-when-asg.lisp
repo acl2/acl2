@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-ident-rules
+(defsection atc-exec-expr-when-asg-ident-rules
   :short "Rules for executing assignment expressions to identifier expressions."
   :long
   (xdoc::topstring
@@ -43,7 +43,7 @@
    (xdoc::p
     "The second one is for the new modular proof approach."))
 
-  (defruled exec-expr-asg-ident
+  (defruled exec-expr-when-asg-ident
     (implies (and (syntaxp (quotep expr))
                   (not (zp limit))
                   (equal (expr-kind expr) :binary)
@@ -66,7 +66,7 @@
              exec-ident
              write-object-of-objdesign-of-var-to-write-var))
 
-  (defruled exec-expr-asg-ident-via-object
+  (defruled exec-expr-when-asg-ident-via-object
     (implies (and (syntaxp (quotep expr))
                   (not (zp limit))
                   (equal (expr-kind expr) :binary)
@@ -90,8 +90,8 @@
              exec-expr-pure
              exec-ident))
 
-  (defval *atc-exec-expr-asg-ident-rules*
-    '(exec-expr-asg-ident
+  (defval *atc-exec-expr-when-asg-ident-rules*
+    '(exec-expr-when-asg-ident
       (:e expr-kind)
       (:e expr-binary->op)
       (:e expr-binary->arg1)
@@ -101,11 +101,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-indir-rule-generation
+(defsection atc-exec-expr-when-asg-indir-rule-generation
   :short "Code to generate the rules for executing
           assignments to integers by pointer."
 
-  (define atc-exec-expr-asg-indir-rules-gen ((type typep))
+  (define atc-exec-expr-when-asg-indir-rules-gen ((type typep))
     :guard (type-nonchar-integerp type)
     :returns (mv (name symbolp)
                  (events pseudo-event-form-listp))
@@ -117,7 +117,7 @@
          (not-pred-of-value-pointer (pack 'not- pred '-of-value-pointer))
          (value-kind-when-pred (pack 'value-kind-when- pred))
          (writer (pack fixtype '-write))
-         (name (pack 'exec-expr-asg-indir-when- pred))
+         (name (pack 'exec-expr-when-asg-indir-when- pred))
          (name-mod-proofs (pack name '-for-modular-proofs))
          (formula
           `(implies
@@ -214,29 +214,29 @@
                      :enable ,writer))))
       (mv name events)))
 
-  (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
+  (define atc-exec-expr-when-asg-indir-rules-gen-loop ((types type-listp))
     :guard (type-nonchar-integer-listp types)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp types)) (mv nil nil))
          ((mv name events)
-          (atc-exec-expr-asg-indir-rules-gen (car types)))
+          (atc-exec-expr-when-asg-indir-rules-gen (car types)))
          ((mv more-names more-events)
-          (atc-exec-expr-asg-indir-rules-gen-loop (cdr types))))
+          (atc-exec-expr-when-asg-indir-rules-gen-loop (cdr types))))
       (mv (cons name more-names) (append events more-events))))
 
-  (define atc-exec-expr-asg-indir-rules-gen-all ()
+  (define atc-exec-expr-when-asg-indir-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-expr-asg-indir-rules-gen-loop *nonchar-integer-types*)))
+          (atc-exec-expr-when-asg-indir-rules-gen-loop *nonchar-integer-types*)))
       `(progn
-         (defsection atc-exec-expr-asg-indir-rules
+         (defsection atc-exec-expr-when-asg-indir-rules
            :short "Rules for executing assignment expressions
                  to integers by pointer."
            ,@events
-           (defval *atc-exec-expr-asg-indir-rules*
+           (defval *atc-exec-expr-when-asg-indir-rules*
              '(,@names
                (:e expr-kind)
                (:e binop-kind)
@@ -250,11 +250,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-expr-asg-indir-rules-gen-all))
+(make-event (atc-exec-expr-when-asg-indir-rules-gen-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-arrsub-rules-generation
+(defsection atc-exec-expr-when-asg-arrsub-rules-generation
   :short "Code to generate the rules for executing
           assignments to array subscripting expressions."
   :long
@@ -265,7 +265,7 @@
      The former will be eventually eliminated,
      once modular proofs cover all the ATC constructs."))
 
-  (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep))
+  (define atc-exec-expr-when-asg-arrsub-rules-gen ((atype typep))
     :guard (type-nonchar-integerp atype)
     :returns (mv (name symbolp)
                  (events pseudo-event-form-listp))
@@ -279,7 +279,7 @@
                                                  apred))
          (value-array-read-when-apred (pack 'value-array-read-when- apred))
          (value-array-write-when-apred (pack 'value-array-write-when- apred))
-         (name (pack 'exec-expr-asg-arrsub-when- apred))
+         (name (pack 'exec-expr-when-asg-arrsub-when- apred))
          (formula
           `(implies
             (and (equal (expr-kind expr) :binary)
@@ -410,29 +410,29 @@
                       exec-ident))))
       (mv name (list event event-mod-prf))))
 
-  (define atc-exec-expr-asg-arrsub-rules-gen-loop ((atypes type-listp))
+  (define atc-exec-expr-when-asg-arrsub-rules-gen-loop ((atypes type-listp))
     :guard (type-nonchar-integer-listp atypes)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp atypes)) (mv nil nil))
-         ((mv name events) (atc-exec-expr-asg-arrsub-rules-gen (car atypes)))
+         ((mv name events) (atc-exec-expr-when-asg-arrsub-rules-gen (car atypes)))
          ((mv more-names more-events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop (cdr atypes))))
+          (atc-exec-expr-when-asg-arrsub-rules-gen-loop (cdr atypes))))
       (mv (cons name more-names)
           (append events more-events))))
 
-  (define atc-exec-expr-asg-arrsub-rules-gen-all ()
+  (define atc-exec-expr-when-asg-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
     (b* (((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop *nonchar-integer-types*)))
+          (atc-exec-expr-when-asg-arrsub-rules-gen-loop *nonchar-integer-types*)))
       `(progn
-         (defsection atc-exec-expr-asg-arrsub-rules
+         (defsection atc-exec-expr-when-asg-arrsub-rules
            :short "Rules for executing assignment expressions to
                    array subscript expressions."
            ,@events
-           (defval *atc-exec-expr-asg-arrsub-rules*
+           (defval *atc-exec-expr-when-asg-arrsub-rules*
              '(,@names
                (:e expr-kind)
                (:e expr-arrsub->arr)
@@ -445,14 +445,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event (atc-exec-expr-asg-arrsub-rules-gen-all))
+(make-event (atc-exec-expr-when-asg-arrsub-rules-gen-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-asg-rules
+(defsection atc-exec-expr-when-asg-rules
   :short "Rules for executing assignment expressions."
 
-  (defval *atc-exec-expr-asg-rules*
-    (append *atc-exec-expr-asg-ident-rules*
-            *atc-exec-expr-asg-indir-rules*
-            *atc-exec-expr-asg-arrsub-rules*)))
+  (defval *atc-exec-expr-when-asg-rules*
+    (append *atc-exec-expr-when-asg-ident-rules*
+            *atc-exec-expr-when-asg-indir-rules*
+            *atc-exec-expr-when-asg-arrsub-rules*)))

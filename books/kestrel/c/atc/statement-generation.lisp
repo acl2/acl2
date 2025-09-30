@@ -1834,7 +1834,7 @@
         (atc-type-to-type-of-value-thm rhs.type gin.prec-tags))
        (asg-hints
         `(("Goal"
-           :in-theory '(exec-expr-asg-ident-via-object
+           :in-theory '(exec-expr-when-asg-ident-via-object
                         (:e expr-kind)
                         (:e expr-binary->op)
                         (:e expr-binary->arg1)
@@ -2174,8 +2174,8 @@
                                         nil
                                         wrld))
        (asg-formula `(and ,exec-formula ,type-formula))
-       (exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
-        (pack 'exec-expr-asg-arrsub-when-
+       (exec-expr-when-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+        (pack 'exec-expr-when-asg-arrsub-when-
               elem-fixtype
               '-arrayp-for-modular-proofs))
        (value-kind-when-sub-type-pred
@@ -2205,7 +2205,7 @@
        (asg-hints
         `(("Goal"
            :in-theory
-           '(,exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+           '(,exec-expr-when-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
              (:e expr-kind)
              (:e expr-binary->op)
              (:e expr-binary->arg1)
@@ -2575,7 +2575,7 @@
                                         nil
                                         wrld))
        (asg-formula `(and ,exec-formula ,type-formula))
-       (exec-expr-asg-thms
+       (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags))
@@ -2588,7 +2588,7 @@
         (if pointerp
             `(("Goal"
                :in-theory
-               '(,@exec-expr-asg-thms
+               '(,@exec-expr-when-asg-thms
                  (:e expr-kind)
                  (:e expr-binary->op)
                  (:e expr-binary->arg1)
@@ -2623,7 +2623,7 @@
                  compustatep-of-update-object)))
           `(("Goal"
              :in-theory
-             '(,@exec-expr-asg-thms
+             '(,@exec-expr-when-asg-thms
                (:e expr-kind)
                (:e expr-binary->op)
                (:e expr-binary->arg1)
@@ -3024,7 +3024,7 @@
                                         nil
                                         wrld))
        (asg-formula `(and ,exec-formula ,type-formula))
-       (exec-expr-asg-thms
+       (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (valuep-when-elem-type-pred
         (atc-type-to-valuep-thm elem.type gin.prec-tags))
@@ -3045,7 +3045,7 @@
         (if pointerp
             `(("Goal"
                :in-theory
-               '(,@exec-expr-asg-thms
+               '(,@exec-expr-when-asg-thms
                  (:e expr-kind)
                  (:e expr-binary->op)
                  (:e expr-binary->arg1)
@@ -3089,7 +3089,7 @@
                  compustatep-of-update-object)))
           `(("Goal"
              :in-theory
-             '(,@exec-expr-asg-thms
+             '(,@exec-expr-when-asg-thms
                (:e expr-kind)
                (:e expr-binary->op)
                (:e expr-binary->arg1)
@@ -3420,15 +3420,15 @@
                                         wrld))
        (asg-formula `(and ,exec-formula ,type-formula))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
-       (exec-expr-asg-thm
-        (pack 'exec-expr-asg-indir-when- type-pred '-for-modular-proofs))
+       (exec-expr-when-asg-thm
+        (pack 'exec-expr-when-asg-indir-when- type-pred '-for-modular-proofs))
        (value-kind-thm (atc-type-to-value-kind-thm type gin.prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (type-of-value-thm (atc-type-to-type-of-value-thm type gin.prec-tags))
        (type-pred-of-integer-write-fn (pack type-pred '-of- integer-write-fn))
        (asg-hints
         `(("Goal"
-           :in-theory '(,exec-expr-asg-thm
+           :in-theory '(,exec-expr-when-asg-thm
                         (:e expr-kind)
                         (:e expr-binary->op)
                         (:e expr-binary->arg1)

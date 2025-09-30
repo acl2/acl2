@@ -454,7 +454,7 @@
      the ones that rewrite @(tsee exec-expr)
      on assignments that have @(':arrsub') left expressions
      to array writers,
-     in @(see atc-exec-expr-asg-arrsub-rules-generation).")
+     in @(see atc-exec-expr-when-asg-arrsub-rules-generation).")
    (xdoc::p
     "For a scalar member (which must have integer type),
      we generate two theorems that

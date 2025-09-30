@@ -26,7 +26,7 @@
 (include-book "exec-arrsub")
 (include-book "exec-expr-pure")
 (include-book "exec-expr-call")
-(include-book "exec-expr-asg")
+(include-book "exec-expr-when-asg")
 (include-book "exec-expr")
 (include-book "exec-fun")
 (include-book "exec-stmt")
@@ -161,7 +161,7 @@
           *atc-exec-expr-pure-rules*
           *atc-exec-expr-pure-list-rules*
           *atc-exec-expr-call-rules*
-          *atc-exec-expr-asg-rules*
+          *atc-exec-expr-when-asg-rules*
           *atc-exec-expr-rules*
           *atc-exec-fun-rules*
           *atc-exec-stmt-rules*
