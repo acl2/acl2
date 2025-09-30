@@ -14,14 +14,10 @@
 (include-book "proof-generation-theorems")
 (include-book "input-processing")
 
-(include-book "../syntax/unambiguity")
-(include-book "../syntax/ascii-identifiers")
-(include-book "../syntax/purity")
-(include-book "../syntax/langdef-mapping")
 (include-book "../representation/shallow-deep-relation")
 (include-book "../atc/symbolic-execution-rules/top")
 
-(include-book "std/lists/index-of" :dir :system)
+;(include-book "std/lists/index-of" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 
