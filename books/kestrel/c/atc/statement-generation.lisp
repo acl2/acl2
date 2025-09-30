@@ -1036,7 +1036,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-call-open
+                 '(exec-expr-when-call-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -5245,7 +5245,7 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-call-open
+           '(exec-expr-when-call-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names

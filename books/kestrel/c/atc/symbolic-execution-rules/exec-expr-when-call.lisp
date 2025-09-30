@@ -21,10 +21,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-call-rules
+(defsection atc-exec-expr-when-call-rules
   :short "Rules for executing function call expressions."
 
-  (defruled exec-expr-call-open
+  (defruled exec-expr-when-call-open
     (implies (and (not (zp limit))
                   (equal (expr-kind expr) :call)
                   (equal vals
@@ -38,5 +38,5 @@
                               (1- limit))))
     :enable exec-expr)
 
-  (defval *atc-exec-expr-call-rules*
-    '(exec-expr-call-open)))
+  (defval *atc-exec-expr-when-call-rules*
+    '(exec-expr-when-call-open)))
