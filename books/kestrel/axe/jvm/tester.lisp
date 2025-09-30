@@ -453,6 +453,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: use this
+(defun bool-intro-rules ()
+  (declare (xargs :guard t))
+  '(;; these introduce boolor / booland , which pruning doesn't handle well:
+    boolif-when-quotep-arg2 ; introduces boolor, or booland of not
+    boolif-when-quotep-arg3 ; introduces boolor of not, or booland
+    boolif-x-x-y-becomes-boolor ; introduces boolor
+    boolif-x-y-x-becomes-booland ; introduces booland
+    ))
+
 ;; Returns (mv erp failedp state)
 (defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
@@ -519,6 +529,7 @@
                                            MYIF-BECOMES-BOOLIF-NIL-ARG2
                                            MYIF-BECOMES-BOOLIF-AXE
                                            )
+                                         ;; (bool-intro-rules)
                                          (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
                                          remove-rules)
                                  nil ;rule-alists
@@ -553,7 +564,13 @@
        ;;        nil))
        ;; put boolifs back:
        ((mv erp dag state)
-        (simp-dag dag :rules (formal-unit-testing-extra-simplification-rules)
+        (simp-dag dag :rules (set-difference-equal
+                               (append (formal-unit-testing-extra-simplification-rules)
+                                       ;; '(booland-becomes-boolif
+                                       ;;   boolor-becomes-boolif)
+                                       )
+                               nil ;; (bool-intro-rules)
+                               )
                   :check-inputs nil))
        ((when erp) (mv erp t state))
        (- (cw "Done unrolling code (~x0 nodes))~%" (len dag)))
@@ -567,7 +584,8 @@
                  ((mv erp dag state)
                   (simp-dag dag
                             :rules (append (set-difference-equal (amazing-rules-bv)
-                                                                 remove-rules)
+                                                                 (append ;; (bool-intro-rules)
+                                                                         remove-rules))
                                            extra-rules)
                             :use-internal-contextsp t
                             :monitor monitor
@@ -610,7 +628,8 @@
                              '(:rewrite :stp) ;todo: maybe prune? ;; tactics
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
-                                                        remove-rules))
+                                                        (append ;; (bool-intro-rules)
+                                                                remove-rules)))
                              nil ;simplify-assumptions
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
