@@ -22,15 +22,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-exec-expr-call-rules
-  :short "Rules for @(tsee exec-expr-call)."
+  :short "Rules for executing function call expressions."
 
   (defruled exec-expr-call-open
     (implies (and (not (zp limit))
-                  (equal vals (exec-expr-pure-list args compst))
+                  (equal (expr-kind expr) :call)
+                  (equal vals
+                         (exec-expr-pure-list (expr-call->args expr) compst))
                   (value-listp vals))
-             (equal (exec-expr-call fun args compst fenv limit)
-                    (exec-fun fun vals compst fenv (1- limit))))
-    :enable exec-expr-call)
+             (equal (exec-expr expr compst fenv limit)
+                    (exec-fun (expr-call->fun expr)
+                              vals
+                              compst
+                              fenv
+                              (1- limit))))
+    :enable exec-expr)
 
   (defval *atc-exec-expr-call-rules*
     '(exec-expr-call-open)))

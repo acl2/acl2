@@ -856,9 +856,8 @@
      we ensure that this type is not @('void').
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
-     we add 2 to it, to take into account the decrementing of the limit
-     to go from @(tsee exec-expr) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).
+     we add 1 to it, to take into account the decrementing of the limit
+     to go from @(tsee exec-expr) to @(tsee exec-fun).
      If the called function affects no objects,
      the @('result') term is essentially the untranslation of the input term,
      and @('new-compst') is the same as the computation state variable;
@@ -869,7 +868,7 @@
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr-call)
+     As limit we return 1, which suffices for @(tsee exec-expr)
      to not stop right away due to the limit being 0.
      In this case, @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
@@ -953,7 +952,7 @@
                      term
                      nil
                      nil
-                     `(binary-+ '2 ,limit)
+                     `(binary-+ '1 ,limit)
                      args.events
                      nil
                      gin.inscope
@@ -997,7 +996,7 @@
               (reterr
                (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                       called-fn called-formals args.terms)))
-             (call-limit `(binary-+ '2 ,limit))
+             (call-limit `(binary-+ '1 ,limit))
              ((mv result new-compst)
               (atc-gen-call-result-and-endstate out-type
                                                 gin.affect
@@ -1037,8 +1036,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-when-call
-                   exec-expr-call-open
+                 '(exec-expr-call-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1120,7 +1118,7 @@
                  term
                  result
                  new-compst
-                 `(binary-+ '2 ,limit)
+                 `(binary-+ '1 ,limit)
                  (append args.events
                          (list guard-lemma-event
                                call-event))
@@ -5103,10 +5101,8 @@
    (xdoc::p
     "We also generate a theorem about @(tsee exec-expr)
      applied to the call expression.
-     The limit is 2 more than the function's limit:
-     it takes 1 to go from @(tsee exec-expr)
-     to @(tsee exec-expr-call),
-     and another 1 to go from there to @(tsee exec-expr-pure-list).
+     The limit is 1 more than the function's limit:
+     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-pure-list).
      Since the limit term for the function is over the function's formal,
      we need to perform a substitution of the formals with the actuals."))
   (b* (((reterr) (irr-stmt-gout))
@@ -5169,7 +5165,7 @@
                 :term term
                 :context gin.context
                 :inscope gin.inscope
-                :limit `(binary-+ '5 ,limit)
+                :limit `(binary-+ '4 ,limit)
                 :events args.events
                 :thm-name nil
                 :thm-index args.thm-index
@@ -5209,7 +5205,7 @@
        ((unless (equal (len called-formals) (len args.terms)))
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
-       (call-limit `(binary-+ '2 ,limit))
+       (call-limit `(binary-+ '1 ,limit))
        ((mv result new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
@@ -5249,8 +5245,7 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-when-call
-             exec-expr-call-open
+           '(exec-expr-call-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
@@ -5761,7 +5756,6 @@
      to the call of @(tsee exec-block-item),
      another 1 to go from there to the call of @(tsee exec-stmt),
      another 1 to go from there to the call of @(tsee exec-expr),
-     another 1 to go from there to the call of @(tsee exec-expr-call),
      and another 1 to go from there to the call of @(tsee exec-fun).")
    (xdoc::p
     "If the term does not have any of the forms above,

@@ -25,18 +25,6 @@
 (defsection atc-exec-expr-rules
   :short "Rules for @(tsee exec-expr)."
 
-  (defruled exec-expr-when-call
-    (implies (and (syntaxp (quotep e))
-                  (equal (expr-kind e) :call)
-                  (not (zp limit)))
-             (equal (exec-expr e compst fenv limit)
-                    (exec-expr-call (expr-call->fun e)
-                                    (expr-call->args e)
-                                    compst
-                                    fenv
-                                    (1- limit))))
-    :enable exec-expr)
-
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
                   (not (equal (expr-kind e) :call))
@@ -54,8 +42,7 @@
     :enable exec-expr)
 
   (defval *atc-exec-expr-rules*
-    '(exec-expr-when-call
-      exec-expr-when-pure
+    '(exec-expr-when-pure
       (:e expr-kind)
       (:e expr-call->fun)
       (:e expr-call->args)
