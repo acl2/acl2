@@ -795,3 +795,322 @@
    :sllong (mv t (c::type-sllong))
    :otherwise (mv nil (c::type-void)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gen-from-params ((params c::param-declon-listp) (gin ginp))
+  :returns (mv (okp booleanp)
+               (args symbol-listp)
+               (parargs "A term.")
+               (arg-types true-listp)
+               (arg-types-compst true-listp)
+               (vartys c::ident-type-mapp))
+  :short "Generate certain pieces of information
+          from the formal parameters of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The results of this function are used to generate
+     theorems about function calls.")
+   (xdoc::p
+    "We generate the following:")
+   (xdoc::ul
+    (xdoc::li
+     "A list @('args') of symbols used as ACL2 variables
+      that denote the C values passed as arguments to the function.")
+    (xdoc::li
+     "A term @('parargs') that is a nest of @(tsee omap::update) calls
+      that denotes the initial scope of the function.
+      Each @(tsee omap::update) call adds
+      the name of the parameter as key
+      and the variable for the corresponding argument as value.")
+    (xdoc::li
+     "A list @('arg-types') of terms that assert that
+      each variable in @('args') is a value of the appropriate type.")
+    (xdoc::li
+     "A list @('arg-types-compst') of terms that assert that
+      each parameter in @('params') can be read from a computation state
+      and its reading yields a value of the appropriate type.")
+    (xdoc::li
+     "A variable-type map corresponding to the parameters in the obvious way."))
+   (xdoc::p
+    "These results are generated only if
+     all the parameters have certain types
+     (see @(tsee tyspecseq-to-type)),
+     which we check as we go through the parameters.
+     The @('okp') result says whether this is the case;
+     if it is @('nil'), the other results are @('nil') too."))
+  (b* (((when (endp params)) (mv t nil nil nil nil nil))
+       ((c::param-declon param) (car params))
+       ((mv okp type) (tyspecseq-to-type param.tyspec))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       ((unless (c::obj-declor-case param.declor :ident))
+        (mv nil nil nil nil nil nil))
+       (ident (c::obj-declor-ident->get param.declor))
+       (par (c::ident->name ident))
+       (arg (intern-in-package-of-symbol par (gin->const-new gin)))
+       (arg-type `(and (c::valuep ,arg)
+                       (equal (c::type-of-value ,arg) ',type)))
+       (arg-type-compst
+        `(c::compustate-has-var-with-type-p ',ident ',type compst))
+       ((mv okp
+            more-args
+            parargs
+            more-arg-types
+            more-arg-types-compst
+            more-vartys)
+        (gen-from-params (cdr params) gin))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
+       (vartys (omap::update ident type more-vartys)))
+    (mv t
+        (cons arg more-args)
+        parargs
+        (cons arg-type more-arg-types)
+        (cons arg-type-compst more-arg-types-compst)
+        vartys))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret len-of-gen-from-params.arg-types
+    (equal (len arg-types)
+           (len args))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret len-of-gen-from-params.arg-types-compst
+    (equal (len arg-types-compst)
+           (len args))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gen-init-scope-thm ((params c::param-declon-listp)
+                            (args symbol-listp)
+                            (parargs "A term.")
+                            (arg-types true-listp)
+                            (const-new symbolp)
+                            (thm-index posp))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp
+                                  :rule-classes (:rewrite :type-prescription)))
+  :short "Generate a theorem about the initial scope of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('args'), @('parargs'), and @('arg-types') inputs
+     are the corresponding outputs of @(tsee gen-from-params).")
+   (xdoc::p
+    "The theorem says that, given values of certain types for the arguments,
+     @(tsee c::init-scope) applied to the list of parameter declarations
+     and to the list of parameter values
+     yields an omap (which we express as an @(tsee omap::update) nest)
+     that associates parameter name and argument value."))
+  (b* ((formula `(implies (and ,@arg-types)
+                          (equal (c::init-scope ',params (list ,@args))
+                                 ,parargs)))
+       (hints
+        '(("Goal" :in-theory '(omap::assoc-when-emptyp
+                               (:e omap::emptyp)
+                               omap::assoc-of-update
+                               c::init-scope
+                               c::not-flexible-array-member-p-when-ucharp
+                               c::not-flexible-array-member-p-when-scharp
+                               c::not-flexible-array-member-p-when-ushortp
+                               c::not-flexible-array-member-p-when-sshortp
+                               c::not-flexible-array-member-p-when-uintp
+                               c::not-flexible-array-member-p-when-sintp
+                               c::not-flexible-array-member-p-when-ulongp
+                               c::not-flexible-array-member-p-when-slongp
+                               c::not-flexible-array-member-p-when-ullongp
+                               c::not-flexible-array-member-p-when-sllongp
+                               c::remove-flexible-array-member-when-absent
+                               c::ucharp-alt-def
+                               c::scharp-alt-def
+                               c::ushortp-alt-def
+                               c::sshortp-alt-def
+                               c::uintp-alt-def
+                               c::sintp-alt-def
+                               c::ulongp-alt-def
+                               c::slongp-alt-def
+                               c::ullongp-alt-def
+                               c::sllongp-alt-def
+                               c::type-of-value-when-ucharp
+                               c::type-of-value-when-scharp
+                               c::type-of-value-when-ushortp
+                               c::type-of-value-when-sshortp
+                               c::type-of-value-when-uintp
+                               c::type-of-value-when-sintp
+                               c::type-of-value-when-ulongp
+                               c::type-of-value-when-slongp
+                               c::type-of-value-when-ullongp
+                               c::type-of-value-when-sllongp
+                               c::value-fix-when-valuep
+                               c::value-list-fix-of-cons
+                               c::type-of-value
+                               c::type-array
+                               c::type-pointer
+                               c::type-struct
+                               (:e c::adjust-type)
+                               (:e c::apconvert-type)
+                               (:e c::ident)
+                               (:e c::param-declon-list-fix$inline)
+                               (:e c::param-declon-to-ident+tyname)
+                               (:e c::tyname-to-type)
+                               (:e c::type-uchar)
+                               (:e c::type-schar)
+                               (:e c::type-ushort)
+                               (:e c::type-sshort)
+                               (:e c::type-uint)
+                               (:e c::type-sint)
+                               (:e c::type-ulong)
+                               (:e c::type-slong)
+                               (:e c::type-ullong)
+                               (:e c::type-sllong)
+                               (:e c::value-list-fix$inline)
+                               mv-nth
+                               car-cons
+                               cdr-cons
+                               (:e <<)
+                               lemma1
+                               lemma2))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event `(defruled ,thm-name
+                     ,formula
+                     :hints ,hints
+                     :prep-lemmas
+                     ((defruled lemma1
+                        (not (c::errorp nil)))
+                      (defruled lemma2
+                        (not (c::errorp (omap::update key val map)))
+                        :enable (c::errorp omap::update))))))
+    (mv thm-event thm-name thm-index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gen-param-thms ((arg-types-compst true-listp)
+                        (all-arg-types true-listp)
+                        (all-params c::param-declon-listp)
+                        (all-args symbol-listp)
+                        (init-scope-thm symbolp)
+                        (const-new symbolp)
+                        (thm-index posp))
+  :returns (mv (thm-events pseudo-event-form-listp)
+               (thm-names symbol-listp)
+               (updated-thm-index posp
+                                  :rule-classes (:rewrite :type-prescription)))
+  :short "Generate theorems about the parameters of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('args') and @('arg-types-compst') inputs are
+     the corresponding outputs of @(tsee gen-from-params);
+     these are @(tsee cdr)ed in the recursion.
+     The @('all-arg-types') input is
+     the @('arg-types') output of @(tsee gen-from-params);
+     it stays the same during the recursion.")
+   (xdoc::p
+    "We return the theorem events, along with the theorem names.")
+   (xdoc::p
+    "The theorem names are used locally in an enclosing theorem,
+     so they do not need to be particularly unique.
+     But we should check and disambiguate them more thoroughly.")
+   (xdoc::p
+    "For each parameter of the function,
+     we generate a theorem saying that,
+     in the computation state resulting from
+     pushing the initial scope to the frame stack,
+     if the value corresponding to the parameter has a certain type,
+     then reading the parameter from the computation state
+     succeeds and yields a value of that type."))
+  (b* (((when (endp arg-types-compst)) (mv nil nil (pos-fix thm-index)))
+       (formula
+        `(b* ((compst
+               (c::push-frame
+                (c::frame fun
+                          (list
+                           (c::init-scope ',all-params (list ,@all-args))))
+                compst0)))
+           (implies (and ,@all-arg-types)
+                    ,(car arg-types-compst))))
+       (hints
+        `(("Goal" :in-theory '(,init-scope-thm
+                               (:e ident)
+                               c::push-frame
+                               c::compustate-has-var-with-type-p
+                               c::objdesign-of-var
+                               c::objdesign-of-var-aux
+                               c::compustate-frames-number
+                               c::top-frame
+                               c::read-object
+                               c::scopep-of-update
+                               (:e c::scopep)
+                               c::compustate->frames-of-compustate
+                               c::frame->scopes-of-frame
+                               c::frame-fix-when-framep
+                               c::frame-list-fix-of-cons
+                               c::mapp-when-scopep
+                               c::framep-of-frame
+                               c::objdesign-auto->frame-of-objdesign-auto
+                               c::objdesign-auto->name-of-objdesign-auto
+                               c::objdesign-auto->scope-of-objdesign-auto
+                               c::return-type-of-objdesign-auto
+                               c::scope-fix-when-scopep
+                               c::scope-fix
+                               c::scope-list-fix-of-cons
+                               (:e c::ident)
+                               (:e c::ident-fix$inline)
+                               (:e c::identp)
+                               (:t c::objdesign-auto)
+                               omap::assoc-of-update
+                               param-thm-list-lemma
+                               nfix
+                               fix
+                               len
+                               car-cons
+                               cdr-cons
+                               commutativity-of-+
+                               acl2::fold-consts-in-+
+                               acl2::len-of-append
+                               acl2::len-of-rev
+                               acl2::rev-of-cons
+                               (:e acl2::fast-<<)
+                               unicity-of-0
+                               (:e rev)
+                               (:t len)
+                               (:e c::type-fix)))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event `(defruled ,thm-name
+                     ,formula
+                     :hints ,hints))
+       ((mv more-thm-events more-thm-names thm-index)
+        (gen-param-thms (cdr arg-types-compst)
+                        all-arg-types
+                        all-params
+                        all-args
+                        init-scope-thm
+                        const-new
+                        thm-index)))
+    (mv (cons thm-event more-thm-events)
+        (cons thm-name more-thm-names)
+        thm-index))
+  :guard-hints (("Goal" :in-theory (enable len)))
+
+  ///
+
+  (defret len-of-gen-param-thms.thm-names
+    (equal (len thm-names)
+           (len thm-events))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defruled param-thm-list-lemma
+    (equal (nth (len l) (append (rev l) (list x)))
+           x)
+    :use (:instance lemma (l (rev l)))
+    :prep-lemmas
+    ((defruled lemma
+       (equal (nth (len l) (append l (list x)))
+              x)
+       :induct t
+       :enable len))))
