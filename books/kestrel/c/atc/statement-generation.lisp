@@ -1382,7 +1382,13 @@
      and also a symbol table updated with the variable.")
    (xdoc::p
     "We generate a theorem about executing the initializer,
-     and a theorem about executing the block item."))
+     and a theorem about executing the block item.")
+   (xdoc::p
+    "The limit for the block item is 3 more than the expression,
+     because we need 1 to go from @(tsee exec-block-item)
+     to its @(':declon') case and to @(tsee exec-obj-declon),
+     1 to go from there to @(tsee exec-initer), and
+     1 to go from there to its @(':single') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
