@@ -22,8 +22,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection atc-exec-expr-rules
-  :short "Rules for @(tsee exec-expr)."
+(defsection atc-exec-expr-when-pure-rules
+  :short "Rules for executing pure expressions with @(tsee exec-expr)."
 
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
@@ -41,7 +41,7 @@
                         compst)))
     :enable exec-expr)
 
-  (defval *atc-exec-expr-rules*
+  (defval *atc-exec-expr-when-pure-rules*
     '(exec-expr-when-pure
       (:e expr-kind)
       (:e expr-call->fun)
