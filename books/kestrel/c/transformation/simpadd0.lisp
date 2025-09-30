@@ -1047,7 +1047,7 @@
                  c::type-of-value-when-compustate-has-var-with-type-p
                  c::valuep-of-read-object-of-objdesign-of-var
                  c::not-errorp-when-valuep
-                 expr-binary-asg-compustate-vars)
+                 expr-compustate-vars)
                :use (,arg1-thm-name
                      ,arg2-thm-name
                      (:instance
@@ -1387,7 +1387,7 @@
                             c::errorp-of-error)
                :use ((:instance
                       ,expr?-thm-name
-                      (limit (- limit 2)))
+                      (limit (1- limit)))
                      (:instance
                       stmt-expr-congruence
                       (old-expr ',old-expr?)

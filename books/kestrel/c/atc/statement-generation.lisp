@@ -1641,8 +1641,6 @@
                                 (asg-limit pseudo-termp)
                                 (asg-events pseudo-event-form-listp)
                                 (asg-thm-name symbolp)
-                                (val-uterm "An untranslated term.")
-                                (val-type typep)
                                 (new-compst "An untranslated term.")
                                 (gin stmt-ginp)
                                 state)
@@ -1659,71 +1657,16 @@
    (xdoc::p
     "This lifts an assignment to a block item with the assignment.
      It also lifts the theorem about the assignment
-     to a theorem about the block item.")
-   (xdoc::p
-    "The @('val-uterm') input is the untranslated term denoting
-     the C value that is being assigned.
-     The @('val-type') is its type."))
+     to a theorem about the block item."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
-       (expr-thm-name (pack gin.fn '-correct- gin.thm-index))
-       ((mv expr-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix
-         expr-thm-name nil gin.names-to-avoid wrld))
-       (thm-index (1+ gin.thm-index))
-       (expr-limit `(binary-+ '1 ,asg-limit))
-       (exec-formula `(equal (exec-expr ',asg
-                                        ,gin.compst-var
-                                        ,gin.fenv-var
-                                        ,gin.limit-var)
-                             (mv ,val-uterm ,new-compst)))
-       (exec-formula (atc-contextualize exec-formula
-                                        gin.context
-                                        gin.fn
-                                        gin.fn-guard
-                                        gin.compst-var
-                                        gin.limit-var
-                                        expr-limit
-                                        t
-                                        wrld))
-       (pred (atc-type-to-recognizer val-type gin.prec-tags))
-       (type-formula `(,pred ,val-uterm))
-       (type-formula (atc-contextualize type-formula
-                                        gin.context
-                                        gin.fn
-                                        gin.fn-guard
-                                        nil
-                                        nil
-                                        nil
-                                        nil
-                                        wrld))
-       (expr-formula `(and ,exec-formula ,type-formula))
-       (expr-hints
-        `(("Goal" :in-theory '(exec-expr-when-asg
-                               (:e expr-kind)
-                               (:e expr-binary->op)
-                               (:e expr-binary->arg1)
-                               (:e expr-binary->arg2)
-                               (:e binop-kind)
-                               not-zp-of-limit-variable
-                               compustatep-of-add-frame
-                               compustatep-of-add-var
-                               compustatep-of-enter-scope
-                               compustatep-of-update-var
-                               compustatep-of-update-object
-                               compustatep-of-update-static-var
-                               ,asg-thm-name))))
-       ((mv expr-event &) (evmac-generate-defthm expr-thm-name
-                                                 :formula expr-formula
-                                                 :hints expr-hints
-                                                 :enable nil))
        (stmt (stmt-expr asg))
-       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       (stmt-thm-name (pack gin.fn '-correct- gin.thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
-         stmt-thm-name nil names-to-avoid wrld))
-       (thm-index (1+ thm-index))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
+         stmt-thm-name nil gin.names-to-avoid wrld))
+       (thm-index (1+ gin.thm-index))
+       (stmt-limit `(binary-+ '1 ,asg-limit))
        (stmt-formula `(equal (exec-stmt ',stmt
                                         ,gin.compst-var
                                         ,gin.fenv-var
@@ -1743,7 +1686,7 @@
                                (:e stmt-kind)
                                not-zp-of-limit-variable
                                (:e stmt-expr->get)
-                               ,expr-thm-name
+                               ,asg-thm-name
                                compustatep-of-update-var
                                compustatep-of-update-object
                                compustatep-of-update-static-var
@@ -1768,8 +1711,7 @@
     (atc-gen-block-item-stmt stmt
                              stmt-limit
                              (append asg-events
-                                     (list expr-event
-                                           stmt-event))
+                                     (list stmt-event))
                              stmt-thm-name
                              nil
                              (type-void)
@@ -1804,20 +1746,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We increase the limit by one
-     for the theorem about @(tsee exec-expr-asg),
-     because that is what it takes, in @(tsee exec-expr-asg),
-     to go to @(tsee exec-expr).")
-   (xdoc::p
-    "We further increase the limit by one
+    "We increase the limit by two
      for the theorem about @(tsee exec-expr),
-     because that is what it takes, in  @(tsee exec-expr),
-     to go to @(tsee exec-expr-asg).")
+     because that is what it takes, in @(tsee exec-expr),
+     to go to @(tsee exec-expr) for the right-hand side.")
    (xdoc::p
     "We further increase the limit by one
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
-     to go to @(tsee exec-expr)."))
+     to go to @(tsee exec-expr) for the assignment expression."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1866,8 +1803,7 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit `(binary-+ '1 ,rhs.limit))
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit `(binary-+ '2 ,rhs.limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (not rhs.thm-name))
@@ -1894,11 +1830,10 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil rhs.names-to-avoid wrld))
        (thm-index (1+ rhs.thm-index))
-       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
-                                            ',(expr-binary->arg2 asg)
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,rhs.result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -1906,7 +1841,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        asg-limit
+                                        expr-limit
                                         t
                                         wrld))
        (pred (atc-type-to-recognizer rhs.type gin.prec-tags))
@@ -1933,6 +1868,7 @@
                         (:e expr-binary->arg2)
                         (:e binop-kind)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         ,rhs.thm-name
                         mv-nth-of-cons
                         (:e zp)
@@ -1977,12 +1913,10 @@
                                                 :enable nil))
        ((mv item item-limit item-events item-thm-name thm-index names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append rhs.events
                                         (list asg-event))
                                 asg-thm-name
-                                rhs.result
-                                rhs.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -2175,8 +2109,7 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''2)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
@@ -2237,11 +2170,10 @@
         (fresh-logical-name-with-$s-suffix asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
        (uterm (untranslate$ elem.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
-                                            ',(expr-binary->arg2 asg)
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,uterm ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -2249,7 +2181,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        asg-limit
+                                        expr-limit
                                         t
                                         wrld))
        (pred (atc-type-to-recognizer elem.type gin.prec-tags))
@@ -2305,6 +2237,7 @@
              (:e expr-ident->get)
              (:e binop-kind)
              not-zp-of-limit-variable
+             not-zp-of-limit-minus-const
              ,arr.thm-name
              expr-valuep-of-expr-value
              apconvert-expr-value-when-not-value-array
@@ -2369,15 +2302,13 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append arr.events
                                         sub.events
                                         elem.events
                                         (list okp-lemma-event
                                               asg-event))
                                 asg-thm-name
-                                uterm
-                                elem.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -2596,8 +2527,7 @@
                               :arg2 member.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''2)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -2632,11 +2562,10 @@
                                            wrld))
        (thm-index (1+ member.thm-index))
        (uterm (untranslate$ member.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
-                                            ',(expr-binary->arg2 asg)
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,uterm ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -2644,7 +2573,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        asg-limit
+                                        expr-limit
                                         t
                                         wrld))
        (pred (atc-type-to-recognizer member.type gin.prec-tags))
@@ -2686,6 +2615,7 @@
                  (:e ident->name)
                  (:e str-fix)
                  not-zp-of-limit-variable
+                 not-zp-of-limit-minus-const
                  read-var-to-read-object-of-objdesign-of-var
                  ,(atc-var-info->thm varinfo)
                  objdesign-of-var-of-const-identifier
@@ -2720,6 +2650,7 @@
                (:e ident->name)
                (:e str-fix)
                not-zp-of-limit-variable
+               not-zp-of-limit-minus-const
                read-var-to-read-object-of-objdesign-of-var
                ,(atc-var-info->thm varinfo)
                objdesign-of-var-of-const-identifier
@@ -2754,13 +2685,11 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append struct.events
                                         member.events
                                         (list asg-event))
                                 asg-thm-name
-                                uterm
-                                member.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -3004,8 +2933,7 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''2)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -3074,11 +3002,10 @@
          asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
        (uterm (untranslate$ elem.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
-                                            ',(expr-binary->arg2 asg)
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,uterm ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -3086,7 +3013,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        asg-limit
+                                        expr-limit
                                         t
                                         wrld))
        (pred (atc-type-to-recognizer elem.type gin.prec-tags))
@@ -3138,6 +3065,7 @@
                  (:e ident->name)
                  (:e str-fix)
                  not-zp-of-limit-variable
+                 not-zp-of-limit-minus-const
                  read-var-to-read-object-of-objdesign-of-var
                  ,(atc-var-info->thm varinfo)
                  objdesign-of-var-of-const-identifier
@@ -3181,6 +3109,7 @@
                (:e ident->name)
                (:e str-fix)
                not-zp-of-limit-variable
+               not-zp-of-limit-minus-const
                read-var-to-read-object-of-objdesign-of-var
                ,(atc-var-info->thm varinfo)
                objdesign-of-var-of-const-identifier
@@ -3221,15 +3150,13 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append struct.events
                                         index.events
                                         elem.events
                                         (list okp-lemma-event
                                               asg-event))
                                 asg-thm-name
-                                uterm
-                                elem.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
@@ -3429,8 +3356,7 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''2)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
@@ -3462,11 +3388,10 @@
                                            wrld))
        (thm-index (1+ int.thm-index))
        (uterm (untranslate$ int.term nil state))
-       (exec-formula `(equal (exec-expr-asg ',(expr-binary->arg1 asg)
-                                            ',(expr-binary->arg2 asg)
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
                              (mv ,uterm ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
@@ -3474,7 +3399,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        asg-limit
+                                        expr-limit
                                         t
                                         wrld))
        (pred (atc-type-to-recognizer int.type gin.prec-tags))
@@ -3508,6 +3433,7 @@
                         (:e expr-unary->arg)
                         (:e unop-kind)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         (:e expr-ident->get)
                         read-var-of-const-identifier
                         (:e identp)
@@ -3540,13 +3466,11 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append ptr.events
                                         int.events
                                         (list asg-event))
                                 asg-thm-name
-                                uterm
-                                int.type
                                 new-compst
                                 (change-stmt-gin
                                  gin
