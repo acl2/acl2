@@ -418,7 +418,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-asg).
+    "These are the expressions supported by @(tsee c::exec-expr).
      The expression must be a simple assignment expression.
      The sub-expressions must have formal dynamic semantics.
      The left expression must be pure.

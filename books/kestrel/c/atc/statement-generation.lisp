@@ -1382,20 +1382,25 @@
      and also a symbol table updated with the variable.")
    (xdoc::p
     "We generate a theorem about executing the initializer,
-     and a theorem about executing the block item."))
+     and a theorem about executing the block item.")
+   (xdoc::p
+    "The limit for the block item is 3 more than the expression,
+     because we need 1 to go from @(tsee exec-block-item)
+     to its @(':declon') case and to @(tsee exec-obj-declon),
+     1 to go from there to @(tsee exec-initer), and
+     1 to go from there to its @(':single') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
                             (make-ident :name (symbol-name var))
                             type))
        (initer (initer-single expr))
-       (initer-limit `(binary-+ '1 ,expr-limit))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(binary-+ '2 ,initer-limit))
+       (item-limit `(binary-+ '3 ,expr-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1406,50 +1411,14 @@
             gin.context
             gin.thm-index
             gin.names-to-avoid))
-       (initer-thm-name (pack gin.fn '-correct- gin.thm-index))
-       (thm-index (1+ gin.thm-index))
-       ((mv initer-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix initer-thm-name
-                                           nil
-                                           gin.names-to-avoid
-                                           wrld))
-       (initer-formula `(equal (exec-initer ',initer
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
-                               (mv (init-value-single ,expr-term)
-                                   ,gin.compst-var)))
-       (initer-formula
-        (atc-contextualize initer-formula
-                           gin.context
-                           gin.fn
-                           gin.fn-guard
-                           gin.compst-var
-                           gin.limit-var
-                           initer-limit
-                           t
-                           wrld))
-       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
-       (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
-                                            (:e initer-kind)
-                                            not-zp-of-limit-variable
-                                            (:e initer-single->get)
-                                            ,expr-thm
-                                            ,valuep-when-type-pred
-                                            mv-nth-of-cons
-                                            (:e zp)))))
-       ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
-                                                       :formula initer-formula
-                                                       :hints initer-hints
-                                                       :enable nil))
        (new-compst
         `(add-var (ident ',(symbol-name var)) ,expr-term ,gin.compst-var))
-       (item-thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
+       (item-thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
        ((mv item-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix item-thm-name
                                            nil
-                                           names-to-avoid
+                                           gin.names-to-avoid
                                            wrld))
        (item-formula `(equal (exec-block-item ',item
                                               ,gin.compst-var
@@ -1466,6 +1435,7 @@
                                         item-limit
                                         t
                                         wrld))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (type-of-value-when-type-pred
         (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
@@ -1473,7 +1443,10 @@
         `(("Goal"
            :in-theory '(exec-block-item-when-declon
                         exec-obj-declon-open
+                        exec-initer-when-single
                         (:e block-item-kind)
+                        (:e initer-kind)
+                        (:e initer-single->get)
                         not-zp-of-limit-variable
                         not-zp-of-limit-minus-const
                         (:e block-item-declon->get)
@@ -1483,7 +1456,6 @@
                         (:e scspecseq-kind)
                         (:e tyname-to-type)
                         (:e type-kind)
-                        ,initer-thm-name
                         return-type-of-init-value-single
                         init-value-to-value-when-single
                         ,expr-thm
@@ -1530,8 +1502,7 @@
     (mv item
         item-limit
         (append expr-events
-                (list initer-thm-event
-                      item-thm-event)
+                (list item-thm-event)
                 new-inscope-events)
         item-thm-name
         new-inscope
@@ -1657,7 +1628,11 @@
    (xdoc::p
     "This lifts an assignment to a block item with the assignment.
      It also lifts the theorem about the assignment
-     to a theorem about the block item."))
+     to a theorem about the block item.")
+   (xdoc::p
+    "We increase the limit by 1,
+     because we need 1 to go from @(tsee exec-stmt)
+     to its @(':expr') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (stmt (stmt-expr asg))
@@ -1746,15 +1721,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We increase the limit by two
+    "We increase the limit by 1
      for the theorem about @(tsee exec-expr),
      because that is what it takes, in @(tsee exec-expr),
      to go to @(tsee exec-expr) for the right-hand side.")
    (xdoc::p
-    "We further increase the limit by one
+    "We further increase the limit by 1
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
-     to go to @(tsee exec-expr) for the assignment expression."))
+     to go to the @(':expr') case and to @(tsee exec-expr)."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1803,7 +1778,7 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit `(binary-+ '2 ,rhs.limit))
+       (expr-limit `(binary-+ '1 ,rhs.limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (not rhs.thm-name))
@@ -2018,7 +1993,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg)."))
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2109,7 +2089,7 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''2)
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
@@ -5692,7 +5672,6 @@
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
      and to @(tsee exec-expr),
-     another 1 to fo from there to @(tsee exec-expr-asg),
      and another 1 to go from there to @(tsee exec-expr),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
