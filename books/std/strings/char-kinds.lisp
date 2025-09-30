@@ -1,6 +1,6 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "letter-digit-uscore-chars")
 (include-book "letter-digit-uscore-dollar-chars")
 (include-book "letter-digit-uscore-dash-chars")
+(include-book "letter-uscore-chars")
 (include-book "letter-uscore-dollar-chars")
 (include-book "nondigit-chars")
 (include-book "printable-chars")

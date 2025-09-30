@@ -776,9 +776,9 @@
   (b* (((reterr) 0))
     (escape-case
      esc
-     :simple (retok (valid-simple-escape esc.unwrap))
-     :oct (valid-oct-escape esc.unwrap max)
-     :hex (b* ((code (str::hex-digit-chars-value esc.unwrap)))
+     :simple (retok (valid-simple-escape esc.escape))
+     :oct (valid-oct-escape esc.escape max)
+     :hex (b* ((code (str::hex-digit-chars-value esc.escape)))
             (if (<= code (nfix max))
                 (retok code)
               (retmsg$ "The hexadecimal escape sequence ~x0 has value ~x1, ~
@@ -788,7 +788,7 @@
                        (escape-fix esc)
                        code
                        (nfix max))))
-     :univ (valid-univ-char-name esc.unwrap max)))
+     :univ (valid-univ-char-name esc.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

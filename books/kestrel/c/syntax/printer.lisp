@@ -1197,16 +1197,16 @@
      in a hexadecimal escape sequence."))
   (escape-case
    esc
-   :simple (print-simple-escape esc.unwrap pstate)
-   :oct (print-oct-escape esc.unwrap pstate)
+   :simple (print-simple-escape esc.escape pstate)
+   :oct (print-oct-escape esc.escape pstate)
    :hex (b* ((pstate (print-astring "\\x" pstate)) ; \x
-             ((unless esc.unwrap)
+             ((unless esc.escape)
               (raise "Misusage error: ~
                       hexadecimal escape sequence has no digits.")
               pstate)
-             (pstate (print-hex-digit-achars esc.unwrap pstate)))
+             (pstate (print-hex-digit-achars esc.escape pstate)))
           pstate)
-   :univ (print-univ-char-name esc.unwrap pstate))
+   :univ (print-univ-char-name esc.escape pstate))
   :hooks (:fix)
 
   ///
@@ -3550,7 +3550,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Here `inline' means that we print is as part of the current line,
+      "Here `inline' means that we print it as part of the current line,
        without adding new lines or indentation.")
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
