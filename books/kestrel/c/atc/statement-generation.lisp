@@ -1389,13 +1389,12 @@
                             (make-ident :name (symbol-name var))
                             type))
        (initer (initer-single expr))
-       (initer-limit `(binary-+ '1 ,expr-limit))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(binary-+ '2 ,initer-limit))
+       (item-limit `(binary-+ '3 ,expr-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1406,50 +1405,14 @@
             gin.context
             gin.thm-index
             gin.names-to-avoid))
-       (initer-thm-name (pack gin.fn '-correct- gin.thm-index))
-       (thm-index (1+ gin.thm-index))
-       ((mv initer-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix initer-thm-name
-                                           nil
-                                           gin.names-to-avoid
-                                           wrld))
-       (initer-formula `(equal (exec-initer ',initer
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
-                               (mv (init-value-single ,expr-term)
-                                   ,gin.compst-var)))
-       (initer-formula
-        (atc-contextualize initer-formula
-                           gin.context
-                           gin.fn
-                           gin.fn-guard
-                           gin.compst-var
-                           gin.limit-var
-                           initer-limit
-                           t
-                           wrld))
-       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
-       (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
-                                            (:e initer-kind)
-                                            not-zp-of-limit-variable
-                                            (:e initer-single->get)
-                                            ,expr-thm
-                                            ,valuep-when-type-pred
-                                            mv-nth-of-cons
-                                            (:e zp)))))
-       ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
-                                                       :formula initer-formula
-                                                       :hints initer-hints
-                                                       :enable nil))
        (new-compst
         `(add-var (ident ',(symbol-name var)) ,expr-term ,gin.compst-var))
-       (item-thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
+       (item-thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
        ((mv item-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix item-thm-name
                                            nil
-                                           names-to-avoid
+                                           gin.names-to-avoid
                                            wrld))
        (item-formula `(equal (exec-block-item ',item
                                               ,gin.compst-var
@@ -1466,6 +1429,7 @@
                                         item-limit
                                         t
                                         wrld))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (type-of-value-when-type-pred
         (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
@@ -1473,7 +1437,10 @@
         `(("Goal"
            :in-theory '(exec-block-item-when-declon
                         exec-obj-declon-open
+                        exec-initer-when-single
                         (:e block-item-kind)
+                        (:e initer-kind)
+                        (:e initer-single->get)
                         not-zp-of-limit-variable
                         not-zp-of-limit-minus-const
                         (:e block-item-declon->get)
@@ -1483,7 +1450,6 @@
                         (:e scspecseq-kind)
                         (:e tyname-to-type)
                         (:e type-kind)
-                        ,initer-thm-name
                         return-type-of-init-value-single
                         init-value-to-value-when-single
                         ,expr-thm
@@ -1530,8 +1496,7 @@
     (mv item
         item-limit
         (append expr-events
-                (list initer-thm-event
-                      item-thm-event)
+                (list item-thm-event)
                 new-inscope-events)
         item-thm-name
         new-inscope
