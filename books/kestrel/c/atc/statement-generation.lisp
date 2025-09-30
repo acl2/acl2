@@ -3289,6 +3289,15 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a pointed integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -3354,7 +3363,7 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''2)
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
