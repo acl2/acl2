@@ -1628,7 +1628,11 @@
    (xdoc::p
     "This lifts an assignment to a block item with the assignment.
      It also lifts the theorem about the assignment
-     to a theorem about the block item."))
+     to a theorem about the block item.")
+   (xdoc::p
+    "We increase the limit by 1,
+     because we need 1 to go from @(tsee exec-stmt)
+     to its @(':expr') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (stmt (stmt-expr asg))
@@ -1717,15 +1721,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We increase the limit by two
+    "We increase the limit by 1
      for the theorem about @(tsee exec-expr),
      because that is what it takes, in @(tsee exec-expr),
      to go to @(tsee exec-expr) for the right-hand side.")
    (xdoc::p
-    "We further increase the limit by one
+    "We further increase the limit by 1
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
-     to go to @(tsee exec-expr) for the assignment expression."))
+     to go to the @(':expr') case and to @(tsee exec-expr)."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1774,7 +1778,7 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit `(binary-+ '2 ,rhs.limit))
+       (expr-limit `(binary-+ '1 ,rhs.limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (not rhs.thm-name))
