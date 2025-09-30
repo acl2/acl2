@@ -714,10 +714,10 @@
      we use lists of hexadecimal digit characters,
      which correspond to <i>hexadecimal-escape-sequence</i>
      without the implicit @('\\x') prefix."))
-  (:simple ((unwrap simple-escape)))
-  (:oct ((unwrap oct-escape)))
-  (:hex ((unwrap hex-digit-char-list)))
-  (:univ ((unwrap univ-char-name)))
+  (:simple ((escape simple-escape)))
+  (:oct ((escape oct-escape)))
+  (:hex ((escape hex-digit-char-list)))
+  (:univ ((escape univ-char-name)))
   :pred escapep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

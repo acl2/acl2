@@ -36,6 +36,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                character-list
                 defirrelevant
                 defmacro+
                 defxdoc+
