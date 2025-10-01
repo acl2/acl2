@@ -61,6 +61,8 @@
     binop-case
     binop-kind
 
+    asm-name-spec-optionp
+
     exprp
     expr-fix
     expr-count
@@ -343,6 +345,8 @@
     statassert
     make-statassert
 
+    attrib-spec-listp
+
     initdeclorp
     initdeclor-fix
     initdeclor-count
@@ -582,6 +586,7 @@
     enumer-aidentp
     enumer-list-aidentp
     statassert-aidentp
+    attrib-spec-list-aidentp
     initdeclor-aidentp
     initdeclor-list-aidentp
     decl-aidentp
@@ -671,6 +676,7 @@
     initdeclor-info->typedefp
 
     fundef-info
+    fundef-infop
     fundef-info->type
     fundef-info->table-body-start
 
@@ -680,6 +686,19 @@
     block-item-types
     block-item-list-types
     fundef-types
+
+    valid-ord-info-case
+    valid-ord-info-objfun->type
+
+    valid-ord-scopep
+
+    valid-scopep
+    valid-scope->ord
+
+    valid-scope-listp
+
+    valid-tablep
+    valid-table->scopes
 
     iconst-annop
     const-annop
