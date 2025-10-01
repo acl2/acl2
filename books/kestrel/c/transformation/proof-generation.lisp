@@ -3035,3 +3035,264 @@
     (block-item-list-aidentp item+items gcc)
     :hyp (and (block-item-aidentp item-new gcc)
               (block-item-list-aidentp items-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define xeq-fundef ((extension booleanp)
+                    (spec decl-spec-listp)
+                    (spec-new decl-spec-listp)
+                    (declor declorp)
+                    (declor-new declorp)
+                    (asm? c$::asm-name-spec-optionp)
+                    (attribs c$::attrib-spec-listp)
+                    (decls decl-listp)
+                    (decls-new decl-listp)
+                    (body block-item-listp)
+                    (body-new block-item-listp)
+                    (body-thm-name symbolp)
+                    (vartys-with-fun c::ident-type-mapp)
+                    (info c$::fundef-infop)
+                    (gin ginp))
+  :guard (and (decl-spec-list-unambp spec)
+              (decl-spec-list-annop spec)
+              (decl-spec-list-unambp spec-new)
+              (decl-spec-list-annop spec-new)
+              (declor-unambp declor)
+              (declor-annop declor)
+              (declor-unambp declor-new)
+              (declor-annop declor-new)
+              (decl-list-unambp decls)
+              (decl-list-annop decls)
+              (decl-list-unambp decls-new)
+              (decl-list-annop decls-new)
+              (block-item-list-unambp body)
+              (block-item-list-annop body)
+              (block-item-list-unambp body-new)
+              (block-item-list-annop body-new))
+  :returns (mv (fundef fundefp) (gout goutp))
+  :short "Equality lifting transformation of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a theorem for the function
+     only under certain conditions,
+     including the fact that a theorem for the body gets generated.")
+   (xdoc::p
+    "For the body of the function,
+     currently we obtain the variable-type map from
+     the validation table that annotates the function definition
+     (the validation table at the start of the body,
+     not at the start of the function definition;
+     we plan to avoid this, and use instead the variable-type map
+     coming from the transformation of the constructs preceding the body,
+     since now we may have sufficient propagation of variable-type maps,
+     which was not the case some time ago
+     (which motivated the use of
+     the validation table at the start of the body).")
+   (xdoc::p
+    "We generate the folllowing theorems:")
+   (xdoc::ul
+    (xdoc::li
+     "A theorem about the initial scope of the function body.
+      See @(tsee gen-init-scope-thm).")
+    (xdoc::li
+     "For each function parameter, a theorem saying that,
+      after pushing a frame with the initial scope above,
+      the computation state has a variable for the parameter
+      with the associated type.")
+    (xdoc::li
+     "The main theorem for the function definition,
+      saying that, if the execution of the old function does not yield an error,
+      neither does the execition of the new function,
+      and they return the same results and computation states."))
+   (xdoc::p
+    "We use @(tsee gen-from-params) to obtain
+     certain information from the parameters,
+     which is used to generate the theorems.
+     This information includes the variable-type map
+     corresponding to the function parameters:
+     we ensure that it is the same as
+     the variable-type map from the validation table
+     that annotates the start of the function body.
+     In general the former is a sub-map of the latter,
+     because the validation table could include global variables;
+     but for now proof generation does not handle global variables,
+     so we generate proofs for the body only if
+     the theorems about the initial scope and the parameters
+     suffice to establish the variable-type hypotheses of the body."))
+  (b* (((gin gin) gin)
+       (vartys (vartys-from-valid-table (fundef-info->table-body-start info)))
+       (fundef (make-fundef :extension extension
+                            :spec spec
+                            :declor declor
+                            :asm? asm?
+                            :attribs attribs
+                            :decls decls
+                            :body body
+                            :info info))
+       (new-fundef (make-fundef :extension extension
+                                :spec spec-new
+                                :declor declor-new
+                                :asm? asm?
+                                :attribs attribs
+                                :decls decls-new
+                                :body body-new
+                                :info info))
+       (gout-no-thm (change-gout (gout-no-thm gin)
+                                 :vartys vartys-with-fun))
+       ((unless body-thm-name) (mv new-fundef gout-no-thm))
+       ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
+       ((declor declor) declor)
+       ((when (consp declor.pointers)) (mv new-fundef gout-no-thm))
+       ((mv okp params dirdeclor)
+        (dirdeclor-case
+         declor.direct
+         :function-params (mv t declor.direct.params declor.direct.declor)
+         :function-names (mv (endp declor.direct.names)
+                             nil
+                             declor.direct.declor)
+         :otherwise (mv nil nil (irr-dirdeclor))))
+       ((unless okp) (mv new-fundef gout-no-thm))
+       ((unless (dirdeclor-case dirdeclor :ident))
+        (raise "Internal error: ~x0 is not just the function name."
+               dirdeclor)
+        (mv new-fundef (irr-gout)))
+       (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
+       ((unless (stringp fun))
+        (raise "Internal error: non-string identifier ~x0." fun)
+        (mv new-fundef (irr-gout)))
+       ((mv erp ldm-params) (ldm-param-declon-list params))
+       ((when erp) (mv new-fundef gout-no-thm))
+       (types (fundef-types fundef))
+       ((mv okp args parargs arg-types arg-types-compst param-vartys)
+        (gen-from-params ldm-params gin))
+       ((unless okp) (mv new-fundef gout-no-thm))
+       ((unless (equal param-vartys vartys)) (mv new-fundef gout-no-thm))
+       ((mv init-scope-thm-event init-scope-thm-name thm-index)
+        (gen-init-scope-thm ldm-params
+                            args
+                            parargs
+                            arg-types
+                            gin.const-new
+                            gin.thm-index))
+       (events (cons init-scope-thm-event gin.events))
+       ((mv param-thm-events param-thm-names thm-index)
+        (gen-param-thms arg-types-compst
+                        arg-types
+                        ldm-params
+                        args
+                        init-scope-thm-name
+                        gin.const-new
+                        thm-index))
+       (events (append (rev param-thm-events) events))
+       ((mv thm-name thm-index) (gen-thm-name gin.const-new thm-index))
+       (formula
+        `(b* ((old ',(fundef-fix fundef))
+              (new ',new-fundef)
+              (fun (mv-nth 1 (ldm-ident (ident ,fun))))
+              ((mv old-result old-compst)
+               (c::exec-fun fun (list ,@args) compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-fun fun (list ,@args) compst new-fenv limit)))
+           (implies (and ,@arg-types
+                         (equal (c::fun-env-lookup fun old-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (ldm-fundef old))))
+                         (equal (c::fun-env-lookup fun new-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (ldm-fundef new))))
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         (set::in (c::type-of-value-option old-result)
+                                  (mv-nth 1 (ldm-type-set ',types)))))))
+       (hints
+        `(("Goal"
+           :expand ((c::exec-fun
+                     ',(c::ident fun) (list ,@args) compst old-fenv limit)
+                    (c::exec-fun
+                     ',(c::ident fun) (list ,@args) compst new-fenv limit))
+           :use (,init-scope-thm-name
+                 ,@(xeq-fundef-loop param-thm-names fun)
+                 (:instance ,body-thm-name
+                            (compst
+                             (c::push-frame
+                              (c::frame (mv-nth 1 (ldm-ident
+                                                   (ident ,fun)))
+                                        (list
+                                         (c::init-scope
+                                          ',ldm-params
+                                          (list ,@args))))
+                              compst))
+                            (limit (1- limit))))
+           :in-theory '((:e c::fun-info->body$inline)
+                        (:e c::fun-info->params$inline)
+                        (:e c::fun-info->result$inline)
+                        (:e c::fun-info-from-fundef)
+                        (:e ident)
+                        (:e ldm-block-item-list)
+                        (:e ldm-fundef)
+                        (:e ldm-ident)
+                        (:e ldm-type)
+                        (:e ldm-type-set)
+                        (:e ldm-block-item-list)
+                        (:e c::tyname-to-type)
+                        (:e c::block-item-list-nocallsp)
+                        (:e set::in)
+                        c::errorp-of-error
+                        c::compustate-frames-number-of-push-frame
+                        (:t c::compustate-frames-number)))))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,hints)))
+    (mv new-fundef
+        (make-gout :events (cons thm-event events)
+                   :thm-index thm-index
+                   :thm-name thm-name
+                   :vartys vartys-with-fun)))
+
+  :prepwork
+  ((local (in-theory (disable (:e tau-system)))) ; for speed
+   (define xeq-fundef-loop ((thms symbol-listp) (fun stringp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (endp thms)) nil)
+          (thm (car thms))
+          (lemma-instance
+           `(:instance ,thm
+                       (fun (mv-nth 1 (ldm-ident (ident ,fun))))
+                       (compst0 compst)))
+          (more-lemma-instances
+           (xeq-fundef-loop (cdr thms) fun)))
+       (cons lemma-instance more-lemma-instances))))
+
+  ///
+
+  (defret fundef-unambp-of-xeq-fundef
+    (fundef-unambp fundef)
+    :hyp (and (decl-spec-list-unambp spec-new)
+              (declor-unambp declor-new)
+              (decl-list-unambp decls-new)
+              (block-item-list-unambp body-new)))
+
+  (defret fundef-annop-of-xeq-fundef
+    (fundef-annop fundef)
+    :hyp (and (decl-spec-list-annop spec-new)
+              (declor-annop declor-new)
+              (decl-list-annop decls-new)
+              (block-item-list-annop body-new)
+              (c$::fundef-infop info)))
+
+  (defret fundef-aidentp-of-xeq-fundef
+    (fundef-aidentp fundef gcc)
+    :hyp (and (decl-spec-list-unambp spec-new)
+              (decl-spec-list-aidentp spec-new gcc)
+              (declor-unambp declor-new)
+              (declor-aidentp declor-new gcc)
+              (c$::attrib-spec-list-aidentp attribs gcc)
+              (decl-list-unambp decls-new)
+              (decl-list-aidentp decls-new gcc)
+              (block-item-list-unambp body-new)
+              (block-item-list-aidentp body-new gcc))))

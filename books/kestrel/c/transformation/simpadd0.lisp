@@ -2808,145 +2808,23 @@
        ((mv new-body (gout gout-body))
         (simpadd0-block-item-list fundef.body
                                   (change-gin gin :vartys vartys)))
-       ((gin gin) (gin-update gin gout-body))
-       (new-fundef (make-fundef :extension fundef.extension
-                                :spec new-spec
-                                :declor new-declor
-                                :asm? fundef.asm?
-                                :attribs fundef.attribs
-                                :decls new-decls
-                                :body new-body
-                                :info fundef.info))
-       (gout-no-thm (change-gout (gout-no-thm gin)
-                                 :vartys vartys-with-fun))
-       ((unless gout-body.thm-name) (mv new-fundef gout-no-thm))
-       ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
-       ((declor declor) fundef.declor)
-       ((when (consp declor.pointers)) (mv new-fundef gout-no-thm))
-       ((mv okp params dirdeclor)
-        (dirdeclor-case
-         declor.direct
-         :function-params (mv t declor.direct.params declor.direct.declor)
-         :function-names (mv (endp declor.direct.names)
-                             nil
-                             declor.direct.declor)
-         :otherwise (mv nil nil (irr-dirdeclor))))
-       ((unless okp) (mv new-fundef gout-no-thm))
-       ((unless (dirdeclor-case dirdeclor :ident))
-        (raise "Internal error: ~x0 is not just the function name."
-               dirdeclor)
-        (mv new-fundef (irr-gout)))
-       (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
-       ((unless (stringp fun))
-        (raise "Internal error: non-string identifier ~x0." fun)
-        (mv new-fundef (irr-gout)))
-       ((mv erp ldm-params) (ldm-param-declon-list params))
-       ((when erp) (mv new-fundef gout-no-thm))
-       (types (fundef-types fundef))
-       ((mv okp args parargs arg-types arg-types-compst param-vartys)
-        (gen-from-params ldm-params gin))
-       ((unless okp) (mv new-fundef gout-no-thm))
-       ((unless (equal param-vartys vartys)) (mv new-fundef gout-no-thm))
-       ((mv init-scope-thm-event init-scope-thm-name thm-index)
-        (gen-init-scope-thm ldm-params
-                            args
-                            parargs
-                            arg-types
-                            gin.const-new
-                            gin.thm-index))
-       (events (cons init-scope-thm-event gout-body.events))
-       ((mv param-thm-events param-thm-names thm-index)
-        (gen-param-thms arg-types-compst
-                        arg-types
-                        ldm-params
-                        args
-                        init-scope-thm-name
-                        gin.const-new
-                        thm-index))
-       (events (append (rev param-thm-events) events))
-       ((mv thm-name thm-index) (gen-thm-name gin.const-new thm-index))
-       (formula
-        `(b* ((old ',(fundef-fix fundef))
-              (new ',new-fundef)
-              (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-              ((mv old-result old-compst)
-               (c::exec-fun fun (list ,@args) compst old-fenv limit))
-              ((mv new-result new-compst)
-               (c::exec-fun fun (list ,@args) compst new-fenv limit)))
-           (implies (and ,@arg-types
-                         (equal (c::fun-env-lookup fun old-fenv)
-                                (c::fun-info-from-fundef
-                                 (mv-nth 1 (ldm-fundef old))))
-                         (equal (c::fun-env-lookup fun new-fenv)
-                                (c::fun-info-from-fundef
-                                 (mv-nth 1 (ldm-fundef new))))
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
-                         (equal old-compst new-compst)
-                         (set::in (c::type-of-value-option old-result)
-                                  (mv-nth 1 (ldm-type-set ',types)))))))
-       (hints
-        `(("Goal"
-           :expand ((c::exec-fun
-                     ',(c::ident fun) (list ,@args) compst old-fenv limit)
-                    (c::exec-fun
-                     ',(c::ident fun) (list ,@args) compst new-fenv limit))
-           :use (,init-scope-thm-name
-                 ,@(simpadd0-fundef-loop param-thm-names fun)
-                 (:instance ,gout-body.thm-name
-                            (compst
-                             (c::push-frame
-                              (c::frame (mv-nth 1 (ldm-ident
-                                                   (ident ,fun)))
-                                        (list
-                                         (c::init-scope
-                                          ',ldm-params
-                                          (list ,@args))))
-                              compst))
-                            (limit (1- limit))))
-           :in-theory '((:e c::fun-info->body$inline)
-                        (:e c::fun-info->params$inline)
-                        (:e c::fun-info->result$inline)
-                        (:e c::fun-info-from-fundef)
-                        (:e ident)
-                        (:e ldm-block-item-list)
-                        (:e ldm-fundef)
-                        (:e ldm-ident)
-                        (:e ldm-type)
-                        (:e ldm-type-set)
-                        (:e ldm-block-item-list)
-                        (:e c::tyname-to-type)
-                        (:e c::block-item-list-nocallsp)
-                        (:e set::in)
-                        c::errorp-of-error
-                        c::compustate-frames-number-of-push-frame
-                        (:t c::compustate-frames-number)))))
-       (thm-event `(defrule ,thm-name
-                     ,formula
-                     :rule-classes nil
-                     :hints ,hints)))
-    (mv new-fundef
-        (make-gout :events (cons thm-event events)
-                   :thm-index thm-index
-                   :thm-name thm-name
-                   :vartys vartys-with-fun)))
+       ((gin gin) (gin-update gin gout-body)))
+    (xeq-fundef fundef.extension
+                fundef.spec
+                new-spec
+                fundef.declor
+                new-declor
+                fundef.asm?
+                fundef.attribs
+                fundef.decls
+                new-decls
+                fundef.body
+                new-body
+                gout-body.thm-name
+                vartys-with-fun
+                fundef.info
+                gin))
   :hooks (:fix)
-
-  :prepwork
-  ((local (in-theory (disable (:e tau-system)))) ; for speed
-   (define simpadd0-fundef-loop ((thms symbol-listp) (fun stringp))
-     :returns (lemma-instances true-listp)
-     :parents nil
-     (b* (((when (endp thms)) nil)
-          (thm (car thms))
-          (lemma-instance
-           `(:instance ,thm
-                       (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-                       (compst0 compst)))
-          (more-lemma-instances
-           (simpadd0-fundef-loop (cdr thms) fun)))
-       (cons lemma-instance more-lemma-instances))))
 
   ///
 
