@@ -17,4 +17,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defmake-self code-ensemble
-  :parents (abstract-syntax))
+  :parents (abstract-syntax)
+  :short (xdoc::topstring
+          (xdoc::seetopic "fty::defmake-self" "Make-self functions")
+          " for "
+          (xdoc::seetopic "code-ensemble" "code ensembles")
+          " and all the AST types."))
