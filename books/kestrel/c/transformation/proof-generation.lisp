@@ -1555,3 +1555,222 @@
     (expr-aidentp expr gcc)
     :hyp (and (tyname-aidentp type-new gcc)
               (expr-aidentp arg-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define xeq-expr-binary ((op binopp)
+                         (arg1 exprp)
+                         (arg1-new exprp)
+                         (arg1-thm-name symbolp)
+                         (arg2 exprp)
+                         (arg2-new exprp)
+                         (arg2-thm-name symbolp)
+                         (info expr-binary-infop)
+                         (gin ginp))
+  :guard (and (expr-unambp arg1)
+              (expr-annop arg1)
+              (expr-unambp arg1-new)
+              (expr-annop arg1-new)
+              (expr-unambp arg2)
+              (expr-annop arg2)
+              (expr-unambp arg2-new)
+              (expr-annop arg2-new))
+  :returns (mv (expr exprp) (gout goutp))
+  :short "Transform a binary expression by just lifting."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we just lift the equalitites of the sub-expressions
+     to an equality of the binary expression.
+     In @(tsee simpadd0-expr-binary),
+     the simplification of @('E + 0') to @('E'), if applicable,
+     is carried out, and composed with the lifting done here.")
+   (xdoc::p
+    "We generate a theorem only if
+     theorems were generated for both argument expressions,
+     and the argument expressions are pure
+     (the latter check excludes cases in which an assignment expression,
+     for which we may have generated a theorem,
+     is combined into a larger expression,
+     which our dynamic semantics does not handle currently).
+     We generate a theorem for pure strict and non-strict operators.
+     We generate a theorem for simple assignment expressions
+     whose left side is a variable of integer type
+     and whose right side is a pure expression of the same integer type."))
+  (b* (((gin gin) gin)
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
+       (expr-new
+        (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new :info info))
+       (gout-no-thm (gout-no-thm gin))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name
+                     (expr-purep arg1)
+                     (expr-purep arg2)))
+        (mv expr-new gout-no-thm))
+       (cop (ldm-binop op)) ; ERP must be NIL
+       ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+       ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+       ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
+       ((mv & new-arg2) (ldm-expr arg2-new))) ; ERP must be NIL
+    (cond
+     ((member-eq (binop-kind op)
+                 '(:mul :div :rem :add :sub :shl :shr
+                   :lt :gt :le :ge :eq :ne
+                   :bitand :bitxor :bitior))
+      (b* ((hints `(("Goal"
+                     :in-theory '((:e c::binop-kind)
+                                  (:e c::binop-purep)
+                                  (:e c::binop-strictp)
+                                  (:e c::expr-binary)
+                                  (:e c::type-nonchar-integerp)
+                                  (:e c::promote-type)
+                                  (:e c::uaconvert-types)
+                                  (:e c::type-sint)
+                                  (:e member-equal))
+                     :use (,arg1-thm-name
+                           ,arg2-thm-name
+                           (:instance
+                            expr-binary-pure-strict-congruence
+                            (op ',cop)
+                            (old-arg1 ',old-arg1)
+                            (old-arg2 ',old-arg2)
+                            (new-arg1 ',new-arg1)
+                            (new-arg2 ',new-arg2))
+                           (:instance
+                            expr-binary-pure-strict-errors
+                            (op ',cop)
+                            (arg1 ',old-arg1)
+                            (arg2 ',old-arg2))))))
+           ((mv thm-event thm-name thm-index)
+            (gen-expr-pure-thm expr
+                               expr-new
+                               gin.vartys
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
+        (mv expr-new
+            (make-gout :events (cons thm-event gin.events)
+                       :thm-index thm-index
+                       :thm-name thm-name
+                       :vartys gin.vartys))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (b* ((hints
+            `(("Goal"
+               :in-theory '((:e c::expr-binary)
+                            (:e c::binop-logand)
+                            (:e c::binop-logor)
+                            (:e c::type-sint)
+                            (:e c::type-nonchar-integerp))
+               :use
+               (,arg1-thm-name
+                ,arg2-thm-name
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand 'expr-binary-logand-first-congruence)
+                    (:logor 'expr-binary-logor-first-congruence))
+                 (old-arg1 ',old-arg1)
+                 (old-arg2 ',old-arg2)
+                 (new-arg1 ',new-arg1)
+                 (new-arg2 ',new-arg2))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand 'expr-binary-logand-second-congruence)
+                    (:logor 'expr-binary-logor-second-congruence))
+                 (old-arg1 ',old-arg1)
+                 (old-arg2 ',old-arg2)
+                 (new-arg1 ',new-arg1)
+                 (new-arg2 ',new-arg2))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand 'expr-binary-logand-first-errors)
+                    (:logor 'expr-binary-logor-first-errors))
+                 (arg1 ',old-arg1)
+                 (arg2 ',old-arg2))
+                (:instance
+                 ,(case (binop-kind op)
+                    (:logand 'expr-binary-logand-second-errors)
+                    (:logor 'expr-binary-logor-second-errors))
+                 (arg1 ',old-arg1)
+                 (arg2 ',old-arg2))))))
+           ((mv thm-event thm-name thm-index)
+            (gen-expr-pure-thm expr
+                               expr-new
+                               gin.vartys
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
+        (mv expr-new
+            (make-gout :events (cons thm-event gin.events)
+                       :thm-index thm-index
+                       :thm-name thm-name
+                       :vartys gin.vartys))))
+     ((eq (binop-kind op) :asg)
+      (b* (((unless (and (expr-case arg1 :ident)
+                         (equal (expr-type arg1)
+                                (expr-type arg2))
+                         (type-integerp (expr-type arg1))))
+            (mv expr-new gout-no-thm))
+           ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
+           (hints
+            `(("Goal"
+               :in-theory
+               '((:e c::expr-kind)
+                 (:e c::expr-ident)
+                 (:e c::expr-ident->get)
+                 (:e c::expr-binary->op)
+                 (:e c::expr-binary->arg1)
+                 (:e c::expr-binary->arg2)
+                 (:e c::expr-binary)
+                 (:e c::binop-kind)
+                 (:e c::binop-asg)
+                 (:e c::ident)
+                 (:e c::type-nonchar-integerp)
+                 (:e c::type-fix)
+                 c::not-errorp-when-compustate-has-var-with-type-p
+                 c::type-of-value-when-compustate-has-var-with-type-p
+                 c::valuep-of-read-object-of-objdesign-of-var
+                 c::not-errorp-when-valuep
+                 expr-compustate-vars)
+               :use (,arg1-thm-name
+                     ,arg2-thm-name
+                     (:instance
+                      expr-binary-asg-congruence
+                      (old-arg ',old-arg2)
+                      (new-arg ',new-arg2)
+                      (var ',cvar))
+                     (:instance
+                      expr-binary-asg-errors
+                      (var ',cvar)
+                      (expr ',old-arg2)
+                      (fenv old-fenv))))))
+           ((mv thm-event thm-name thm-index)
+            (gen-expr-asg-thm expr
+                              expr-new
+                              gin.vartys
+                              gin.const-new
+                              gin.thm-index
+                              hints)))
+        (mv expr-new
+            (make-gout :events (cons thm-event gin.events)
+                       :thm-index thm-index
+                       :thm-name thm-name
+                       :vartys gin.vartys))))
+     (t (mv expr-new gout-no-thm))))
+
+  ///
+
+  (defret expr-unambp-of-xeq-expr-binary
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1-new)
+              (expr-unambp arg2-new)))
+
+  (defret expr-annop-of-xeq-expr-binary
+    (expr-annop expr)
+    :hyp (and (expr-annop arg1-new)
+              (expr-annop arg2-new)
+              (expr-binary-infop info)))
+
+  (defret expr-aidentp-of-xeq-expr-binary
+    (expr-aidentp expr gcc)
+    :hyp (and (expr-aidentp arg1-new gcc)
+              (expr-aidentp arg2-new gcc))))
