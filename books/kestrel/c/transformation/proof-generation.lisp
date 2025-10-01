@@ -1142,7 +1142,7 @@
 
 (define xeq-expr-ident ((ident identp) (info var-infop) (gin ginp))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality transformation of identifier expressions (i.e. variables)."
+  :short "Equality transformation of an identifier expression (i.e. variable)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1210,7 +1210,7 @@
 (define xeq-expr-const ((const constp) (gin ginp))
   :guard (const-annop const)
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality transformation of constants."
+  :short "Equality transformation of a constant."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1313,7 +1313,7 @@
               (expr-unambp inner-new)
               (expr-annop inner-new))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality lifting transformation of parenthesized expressions."
+  :short "Equality lifting transformation of a parenthesized expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1375,7 +1375,7 @@
               (expr-unambp arg-new)
               (expr-annop arg-new))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality lifting transformation of unary expressions."
+  :short "Equality lifting transformation of a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1476,7 +1476,7 @@
               (expr-unambp arg-new)
               (expr-annop arg-new))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality lifting transformation of cast expressions."
+  :short "Equality lifting transformation of a cast expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1576,7 +1576,7 @@
               (expr-unambp arg2-new)
               (expr-annop arg2-new))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Equality lifting transformation of binary expressions."
+  :short "Equality lifting transformation of a binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1794,7 +1794,7 @@
               (expr-unambp else-new)
               (expr-annop else-new))
   :returns (mv (expr exprp) (gou goutp))
-  :short "Equality lifting transformation of conditional expressions."
+  :short "Equality lifting transformation of a conditional expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1907,7 +1907,7 @@
               (expr-annop expr-new))
   :returns (mv (initer initerp) (gout goutp))
   :short "Equality lifting transformation of
-          initializers consisting of single expressions."
+          an initializer consisting of a single expression."
   (b* (((gin gin) gin)
        (initer (initer-single expr))
        (initer-new (initer-single expr-new))
@@ -1973,7 +1973,7 @@
               (expr-option-annop expr?-new)
               (iff expr? expr?-new))
   :returns (mv (stmt stmtp) (gout goutp))
-  :short "Equality lifting transformation of expression statements."
+  :short "Equality lifting transformation of an expression statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2085,7 +2085,7 @@
               (expr-option-annop expr?-new)
               (iff expr? expr?-new))
   :returns (mv (stmt stmtp) (gout goutp))
-  :short "Equality lifting transformation of return statements."
+  :short "Equality lifting transformation of a return statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2191,7 +2191,7 @@
               (stmt-annop then-new))
   :returns (mv (stmt stmtp) (gout goutp))
   :short "Equality lifting transformation of
-          @('if') statements (without @('else'))."
+          an @('if') statement (without @('else'))."
   (b* (((gin gin) gin)
        (stmt (make-stmt-if :test test :then then))
        (stmt-new (make-stmt-if :test test-new :then then-new))
@@ -2298,7 +2298,7 @@
               (stmt-unambp else-new)
               (stmt-annop else-new))
   :returns (mv (stmt stmtp) (gout goutp))
-  :short "Equality lifting transformation of @('if')-@('else') statements."
+  :short "Equality lifting transformation of an @('if')-@('else') statement."
   (b* (((gin gin) gin)
        (stmt (make-stmt-ifelse :test test :then then :else else))
        (stmt-new
@@ -2415,7 +2415,7 @@
               (block-item-list-unambp items-new)
               (block-item-list-annop items-new))
   :returns (mv (stmt stmtp) (gout goutp))
-  :short "Equality lifting transformation of compound statements."
+  :short "Equality lifting transformation of a compound statement."
   (b* (((gin gin) gin)
        (stmt (stmt-compound items))
        (stmt-new (stmt-compound items-new))
@@ -2487,7 +2487,7 @@
               (stmt-unambp body-new)
               (stmt-annop body-new))
   :returns (mv (stmt stmtp) (gout goutp))
-  :short "Equality lifting transformation of @('while') loops."
+  :short "Equality lifting transformation of a @('while') loop."
   (b* (((gin gin) gin)
        (stmt (make-stmt-while :test test
                               :body body))
@@ -2598,7 +2598,7 @@
               (initdeclor-list-unambp init-new)
               (initdeclor-list-annop init-new))
   :returns (mv (decl declp) (gout goutp))
-  :short "Equality lifting transformation of non-static-assert declarations."
+  :short "Equality lifting transformation of a non-static-assert declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2742,7 +2742,7 @@
               (stmt-annop stmt-new))
   :returns (mv (item block-itemp) (gout goutp))
   :short "Equality lifting transformation of
-          block items that consist of statements."
+          a block items that consists of a statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2816,7 +2816,7 @@
               (decl-annop decl-new))
   :returns (mv (item block-itemp) (gout goutp))
   :short "Equality lifting transformation of
-          block items that consist of declarations."
+          a block item that consists of a declaration."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2883,7 +2883,7 @@
 
 (define xeq-block-item-list-empty ((gin ginp))
   :returns (gout goutp)
-  :short "Equality lifting transformation of empty lists of block items."
+  :short "Equality lifting transformation of the empty list of block items."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2927,7 +2927,7 @@
               (block-item-list-unambp items-new)
               (block-item-list-annop items-new))
   :returns (mv (item+items block-item-listp) (gout goutp))
-  :short "Equality lifting transformation of non-empty lists of block items."
+  :short "Equality lifting transformation of a non-empty list of block items."
   :long
   (xdoc::topstring
    (xdoc::p
