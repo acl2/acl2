@@ -17,7 +17,6 @@
 (include-book "../representation/shallow-deep-relation")
 (include-book "../atc/symbolic-execution-rules/top")
 
-;(include-book "std/lists/index-of" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 

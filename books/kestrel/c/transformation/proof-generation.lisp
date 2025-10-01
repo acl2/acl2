@@ -393,6 +393,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-expr-pure-thm ((old exprp)
+                            (new exprp)
+                            (expr-pure-thm symbolp)
+                            (vartys c::ident-type-mapp)
+                            (const-new symbolp)
+                            (thm-index posp))
+  :guard (and (expr-unambp old)
+              (expr-annop old)
+              (expr-unambp new)
+              (expr-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Lift a theorem for a pure expression
+          from @(tsee exec-expr-pure) to @(tsee exec-expr)."
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (expr-pure-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (expr-pure-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (equal (expr-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
+       (vars-pre (gen-var-assertions vartys 'compst))
+       ((unless (type-formalp type))
+        (raise "Internal error: expression ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (formula
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
+              ((mv old-result old-compst)
+               (c::exec-expr old-expr compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-expr new-expr compst new-fenv limit)))
+           (implies (and ,@vars-pre
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         (equal (c::type-of-value old-result) ',ctype)))))
+       (hints `(("Goal"
+                 :use (,expr-pure-thm
+                       (:instance exec-expr-when-exec-expr-pure-integer
+                                  (expr ',old-expr)
+                                  (fenv old-fenv))
+                       (:instance exec-expr-when-exec-expr-pure-integer
+                                  (expr ',new-expr)
+                                  (fenv new-fenv)))
+                 :in-theory '(c::exec-expr
+                              c::errorp-of-error
+                              (:e c::expr-kind)
+                              (:e c::expr-binary->op)
+                              (:e c::binop-kind)
+                              (:e c::type-nonchar-integerp)))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv gen-expr-pure-thm
+    :args ((old exprp) (new exprp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define gen-initer-single-thm ((old initerp)
                                (new initerp)
                                (vartys c::ident-type-mapp)
@@ -1979,9 +2057,9 @@
    (xdoc::p
     "We generate a theorem
      if there is no expression (i.e. the null statement),
-     or if there is an assignment expression
-     (which we recognize by checking that it is not pure)
-     for which a theorem was generated.
+     or if we have a theorem for a supported expression.
+     If the expression is pure, its theorem refers to @(tsee c::exec-expr-pure),
+     and so we lift that to a theorem that refers to @(tsee c::exec-expr).
      An expression statement does not change the variables in scope,
      so we use the variable-type map from the validation table in the AST
      for both before and after the statement, in the generated theorem."))
@@ -1996,9 +2074,20 @@
                expr? expr?-new)
         (mv stmt-new (irr-gout)))
        ((unless (or (not expr?)
-                    (and expr?-thm-name
-                         (not (expr-purep expr?)))))
+                    expr?-thm-name))
         (mv stmt-new (gout-no-thm gin)))
+       ((mv lifted-thm-name thm-index events)
+        (if (and expr?
+                 (expr-purep expr?))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm expr?
+                                      expr?-new
+                                      expr?-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
        (hints
@@ -2007,20 +2096,12 @@
                :in-theory '((:e c::stmt-kind)
                             (:e c::stmt-expr->get)
                             (:e c::stmt-expr)
-                            (:e c::expr-kind)
                             (:e set::insert)
-                            (:e c::expr-binary->op)
-                            (:e c::expr-binary->arg1)
-                            (:e c::expr-binary->arg2)
-                            (:e c::binop-kind)
-                            (:e c::binop-asg)
-                            (:e c::expr-binary)
-                            stmt-expr-compustate-vars
-                            c::exec-expr
-                            xeq-stmt-expr-arith-lemma
-                            c::errorp-of-error)
+                            expr-compustate-vars
+                            stmt-expr-compustate-vars)
                :use ((:instance
-                      ,expr?-thm-name
+                      ,(or lifted-thm-name
+                           expr?-thm-name)
                       (limit (1- limit)))
                      (:instance
                       stmt-expr-congruence
@@ -2043,20 +2124,16 @@
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      gin.thm-index
+                      thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
   ///
-
-  (defruled xeq-stmt-expr-arith-lemma
-    (equal (+ -1 -1 limit)
-           (+ -2 limit)))
 
   (defret stmt-unambp-of-xeq-stmt-expr
     (stmt-unambp stmt)
