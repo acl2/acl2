@@ -3750,7 +3750,7 @@
                    (diff (- len-tumap len-new-tumap)))
                 (if (= (the integer diff) 0)
                     nil
-                  (cw "Disambiguated ~x0/~x1 translation units."
+                  (cw "Disambiguated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
             nil)))
     (retok (transunit-ensemble new-tumap)))
@@ -3771,7 +3771,7 @@
           ((mv erp new-tunit) (dimb-transunit tunit gcc))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "~@0" erp)
+               (prog2$ (cw "~@0~%" erp)
                        (dimb-transunit-ensemble-loop (omap::tail tumap)
                                                      gcc
                                                      keep-going))

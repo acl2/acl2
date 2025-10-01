@@ -6696,7 +6696,7 @@
                    (diff (- len-map len-new-map)))
                 (if (= (the integer diff) 0)
                     nil
-                  (cw "Validated ~x0/~x1 translation units."
+                  (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-map len-map)))
             nil)))
     (retok (transunit-ensemble new-map)))
@@ -6719,7 +6719,7 @@
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "~@0" erp)
+               (prog2$ (cw "~@0~%" erp)
                        (valid-transunit-ensemble-loop (omap::tail map)
                                                       externals
                                                       next-uid
