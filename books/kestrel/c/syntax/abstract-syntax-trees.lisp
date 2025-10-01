@@ -159,7 +159,8 @@
      in addition, parsing code compliant to [C17]
      will result in specific forms of identifiers."))
   ((unwrap any))
-  :pred identp)
+  :pred identp
+  :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +229,8 @@
   (:upcase-l ())
   (:locase-ll ())
   (:upcase-ll ())
-  :pred lsuffixp)
+  :pred lsuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +243,8 @@
      This captures the two possible suffixes @('u') and @('U')."))
   (:locase-u ())
   (:upcase-u ())
-  :pred usuffixp)
+  :pred usuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +265,8 @@
         (length lsuffix)))
   (:lu ((length lsuffix)
         (unsigned usuffix)))
-  :pred isuffixp)
+  :pred isuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,7 +290,8 @@
      This captures the two possible prefixes @('0x') and @('0X')."))
   (:locase-0x ())
   (:upcase-0x ())
-  :pred hprefixp)
+  :pred hprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,7 +344,8 @@
          (value nat)))
   (:hex ((prefix hprefix)
          (digits hex-digit-char-list)))
-  :pred dec/oct/hex-constp)
+  :pred dec/oct/hex-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,7 +365,8 @@
   ((core dec/oct/hex-const)
    (suffix? isuffix-option)
    (info any))
-  :pred iconstp)
+  :pred iconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,7 +407,8 @@
   (:upcase-f64 ((x bool)))
   (:upcase-f128 ((x bool)))
   :pred fsuffixp
-  :xvar f)
+  :xvar f
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,7 +433,8 @@
      used in the exponents of floating constants."))
   (:plus ())
   (:minus ())
-  :pred signp)
+  :pred signp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -449,7 +458,8 @@
      in <i>exponent-part</i> in the grammar in [C17]."))
   (:locase-e ())
   (:upcase-e ())
-  :pred dec-expo-prefixp)
+  :pred dec-expo-prefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,7 +472,8 @@
      in <i>binary-exponent-part</i> in the grammar in [C17]."))
   (:locase-p ())
   (:upcase-p ())
-  :pred bin-expo-prefixp)
+  :pred bin-expo-prefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -478,7 +489,8 @@
   ((prefix dec-expo-prefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred dec-expop)
+  :pred dec-expop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +519,8 @@
   ((prefix bin-expo-prefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred bin-expop)
+  :pred bin-expop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,7 +542,8 @@
      and can be ruled out by predicates over this abstract syntax."))
   ((before dec-digit-char-list)
    (after dec-digit-char-list))
-  :pred dec-frac-constp)
+  :pred dec-frac-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -551,7 +565,8 @@
      and can be ruled out by predicates over this abstract syntax."))
   ((before hex-digit-char-list)
    (after hex-digit-char-list))
-  :pred hex-frac-constp)
+  :pred hex-frac-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -575,7 +590,8 @@
           (expo? dec-expo-option)))
   (:int ((significand dec-digit-char-list)
          (expo dec-expo)))
-  :pred dec-core-fconstp)
+  :pred dec-core-fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +612,8 @@
           (expo bin-expo)))
   (:int ((significand hex-digit-char-list)
          (expo bin-expop)))
-  :pred hex-core-fconstp)
+  :pred hex-core-fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,7 +631,8 @@
   (:hex ((prefix hprefix)
          (core hex-core-fconst)
          (suffix? fsuffix-option)))
-  :pred fconstp)
+  :pred fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -651,7 +669,8 @@
   (:t ())
   (:v ())
   (:percent ())
-  :pred simple-escapep)
+  :pred simple-escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,7 +689,8 @@
   (:three ((digit1 oct-digit-char)
            (digit2 oct-digit-char)
            (digit3 oct-digit-char)))
-  :pred oct-escapep)
+  :pred oct-escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,7 +704,8 @@
    (2nd hex-digit-char)
    (3rd hex-digit-char)
    (4th hex-digit-char))
-  :pred hex-quad-p)
+  :pred hex-quad-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,7 +721,8 @@
   (:locase-u ((quad hex-quad)))
   (:upcase-u ((quad1 hex-quad)
               (quad2 hex-quad)))
-  :pred univ-char-name-p)
+  :pred univ-char-name-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,7 +740,8 @@
   (:oct ((escape oct-escape)))
   (:hex ((escape hex-digit-char-list)))
   (:univ ((escape univ-char-name)))
-  :pred escapep)
+  :pred escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -736,7 +759,8 @@
      single quote, backslash, or new-line."))
   (:char ((unwrap nat)))
   (:escape ((unwrap escape)))
-  :pred c-char-p)
+  :pred c-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -765,7 +789,8 @@
   (:upcase-l ())
   (:locase-u ())
   (:upcase-u ())
-  :pred cprefixp)
+  :pred cprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,7 +813,8 @@
     "This corresponds to <i>character-constant</i> in the grammar in [C17]."))
   ((prefix? cprefix-option)
    (cchars c-char-list))
-  :pred cconstp)
+  :pred cconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -802,7 +828,8 @@
   (:float ((unwrap fconst)))
   (:enum ((unwrap ident)))
   (:char ((unwrap cconst)))
-  :pred constp)
+  :pred constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -831,7 +858,8 @@
      double quote, backslash, or new-line."))
   (:char ((unwrap nat)))
   (:escape ((unwrap escape)))
-  :pred s-char-p)
+  :pred s-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -860,7 +888,8 @@
   (:locase-u ())
   (:upcase-u ())
   (:upcase-l ())
-  :pred eprefixp)
+  :pred eprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -897,7 +926,8 @@
     "This corresponds to <i>string-literal</i> in the grammar in [C17]."))
   ((prefix? eprefix-option)
    (schars s-char-list))
-  :pred stringlitp)
+  :pred stringlitp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -929,7 +959,8 @@
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
   ((char nat))
-  :pred h-char-p)
+  :pred h-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,7 +994,8 @@
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
   ((char nat))
-  :pred q-char-p)
+  :pred q-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -990,7 +1022,8 @@
     "This corresponds to <i>header-name</i> in the grammar in [C17]."))
   (:angles ((chars h-char-list)))
   (:quotes ((chars q-char-list)))
-  :pred header-namep)
+  :pred header-namep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1036,7 +1069,8 @@
   (:sizeof ())
   (:real ()) ; GCC extension
   (:imag ()) ; GCC extension
-  :pred unopp)
+  :pred unopp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1111,7 +1145,8 @@
   (:asg-and ())
   (:asg-xor ())
   (:asg-ior ())
-  :pred binopp)
+  :pred binopp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1130,7 +1165,8 @@
      (see @(tsee expr))."))
   (:inc ())
   (:dec ())
-  :pred inc/dec-opp)
+  :pred inc/dec-opp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1163,7 +1199,8 @@
   (:none ())
   (:start ())
   (:both ())
-  :pred keyword-uscores-p)
+  :pred keyword-uscores-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1192,7 +1229,8 @@
   (:thread ((local bool)))
   (:auto ())
   (:register ())
-  :pred stor-specp)
+  :pred stor-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1241,7 +1279,8 @@
   (:atomic ())
   (:seg-fs ())
   (:seg-gs ())
-  :pred type-qualp)
+  :pred type-qualp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1260,7 +1299,8 @@
      to the @(':inline') case."))
   (:inline ((uscores keyword-uscores)))
   (:noreturn ())
-  :pred fun-specp)
+  :pred fun-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1296,7 +1336,8 @@
      This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
    (uscores keyword-uscores))
-  :pred asm-name-specp)
+  :pred asm-name-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1320,7 +1361,8 @@
   (:volatile ((uscores keyword-uscores)))
   (:inline ((uscores keyword-uscores)))
   (:goto ())
-  :pred asm-qualp)
+  :pred asm-qualp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1344,7 +1386,8 @@
    (xdoc::p
     "These are a GCC extension; see ABNF grammar."))
   ((unwrap stringlit-list))
-  :pred asm-clobberp)
+  :pred asm-clobberp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1356,7 +1399,7 @@
     "Assembler clobbers are defined in @(tsee asm-clobber)."))
   :elt-type asm-clobber
   :true-listp t
-  :elementp-of-nil nil
+  :elementp-of-nil t
   :pred asm-clobber-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1371,7 +1414,8 @@
      We use an ACL2 string to represent a keyword."))
   (:ident ((unwrap ident)))
   (:keyword ((unwrap string)))
-  :pred attrib-namep)
+  :pred attrib-namep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,6 +1822,7 @@
               (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -1823,6 +1868,7 @@
        with separate predicates that enforce that."))
     ((expr expr))
     :pred const-exprp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -1851,6 +1897,7 @@
             (expr expr)))
     (:default ((expr expr)))
     :pred genassocp
+    :layout :fulltree
     :base-case-override :default
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -1889,6 +1936,7 @@
     (:sub ((member member-designor)
            (index expr)))
     :pred member-designorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1992,6 +2040,7 @@
                     (uscores keyword-uscores-p)))
     (:auto-type ())
     :pred type-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2015,6 +2064,7 @@
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2059,6 +2109,7 @@
     (:alignas-ambig ((expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2088,6 +2139,7 @@
     (:stdcall ()) ; GCC extension
     (:declspec ((arg identp))) ; GCC extension
     :pred decl-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2116,6 +2168,7 @@
     (:type ((unwrap type-qual)))
     (:attrib ((unwrap attrib-spec)))
     :pred typequal/attribspec-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2169,6 +2222,7 @@
             (final-comma bool)))
     :pred initerp
     :base-case-override :single
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2204,6 +2258,7 @@
      (initer initer))
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :pred desiniterp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2239,6 +2294,7 @@
            (range? const-expr-option)))
     (:dot ((name ident)))
     :pred designorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2277,6 +2333,7 @@
     ((pointers typequal/attribspec-list-list)
      (direct dirdeclor))
     :pred declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2348,6 +2405,7 @@
     (:function-names ((declor dirdeclor)
                       (names ident-list)))
     :pred dirdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2371,6 +2429,7 @@
     ((pointers typequal/attribspec-list-list)
      (direct? dirabsdeclor-option))
     :pred absdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2419,6 +2478,7 @@
                 (params param-declon-list)
                 (ellipsis bool)))
     :pred dirabsdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2453,6 +2513,7 @@
      (declor param-declor)
      (attribs attrib-spec-list)) ; GCC extension
     :pred param-declonp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2498,6 +2559,7 @@
     (:none ())
     (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2516,6 +2578,7 @@
      (declor? absdeclor-option)
      (info any))
     :pred tynamep
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2543,6 +2606,7 @@
     ((name? ident-option)
      (members struct-declon-list))
     :pred struni-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2582,6 +2646,7 @@
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2620,6 +2685,7 @@
     ((declor? declor-option)
      (expr? const-expr-option))
     :pred struct-declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2656,6 +2722,7 @@
      (list enumer-list)
      (final-comma bool))
     :pred enum-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2670,6 +2737,7 @@
     ((name ident)
      (value const-expr-option))
     :pred enumerp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2707,6 +2775,7 @@
     ((test const-expr)
      (message stringlit-list))
     :pred statassertp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2753,6 +2822,7 @@
     (:name-param ((name attrib-name)
                   (param expr-list)))
     :pred attribp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2791,6 +2861,7 @@
     ((uscores bool)
      (attribs attrib-list))
     :pred attrib-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2832,6 +2903,7 @@
      (init? initer-option)
      (info any))
     :pred initdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2870,6 +2942,7 @@
     (:statassert ((unwrap statassert)))
     :pred declp
     :base-case-override :statassert
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2919,6 +2992,7 @@
                (range? const-expr-option)))
     (:default ())
     :pred labelp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2934,6 +3008,7 @@
      (constraint stringlit-list)
      (lvalue expr))
     :pred asm-outputp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2964,6 +3039,7 @@
      (constraint stringlit-list)
      (rvalue expr))
     :pred asm-inputp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -3017,6 +3093,7 @@
      (clobbers asm-clobber-list)
      (labels ident-list))
     :pred asm-stmtp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3088,6 +3165,7 @@
               (info any)))
     (:asm ((unwrap asm-stmt)))
     :pred stmtp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3109,6 +3187,7 @@
     (:ambig ((unwrap amb-decl/stmt)))
     :pred block-itemp
     :base-case-override :stmt
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -3174,6 +3253,7 @@
     ((expr expr)
      (tyname tyname))
     :pred amb-expr/tyname-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 5))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3205,6 +3285,7 @@
     ((declor declor)
      (absdeclor absdeclor))
     :pred amb-declor/absdeclor-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3243,6 +3324,7 @@
     ((decl decl)
      (stmt expr))
     :pred amb-decl/stmt-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3291,7 +3373,8 @@
   :short "Fixtype of expressions or type names."
   (:expr ((unwrap expr)))
   (:tyname ((unwrap tyname)))
-  :pred expr/tyname-p)
+  :pred expr/tyname-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3299,7 +3382,8 @@
   :short "Fixtype of declarators or abstract declarators."
   (:declor ((unwrap declor)))
   (:absdeclor ((unwrap absdeclor)))
-  :pred declor/absdeclor-p)
+  :pred declor/absdeclor-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3307,7 +3391,8 @@
   :short "Fixtype of declarations or (expression) statements."
   (:decl ((unwrap decl)))
   (:stmt ((unwrap expr)))
-  :pred decl/stmt-p)
+  :pred decl/stmt-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3326,7 +3411,8 @@
   (:expr ((unwrap expr)))
   (:tyname ((unwrap tyname)))
   (:ambig ((unwrap amb-expr/tyname)))
-  :pred amb?-expr/tyname-p)
+  :pred amb?-expr/tyname-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3347,7 +3433,8 @@
   (:declor ((unwrap declor)))
   (:absdeclor ((unwrap absdeclor)))
   (:ambig ((unwrap amb-declor/absdeclor)))
-  :pred amb?-declor/absdeclor-p)
+  :pred amb?-declor/absdeclor-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3365,7 +3452,8 @@
   (:decl ((unwrap decl)))
   (:stmt ((unwrap expr)))
   (:ambig ((unwrap amb-decl/stmt)))
-  :pred amb?-decl/stmt-p)
+  :pred amb?-decl/stmt-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3397,7 +3485,8 @@
    (decls decl-list)
    (body block-item-list)
    (info any))
-  :pred fundefp)
+  :pred fundefp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3429,7 +3518,8 @@
   (:decl ((unwrap decl)))
   (:empty ()) ; GCC extension
   (:asm ((unwrap asm-stmt))) ; GCC extension
-  :pred extdeclp)
+  :pred extdeclp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3459,7 +3549,8 @@
      We also add a slot with additional information, e.g. from validation."))
   ((decls extdecl-list)
    (info any))
-  :pred transunitp)
+  :pred transunitp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3505,4 +3596,5 @@
      with some elements of the ensembles
      that may be headers instead of source files."))
   ((unwrap filepath-transunit-map))
-  :pred transunit-ensemblep)
+  :pred transunit-ensemblep
+  :layout :fulltree)
