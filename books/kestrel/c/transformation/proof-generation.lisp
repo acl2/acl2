@@ -250,7 +250,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vartys-from-valid-table ((table c$::valid-tablep))
+(define vartys-from-valid-table ((table valid-tablep))
   :returns (vatys c::ident-type-mapp)
   :short "Generate, from a validation table,
           a map from identifiers to types."
@@ -265,11 +265,10 @@
      Given that later scopes may contain variables that shadow earlier scopes,
      we process the scopes in the validation table
      from oldest to newest, overriding map entries as applicable."))
-  (vartys-from-valid-scope-list (c$::valid-table->scopes table))
+  (vartys-from-valid-scope-list (valid-table->scopes table))
 
   :prepwork
-  ((define vartys-from-valid-scope-list ((scopes
-                                          c$::valid-scope-listp))
+  ((define vartys-from-valid-scope-list ((scopes valid-scope-listp))
      :returns (vartys c::ident-type-mapp :hyp :guard)
      :parents nil
      (cond ((endp scopes) nil)
@@ -279,22 +278,21 @@
      :verify-guards :after-returns
 
      :prepwork
-     ((define vartys-from-valid-scope ((scope c$::valid-scopep))
+     ((define vartys-from-valid-scope ((scope valid-scopep))
         :returns (vartys c::ident-type-mapp)
         :parents nil
-        (vartys-from-valid-ord-scope (c$::valid-scope->ord scope))
+        (vartys-from-valid-ord-scope (valid-scope->ord scope))
 
         :prepwork
-        ((define vartys-from-valid-ord-scope ((oscope
-                                               c$::valid-ord-scopep))
+        ((define vartys-from-valid-ord-scope ((oscope valid-ord-scopep))
            :returns (vartys c::ident-type-mapp :hyp :guard)
            :parents nil
            (b* (((when (endp oscope)) nil)
                 ((cons ident info) (car oscope))
                 (vartys (vartys-from-valid-ord-scope (cdr oscope)))
                 ((unless (ident-formalp ident)) vartys)
-                ((unless (c$::valid-ord-info-case info :objfun)) vartys)
-                (type (c$::valid-ord-info-objfun->type info))
+                ((unless (valid-ord-info-case info :objfun)) vartys)
+                (type (valid-ord-info-objfun->type info))
                 ((unless (type-formalp type)) vartys)
                 ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because of FORMALP
                 ((mv & ctype) (ldm-type type))) ; ERP is NIL because of FORMALP
@@ -3043,15 +3041,15 @@
                     (spec-new decl-spec-listp)
                     (declor declorp)
                     (declor-new declorp)
-                    (asm? c$::asm-name-spec-optionp)
-                    (attribs c$::attrib-spec-listp)
+                    (asm? asm-name-spec-optionp)
+                    (attribs attrib-spec-listp)
                     (decls decl-listp)
                     (decls-new decl-listp)
                     (body block-item-listp)
                     (body-new block-item-listp)
                     (body-thm-name symbolp)
                     (vartys-with-fun c::ident-type-mapp)
-                    (info c$::fundef-infop)
+                    (info fundef-infop)
                     (gin ginp))
   :guard (and (decl-spec-list-unambp spec)
               (decl-spec-list-annop spec)
@@ -3283,7 +3281,7 @@
               (declor-annop declor-new)
               (decl-list-annop decls-new)
               (block-item-list-annop body-new)
-              (c$::fundef-infop info)))
+              (fundef-infop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
     (fundef-aidentp fundef gcc)
@@ -3291,7 +3289,7 @@
               (decl-spec-list-aidentp spec-new gcc)
               (declor-unambp declor-new)
               (declor-aidentp declor-new gcc)
-              (c$::attrib-spec-list-aidentp attribs gcc)
+              (attrib-spec-list-aidentp attribs gcc)
               (decl-list-unambp decls-new)
               (decl-list-aidentp decls-new gcc)
               (block-item-list-unambp body-new)
