@@ -119,15 +119,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-expr-binary ((op binopp)
-                              (arg1 exprp)
-                              (arg1-new exprp)
-                              (arg1-thm-name symbolp)
-                              (arg2 exprp)
-                              (arg2-new exprp)
-                              (arg2-thm-name symbolp)
-                              (info expr-binary-infop)
-                              (gin ginp))
+(define simpadd0-expr-binary-lift ((op binopp)
+                                   (arg1 exprp)
+                                   (arg1-new exprp)
+                                   (arg1-thm-name symbolp)
+                                   (arg2 exprp)
+                                   (arg2-new exprp)
+                                   (arg2-thm-name symbolp)
+                                   (info expr-binary-infop)
+                                   (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
               (expr-unambp arg1-new)
@@ -137,19 +137,15 @@
               (expr-unambp arg2-new)
               (expr-annop arg2-new))
   :returns (mv (expr exprp) (gout goutp))
-  :short "Transform a binary expression."
+  :short "Transform a binary expression by just lifting."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The resulting expression is obtained by
-     combining the binary operator with
-     the possibly transformed argument expressions,
-     unless the binary operator is @('+')
-     and the possibly transformed left argument is an @('int') expression
-     and the possibly transformed right argument is
-     an @('int') octal 0 without leading zeros,
-     in which case the resulting expression is just that expression.
-     This is the core of this simple transformation.")
+    "Here we just lift the equalitites of the sub-expressions
+     to an equality of the binary expression.
+     In @(tsee simpadd0-expr-binary),
+     the simplification of @('E + 0') to @('E'), if applicable,
+     is carried out, and composed with the lifting done here.")
    (xdoc::p
     "We generate a theorem only if
      theorems were generated for both argument expressions,
@@ -164,13 +160,8 @@
      and whose right side is a pure expression of the same integer type."))
   (b* (((gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
-       (simpp (and (binop-case op :add)
-                   (type-case (expr-type arg1-new) :sint)
-                   (expr-zerop arg2-new)))
-       (expr-new (if simpp
-                     (expr-fix arg1-new)
-                   (make-expr-binary
-                    :op op :arg1 arg1-new :arg2 arg2-new :info info)))
+       (expr-new
+        (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (and arg1-thm-name
                      arg2-thm-name
@@ -188,13 +179,7 @@
                    :lt :gt :le :ge :eq :ne
                    :bitand :bitxor :bitior))
       (b* ((hints `(("Goal"
-                     :in-theory '((:e c::iconst-length-none)
-                                  (:e c::iconst-base-oct)
-                                  (:e c::iconst)
-                                  (:e c::const-int)
-                                  (:e c::expr-const)
-                                  (:e c::binop-kind)
-                                  (:e c::binop-add)
+                     :in-theory '((:e c::binop-kind)
                                   (:e c::binop-purep)
                                   (:e c::binop-strictp)
                                   (:e c::expr-binary)
@@ -216,11 +201,7 @@
                             expr-binary-pure-strict-errors
                             (op ',cop)
                             (arg1 ',old-arg1)
-                            (arg2 ',old-arg2))
-                           ,@(and simpp
-                                  `((:instance
-                                     simpadd0-expr-binary-simp-congruence
-                                     (expr ',new-arg1))))))))
+                            (arg2 ',old-arg2))))))
            ((mv thm-event thm-name thm-index)
             (gen-expr-pure-thm expr
                                expr-new
@@ -339,6 +320,121 @@
 
   ///
 
+  (defret expr-unambp-of-simpadd0-expr-binary-lift
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1-new)
+              (expr-unambp arg2-new)))
+
+  (defret expr-annop-of-simpadd0-expr-binary-lift
+    (expr-annop expr)
+    :hyp (and (expr-annop arg1-new)
+              (expr-annop arg2-new)
+              (expr-binary-infop info)))
+
+  (defret expr-aidentp-of-simpadd0-expr-binary-lift
+    (expr-aidentp expr gcc)
+    :hyp (and (expr-aidentp arg1-new gcc)
+              (expr-aidentp arg2-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-expr-binary ((op binopp)
+                              (arg1 exprp)
+                              (arg1-new exprp)
+                              (arg1-thm-name symbolp)
+                              (arg2 exprp)
+                              (arg2-new exprp)
+                              (arg2-thm-name symbolp)
+                              (info expr-binary-infop)
+                              (gin ginp))
+  :guard (and (expr-unambp arg1)
+              (expr-annop arg1)
+              (expr-unambp arg1-new)
+              (expr-annop arg1-new)
+              (expr-unambp arg2)
+              (expr-annop arg2)
+              (expr-unambp arg2-new)
+              (expr-annop arg2-new))
+  :returns (mv (expr exprp) (gout goutp))
+  :short "Transform a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "First, we lift the equalities of the sub-expressions
+     to an equality for the binary expression.
+     Then we check whether the resulting binary expression
+     has the form @('E + 0'),
+     with @('E') of type @('int')
+     and @('0') the @('int') octal 0 without leading zeros,
+     in which case the resulting expression is just @('E');
+     the theorem that lifts equality is used to prove
+     the equality of the original expression to @('E').")
+   (xdoc::p
+    "The proof for the original-to-simplified theorem makes use of
+     the supporting theorem @('simpadd0-expr+zero-to-expr'),
+     which says that @('E + 0'), with @('E') of type @('int'),
+     is semantically equivalent to @('E').
+     The hypothesis that @('E') has type @('int')
+     is discharged via the theorem @('arg1-thm-name');
+     we only need the type part of it in the proof;
+     to discharge that theorem's hypothesis that @('E') does not error,
+     we also need an instance of @('expr-binary-pure-strict-errors')
+     (of which we only really need the part for the first argument).
+     We also need the theorem for the lifted equality,
+     i.e. @('gout.thm-name').
+     We enable the executable counterparts of various functions
+     so that things match up in the proof;
+     in particular, we need to reduce the @('(c::expr-const ...)')
+     in the theorem @('simpadd0-expr+zero-to-expr') to a quoted constant."))
+  (b* (((mv expr-new (gout gout))
+        (simpadd0-expr-binary-lift op
+                                   arg1 arg1-new arg1-thm-name
+                                   arg2 arg2-new arg2-thm-name
+                                   info
+                                   gin))
+       (simpp (and (binop-case op :add)
+                   (type-case (expr-type arg1-new) :sint)
+                   (expr-zerop arg2-new)))
+       ((when (not simpp)) (mv expr-new gout))
+       (expr-new-simp (expr-fix arg1-new))
+       ((unless gout.thm-name) (mv expr-new-simp gout))
+       ((gin gin) (gin-update gin gout))
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
+       ((mv & cexpr-new-simp) (ldm-expr expr-new-simp)) ; ERP must be NIL
+       ((mv & czero) (ldm-expr arg2-new))
+       (hints `(("Goal"
+                 :in-theory '((:e c::iconst-length-none)
+                              (:e c::iconst-base-oct)
+                              (:e c::iconst)
+                              (:e c::const-int)
+                              (:e c::expr-const)
+                              (:e c::binop-add)
+                              (:e c::expr-binary)
+                              (:e c::type-sint)
+                              (:e c::binop-strictp))
+                 :use (,gout.thm-name
+                       (:instance simpadd0-expr+zero-to-expr
+                                  (expr ',cexpr-new-simp))
+                       ,arg1-thm-name
+                       (:instance expr-binary-pure-strict-errors
+                                  (op ',(c::binop-add))
+                                  (arg1 ',cexpr-new-simp)
+                                  (arg2 ',czero))))))
+       ((mv thm-event thm-name thm-index)
+        (gen-expr-pure-thm expr
+                           expr-new-simp
+                           gin.vartys
+                           gin.const-new
+                           gin.thm-index
+                           hints)))
+    (mv expr-new-simp
+        (make-gout :events (cons thm-event gin.events)
+                   :thm-index thm-index
+                   :thm-name thm-name
+                   :vartys gin.vartys)))
+
+  ///
+
   (defret expr-unambp-of-simpadd0-expr-binary
     (expr-unambp expr)
     :hyp (and (expr-unambp arg1-new)
@@ -374,7 +470,7 @@
              fix
              ifix))
 
-  (defruled simpadd0-expr-binary-simp-congruence
+  (defruled simpadd0-expr+zero-to-expr
     (b* ((zero (c::expr-const
                 (c::const-int
                  (c::make-iconst
