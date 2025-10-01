@@ -11585,7 +11585,7 @@
                    (diff (- len-filemap len-tunitmap)))
                 (if (= (the integer diff) 0)
                     nil
-                  (cw "Parsed ~x0/~x1 files." len-tunitmap len-filemap)))
+                  (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
     (retok (transunit-ensemble tunitmap)))
 
@@ -11601,7 +11601,7 @@
            (parse-file filepath (filedata->unwrap filedata) gcc))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "~@0" erp)
+               (prog2$ (cw "~@0~%" erp)
                        (parse-fileset-loop (omap::tail filemap) gcc keep-going))
              (reterr erp)))
           ((erp tunitmap)
