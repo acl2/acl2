@@ -729,6 +729,7 @@
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
+
   ///
 
   (defret expr-value-resultp-of-exec-expr-pure-forward
@@ -737,7 +738,19 @@
                     :trigger-terms ((exec-expr-pure e compst)))))
 
   (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable binop-strictp)))))
+    :hints (("Goal" :in-theory (enable binop-strictp))))
+
+  (defruled not-call-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (equal (expr-kind expr) :call)))
+    :induct t)
+
+  (defruled not-asg-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (and (equal (expr-kind expr) :binary)
+                       (equal (binop-kind (expr-binary->op expr)) :asg))))
+    :induct t
+    :enable binop-purep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
