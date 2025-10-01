@@ -729,6 +729,7 @@
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
+
   ///
 
   (defret expr-value-resultp-of-exec-expr-pure-forward
@@ -737,7 +738,19 @@
                     :trigger-terms ((exec-expr-pure e compst)))))
 
   (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable binop-strictp)))))
+    :hints (("Goal" :in-theory (enable binop-strictp))))
+
+  (defruled not-call-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (equal (expr-kind expr) :call)))
+    :induct t)
+
+  (defruled not-asg-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (and (equal (expr-kind expr) :binary)
+                       (equal (binop-kind (expr-binary->op expr)) :asg))))
+    :induct t
+    :enable binop-purep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -944,28 +957,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr-call ((fun identp)
-                          (args expr-listp)
-                          (compst compustatep)
-                          (fenv fun-envp)
-                          (limit natp))
-    :returns (mv (result value-option-resultp)
-                 (new-compst compustatep))
-    :parents (dynamic-semantics exec)
-    :short "Execution a function call."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We return an optional value,
-       which is @('nil') for a function that returns @('void')."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (vals (exec-expr-pure-list args compst))
-         ((when (errorp vals)) (mv vals (compustate-fix compst))))
-      (exec-fun fun vals compst fenv (1- limit)))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (define exec-expr ((e exprp)
                      (compst compustatep)
                      (fenv fun-envp)
@@ -1036,11 +1027,11 @@
        this ACL2 function is always used where such a conversion is needed."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          ((when (expr-case e :call))
-          (exec-expr-call (expr-call->fun e)
-                          (expr-call->args e)
-                          compst
-                          fenv
-                          (1- limit)))
+          (b* ((fun (expr-call->fun e))
+               (args (expr-call->args e))
+               (vals (exec-expr-pure-list args compst))
+               ((when (errorp vals)) (mv vals (compustate-fix compst))))
+            (exec-fun fun vals compst fenv (1- limit))))
          ((when (and (expr-case e :binary)
                      (binop-case (expr-binary->op e) :asg)))
           (b* ((left (expr-binary->arg1 e))
@@ -1341,10 +1332,6 @@
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-fun)
-    (defret compustate-frames-number-of-exec-expr-call
-      (equal (compustate-frames-number new-compst)
-             (compustate-frames-number compst))
-      :fn exec-expr-call)
     (defret compustate-frames-number-of-exec-expr
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1383,7 +1370,6 @@
     :hints (("Goal"
              :in-theory (enable len)
              :expand ((exec-fun fun args compst fenv limit)
-                      (exec-expr-call fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
@@ -1399,10 +1385,6 @@
              (compustate-scopes-numbers compst))
       :rule-classes nil
       :fn exec-fun)
-    (defret compustate-scopes-numbers-of-exec-expr-call
-      (equal (compustate-scopes-numbers new-compst)
-             (compustate-scopes-numbers compst))
-      :fn exec-expr-call)
     (defret compustate-scopes-numbers-of-exec-expr
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1441,7 +1423,6 @@
     :hints (("Goal"
              :in-theory (enable len)
              :expand ((exec-fun fun args compst fenv limit)
-                      (exec-expr-call fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
