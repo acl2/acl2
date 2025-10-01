@@ -1987,6 +1987,22 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((type-spec-list-float16-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128x-complex-p tyspecs)
+      (retok (type-unknown)))
      ((or (type-spec-list-int128-p tyspecs)
           (type-spec-list-signed-int128-p tyspecs))
       (retok (type-unknown)))
@@ -3031,62 +3047,14 @@
                       ext-tyspecs
                       nil
                       same-table)
-       :float16 (if (endp tyspecs)
-                    (retok (type-spec-float16)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float16x (if (endp tyspecs)
-                     (retok (type-spec-float16x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float32 (if (endp tyspecs)
-                    (retok (type-spec-float32)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float32x (if (endp tyspecs)
-                     (retok (type-spec-float32x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float64 (if (endp tyspecs)
-                    (retok (type-spec-float64)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float64x (if (endp tyspecs)
-                     (retok (type-spec-float64x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128 (if (endp tyspecs)
-                     (retok (type-spec-float128)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128x (if (endp tyspecs)
-                      (retok (type-spec-float128x)
-                             (type-unknown)
-                             nil
-                             nil
-                             same-table)
-                    (reterr msg-bad-preceding))
+       :float16 (retok (type-spec-float16) nil ext-tyspecs nil same-table)
+       :float16x (retok (type-spec-float16x) nil ext-tyspecs nil same-table)
+       :float32 (retok (type-spec-float32) nil ext-tyspecs nil same-table)
+       :float32x (retok (type-spec-float32x) nil ext-tyspecs nil same-table)
+       :float64 (retok (type-spec-float64) nil ext-tyspecs nil same-table)
+       :float64x (retok (type-spec-float64x) nil ext-tyspecs nil same-table)
+       :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-table)
+       :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-table)
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
                                    (type-unknown)

@@ -456,6 +456,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-spec-list-float16-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float16 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float16)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float16x-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float16x _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float16x)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float32-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float32 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float32)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float32x-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float32x _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float32x)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float64-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float64 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float64)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float64x-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float64x _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float64x)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float128-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float128 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float128)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float128x-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('_Float128x _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-float128x)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-spec-list-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('__int128') or
