@@ -1079,3 +1079,8 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
  "_Complex _Float128 x;
 "
  :gcc t)
+
+(test-valid
+ "_Float128 x;
+"
+ :gcc t)

@@ -422,6 +422,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-spec-list-float16-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float16')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float16)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float16x-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float16x')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float16x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;16
+
+(define type-spec-list-float32-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float32')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float32)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float32x-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float32x')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float32x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float64-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float64')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float64)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float64x-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float64x')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float64x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float128-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float128')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float128)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-float128x-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('_Float128x')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-float128x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-spec-list-float-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
