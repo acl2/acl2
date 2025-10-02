@@ -6031,6 +6031,7 @@
                                     nil ; interpreted-function-alist
                                     (g :monitor options)
                                     (g :call-stp options)
+                                    *no-warn-ground-functions-jvm*
                                     print
                                     state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
@@ -6560,6 +6561,7 @@
                                    nil ; interpreted-function-alist
                                    (g :monitor options)
                                    (g :call-stp options)
+                                   *no-warn-ground-functions-jvm*
                                    print
                                    state))
        ((when erp) (mv erp nil state))

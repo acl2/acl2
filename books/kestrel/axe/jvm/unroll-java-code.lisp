@@ -250,15 +250,12 @@
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
                               (natp total-steps))
-;                  :mode :program ;; because we call untranslate
                   :measure (nfix steps-left)
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (true-listp-when-symbol-listp-rewrite-unlimited)
                                                         (myquotep ;looped
                                                          quotep
-                                                         min
-                                                         ))))
-                  )
+                                                         min)))))
            (irrelevant print-interval) ; todo
            )
   (if (or (zp steps-left)
@@ -298,7 +295,7 @@
                                                    (print-level-at-least-verbosep print) ; count-hits ; todo: pass in separately
                                                    (reduce-print-level print)
                                                    rules-to-monitor
-                                                   nil ; no-warn-ground-functions
+                                                   *no-warn-ground-functions-jvm*
                                                    '(program-at) ; fns-to-elide
                                                    ))
          ((when erp) (mv erp dag state))
@@ -308,7 +305,7 @@
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
-          (maybe-prune-dag-approximately prune-approx dag assumptions print
+          (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
                                          60000 ; todo: pass in
                                          state))
          ((when erp) (mv erp dag state))
@@ -324,6 +321,7 @@
                                                                   nil ; todo?
                                                                   nil
                                                                   t ; call-stp
+                                                                  *no-warn-ground-functions-jvm*
                                                                   print
                                                                   state))
          ((when erp) (mv erp dag state))
@@ -744,6 +742,7 @@
                                    nil ; interpreted-function-alist
                                    monitored-rules
                                    call-stp
+                                   *no-warn-ground-functions-jvm*
                                    print
                                    state))
        ((when erp) (mv erp nil nil nil nil nil state))

@@ -414,6 +414,7 @@
                     nil                ;no interpreted-fns (todo)
                     nil                ;no point in monitoring anything
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
@@ -460,6 +461,7 @@
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state))
