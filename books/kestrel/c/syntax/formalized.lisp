@@ -625,8 +625,7 @@
     (stmt-case
      stmt
      :labeled nil
-     :compound (and (not stmt.labels)
-                    (block-item-list-formalp stmt.items))
+     :compound (block-formalp stmt.block)
      :expr (or (not stmt.expr?)
                (expr-pure-formalp stmt.expr?)
                (expr-call-formalp stmt.expr?)
@@ -681,6 +680,16 @@
         (and (block-item-formalp (car items))
              (block-item-list-formalp (cdr items))))
     :measure (block-item-list-count items))
+
+  (define block-formalp ((block blockp))
+    :guard (block-unambp block)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset stmts/blocks-formalp)
+    :short "Check if a block has formal dynamic semantics."
+    (b* (((block block) block))
+      (and (not block.labels)
+           (block-item-list-formalp block.items)))
+    :measure (block-count block))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
@@ -1070,7 +1079,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.decls)
-         (block-item-list-formalp fundef.body)))
+         (block-formalp fundef.body)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

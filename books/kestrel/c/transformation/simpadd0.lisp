@@ -416,10 +416,9 @@
                               :next new-next)
              (gout-no-thm gin)))
        :stmt
-       (b* (((mv new-items (gout gout-items))
-             (simpadd0-block-item-list expr.items gin))
-            (gin (gin-update gin gout-items)))
-         (mv (expr-stmt new-items)
+       (b* (((mv new-block (gout gout-block)) (simpadd0-block expr.block gin))
+            (gin (gin-update gin gout-block)))
+         (mv (expr-stmt new-block)
              (gout-no-thm gin)))
        :tycompat
        (b* (((mv new-type1 (gout gout-type1))
@@ -1727,13 +1726,12 @@
                   (mv (make-stmt-labeled :label new-label
                                          :stmt new-stmt)
                       (gout-no-thm gin)))
-       :compound (b* (((mv new-items (gout gout-items))
-                       (simpadd0-block-item-list stmt.items gin))
-                      (gin (gin-update gin gout-items)))
-                   (xeq-stmt-compound stmt.labels
-                                      stmt.items
-                                      new-items
-                                      gout-items.thm-name
+       :compound (b* (((mv new-block (gout gout-block))
+                       (simpadd0-block stmt.block gin))
+                      (gin (gin-update gin gout-block)))
+                   (xeq-stmt-compound stmt.block
+                                      new-block
+                                      gout-block.thm-name
                                       gin))
        :expr (b* (((mv new-expr? (gout gout-expr?))
                    (simpadd0-expr-option stmt.expr? gin))
@@ -1921,6 +1919,26 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define simpadd0-block ((block blockp) (gin ginp))
+    :guard (and (block-unambp block)
+                (block-annop block))
+    :returns (mv (new-block blockp) (gout goutp))
+    :parents (simpadd0 simpadd0-exprs/decls/stmts)
+    :short "Transform a block."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since a block maps to the same thing as its list of block items,
+       in the abstract syntax of the language formalization,
+       we just use the @('gout') for the block items
+       as the @('gout') for the block."))
+    (b* (((block block) block)
+         ((mv items gout) (simpadd0-block-item-list block.items gin)))
+      (mv (make-block :labels block.labels :items items) gout))
+    :measure (block-count block))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done after the unambiguity proofs
@@ -1928,7 +1946,8 @@
   ///
 
   (local (in-theory (enable irr-absdeclor
-                            irr-dirabsdeclor)))
+                            irr-dirabsdeclor
+                            irr-block)))
 
   (fty::deffixequiv-mutual simpadd0-exprs/decls/stmts)
 
@@ -2079,6 +2098,9 @@
     (defret block-item-list-unambp-of-simpadd0-block-item-list
       (block-item-list-unambp new-items)
       :fn simpadd0-block-item-list)
+    (defret block-unambp-of-simpadd0-block
+      (block-unambp new-block)
+      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2126,6 +2148,7 @@
                                        simpadd0-stmt
                                        simpadd0-block-item
                                        simpadd0-block-item-list
+                                       simpadd0-block
                                        irr-expr
                                        irr-const-expr
                                        irr-align-spec
@@ -2378,6 +2401,11 @@
       :hyp (and (block-item-list-unambp items)
                 (block-item-list-annop items))
       :fn simpadd0-block-item-list)
+    (defret block-annop-of-simpadd0-block
+      (block-annop new-block)
+      :hyp (and (block-unambp block)
+                (block-annop block))
+      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2424,7 +2452,8 @@
                                        simpadd0-label
                                        simpadd0-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list))))
+                                       simpadd0-block-item-list
+                                       simpadd0-block))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2669,6 +2698,11 @@
       :hyp (and (block-item-list-unambp items)
                 (block-item-list-aidentp items gcc))
       :fn simpadd0-block-item-list)
+    (defret block-aidentp-of-simpadd0-block
+      (block-aidentp new-block gcc)
+      :hyp (and (block-unambp block)
+                (block-aidentp block gcc))
+      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2716,7 +2750,8 @@
                                        simpadd0-label
                                        simpadd0-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list))))
+                                       simpadd0-block-item-list
+                                       simpadd0-block))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2750,7 +2785,7 @@
      the validation table at the start of the body).
      The validation table at the start of the body
      is put into the @(tsee gin)
-     and passed to @(tsee simpadd0-block-item-list).")
+     and passed to @(tsee simpadd0-block).")
    (xdoc::p
     "We generate the folllowing theorems:")
    (xdoc::ul
@@ -2806,8 +2841,7 @@
        (vartys (vartys-from-valid-table
                 (fundef-info->table-body-start fundef.info)))
        ((mv new-body (gout gout-body))
-        (simpadd0-block-item-list fundef.body
-                                  (change-gin gin :vartys vartys)))
+        (simpadd0-block fundef.body (change-gin gin :vartys vartys)))
        ((gin gin) (gin-update gin gout-body)))
     (xeq-fundef fundef.extension
                 fundef.spec

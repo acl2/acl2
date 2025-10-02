@@ -1747,7 +1747,7 @@
       "As a GCC extension, we include statement expressions,
        i.e. expressions consisting of compound statements.
        The @(':stmt') case of this fixtype includes
-       the block items that comprise the compound statement.")
+       the block that is the compound statement.")
      (xdoc::p
       "As a GCC extension, we include calls of
        the built-in function @('__builtin_types_compatible_p').
@@ -1825,7 +1825,7 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 ident)))
-    (:stmt ((items block-item-list)))
+    (:stmt ((block block)))
     ;; GCC extensions:
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
@@ -3142,21 +3142,10 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
-      "As a GCC extension, we include assembler statements.")
-     (xdoc::p
-      "As a GCC extension, we include
-       lists of lists of identifiers at the beginning of blocks.
-       These represent sequences of label declarations:
-       the outer list captures the sequence of declarations
-       (@('nil') if there are no label declarations),
-       and each inner list captures the labels declared
-       in the corresponding label declaration;
-       currently we do not capture the restriction that
-       each inner list must be non-empty."))
+      "As a GCC extension, we include assembler statements."))
     (:labeled ((label label)
                (stmt stmt)))
-    (:compound ((labels ident-list-list)
-                (items block-item-list)))
+    (:compound ((block block)))
     (:expr ((expr? expr-option)
             (info any)))
     (:if ((test expr)
@@ -3230,6 +3219,33 @@
     :elementp-of-nil nil
     :pred block-item-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod block
+    :parents (abstract-syntax-trees exprs/decls/stmts)
+    :short "Fixtype of blocks."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Although the grammar does not explicitly define blocks,
+       using the nonterminal <i>compound-statement</i> instead,
+       the term `block' is used extensively in [C17].")
+     (xdoc::p
+      "As a GCC extension, we include
+       lists of lists of identifiers at the beginning of blocks.
+       These represent sequences of label declarations:
+       the outer list captures the sequence of declarations
+       (@('nil') if there are no label declarations),
+       and each inner list captures the labels declared
+       in the corresponding label declaration;
+       currently we do not capture the restriction that
+       each inner list must be non-empty."))
+    ((labels ident-list-list)
+     (items block-item-list))
+    :pred blockp
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3488,8 +3504,7 @@
    (xdoc::p
     "This corresponds to <i>function-definition</i> in the grammar in [C17].
      The grammar constrains the function body to be a compound statement;
-     in this fixtype we capture that restriction by using a list of block items,
-     which the compound statement consists of.")
+     in this fixtype we capture that restriction by using a block.")
    (xdoc::p
     "As a GCC extension,
      we include the possibility that
@@ -3507,7 +3522,7 @@
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
-   (body block-item-list)
+   (body block)
    (info any))
   :pred fundefp
   :layout :fulltree)

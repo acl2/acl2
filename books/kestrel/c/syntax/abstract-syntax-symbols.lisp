@@ -388,6 +388,7 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->block
     make-stmt-compound
     stmt-compound->items
     make-stmt-expr
@@ -410,6 +411,13 @@
     block-item-listp
     block-item-list-fix
     block-item-list-count
+
+    block
+    make-block
+    blockp
+    block-count
+    block->labels
+    block->items
 
     fundefp
     fundef
@@ -477,6 +485,7 @@
     irr-decl
     irr-stmt
     irr-block-item
+    irr-block
     irr-fundef
     irr-transunit-ensemble
     irr-code-ensemble
@@ -532,6 +541,7 @@
     stmt-unambp
     block-item-unambp
     block-item-list-unambp
+    block-unambp
     fundef-unambp
     extdecl-unambp
     extdecl-list-unambp
@@ -599,6 +609,7 @@
     stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
+    block-aidentp
     fundef-aidentp
     extdecl-aidentp
     extdecl-list-aidentp
@@ -635,6 +646,7 @@
     ldm-stmt
     ldm-block-item
     ldm-block-item-list
+    ldm-block
     ldm-param-declon-list
     ldm-fundef
     ldm-type
@@ -689,6 +701,7 @@
     stmt-types
     block-item-types
     block-item-list-types
+    block-types
     fundef-types
 
     valid-ord-info-case
@@ -754,6 +767,7 @@
     stmt-annop
     block-item-annop
     block-item-list-annop
+    block-annop
     fundef-annop
     extdecl-annop
     extdecl-list-annop

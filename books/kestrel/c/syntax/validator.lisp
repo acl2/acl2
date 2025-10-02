@@ -2611,12 +2611,10 @@
                        type
                        (set::union types1 types2)
                        table))
-       :stmt (b* ((table (valid-push-scope table))
-                  ((erp new-items types type? table)
-                   (valid-block-item-list expr.items table ienv))
-                  (table (valid-pop-scope table))
+       :stmt (b* (((erp new-block types type? table)
+                   (valid-block expr.block table ienv))
                   (type (or type? (type-void))))
-               (retok (expr-stmt new-items) type types table))
+               (retok (expr-stmt new-block) type types table))
        :tycompat (b* (((erp new-type1 & types1 table)
                        (valid-tyname expr.type1 table ienv))
                       ((erp new-type2 & types2 table)
@@ -5739,14 +5737,9 @@
                 type?
                 table))
        :compound
-       (b* ((table (valid-push-scope table))
-            ((erp new-items types type? table)
-             (valid-block-item-list stmt.items table ienv))
-            (table (valid-pop-scope table)))
-         (retok (make-stmt-compound :labels stmt.labels :items new-items)
-                types
-                type?
-                table))
+       (b* (((erp new-block types type? table)
+             (valid-block stmt.block table ienv)))
+         (retok (stmt-compound new-block) types type? table))
        :expr
        (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv)))
@@ -6001,6 +5994,39 @@
              last-expr-type?
              table))
     :measure (block-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-block ((block blockp) (table valid-tablep) (ienv ienvp))
+    :guard (block-unambp block)
+    :returns (mv (erp maybe-msgp)
+                 (new-block blockp)
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a block."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the same kind of type results
+       as @(tsee valid-stmt) (see that function's documentation),
+       with the modification that
+       the @('last-expr-type?') result is a type exactly when
+       the list of block items is not empty
+       and the validation of the last block item
+       returns a type as that result."))
+    (b* (((reterr) (irr-block) nil nil (irr-valid-table))
+         ((block block) block)
+         (table (valid-push-scope table))
+         ((erp new-items types last-expr-type? table)
+          (valid-block-item-list block.items table ienv))
+         (table (valid-pop-scope table)))
+      (retok (make-block :labels block.labels :items new-items)
+             types
+             last-expr-type?
+             table))
+    :measure (block-count block))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6266,6 +6292,11 @@
                (block-item-list-unambp new-items))
       :hyp (block-item-list-unambp items)
       :fn valid-block-item-list)
+    (defret block-unambp-of-valid-block
+      (implies (not erp)
+               (block-unambp new-block))
+      :hyp (block-unambp block)
+      :fn valid-block)
     ;; These hints only enable VALID-DECL-SPEC-LIST
     ;; in the cases involving that function.
     ;; Without this, the proof seems to hang, or at least take a very long time.
@@ -6489,7 +6520,7 @@
                                  table)
                 table))
        (table-body-start table)
-       ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
+       ((erp new-body & & table) (valid-block fundef.body table ienv))
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
                                :table-body-start table-body-start

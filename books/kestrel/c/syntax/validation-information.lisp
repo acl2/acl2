@@ -740,7 +740,7 @@
    (fundef (and (decl-spec-list-annop (fundef->spec fundef))
                 (declor-annop (fundef->declor fundef))
                 (decl-list-annop (fundef->decls fundef))
-                (block-item-list-annop (fundef->body fundef))
+                (block-annop (fundef->body fundef))
                 (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
@@ -818,7 +818,7 @@
            (and (decl-spec-list-annop spec)
                 (declor-annop declor)
                 (decl-list-annop decls)
-                (block-item-list-annop body)
+                (block-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
              (fundef extension spec declor asm? attribs decls body info))
@@ -932,9 +932,9 @@
              (decl-list-annop (fundef->decls fundef)))
     :enable fundef-annop)
 
-  (defruled block-item-list-annop-of-fundef->body
+  (defruled block-annop-of-fundef->body
     (implies (fundef-annop fundef)
-             (block-item-list-annop (fundef->body fundef)))
+             (block-annop (fundef->body fundef)))
     :enable fundef-annop)
 
   (defruled fundef-infop-of-fundef->info
@@ -983,7 +983,7 @@
      decl-spec-list-annop-of-fundef->spec
      declor-annop-of-fundef->declor
      decl-list-annop-of-fundef->decls
-     block-item-list-annop-of-fundef->body
+     block-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls
      transunit-infop-of-transunit->info)))
@@ -1105,7 +1105,7 @@
     (stmt-case
      stmt
      :labeled (stmt-types stmt.stmt)
-     :compound (block-item-list-types stmt.items)
+     :compound (block-types stmt.block)
      :expr (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
@@ -1172,6 +1172,15 @@
       (set::union (set::delete nil item-types) items-types))
     :measure (block-item-list-count items))
 
+  (define block-types ((block blockp))
+    :guard (and (block-unambp block)
+                (block-annop block))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts/types)
+    :short "Types of a block, from the validation information."
+    (block-item-list-types (block->items block))
+    :measure (block-count block))
+
   :verify-guards :after-returns
 
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
@@ -1218,7 +1227,7 @@
      possibly subject to conversions.
      However, our formal semantics of C does not cover those conversions yet,
      so we adopt the more general view here."))
-  (b* ((types (block-item-list-types (fundef->body fundef)))
+  (b* ((types (block-types (fundef->body fundef)))
        (types (if (set::in nil types)
                   (set::insert (type-void) (set::delete nil types))
                 types)))

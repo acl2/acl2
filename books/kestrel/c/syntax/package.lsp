@@ -20,7 +20,8 @@
 
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
-                                 '(position
+                                 '(block
+                                   position
                                    read-char
                                    read-files
                                    schar

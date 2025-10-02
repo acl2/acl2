@@ -2481,25 +2481,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-stmt-compound ((labelss ident-list-listp)
-                           (items block-item-listp)
-                           (items-new block-item-listp)
-                           (items-thm-name symbolp)
+(define xeq-stmt-compound ((block blockp)
+                           (block-new blockp)
+                           (block-thm-name symbolp)
                            (gin ginp))
-  :guard (and (block-item-list-unambp items)
-              (block-item-list-annop items)
-              (block-item-list-unambp items-new)
-              (block-item-list-annop items-new))
+  :guard (and (block-unambp block)
+              (block-annop block)
+              (block-unambp block-new)
+              (block-annop block-new))
   :returns (mv (stmt stmtp) (gout goutp))
   :short "Equality lifting transformation of a compound statement."
   (b* (((gin gin) gin)
-       (stmt (make-stmt-compound :labels labelss :items items))
-       (stmt-new (make-stmt-compound :labels labelss :items items-new))
-       ((unless items-thm-name)
+       (stmt (stmt-compound block))
+       (stmt-new (stmt-compound block-new))
+       ((unless block-thm-name)
         (mv stmt-new (gout-no-thm gin)))
-       (types (block-item-list-types items))
-       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
-       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       (types (block-types block))
+       ((mv & old-items) (ldm-block block)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block block-new)) ; ERP must be NIL
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints
         `(("Goal"
@@ -2508,7 +2507,7 @@
                         c::compustate-frames-number-of-enter-scope
                         c::compustate-has-var-with-type-p-of-enter-scope
                         stmt-compound-compustate-vars)
-           :use ((:instance ,items-thm-name
+           :use ((:instance ,block-thm-name
                             (compst (c::enter-scope compst))
                             (limit (1- limit)))
                  (:instance stmt-compound-congruence
@@ -2535,16 +2534,15 @@
 
   (defret stmt-unambp-of-xeq-stmt-compound
     (stmt-unambp stmt)
-    :hyp (block-item-list-unambp items-new))
+    :hyp (block-unambp block-new))
 
   (defret stmt-annop-of-xeq-stmt-compound
     (stmt-annop stmt)
-    :hyp (block-item-list-annop items-new))
+    :hyp (block-annop block-new))
 
   (defret stmt-aidentp-of-xeq-stmt-compound
     (stmt-aidentp stmt gcc)
-    :hyp (and (ident-list-list-aidentp labelss gcc)
-              (block-item-list-aidentp items-new gcc))))
+    :hyp (block-aidentp block-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3124,8 +3122,8 @@
                     (attribs attrib-spec-listp)
                     (decls decl-listp)
                     (decls-new decl-listp)
-                    (body block-item-listp)
-                    (body-new block-item-listp)
+                    (body blockp)
+                    (body-new blockp)
                     (body-thm-name symbolp)
                     (vartys-with-fun c::ident-type-mapp)
                     (info fundef-infop)
@@ -3142,10 +3140,10 @@
               (decl-list-annop decls)
               (decl-list-unambp decls-new)
               (decl-list-annop decls-new)
-              (block-item-list-unambp body)
-              (block-item-list-annop body)
-              (block-item-list-unambp body-new)
-              (block-item-list-annop body-new))
+              (block-unambp body)
+              (block-annop body)
+              (block-unambp body-new)
+              (block-annop body-new))
   :returns (mv (fundef fundefp) (gout goutp))
   :short "Equality lifting transformation of a function definition."
   :long
@@ -3308,12 +3306,11 @@
                         (:e c::fun-info->result$inline)
                         (:e c::fun-info-from-fundef)
                         (:e ident)
-                        (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
                         (:e ldm-type)
                         (:e ldm-type-set)
-                        (:e ldm-block-item-list)
+                        (:e ldm-block)
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
@@ -3352,14 +3349,14 @@
     :hyp (and (decl-spec-list-unambp spec-new)
               (declor-unambp declor-new)
               (decl-list-unambp decls-new)
-              (block-item-list-unambp body-new)))
+              (block-unambp body-new)))
 
   (defret fundef-annop-of-xeq-fundef
     (fundef-annop fundef)
     :hyp (and (decl-spec-list-annop spec-new)
               (declor-annop declor-new)
               (decl-list-annop decls-new)
-              (block-item-list-annop body-new)
+              (block-annop body-new)
               (fundef-infop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
@@ -3371,5 +3368,5 @@
               (attrib-spec-list-aidentp attribs gcc)
               (decl-list-unambp decls-new)
               (decl-list-aidentp decls-new gcc)
-              (block-item-list-unambp body-new)
-              (block-item-list-aidentp body-new gcc))))
+              (block-unambp body-new)
+              (block-aidentp body-new gcc))))
