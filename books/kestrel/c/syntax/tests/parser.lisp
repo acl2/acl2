@@ -310,6 +310,11 @@
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
+(test-parse
+ parse-expression
+ "(f)()"
+ :cond (equal (expr-kind ast) :funcall))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator
