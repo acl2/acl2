@@ -1433,7 +1433,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-expo-if-present ((parstate parstatep))
+(define lex-?-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo? dec-expo-optionp)
                (last/next-pos positionp)
@@ -1486,12 +1486,12 @@
 
   ///
 
-  (defret parsize-of-lex-dec-expo-if-present-uncond
+  (defret parsize-of-lex-?-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-dec-expo-if-present-cond
+  (defret parsize-of-lex-?-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -2024,7 +2024,7 @@
             (lex-*-digit pos parstate))
            ;; 1-9 [decdigs] . [decdigs2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2142,7 +2142,7 @@
         (lex-*-digit first-pos-after-dot parstate))
        ;; . decdig [decdigs]
        ((erp expo? expo-last/next-pos parstate)
-        (lex-dec-expo-if-present parstate))
+        (lex-?-exponent-part parstate))
        ;; . decdig [decdigs] [expo]
        ((erp fsuffix? suffix-last/next-pos parstate)
         (lex-?-floating-suffix parstate))
@@ -2321,7 +2321,7 @@
             (lex-*-digit pos parstate))
            ;; 0 [digits] . [digits2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 0 [digits] . [digits2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
