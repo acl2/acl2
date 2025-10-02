@@ -453,7 +453,7 @@
                 (<= len (len array)))
            (equal (bv-array-read elem-size len index (take len array))
                   (bv-array-read elem-size (len array) index array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
 
 (defthmd bv-array-read-when-all-same-axe
   (implies (and (syntaxp (and (quotep data)

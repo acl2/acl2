@@ -255,12 +255,12 @@
 ;;                                  ;;                 (TOP-NODENUM-TO-CHECK (+ -1 dag-len)))
 ;;                                  :do-not '(generalize eliminate-destructors)
 ;;                                  ;;:cases ((equal 0 dag-len))
-;;                                  :in-theory (e/d () (CONSP-FROM-LEN-CHEAP
+;;                                  :in-theory (disable CONSP-FROM-LEN-CHEAP
 ;;                                                      sum-list-tail ;consp-cdr
 ;;                                                      KEEP-NODENUM-DARGS
 ;;                                                      MAXELEM
 ;;                                                      dag-exprp
-;;                                                      TRUE-LISTP-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX))))))
+;;                                                      TRUE-LISTP-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX)))))
 ;;   (if (or (not (natp steps-left))
 ;;           (equal 0 steps-left))
 ;;       (prog2$ (er hard? 'size-array-for-nodes-aux "Reached step limit (should not happen).")
