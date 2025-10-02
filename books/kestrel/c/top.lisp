@@ -57,6 +57,11 @@
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"
                   "GCC Manual for the current development")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://www.gnu.org/software/c-intro-and-ref/manual"
+                  "GNU C Language Intro and Reference Manual")
      "."))
    (xdoc::p
     "In the documentation of this library,
