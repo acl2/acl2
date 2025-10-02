@@ -830,21 +830,21 @@
               (ienv->uchar-max ienv))))
     (c-char-case
      cchar
-     :char (cond ((= cchar.unwrap (char-code #\'))
+     :char (cond ((= cchar.code (char-code #\'))
                   (retmsg$ "Single quote cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 10)
+                 ((= cchar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 13)
+                 ((= cchar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> cchar.unwrap max)
+                 ((> cchar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceed the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           cchar.unwrap max (cprefix-option-fix prefix?)))
-                 (t (retok cchar.unwrap)))
+                           cchar.code max (cprefix-option-fix prefix?)))
+                 (t (retok cchar.code)))
      :escape (valid-escape cchar.unwrap max)))
   :hooks (:fix))
 
@@ -968,21 +968,21 @@
               (ienv->uchar-max ienv))))
     (s-char-case
      schar
-     :char (cond ((= schar.unwrap (char-code #\"))
+     :char (cond ((= schar.code (char-code #\"))
                   (retmsg$ "Double quote cannot be used directly ~
                             in a string literal."))
-                 ((= schar.unwrap 10)
+                 ((= schar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= schar.unwrap 13)
+                 ((= schar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> schar.unwrap max)
+                 ((> schar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceeds the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           schar.unwrap max (eprefix-option-fix prefix?)))
-                 (t (retok schar.unwrap)))
+                           schar.code max (eprefix-option-fix prefix?)))
+                 (t (retok schar.code)))
      :escape (valid-escape schar.unwrap max)))
   :hooks (:fix))
 

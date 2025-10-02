@@ -1235,17 +1235,17 @@
      or line feed followed by carriage return)."))
   (c-char-case
    cchar
-   :char (b* (((unless (and (grammar-character-p cchar.unwrap)
-                            (not (= cchar.unwrap (char-code #\'))) ; '
-                            (not (= cchar.unwrap (char-code #\\))) ; \
-                            (not (= cchar.unwrap 10))              ; LF
-                            (not (= cchar.unwrap 13))))            ; CR
+   :char (b* (((unless (and (grammar-character-p cchar.code)
+                            (not (= cchar.code (char-code #\'))) ; '
+                            (not (= cchar.code (char-code #\\))) ; \
+                            (not (= cchar.code 10))              ; LF
+                            (not (= cchar.code 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a character constant."
-                      cchar.unwrap)
+                      cchar.code)
                (pristate-fix pstate)))
-           (print-char cchar.unwrap pstate))
+           (print-char cchar.code pstate))
    :escape (print-escape cchar.unwrap pstate))
   :hooks (:fix)
 
@@ -1368,17 +1368,17 @@
      or line feed followed by carriage return)."))
   (s-char-case
    schar
-   :char (b* (((unless (and (grammar-character-p schar.unwrap)
-                            (not (= schar.unwrap (char-code #\"))) ; "
-                            (not (= schar.unwrap (char-code #\\))) ; \
-                            (not (= schar.unwrap 10))              ; LF
-                            (not (= schar.unwrap 13))))            ; CR
+   :char (b* (((unless (and (grammar-character-p schar.code)
+                            (not (= schar.code (char-code #\"))) ; "
+                            (not (= schar.code (char-code #\\))) ; \
+                            (not (= schar.code 10))              ; LF
+                            (not (= schar.code 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a string literal."
-                      schar.unwrap)
+                      schar.code)
                (pristate-fix pstate)))
-           (print-char schar.unwrap pstate))
+           (print-char schar.code pstate))
    :escape (print-escape schar.unwrap pstate))
   :hooks (:fix)
 

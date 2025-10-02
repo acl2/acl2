@@ -770,7 +770,7 @@
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
-  (:char ((unwrap nat)))
+  (:char ((code nat)))
   (:escape ((unwrap escape)))
   :pred c-char-p
   :layout :fulltree)
@@ -869,7 +869,7 @@
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((unwrap nat)))
+  (:char ((code nat)))
   (:escape ((unwrap escape)))
   :pred s-char-p
   :layout :fulltree)
