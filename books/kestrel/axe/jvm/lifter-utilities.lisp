@@ -721,3 +721,13 @@
   (equal (jvm::step-always-open th s)
          (jvm::step th s))
   :hints (("Goal" :in-theory (enable jvm::step))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: add to this?
+(defconst *no-warn-ground-functions-jvm*
+  '(th
+    jvm::update-nth-local
+    jvm::no-locked-object
+    jvm::empty-operand-stack
+    ))

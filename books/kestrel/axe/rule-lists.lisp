@@ -116,8 +116,8 @@
     boolif-of-t-and-nil
     boolif-of-nil-and-t
     boolif-when-quotep-arg1 ; for when the test can be resolved
-    boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt
+    boolif-of-not-same-arg2-alt ; harmless
+    boolif-of-not-same-arg3-alt ; harmless
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
     boolif-when-quotep-and-not-booleanp-arg2
     boolif-when-quotep-and-not-booleanp-arg3
@@ -137,7 +137,7 @@
   (append
    (boolean-rules-safe)
    `(;; Rules about boolor:
-     boolor-of-not-of-boolor-of-not-same ; do we need this?
+     boolor-of-not-of-boolor-of-not-same ; do we need this? move to boolean-rules-safe
 
      ;; Rules about boolif:
      ;; todo: think about these: sometimes we prefer boolif:
@@ -3210,8 +3210,8 @@
              my-non-integerp-<-integerp
              booland-combine-adjacent-bvles
              booland-combine-adjacent-bvles-alt
-             boolif-of-not-same-arg2 ;moved from axe-prover-rules
-             boolif-of-not-same-arg3 ;moved from axe-prover-rules
+             boolif-of-not-same-arg2 ;moved from axe-prover-rules ; introduces booland
+             boolif-of-not-same-arg3 ;moved from axe-prover-rules ; introduces boolor
 
              sbvlt-of-bvplus-of-constant-and-constant
              nth-when-equal-of-take-hack
