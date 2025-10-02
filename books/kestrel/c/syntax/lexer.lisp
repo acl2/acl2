@@ -1561,7 +1561,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-bin-expo ((parstate parstatep))
+(define lex-binary-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo bin-expop)
                (last-pos positionp)
@@ -1608,12 +1608,12 @@
 
   ///
 
-  (defret parsize-of-lex-bin-expo-uncond
+  (defret parsize-of-lex-binary-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-bin-expo-cond
+  (defret parsize-of-lex-binary-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1815,7 +1815,7 @@
                           :found (char-to-msg nil)))
              (t ; 0 x/X . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate)))
+                    (lex-binary-exponent-part parstate)))
                 ;; 0 x/X . hexdigs2 expo
                 (b* (((erp fsuffix? suffix-last/next-pos parstate)
                       (lex-?-floating-suffix parstate))
@@ -1857,7 +1857,7 @@
             (cond
              ((not hexdigs2) ; 0 x/X hexdigs .
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1877,7 +1877,7 @@
                        parstate)))
              (t ; 0 x/X hexdigs . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1898,7 +1898,8 @@
          ((or (= char (char-code #\p)) ; 0 x/X hexdigs p
               (= char (char-code #\P))) ; 0 x/X hexdigs P
           (b* ((parstate (unread-char parstate)) ; 0 x/X hexdigs
-               ((erp expo expo-last-pos parstate) (lex-bin-expo parstate))
+               ((erp expo expo-last-pos parstate)
+                (lex-binary-exponent-part parstate))
                ;; 0 x/X hexdigs expo
                ((erp fsuffix? suffix-last/next-pos parstate)
                 (lex-?-floating-suffix parstate))
