@@ -1619,7 +1619,7 @@
       (hard-error 'find-a-val-in-traces "All traces are empty!" nil)
     (let* ((trace (first traces)))
       (if (endp trace) ;this trace is empty, so skip it:
-          (prog2$ (hard-error 'find-a-val-in-traces "this shoult not happen" nil)
+          (prog2$ (hard-error 'find-a-val-in-traces "this should not happen" nil)
                   (find-a-val-in-traces (rest traces)))
 ;found a non empty trace; return its first value:
         (first trace)))))

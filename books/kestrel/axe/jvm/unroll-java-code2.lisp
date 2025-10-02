@@ -586,6 +586,7 @@
                                    nil ; interpreted-function-alist
                                    monitor
                                    call-stp
+                                   *no-warn-ground-functions-jvm*
                                    print
                                    state))
        ((when erp) (mv erp nil state))

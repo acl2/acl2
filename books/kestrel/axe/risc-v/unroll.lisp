@@ -351,6 +351,7 @@
          ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
                                                                               dag
                                                                               (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                              nil ; *no-warn-ground-functions*
                                                                               print
                                                                               60000 ; todo: pass in
                                                                               state))
@@ -376,6 +377,7 @@
                                            nil ; interpreted-function-alist
                                            rules-to-monitor
                                            t ;call-stp
+                                           nil ; no-warn-ground-functions
                                            print
                                            state))
          ((when erp) (mv erp nil state))

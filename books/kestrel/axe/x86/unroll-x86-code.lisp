@@ -774,6 +774,7 @@
          ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
                                                                               dag
                                                                               (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                              *no-warn-ground-functions*
                                                                               print
                                                                               60000 ; todo: pass in
                                                                               state))
@@ -799,6 +800,7 @@
                                            nil ; interpreted-function-alist
                                            rules-to-monitor
                                            t ;call-stp
+                                           *no-warn-ground-functions*
                                            print
                                            state))
          ((when erp) (mv erp nil state))

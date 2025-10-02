@@ -427,6 +427,7 @@
                                  ;; interpreted-fns
                                  ;; monitored-rules
                                  ;;call-stp
+                                 no-warn-ground-functions
                                  print
                                  max-conflicts
                                  state)
@@ -437,6 +438,7 @@
                               ;; (symbol-listp interpreted-fns)
                               ;; (symbol-listp monitored-rules)
                               ;; (call-stp-optionp call-stp)
+                              (symbol-listp no-warn-ground-functions)
                               (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts)))
@@ -499,7 +501,7 @@
                                                           nil ; count-hits
                                                           nil ; print
                                                           nil ; monitored-symbols
-                                                          nil ; no-warn-ground-functions
+                                                          no-warn-ground-functions
                                                           nil ; fns-to-elide
                                                           ))
        ((when erp) (mv erp nil state))
@@ -526,18 +528,18 @@
 
 (local
   (defthm w-of-mv-nth-2-of-prune-dag-approximately
-    (equal (w (mv-nth 2 (prune-dag-approximately dag assumptions print max-conflicts state)))
+    (equal (w (mv-nth 2 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state)))
            (w state))
     :hints (("Goal" :in-theory (enable prune-dag-approximately)))))
 
 (local
   (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-approximately
-    (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions print max-conflicts state))) ; no error
+    (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state))) ; no error
                   (pseudo-dagp dag)
                   ;; (<= (len dag) *max-1d-array-length*)
                   (pseudo-term-listp assumptions)
-                  (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state)))))
-             (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state))))
+                  (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state)))))
+             (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state))))
     :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
                                     (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
                                      ))))))
@@ -555,11 +557,14 @@
 ;; TODO: Add support for pruning bv-array-ifs?
 ;; TODO: Add support for not trying to resolve conditions that are too large (e.g., top-level conjuncts of crypto tests).
 (defund maybe-prune-dag-approximately (prune-branches ; t, nil, or dag-size limit
-                                       dag assumptions print max-conflicts state)
+                                       dag assumptions
+                                       no-warn-ground-functions
+                                       print max-conflicts state)
   (declare (xargs :guard (and (prune-approx-optionp prune-branches)
                               (pseudo-dagp dag)
                               ;; (<= (len dag) *max-1d-array-length*)
                               (pseudo-term-listp assumptions)
+                              (symbol-listp no-warn-ground-functions)
                               (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts)))
@@ -579,17 +584,17 @@
     ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune:
     (prune-dag-approximately dag
                              assumptions
-                             print max-conflicts
+                             no-warn-ground-functions print max-conflicts
                              state)))
 
 (defthm w-of-mv-nth-2-of-maybe-prune-dag-approximately
-  (equal (w (mv-nth 2 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state)))
+  (equal (w (mv-nth 2 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state)))
          (w state))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-approximately))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-approximately
-  (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))) ; no error
-                (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))) ; no error
+                (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))))
                 ;; (prune-approx-optionp prune-branches)
                 (pseudo-dagp dag)
                 ;; (<= (len dag) *max-1d-array-length*)
@@ -597,5 +602,5 @@
                 ;; (print-levelp print)
                 (or (null max-conflicts)
                     (natp max-conflicts)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))))
   :hints (("Goal" :in-theory (e/d (maybe-prune-dag-approximately) (quotep)))))
