@@ -867,7 +867,7 @@
 ;;                                                 lst))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;; ;           :induct (ind2 start end lst)
-;;            :in-theory (e/d (subrange ITEMS-HAVE-LEN) ()))))
+;;            :in-theory (enable subrange ITEMS-HAVE-LEN))))
 
 (defthm equal-of-nil-and-nthcdr
   (implies (true-listp x)
