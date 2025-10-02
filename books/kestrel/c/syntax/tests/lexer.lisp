@@ -976,6 +976,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; lex-?-sign
+
 (test-lex
  lex-?-sign
  ""
@@ -1005,3 +1007,49 @@
  lex-?-sign
  "L"
  :cond (equal ast nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-exponent-part
+
+(test-lex
+ lex-?-exponent-part
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-exponent-part
+ "not-e-or-E"
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-exponent-part
+ "e10"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        nil
+                        (list #\1 #\0))))
+
+(test-lex
+ lex-?-exponent-part
+ "E0223"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        nil
+                        (list #\0 #\2 #\2 #\3))))
+
+(test-lex
+ lex-?-exponent-part
+ "e+5"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        (sign-plus)
+                        (list #\5))))
+
+(test-lex
+ lex-?-exponent-part
+ "E-500"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        (sign-minus)
+                        (list #\5 #\0 #\0))))
