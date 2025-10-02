@@ -217,14 +217,6 @@
   (defthm min-helper
     (<= (min x y) x)))
 
-(defconst *no-warn-ground-functions-jvm*
-  '(th
-    jvm::update-nth-local
-    jvm::no-locked-object
-    jvm::empty-operand-stack
-    ))
-
-
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
@@ -313,7 +305,7 @@
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
-          (maybe-prune-dag-approximately prune-approx dag assumptions print
+          (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
                                          60000 ; todo: pass in
                                          state))
          ((when erp) (mv erp dag state))
@@ -329,6 +321,7 @@
                                                                   nil ; todo?
                                                                   nil
                                                                   t ; call-stp
+                                                                  *no-warn-ground-functions-jvm*
                                                                   print
                                                                   state))
          ((when erp) (mv erp dag state))
@@ -749,6 +742,7 @@
                                    nil ; interpreted-function-alist
                                    monitored-rules
                                    call-stp
+                                   *no-warn-ground-functions-jvm*
                                    print
                                    state))
        ((when erp) (mv erp nil nil nil nil nil state))
