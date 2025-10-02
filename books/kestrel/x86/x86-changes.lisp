@@ -2360,7 +2360,7 @@
 ;;                                     :EXEC UNDEFINED-FLAGS)))
 ;;            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
 ;;   :otf-flg t
-;;   :hints (("Goal" :expand ()
+;;   :hints (("Goal"
 ;;            :in-theory (e/d (acl2::bvashr ;acl2::bvsx
 ;;                             SAR-SPEC-64 ACL2::BVSHR
 ;;                                         ;;ACL2::LOGEXT-CASES
