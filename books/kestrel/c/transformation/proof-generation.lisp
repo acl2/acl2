@@ -407,7 +407,7 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Lift a theorem for a pure expression
-          from @(tsee exec-expr-pure) to @(tsee exec-expr)."
+          from @(tsee c::exec-expr-pure) to @(tsee c::exec-expr)."
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-pure-formalp old))
