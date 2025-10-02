@@ -1524,7 +1524,10 @@
        :labeled (b* (((erp label1) (ldm-label stmt.label))
                      ((erp stmt1) (ldm-stmt stmt.stmt)))
                   (retok (c::make-stmt-labeled :label label1 :body stmt1)))
-       :compound (b* (((erp items1) (ldm-block-item-list stmt.items)))
+       :compound (b* (((when stmt.labels)
+                       (reterr (msg "Unsupported label declarations ~x0."
+                                    stmt.labels)))
+                      ((erp items1) (ldm-block-item-list stmt.items)))
                    (retok (c::make-stmt-compound :items items1)))
        :expr (expr-option-case
               stmt.expr?

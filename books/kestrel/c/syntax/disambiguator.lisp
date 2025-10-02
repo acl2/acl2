@@ -2890,7 +2890,8 @@
        (b* ((table (dimb-push-scope table))
             ((erp new-items table) (dimb-block-item-list stmt.items table))
             (table (dimb-pop-scope table)))
-         (retok (stmt-compound new-items) table))
+         (retok (make-stmt-compound :labels stmt.labels :items new-items)
+                table))
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-expr :expr? new-expr? :info nil) table))

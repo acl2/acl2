@@ -5727,7 +5727,10 @@
             ((erp new-items types type? table)
              (valid-block-item-list stmt.items table ienv))
             (table (valid-pop-scope table)))
-         (retok (stmt-compound new-items) types type? table))
+         (retok (make-stmt-compound :labels stmt.labels :items new-items)
+                types
+                type?
+                table))
        :expr
        (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv)))

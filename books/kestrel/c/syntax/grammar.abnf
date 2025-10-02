@@ -536,6 +536,7 @@ gcc-keyword = %s"__alignof"
             / %s"__inline"
             / %s"__inline__"
             / %s"__int128"
+            / %s"__label__"
             / %s"__real__"
             / %s"__restrict"
             / %s"__restrict__"
@@ -1510,6 +1511,9 @@ static-assert-declaration =
 ; we allow two, separated by the three-dot punctuator
 ; (this punctuator also exists in standard C, for a different purpose).
 
+; As a GCC extension, we allow locally declared labels,
+; which may only occur at the beginning of blocks.
+
 statement = labeled-statement
           / compound-statement
           / expression-statement
@@ -1526,7 +1530,13 @@ labeled-statement = identifier ":"
                     ":" statement
                   / %s"default" ":" statement
 
-compound-statement = "{" [ block-item-list ] "}"
+; GCC extension:
+label-declaration = %s"__label__" identifier *( "," identifier ) ";"
+
+compound-statement = "{"
+                     *label-declaration ; GCC extension
+                     [ block-item-list ]
+                     "}"
 
 block-item-list = block-item
                 / block-item-list block-item

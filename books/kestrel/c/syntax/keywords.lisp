@@ -68,6 +68,7 @@
     "__inline__"
     "__int128"
     "__int128_t"
+    "__label__"
     "__real__"
     "__restrict"
     "__restrict__"
