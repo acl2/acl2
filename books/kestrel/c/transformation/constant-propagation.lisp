@@ -1766,7 +1766,7 @@
                        env))
         :compound (b* (((mv items env)
                         (const-prop-block-item-list stmt.items env)))
-                    (mv (stmt-compound items) env))
+                    (mv (stmt-compound stmt.labels items) env))
         :expr (b* (((mv expr? - env)
                     (const-prop-expr-option stmt.expr? env)))
                 (mv (make-stmt-expr :expr? expr?

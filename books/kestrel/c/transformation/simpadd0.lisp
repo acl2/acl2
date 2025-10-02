@@ -1730,7 +1730,8 @@
        :compound (b* (((mv new-items (gout gout-items))
                        (simpadd0-block-item-list stmt.items gin))
                       (gin (gin-update gin gout-items)))
-                   (xeq-stmt-compound stmt.items
+                   (xeq-stmt-compound stmt.labels
+                                      stmt.items
                                       new-items
                                       gout-items.thm-name
                                       gin))

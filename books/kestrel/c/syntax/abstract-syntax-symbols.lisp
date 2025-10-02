@@ -29,6 +29,8 @@
 
     ident-listp
 
+    ident-list-listp
+
     ident-set
     ident-setp
     ident-set-fix
@@ -386,6 +388,7 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    make-stmt-compound
     stmt-compound->items
     make-stmt-expr
     make-stmt-if
@@ -545,6 +548,7 @@
     ;; ASCII identifiers:
 
     ident-aidentp
+    ident-list-list-aidentp
     const-aidentp
     expr-aidentp
     expr-list-aidentp

@@ -2481,7 +2481,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-stmt-compound ((items block-item-listp)
+(define xeq-stmt-compound ((labelss ident-list-listp)
+                           (items block-item-listp)
                            (items-new block-item-listp)
                            (items-thm-name symbolp)
                            (gin ginp))
@@ -2492,8 +2493,8 @@
   :returns (mv (stmt stmtp) (gout goutp))
   :short "Equality lifting transformation of a compound statement."
   (b* (((gin gin) gin)
-       (stmt (stmt-compound items))
-       (stmt-new (stmt-compound items-new))
+       (stmt (make-stmt-compound :labels labelss :items items))
+       (stmt-new (make-stmt-compound :labels labelss :items items-new))
        ((unless items-thm-name)
         (mv stmt-new (gout-no-thm gin)))
        (types (block-item-list-types items))
@@ -2542,7 +2543,8 @@
 
   (defret stmt-aidentp-of-xeq-stmt-compound
     (stmt-aidentp stmt gcc)
-    :hyp (block-item-list-aidentp items-new gcc)))
+    :hyp (and (ident-list-list-aidentp labelss gcc)
+              (block-item-list-aidentp items-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

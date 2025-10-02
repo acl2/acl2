@@ -1280,7 +1280,7 @@
      (b* (((mv items -)
            (block-item-list-subst-free (stmt-compound->items stmt)
                                        subst bound-vars)))
-       (stmt-compound items))
+       (stmt-compound stmt.labels items))
      :expr
      (make-stmt-expr
       :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
