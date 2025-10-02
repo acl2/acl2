@@ -1623,7 +1623,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after the @('__label__' keyword has already been read,
+    "This is called after the @('__label__') keyword has already been read,
      so we parse an identifier (which must be present),
      followed by zero or more comma-preceded identifiers."))
   (b* (((reterr) nil (irr-span) parstate)
