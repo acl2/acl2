@@ -176,6 +176,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist ident-list-list
+  :short "Fixtype of lists of lists of identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred ident-list-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset ident-set
   :short "Fixtype of sets of identifiers."
   :long
@@ -3052,10 +3065,21 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
-      "As a GCC extension, we include assembler statements."))
+      "As a GCC extension, we include assembler statements.")
+     (xdoc::p
+      "As a GCC extension, we include
+       lists of lists of identifiers at the beginning of blocks.
+       These represent sequences of label declarations:
+       the outer list captures the sequence of declarations
+       (@('nil') if there are no label declarations),
+       and each inner list captures the labels declared
+       in the corresponding label declaration;
+       currently we do not capture the restriction that
+       each inner list must be non-empty."))
     (:labeled ((label label)
                (stmt stmt)))
-    (:compound ((items block-item-list)))
+    (:compound ((labels ident-list-list)
+                (items block-item-list)))
     (:expr ((expr? expr-option)
             (info any)))
     (:if ((test expr)

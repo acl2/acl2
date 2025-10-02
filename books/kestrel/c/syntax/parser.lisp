@@ -1572,6 +1572,125 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-*-comma-identifier ((parstate parstatep))
+  :returns (mv erp
+               (idents ident-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a list of zero or more identifiers preceded by commas."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, we parse a @('*( \",\" identifier )'), in ABNF notation.")
+   (xdoc::p
+    "If the next token is absent or not a comma,
+     we return the empty list of identifiers and an irrelevant span.
+     Otherwise, we parse an identifier,
+     and then we recursively parse
+     zero or more additional identifiers separated by commas.
+     We join spans only if the recursive call returns a non-empty list."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-punctuatorp token ","))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ((erp ident ident-span parstate) (read-identifier parstate))
+       ((erp idents idents-span parstate) (parse-*-comma-identifier parstate)))
+    (retok (cons ident idents)
+           (if idents
+               (span-join span idents-span)
+             (span-join span ident-span))
+           parstate))
+  :measure (parsize parstate)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-comma-identifier-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-label-declaration ((parstate parstatep))
+  :returns (mv erp
+               (idents ident-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a label declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after the @('__label__' keyword has already been read,
+     so we parse an identifier (which must be present),
+     followed by zero or more comma-preceded identifiers."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp label span parstate) (read-identifier parstate))
+       ((erp labels & parstate) (parse-*-comma-identifier parstate))
+       ((erp last-span parstate) (read-punctuator ";" parstate)))
+    (retok (cons label labels)
+           (span-join span last-span)
+           parstate))
+
+  ///
+
+  (defret parsize-of-parse-label-declaration-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-label-declaration-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-*-label-declaration ((parstate parstatep))
+  :returns (mv erp
+               (labelss ident-list-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a list of zero or more label declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, we parse a @('*label-declaration'), in ABNF notation.")
+   (xdoc::p
+    "If the next token is not the @('__label__') keyword
+     (which is a keyword only when GCC extensions are enabled),
+     we return the empty list of lists of identifiers and an irrelevant span.
+     Otherwise, we parse the rest of the label declaration,
+     and then we recursively parse
+     zero or more additional label declarations."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-keywordp token "__label__"))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ((erp labels labels-span parstate) (parse-label-declaration parstate))
+       ((erp labelss labelss-span parstate) (parse-*-label-declaration parstate)))
+    (retok (cons labels labelss)
+           (if labelss
+               (span-join span labelss-span)
+             (span-join span labels-span))
+           parstate))
+  :measure (parsize parstate)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-label-declaration-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines parse-exprs/decls/stmts
   :short "Parse expressions, declarations, statements, and related entities."
   :long
@@ -8787,22 +8906,25 @@
        ;; If token is an open curly brace,
        ;; we must have a compound statement.
        ((token-punctuatorp token "{") ; {
-        (b* (((erp token2 span2 parstate) (read-token parstate)))
+        (b* (((erp labels & parstate) (parse-*-label-declaration parstate))
+             ((erp token2 span2 parstate) (read-token parstate)))
           (cond
            ;; If token2 is a closed curly brace,
-           ;; we have an empty compound statement.
-           ((token-punctuatorp token2 "}") ; { }
-            (retok (stmt-compound nil)
+           ;; we have an empty compound statement
+           ;; (with possibly some label declarations).
+           ((token-punctuatorp token2 "}") ; { [labels] }
+            (retok (make-stmt-compound :labels labels :items nil)
                    (span-join span span2)
                    parstate))
            ;; Otherwise, we parse a list of one or more block items.
-           (t ; { other
-            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; {
-                 ((erp items & parstate) ; { blockitems
+           (t ; { [labels] other
+            (b* ((parstate ; { [labels]
+                  (if token2 (unread-token parstate) parstate))
+                 ((erp items & parstate) ; { [labels] blockitems
                   (parse-block-item-list parstate))
-                 ((erp last-span parstate) ; { blockitems }
+                 ((erp last-span parstate) ; { [labels] blockitems }
                   (read-punctuator "}" parstate)))
-              (retok (stmt-compound items)
+              (retok (make-stmt-compound :labels labels :items items)
                      (span-join span last-span)
                      parstate))))))
        ;; If token is a semicolon,

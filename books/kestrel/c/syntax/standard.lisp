@@ -191,6 +191,9 @@
    (asm-output nil)
    (asm-input nil)
    (asm-stmt nil)
+   (stmt :compound (and (endp (stmt-compound->labels stmt))
+                        (block-item-list-standardp
+                         (stmt-compound->items stmt))))
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
    (stmt :asm nil)

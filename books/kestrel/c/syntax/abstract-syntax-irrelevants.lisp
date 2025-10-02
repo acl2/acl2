@@ -452,7 +452,7 @@
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
-  :body (stmt-compound nil))
+  :body (stmt-compound nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
