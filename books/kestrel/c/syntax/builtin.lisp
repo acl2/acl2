@@ -13,7 +13,7 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
