@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "external-preprocessing")
+(include-book "preprocessor")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,4 +25,5 @@
    (xdoc::p
     "We have also just started developing our own C preprocessor.
      This is very much work in progress."))
-  :order-subtopics (external-preprocessing))
+  :order-subtopics (external-preprocessing
+                    preprocessor))
