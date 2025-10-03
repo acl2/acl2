@@ -268,13 +268,8 @@
        :const (xeq-expr-const expr.const gin)
        :string (mv (expr-fix expr) (gout-no-thm gin))
        :paren
-       (b* (((mv new-inner (gout gout-inner))
-             (simpadd0-expr expr.inner gin))
-            (gin (gin-update gin gout-inner)))
-         (xeq-expr-paren expr.inner
-                         new-inner
-                         gout-inner.thm-name
-                         gin))
+       (b* (((mv new-inner gout) (simpadd0-expr expr.inner gin)))
+         (mv (expr-paren new-inner) gout))
        :gensel
        (b* (((mv new-control (gout gout-control))
              (simpadd0-expr expr.control gin))
@@ -416,7 +411,8 @@
                               :next new-next)
              (gout-no-thm gin)))
        :stmt
-       (b* (((mv new-block (gout gout-block)) (simpadd0-block expr.block gin))
+       (b* (((mv new-block (gout gout-block))
+             (simpadd0-block expr.block gin))
             (gin (gin-update gin gout-block)))
          (mv (expr-stmt new-block)
              (gout-no-thm gin)))

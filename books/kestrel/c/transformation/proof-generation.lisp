@@ -1380,66 +1380,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-expr-paren ((inner exprp)
-                        (inner-new exprp)
-                        (inner-thm-name symbolp)
-                        (gin ginp))
-  :guard (and (expr-unambp inner)
-              (expr-annop inner)
-              (expr-unambp inner-new)
-              (expr-annop inner-new))
-  :returns (mv (expr exprp) (gout goutp))
-  :short "Equality lifting transformation of a parenthesized expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The resulting expression is obtained by
-     parenthesizing the possibly transformed inner expression.
-     We generate a theorem iff
-     a theorem was generated for the inner expression,
-     and the inner expression is pure.
-     The function @(tsee ldm-expr) maps
-     a parenthesized expression to the same as the inner expression.
-     Thus, the theorem for the parenthesized expression
-     follows directly from the one for the inner expression."))
-  (b* ((expr (expr-paren inner))
-       (expr-new (expr-paren inner-new))
-       ((gin gin) gin)
-       ((unless (and inner-thm-name
-                     (expr-purep inner)))
-        (mv expr-new (gout-no-thm gin)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-expr))
-                 :use ,inner-thm-name)))
-       ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr-new
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
-    (mv expr-new
-        (make-gout :events (cons thm-event gin.events)
-                   :thm-index thm-index
-                   :thm-name thm-name
-                   :vartys gin.vartys)))
-
-  ///
-
-  (defret expr-unambp-of-xeq-expr-paren
-    (expr-unambp expr)
-    :hyp (expr-unambp inner-new))
-
-  (defret expr-annop-of-xeq-expr-paren
-    (expr-annop expr)
-    :hyp (expr-annop inner-new))
-
-  (defret expr-aidentp-of-xeq-expr-paren
-    (expr-aidentp expr gcc)
-    :hyp (expr-aidentp inner-new gcc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define xeq-expr-unary ((op unopp)
                         (arg exprp)
                         (arg-new exprp)
