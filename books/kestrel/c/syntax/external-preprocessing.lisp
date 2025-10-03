@@ -123,7 +123,7 @@
                          "The preprocessed @(see filedata) if read, or
                           @('(filedata nil)') otherwise.")
                state)
-  :parents (preprocessing)
+  :parents (external-preprocessing)
   :short "Preprocess a single file."
   :long
   (xdoc::topstring
@@ -252,7 +252,7 @@
                (map filesetp
                     "The map from filepaths to preprocessed filedata.")
                state)
-  :parents (preprocessing preprocess-file)
+  :parents (external-preprocessing preprocess-file)
   :short "Preprocess a set of files."
   :long
   (xdoc::topstring
