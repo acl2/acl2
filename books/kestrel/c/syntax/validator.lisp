@@ -2613,7 +2613,7 @@
                        (set::union types1 types2)
                        table))
        :stmt (b* (((erp new-block types type? table)
-                   (valid-block expr.block table ienv))
+                   (valid-block expr.block nil table ienv))
                   (type (or type? (type-void))))
                (retok (expr-stmt new-block) type types table))
        :tycompat (b* (((erp new-type1 & types1 table)
@@ -5739,7 +5739,7 @@
                 table))
        :compound
        (b* (((erp new-block types type? table)
-             (valid-block stmt.block table ienv)))
+             (valid-block stmt.block nil table ienv)))
          (retok (stmt-compound new-block) types type? table))
        :expr
        (b* (((erp new-expr? type? types table)
@@ -5998,7 +5998,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-block ((block blockp) (table valid-tablep) (ienv ienvp))
+  (define valid-block ((block blockp)
+                       (fundefp booleanp)
+                       (table valid-tablep)
+                       (ienv ienvp))
     :guard (block-unambp block)
     :returns (mv (erp maybe-msgp)
                  (new-block blockp)
@@ -6016,13 +6019,21 @@
        the @('last-expr-type?') result is a type exactly when
        the list of block items is not empty
        and the validation of the last block item
-       returns a type as that result."))
+       returns a type as that result.")
+     (xdoc::p
+      "The @('fundefp') flag says whether the block
+       is the body of a function definition.
+       If that is the case, we do not push a new scope and then pop it,
+       because that is already done in @(tsee valid-fundef):
+       the body itself of the function does not start a new scope;
+       it is the function definition itself that starts a new scope,
+       involving the parameters."))
     (b* (((reterr) (irr-block) nil nil (irr-valid-table))
          ((block block) block)
-         (table (valid-push-scope table))
+         (table (if fundefp table (valid-push-scope table)))
          ((erp new-items types last-expr-type? table)
           (valid-block-item-list block.items table ienv))
-         (table (valid-pop-scope table)))
+         (table (if fundefp table (valid-pop-scope table))))
       (retok (make-block :labels block.labels :items new-items)
              types
              last-expr-type?
@@ -6521,7 +6532,7 @@
                                  table)
                 table))
        (table-body-start table)
-       ((erp new-body & & table) (valid-block fundef.body table ienv))
+       ((erp new-body & & table) (valid-block fundef.body t table ienv))
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
                                :table-body-start table-body-start
