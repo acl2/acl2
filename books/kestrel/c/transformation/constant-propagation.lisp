@@ -782,11 +782,11 @@
                                nil
                                env)
         :stmt (b* (((mv items env)
-                    (const-prop-block-item-list expr.items (push-scope-env env))))
+                    (const-prop-block expr.block env)))
                 (mv (expr-stmt items)
                     ;; TODO
                     nil
-                    (pop-scope-env env)))
+                    env))
         :tycompat (b* (((mv type1 env)
                         (const-prop-tyname expr.type1 env))
                        ((mv type2 env)
@@ -1764,9 +1764,9 @@
                    (mv (make-stmt-labeled :label label
                                           :stmt stmt)
                        env))
-        :compound (b* (((mv items env)
-                        (const-prop-block-item-list stmt.items env)))
-                    (mv (stmt-compound items) env))
+        :compound (b* (((mv block env)
+                        (const-prop-block stmt.block env)))
+                    (mv (stmt-compound block) env))
         :expr (b* (((mv expr? - env)
                     (const-prop-expr-option stmt.expr? env)))
                 (mv (make-stmt-expr :expr? expr?
@@ -1904,6 +1904,18 @@
           env))
     :measure (block-item-list-count items))
 
+  (define const-prop-block
+    ((block blockp)
+     (env envp))
+    :short "Propagate a constant through a @(see c$::block)."
+    :returns (mv (new-block blockp)
+                 (new-env envp))
+    (b* ((env (push-scope-env env))
+         ((mv items env) (const-prop-block-item-list (block->items block) env))
+         (env (pop-scope-env env)))
+      (mv (make-block :labels (block->labels block) :items items) env))
+    :measure (block-count block))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
@@ -1921,7 +1933,7 @@
        ((mv decls -)
         (const-prop-decl-list fundef.decls env))
        ((mv body -)
-        (const-prop-block-item-list fundef.body (push-scope-env env))))
+        (const-prop-block fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
                  :spec spec
                  :declor declor

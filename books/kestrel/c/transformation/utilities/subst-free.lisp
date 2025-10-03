@@ -201,10 +201,9 @@
        (c$::expr-cast/logand-ambig->arg/arg2 expr))
      ;; Interesting case
      :stmt
-     (b* (((mv items -)
-           (block-item-list-subst-free (c$::expr-stmt->items expr)
-                                       subst bound-vars)))
-       (expr-stmt items))
+     (b* (((mv block -)
+           (block-subst-free (c$::expr-stmt->block expr) subst bound-vars)))
+       (expr-stmt block))
      :tycompat
      (c$::expr-tycompat
        (tyname-subst-free (c$::expr-tycompat->type1 expr)
@@ -1277,10 +1276,9 @@
                         subst bound-vars))
      ;; Interesting case
      :compound
-     (b* (((mv items -)
-           (block-item-list-subst-free (stmt-compound->items stmt)
-                                       subst bound-vars)))
-       (stmt-compound items))
+     (b* (((mv block -)
+           (block-subst-free (stmt-compound->block stmt) subst bound-vars)))
+       (stmt-compound block))
      :expr
      (make-stmt-expr
       :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
@@ -1402,6 +1400,17 @@
           (ident-set-fix bound-vars)))
     :measure (block-item-list-count block-item-list))
 
+  (define block-subst-free
+    ((block blockp)
+     (subst ident-expr-mapp)
+     (bound-vars ident-setp))
+    :returns (mv (result blockp)
+                 (bound-vars ident-setp))
+    (b* (((mv items bound-vars)
+          (block-item-list-subst-free (block->items block) subst bound-vars)))
+      (mv (make-block :labels (block->labels block) :items items) bound-vars))
+    :measure (block-count block))
+
   (define amb-expr/tyname-subst-free
     ((amb-expr/tyname c$::amb-expr/tyname-p)
      (subst ident-expr-mapp)
@@ -1466,7 +1475,7 @@
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv decls body-bound-vars)
         (decl-list-subst-free fundef.decls subst body-bound-vars))
-       ((mv body &) (block-item-list-subst-free fundef.body subst body-bound-vars)))
+       ((mv body &) (block-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
           :spec spec

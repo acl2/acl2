@@ -503,6 +503,25 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defruled exec-expr-when-exec-expr-pure-integer
+    (b* ((expr-result (c::exec-expr-pure expr compst))
+         (expr-value (c::expr-value->value expr-result))
+         (type (c::type-of-value expr-value)))
+      (implies (and (not (c::errorp expr-result))
+                    (c::type-nonchar-integerp type)
+                    (not (zp limit)))
+               (equal (c::exec-expr expr compst fenv limit)
+                      (mv expr-value (c::compustate-fix compst)))))
+    :use ((:instance c::not-call-when-exec-expr-pure-not-error
+                     (expr expr) (compst compst))
+          (:instance c::not-asg-when-exec-expr-pure-not-error
+                     (expr expr) (compst compst)))
+    :enable (c::exec-expr
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defruled initer-single-pure-congruence
     (b* ((old (c::initer-single old-expr))
          (new (c::initer-single new-expr))

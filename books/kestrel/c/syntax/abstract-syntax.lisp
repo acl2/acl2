@@ -18,6 +18,7 @@
 (include-book "purity")
 (include-book "standard")
 (include-book "ascii-identifiers")
+(include-book "type-specifier-lists")
 (include-book "abstraction-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,4 +55,5 @@
                     purity
                     standard
                     ascii-identifiers
+                    type-specifier-lists
                     abstraction-mapping))

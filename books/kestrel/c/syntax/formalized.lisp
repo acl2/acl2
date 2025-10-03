@@ -398,7 +398,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-call).
+    "These are the call expressions supported by @(tsee c::exec-expr).
      The expression must be a function call,
      the function sub-expression must be an identifier,
      and the arguments must be supported pure expressions."))
@@ -418,7 +418,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr).
+    "These are the assignment expressions supported by @(tsee c::exec-expr).
      The expression must be a simple assignment expression.
      The sub-expressions must have formal dynamic semantics.
      The left expression must be pure.
@@ -625,8 +625,9 @@
     (stmt-case
      stmt
      :labeled nil
-     :compound (block-item-list-formalp stmt.items)
+     :compound (block-formalp stmt.block)
      :expr (or (not stmt.expr?)
+               (expr-pure-formalp stmt.expr?)
                (expr-call-formalp stmt.expr?)
                (expr-asg-formalp stmt.expr?))
      :if (and (expr-pure-formalp stmt.test)
@@ -679,6 +680,16 @@
         (and (block-item-formalp (car items))
              (block-item-list-formalp (cdr items))))
     :measure (block-item-list-count items))
+
+  (define block-formalp ((block blockp))
+    :guard (block-unambp block)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset stmts/blocks-formalp)
+    :short "Check if a block has formal dynamic semantics."
+    (b* (((block block) block))
+      (and (not block.labels)
+           (block-item-list-formalp block.items)))
+    :measure (block-count block))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
@@ -1068,7 +1079,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.decls)
-         (block-item-list-formalp fundef.body)))
+         (block-formalp fundef.body)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

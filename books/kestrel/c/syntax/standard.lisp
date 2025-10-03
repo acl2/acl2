@@ -196,6 +196,8 @@
    (stmt :asm nil)
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))
+   (block (and (endp (block->labels block))
+               (block-item-list-standardp (block->items block))))
    (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
                            (amb-expr/tyname-fix amb-expr/tyname)))
    (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
@@ -209,7 +211,7 @@
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))
                 (decl-list-standardp (fundef->decls fundef))
-                (block-item-list-standardp (fundef->body fundef))))
+                (block-standardp (fundef->body fundef))))
    (extdecl :empty nil)
    (extdecl :asm nil)
    (transunit (consp (transunit->decls transunit)))))

@@ -609,10 +609,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In our abstract syntax, @(tsee ident-list) is used only
-     in the @(':function-names') case of @(tsee dirdeclor),
-     where the identifiers represent function parameter names,
-     and so it is appropriate to print them separated by commas."))
+    "In our abstract syntax, @(tsee ident-list) is used
+     in places whose corresponding concrete syntax
+     separates them with commas;
+     thus, it is appropriate to print them separated by commas."))
   (b* (((unless (mbt (consp idents))) (pristate-fix pstate))
        (pstate (print-ident (car idents) pstate))
        ((when (endp (cdr idents))) pstate)
@@ -1235,17 +1235,17 @@
      or line feed followed by carriage return)."))
   (c-char-case
    cchar
-   :char (b* (((unless (and (grammar-character-p cchar.unwrap)
-                            (not (= cchar.unwrap (char-code #\'))) ; '
-                            (not (= cchar.unwrap (char-code #\\))) ; \
-                            (not (= cchar.unwrap 10))              ; LF
-                            (not (= cchar.unwrap 13))))            ; CR
+   :char (b* (((unless (and (grammar-character-p cchar.code)
+                            (not (= cchar.code (char-code #\'))) ; '
+                            (not (= cchar.code (char-code #\\))) ; \
+                            (not (= cchar.code 10))              ; LF
+                            (not (= cchar.code 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a character constant."
-                      cchar.unwrap)
+                      cchar.code)
                (pristate-fix pstate)))
-           (print-char cchar.unwrap pstate))
+           (print-char cchar.code pstate))
    :escape (print-escape cchar.unwrap pstate))
   :hooks (:fix)
 
@@ -1368,17 +1368,17 @@
      or line feed followed by carriage return)."))
   (s-char-case
    schar
-   :char (b* (((unless (and (grammar-character-p schar.unwrap)
-                            (not (= schar.unwrap (char-code #\"))) ; "
-                            (not (= schar.unwrap (char-code #\\))) ; \
-                            (not (= schar.unwrap 10))              ; LF
-                            (not (= schar.unwrap 13))))            ; CR
+   :char (b* (((unless (and (grammar-character-p schar.code)
+                            (not (= schar.code (char-code #\"))) ; "
+                            (not (= schar.code (char-code #\\))) ; \
+                            (not (= schar.code 10))              ; LF
+                            (not (= schar.code 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a string literal."
-                      schar.unwrap)
+                      schar.code)
                (pristate-fix pstate)))
-           (print-char schar.unwrap pstate))
+           (print-char schar.code pstate))
    :escape (print-escape schar.unwrap pstate))
   :hooks (:fix)
 
@@ -1895,6 +1895,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-label-declaration ((labels ident-listp) (pstate pristatep))
+  :guard (and (consp labels)
+              (ident-list-aidentp labels (pristate->gcc pstate)))
+  :returns (new-pstate pristatep)
+  :short "Print a label declaration consisting of one or more labels."
+  (b* ((pstate (print-indent pstate))
+       (pstate (print-astring "__label__ " pstate))
+       (pstate (print-ident-list labels pstate))
+       (pstate (print-astring ";" pstate))
+       (pstate (print-new-line pstate)))
+    pstate)
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-gcc print-label-declaration))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-label-declaration-list ((labelss ident-list-listp)
+                                      (pstate pristatep))
+  :guard (ident-list-list-aidentp labelss (pristate->gcc pstate))
+  :returns (new-pstate pristatep)
+  :short "Print zero or more label declarations."
+  (b* (((when (endp labelss)) (pristate-fix pstate))
+       (labels (car labelss))
+       ((unless (consp labels))
+        (raise "Misusage error: ~
+                empty list of labels in a label declaration.")
+        (pristate-fix pstate))
+       (pstate (print-label-declaration labels pstate)))
+    (print-label-declaration-list (cdr labelss) pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-gcc print-label-declaration-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines print-exprs/decls/stmts
   :short "Print expressions, declarations, statements, and related entities."
 
@@ -2272,7 +2312,7 @@
            :cast/logand-ambig (prog2$ (impossible) (pristate-fix pstate))
            :stmt
            (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-block expr.items pstate))
+                (pstate (print-block expr.block pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :tycompat
@@ -3857,7 +3897,7 @@
           (pstate (print-astring ":" pstate)))
        (if (stmt-case stmt.stmt :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.stmt) pstate))
+                (pstate (print-block (stmt-compound->block stmt.stmt) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3867,7 +3907,7 @@
            pstate)))
      :compound
      (b* ((pstate (print-indent pstate))
-          (pstate (print-block stmt.items pstate))
+          (pstate (print-block stmt.block pstate))
           (pstate (print-new-line pstate)))
        pstate)
      :expr
@@ -3888,7 +3928,7 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.then :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.then) pstate))
+                (pstate (print-block (stmt-compound->block stmt.then) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3903,7 +3943,7 @@
           (pstate (print-astring ")" pstate))
           (pstate (if (stmt-case stmt.then :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->items stmt.then)
+                           (pstate (print-block (stmt-compound->block stmt.then)
                                                 pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -3918,7 +3958,7 @@
           (pstate (print-astring "else" pstate))
           (pstate (if (stmt-case stmt.else :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->items stmt.else)
+                           (pstate (print-block (stmt-compound->block stmt.else)
                                                 pstate))
                            (pstate (print-new-line pstate)))
                         pstate)
@@ -3935,7 +3975,7 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.body) pstate))
+                (pstate (print-block (stmt-compound->block stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3950,7 +3990,7 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.body) pstate))
+                (pstate (print-block (stmt-compound->block stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3963,7 +4003,7 @@
           (pstate (print-astring "do" pstate))
           (pstate (if (stmt-case stmt.body :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->items stmt.body)
+                           (pstate (print-block (stmt-compound->block stmt.body)
                                                 pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -3997,7 +4037,7 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.body) pstate))
+                (pstate (print-block (stmt-compound->block stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -4022,7 +4062,7 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->items stmt.body) pstate))
+                (pstate (print-block (stmt-compound->block stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -4097,9 +4137,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-block ((items block-item-listp) (pstate pristatep))
-    :guard (and (block-item-list-unambp items)
-                (block-item-list-aidentp items (pristate->gcc pstate)))
+  (define print-block ((block blockp) (pstate pristatep))
+    :guard (and (block-unambp block)
+                (block-aidentp block (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a block."
@@ -4108,27 +4148,29 @@
      (xdoc::p
       "This prints the open curly brace in the current position on the line,
        i.e. without printing any new line or indentation.
-       Then it prints the block items after a new line
+       Then it prints the label declarations and block items after a new line
        and after incrementing the indentation level,
        and finally it restores the indentation level
        and prints the closed curly brace,
        without any new line after that.")
      (xdoc::p
       "In other words, this prints the block ``inline'',
-       but the block items between the curly braces
+       but the label declarations and block items between the curly braces
        are printed on multiple lines, with appropriate indentation.
        This facilitates the compositional printing
        of compound sub-statements of statements;
        see how it is used in @(tsee print-stmt)."))
-    (b* ((pstate (print-astring "{" pstate))
+    (b* (((block block) block)
+         (pstate (print-astring "{" pstate))
          (pstate (print-new-line pstate))
          (pstate (inc-pristate-indent pstate))
-         (pstate (print-block-item-list items pstate))
+         (pstate (print-label-declaration-list block.labels pstate))
+         (pstate (print-block-item-list block.items pstate))
          (pstate (dec-pristate-indent pstate))
          (pstate (print-indent pstate))
          (pstate (print-astring "}" pstate)))
       pstate)
-    :measure (two-nats-measure (block-item-list-count items) 1))
+    :measure (two-nats-measure (block-count block) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

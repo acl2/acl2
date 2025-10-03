@@ -111,6 +111,7 @@
      to call @(tsee ascii-ident-stringp) on the unwrapped value."))
   :types (ident
           ident-list
+          ident-list-list
           ident-option
           const
           attrib-name

@@ -87,7 +87,7 @@
      :comma (union (free-vars-expr expr.first bound-vars)
                    (free-vars-expr expr.next bound-vars))
      :stmt (b* (((mv free-vars -)
-                 (free-vars-block-item-list expr.items bound-vars)))
+                 (free-vars-block expr.block bound-vars)))
              free-vars)
      :tycompat (union (free-vars-tyname expr.type1 bound-vars)
                       (free-vars-tyname expr.type2 bound-vars))
@@ -913,7 +913,7 @@
      :labeled (union (free-vars-label stmt.label bound-vars)
                      (free-vars-stmt stmt.stmt bound-vars))
      :compound (b* (((mv free-vars -)
-                     (free-vars-block-item-list stmt.items bound-vars)))
+                     (free-vars-block stmt.block bound-vars)))
                  free-vars)
      :expr (free-vars-expr-option stmt.expr? bound-vars)
      :if (union (free-vars-expr stmt.test bound-vars)
@@ -977,6 +977,15 @@
           bound-vars))
     :measure (block-item-list-count items))
 
+  (define free-vars-block
+    ((block blockp)
+     (bound-vars ident-setp))
+    :short "Collect free variables appearing in a block."
+    :returns (mv (free-vars ident-setp)
+                 (bound-vars ident-setp))
+    (free-vars-block-item-list (block->items block) bound-vars)
+    :measure (block-count block))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
@@ -995,7 +1004,7 @@
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
         (free-vars-decl-list fundef.decls bound-vars))
-       ((mv free-vars5 &) (free-vars-block-item-list fundef.body bound-vars)))
+       ((mv free-vars5 &) (free-vars-block fundef.body bound-vars)))
     (union free-vars1
            (union free-vars2
                   (union free-vars3 (union free-vars4 free-vars5))))))

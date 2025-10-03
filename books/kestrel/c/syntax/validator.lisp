@@ -16,6 +16,7 @@
 
 (include-book "builtin")
 (include-book "unambiguity")
+(include-book "type-specifier-lists")
 (include-book "validation-information")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -830,21 +831,21 @@
               (ienv->uchar-max ienv))))
     (c-char-case
      cchar
-     :char (cond ((= cchar.unwrap (char-code #\'))
+     :char (cond ((= cchar.code (char-code #\'))
                   (retmsg$ "Single quote cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 10)
+                 ((= cchar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 13)
+                 ((= cchar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> cchar.unwrap max)
+                 ((> cchar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceed the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           cchar.unwrap max (cprefix-option-fix prefix?)))
-                 (t (retok cchar.unwrap)))
+                           cchar.code max (cprefix-option-fix prefix?)))
+                 (t (retok cchar.code)))
      :escape (valid-escape cchar.unwrap max)))
   :hooks (:fix))
 
@@ -968,21 +969,21 @@
               (ienv->uchar-max ienv))))
     (s-char-case
      schar
-     :char (cond ((= schar.unwrap (char-code #\"))
+     :char (cond ((= schar.code (char-code #\"))
                   (retmsg$ "Double quote cannot be used directly ~
                             in a string literal."))
-                 ((= schar.unwrap 10)
+                 ((= schar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= schar.unwrap 13)
+                 ((= schar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> schar.unwrap max)
+                 ((> schar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceeds the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           schar.unwrap max (eprefix-option-fix prefix?)))
-                 (t (retok schar.unwrap)))
+                           schar.code max (eprefix-option-fix prefix?)))
+                 (t (retok schar.code)))
      :escape (valid-escape schar.unwrap max)))
   :hooks (:fix))
 
@@ -1987,6 +1988,38 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((type-spec-list-float16-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128x-complex-p tyspecs)
+      (retok (type-unknown)))
      ((or (type-spec-list-int128-p tyspecs)
           (type-spec-list-signed-int128-p tyspecs))
       (retok (type-unknown)))
@@ -2579,12 +2612,10 @@
                        type
                        (set::union types1 types2)
                        table))
-       :stmt (b* ((table (valid-push-scope table))
-                  ((erp new-items types type? table)
-                   (valid-block-item-list expr.items table ienv))
-                  (table (valid-pop-scope table))
+       :stmt (b* (((erp new-block types type? table)
+                   (valid-block expr.block table ienv))
                   (type (or type? (type-void))))
-               (retok (expr-stmt new-items) type types table))
+               (retok (expr-stmt new-block) type types table))
        :tycompat (b* (((erp new-type1 & types1 table)
                        (valid-tyname expr.type1 table ienv))
                       ((erp new-type2 & types2 table)
@@ -3031,62 +3062,14 @@
                       ext-tyspecs
                       nil
                       same-table)
-       :float16 (if (endp tyspecs)
-                    (retok (type-spec-float16)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float16x (if (endp tyspecs)
-                     (retok (type-spec-float16x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float32 (if (endp tyspecs)
-                    (retok (type-spec-float32)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float32x (if (endp tyspecs)
-                     (retok (type-spec-float32x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float64 (if (endp tyspecs)
-                    (retok (type-spec-float64)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float64x (if (endp tyspecs)
-                     (retok (type-spec-float64x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128 (if (endp tyspecs)
-                     (retok (type-spec-float128)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128x (if (endp tyspecs)
-                      (retok (type-spec-float128x)
-                             (type-unknown)
-                             nil
-                             nil
-                             same-table)
-                    (reterr msg-bad-preceding))
+       :float16 (retok (type-spec-float16) nil ext-tyspecs nil same-table)
+       :float16x (retok (type-spec-float16x) nil ext-tyspecs nil same-table)
+       :float32 (retok (type-spec-float32) nil ext-tyspecs nil same-table)
+       :float32x (retok (type-spec-float32x) nil ext-tyspecs nil same-table)
+       :float64 (retok (type-spec-float64) nil ext-tyspecs nil same-table)
+       :float64x (retok (type-spec-float64x) nil ext-tyspecs nil same-table)
+       :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-table)
+       :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-table)
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
                                    (type-unknown)
@@ -5755,11 +5738,9 @@
                 type?
                 table))
        :compound
-       (b* ((table (valid-push-scope table))
-            ((erp new-items types type? table)
-             (valid-block-item-list stmt.items table ienv))
-            (table (valid-pop-scope table)))
-         (retok (stmt-compound new-items) types type? table))
+       (b* (((erp new-block types type? table)
+             (valid-block stmt.block table ienv)))
+         (retok (stmt-compound new-block) types type? table))
        :expr
        (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv)))
@@ -6014,6 +5995,39 @@
              last-expr-type?
              table))
     :measure (block-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-block ((block blockp) (table valid-tablep) (ienv ienvp))
+    :guard (block-unambp block)
+    :returns (mv (erp maybe-msgp)
+                 (new-block blockp)
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a block."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the same kind of type results
+       as @(tsee valid-stmt) (see that function's documentation),
+       with the modification that
+       the @('last-expr-type?') result is a type exactly when
+       the list of block items is not empty
+       and the validation of the last block item
+       returns a type as that result."))
+    (b* (((reterr) (irr-block) nil nil (irr-valid-table))
+         ((block block) block)
+         (table (valid-push-scope table))
+         ((erp new-items types last-expr-type? table)
+          (valid-block-item-list block.items table ienv))
+         (table (valid-pop-scope table)))
+      (retok (make-block :labels block.labels :items new-items)
+             types
+             last-expr-type?
+             table))
+    :measure (block-count block))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6279,6 +6293,11 @@
                (block-item-list-unambp new-items))
       :hyp (block-item-list-unambp items)
       :fn valid-block-item-list)
+    (defret block-unambp-of-valid-block
+      (implies (not erp)
+               (block-unambp new-block))
+      :hyp (block-unambp block)
+      :fn valid-block)
     ;; These hints only enable VALID-DECL-SPEC-LIST
     ;; in the cases involving that function.
     ;; Without this, the proof seems to hang, or at least take a very long time.
@@ -6502,7 +6521,7 @@
                                  table)
                 table))
        (table-body-start table)
-       ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
+       ((erp new-body & & table) (valid-block fundef.body table ienv))
        (table (valid-pop-scope table))
        (info (make-fundef-info :table-start table-start
                                :table-body-start table-body-start

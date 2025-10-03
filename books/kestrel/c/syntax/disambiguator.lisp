@@ -1467,8 +1467,8 @@
                                        expr.arg/arg2)
            table)))
        :stmt
-       (b* (((erp items table) (dimb-block-item-list expr.items table)))
-         (retok (expr-stmt items) table))
+       (b* (((erp block table) (dimb-block expr.block table)))
+         (retok (expr-stmt block) table))
        :tycompat
        (b* (((erp type1 table) (dimb-tyname expr.type1 table))
             ((erp type2 table) (dimb-tyname expr.type2 table)))
@@ -2887,10 +2887,8 @@
          (retok (make-stmt-labeled :label new-label :stmt new-stmt)
                 table))
        :compound
-       (b* ((table (dimb-push-scope table))
-            ((erp new-items table) (dimb-block-item-list stmt.items table))
-            (table (dimb-pop-scope table)))
-         (retok (stmt-compound new-items) table))
+       (b* (((erp block table) (dimb-block stmt.block table)))
+         (retok (stmt-compound block) table))
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-expr :expr? new-expr? :info nil) table))
@@ -3047,6 +3045,22 @@
          ((erp new-items table) (dimb-block-item-list (cdr items) table)))
       (retok (cons new-item new-items) table))
     :measure (block-item-list-count items))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-block ((block blockp) (table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-block blockp)
+                 (new-table dimb-tablep))
+    :parents (disambiguator dimb-exprs/decls/stmts)
+    :short "Disambiguate a block."
+    (b* (((reterr) (irr-block) (irr-dimb-table))
+         ((block block) block)
+         (table (dimb-push-scope table))
+         ((erp new-items table) (dimb-block-item-list block.items table))
+         (table (dimb-pop-scope table)))
+      (retok (make-block :labels block.labels :items new-items) table))
+    :measure (block-count block))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3491,6 +3505,10 @@
       (implies (not erp)
                (block-item-list-unambp new-items))
       :fn dimb-block-item-list)
+    (defret block-unambp-of-dimb-block
+      (implies (not erp)
+               (block-unambp new-block))
+      :fn dimb-block)
     (defret expr/tyname-unambp-of-dimb-amb-expr/tyname
       (implies (not erp)
                (expr/tyname-unambp expr-or-tyname))
@@ -3583,14 +3601,14 @@
                          (ident "__PRETTY_FUNCTION__"))
                    table)
                 table))
-       ((erp new-items table) (dimb-block-item-list fundef.body table))
+       ((erp new-body table) (dimb-block fundef.body table))
        (table (dimb-pop-scope table))
        (table (dimb-add-ident ident (dimb-kind-objfun) table)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
                         :decls new-decls
-                        :body new-items
+                        :body new-body
                         :info fundef.info)
            table))
   :hooks (:fix)

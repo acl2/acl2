@@ -310,6 +310,11 @@
  :cond (and (expr-case ast :paren)
             (expr-case (expr-paren->inner ast) :member)))
 
+(test-parse
+ parse-expression
+ "(f)()"
+ :cond (equal (expr-kind ast) :funcall))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator
@@ -705,6 +710,53 @@
  parse-statement
  "case 'a' ... 'z': return;"
  :gcc t)
+
+(test-parse
+ parse-statement
+ "{}")
+
+(test-parse
+ parse-statement
+ "{
+  int x = 0;
+}")
+
+(test-parse
+ parse-statement
+ "{
+  __label__ lab;
+  int x = 0;
+}"
+ :gcc t
+ :cond (and (stmt-case ast :compound)
+            (equal (block->labels (stmt-compound->block ast))
+                   (list (list (ident "lab"))))))
+
+(test-parse
+ parse-statement
+ "{
+  __label__ lab1, lab2;
+  int x = 0;
+}"
+ :gcc t
+ :cond (and (stmt-case ast :compound)
+            (equal (block->labels (stmt-compound->block ast))
+                   (list (list (ident "lab1")
+                               (ident "lab2"))))))
+
+(test-parse
+ parse-statement
+ "{
+  __label__ lab1, lab2;
+  __label__ lab3;
+  int x = 0;
+}"
+ :gcc t
+ :cond (and (stmt-case ast :compound)
+            (equal (block->labels (stmt-compound->block ast))
+                   (list (list (ident "lab1")
+                               (ident "lab2"))
+                         (list (ident "lab3"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

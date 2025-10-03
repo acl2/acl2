@@ -52,10 +52,6 @@
       t
       :rule-classes nil
       :flag exec-fun)
-    (defthm exec-expr-call-without-calls
-      t
-      :rule-classes nil
-      :flag exec-expr-call)
     (defthm exec-expr-without-calls
       (implies (expr-nocallsp e)
                (equal (exec-expr e compst fenv limit)
@@ -100,8 +96,7 @@
       :rule-classes nil
       :flag exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable exec-expr-call
-                                exec-expr
+             :in-theory (enable exec-expr
                                 exec-stmt
                                 exec-stmt-while
                                 exec-initer
