@@ -39,8 +39,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ preprocessing
-  :parents (syntax-for-tools)
+(defxdoc+ external-preprocessing
+  :parents (preprocessing)
   :short "An interface to C preprocessors."
   :long
   (xdoc::topstring
