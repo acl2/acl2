@@ -15,7 +15,7 @@
 (include-book "std/testing/must-eval-to-t" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 
-(include-book "../preprocess-file")
+(include-book "../external-preprocessing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
