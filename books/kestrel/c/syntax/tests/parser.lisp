@@ -315,6 +315,11 @@
  "(f)()"
  :cond (equal (expr-kind ast) :funcall))
 
+(test-parse
+ parse-expression
+ "(x->y >= (f()) && x->y < (g()))"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator

@@ -2892,14 +2892,14 @@
                           ((expr-postfix/primary-p expr)
                            (retok (make-expr-cast/call-ambig
                                    :type/fun expr/tyname.unwrap
-                                   :inc/dec incdecops
+                                   :inc/dec nil
                                    :arg/rest expr)
                                   (span-join span last-span)
                                   parstate))
                           ;; If the cast expression just parsed is not postfix,
                           ;; then it must be a proper cast expression,
                           ;; because we know from above that
-                          ;; the expression starts with open parenthesis.
+                          ;; the expression starts with an open parenthesis.
                           ;; In this case we have resolved the ambiguity:
                           ;; the previously parsed
                           ;; ambiguous expression or type name
@@ -2979,32 +2979,27 @@
               ;; is in fact an expression,
               ;; and the increment and decrement operators, if any,
               ;; are postfix operators.
-              ;; Furthermore, there may be further postfix constructs,
-              ;; e.g. an array access.
-              ;; In this case we backtrack all the way
-              ;; to the initial open parenthesis,
-              ;; we put back that one too,
-              ;; and we parse a postfix expression.
-              ;; It must be a postfix expression,
-              ;; because it starts with an open parenthesis,
-              ;; and we are expecting either a cast expression proper
-              ;; (which has been excluded at this point)
-              ;; or a unary expression that starts with an open parenthesis,
-              ;; so in fact it is a primary parenthesized expression,
-              ;; or a postfix expression starting with
-              ;; a primary parenthesized expression.
+              ;; If the '&&' is followed by an identifier,
+              ;; we need to parse an inclusive `or' expression,
+              ;; because it could be the right operand of
+              ;; a conditional `and' expression.
               ((and (token-punctuatorp token2 "&&") ; ( expr/tyname) [ops] &&
                     (parstate->gcc parstate))
-               (b* (((erp token3 last-span parstate) (read-token parstate)))
+               (b* (((erp token3 & parstate) (read-token parstate)))
                  (cond
                   ((and token3 (token-case token3 :ident))
                    ;; ( expr/tyname ) [ops] && ident
-                   (retok (make-expr-cast/logand-ambig
-                           :type/arg1 expr/tyname.unwrap
-                           :inc/dec incdecops
-                           :arg/arg2 (token-ident->unwrap token3))
-                          (span-join span last-span)
-                          parstate))
+                   (b* ((parstate (unread-token parstate))
+                        ;; ( expr/tyname ) [ops] &&
+                        ((erp expr last-span parstate)
+                         ;; ( expr/tyname ) [ops] && expr
+                         (parse-inclusive-or-expression parstate)))
+                     (retok (make-expr-cast/logand-ambig
+                             :type/arg1 expr/tyname.unwrap
+                             :inc/dec incdecops
+                             :arg/arg2 expr)
+                            (span-join span last-span)
+                            parstate)))
                   (t ; ( expr/tyname ) [ops] && other
                    (b* ((parstate (unread-to-token checkpoint parstate)) ; (
                         ((unless (<= (parsize parstate) psize))

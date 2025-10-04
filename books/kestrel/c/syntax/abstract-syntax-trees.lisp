@@ -1600,13 +1600,12 @@
       "( X ) IncDec + E"
       "( X ) IncDec - E"
       "( X ) IncDec & E"
-      "( X ) IncDec && I")
+      "( X ) IncDec && E")
      (xdoc::p
       "where @('X') is an ambiguous expression or type name,
        @('IncDec') is a sequence of zero or more
        increment and decrement operators @('++') and @('--'),
        @('E') is an expression,
-       @('I') is an identifier,
        @('Pr') is a possibly empty rest of a postfix expression,
        and the last one is ambiguous only if
        GCC extensions are enabled,
@@ -1689,12 +1688,11 @@
        are both unary and binary
        (the last one only if GCC extensions are enabled).
        Thus, if @('X') is a type name,
-       the @('* E') or @('+ E') or @('- E') or @('& E') or @('&& I')
+       the @('* E') or @('+ E') or @('- E') or @('& E') or @('&& E')
        is a unary expression that is the argument of the cast;
        the operator is unary.
        If instead @('X') is an expression,
-       the operator is binary with operands @('(X)') and @('E'),
-       or @('X') and @('I') in the case of @('&&').
+       the operator is binary with operands @('(X)') and @('E').
        The cases
        @(':cast/mul-ambig'),
        @(':cast/add-ambig'),
@@ -1707,14 +1705,14 @@
        multiplications/additions/subtractions/conjunctions
        (the latter strict or conditional).
        Their first component is @('X'),
-       and their last component is @('E') or @('I').
+       and their last component is @('E').
        Their middle component is a list of zero or more
        increment and decrement operators that may be in between,
        i.e. @('IncDec') in the patterns shown earlier.
        Their presence maintain the ambiguity:
        if @('X') is a type name,
        they are pre-increment and pre-decrement operators
-       applied to @('* E') or @('+ E') or @('- E') or @('& E') or @('&& I');
+       applied to @('* E') or @('+ E') or @('- E') or @('& E') or @('&& E');
        if @('X') is an expression,
        they are post-increment and post-decrement operators applied to @('X'),
        forming the left operand of the binary operators.")
@@ -1737,8 +1735,19 @@
        captures all and only the ambiguous expressions
        that start with @('(X)')
        where @('X') is an ambiguous type name or expression.
-       Also see how @(see parser) handles
-       possibly ambiguous cast expressions.")
+       Also see how the @(see parser) handles these ambiguities.")
+     (xdoc::p
+      "Although the ambiguity with @('&&') arises
+       only when @('E') is an identifier,
+       the AST accommodates a more general expression
+       because when the parser constructs that AST,
+       it has to include the possibility of @('E') being
+       the right side of a binary @('&&').
+       The same applies to the other unary/binary operators:
+       the expression @('E') may have a lower grammatical priority
+       than allowed if the operator were unary.
+       The @(see disambiguator) takes care of repackaging @('E')
+       when resolving the ambiguity.")
      (xdoc::p
       "As a GCC extension, we allow the omission of
        the `then' sub-expression of a conditional expression.
@@ -1824,7 +1833,7 @@
                       (arg/arg2 expr)))
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
-                         (arg/arg2 ident)))
+                         (arg/arg2 expr)))
     (:stmt ((block block)))
     ;; GCC extensions:
     (:tycompat ((type1 tyname)
