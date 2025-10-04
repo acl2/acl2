@@ -39,11 +39,14 @@
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
 (local (in-theory (disable acl2-count ;for speed
-                           w)))
+                           w
+                           state-p1-forward
+                           state-p-implies-and-forward-to-state-p1)))
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
@@ -255,7 +258,8 @@
                   :guard-hints (("Goal" :in-theory (e/d (true-listp-when-symbol-listp-rewrite-unlimited)
                                                         (myquotep ;looped
                                                          quotep
-                                                         min)))))
+                                                         ;min
+                                                         )))))
            (irrelevant print-interval) ; todo
            )
   (if (or (zp steps-left)
@@ -480,13 +484,41 @@
   (symbol-listp (choose-symbolic-execution-rules steps branches))
   :hints (("Goal" :in-theory (enable choose-symbolic-execution-rules))))
 
+;; Returns (mv erp rule-alists).
+;; Having this separate speeds up the guard proof below
+(defund rule-alists-for-unroll (rule-alists symbolic-execution-rules wrld)
+  (declare (xargs :guard (and (rule-alistsp rule-alists)
+                              (symbol-listp symbolic-execution-rules)
+                              (plist-worldp wrld))))
+  (if rule-alists ; use the user-supplied rule-alists, if any
+      ;; todo:  should we at least include the symbolic-execution-rules?
+      (mv (erp-nil) rule-alists)
+    ;; by default, we use 1 rule-alist:
+    ;; todo: pre-compute each possibility here (but what about priorities?)
+    (b* (((mv erp rule-alist)
+          (make-rule-alist (append (unroll-java-code-rules)
+                                   symbolic-execution-rules)
+                           wrld))
+         ((when erp) (mv erp nil)))
+      (mv (erp-nil) (list rule-alist)))))
+
+(defthm rule-alistsp-of-mv-nth-1-of-rule-alists-for-unroll
+  (implies (and (not (mv-nth 0 (rule-alists-for-unroll rule-alists symbolic-execution-rules wrld)))
+                (rule-alistsp rule-alists)
+                (symbol-listp symbolic-execution-rules)
+                (plist-worldp wrld))
+           (rule-alistsp (mv-nth 1 (rule-alists-for-unroll rule-alists symbolic-execution-rules wrld))))
+  :hints (("Goal" :in-theory (e/d (rule-alists-for-unroll symbol-listp-of-unroll-java-code-rules)
+                                  (append-of-cons-arg1 ; todo: bad
+                                   )))))
+
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
 ;; This uses all classes currently in the global-class-alist.
 ;; Why does this return the dag-fns?
 ;; Consider
 ;; (set-inhibit-output-lst '(proof-tree event))
 ;;when working with this function.
-;; Very slow guard proof
+;; Somewhat slow guard proof
 (defun unroll-java-code-fn-aux (method-designator-string
                                 nice-output-indicator
                                 array-length-alist
@@ -538,16 +570,13 @@
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp))
                   :stobjs state
-;                  :verify-guards nil ; todo: works but slow!
-                  ;; :guard-simplify :limited
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
                                                          steps-optionp ; todo
                                                          )
                                                         (quotep
                                                          myquotep
-                                                         integerp-of-nth-when-all-natp))
-                                 ;:do-not '(preprocess)
-                                 ))))
+                                                         integerp-of-nth-when-all-natp
+                                                         pseudo-term-listp))))))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -660,20 +689,12 @@
        ;;todo: can we call output-extraction-term here?
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor simple-output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
-       ;; Decide which symbolic execution rule to use:
+       ;; Decide which symbolic execution rules to use:
        (symbolic-execution-rules (choose-symbolic-execution-rules steps branches))
-       ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
+
+       ;; Make the rule-alists:
        ((mv erp rule-alists)
-        (if rule-alists ;use user-supplied rule-alists, if any
-            (mv (erp-nil) rule-alists)
-          ;; by default, we use 1 rule-alist:
-          ;; todo: pre-compute each possibility here (but what about priorities?)
-          (b* (((mv erp rule-alist)
-                (make-rule-alist (append (unroll-java-code-rules)
-                                         symbolic-execution-rules)
-                                 (w state)))
-               ((when erp) (mv erp nil)))
-            (mv (erp-nil) (list rule-alist)))))
+        (rule-alists-for-unroll rule-alists symbolic-execution-rules (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
        ;; maybe add some rules (can't call add-to-rule-alists because these are not theorems in the world):
        (rule-alists (extend-rule-alists2 ;; Maybe include the ignore-XXX rules:
@@ -686,13 +707,15 @@
        ((when erp) (mv erp nil nil nil nil nil state))
        ;; Exclude any :remove-rules given:
        (rule-alists (remove-from-rule-alists remove-rules rule-alists))
+
        ;; Simplify the assumptions using themselves (example: an automatic
        ;; assumption replaces an array's contents with a var, and a user
        ;; assumption replaces that var with another term):
        ((mv erp all-assumptions)
         (acl2::simplify-conjunction-with-rule-alists-basic ;simplify-terms-repeatedly
           all-assumptions
-          (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) rule-alists) ; could use a separate rules for this assumption simplification
+          ;; why are we removing this?:
+          (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) rule-alists) ; could use separate rules for this assumption simplification
           (acl2::known-booleans (w state))
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; no-warn-ground-functions
@@ -791,7 +814,7 @@
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (all-rule-alistp rule-alists)
+                              (rule-alistsp rule-alists)
                               (symbol-listp monitored-rules)
                               (array-length-alistp array-length-alist)
                               (booleanp memoizep)
