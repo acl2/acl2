@@ -218,8 +218,6 @@
     (param-var-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist ; array-length-alist
                                )))
 
-
-
 ;;;
 ;;; Testing a given method (to be called from the ACL2 REPL)
 ;;;
@@ -311,6 +309,8 @@
           (cons method-id (select-method-ids-to-test (rest method-info-alist) methods-to-test))
         (select-method-ids-to-test (rest method-info-alist) methods-to-test)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun strip-steps-from-term (expr)
   (declare (xargs :guard (pseudo-termp expr)))
   (if (and (call-of 'step-state-with-pc-and-call-stack-height expr)
@@ -380,6 +380,8 @@
           (er hard? 'convert-assert-branches-unguarded "Bad dag: ~x0." dag))
     (convert-assert-branches dag)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
   `( ;; assertion checking is on:
@@ -398,6 +400,8 @@
 (defthm pseudo-term-listp-of-assert-assumptions
   (pseudo-term-listp (assert-assumptions class-name))
   :hints (("Goal" :in-theory (enable assert-assumptions))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun method-should-failp (method-name methods-expected-to-fail)
   (declare (xargs :guard (and (stringp method-name)
@@ -514,9 +518,9 @@
                                     ))
        (assert-assumptions (assert-assumptions class-name))
        (- (cw "(Unrolling code:~%"))
-       ((mv erp dag & & & & state)
+       ((mv erp dag & & & state)
         ;; TODO: Use assumptions here:
-        (unroll-java-code-fn-aux method-designator-string
+        (unroll-java-code-core method-designator-string
                                  output-indicator
                                  nil   ;;array-length-alist
                                  ;; extra-rules, to add to default set:

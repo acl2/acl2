@@ -335,7 +335,7 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         (dag-fns (dag-fns dag))
+         (dag-fns (dag-fns dag)) ; optimize to not create the whole list
          (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
           (prog2$ (cw "Note: The run has completed.~%")
@@ -446,13 +446,13 @@
     (implies (symbol-listp x)
              (eqlable-listp x))))
 
-;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
   (or (eq :all classes-to-assume-initialized)
       (jvm::all-class-namesp classes-to-assume-initialized)))
 
-;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
   (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (class-table-alistp class-alist))))
@@ -515,14 +515,14 @@
                                   (append-of-cons-arg1 ; todo: bad
                                    )))))
 
-;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
+;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor parameter-names state).
 ;; This uses all classes currently in the global-class-alist.
-;; Why does this return the dag-fns?
 ;; Consider
 ;; (set-inhibit-output-lst '(proof-tree event))
 ;;when working with this function.
 ;; Somewhat slow guard proof
-(defun unroll-java-code-fn-aux (method-designator-string
+;; This is also called in tester.lisp.
+(defun unroll-java-code-core (method-designator-string
                                 nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
@@ -586,34 +586,34 @@
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
        ((when (not (jvm::method-descriptorp method-descriptor)))
-        (mv :bad-descriptor nil nil nil nil nil state))
+        (mv :bad-descriptor nil nil nil nil state))
        ;; TODO: If only one method with that name, just put in its descriptor
        ((when (equal method-descriptor ""))
         (mv t
             (er hard? 'unroll-java-code-fn "Method descriptor is missing in ~x0." method-designator-string)
-            nil nil nil nil
+            nil nil nil
             state))
        (class-alist (jvm::global-class-alist state))
        ((when (not (class-table-alistp class-alist)))
-        (mv :bad-global-class-alist nil nil nil nil nil state))
+        (mv :bad-global-class-alist nil nil nil nil state))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Class ~x0 not found." method-class)
-            nil nil nil nil
+            nil nil nil
             state))
        (class-info (lookup-equal method-class class-alist))
        ((when (not (jvm::class-infop0 class-info))) ; drop?
-        (mv :bad-class-info nil nil nil nil nil state))
+        (mv :bad-class-info nil nil nil nil state))
        (method-info-alist (jvm::class-decl-methods class-info))
        (method-id (cons method-name method-descriptor))
        ((when (not (assoc-equal method-id method-info-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Method ~x0 not found." method-id)
-            nil nil nil nil
+            nil nil nil
             state))
        (method-info (lookup-equal method-id method-info-alist))
        ((when (not (jvm::method-infop method-info)))
-        (mv :bad-method-info nil nil nil nil nil state))
+        (mv :bad-method-info nil nil nil nil state))
        (param-slot-to-name-alist (make-param-slot-to-name-alist method-info param-names))
        (parameter-names (strip-cdrs param-slot-to-name-alist)) ; the actual names used
        (class-table-term (make-class-table-term-compact class-alist 'initial-class-table))
@@ -625,8 +625,8 @@
        ;; (allowed-assumption-vars (append parameter-names
        ;;                                  '(locals initial-heap initial-static-field-map and initial-intern-table)))
        ;; ((when (not (subsetp-eq assumption-vars allowed-assumption-vars)))
-       ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
-       ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
+       ;;  (er hard? 'unroll-java-code-core "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
+       ;;  (mv :bad-assumption-vars nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
        ;; todo: have this return all the var names created for array components/bits:
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
@@ -642,12 +642,12 @@
        ((when (not (no-duplicatesp parameter-names)))
         (mv t
             (er hard? 'unroll-java-code-fn "We don't yet support lifting methods with parameter names that differ only in case, but method ~x0 has params ~x1." method-name parameter-names)
-            nil nil nil nil
+            nil nil nil
             state))
        ((when (not (subsetp-eq (strip-cars array-length-alist) parameter-names)))
         (mv t
             (er hard? 'unroll-java-code-fn "Bad :array-length-alist: ~x0.  Should only mention params ~x1.  Note that param names may depend on whether debugging info is present in the .class file." array-length-alist parameter-names)
-            nil nil nil nil
+            nil nil nil
             state))
        (- (and print (cw "(Parameter assumptions: ~x0.)~%" parameter-assumptions)))
        (classes-to-assume-initialized (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist))
@@ -685,12 +685,12 @@
        (return-type (lookup-eq :return-type method-info))
        ((when (not (or (eq :void return-type)
                        (jvm::typep return-type))))
-        (mv :bad-return-type nil nil nil nil nil state))
+        (mv :bad-return-type nil nil nil nil state))
        (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :rv or a param-name:
        (simple-output-indicator (desugar-nice-output-indicator nice-output-indicator param-slot-to-name-alist parameter-types return-type))
        ((when (not simple-output-indicator))
-        (mv :failed-to-resolve-output-indicator nil nil nil nil nil state))
+        (mv :failed-to-resolve-output-indicator nil nil nil nil state))
        ;;todo: can we call output-extraction-term here?
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor simple-output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
@@ -700,7 +700,7 @@
        ;; Make the rule-alists:
        ((mv erp rule-alists)
         (rule-alists-for-unroll rule-alists symbolic-execution-rules (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil state))
        ;; maybe add some rules (can't call add-to-rule-alists because these are not theorems in the world):
        (rule-alists (extend-rule-alists2 ;; Maybe include the ignore-XXX rules:
                       (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
@@ -709,7 +709,7 @@
                       (w state)))
        ;; Include any :extra-rules given:
        ((mv erp rule-alists) (add-to-rule-alists extra-rules rule-alists (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil state))
        ;; Exclude any :remove-rules given:
        (rule-alists (remove-from-rule-alists remove-rules rule-alists))
 
@@ -728,14 +728,14 @@
           count-hits
           t   ; todo: warn just once
           ))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil state))
        (- (and (print-level-at-least-tp print)
                (cw "(Simplified assumptions:~%~X01" all-assumptions nil)))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil state))
        ((when (quotep dag-to-simulate)) ; todo: return it?
-        (mv :unexpected-quotep nil nil nil nil nil state))
+        (mv :unexpected-quotep nil nil nil nil state))
        (step-limit 1000000)
        (step-increment (if chunkedp 100 1000000)) ; todo: let the chunk size be configurable
        ((mv erp dag state)
@@ -756,9 +756,9 @@
                         state))
        ((when erp)
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
-        (mv erp nil nil nil nil nil state))
+        (mv erp nil nil nil nil state))
        ((when (quotep dag)) ; todo: test this case
-        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
        ;; TODO: Consider calling prune-dag-approximately here:
        ;; TODO: Consider making this final pruning a separate option
@@ -774,16 +774,16 @@
                                    *no-warn-ground-functions-jvm*
                                    print
                                    state))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil state))
        ((when (quotep dag)) ; todo: test this case
-        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor parameter-names state))
        ;; Check whether symbolic execution failed:
        (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp state)))
     (mv (if (and (not dag-okp)
                  error-on-incomplete-runsp)
             (erp-t)
           (erp-nil))
-        dag all-assumptions term-to-run-with-output-extractor (dag-fns dag) parameter-names state)))
+        dag all-assumptions term-to-run-with-output-extractor parameter-names state)))
 
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
@@ -858,8 +858,8 @@
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
-       ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string
+       ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor parameter-names state)
+        (unroll-java-code-core method-designator-string
                                  nice-output-indicator
                                  array-length-alist
                                  extra-rules ;to add to default set
@@ -897,6 +897,9 @@
                      nil
                    ;;todo: check these (what should be allowed)?
                    (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
+       (dag-fns (if (quotep dag-or-quotep)
+                     nil
+                   (dag-fns dag-or-quotep)))
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
                           (dag-to-term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
