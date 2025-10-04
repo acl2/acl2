@@ -606,7 +606,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines stmts/blocks-formalp
-  :short "Chek if statements and blocks have formal dynamic semantics."
+  :short "Check if statements and blocks have formal dynamic semantics."
 
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
