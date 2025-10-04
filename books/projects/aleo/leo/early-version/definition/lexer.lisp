@@ -421,7 +421,7 @@
      in which case we re-classify the ABNF tree as a @('keyword') tree.
      Otherwise, we check whether it is a boolean literal,
      in which case we re-classify the ABNF tree as a @('boolean-literal).
-     Otherwise, we chek whether it is an address:
+     Otherwise, we check whether it is an address:
      in this case, we need to re-lex it,
      so that we can construct and return an @('address-literal').
      Otherwise, we return the @('identifier') tree,
