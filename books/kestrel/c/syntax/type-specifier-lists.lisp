@@ -422,6 +422,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-spec-list-locase-float80-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('__float80')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-locase-float80)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-locase-float128-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('__float128')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-locase-float128)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-spec-list-float16-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float16')."
@@ -523,6 +541,28 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-long)
                               (type-spec-double)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-locase-float80-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('__float80 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-locase-float80)
+                              (type-spec-complex)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-locase-float128-complex-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('__float128 _Complex') or any permutation of it."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-locase-float128)
                               (type-spec-complex)))
   :hooks (:fix))
 
