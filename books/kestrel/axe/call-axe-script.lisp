@@ -81,4 +81,4 @@
 (defthm state-p-of-mv-nth-1-of-call-axe-script
   (implies (state-p state)
            (state-p (mv-nth 1 (call-axe-script script-name script-args state))))
-  :hints (("Goal" :in-theory (e/d (call-axe-script) ()))))
+  :hints (("Goal" :in-theory (enable call-axe-script))))

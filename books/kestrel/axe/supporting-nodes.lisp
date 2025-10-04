@@ -568,7 +568,6 @@
                                                       translation-array dag-acc))))
   :hints (("Goal" :use (build-reduced-dag-with-name-type
                         consp-of-mv-nth-0-of-build-reduced-dag-with-name)
-           :expand ()
            :in-theory (e/d (pseudo-dagp) (natp build-reduced-dag-with-name-type
                                                consp-of-mv-nth-0-of-build-reduced-dag-with-name
                                                ;;pseudo-dagp-aux-of-car-of-car-when-pseudo-dagp-aux

@@ -1752,8 +1752,7 @@
   :hints (("subgoal *1/2" :cases ((equal 1 n2)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (write n2 addr2 val x86)
-           :in-theory (e/d (write separate write-byte acl2::equal-of-bvchop-and-bvchop)
-                           ()))))
+           :in-theory (enable write separate write-byte acl2::equal-of-bvchop-and-bvchop))))
 
 (defthm xr-of-write-too-low
   (implies (and (< addr1 addr2)
@@ -2486,7 +2485,7 @@
            (equal (read n addr (write-byte addr val x86))
                   (putbyte n 0 val (read n addr x86))))
   :hints (("Goal" :use (:instance read-of-write-byte-within-with-< (addr2 addr) (addr1 addr))
-           :in-theory (e/d () (read-of-write-byte-within-with-<)))))
+           :in-theory (disable read-of-write-byte-within-with-<))))
 
 (defthm read-of-write-1-irrel
   (implies (and (not (bvlt 48 (bvminus 48 addr2 addr1) n))
@@ -2534,7 +2533,7 @@
                 (integerp addr2))
            (equal (write-alt n addr2 val x86)
                   (write-alt n addr val x86)))
-  :hints (("Goal" :expand ()
+  :hints (("Goal"
            :induct (double-write-induct-two-addrs N ADDR addr2 VAL X86)
            :in-theory (enable write-alt ACL2::BVCHOP-OF-SUM-CASES))))
 
@@ -2661,14 +2660,13 @@
            (equal (write n addr val x86)
                   (write-alt n addr val x86)))
   :hints (("Goal" :induct (write n addr val x86)
-           :in-theory (e/d (write
-                            write-alt
+           :in-theory (enable write
+                              write-alt
                             ;!memi
-                            write-alt-of-write-byte-irrel ;write-alt-of-xw-memi-irrel ;write-alt-of-!memi-irrel
-                            ACL2::BVPLUS-OF-+-ARG3
+                              write-alt-of-write-byte-irrel ;write-alt-of-xw-memi-irrel ;write-alt-of-!memi-irrel
+                              ACL2::BVPLUS-OF-+-ARG3
                             ;write-byte
-                            )
-                           ())
+                              )
            :expand ((WRITE N ADDR VAL X86)))))
 
 ;; (thm
@@ -3368,9 +3366,9 @@
                         ;;                        x86)))
                         )
            :cases ((zp n))
-           :in-theory (e/d () (write-of-bvchop-arg3-gen
+           :in-theory (disable write-of-bvchop-arg3-gen
                                write-of-bvchop-arg3 ; todo: just keep the gen one?
-                               )))))
+                               ))))
 
 ;move up?
 ;see also the SMT version of this rule

@@ -588,7 +588,7 @@
 ;;                                 (BVCHOP 32
 ;;                                          (+ EFF-ADDR (XR :SEG-HIDDEN-BASE 1 X86)))
 ;;                                 R-X X86)
-;;            :in-theory (e/d (x86isa::rme08 segment-base-and-bounds rb rb-1 rvm08 n48 read-byte-from-segment) ()))))
+;;            :in-theory (enable x86isa::rme08 segment-base-and-bounds rb rb-1 rvm08 n48 read-byte-from-segment))))
 
 ;; (defthm mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment-gen
 ;;   (implies (and (not (64-bit-modep x86))
@@ -1745,27 +1745,27 @@
 ;; (defthm 32-bit-segment-start-and-size-of-set-flag
 ;;   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
 ;;          (32-bit-segment-start-and-size seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+;;   :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
 ;; (defthm 32-bit-segment-start-of-set-flag
 ;;   (equal (32-bit-segment-start seg-reg (set-flag flg val x86))
 ;;          (32-bit-segment-start seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+;;   :hints (("Goal" :in-theory (enable 32-bit-segment-start))))
 
 ;; (defthm well-formed-32-bit-segmentp-of-set-flag
 ;;   (equal (well-formed-32-bit-segmentp seg-reg (set-flag flg val x86))
 ;;          (well-formed-32-bit-segmentp seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+;;   :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp))))
 
 ;; (defthm well-formed-32-bit-segmentp-of-set-undef
 ;;   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
 ;;          (well-formed-32-bit-segmentp seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+;;   :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp set-undef))))
 
 ;; (defthm well-formed-32-bit-segmentp-of-set-mxcsr
 ;;   (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
 ;;          (well-formed-32-bit-segmentp seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
+;;   :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp set-mxcsr))))
 
 ;; (defthm read-byte-from-segment-of-set-flag
 ;;   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
@@ -3656,13 +3656,12 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml-size nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (x86isa::wml08
-                                   x86isa::wml16
-                                   x86isa::wml32
-                                   x86isa::wml48
-                                   x86isa::wml64
-                                   ea-to-la)))))
+  :hints (("Goal" :in-theory (disable x86isa::wml08
+                                      x86isa::wml16
+                                      x86isa::wml32
+                                      x86isa::wml48
+                                      x86isa::wml64
+                                      ea-to-la))))
 
 (defthm mv-nth-1-of-wme-size
   (implies (and (segment-is-32-bitsp seg-reg x86)

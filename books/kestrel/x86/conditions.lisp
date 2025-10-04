@@ -790,7 +790,6 @@
          (sbvlt 32 y x))
   :HINTS
   (("Goal"
-    :USE ()
     :IN-THEORY
     (E/D
      (bvlt
@@ -1439,7 +1438,7 @@
                                   (sub-sf-spec8 dst src)
                                   (sub-of-spec8 dst src))
                   (sbvlt 8 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnle-condition
+  :hints (("Goal" :in-theory (enable jnle-condition
                                      bvlt
                                      x86isa::of-spec8
                                      x86isa::sf-spec8
@@ -1452,8 +1451,7 @@
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
                                      acl2::equal-of-bvchops-when-equal-of-getbits
-                                     acl2::sbvlt-rewrite)
-                                  ()))))
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16

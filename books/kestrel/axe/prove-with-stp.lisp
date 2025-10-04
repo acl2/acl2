@@ -2403,7 +2403,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (bounded-stp-resultp (mv-nth 0 (prove-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
                                 dag-len))
-  :hints (("Goal" :in-theory (e/d (prove-implication-with-stp) ()))))
+  :hints (("Goal" :in-theory (enable prove-implication-with-stp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
