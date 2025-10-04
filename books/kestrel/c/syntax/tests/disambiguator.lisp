@@ -385,3 +385,15 @@
             (stmt (block-item-stmt->stmt item))
             (expr (stmt-return->expr? stmt)))
          (expr-case expr :binary)))
+
+(test-dimb
+ "int f() {
+}
+  int g() {
+}
+  int h(int x) {
+  return (x->y >= (f()) && x->y < (g()));
+}
+"
+ :gcc t
+ :cond (not (cw "~x0" ast)))

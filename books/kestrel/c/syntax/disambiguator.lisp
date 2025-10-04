@@ -388,7 +388,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-make/adjust-expr-cast ((type tynamep) (arg exprp))
+(define dimb-make/adjust-expr-cast ((type tynamep)
+                                    (inc/dec inc/dec-op-listp)
+                                    (arg exprp))
   :guard (and (tyname-unambp type)
               (expr-unambp arg))
   :returns (expr exprp)
@@ -396,9 +398,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to build or adjust cast expression,
-     in @(tsee dimb-expr) and other functions.
-     When @(tsee dimb-expr) encounters a cast expression,
+    "This is used to build or adjust a cast expression during disambiguation.")
+   (xdoc::p
+    "When @(tsee dimb-expr) encounters a cast expression,
      it recursively disambiguates
      the type name @('T0') and the argument expression @('E0'),
      obtaining a type name @('T') and an argument expression @('E').
@@ -422,33 +424,72 @@
      a binary expression with @'op\''),
      pushing the cast down.")
    (xdoc::p
-    "The same kind of adjustment may be needed, besides in @(tsee dimb-expr),
-     also in functions like @(tsee dimb-cast/call-to-cast),
-     which also normally build cast expressions.")
+    "The same kind of adjustment may be needed, besides @(tsee dimb-expr),
+     also in functions like @(tsee dimb-cast/and-to-cast),
+     which turns ambiguous expressions of the form @('( X ) IncDec & E'),
+     which is explained in @(tsee expr),
+     into cast expressions,
+     possibly also applying the increment/decrement operators @('IncDec')
+     to the @('& E') expression.
+     But note that the parser, when constructing such an ambiguous expression,
+     i.e. an expression of type @(tsee expr) of kind @(':cast/and-ambig'),
+     may need to put an equality binary expression into @('E')
+     (a proper equality expression, or one with higher priority),
+     e.g. we may have @('(X) ++ & A == B'),
+     which must be grouped like @('[ (X) [ ++ [ & A ] ] ] == B')
+     and not like @('[ (X) [ ++ [ & [ A == B ] ] ] ]'),
+     where the square brackets describe grouping in the AST
+     but are not part of the syntax.
+     Thus, we need to recursively push the increment/decrement operators in,
+     as we go into possibly nested binary expressions.")
    (xdoc::p
-    "This function takes @('T') and @('E') as inputs.
+    "This function takes @('T'), @('IncDec'), and @('E') as inputs.
      If @('E') is not a binary expression,
      we return the cast expression @('(T) E').
      If @('E') is a binary expression, let that be @('A op B'),
-     then we return @('[ TA ] op B'),
-     where TA is the result of recursively calling this function
-     on @('T') and @('A'),
-     and where the square brackets show how things are grouped.")
+     then we return @('[ TIncDecA ] op B'),
+     where @('TIncDecA') is the result of recursively calling this function
+     on @('T'), @('IncDec'), and @('A').")
    (xdoc::p
-    "In other words, this builds and adjusts the expression
+    "The @('arg') input of this function is always a binary expression,
+     or an expression of lower priority.
+     We stop the recursion as soon as the expression is not binary,
+     in which case the expression could be
+     a cast or unary or postfix or primary.
+     If there are no @('IncDec') operators,
+     any of these kinds of expressions is appropriate as
+     argument of the newly constructed cast expression.
+     If there are @('IncDec') operators,
+     then the cast case would not be appropriate,
+     but this should never happen by construction;
+     we double-check that and throw a hard error if that happens.
+     We also throw a hard error if @('arg') has
+     a lower priority than a logical conjunction expression,
+     because that should never happen by construction.")
+   (xdoc::p
+    "In summary, this function builds and adjusts the expression
      so that the sub-expressions have priorities greater than or equal to
      the ones expected by the super-expressions at those place.
      Another way to express this condition on priorities
      is that the expression prints without any added parentheses.
      But this is not a function to adjust all kinds of priority mismatches:
      it only works on the ones that may arise during disambiguation."))
-  (if (expr-case arg :binary)
-      (make-expr-binary :op (expr-binary->op arg)
-                        :arg1 (dimb-make/adjust-expr-cast
-                               type (expr-binary->arg1 arg))
-                        :arg2 (expr-binary->arg2 arg)
-                        :info nil)
-    (make-expr-cast :type type :arg arg))
+  (cond
+   ((expr-case arg :binary)
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-cast
+                             type inc/dec (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+   ((expr-priority-< (expr->priority arg)
+                     (expr-priority-logand))
+    (prog2$ (raise "Internal error: ~x0 has lower priority than &&." arg)
+            (expr-fix arg)))
+   ((and (consp inc/dec)
+         (expr-case arg :cast))
+    (prog2$ (raise "Internal error: ~x0 applied to ~x1." inc/dec arg)
+            (expr-fix arg)))
+   (t (make-expr-cast :type type :arg (apply-pre-inc/dec-ops inc/dec arg))))
   :measure (expr-count arg)
   :verify-guards :after-returns
   :hooks (:fix)
@@ -514,7 +555,7 @@
      because for instance the expression @('(x) + y * (z) & w')
      could not lead, without adjustment, to @('[ (x) + y ] * [ (z) & w ]'),
      because the parser would parse all of @('y * (z) & w') after the @('+'),
-     but the generality is easies to handle,
+     but the generality is easier to handle,
      compared to establishing restrictions on what the parser can produce.
      So we consider a case like @('[ (x) + y ] * [ (z) & w ]') possible,
      with both sub-expressions mismatching,
@@ -633,7 +674,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee dimb-make/adjust-expr-cast)
-     and @(tsee dimb-make/adjust-expr-binary).
+     and @(tsee dimb-make/adjust-expr-binary):
+     see those functions' documentation first.
      Since some of the unary operators expect a cast expression as argument
      (as well as an expression with priority higher than a cast),
      the argument of a unary operators, as produced by the parser,
@@ -697,6 +739,49 @@
     :hyp (expr-unambp arg)
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-label-addr ((arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, a label address expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee dimb-make/adjust-expr-unary),
+     but for label address expression,
+     which are conceptually similar to unary expressions,
+     but have a different AST structure.")
+   (xdoc::p
+    "The unary operator @('&&') expects an identifier,
+     so we test directly for that.
+     If the argument is not an identifier,
+     it must be a binary expression;
+     the caller takes care of checking this."))
+  (b* (((when (expr-case arg :ident))
+        (expr-label-addr (expr-ident->ident arg)))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of unary operator &&."
+               (expr-fix arg))
+        (expr-fix arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-label-addr
+                             (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+  :measure (expr-count arg)
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-label-addr
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/call-to-cast ((tyname tynamep)
@@ -728,10 +813,8 @@
      If @('X') is a type name,
      the increment and decrement operators, if any,
      are pre-increment and pre-decrement operators
-     applied to the expression @('(E)Pr').
-     We apply them and we form a cast expression."))
-  (dimb-make/adjust-expr-cast tyname
-                              (apply-pre-inc/dec-ops inc/dec arg))
+     applied to the expression @('(E)Pr')."))
+  (dimb-make/adjust-expr-cast tyname inc/dec arg)
   :hooks (:fix)
 
   ///
@@ -853,9 +936,8 @@
      Note that the @('*'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               (unop-indir)
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary (unop-indir) arg))
   :hooks (:fix)
 
   ///
@@ -917,9 +999,8 @@
      Note that the @('+') or @('-'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               plus/minus
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary plus/minus arg))
   :hooks (:fix)
 
   ///
@@ -981,9 +1062,8 @@
      Note that the @('&'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               (unop-address)
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary (unop-address) arg))
   :hooks (:fix)
 
   ///
@@ -1026,8 +1106,9 @@
 
 (define dimb-cast/logand-to-cast ((tyname tynamep)
                                   (inc/dec inc/dec-op-listp)
-                                  (arg identp))
-  :guard (tyname-unambp tyname)
+                                  (arg exprp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg))
   :returns (expr exprp)
   :short "Disambiguate an ambiguous cast or logical conjunction expression
           to be a cast expression."
@@ -1037,27 +1118,26 @@
     "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
      but for a different kind of ambiguous expression.
      Note that the @('&&'), which is unary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression.")
-   (xdoc::p
-    "Since the @('arg') component is an identifier here,
-     we can use the plain cast expression constructor,
-     instead of @(tsee dimb-make/adjust-expr-binary)."))
-  (make-expr-cast :type tyname
-                  :arg (apply-pre-inc/dec-ops inc/dec (expr-label-addr arg)))
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              inc/dec
+                              (dimb-make/adjust-expr-label-addr arg))
   :hooks (:fix)
 
   ///
 
   (defret expr-unambp-of-dimb-cast/logand-to-cast
     (expr-unambp expr)
-    :hyp (tyname-unambp tyname)))
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/logand-to-logand ((arg1 exprp)
                                     (inc/dec inc/dec-op-listp)
-                                    (arg2 identp))
-  :guard (expr-unambp arg1)
+                                    (arg2 exprp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2))
   :returns (expr exprp)
   :short "Disambiguate an ambiguous cast or logical conjunction expression
           to be a logical conjunction expression."
@@ -1067,21 +1147,18 @@
     "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
      but for a different kind of ambiguous expression.
      Note that the @('&&'), which is binary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression.")
-   (xdoc::p
-    "Since the @('arg') component is an identifier here,
-     we can use the plain binary expression constructor,
-     instead of @(tsee dimb-make/adjust-expr-binary)."))
-  (make-expr-binary :op (binop-logand)
-                    :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
-                    :arg2 (make-expr-ident :ident arg2 :info nil))
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-binary (binop-logand)
+                                (apply-post-inc/dec-ops arg1 inc/dec)
+                                arg2)
   :hooks (:fix)
 
   ///
 
   (defret expr-unambp-of-dimb-cast/logand-to-logand
     (expr-unambp expr)
-    :hyp (expr-unambp arg1)))
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1334,7 +1411,7 @@
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))
-         (retok (dimb-make/adjust-expr-cast new-type new-arg)
+         (retok (dimb-make/adjust-expr-cast new-type nil new-arg)
                 table))
        :binary
        (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
@@ -1451,20 +1528,21 @@
            table)))
        :cast/logand-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 t table)))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
+            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
           :tyname
           (retok
            (dimb-cast/logand-to-cast (expr/tyname-tyname->unwrap expr/tyname)
                                      expr.inc/dec
-                                     expr.arg/arg2)
+                                     new-arg/arg2)
            table)
           :expr
           (retok
            (dimb-cast/logand-to-logand (expr/tyname-expr->unwrap expr/tyname)
                                        expr.inc/dec
-                                       expr.arg/arg2)
+                                       new-arg/arg2)
            table)))
        :stmt
        (b* (((erp block table) (dimb-block expr.block nil table)))
