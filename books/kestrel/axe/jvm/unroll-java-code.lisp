@@ -233,6 +233,7 @@
                         normalize-xors
                         rules-to-monitor
                         ;;use-internal-contextsp
+                        count-hits
                         print
                         print-interval
                         memoizep
@@ -247,6 +248,7 @@
                               (pseudo-term-listp assumptions)
                               (booleanp normalize-xors)
                               (symbol-listp rules-to-monitor)
+                              (count-hits-argp count-hits)
 ;                              (booleanp use-internal-contextsp)
                               (print-levelp print)
                               (booleanp memoizep)
@@ -296,7 +298,7 @@
                                                    normalize-xors
                                                    limits
                                                    memoizep
-                                                   (print-level-at-least-verbosep print) ; count-hits ; todo: pass in separately
+                                                   count-hits
                                                    (reduce-print-level print)
                                                    rules-to-monitor
                                                    *no-warn-ground-functions-jvm*
@@ -365,6 +367,7 @@
             (repeatedly-run dag
                             (- steps-left steps-for-this-iteration)
                             step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
+                            count-hits
                             print
                             print-interval
                             memoizep
@@ -387,8 +390,8 @@
                 ;; (prune-precise-optionp prune-precise)
                 ;; (prune-approx-optionp prune-approx)
                 (natp total-steps))
-           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor print print-interval memoizep prune-precise prune-approx total-steps state)))
-                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor print print-interval memoizep prune-precise prune-approx total-steps state))))))
+           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
   :hints (("Goal" :induct t
            :in-theory (e/d (repeatedly-run)
                            (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
@@ -396,7 +399,7 @@
                             min)))))
 
 (defthm w-of-mv-nth-2-of-repeatedly-run
-  (equal (w (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor print print-interval memoizep prune-precise prune-approx total-steps state)))
+  (equal (w (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state)))
          (w state))
   :hints (("Goal" :in-theory (enable repeatedly-run))))
 
@@ -531,6 +534,7 @@
                                 classes-to-assume-initialized
                                 ignore-exceptions
                                 ignore-errors
+                                count-hits
                                 print
                                 print-interval
                                 memoizep
@@ -556,6 +560,7 @@
                               (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (booleanp ignore-exceptions)
                               (booleanp ignore-errors)
+                              (count-hits-argp count-hits)
                               (print-levelp print)
                               ;; print-interval -- drop?
                               (booleanp memoizep)
@@ -720,7 +725,7 @@
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
-          (print-level-at-least-tp print) ; count-hits ; todo: pass in
+          count-hits
           t   ; todo: warn just once
           ))
        ((when erp) (mv erp nil nil nil nil nil state))
@@ -741,6 +746,7 @@
                         all-assumptions
                         normalize-xors
                         monitored-rules
+                        count-hits
                         print
                         print-interval
                         memoizep
@@ -793,6 +799,7 @@
                              classes-to-assume-initialized
                              ignore-exceptions
                              ignore-errors
+                             count-hits
                              print
                              print-interval
                              memoizep
@@ -864,6 +871,7 @@
                                  classes-to-assume-initialized
                                  ignore-exceptions
                                  ignore-errors
+                                 count-hits
                                  print
                                  print-interval
                                  memoizep
@@ -949,6 +957,7 @@
                                       (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
                                       (ignore-errors 'nil)
+                                      (count-hits 'nil)
                                       (vars-for-array-elements 't) ;whether to introduce vars for individual array elements
                                       (param-names ':auto)
                                       (output ':rv)
@@ -986,6 +995,7 @@
                                      ,classes-to-assume-initialized
                                      ,ignore-exceptions
                                      ,ignore-errors
+                                     ,count-hits
                                      ,print
                                      ,print-interval
                                      ,memoizep
@@ -1024,6 +1034,7 @@
          (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or @(':all'))")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
          (ignore-errors           "Whether to assume JVM errors do not happen")
+         (count-hits "Whether to count rule hits.")
          (rule-alists             "If non-@('nil'), rule-alists to use (these completely replace the usual rule sets)")
          (extra-rules             "Rules to add to the usual set of rules")
          (remove-rules            "Rules to remove from the usual set of rules")
