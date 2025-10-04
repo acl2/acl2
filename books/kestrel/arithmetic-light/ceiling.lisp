@@ -61,6 +61,7 @@
                       (+ 1 (floor i j)))))
   :hints (("Goal" :in-theory (enable ceiling floor equal-of-0-and-mod))))
 
+;introduces an IF
 (defthmd ceiling-in-terms-of-floor-alt
   (implies (and (rationalp i)
                 (rationalp j))
@@ -130,26 +131,99 @@
 ;;                  (+ -1 (CEILING x N))))
 ;;  :hints (("Goal" :in-theory (enable ceiling))))
 
-(defthm ceiling-upper-bound
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (< (ceiling i j) (+ 1 (/ i j))))
-  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
+(encapsulate ()
+  (local (defthm ceiling-upper-bound-pos
+           (implies (and (< 0 j)
+                         (rationalp i)
+                         (rationalp j))
+                    (< (ceiling i j) (+ 1 (/ i j))))
+           :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor)))))
+
+  (local (defthm ceiling-upper-bound-neg
+           (implies (and (< j 0) ; unusual
+                                 ;                (< 0 i) ; todo
+                         (rationalp i)
+                         (rationalp j))
+                    (< (ceiling i j) (+ 1 (/ i j))))
+           :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor)))))
+
+  (defthm ceiling-upper-bound
+    (implies (and (rationalp i)
+                  (rationalp j))
+             (< (ceiling i j) (+ 1 (/ i j))))
+    :hints (("Goal" :cases ((< j 0) (equal j 0))))))
+
+;; We've multiplied through by j
+(defthm ceiling-upper-bound-pos-linear
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (< (* j (ceiling i j)) (+ j i)))
+  :rule-classes ((:linear :trigger-terms ((* j (ceiling i j)))))
+  :hints (("Goal" :use ((:instance ceiling-upper-bound)
+                        )
+           :in-theory (disable ceiling-upper-bound))))
+
+;; We've multiplied through by j (and flipped the inequality since j is negative)
+(defthm ceiling-upper-bound-neg-linear
+  (implies (and (< j 0) ; unusual
+                (rationalp i)
+                (rationalp j))
+           (< (+ j i) (* j (ceiling i j))))
+  :rule-classes ((:linear :trigger-terms ((* j (ceiling i j)))))
+  :hints (("Goal" :use ((:instance ceiling-upper-bound)
+                        (:instance <-of-*-and-*-cancel-gen
+                                   (x2 (ceiling i j))
+                                   (x1 (+ 1 (* i (/ j))))
+                                   (y j)))
+           :in-theory (disable ceiling-upper-bound
+                               <-of-*-and-*-cancel-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; move these up?
 
 (defthm ceiling-lower-bound
   (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+                (rationalp j))
            (<= (/ i j) (ceiling i j)))
   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
 
 (defthm ceiling-lower-bound-linear
   (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
+                (rationalp j))
            (<= (/ i j) (ceiling i j)))
   :rule-classes ((:linear :trigger-terms ((ceiling i j)))))
+
+;; We've multiplied through by j
+(defthm *-of-ceiling-same-linear-pos
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (<= i (* j (ceiling i j))))
+  :rule-classes :linear
+  :hints (("Goal" :use ceiling-lower-bound
+           :in-theory (disable ceiling-lower-bound))))
+
+;; We've multiplied through by j (and flipped the inequality since j is negative)
+(defthm *-of-ceiling-same-linear-neg
+  (implies (and (< j 0) ; unusual
+                (rationalp i)
+                (rationalp j))
+           (<= (* j (ceiling i j)) i))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
+
+;; not quite subsumed by *-of-ceiling-same-linear-neg
+(defthmd *-of-ceiling-same-linear-pos-neg
+  (implies (and (<= j 0) ; unusual
+                (<= 0 i)
+                (rationalp i)
+                (rationalp j))
+           (<= (* j (ceiling i j)) i))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((equal j 0))
+           :in-theory (enable ceiling-in-terms-of-floor))))
 
 ;gen?
 (defthm <-of-ceiling-arg1
