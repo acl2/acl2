@@ -849,11 +849,13 @@
 
   (define update-parstate->chars-length ((length natp) parstate)
     :returns (parstate parstatep
-                       :hints (("Goal"
-                                :in-theory (enable nfix
-                                                   parstate-fix
-                                                   length
-                                                   char+position-listp-of-resize-list))))
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         (enable nfix
+                                 parstate-fix
+                                 length
+                                 char+position-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-length (nfix length) parstate))
     :hooks (:fix))
@@ -892,11 +894,12 @@
 
   (define update-parstate->tokens-length ((length natp) parstate)
     :returns (parstate parstatep
-                       :hints (("Goal"
-                                :in-theory (enable nfix
-                                                   parstate-fix
-                                                   length
-                                                   token+span-listp-of-resize-list))))
+                       :hints
+                       (("Goal"
+                         :in-theory (enable nfix
+                                            parstate-fix
+                                            length
+                                            token+span-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-length (nfix length) parstate))
     :hooks (:fix))

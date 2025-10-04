@@ -236,7 +236,8 @@ void f() {
             (edecls (transunit->decls transunit))
             (edecl (cadr edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (items (fundef->body fundef))
+            (block (fundef->body fundef))
+            (items (block->items block))
             (item (car items))
             (decl (block-item-decl->decl item))
             (ideclors (decl-decl->init decl))
@@ -863,18 +864,18 @@ void bar(void) {
              (bar-param-declon (param-declon->declor (first bar-params)))
              (x-param-uid (param-declor-nonabstract-info->uid (param-declor-nonabstract->info bar-param-declon)))
              ;; (- (cw "x-param uid: ~x0~%" x-param-uid))
-             (bar-body-decl1 (first (fundef->body bar-fundef)))
+             (bar-body-decl1 (first (block->items (fundef->body bar-fundef))))
              (foo-init2 (first (decl-decl->init (block-item-decl->decl bar-body-decl1))))
              (foo-init2-uid (initdeclor-info->uid? (initdeclor->info foo-init2)))
              ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
              (x-expr (initer-single->expr (initdeclor->init? foo-init2)))
              (x-expr-uid (var-info->uid (expr-ident->info x-expr)))
              ;; (- (cw "x-expr uid: ~x0~%" x-expr-uid))
-             (bar-body-decl2 (first (stmt-compound->items (block-item-stmt->stmt (second (fundef->body bar-fundef))))))
+             (bar-body-decl2 (first (block->items (stmt-compound->block (block-item-stmt->stmt (second (block->items (fundef->body bar-fundef))))))))
              (foo-init3 (first (decl-decl->init (block-item-decl->decl bar-body-decl2))))
              (foo-init3-uid (initdeclor-info->uid? (initdeclor->info foo-init3)))
              ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
-             (bar-return-stmt (block-item-stmt->stmt (third (fundef->body bar-fundef))))
+             (bar-return-stmt (block-item-stmt->stmt (third (block->items (fundef->body bar-fundef)))))
              (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
              (edecls2 (transunit->decls transunit2))
@@ -884,7 +885,7 @@ void bar(void) {
              (foo-fundef (extdecl-fundef->unwrap (second edecls2)))
              (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
              ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
-             (foo-return-stmt (block-item-stmt->stmt (first (fundef->body foo-fundef))))
+             (foo-return-stmt (block-item-stmt->stmt (first (block->items (fundef->body foo-fundef)))))
              (bar-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
              ;; (- (cw "bar-expr uid: ~x0~%" bar-expr-uid))
              )
@@ -1074,3 +1075,13 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
   return (int [1][1]) {42}[0][0];
 }
 ")
+
+(test-valid
+ "_Complex _Float128 x;
+"
+ :gcc t)
+
+(test-valid
+ "_Float128 x;
+"
+ :gcc t)

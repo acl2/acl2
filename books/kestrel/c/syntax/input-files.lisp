@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "preprocess-file")
+(include-book "external-preprocessing")
 (include-book "parser")
 (include-book "disambiguator")
 (include-book "validator")

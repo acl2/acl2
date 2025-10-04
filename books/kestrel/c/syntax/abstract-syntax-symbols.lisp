@@ -29,6 +29,8 @@
 
     ident-listp
 
+    ident-list-listp
+
     ident-set
     ident-setp
     ident-set-fix
@@ -60,6 +62,8 @@
     binopp
     binop-case
     binop-kind
+
+    asm-name-spec-optionp
 
     exprp
     expr-fix
@@ -343,6 +347,8 @@
     statassert
     make-statassert
 
+    attrib-spec-listp
+
     initdeclorp
     initdeclor-fix
     initdeclor-count
@@ -382,6 +388,8 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->block
+    make-stmt-compound
     stmt-compound->items
     make-stmt-expr
     make-stmt-if
@@ -403,6 +411,13 @@
     block-item-listp
     block-item-list-fix
     block-item-list-count
+
+    block
+    make-block
+    blockp
+    block-count
+    block->labels
+    block->items
 
     fundefp
     fundef
@@ -470,6 +485,7 @@
     irr-decl
     irr-stmt
     irr-block-item
+    irr-block
     irr-fundef
     irr-transunit-ensemble
     irr-code-ensemble
@@ -525,6 +541,7 @@
     stmt-unambp
     block-item-unambp
     block-item-list-unambp
+    block-unambp
     fundef-unambp
     extdecl-unambp
     extdecl-list-unambp
@@ -541,6 +558,7 @@
     ;; ASCII identifiers:
 
     ident-aidentp
+    ident-list-list-aidentp
     const-aidentp
     expr-aidentp
     expr-list-aidentp
@@ -582,6 +600,7 @@
     enumer-aidentp
     enumer-list-aidentp
     statassert-aidentp
+    attrib-spec-list-aidentp
     initdeclor-aidentp
     initdeclor-list-aidentp
     decl-aidentp
@@ -590,6 +609,7 @@
     stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
+    block-aidentp
     fundef-aidentp
     extdecl-aidentp
     extdecl-list-aidentp
@@ -626,6 +646,7 @@
     ldm-stmt
     ldm-block-item
     ldm-block-item-list
+    ldm-block
     ldm-param-declon-list
     ldm-fundef
     ldm-type
@@ -671,6 +692,7 @@
     initdeclor-info->typedefp
 
     fundef-info
+    fundef-infop
     fundef-info->type
     fundef-info->table-body-start
 
@@ -679,7 +701,21 @@
     stmt-types
     block-item-types
     block-item-list-types
+    block-types
     fundef-types
+
+    valid-ord-info-case
+    valid-ord-info-objfun->type
+
+    valid-ord-scopep
+
+    valid-scopep
+    valid-scope->ord
+
+    valid-scope-listp
+
+    valid-tablep
+    valid-table->scopes
 
     iconst-annop
     const-annop
@@ -731,6 +767,7 @@
     stmt-annop
     block-item-annop
     block-item-list-annop
+    block-annop
     fundef-annop
     extdecl-annop
     extdecl-list-annop

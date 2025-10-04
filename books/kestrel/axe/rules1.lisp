@@ -227,7 +227,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size x y)
 ;;                   (bvplus size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;; (defthmd bvminus-solve-for-dag2
 ;;   (implies (and (syntaxp (quotep k))
@@ -335,8 +335,7 @@
 ;;   :HINTS
 ;;   (("Goal"
 ;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-;;     :IN-THEORY (E/d (NTH2 BVNTH
-;;                           ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;;     :IN-THEORY (enable NTH2 BVNTH ALL-INTEGERP-WHEN-ALL-NATP))))
 
 ;Thu Mar  4 15:56:21 2010
 ;; (skip -proofs
@@ -379,8 +378,7 @@
 ;;   :HINTS
 ;;   (("Goal"
 ;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-;;     :IN-THEORY (E/d (NTH2 BVNTH
-;;                        ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;;     :IN-THEORY (enable NTH2 BVNTH ALL-INTEGERP-WHEN-ALL-NATP))))
 
 ;; ;bbozo gross
 ;; (defthmd bvnth-tighten-32-8
@@ -1605,9 +1603,7 @@
 ;;                   (bv-array-read size len index lst)))
 ;;   :hints
 ;;   (("Goal" :cases ((equal 0 (len lst))) ;yuck
-;;     :in-theory (e/d (bvchop-when-i-is-not-an-integer
-;;                        bv-array-read) ()))))
-
+;;     :in-theory (enable bvchop-when-i-is-not-an-integer bv-array-read))))
 
 ;move
 ;change for ACL2 4.3

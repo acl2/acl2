@@ -319,7 +319,7 @@
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
                             :params (map-add-pointer-param-declon params)))
-        :body items
+        :body (make-block :labels nil :items items)
         :info nil)))
   :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
@@ -437,7 +437,7 @@
        ((erp new-fn truncated-items)
         (split-fn-block-item-list
          new-fn-name
-         fundef.body
+         (block->items fundef.body)
          fundef.spec
          fundef.declor.pointers
          (param-declon-list-to-ident-param-declon-map params)
@@ -448,7 +448,8 @@
             :spec fundef.spec
             :declor fundef.declor
             :decls fundef.decls
-            :body truncated-items
+            :body (make-block :labels (block->labels fundef.body)
+                              :items truncated-items)
             :info fundef.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

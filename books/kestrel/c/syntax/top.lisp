@@ -13,7 +13,7 @@
 (include-book "implementation-environments")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
-(include-book "preprocess-file")
+(include-book "preprocessing")
 (include-book "parsing")
 (include-book "disambiguation")
 (include-book "validation")

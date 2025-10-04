@@ -4606,9 +4606,7 @@
 ;;                   (if (< INDEX LEN)
 ;;                       (BVCHOP WIDTH1 VAL)
 ;;                     nil)))
-;;   :HINTS (("Goal" :IN-THEORY (E/D (BV-ARRAY-READ BV-ARRAY-WRITE)
-;;                                   ()))))
-
+;;   :HINTS (("Goal" :IN-THEORY (enable BV-ARRAY-READ BV-ARRAY-WRITE))))
 
 ;alternate version?
 (defthm bvlt-of-constant-arg1-weaken
@@ -5590,7 +5588,7 @@
 ;;                (equal len (len x)))
 ;;           (equal (bv-array-read size len n x)
 ;;                  0))
-;;  :hints (("Goal" :in-theory (e/d (bv-array-read LIST::NTH-WITH-LARGE-INDEX) ()))))
+;;  :hints (("Goal" :in-theory (enable bv-array-read LIST::NTH-WITH-LARGE-INDEX))))
 
 ;; (defthm equal-of-bvchop-of-nth-and-bv-array-read-better
 ;;   (implies (and (equal len (len x))
@@ -9999,11 +9997,10 @@
 ;;                   (bvcat (- free2 free) (slice (+ -1 free2) free x) free k)))
 ;;   :hints (("Goal" ;:expand ((:with (:definition unsigned-byte-p) (unsigned-byte-p free2 (+ k x))))
 ;;            :use (:instance split-bv (x x) (n free2) (m free))
-;;            :in-theory (e/d ()
-;;                            (bvcat-equal-rewrite-alt
+;;            :in-theory (disable bvcat-equal-rewrite-alt
 ;;                             bvcat-equal-rewrite
 ;;                             bvminus-becomes-bvplus-of-bvuminus
-;;                             bvcat-of-getbit-and-x-adjacent)))))
+;;                             bvcat-of-getbit-and-x-adjacent))))
 
 ;lhs out of order
 (defthm one-fourth-hack

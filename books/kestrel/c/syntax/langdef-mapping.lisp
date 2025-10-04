@@ -1524,8 +1524,8 @@
        :labeled (b* (((erp label1) (ldm-label stmt.label))
                      ((erp stmt1) (ldm-stmt stmt.stmt)))
                   (retok (c::make-stmt-labeled :label label1 :body stmt1)))
-       :compound (b* (((erp items1) (ldm-block-item-list stmt.items)))
-                   (retok (c::make-stmt-compound :items items1)))
+       :compound (b* (((erp items) (ldm-block stmt.block)))
+                   (retok (c::make-stmt-compound :items items)))
        :expr (expr-option-case
               stmt.expr?
               :some (b* (((erp expr1) (ldm-expr stmt.expr?.val)))
@@ -1599,6 +1599,24 @@
       (retok (cons item1 items1)))
     :measure (block-item-list-count items))
 
+  (define ldm-block ((block blockp))
+    :guard (block-unambp block)
+    :returns (mv erp (items c::block-item-listp))
+    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :short "Map a block to a list of block items in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The abstract syntax in the language definition
+       does not have a type for blocks,
+       so this function returns lists of block items."))
+    (b* (((reterr) nil)
+         ((block block) block)
+         ((when block.labels)
+          (reterr (msg "Unsupported label declarations ~x0." block.labels))))
+      (ldm-block-item-list block.items))
+    :measure (block-count block))
+
   :verify-guards :after-returns
 
   ///
@@ -1618,11 +1636,16 @@
       (not erp)
       :hyp (block-item-list-formalp items)
       :fn ldm-block-item-list)
+    (defret ldm-block-ok-when-block-formalp
+      (not erp)
+      :hyp (block-formalp block)
+      :fn ldm-block)
     :hints (("Goal"
              :expand (stmt-formalp stmt)
              :in-theory (enable stmt-formalp
                                 block-item-formalp
                                 block-item-list-formalp
+                                block-formalp
                                 expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1663,7 +1686,7 @@
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((erp body) (ldm-block-item-list fundef.body)))
+       ((erp body) (ldm-block fundef.body)))
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
                            :body body)))

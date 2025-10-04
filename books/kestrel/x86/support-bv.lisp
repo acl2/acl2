@@ -45,7 +45,7 @@
 ;;               (natp m))
 ;;              (equal (slice m n (* (expt 2 j) x))
 ;;                     (slice (- m j) (- n j) x)))
-;;     :hints (("Goal" :in-theory (e/d (slice logtail nfix) ())))))
+;;     :hints (("Goal" :in-theory (slice logtail nfix)))))
 
 ;move
 ;; ;avoids having to give a highsize
@@ -64,10 +64,10 @@
 ;;                                   (highsize (+ 1 high (- lowsize)))))))
 
 
-;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
+;;   :hints (("Goal" :in-theory (;bvcat logapp
 ;;                                          ;slice-of-sum-cases
 ;;                                          )
-;;                                   ()))))
+;;                                   )))
 
 ;move
 (defthm slice-of-logapp-case-1

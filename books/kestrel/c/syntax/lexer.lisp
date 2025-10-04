@@ -1433,7 +1433,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-expo-if-present ((parstate parstatep))
+(define lex-?-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo? dec-expo-optionp)
                (last/next-pos positionp)
@@ -1486,12 +1486,12 @@
 
   ///
 
-  (defret parsize-of-lex-dec-expo-if-present-uncond
+  (defret parsize-of-lex-?-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-dec-expo-if-present-cond
+  (defret parsize-of-lex-?-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1500,7 +1500,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-expo ((parstate parstatep))
+(define lex-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo dec-expop)
                (last-pos positionp)
@@ -1547,12 +1547,12 @@
 
   ///
 
-  (defret parsize-of-lex-dec-expo-uncond
+  (defret parsize-of-lex-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-dec-expo-cond
+  (defret parsize-of-lex-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1561,7 +1561,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-bin-expo ((parstate parstatep))
+(define lex-binary-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo bin-expop)
                (last-pos positionp)
@@ -1608,12 +1608,12 @@
 
   ///
 
-  (defret parsize-of-lex-bin-expo-uncond
+  (defret parsize-of-lex-binary-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-bin-expo-cond
+  (defret parsize-of-lex-binary-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1815,7 +1815,7 @@
                           :found (char-to-msg nil)))
              (t ; 0 x/X . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate)))
+                    (lex-binary-exponent-part parstate)))
                 ;; 0 x/X . hexdigs2 expo
                 (b* (((erp fsuffix? suffix-last/next-pos parstate)
                       (lex-?-floating-suffix parstate))
@@ -1857,7 +1857,7 @@
             (cond
              ((not hexdigs2) ; 0 x/X hexdigs .
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1877,7 +1877,7 @@
                        parstate)))
              (t ; 0 x/X hexdigs . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1898,7 +1898,8 @@
          ((or (= char (char-code #\p)) ; 0 x/X hexdigs p
               (= char (char-code #\P))) ; 0 x/X hexdigs P
           (b* ((parstate (unread-char parstate)) ; 0 x/X hexdigs
-               ((erp expo expo-last-pos parstate) (lex-bin-expo parstate))
+               ((erp expo expo-last-pos parstate)
+                (lex-binary-exponent-part parstate))
                ;; 0 x/X hexdigs expo
                ((erp fsuffix? suffix-last/next-pos parstate)
                 (lex-?-floating-suffix parstate))
@@ -2024,7 +2025,7 @@
             (lex-*-digit pos parstate))
            ;; 1-9 [decdigs] . [decdigs2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2068,7 +2069,7 @@
      ((or (= char (char-code #\e)) ; 1-9 [decdigs] e
           (= char (char-code #\E))) ; 1-9 [decdigs] E
       (b* ((parstate (unread-char parstate)) ; 1-9 [decdigs]
-           ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
+           ((erp expo expo-last-pos parstate) (lex-exponent-part parstate))
            ;; 1-9 [decdigs] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2142,7 +2143,7 @@
         (lex-*-digit first-pos-after-dot parstate))
        ;; . decdig [decdigs]
        ((erp expo? expo-last/next-pos parstate)
-        (lex-dec-expo-if-present parstate))
+        (lex-?-exponent-part parstate))
        ;; . decdig [decdigs] [expo]
        ((erp fsuffix? suffix-last/next-pos parstate)
         (lex-?-floating-suffix parstate))
@@ -2321,7 +2322,7 @@
             (lex-*-digit pos parstate))
            ;; 0 [digits] . [digits2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 0 [digits] . [digits2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2367,7 +2368,7 @@
      ((or (= char (char-code #\e)) ; 0 [digits] e
           (= char (char-code #\E))) ; 0 [digits] E
       (b* ((parstate (unread-char parstate)) ; 0 [digits]
-           ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
+           ((erp expo expo-last-pos parstate) (lex-exponent-part parstate))
            ;; 0 [digits] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))

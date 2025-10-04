@@ -696,7 +696,7 @@
                   t))
            (increasingp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :induct t
-           :in-theory (e/d (bitxor-nest-leaves-aux) ()))))
+           :in-theory (enable bitxor-nest-leaves-aux))))
 
 ;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
 ;nodenum is the root of a bitxor nest

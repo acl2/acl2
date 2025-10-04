@@ -512,7 +512,7 @@
     (stmt-case
      stmt
      :labeled (call-graph-stmt stmt.stmt fn-name filepath valid-table call-graph)
-     :compound (call-graph-block-item-list stmt.items fn-name filepath valid-table call-graph)
+     :compound (call-graph-block stmt.block fn-name filepath valid-table call-graph)
      :expr (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
      :if (call-graph-stmt
            stmt.then
@@ -629,6 +629,17 @@
         (call-graph-block-item (first items) fn-name filepath valid-table call-graph)))
     :measure (block-item-list-count items))
 
+  (define call-graph-block
+    ((block blockp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
+    (call-graph-block-item-list
+     (block->items block) fn-name filepath valid-table call-graph)
+    :measure (block-count block))
+
    :hints (("Goal" :in-theory (enable o< o-finp)))
    :verify-guards :after-returns)
 
@@ -648,7 +659,7 @@
                               (c$::dirdeclor->ident fundef.declor.direct.declor))
                             (qualified-fn-name
                               (qualify-ident filepath valid-table fn-name)))
-                         (call-graph-block-item-list
+                         (call-graph-block
                            fundef.body
                            qualified-fn-name
                            filepath
@@ -658,7 +669,7 @@
                              (c$::dirdeclor->ident fundef.declor.direct.declor))
                            (qualified-fn-name
                              (qualify-ident filepath valid-table fn-name)))
-                        (call-graph-block-item-list
+                        (call-graph-block
                           fundef.body
                           qualified-fn-name
                           filepath

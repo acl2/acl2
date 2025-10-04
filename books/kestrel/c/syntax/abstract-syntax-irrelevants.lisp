@@ -449,10 +449,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-block
+  :short "An irrelevant block."
+  :type blockp
+  :body (make-block :labels nil :items nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
-  :body (stmt-compound nil))
+  :body (stmt-compound (irr-block)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,7 +521,7 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body nil
+                     :body (irr-block)
                      :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

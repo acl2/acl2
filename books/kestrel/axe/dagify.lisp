@@ -461,7 +461,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array)
-    :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array) ()))))
+    :hints (("Goal" :in-theory (enable merge-term-into-dag-array merge-terms-into-dag-array))))
 
 ;drop?
 (defthm-flag-merge-term-into-dag-array
@@ -488,11 +488,10 @@
                                                       DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
                                                       DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                       INTERPRETED-FUNCTION-ALIST))
-                  :in-theory (e/d (merge-term-into-dag-array
-                                   merge-terms-into-dag-array
+           :in-theory (enable merge-term-into-dag-array
+                              merge-terms-into-dag-array
                                    ;call-of-dag-val-with-axe-evaluator-with-inlineable-dagp ;somewhat slow. why didn't the forward-chaining rules suffice?
-                                   )
-                                  ()))))
+                              ))))
 
 (local (in-theory (disable use-all-<-for-car
                            bounded-darg-listp-when-<-of-largest-non-quotep
@@ -694,7 +693,7 @@
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-return-type)
-           :in-theory (e/d () (merge-term-into-dag-array-return-type)))))
+           :in-theory (disable merge-term-into-dag-array-return-type))))
 
 (defthm merge-term-into-dag-array-return-type-corollary2
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array

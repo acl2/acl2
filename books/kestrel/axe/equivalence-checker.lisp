@@ -18047,7 +18047,7 @@
 ;;                     ALIST
 ;;                     FORM-LST INTERPRETED-FUNCTION-ALIST)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0) ()))))
+;;            :in-theory (enable NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0))))
 
 ;; (defthm EVAL-GROUND-TERM-LST-FOR-AXE-EVALUATOR-opener
 ;;   (implies (not (endp form-lst))

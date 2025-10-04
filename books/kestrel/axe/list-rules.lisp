@@ -150,7 +150,7 @@
                   (EQUAL (TAKE (+ 1 N) LST1)
                          (TAKE (+ 1 N) LST2))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
-  :HINTS (("Goal" :IN-THEORY (E/d (TAKE NTH) ()))))
+  :HINTS (("Goal" :IN-THEORY (enable TAKE NTH))))
 
 ;move?
 (theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
@@ -171,8 +171,8 @@
                     (append x
                             (repeat (- (nfix n) (len x))
                                     nil)))))
-  :hints (("Goal" :in-theory (e/d (take; list::nth-append
-                                   ) ()))))
+  :hints (("Goal" :in-theory (enable take; list::nth-append
+                                   ))))
 
 
 ;gen
