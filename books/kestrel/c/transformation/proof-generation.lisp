@@ -1611,14 +1611,12 @@
      the order of evaluation is prescribed.")
    (xdoc::p
     "For the non-pure strict simple assignment operator,
-     for theorem generation we also require
-     both argument expressions to be pure,
-     and additionally the left expression to be a variable.
-     We plan to relax the restriction on the right expression soon,
-     to support multiple assignments @('x = y = z = ...'),
-     whose order of evaluation is sufficiently determined,
-     given that only the object designated by @('x'), @('y'), @('z'), etc.
-     is used for the assignment and not the current value.
+     for theorem generation we require the left expression to be a variable.
+     The right expression does not have to be pure,
+     because when the left expression is a variable,
+     the order of evaluation does not matter,
+     because the (previous) value of the assigned variable does not matter.
+     Note that this supports multiple assignments @('x = y = z = ...').
      If the right expression is pure (which always is, currently),
      we lift the theorem about @(tsee c::exec-expr-pure)
      to a theorem about @(tsee c::exec-expr):
@@ -1747,8 +1745,7 @@
       (b* (((unless (and (expr-case arg1 :ident)
                          (equal (expr-type arg1)
                                 (expr-type arg2))
-                         (type-integerp (expr-type arg1))
-                         (expr-purep arg2)))
+                         (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
