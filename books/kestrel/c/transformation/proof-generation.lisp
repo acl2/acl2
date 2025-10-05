@@ -1597,25 +1597,39 @@
   (xdoc::topstring
    (xdoc::p
     "We generate a theorem only if
-     theorems were generated for both argument expressions,
-     and the argument expressions are pure
-     (the latter check excludes cases in which an assignment expression,
-     for which we may have generated a theorem,
-     is combined into a larger expression,
-     which our dynamic semantics does not handle currently).
-     We generate a theorem for pure strict and non-strict operators.
-     We generate a theorem for simple assignment expressions
-     whose left side is a variable of integer type
-     and whose right side is a pure expression of the same integer type."))
+     theorems were generated for both argument expressions.")
+   (xdoc::p
+    "For pure strict binary operators,
+     we generate a theorem if additionally
+     both argument expressions are pure,
+     since the order of evaluation is unspecified in C.")
+   (xdoc::p
+    "For pure non-strict binary operators,
+     for now we also require both argument expressions to be pure
+     in order to generate a theorem.
+     But this could be relaxed, since in this case
+     the order of evaluation is prescribed.")
+   (xdoc::p
+    "For the non-pure strict simple assignment operator,
+     for theorem generation we also require
+     both argument expressions to be pure,
+     and additionally the left expression to be a variable.
+     We plan to relax the restriction on the right expression soon,
+     to support multiple assignments @('x = y = z = ...'),
+     whose order of evaluation is sufficiently determined,
+     given that only the object designated by @('x'), @('y'), @('z'), etc.
+     is used for the assignment and not the current value.")
+   (xdoc::p
+    "For the remaining (non-pure strict) operators,
+     namely compound assignments,
+     we do not generate any theorems for now."))
   (b* (((gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (expr-new
         (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (and arg1-thm-name
-                     arg2-thm-name
-                     (expr-purep arg1)
-                     (expr-purep arg2)))
+                     arg2-thm-name))
         (mv expr-new gout-no-thm))
        (cop (ldm-binop op)) ; ERP must be NIL
        ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
@@ -1627,7 +1641,10 @@
                  '(:mul :div :rem :add :sub :shl :shr
                    :lt :gt :le :ge :eq :ne
                    :bitand :bitxor :bitior))
-      (b* ((hints `(("Goal"
+      (b* (((unless (and (expr-purep arg1)
+                         (expr-purep arg2)))
+            (mv expr-new gout-no-thm))
+           (hints `(("Goal"
                      :in-theory '((:e c::binop-kind)
                                   (:e c::binop-purep)
                                   (:e c::binop-strictp)
@@ -1664,7 +1681,10 @@
                        :thm-name thm-name
                        :vartys gin.vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
-      (b* ((hints
+      (b* (((unless (and (expr-purep arg1)
+                         (expr-purep arg2)))
+            (mv expr-new gout-no-thm))
+           (hints
             `(("Goal"
                :in-theory '((:e c::expr-binary)
                             (:e c::binop-logand)
@@ -1718,7 +1738,8 @@
       (b* (((unless (and (expr-case arg1 :ident)
                          (equal (expr-type arg1)
                                 (expr-type arg2))
-                         (type-integerp (expr-type arg1))))
+                         (type-integerp (expr-type arg1))
+                         (expr-purep arg2)))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            (hints
