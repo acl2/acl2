@@ -1777,8 +1777,6 @@
                  (:e c::binop-kind)
                  (:e c::binop-asg)
                  (:e c::ident)
-                 (:e c::type-nonchar-integerp)
-                 (:e c::type-fix)
                  c::not-errorp-when-compustate-has-var-with-type-p
                  c::type-of-value-when-compustate-has-var-with-type-p
                  c::valuep-of-read-object-of-objdesign-of-var
