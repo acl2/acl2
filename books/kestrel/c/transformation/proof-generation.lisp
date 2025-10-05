@@ -1618,7 +1618,12 @@
      to support multiple assignments @('x = y = z = ...'),
      whose order of evaluation is sufficiently determined,
      given that only the object designated by @('x'), @('y'), @('z'), etc.
-     is used for the assignment and not the current value.")
+     is used for the assignment and not the current value.
+     If the right expression is pure (which always is, currently),
+     we lift the theorem about @(tsee c::exec-expr-pure)
+     to a theorem about @(tsee c::exec-expr):
+     this uniformly provides a theorem about @(tsee c::exec-expr)
+     to use in the proof for the assignment expression.")
    (xdoc::p
     "For the remaining (non-pure strict) operators,
      namely compound assignments,
@@ -1748,6 +1753,17 @@
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
+           ((mv lifted-thm-name thm-index events)
+            (if (expr-purep arg2)
+                (b* (((mv thm-event thm-name thm-index)
+                      (lift-expr-pure-thm arg2
+                                          arg2-new
+                                          arg2-thm-name
+                                          gin.vartys
+                                          gin.const-new
+                                          gin.thm-index)))
+                  (mv thm-name thm-index (cons thm-event gin.events)))
+              (mv nil gin.thm-index gin.events)))
            (hints
             `(("Goal"
                :in-theory
@@ -1769,12 +1785,15 @@
                  c::not-errorp-when-valuep
                  expr-compustate-vars)
                :use (,arg1-thm-name
-                     ,arg2-thm-name
+                     (:instance
+                      ,(or lifted-thm-name
+                           arg2-thm-name)
+                      (limit (1- limit)))
                      (:instance
                       expr-binary-asg-congruence
+                      (var ',cvar)
                       (old-arg ',old-arg2)
-                      (new-arg ',new-arg2)
-                      (var ',cvar))
+                      (new-arg ',new-arg2))
                      (:instance
                       expr-binary-asg-errors
                       (var ',cvar)
@@ -1785,10 +1804,10 @@
                               expr-new
                               gin.vartys
                               gin.const-new
-                              gin.thm-index
+                              thm-index
                               hints)))
         (mv expr-new
-            (make-gout :events (cons thm-event gin.events)
+            (make-gout :events (cons thm-event events)
                        :thm-index thm-index
                        :thm-name thm-name
                        :vartys gin.vartys))))
