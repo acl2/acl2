@@ -94,6 +94,23 @@
   (declare (xargs :guard (true-listp items)))
   (xml-item-listp (skip-xml-attributes items)))
 
+(defthm skip-xml-attributes-does-nothing
+  (implies (xml-item-listp args)
+           (equal (skip-xml-attributes args)
+                  args))
+  :hints (("Goal" :in-theory (enable xml-item-listp skip-xml-attributes xml-elementp))))
+
+(defthm xml-element-argsp-of-cdr
+  (implies (xml-element-argsp args)
+           (xml-element-argsp (cdr args)))
+  :hints (("Goal" :in-theory (enable xml-element-argsp xml-item-listp skip-xml-attributes))))
+
+(defthm xml-element-argsp-of-append
+  (implies (and (xml-attribute-listp attributes)
+                (xml-item-listp child-items))
+           (xml-element-argsp (append attributes child-items)))
+  :hints (("Goal" :in-theory (enable xml-element-argsp skip-xml-attributes xml-attribute-listp))))
+
 ;re-characterize to have xml-element-argsp closed up:
 (defthm xml-elementp-rewrite
   (equal (xml-elementp x)
@@ -130,10 +147,10 @@
   :hints (("Goal" :expand (XML-ITEM-LISTP ITEMS)
            :in-theory (enable xml-item-listp))))
 
-(defthm xml-item-listp-of-skip-xml-attributes
-  (implies (xml-item-listp args)
-           (xml-item-listp (skip-xml-attributes args)))
-  :hints (("Goal" :in-theory (enable skip-xml-attributes))))
+;; (defthmd xml-item-listp-of-skip-xml-attributes
+;;   (implies (xml-item-listp args)
+;;            (xml-item-listp (skip-xml-attributes args)))
+;;   :hints (("Goal" :in-theory (enable skip-xml-attributes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,12 +160,6 @@
                               (xml-item-listp child-items))))
   (cons tag (append attributes child-items)))
 
-;move
-(defthm xml-element-argsp-of-append
-  (implies (and (xml-attribute-listp attributes)
-                (xml-item-listp child-items))
-           (xml-element-argsp (append attributes child-items)))
-  :hints (("Goal" :in-theory (enable xml-element-argsp skip-xml-attributes xml-attribute-listp))))
 
 (defthm xml-elementp-of-make-xml-element
   (implies (and (stringp tag)
@@ -192,6 +203,7 @@
   :hints (("Goal" :in-theory (enable xml-elementp xml-element-attributes
                                      xml-element-argsp))))
 
+;; Returns the child items (strings and XML elements) of an XML element:
 (defund xml-element-sub-items (elem)
   (declare (xargs :guard (xml-elementp elem)))
   (skip-xml-attributes (cdr elem)))
@@ -216,17 +228,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; From the ITEMS (elements and strings) keep the ones that are elements whose tag is NAME.
-(defun filter-elements-with-name (name items)
-  (declare (xargs :guard (xml-item-listp items)))
-  (if (not (consp items))
-      nil
-    (let ((item (first items)))
-      (if (and (not (stringp item))
-               (equal name (xml-element-tag item)))
-          (cons item (filter-elements-with-name name (rest items)))
-        (filter-elements-with-name name (rest items))))))
-
 ;keep the members of ITEMS that are XML elements, not strings
 (defun filter-xml-elements (items)
   (declare (xargs :guard (xml-item-listp items)))
@@ -237,42 +238,41 @@
           (cons item (filter-xml-elements (rest items)))
         (filter-xml-elements (rest items))))))
 
-(defthm use-XML-ELEMENT-ARGSP-limited
-  (IMPLIES (XML-ELEMENT-ARGSP ITEM)
-           (XML-ITEM-LISTP (SKIP-XML-ATTRIBUTES ITEM)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable XML-ELEMENT-ARGSP))))
+;returns all of the child elements (not the strings)
+(defun child-elements (elem)
+  (declare (xargs :guard (xml-elementp elem)
+                  :guard-hints (("Goal" :in-theory (enable xml-element-argsp)))))
+  (filter-xml-elements (xml-element-sub-items elem)))
 
-;fixme what if there are several child elements with the same name?
-(defun get-child-element (name xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (let ((child-items (xml-element-sub-items xml-element)))
-    (first (filter-elements-with-name name child-items))))
+;; From the ITEMS (elements and strings) keep the ones that are elements whose tag is NAME.
+(defun filter-elements-with-tag (name items)
+  (declare (xargs :guard (xml-item-listp items)))
+  (if (not (consp items))
+      nil
+    (let ((item (first items)))
+      (if (and (not (stringp item))
+               (equal name (xml-element-tag item)))
+          (cons item (filter-elements-with-tag name (rest items)))
+        (filter-elements-with-tag name (rest items))))))
 
-;; rename to have "with name" in the name
-(defun get-child-elements (name xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (let ((child-items (xml-element-sub-items xml-element)))
-    (filter-elements-with-name name child-items)))
+;; (defthm use-xml-element-argsp-limited
+;;   (implies (xml-element-argsp item)
+;;            (xml-item-listp (skip-xml-attributes item)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable xml-element-argsp))))
 
-;returns all child elements
-(defun child-elements (xml-element)
-   (declare (xargs :guard (xml-elementp xml-element)))
-   (let ((args (rest xml-element)))
-    (filter-xml-elements (skip-xml-attributes args))))
+(defund child-elements-with-tag (tag elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (let ((child-items (xml-element-sub-items elem)))
+    (filter-elements-with-tag tag child-items)))
 
-(defthm SKIP-XML-ATTRIBUTES-does-nothing
-  (implies (xml-item-listp args)
-           (equal (skip-xml-attributes args)
-                  args))
-  :hints (("Goal" :in-theory (enable xml-item-listp skip-xml-attributes))))
+;; Returns the first  child element with the given tag.
+;; Returns nil if there aren't any.
+(defund first-child-element-with-tag (tag elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (first (child-elements-with-tag tag elem)))
 
-(defthm xml-element-argsp-of-cdr
-  (implies (xml-element-argsp args)
-           (xml-element-argsp (cdr args)))
-  :hints (("Goal" :in-theory (enable xml-element-argsp xml-item-listp skip-xml-attributes))))
-
-;use a generic? something like get-the (for "get the unique item in this list that satisfies this predicate -- obligation that only one does?)
+;use a generic? something like get-the (for "get the unique item in this list that satisfies this predicate" -- obligation that only one does?)
 (defun get-xml-attribute-aux (name args)
   (declare (xargs :guard (and (stringp name)
                               (true-listp args)
@@ -290,31 +290,26 @@
 
 ;returns nil or a string
 ;get the string value equated to the string name in something like (= "foo" "bar")
-(defund get-xml-attribute (name xml-element)
+(defund get-xml-attribute (name elem)
   (declare (xargs :guard (and (stringp name)
-                              (xml-elementp xml-element))))
-  (let ((args (rest xml-element)))
+                              (xml-elementp elem))))
+  (let ((args (rest elem)))
     (get-xml-attribute-aux name args)))
 
-(defun xml-attribute-presentp (name xml-element)
+(defun xml-attribute-presentp (name elem)
   (declare (xargs :guard (and (stringp name)
-                              (xml-elementp xml-element))))
-  ;;todo: weaken to non-nil?
-  (stringp (get-xml-attribute name xml-element)))
+                              (xml-elementp elem))))
+  ;;todo: weaken to bool-fix?
+  (stringp (get-xml-attribute name elem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: deprecate but mentioned in muse
-(defun xml-element-contents (xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (xml-element-sub-items xml-element))
-
 ;; Get the first thing in the XML-ELEMENT's contents (a string or child element)
-(defun xml-element-first-contents (xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)
+(defun xml-element-first-contents (elem)
+  (declare (xargs :guard (xml-elementp elem)
                   :guard-hints (("Goal" :in-theory (disable xml-elementp-rewrite)))
                   ))
-  (first (xml-element-contents xml-element)))
+  (first (xml-element-sub-items elem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

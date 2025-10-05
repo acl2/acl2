@@ -464,7 +464,7 @@
     ))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
+(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
                               (or (eq :any methods-expected-to-fail)
                                   (eq :auto methods-expected-to-fail)
@@ -474,6 +474,7 @@
                               (jvm::class-namep class-name)
                               ;; TODO: translate the assumptions!
                               (stringp root-of-class-hierarchy) ;a directory name
+                              (count-hits-argp count-hits)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (prune-precise-optionp prune-precise)
@@ -540,6 +541,7 @@
                                  :all ;'("java.lang.Object" "java.lang.System") ;classes-to-assume-initialized
                                  nil ;ignore-exceptions
                                  nil ;ignore-errors
+                                 count-hits
                                  print
                                  nil    ;print-interval
                                  t ;memoizep
@@ -664,13 +666,14 @@
 
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
   (declare (xargs :guard ;; todo: flesh out:
                   (and
                    (or (eq :any methods-expected-to-fail)
                        (eq :auto methods-expected-to-fail)
                        (string-listp methods-expected-to-fail))
                    (booleanp error-on-unexpectedp)
+                   (count-hits-argp count-hits)
                    (prune-precise-optionp prune-precise)
                    (prune-approx-optionp prune-approx))
                   :stobjs state
@@ -679,11 +682,11 @@
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
+        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -694,6 +697,7 @@
                      methods-expected-to-fail ;todo: check that these are all methods in the class
                      error-on-unexpectedp
                      ;;assumptions
+                     count-hits
                      print
                      extra-rules
                      remove-rules
@@ -712,6 +716,7 @@
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   )
                               (booleanp error-on-unexpectedp)
+                              (count-hits-argp count-hits)
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
@@ -775,7 +780,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor
+        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state constant-pool))
@@ -797,6 +802,7 @@
                                        (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                        (expected-failures ':auto)
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
+                                       (count-hits 'nil)
                                        (extra-rules 'nil)
                                        (remove-rules 'nil)
                                        (prune-precise '10000) ; todo: can explode
@@ -808,6 +814,7 @@
                                    ,methods
                                    ,expected-failures
                                    ,error-on-unexpectedp
+                                   ,count-hits
                                    ,print
                                    ,extra-rules
                                    ,remove-rules
@@ -825,6 +832,7 @@
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                                (count-hits 'nil)
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
                                                 (prune-precise '10000) ; todo: can explode, was called was called prune-branches-precisely
@@ -838,6 +846,7 @@
                    ,methods
                    :auto ; methods-expected-to-fail
                    nil ; error-on-unexpectedp, don't cause hard error on unexpected result
+                   ,count-hits
                    ,print
                    ,extra-rules
                    ,remove-rules
