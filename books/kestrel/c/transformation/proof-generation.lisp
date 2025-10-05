@@ -1630,12 +1630,7 @@
        (gout-no-thm (gout-no-thm gin))
        ((unless (and arg1-thm-name
                      arg2-thm-name))
-        (mv expr-new gout-no-thm))
-       (cop (ldm-binop op)) ; ERP must be NIL
-       ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
-       ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
-       ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
-       ((mv & new-arg2) (ldm-expr arg2-new))) ; ERP must be NIL
+        (mv expr-new gout-no-thm)))
     (cond
      ((member-eq (binop-kind op)
                  '(:mul :div :rem :add :sub :shl :shr
@@ -1644,6 +1639,11 @@
       (b* (((unless (and (expr-purep arg1)
                          (expr-purep arg2)))
             (mv expr-new gout-no-thm))
+           (cop (ldm-binop op)) ; ERP must be NIL
+           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+           ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+           ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
+           ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
            (hints `(("Goal"
                      :in-theory '((:e c::binop-kind)
                                   (:e c::binop-purep)
@@ -1684,6 +1684,10 @@
       (b* (((unless (and (expr-purep arg1)
                          (expr-purep arg2)))
             (mv expr-new gout-no-thm))
+           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+           ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+           ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
+           ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
            (hints
             `(("Goal"
                :in-theory '((:e c::expr-binary)
@@ -1742,6 +1746,8 @@
                          (expr-purep arg2)))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
+           ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+           ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
            (hints
             `(("Goal"
                :in-theory
