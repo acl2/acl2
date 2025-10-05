@@ -430,9 +430,12 @@
        (if (expr-case (expr-binary->arg1 expr) :ident)
            (and (ident-formalp (expr-ident->ident (expr-binary->arg1 expr)))
                 (or (expr-pure-formalp (expr-binary->arg2 expr))
-                    (expr-call-formalp (expr-binary->arg2 expr))))
+                    (expr-call-formalp (expr-binary->arg2 expr))
+                    (expr-asg-formalp (expr-binary->arg2 expr))))
          (and (expr-pure-formalp (expr-binary->arg1 expr))
               (expr-pure-formalp (expr-binary->arg2 expr)))))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
