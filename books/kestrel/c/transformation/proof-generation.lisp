@@ -1778,8 +1778,6 @@
                  (:e c::binop-asg)
                  (:e c::ident)
                  c::not-errorp-when-compustate-has-var-with-type-p
-                 c::valuep-of-read-object-of-objdesign-of-var
-                 c::not-errorp-when-valuep
                  expr-compustate-vars)
                :use (,arg1-thm-name
                      (:instance
