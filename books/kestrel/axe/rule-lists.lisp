@@ -746,6 +746,8 @@
      equal-of-constant-and-leftrotate32
      slice-of-leftrotate32-high
 
+;     sbvlt-of-ifix-arg2 ; todo: uncomment these 2, but one of them caused a problem in isAscending
+;     sbvlt-of-ifix-arg3
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename
      equal-constant-when-not-sbvlt ; rename
@@ -775,17 +777,28 @@
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
      bvminus-of-bvplus-and-bvplus-same-2-2
+     bvminus-of-ifix-arg2
+     bvminus-of-ifix-arg3
 
      bvplus-of-0-arg2
+     ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
+     bvand-of-ifix-arg2
+     bvand-of-ifix-arg3
+
      bvor-of-0-arg2
      bvor-of-0-arg3 ; could drop if commuting constants forward
+     bvor-of-ifix-arg2
+     bvor-of-ifix-arg3
+
      bvxor-of-0-arg2
      bvxor-of-0-arg3 ; could drop if commuting constants forward
+     bvxor-of-ifix-arg2
+     bvxor-of-ifix-arg3
 
      bitand-of-0-arg1
      bitand-of-0-arg2 ; could drop if commuting constants forward
@@ -814,7 +827,10 @@
      bitxor-same-2
 
      bvnot-of-bvnot
+     bvnot-of-ifix
+
      bitnot-of-bitnot
+     bitnot-of-ifix
 
      bvand-of-myif-arg1
      bvand-of-myif-arg2
@@ -930,6 +946,12 @@
      getbit-of-bvmult-of-expt-constant-version
 
 ;slice-of-bvplus-cases-no-split-case-no-carry-constant-version ;new
+     bitand-of-ifix-arg1
+     bitand-of-ifix-arg2
+
+     bitor-of-ifix-arg1
+     bitor-of-ifix-arg2
+
      bitxor-of-ifix-arg1
      bitxor-of-ifix-arg2
 
@@ -961,6 +983,8 @@
      bvif-of-getbit-arg4
 
      not-bvlt-self
+     bvlt-of-ifix-arg2
+     bvlt-of-ifix-arg3
      bvlt-of-bvmod-false
      bvlt-transitive-1-a
      bvlt-transitive-1-b
@@ -996,7 +1020,6 @@
      equal-of-bvif-constants2
      bvif-of-not
 
-
 ;    bvlt-of-0-arg2 ;fixme use polarity?
      bvlt-of-0-arg3
 
@@ -1004,7 +1027,6 @@
      bvmult-of-1-arg2
      bvmult-of-ifix-arg2
      bvmult-of-ifix-arg3
-
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -1202,6 +1224,8 @@
      sbvdiv-same
 
      bvchop-of-ifix ; more like this?
+     slice-of-ifix
+     getbit-of-ifix
      slice-tighten-top-axe
 
      unsigned-byte-p-when-unsigned-byte-p-smaller

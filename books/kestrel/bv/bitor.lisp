@@ -1,7 +1,7 @@
-; Taking the or of two bits
+; Taking the (inclusive) OR of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "bvor")
 (local (include-book "slice"))
 
+;; We could call this bitior instead, if we wanted to match Common Lisp conventions.
 (defund bitor (x y)
   (declare (type integer x)
            (type integer y)
@@ -198,3 +199,25 @@
                             t
                           (equal 1 (getbit 0 y)))
                       nil)))))
+
+(defthm bitor-when-x-is-not-an-integer
+  (implies (not (integerp x))
+           (equal (bitor x y)
+                  (getbit 0 y)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-when-y-is-not-an-integer
+  (implies (not (integerp y))
+           (equal (bitor x y)
+                  (getbit 0 x)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-of-ifix-arg1
+  (equal (bitor (ifix x) y)
+         (bitor x y))
+  :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))
+
+(defthm bitor-of-ifix-arg2
+  (equal (bitor x (ifix y))
+         (bitor x y))
+  :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))

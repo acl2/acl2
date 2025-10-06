@@ -136,3 +136,8 @@
   (not (equal (bitnot x) (getbit 0 x)))
   :hints (("Goal" :use equal-of-getbit-of-0-and-bitnot
            :in-theory (disable equal-of-getbit-of-0-and-bitnot))))
+
+(defthm bitnot-of-ifix
+  (equal (bitnot (ifix x))
+         (bitnot x))
+  :hints (("Goal" :in-theory (enable ifix))))

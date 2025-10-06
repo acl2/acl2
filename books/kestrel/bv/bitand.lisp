@@ -1,7 +1,7 @@
-; Taking the and of two bits
+; Taking the AND of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -231,3 +231,13 @@
                       (bitand x y)
                     0)))
   :hints (("Goal" :in-theory (e/d (bitand bvand) (getbit-of-bvchop-both)))))
+
+(defthm bitand-of-ifix-arg1
+  (equal (bitand (ifix x) y)
+         (bitand x y))
+  :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))
+
+(defthm bitand-of-ifix-arg2
+  (equal (bitand x (ifix y))
+         (bitand x y))
+  :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))
