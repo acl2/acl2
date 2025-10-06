@@ -376,30 +376,18 @@
   (defruled expr-binary-asg-congruence
     (b* ((old (c::expr-binary (c::binop-asg) (c::expr-ident var) old-arg))
          (new (c::expr-binary (c::binop-asg) (c::expr-ident var) new-arg))
-         (old-arg-result (c::exec-expr-pure old-arg compst))
-         (new-arg-result (c::exec-expr-pure new-arg compst))
-         (old-arg-value (c::expr-value->value old-arg-result))
-         (new-arg-value (c::expr-value->value new-arg-result))
+         ((mv old-arg-result old-arg-compst)
+          (c::exec-expr old-arg compst old-fenv (1- limit)))
+         ((mv new-arg-result new-arg-compst)
+          (c::exec-expr new-arg compst new-fenv (1- limit)))
          ((mv old-result old-compst) (c::exec-expr old compst old-fenv limit))
          ((mv new-result new-compst) (c::exec-expr new compst new-fenv limit))
-         (val (c::read-object (c::objdesign-of-var var compst) compst))
-         (type (c::type-of-value val)))
-      (implies (and (not (equal (c::expr-kind old-arg) :call))
-                    (not (equal (c::expr-kind new-arg) :call))
-                    (not (and (equal (c::expr-kind old-arg) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op old-arg))
-                                     :asg)))
-                    (not (and (equal (c::expr-kind new-arg) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op new-arg))
-                                     :asg)))
-                    (not (c::errorp val))
-                    (c::type-nonchar-integerp type)
+         (val (c::read-object (c::objdesign-of-var var compst) compst)))
+      (implies (and (not (c::errorp val))
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
-                    (equal old-arg-value new-arg-value)
-                    (equal (c::type-of-value old-arg-value) type))
+                    (equal old-arg-result new-arg-result)
+                    (equal old-arg-compst new-arg-compst))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst))))
@@ -408,24 +396,7 @@
               compst old-fenv limit)
              (c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) new-arg)
-              compst new-fenv limit))
-    :enable (c::exec-expr
-             c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp)
-    :use (:instance
-          lemma
-          (val1 (c::read-object (c::objdesign-of-var var compst) compst))
-          (val2 (c::expr-value->value (c::exec-expr-pure old-arg compst))))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (equal (c::type-of-value val1)
-                       (c::type-of-value val2))
-                (equal (c::value-integerp val1)
-                       (c::value-integerp val2)))
-       :enable (c::type-of-value
-                c::value-integerp
-                c::value-unsigned-integerp
-                c::value-signed-integerp))))
+              compst new-fenv limit)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,20 +1061,18 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-asg-errors
-    (implies (and (not (equal (c::expr-kind expr) :call))
-                  (not (and (equal (c::expr-kind expr) :binary)
-                            (equal (c::binop-kind (c::expr-binary->op expr))
-                                   :asg)))
-                  (or (c::errorp (c::exec-expr-pure (c::expr-ident var) compst))
-                      (c::errorp (c::exec-expr-pure expr compst))))
-             (c::errorp
-              (mv-nth 0 (c::exec-expr
-                         (c::expr-binary
-                          (c::binop-asg) (c::expr-ident var) expr)
-                         compst fenv limit))))
+    (b* (((mv right-result right-compst)
+          (c::exec-expr expr compst fenv (1- limit))))
+      (implies (or (c::errorp right-result)
+                   (c::errorp
+                    (c::exec-expr-pure (c::expr-ident var) right-compst)))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-binary
+                            (c::binop-asg) (c::expr-ident var) expr)
+                           compst fenv limit)))))
     :expand (c::exec-expr (c::expr-binary '(:asg) (c::expr-ident var) expr)
-                          compst fenv limit)
-    :enable c::exec-expr)
+                          compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
