@@ -55,6 +55,8 @@
     "__builtin_va_list"
     "__declspec"
     "__extension__"
+    "__float80"
+    "__floar128"
     "_Float16"
     "_Float16x"
     "_Float32"

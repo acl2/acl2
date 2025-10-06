@@ -486,6 +486,8 @@
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
+        ((token-keywordp token "__float80") (type-spec-locase-float80))
+        ((token-keywordp token "__float128") (type-spec-locase-float128))
         ((token-keywordp token "_Float16") (type-spec-float16))
         ((token-keywordp token "_Float16x") (type-spec-float16x))
         ((token-keywordp token "_Float32") (type-spec-float32))

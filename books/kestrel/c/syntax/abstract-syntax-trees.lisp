@@ -1995,6 +1995,8 @@
        but has been observed in real code and is accepted by GCC.")
      (xdoc::p
       "We also include the GCC extensions
+       @('__float80'),
+       @('__float128'),
        @('_Float16'),
        @('_Float16x'),
        @('_Float32'),
@@ -2044,6 +2046,8 @@
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
+    (:locase-float80 ())
+    (:locase-float128 ())
     (:float16 ())
     (:float16x ())
     (:float32 ())

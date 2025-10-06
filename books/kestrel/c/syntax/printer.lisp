@@ -2500,6 +2500,8 @@
      :int128 (if tyspec.uscoret
                  (print-astring "__int128_t" pstate)
                (print-astring "__int128" pstate))
+     :locase-float80 (print-astring "__float80" pstate)
+     :locase-float128 (print-astring "__float128" pstate)
      :float16 (print-astring "_Float16" pstate)
      :float16x (print-astring "_Float16x" pstate)
      :float32 (print-astring "_Float32" pstate)

@@ -524,6 +524,8 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_va_list"
             / %s"__declspec"
             / %s"__extension__"
+            / %s"__float80"
+            / %s"__float128"
             / %s"_Float16"
             / %s"_Float16x"
             / %s"_Float32"
@@ -536,6 +538,7 @@ gcc-keyword = %s"__alignof"
             / %s"__inline"
             / %s"__inline__"
             / %s"__int128"
+            / %s"__int128_t"
             / %s"__label__"
             / %s"__real__"
             / %s"__restrict"
@@ -1253,6 +1256,8 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As GCC extensions, we include the type specifiers
 ; '__int128',
+; '__float80',
+; '__float128',
 ; '_Float16',
 ; '_Float16x',
 ; '_Float32',
@@ -1263,7 +1268,7 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; '_Float128x',
 ; and '__builtin_va_list'.
 ; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
-; for the '_Float...' types.
+; for the '__float...' and '_Float...' types.
 
 ; We include the GCC extension for the 'typeof' operator,
 ; along with its '__typeof' and '__typeof__' variants.
@@ -1342,6 +1347,8 @@ type-specifier = %s"void"
                / typedef-name
                ; GCC extensions:
                / %s"__int128"
+               / %s"__float80"
+               / %s"__float128"
                / %s"_Float16"
                / %s"_Float16x"
                / %s"_Float32"
