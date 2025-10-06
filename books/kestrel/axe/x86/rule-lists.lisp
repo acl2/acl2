@@ -1245,10 +1245,10 @@
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
     acl2::loghead-becomes-bvchop
-    acl2::bvchop-of-lognot-becomes-bvnot
-    acl2::bvchop-of-logand-becomes-bvand
-    acl2::bvchop-of-logior-becomes-bvor
-    acl2::bvchop-of-logxor-becomes-bvxor
+    ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logior-becomes-bvor
+    ;;acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
 
     acl2::logapp-becomes-bvcat-bind-free-axe
@@ -5531,8 +5531,8 @@
      acl2::if-of-nil
      acl2::if-of-t
 
-     acl2::bvplus-of-logext-arg2
-     acl2::bvplus-of-logext-arg3
+     acl2::bvplus-of-logext-arg2 ; drop?
+     acl2::bvplus-of-logext-arg3 ; drop?
      acl2::signed-byte-p-logext
      read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
      )
@@ -5769,7 +5769,7 @@
     acl2::<-of-constant-and-+-of-constant ; for address calcs
     acl2::<-of-15-and-*-of-4
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-    acl2::not-bvlt-of-max-arg2
+    acl2::not-bvlt-of-max-arg2 ; size is symbolic
     acl2::<-of-*-when-constant-integers
     ;;separate-when-separate-2 ; todo: drop? but that caused problems
     acl2::collect-constants-over-<-2
@@ -5840,7 +5840,7 @@
     acl2::equal-of-bvplus-constant-and-constant
     acl2::equal-of-bvplus-constant-and-constant-alt
     acl2::bvchop-of-bvshr-same
-    acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
+    ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
     acl2::equal-of-constant-and-bitand
