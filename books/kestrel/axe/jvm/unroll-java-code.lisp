@@ -34,7 +34,7 @@
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag
-(include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator
+(include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator, has skip-proofs
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
