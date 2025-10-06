@@ -10,7 +10,7 @@
 
 (in-package "X")
 
-(include-book "unroll-x86-code") ; has skip-proofs
+(include-book "unroller") ; has skip-proofs
 (include-book "../tactic-prover")
 (include-book "kestrel/strings-light/upcase" :dir :system)
 (include-book "../basic-rules") ; for equal-same
