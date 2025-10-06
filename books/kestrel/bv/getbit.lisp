@@ -808,3 +808,8 @@
            (equal (integerp (* 1/2 x))
                   (equal 0 (getbit 0 x))))
   :hints (("Goal" :in-theory (enable getbit bvchop ifix))))
+
+(defthm getbit-of-ifix
+  (equal (getbit n (ifix x))
+         (getbit n x))
+  :hints (("Goal" :in-theory (enable ifix))))

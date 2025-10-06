@@ -533,3 +533,13 @@
            (equal (bvor size x y)
                   (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-ifix-arg2
+  (equal (bvor size (ifix x) y)
+         (bvor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm bvor-of-ifix-arg3
+  (equal (bvor size x (ifix y))
+         (bvor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))

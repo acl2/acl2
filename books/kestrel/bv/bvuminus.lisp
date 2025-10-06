@@ -228,3 +228,8 @@
            (equal (bvuminus size (+ x y))
                   (bvuminus size (bvplus size x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvuminus-of-ifix
+  (equal (bvuminus size (ifix x))
+         (bvuminus size x))
+  :hints (("Goal" :in-theory (enable ifix))))
