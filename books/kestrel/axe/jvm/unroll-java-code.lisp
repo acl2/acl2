@@ -46,7 +46,8 @@
 (local (in-theory (disable acl2-count ;for speed
                            w
                            state-p1-forward
-                           state-p-implies-and-forward-to-state-p1)))
+                           state-p-implies-and-forward-to-state-p1
+                           pseudo-term-listp)))
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
@@ -472,8 +473,7 @@
 
 (defund choose-symbolic-execution-rules (steps branches)
   (declare (xargs :guard (and (steps-optionp steps)
-                              (or (eq :smart branches)
-                                  (eq :split branches)))))
+                              (branches-optionp branches))))
   (if (eq :auto steps)
       (if (eq branches :smart)
           (run-until-return-from-stack-height-rules-smart)
@@ -527,6 +527,7 @@
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
+                                extra-assumption-rules
                                 rule-alists
                                 monitored-rules
                                 user-assumptions
@@ -553,6 +554,7 @@
                               (array-length-alistp array-length-alist)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp extra-assumption-rules)
                               (rule-alistsp rule-alists)
                               (symbol-listp monitored-rules)
                               (pseudo-term-listp user-assumptions)
@@ -581,7 +583,7 @@
                                                         (quotep
                                                          myquotep
                                                          integerp-of-nth-when-all-natp
-                                                         pseudo-term-listp))))))
+                                                         ))))))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -716,11 +718,18 @@
        ;; Simplify the assumptions using themselves (example: an automatic
        ;; assumption replaces an array's contents with a var, and a user
        ;; assumption replaces that var with another term):
+       (assumption-rule-alists rule-alists) ; todo: allow overriding
+       (assumption-rule-alists ; todo: also add support for remove-assumption-rules
+         ;; why are we removing this?:
+         (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) assumption-rule-alists) ; could use separate rules for this assumption simplification
+         )
+       ((mv erp assumption-rule-alists)
+        (add-to-rule-alists extra-assumption-rules assumption-rule-alists (w state)))
+       ((when erp) (mv erp nil nil nil nil state))
        ((mv erp all-assumptions)
         (acl2::simplify-conjunction-with-rule-alists-basic ;simplify-terms-repeatedly
           all-assumptions
-          ;; why are we removing this?:
-          (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) rule-alists) ; could use separate rules for this assumption simplification
+          assumption-rule-alists
           (acl2::known-booleans (w state))
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; no-warn-ground-functions
@@ -792,6 +801,7 @@
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
+                             extra-assumption-rules
                              rule-alists
                              monitored-rules
                              user-assumptions
@@ -821,6 +831,7 @@
                                   (jvm::all-class-namesp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp extra-assumption-rules)
                               (rule-alistsp rule-alists)
                               (symbol-listp monitored-rules)
                               (array-length-alistp array-length-alist)
@@ -833,8 +844,7 @@
                               (booleanp produce-function)
                               (or (eq :auto steps)
                                   (natp steps))
-                              (or (eq :smart branches)
-                                  (eq :split branches))
+                              (branches-optionp branches)
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
@@ -864,6 +874,7 @@
                                  array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
+                                 extra-assumption-rules
                                  rule-alists
                                  monitored-rules
                                  user-assumptions
@@ -969,6 +980,7 @@
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
+                                      (extra-assumption-rules 'nil) ; to add to the usual set of rules
                                       (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
                                       (prune-precise 'nil) ; can blow up! was called prune-branches-precisely
                                       (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot), was called prune-branches-approximately
@@ -991,6 +1003,7 @@
                                      ,array-length-alist
                                      ,extra-rules
                                      ,remove-rules
+                                     ,extra-assumption-rules
                                      ,rule-alists
                                      ,monitor
                                      ,assumptions
@@ -1041,6 +1054,7 @@
          (rule-alists             "If non-@('nil'), rule-alists to use (these completely replace the usual rule sets)")
          (extra-rules             "Rules to add to the usual set of rules")
          (remove-rules            "Rules to remove from the usual set of rules")
+         (extra-assumption-rules             "Rules to add to the usual set of rules for simplifying assumptions")
          (vars-for-array-elements "Whether to introduce vars for individual array elements in the input (@('nil'), @('t'), or :@('bits')).  For @('nil'), a single variable is introduced for the entire array.  For @('t'), a variable is introduced for each element of the array.  For @(':bits'), a variable is introduced for each bit of each element of the array.")
          (param-names "Names to use for the parameters (e.g., if no debugging information is available), or @(':auto').")
          (output                  "An indication of which state component to extract")

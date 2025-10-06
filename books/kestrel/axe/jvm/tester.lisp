@@ -537,6 +537,7 @@
                                          ;; (bool-intro-rules)
                                          (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
                                          remove-rules)
+                                 nil ; extra-assumption-rules ; consider adding support for this
                                  nil ;rule-alists
                                  monitor
                                  ;todo: think about these:
