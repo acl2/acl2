@@ -2384,7 +2384,7 @@
                    set::subset-in
                    c::compustate-frames-number-of-exec-stmt
                    c::compustatep-when-compustate-resultp-and-not-errorp
-                   stmt-ifelse-compustate-vars)
+                   stmt-compustate-vars)
                  :use (,test-thm-name
                        (:instance ,then-thm-name (limit (1- limit)))
                        (:instance ,else-thm-name (limit (1- limit)))

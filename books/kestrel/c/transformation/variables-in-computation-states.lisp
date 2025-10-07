@@ -224,33 +224,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-ifelse-compustate-vars
-    (b* ((test (c::stmt-ifelse->test stmt))
-         (then (c::stmt-ifelse->then stmt))
-         (else (c::stmt-ifelse->else stmt))
-         (test-result (c::exec-expr-pure test compst))
-         (test-value (c::expr-value->value test-result))
-         ((mv & then-compst) (c::exec-stmt then compst fenv (1- limit)))
-         ((mv & else-compst) (c::exec-stmt else compst fenv (1- limit)))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :ifelse)
-                    (not (c::errorp result))
-                    (c::type-nonchar-integerp (c::type-of-value test-value))
-                    (or (and (c::test-value test-value)
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                then-compst))
-                        (and (not (c::test-value test-value))
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                else-compst))))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit)
-    :enable (c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defruled stmt-compound-compustate-vars
     (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
       (implies (and (equal (c::stmt-kind stmt) :compound)
