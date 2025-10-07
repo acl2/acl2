@@ -2563,36 +2563,28 @@
                         (:e omap::tail)
                         (:e set::insert)
                         (:e c::type-nonchar-integerp)
-                        while-hyp
+                        while-test-hyp
+                        while-body-hyp
                         c::compustate-has-vars-with-types-p)
            :use ((:instance
                   ,test-thm-name
-                  (compst (mv-nth 0 (while-hyp-witness ',old-test
-                                                       ',new-test
-                                                       ',old-body
-                                                       ',new-body
-                                                       old-fenv
-                                                       new-fenv
-                                                       ',types
-                                                       ',gin.vartys))))
+                  (compst (while-test-hyp-witness ',old-test
+                                                  ',new-test
+                                                  ',gin.vartys)))
                  (:instance
                   ,body-thm-name
-                  (compst (mv-nth 0 (while-hyp-witness ',old-test
-                                                       ',new-test
-                                                       ',old-body
-                                                       ',new-body
-                                                       old-fenv
-                                                       new-fenv
-                                                       ',types
-                                                       ',gin.vartys)))
-                  (limit (mv-nth 1 (while-hyp-witness ',old-test
-                                                      ',new-test
-                                                      ',old-body
-                                                      ',new-body
-                                                      old-fenv
-                                                      new-fenv
-                                                      ',types
-                                                      ',gin.vartys))))
+                  (compst (mv-nth 0 (while-body-hyp-witness ',old-body
+                                                            ',new-body
+                                                            old-fenv
+                                                            new-fenv
+                                                            ',types
+                                                            ',gin.vartys)))
+                  (limit (mv-nth 1 (while-body-hyp-witness ',old-body
+                                                           ',new-body
+                                                           old-fenv
+                                                           new-fenv
+                                                           ',types
+                                                           ',gin.vartys))))
                  (:instance
                   stmt-while-theorem
                   (old-test ',old-test)
