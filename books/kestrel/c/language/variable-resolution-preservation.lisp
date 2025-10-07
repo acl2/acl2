@@ -506,7 +506,7 @@
      and between entering and exiting scopes.")
    (xdoc::p
     "This theorem is proved from
-     @(tsee var-reslve-preservep-of-exit-scope-and-exit-scope),
+     @(tsee var-resolve-preservep-of-exit-scope-and-exit-scope),
      by suitably instantiating the computation states there.")
    (xdoc::p
     "This theorem is used to prove
