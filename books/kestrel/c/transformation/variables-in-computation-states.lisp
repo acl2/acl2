@@ -126,6 +126,17 @@
            c::not-errorp-when-valuep
            c::valuep-of-read-object-of-objdesign-of-var))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-vars-with-types-p-of-enter-scope
+  :short "Preservation of @(tsee c::compustate-has-vars-with-types-p)
+          under @(tsee c::enter-scope)."
+  (implies (c::compustate-has-vars-with-types-p vartys compst)
+           (c::compustate-has-vars-with-types-p vartys (c::enter-scope compst)))
+  :induct t
+  :enable (c::compustate-has-vars-with-types-p
+           c::compustate-has-var-with-type-p-of-enter-scope))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-compustate-vars-theorems
