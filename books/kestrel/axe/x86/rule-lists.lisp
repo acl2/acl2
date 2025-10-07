@@ -5172,8 +5172,6 @@
      set-flag-of-set-rsp
      set-flag-of-set-rbp
 
-
-
      ;; set-rip-of-myif
      ;; set-rax-of-myif
      ;; set-rbx-of-myif
@@ -5839,7 +5837,6 @@
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
     acl2::equal-of-bvplus-constant-and-constant
     acl2::equal-of-bvplus-constant-and-constant-alt
-    acl2::bvchop-of-bvshr-same
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -5886,7 +5883,7 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            acl2::bvchop-of-if
+            acl2::bvchop-of-if ; pushes the if through ; todo: go to bvif?
             acl2::ifix-of-if
 
             ;; move all of these:
@@ -6002,14 +5999,12 @@
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
             acl2::bvplus-commutative-increasing-axe
-            ;acl2::bvchop-of-bvmod ; just use bvchop-identity-axe
             acl2::bvuminus-of-bvif-constants
             acl2::equal-of-bvif ;restrict to constant x?
             acl2::equal-of-bvif-alt ;restrict to constant x?
             ;; just include boolean-rules?
             acl2::boolif-when-quotep-arg2
             acl2::boolif-when-quotep-arg3
-            acl2::bvchop-of-bvuminus-same
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
