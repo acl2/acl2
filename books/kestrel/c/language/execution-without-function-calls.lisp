@@ -71,6 +71,13 @@
                       (exec-stmt-while test body compst fenv1 limit)))
       :rule-classes nil
       :flag exec-stmt-while)
+    (defthm exec-stmt-dowhile-without-calls
+      (implies (and (expr-nocallsp test)
+                    (stmt-nocallsp body))
+               (equal (exec-stmt-dowhile body test compst fenv limit)
+                      (exec-stmt-dowhile body test compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-stmt-dowhile)
     (defthm exec-initer-without-calls
       (implies (initer-nocallsp initer)
                (equal (exec-initer initer compst fenv limit)
@@ -99,6 +106,7 @@
              :in-theory (enable exec-expr
                                 exec-stmt
                                 exec-stmt-while
+                                exec-stmt-dowhile
                                 exec-initer
                                 exec-obj-declon
                                 exec-block-item

@@ -975,9 +975,7 @@
        does not affect the final result.")
      (xdoc::p
       "If the expression is a function call,
-       we call a separate ACL2 function to handle that.
-       We plan to eliminate that ACL2 function,
-       and fold its code here directly.")
+       its arguments must be all pure expressions.")
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1072,7 +1070,7 @@
                      (fenv fun-envp)
                      (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result stmt-value-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a statement."
@@ -1083,7 +1081,14 @@
      (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
-       and we exit that scope after executing the block items."))
+       and we exit that scope after executing the block items.")
+     (xdoc::p
+      "An iteration statement forms a block [C17:6.8.5/5],
+       so we must enter a new scope before it and exit the scope after it.
+       We are currently not doing that for @('while') loops,
+       but we plan to do that;
+       at the moment it does not make a difference,
+       given how we use the dynamic semantics."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
@@ -1119,7 +1124,12 @@
                    (exec-stmt s.else compst fenv (1- limit))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (exec-stmt-while s.test s.body compst fenv (1- limit))
-       :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :dowhile (b* ((compst (enter-scope compst))
+                     ((mv sval compst)
+                      (exec-stmt-dowhile s.body s.test compst fenv (1- limit)))
+                     ((when (errorp sval)) (mv sval (exit-scope compst)))
+                     (compst (exit-scope compst)))
+                  (mv sval compst))
        :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1143,7 +1153,7 @@
                            (fenv fun-envp)
                            (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result stmt-value-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a @('while') statement."
@@ -1155,9 +1165,13 @@
        because it means that the loop completes,
        and execution can proceed with any code after the loop.
        Otherwise, we recursively execute the body.
-       If the body returns a result,
-       we return it from this ACL2 function without continuing the loop.
-       If the body returns no result,
+       We should push and then pop a scope,
+       because the body of a loop forms a block [C17:6.8.5/5];
+       we plan to do that, but currently that makes no difference
+       given how we are using our dynamic semantics of C.
+       If the body terminates with a @('return'),
+       we terminate the loop with the same result.
+       If the body does not terminate with a @('return'),
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1173,6 +1187,48 @@
          ((when (errorp sval)) (mv sval compst))
          ((when (stmt-value-case sval :return)) (mv sval compst)))
       (exec-stmt-while test body compst fenv (1- limit)))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-stmt-dowhile ((body stmtp)
+                             (test exprp)
+                             (compst compustatep)
+                             (fenv fun-envp)
+                             (limit natp))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (sval stmt-value-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute a @('do-while') statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "First, we execute the body,
+       pushing and then popping a scope,
+       because the body forms a block [C17:6.8.5/5].
+       If the body terminates with a @('return'),
+       we end the execution of the loop with the same result.
+       Otherwise, we execute the test.
+       If it yields a 0 scalar, the loop terminates execution,
+       with a statement value indicating non-@('return') termination.
+       Otherwise, we re-execute the loop,
+       by calling this ACL2 function recursively."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (compst (enter-scope compst))
+         ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval (exit-scope compst)))
+         (compst (exit-scope compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst))
+         (test-eval (exec-expr-pure test compst))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         (test-eval (apconvert-expr-value test-eval))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         (test-val (expr-value->value test-eval))
+         (continuep (test-value test-val))
+         ((when (errorp continuep)) (mv continuep compst))
+         ((when (not continuep)) (mv (stmt-value-none) compst)))
+      (exec-stmt-dowhile body test compst fenv (1- limit)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1264,15 +1320,10 @@
                            (fenv fun-envp)
                            (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result stmt-value-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a block item."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Besides an optional value result,
-       we also return a possibly updated computation state."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
@@ -1291,7 +1342,7 @@
                                 (fenv fun-envp)
                                 (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result stmt-value-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a list of block items."
@@ -1346,6 +1397,11 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-frames-number-of-exec-stmt-dowhile
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-dowhile)
     (defret compustate-frames-number-of-exec-initer
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1399,6 +1455,11 @@
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-scopes-numbers-of-exec-stmt-dowhile
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-dowhile)
     (defret compustate-scopes-numbers-of-exec-initer
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))

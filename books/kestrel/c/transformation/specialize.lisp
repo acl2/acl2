@@ -141,10 +141,10 @@
                      :pointers fundef.declor.pointers
                      :direct dirdeclor-params)
             :decls fundef.decls
-            :body (make-block
-                   :labels (block->labels fundef.body)
+            :body (make-comp-stmt
+                   :labels (comp-stmt->labels fundef.body)
                    :items (cons (make-block-item-decl :decl decl :info nil)
-                                (block->items fundef.body)))
+                                (comp-stmt->items fundef.body)))
             :info fundef.info)))
      :otherwise
      ;; TODO: check when non-function-params dirdeclor still has name target-fn

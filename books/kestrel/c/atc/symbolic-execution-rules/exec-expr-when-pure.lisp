@@ -44,9 +44,5 @@
   (defval *atc-exec-expr-when-pure-rules*
     '(exec-expr-when-pure
       (:e expr-kind)
-      (:e expr-call->fun)
-      (:e expr-call->args)
       (:e expr-binary->op)
-      (:e expr-binary->arg1)
-      (:e expr-binary->arg2)
       (:e binop-kind))))

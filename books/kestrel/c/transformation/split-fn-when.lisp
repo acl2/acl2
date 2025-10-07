@@ -120,7 +120,7 @@
        ((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor)
        (position?
-        (block-item-list-try-split-fn-when (block->items fundef.body) triggers))
+        (block-item-list-try-split-fn-when (comp-stmt->items fundef.body) triggers))
        ((unless position?)
         (retok fundef nil))
        ((erp fun-name)

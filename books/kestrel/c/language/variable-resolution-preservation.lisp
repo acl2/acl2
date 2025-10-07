@@ -354,7 +354,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled var-resolve-preservep-of-exit-scope-when-enter-scope
+(defruled var-resolve-preservep-of-prev-of-exit-scope-when-enter-scope
   :short "If variables resolution is preserved between
           a computation state just after entering a scope
           and another computation state,
@@ -385,6 +385,164 @@
            (var-resolve-preservep compst (exit-scope compst1)))
   :enable (prev-scope/frame
            exit-scope-of-enter-scope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-resolve-preservep-of-exit-scope-and-exit-scope
+  :short "Preservation of variable visibility is invariant
+          under exiting a scope in both computation states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We take two computation states
+     with the same non-zero number of frames
+     and with the same numbers od scopes in each frame,
+     and more than one scope in the top frame.
+     If @(tsee var-resolve-preservep) holds on the two computation states,
+     it also holds on the ones obtained by
+     applying @(tsee exit-scope) to both;
+     the hypotheses guarantee that this operation can be applied.")
+   (xdoc::p
+    "This theorem serves to prove
+     @(tsee var-resolve-preservep-of-exit-scope-when-enter-scope)."))
+  (implies (and (var-resolve-preservep compst compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers compst))
+                (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 1))
+           (var-resolve-preservep (exit-scope compst) (exit-scope compst1)))
+  :expand (var-resolve-preservep (exit-scope compst) (exit-scope compst1))
+  :enable lemma
+
+  :prep-lemmas
+
+  ((defruled lemma1
+     (implies (and (var-resolve-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (zp n)
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (equal
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst1))))
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst))))))
+     :enable (peel-frames
+              peel-scopes-of-exit-scope-fold
+              nfix)
+     :use (:instance var-resolve-preservep-necc (n 0) (m (1+ m))))
+
+   (defruled lemma2
+     (implies (and (var-resolve-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (not (zp n))
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (equal
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst1))))
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst))))))
+     :expand ((peel-frames n (exit-scope compst))
+              (peel-frames n (exit-scope compst1)))
+     :enable (peel-frames
+              pop-frame-of-exit-scope
+              peel-frames-of-pop-frame-fold
+              nfix
+              fix
+              var-resolve-preservep-necc))
+
+   (defruled lemma
+     (implies (and (var-resolve-preservep compst compst1)
+                   (equal (compustate-frames-number compst1)
+                          (compustate-frames-number compst))
+                   (equal (compustate-scopes-numbers compst1)
+                          (compustate-scopes-numbers compst))
+                   (> (compustate-frames-number compst) 0)
+                   (> (compustate-top-frame-scopes-number compst) 1)
+                   (natp m)
+                   (identp var)
+                   (objdesign-of-var
+                    var (peel-scopes m (peel-frames n (exit-scope compst)))))
+              (equal
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst1))))
+               (objdesign-of-var
+                var (peel-scopes m (peel-frames n (exit-scope compst))))))
+     :cases ((zp n))
+     :enable (lemma1 lemma2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-resolve-preservep-of-exit-scope-when-enter-scope
+  :short "If variables resolution is preserved between
+          a computation state just after entering a scope
+          and another computation state,
+          then variable resolution is also preserved between
+          the first computation state before entering the scope
+          and the second computation state after exiting a scope,
+          and without going to the previous scope or frame."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note the ``cross-symmetry''
+     between the two computation states in the hypothesis and conclusion,
+     and between entering and exiting scopes.")
+   (xdoc::p
+    "This theorem is proved from
+     @(tsee var-resolve-preservep-of-exit-scope-and-exit-scope),
+     by suitably instantiating the computation states there.")
+   (xdoc::p
+    "This theorem is used to prove
+     @(tsee var-resolve-preservep-of-trans-exit-scope-when-enter-scope)."))
+  (implies (and (var-resolve-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0))
+           (var-resolve-preservep compst (exit-scope compst1)))
+  :use (:instance var-resolve-preservep-of-exit-scope-and-exit-scope
+                  (compst (enter-scope compst))
+                  (compst1 compst1))
+  :enable exit-scope-of-enter-scope)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-resolve-preservep-of-trans-exit-scope-when-enter-scope
+  :short "This combines
+          @(tsee var-resolve-preservep-of-exit-scope-when-enter-scope)
+          with transitivity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is used, in @(tsee var-resolve-preservep-of-exec),
+     to handle the execution of @('do-while') statements."))
+  (implies (and (var-resolve-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0)
+                (var-resolve-preservep (exit-scope compst1) compst2))
+           (var-resolve-preservep compst compst2))
+  :use var-resolve-preservep-of-exit-scope-when-enter-scope)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,6 +618,12 @@
                       (not (errorp result)))
                  (var-resolve-preservep compst compst1)))
       :flag exec-stmt-while)
+    (defthm var-resolve-preservep-of-exec-stmt-dowhile
+      (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+        (implies (and (> (compustate-frames-number compst) 0)
+                      (not (errorp result)))
+                 (var-resolve-preservep compst compst1)))
+      :flag exec-stmt-dowhile)
     (defthm var-resolve-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -494,13 +658,16 @@
               exec-expr
               exec-stmt
               exec-stmt-while
+              exec-stmt-dowhile
               exec-initer
               exec-obj-declon
               exec-block-item
               exec-block-item-list
               var-resolve-preservep-of-prev-scope/frame-and-prev-scope/frame
               var-resolve-preservep-of-prev-scope/frame-and-create-var
+              var-resolve-preservep-of-prev-of-exit-scope-when-enter-scope
               var-resolve-preservep-of-exit-scope-when-enter-scope
+              var-resolve-preservep-of-trans-exit-scope-when-enter-scope
               var-resolve-preservep-of-pop-frame-when-push-frame
               var-resolve-preservep-of-write-object
               len))))
@@ -509,6 +676,7 @@
                       var-resolve-preservep-of-exec-expr
                       var-resolve-preservep-of-exec-stmt
                       var-resolve-preservep-of-exec-stmt-while
+                      var-resolve-preservep-of-exec-stmt-dowhile
                       var-resolve-preservep-of-exec-initer
                       var-resolve-preservep-of-exec-obj-declon
                       var-resolve-preservep-of-exec-block-item
@@ -578,6 +746,23 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-resolve-of-exec-stmt-dowhile
+    (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+      (implies (and (> (compustate-frames-number compst) 0)
+                    (not (errorp result))
+                    (objdesign-of-var var compst))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :use (var-resolve-preservep-of-exec-stmt-dowhile
+          (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-stmt-dowhile body test compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

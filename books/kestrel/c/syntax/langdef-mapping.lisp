@@ -1509,14 +1509,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines ldm-stmts/blocks
-  :short "Map statements and blocks to
-          statements and blocks in the language definition."
+(defines ldm-stmts
+  :short "Map statements and related entities to
+          statements and related entities in the language definition."
 
   (define ldm-stmt ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (mv erp (stmt1 c::stmtp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a statement to a statement in the language definition."
     (b* (((reterr) (c::stmt-null)))
       (stmt-case
@@ -1524,7 +1524,7 @@
        :labeled (b* (((erp label1) (ldm-label stmt.label))
                      ((erp stmt1) (ldm-stmt stmt.stmt)))
                   (retok (c::make-stmt-labeled :label label1 :body stmt1)))
-       :compound (b* (((erp items) (ldm-block stmt.block)))
+       :compound (b* (((erp items) (ldm-comp-stmt stmt.stmt)))
                    (retok (c::make-stmt-compound :items items)))
        :expr (expr-option-case
               stmt.expr?
@@ -1563,6 +1563,8 @@
        :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
+       :gotoe (reterr (msg "Unsupported 'goto' with expression ~x0."
+                           (stmt-fix stmt)))
        :continue (retok (c::stmt-continue))
        :break (retok (c::stmt-break))
        :return (b* (((erp expr?) (ldm-expr-option stmt.expr?)))
@@ -1571,10 +1573,29 @@
                          (stmt-fix stmt)))))
     :measure (stmt-count stmt))
 
+  (define ldm-comp-stmt ((cstmt comp-stmtp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (mv erp (items c::block-item-listp))
+    :parents (mapping-to-language-definition ldm-stmts)
+    :short "Map a compound statement to
+            a list of block items in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The abstract syntax in the language definition
+       does not have a type for compound statements,
+       so this function returns lists of block items."))
+    (b* (((reterr) nil)
+         ((comp-stmt cstmt) cstmt)
+         ((when cstmt.labels)
+          (reterr (msg "Unsupported label declarations ~x0." cstmt.labels))))
+      (ldm-block-item-list cstmt.items))
+    :measure (comp-stmt-count cstmt))
+
   (define ldm-block-item ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (mv erp (item1 c::block-itemp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a block item to a block item in the language definition."
     (b* (((reterr) (c::block-item-stmt (c::stmt-null))))
       (block-item-case
@@ -1589,7 +1610,7 @@
   (define ldm-block-item-list ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (mv erp (items1 c::block-item-listp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a list of block items to
             a list of block items in the language definition."
     (b* (((reterr) nil)
@@ -1599,35 +1620,21 @@
       (retok (cons item1 items1)))
     :measure (block-item-list-count items))
 
-  (define ldm-block ((block blockp))
-    :guard (block-unambp block)
-    :returns (mv erp (items c::block-item-listp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
-    :short "Map a block to a list of block items in the language definition."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The abstract syntax in the language definition
-       does not have a type for blocks,
-       so this function returns lists of block items."))
-    (b* (((reterr) nil)
-         ((block block) block)
-         ((when block.labels)
-          (reterr (msg "Unsupported label declarations ~x0." block.labels))))
-      (ldm-block-item-list block.items))
-    :measure (block-count block))
-
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv-mutual ldm-stmts/blocks)
+  (fty::deffixequiv-mutual ldm-stmts)
 
-  (defret-mutual ldm-stmts/blocks-ok-when-stmts/blocks-formalp
+  (defret-mutual ldm-stmts-ok-when-stmts-formalp
     (defret ldm-stmt-ok-when-stmt-formalp
       (not erp)
       :hyp (stmt-formalp stmt)
       :fn ldm-stmt)
+    (defret ldm-comp-stmt-ok-when-comp-stmt-formalp
+      (not erp)
+      :hyp (comp-stmt-formalp cstmt)
+      :fn ldm-comp-stmt)
     (defret ldm-block-item-ok-when-block-item-formalp
       (not erp)
       :hyp (block-item-formalp item)
@@ -1636,16 +1643,12 @@
       (not erp)
       :hyp (block-item-list-formalp items)
       :fn ldm-block-item-list)
-    (defret ldm-block-ok-when-block-formalp
-      (not erp)
-      :hyp (block-formalp block)
-      :fn ldm-block)
     :hints (("Goal"
              :expand (stmt-formalp stmt)
              :in-theory (enable stmt-formalp
+                                comp-stmt-formalp
                                 block-item-formalp
                                 block-item-list-formalp
-                                block-formalp
                                 expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1686,7 +1689,7 @@
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((erp body) (ldm-block fundef.body)))
+       ((erp body) (ldm-comp-stmt fundef.body)))
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
                            :body body)))

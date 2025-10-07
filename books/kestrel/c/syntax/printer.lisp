@@ -2312,7 +2312,7 @@
            :cast/logand-ambig (prog2$ (impossible) (pristate-fix pstate))
            :stmt
            (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-block expr.block pstate))
+                (pstate (print-comp-stmt expr.stmt pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :tycompat
@@ -3888,9 +3888,7 @@
        because for compound sub-statements we print
        the open curly brace at the end of the line,
        and additionally the closed curly brace may be followed
-       by more code on the same line (e.g. for an @('else')).
-       We use a separate function @(tsee print-block) for that;
-       see its documentation."))
+       by more code on the same line (e.g. for an @('else'))."))
     (stmt-case
      stmt
      :labeled
@@ -3899,7 +3897,8 @@
           (pstate (print-astring ":" pstate)))
        (if (stmt-case stmt.stmt :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.stmt) pstate))
+                (pstate (print-comp-stmt (stmt-compound->stmt stmt.stmt)
+                                         pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3909,7 +3908,7 @@
            pstate)))
      :compound
      (b* ((pstate (print-indent pstate))
-          (pstate (print-block stmt.block pstate))
+          (pstate (print-comp-stmt stmt.stmt pstate))
           (pstate (print-new-line pstate)))
        pstate)
      :expr
@@ -3930,7 +3929,8 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.then :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.then) pstate))
+                (pstate (print-comp-stmt (stmt-compound->stmt stmt.then)
+                                         pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3945,8 +3945,9 @@
           (pstate (print-astring ")" pstate))
           (pstate (if (stmt-case stmt.then :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->block stmt.then)
-                                                pstate))
+                           (pstate
+                            (print-comp-stmt (stmt-compound->stmt stmt.then)
+                                             pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     (b* ((pstate (print-new-line pstate))
@@ -3960,8 +3961,9 @@
           (pstate (print-astring "else" pstate))
           (pstate (if (stmt-case stmt.else :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->block stmt.else)
-                                                pstate))
+                           (pstate
+                            (print-comp-stmt (stmt-compound->stmt stmt.else)
+                                             pstate))
                            (pstate (print-new-line pstate)))
                         pstate)
                     (b* ((pstate (print-new-line pstate))
@@ -3977,7 +3979,8 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.body) pstate))
+                (pstate
+                 (print-comp-stmt (stmt-compound->stmt stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -3992,7 +3995,8 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.body) pstate))
+                (pstate
+                 (print-comp-stmt (stmt-compound->stmt stmt.body) pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -4005,8 +4009,9 @@
           (pstate (print-astring "do" pstate))
           (pstate (if (stmt-case stmt.body :compound)
                       (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-block (stmt-compound->block stmt.body)
-                                                pstate))
+                           (pstate (print-comp-stmt
+                                    (stmt-compound->stmt stmt.body)
+                                    pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     (b* ((pstate (print-new-line pstate))
@@ -4039,7 +4044,8 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.body) pstate))
+                (pstate (print-comp-stmt (stmt-compound->stmt stmt.body)
+                                         pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -4064,7 +4070,8 @@
           (pstate (print-astring ")" pstate)))
        (if (stmt-case stmt.body :compound)
            (b* ((pstate (print-astring " " pstate))
-                (pstate (print-block (stmt-compound->block stmt.body) pstate))
+                (pstate (print-comp-stmt (stmt-compound->stmt stmt.body)
+                                         pstate))
                 (pstate (print-new-line pstate)))
              pstate)
          (b* ((pstate (print-new-line pstate))
@@ -4077,6 +4084,13 @@
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "goto " pstate))
           (pstate (print-ident stmt.label pstate))
+          (pstate (print-astring ";" pstate))
+          (pstate (print-new-line pstate)))
+       pstate)
+     :gotoe
+     (b* ((pstate (print-indent pstate))
+          (pstate (print-astring "goto " pstate))
+          (pstate (print-expr stmt.label (expr-priority-expr) pstate))
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
        pstate)
@@ -4111,6 +4125,43 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define print-comp-stmt ((cstmt comp-stmtp) (pstate pristatep))
+    :guard (and (comp-stmt-unambp cstmt)
+                (comp-stmt-aidentp cstmt (pristate->gcc pstate)))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls/stmts)
+    :short "Print a compound statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This prints the open curly brace in the current position on the line,
+       i.e. without printing any new line or indentation.
+       Then it prints the label declarations and block items after a new line
+       and after incrementing the indentation level,
+       and finally it restores the indentation level
+       and prints the closed curly brace,
+       without any new line after that.")
+     (xdoc::p
+      "In other words, this prints the compound statement ``inline'',
+       but the label declarations and block items between the curly braces
+       are printed on multiple lines, with appropriate indentation.
+       This facilitates the compositional printing
+       of compound sub-statements of statements;
+       see how it is used in @(tsee print-stmt)."))
+    (b* (((comp-stmt cstmt) cstmt)
+         (pstate (print-astring "{" pstate))
+         (pstate (print-new-line pstate))
+         (pstate (inc-pristate-indent pstate))
+         (pstate (print-label-declaration-list cstmt.labels pstate))
+         (pstate (print-block-item-list cstmt.items pstate))
+         (pstate (dec-pristate-indent pstate))
+         (pstate (print-indent pstate))
+         (pstate (print-astring "}" pstate)))
+      pstate)
+    :measure (two-nats-measure (comp-stmt-count cstmt) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define print-block-item ((item block-itemp) (pstate pristatep))
     :guard (and (block-item-unambp item)
                 (block-item-aidentp item (pristate->gcc pstate)))
@@ -4136,43 +4187,6 @@
          (pstate (print-block-item (car items) pstate)))
       (print-block-item-list (cdr items) pstate))
     :measure (two-nats-measure (block-item-list-count items) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define print-block ((block blockp) (pstate pristatep))
-    :guard (and (block-unambp block)
-                (block-aidentp block (pristate->gcc pstate)))
-    :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls/stmts)
-    :short "Print a block."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This prints the open curly brace in the current position on the line,
-       i.e. without printing any new line or indentation.
-       Then it prints the label declarations and block items after a new line
-       and after incrementing the indentation level,
-       and finally it restores the indentation level
-       and prints the closed curly brace,
-       without any new line after that.")
-     (xdoc::p
-      "In other words, this prints the block ``inline'',
-       but the label declarations and block items between the curly braces
-       are printed on multiple lines, with appropriate indentation.
-       This facilitates the compositional printing
-       of compound sub-statements of statements;
-       see how it is used in @(tsee print-stmt)."))
-    (b* (((block block) block)
-         (pstate (print-astring "{" pstate))
-         (pstate (print-new-line pstate))
-         (pstate (inc-pristate-indent pstate))
-         (pstate (print-label-declaration-list block.labels pstate))
-         (pstate (print-block-item-list block.items pstate))
-         (pstate (dec-pristate-indent pstate))
-         (pstate (print-indent pstate))
-         (pstate (print-astring "}" pstate)))
-      pstate)
-    :measure (two-nats-measure (block-count block) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4248,9 +4262,9 @@
      print-asm-input-list
      print-asm-stmt
      print-stmt
+     print-comp-stmt
      print-block-item
-     print-block-item-list
-     print-block)
+     print-block-item-list)
     :hints (("Goal" :expand ((print-decl-inline decl pstate)
                              (print-struct-declon structdeclon pstate)))))
 
@@ -4307,7 +4321,7 @@
                         (pstate (print-decl-list fundef.decls pstate)))
                      pstate)
                  (print-astring " " pstate)))
-       (pstate (print-block fundef.body pstate))
+       (pstate (print-comp-stmt fundef.body pstate))
        (pstate (print-new-line pstate)))
     pstate)
   :hooks (:fix)
