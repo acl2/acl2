@@ -224,21 +224,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-compound-compustate-vars
-    (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :compound)
-                    (> (c::compustate-frames-number compst) 0)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::var-resolve-of-exec-stmt
-             c::object-type-of-exec-stmt
-             c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defruled decl-decl-compustate-vars-old
     (b* ((declor (c::obj-declon->declor declon))
          (var (c::obj-declor-ident->get declor))

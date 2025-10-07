@@ -2484,7 +2484,7 @@
                         (:e c::stmt-kind)
                         c::compustate-frames-number-of-enter-scope
                         c::compustate-has-var-with-type-p-of-enter-scope
-                        stmt-compound-compustate-vars)
+                        stmt-compustate-vars)
            :use ((:instance ,cstmt-thm-name
                             (compst (c::enter-scope compst))
                             (limit (1- limit)))
