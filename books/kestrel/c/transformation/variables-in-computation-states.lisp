@@ -188,6 +188,20 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defruled stmt-compustate-vars
+    (b* (((mv sval compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp sval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::compustate-has-var-with-type-p
+             c::var-resolve-of-exec-stmt
+             c::object-type-of-exec-stmt
+             c::not-errorp-when-valuep
+             c::valuep-of-read-object-of-objdesign-of-var))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defruled initer-single-pure-compustate-vars
     (b* ((expr (c::initer-single->get initer))
          ((mv result compst1)
