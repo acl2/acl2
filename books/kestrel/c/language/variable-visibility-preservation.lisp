@@ -333,6 +333,27 @@
                   (compst1 compst1))
   :enable exit-scope-of-enter-scope)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-visible-preservep-of-trans-exit-scope-when-enter-scope
+  :short "This combines
+          @(tsee var-visible-preservep-of-exit-scope-when-enter-scope)
+          with transitivity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
+     to handle the execution of @('do-while') statements."))
+  (implies (and (var-visible-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0)
+                (var-visible-preservep (exit-scope compst1) compst2))
+           (var-visible-preservep compst compst2))
+  :use var-visible-preservep-of-exit-scope-when-enter-scope)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled var-visible-preservep-of-pop-frame-and-pop-frame
@@ -442,6 +463,12 @@
                       (not (errorp result)))
                  (var-visible-preservep compst compst1)))
       :flag exec-stmt-while)
+    (defthm var-visible-preservep-of-exec-stmt-dowhile
+      (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+        (implies (and (> (compustate-frames-number compst) 0)
+                      (not (errorp result)))
+                 (var-visible-preservep compst compst1)))
+      :flag exec-stmt-dowhile)
     (defthm var-visible-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -473,12 +500,14 @@
               exec-expr
               exec-stmt
               exec-stmt-while
+              exec-stmt-dowhile
               exec-initer
               exec-obj-declon
               exec-block-item
               exec-block-item-list
               var-visible-preservep-of-create-var
               var-visible-preservep-of-exit-scope-when-enter-scope
+              var-visible-preservep-of-trans-exit-scope-when-enter-scope
               var-visible-preservep-of-pop-frame-when-push-frame
               var-visible-preservep-of-write-object
               len))))
@@ -487,6 +516,7 @@
                       var-visible-preservep-of-exec-expr
                       var-visible-preservep-of-exec-stmt
                       var-visible-preservep-of-exec-stmt-while
+                      var-visible-preservep-of-exec-stmt-dowhile
                       var-visible-preservep-of-exec-initer
                       var-visible-preservep-of-exec-obj-declon
                       var-visible-preservep-of-exec-block-item
@@ -552,6 +582,23 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-visible-of-exec-stmt-dowhile
+    (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+      (implies (and (> (compustate-frames-number compst) 0)
+                    (not (errorp result))
+                    (objdesign-of-var var compst))
+               (objdesign-of-var var compst1)))
+    :use (var-visible-preservep-of-exec-stmt-dowhile
+          (:instance var-visible-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-stmt-dowhile
+                                 body test compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
