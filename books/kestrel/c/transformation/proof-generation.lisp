@@ -2076,7 +2076,7 @@
                             (:e c::stmt-expr)
                             (:e set::insert)
                             expr-compustate-vars
-                            stmt-expr-compustate-vars)
+                            stmt-compustate-vars)
                :use ((:instance
                       ,(or lifted-thm-name
                            expr?-thm-name)
