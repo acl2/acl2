@@ -39,4 +39,7 @@
     :enable exec-expr)
 
   (defval *atc-exec-expr-when-call-rules*
-    '(exec-expr-when-call-open)))
+    '(exec-expr-when-call-open
+      (:e expr-kind)
+      (:e expr-call->fun)
+      (:e expr-call->args))))

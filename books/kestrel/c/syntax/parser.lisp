@@ -2736,13 +2736,13 @@
              ((when (and (token-punctuatorp token2 "{") ; ( {
                          (parstate->gcc parstate)))
               (b* ((psize (parsize parstate))
-                   ((erp block & parstate) ; ( { [labels] [items] }
-                    (parse-block span2 parstate))
+                   ((erp cstmt & parstate) ; ( { [labels] [items] }
+                    (parse-compound-statement span2 parstate))
                    ((unless (mbt (<= (parsize parstate) (1- psize))))
                     (reterr :impossible))
                    ((erp last-span parstate) ; ( { [labels] [items] } )
                     (read-punctuator ")" parstate))
-                   (prev-expr (expr-stmt block))
+                   (prev-expr (expr-stmt cstmt))
                    (prev-span (span-join span last-span)))
                 (parse-postfix-expression-rest prev-expr
                                                prev-span
@@ -3379,13 +3379,13 @@
            ((and (token-punctuatorp token2 "{") ; ( {
                  (parstate->gcc parstate))
             (b* ((psize (parsize parstate))
-                 ((erp block & parstate) ; ( { [labels] [items] }
-                  (parse-block span2 parstate))
+                 ((erp cstmt & parstate) ; ( { [labels] [items] }
+                  (parse-compound-statement span2 parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible))
                  ((erp last-span parstate) ; ( { [labels] [items] } )
                   (read-punctuator ")" parstate))
-                 (prev-expr (expr-stmt block))
+                 (prev-expr (expr-stmt cstmt))
                  (prev-span (span-join span last-span)))
               (parse-postfix-expression-rest prev-expr
                                              prev-span
@@ -3756,13 +3756,13 @@
            ((and (token-punctuatorp token2 "{") ; ( {
                  (parstate->gcc parstate))
             (b* ((psize (parsize parstate))
-                 ((erp block & parstate) ; ( { [labels] [items] }
-                  (parse-block span2 parstate))
+                 ((erp cstmt & parstate) ; ( { [labels] [items] }
+                  (parse-compound-statement span2 parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible))
                  ((erp last-span parstate) ; ( { [labels] [items] } )
                   (read-punctuator ")" parstate)))
-              (retok (expr-stmt block)
+              (retok (expr-stmt cstmt)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not an open curly brace,
@@ -8850,9 +8850,9 @@
        ;; If token is an open curly brace,
        ;; we must have a compound statement.
        ((token-punctuatorp token "{") ; {
-        (b* (((erp block block-span parstate) ; { [labels] [items] }
-              (parse-block span parstate)))
-          (retok (stmt-compound block) block-span parstate)))
+        (b* (((erp cstmt cstmt-span parstate) ; { [labels] [items] }
+              (parse-compound-statement span parstate)))
+          (retok (stmt-compound cstmt) cstmt-span parstate)))
        ;; If token is a semicolon,
        ;; we have an expression statement without expression.
        ((token-punctuatorp token ";") ; ;
@@ -8911,12 +8911,26 @@
                  parstate)))
        ;; If token is the 'goto' keyword, we have a jump statement.
        ((token-keywordp token "goto") ; goto
-        (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
-             ((erp last-span parstate) ; goto ident ;
-              (read-punctuator ";" parstate)))
-          (retok (stmt-goto ident)
-                 (span-join span last-span)
-                 parstate)))
+        ;; If GCC extensions are enabled,
+        ;; we parse an expression, which syntactically includes identifiers,
+        ;; so that we also parse labels.
+        ;; The disambiguator will disambiguate this into a label,
+        ;; if applicable.
+        (if (parstate->gcc parstate)
+            (b* (((erp expr & parstate) (parse-expression parstate)) ; goto expr
+                 ((erp last-span parstate) ; goto expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (stmt-gotoe expr)
+                     (span-join span last-span)
+                     parstate))
+          ;; If GCC extensions are not enabled,
+          ;; we can only accept an identifier after 'goto'.
+          (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
+               ((erp last-span parstate) ; goto ident ;
+                (read-punctuator ";" parstate)))
+            (retok (stmt-goto ident)
+                   (span-join span last-span)
+                   parstate))))
        ;; If token is the keyword 'continue', we have a jump statement.
        ((token-keywordp token "continue") ; continue
         (b* (((erp last-span parstate) ; continue ;
@@ -9550,6 +9564,55 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define parse-compound-statement ((open-curly-span spanp)
+                                    (parstate parstatep))
+    :returns (mv erp
+                 (cstmt comp-stmtp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-exprs/decls/stmts)
+    :short "Parse a compound statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called after the opening curly brace has already been parsed.
+       The span of that opening curly brace is passed as input,
+       so that this function can return
+       a span for the whole compound statement.")
+     (xdoc::p
+      "First, we parse zero or more label declarations.
+       Then, if there is a closing curly brace,
+       we return a compound statement with no block items
+       (and with any label declarations we parsed).
+       Otherwise, we parse one or more block items,
+       and then the closing curly brace.")
+     (xdoc::p
+      "Note that label declarations are accepted
+       only if @('__label__') is recognized as a keyword
+       (see @(tsee parse-*-label-declaration)),
+       which can only happen when GCC extensions are enabled."))
+    (b* (((reterr) (irr-comp-stmt) (irr-span) parstate) ; {
+         ((erp labels & parstate) ;; { [labels]
+          (parse-*-label-declaration parstate))
+         ((erp token span parstate) (read-token parstate)))
+      (cond
+       ((token-punctuatorp token "}") ; { [labels] }
+        (retok (make-comp-stmt :labels labels :items nil)
+               (span-join open-curly-span span)
+               parstate))
+       (t ; { [labels] other
+        (b* ((parstate (if token (unread-token parstate) parstate)) ; { [labels]
+             ((erp items & parstate) ; { [labels] items
+              (parse-block-item-list parstate))
+             ((erp last-span parstate) ; { [labels] items }
+              (read-punctuator "}" parstate)))
+          (retok (make-comp-stmt :labels labels :items items)
+                 (span-join open-curly-span last-span)
+                 parstate)))))
+    :measure (two-nats-measure (parsize parstate) 20))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define parse-block-item ((parstate parstatep))
     :returns (mv erp
                  (item block-itemp)
@@ -9666,53 +9729,6 @@
                  (span-join span last-span)
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 19))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-block ((open-curly-span spanp) (parstate parstatep))
-    :returns (mv erp
-                 (block blockp)
-                 (span spanp)
-                 (new-parstate parstatep :hyp (parstatep parstate)))
-    :parents (parser parse-exprs/decls/stmts)
-    :short "Parse a block."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is called after the opening curly brace has already been parsed.
-       The span of that opening curly brace is passed as input,
-       so that this function can return a span for the whole block.")
-     (xdoc::p
-      "First, we parse zero or more label declarations.
-       Then, if there is a closing curly brace,
-       we return a block with no block items
-       (and with any label declarations we parsed).
-       Otherwise, we parse one or more block items,
-       and then the closing curly brace.")
-     (xdoc::p
-      "Note that label declarations are accepted
-       only if @('__label__') is recognized as a keyword
-       (see @(tsee parse-*-label-declaration)),
-       which can only happen when GCC extensions are enabled."))
-    (b* (((reterr) (irr-block) (irr-span) parstate) ; {
-         ((erp labels & parstate) ;; { [labels]
-          (parse-*-label-declaration parstate))
-         ((erp token span parstate) (read-token parstate)))
-      (cond
-       ((token-punctuatorp token "}") ; { [labels] }
-        (retok (make-block :labels labels :items nil)
-               (span-join open-curly-span span)
-               parstate))
-       (t ; { [labels] other
-        (b* ((parstate (if token (unread-token parstate) parstate)) ; { [labels]
-             ((erp items & parstate) ; { [labels] items
-              (parse-block-item-list parstate))
-             ((erp last-span parstate) ; { [labels] items }
-              (read-punctuator "}" parstate)))
-          (retok (make-block :labels labels :items items)
-                 (span-join open-curly-span last-span)
-                 parstate)))))
-    :measure (two-nats-measure (parsize parstate) 20))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -10188,6 +10204,11 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-statement)
+    (defret parsize-of-parse-compound-statement-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-compound-statement)
     (defret parsize-of-parse-block-item-uncond
       (<= (parsize new-parstate)
           (parsize parstate))
@@ -10198,11 +10219,6 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-block-item-list)
-    (defret parsize-of-parse-block-uncond
-      (<= (parsize new-parstate)
-          (parsize parstate))
-      :rule-classes :linear
-      :fn parse-block)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -10494,15 +10510,15 @@
       ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
                         clause)
        '(:expand (parse-statement parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
+                        clause)
+       '(:expand (parse-compound-statement open-curly-span parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
                         clause)
        '(:expand (parse-block-item parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
                         clause)
-       '(:expand (parse-block-item-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block)
-                        clause)
-       '(:expand (parse-block open-curly-span parstate))))))
+       '(:expand (parse-block-item-list parstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11011,6 +11027,12 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-asm-statement)
+    (defret parsize-of-parse-compound-statement-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-compound-statement)
     (defret parsize-of-parse-block-item-cond
       (implies (not erp)
                (<= (parsize new-parstate)
@@ -11023,12 +11045,6 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-block-item-list)
-    (defret parsize-of-parse-block-cond
-      (implies (not erp)
-               (<= (parsize new-parstate)
-                   (1- (parsize parstate))))
-      :rule-classes :linear
-      :fn parse-block)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -11236,15 +11252,15 @@
       ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
                         clause)
        '(:expand (parse-asm-input-operands parstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
+                        clause)
+       '(:expand (parse-compound-statement open-curly-span parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
                         clause)
        '(:expand (parse-block-item parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
                         clause)
-       '(:expand (parse-block-item-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block)
-                        clause)
-       '(:expand (parse-block open-curly-span parstate))))))
+       '(:expand (parse-block-item-list parstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11466,10 +11482,10 @@
              ;; where the curly brace starts the body, which we parse.
              ((token-punctuatorp token3 "{")
               ;; [__extension__] declspecs declor [asmspec] [attrspecs] {
-              (b* (((erp block last-span parstate)
+              (b* (((erp cstmt last-span parstate)
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;; { [labels] [items] }
-                    (parse-block span parstate)))
+                    (parse-compound-statement span parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
                                      :spec declspecs
@@ -11477,7 +11493,7 @@
                                      :asm? asmspec?
                                      :attribs attrspecs
                                      :decls nil
-                                     :body block
+                                     :body cstmt
                                      :info nil))
                        (span-join span last-span)
                        parstate)))
@@ -11496,10 +11512,10 @@
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;;   decls {
                     (read-punctuator "{" parstate))
-                   ((erp block last-span parstate)
+                   ((erp cstmt last-span parstate)
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;;   decls { [labels] [items] }
-                    (parse-block open-curly-span parstate)))
+                    (parse-compound-statement open-curly-span parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
                                      :spec declspecs
@@ -11507,7 +11523,7 @@
                                      :asm? asmspec?
                                      :attribs attrspecs
                                      :decls decls
-                                     :body block
+                                     :body cstmt
                                      :info nil))
                        (span-join span last-span)
                        parstate)))))))))))

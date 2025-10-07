@@ -740,7 +740,7 @@
    (fundef (and (decl-spec-list-annop (fundef->spec fundef))
                 (declor-annop (fundef->declor fundef))
                 (decl-list-annop (fundef->decls fundef))
-                (block-annop (fundef->body fundef))
+                (comp-stmt-annop (fundef->body fundef))
                 (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
@@ -818,7 +818,7 @@
            (and (decl-spec-list-annop spec)
                 (declor-annop declor)
                 (decl-list-annop decls)
-                (block-annop body)
+                (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
              (fundef extension spec declor asm? attribs decls body info))
@@ -932,9 +932,9 @@
              (decl-list-annop (fundef->decls fundef)))
     :enable fundef-annop)
 
-  (defruled block-annop-of-fundef->body
+  (defruled comp-stmt-annop-of-fundef->body
     (implies (fundef-annop fundef)
-             (block-annop (fundef->body fundef)))
+             (comp-stmt-annop (fundef->body fundef)))
     :enable fundef-annop)
 
   (defruled fundef-infop-of-fundef->info
@@ -983,7 +983,7 @@
      decl-spec-list-annop-of-fundef->spec
      declor-annop-of-fundef->declor
      decl-list-annop-of-fundef->decls
-     block-annop-of-fundef->body
+     comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls
      transunit-infop-of-transunit->info)))
@@ -1105,7 +1105,7 @@
     (stmt-case
      stmt
      :labeled (stmt-types stmt.stmt)
-     :compound (block-types stmt.block)
+     :compound (comp-stmt-types stmt.stmt)
      :expr (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
@@ -1117,6 +1117,7 @@
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (expr-option-case
@@ -1125,6 +1126,15 @@
               :none (set::insert (type-void) nil))
      :asm nil)
     :measure (stmt-count stmt))
+
+  (define comp-stmt-types ((cstmt comp-stmtp))
+    :guard (and (comp-stmt-unambp cstmt)
+                (comp-stmt-annop cstmt))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts/types)
+    :short "Types of a compound statement, from the validation information."
+    (block-item-list-types (comp-stmt->items cstmt))
+    :measure (comp-stmt-count cstmt))
 
   (define block-item-types ((item block-itemp))
     :guard (and (block-item-unambp item)
@@ -1172,15 +1182,6 @@
       (set::union (set::delete nil item-types) items-types))
     :measure (block-item-list-count items))
 
-  (define block-types ((block blockp))
-    :guard (and (block-unambp block)
-                (block-annop block))
-    :returns (types type-option-setp)
-    :parents (validation-information stmts/types)
-    :short "Types of a block, from the validation information."
-    (block-item-list-types (block->items block))
-    :measure (block-count block))
-
   :verify-guards :after-returns
 
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
@@ -1208,10 +1209,8 @@
     "The set of possible types returned by the function is
      the set of possible types returned by the body,
      roughly speaking.
-     More precisely, the latter is a set of optional types
-     (see @(tsee block-item-list-types)),
-     where @('nil') means that the list of block items
-     terminates without a @('return').
+     More precisely, the latter is a set of optional types,
+     where @('nil') means that the body terminates without a @('return').
      For a function, this is equivalent to a @('return') without expression.
      Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
      obtaining the set of types (not optional types) of the function's result.
@@ -1227,7 +1226,7 @@
      possibly subject to conversions.
      However, our formal semantics of C does not cover those conversions yet,
      so we adopt the more general view here."))
-  (b* ((types (block-types (fundef->body fundef)))
+  (b* ((types (comp-stmt-types (fundef->body fundef)))
        (types (if (set::in nil types)
                   (set::insert (type-void) (set::delete nil types))
                 types)))

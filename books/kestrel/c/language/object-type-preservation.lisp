@@ -436,6 +436,27 @@
                   (compst1 compst1))
   :enable exit-scope-of-enter-scope)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled object-type-preservep-of-trans-exit-scope-when-enter-scope
+  :short "This combines
+          @(tsee object-type-preservep-of-exit-scope-when-enter-scope)
+          with transitivity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is used, in @(tsee object-type-preservep-of-exec),
+     to handle the execution of @('do-while') statements."))
+  (implies (and (object-type-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0)
+                (object-type-preservep (exit-scope compst1) compst2))
+           (object-type-preservep compst compst2))
+  :use object-type-preservep-of-exit-scope-when-enter-scope)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled object-type-preservep-of-pop-frame-and-pop-frame
@@ -553,6 +574,12 @@
                       (not (errorp result)))
                  (object-type-preservep compst compst1)))
       :flag exec-stmt-while)
+    (defthm object-type-preservep-of-exec-stmt-dowhile
+      (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+        (implies (and (> (compustate-frames-number compst) 0)
+                      (not (errorp result)))
+                 (object-type-preservep compst compst1)))
+      :flag exec-stmt-dowhile)
     (defthm object-type-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -584,12 +611,14 @@
               exec-expr
               exec-stmt
               exec-stmt-while
+              exec-stmt-dowhile
               exec-initer
               exec-obj-declon
               exec-block-item
               exec-block-item-list
               object-type-preservep-of-create-var
               object-type-preservep-of-exit-scope-when-enter-scope
+              object-type-preservep-of-trans-exit-scope-when-enter-scope
               object-type-preservep-of-pop-frame-when-push-frame
               object-type-preservep-of-write-object
               len))))
@@ -598,6 +627,7 @@
                       object-type-preservep-of-exec-expr
                       object-type-preservep-of-exec-stmt
                       object-type-preservep-of-exec-stmt-while
+                      object-type-preservep-of-exec-stmt-dowhile
                       object-type-preservep-of-exec-initer
                       object-type-preservep-of-exec-obj-declon
                       object-type-preservep-of-exec-block-item
@@ -679,6 +709,26 @@
                      (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled object-type-of-exec-stmt-dowhile
+    (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+      (implies (and (> (compustate-frames-number compst) 0)
+                    (not (errorp result))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :use (object-type-preservep-of-exec-stmt-dowhile
+          (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
+                     (compst1
+                      (mv-nth 1 (exec-stmt-dowhile body test compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

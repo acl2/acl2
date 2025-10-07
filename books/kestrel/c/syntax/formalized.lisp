@@ -608,13 +608,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines stmts/blocks-formalp
-  :short "Check if statements and blocks have formal dynamic semantics."
+(defines stmts-formalp
+  :short "Check if statements and related entities
+          have formal dynamic semantics."
 
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -628,7 +629,7 @@
     (stmt-case
      stmt
      :labeled nil
-     :compound (block-formalp stmt.block)
+     :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
                (expr-pure-formalp stmt.expr?)
                (expr-call-formalp stmt.expr?)
@@ -646,6 +647,7 @@
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (or (not stmt.expr?)
@@ -654,10 +656,20 @@
      :asm nil)
     :measure (stmt-count stmt))
 
+  (define comp-stmt-formalp ((cstmt comp-stmtp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset stmts-formalp)
+    :short "Check if a compound statement has formal dynamic semantics."
+    (b* (((comp-stmt cstmt) cstmt))
+      (and (not cstmt.labels)
+           (block-item-list-formalp cstmt.items)))
+    :measure (comp-stmt-count cstmt))
+
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -673,7 +685,7 @@
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -684,21 +696,11 @@
              (block-item-list-formalp (cdr items))))
     :measure (block-item-list-count items))
 
-  (define block-formalp ((block blockp))
-    :guard (block-unambp block)
-    :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
-    :short "Check if a block has formal dynamic semantics."
-    (b* (((block block) block))
-      (and (not block.labels)
-           (block-item-list-formalp block.items)))
-    :measure (block-count block))
-
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   ///
 
-  (fty::deffixequiv-mutual stmts/blocks-formalp))
+  (fty::deffixequiv-mutual stmts-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1082,7 +1084,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.decls)
-         (block-formalp fundef.body)))
+         (comp-stmt-formalp fundef.body)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

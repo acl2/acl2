@@ -1545,8 +1545,8 @@
                                        new-arg/arg2)
            table)))
        :stmt
-       (b* (((erp block table) (dimb-block expr.block nil table)))
-         (retok (expr-stmt block) table))
+       (b* (((erp cstmt table) (dimb-comp-stmt expr.stmt nil table)))
+         (retok (expr-stmt cstmt) table))
        :tycompat
        (b* (((erp type1 table) (dimb-tyname expr.type1 table))
             ((erp type2 table) (dimb-tyname expr.type2 table)))
@@ -2959,7 +2959,12 @@
        [C17:6.8.4/3].")
      (xdoc::p
       "An iteration statement forms a new scope, as do its sub-statements
-       [C17:6.8.5/5]."))
+       [C17:6.8.5/5].")
+     (xdoc::p
+      "A @(':gotoe') followed by an expression that is an identifier
+       may need to be re-classified into a @(':goto').
+       We base that on whether the identifier is in scope:
+       if it is not, it must be a label."))
     (b* (((reterr) (irr-stmt) (irr-dimb-table)))
       (stmt-case
        stmt
@@ -2969,8 +2974,8 @@
          (retok (make-stmt-labeled :label new-label :stmt new-stmt)
                 table))
        :compound
-       (b* (((erp block table) (dimb-block stmt.block nil table)))
-         (retok (stmt-compound block) table))
+       (b* (((erp cstmt table) (dimb-comp-stmt stmt.stmt nil table)))
+         (retok (stmt-compound cstmt) table))
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-expr :expr? new-expr? :info nil) table))
@@ -3066,6 +3071,15 @@
                        table)))
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
+       :gotoe
+       (b* (((erp new-label table) (dimb-expr stmt.label table))
+            ((unless (expr-case new-label :ident))
+             (retok (stmt-gotoe new-label) table))
+            (ident (expr-ident->ident new-label))
+            (kind (dimb-lookup-ident ident table)))
+         (if kind
+             (retok (stmt-gotoe new-label) table)
+           (retok (stmt-goto ident) table)))
        :continue
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :break
@@ -3076,6 +3090,34 @@
        :asm
        (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-comp-stmt ((cstmt comp-stmtp)
+                          (fundefp booleanp)
+                          (table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-cstmt comp-stmtp)
+                 (new-table dimb-tablep))
+    :parents (disambiguator dimb-exprs/decls/stmts)
+    :short "Disambiguate a compound statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundefp') flag says whether the compound statement
+       is the body of a function definition.
+       If that is the case, we do not push a new scope and then pop it,
+       because that is already done in @(tsee dimb-fundef):
+       the body itself of the function does not start a new scope;
+       it is the function definition itself that starts a new scope,
+       involving the parameters."))
+    (b* (((reterr) (irr-comp-stmt) (irr-dimb-table))
+         ((comp-stmt cstmt) cstmt)
+         (table (if fundefp table (dimb-push-scope table)))
+         ((erp new-items table) (dimb-block-item-list cstmt.items table))
+         (table (if fundefp table (dimb-pop-scope table))))
+      (retok (make-comp-stmt :labels cstmt.labels :items new-items) table))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3127,32 +3169,6 @@
          ((erp new-items table) (dimb-block-item-list (cdr items) table)))
       (retok (cons new-item new-items) table))
     :measure (block-item-list-count items))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define dimb-block ((block blockp) (fundefp booleanp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp)
-                 (new-block blockp)
-                 (new-table dimb-tablep))
-    :parents (disambiguator dimb-exprs/decls/stmts)
-    :short "Disambiguate a block."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The @('fundefp') flag says whether the block
-       is the body of a function definition.
-       If that is the case, we do not push a new scope and then pop it,
-       because that is already done in @(tsee dimb-fundef):
-       the body itself of the function does not start a new scope;
-       it is the function definition itself that starts a new scope,
-       involving the parameters."))
-    (b* (((reterr) (irr-block) (irr-dimb-table))
-         ((block block) block)
-         (table (if fundefp table (dimb-push-scope table)))
-         ((erp new-items table) (dimb-block-item-list block.items table))
-         (table (if fundefp table (dimb-pop-scope table))))
-      (retok (make-block :labels block.labels :items new-items) table))
-    :measure (block-count block))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3589,6 +3605,10 @@
       (implies (not erp)
                (stmt-unambp new-stmt))
       :fn dimb-stmt)
+    (defret comp-stmt-unambp-of-dimb-comp-stmt
+      (implies (not erp)
+               (comp-stmt-unambp new-cstmt))
+      :fn dimb-comp-stmt)
     (defret block-item-unambp-of-dimb-block-item
       (implies (not erp)
                (block-item-unambp new-item))
@@ -3597,10 +3617,6 @@
       (implies (not erp)
                (block-item-list-unambp new-items))
       :fn dimb-block-item-list)
-    (defret block-unambp-of-dimb-block
-      (implies (not erp)
-               (block-unambp new-block))
-      :fn dimb-block)
     (defret expr/tyname-unambp-of-dimb-amb-expr/tyname
       (implies (not erp)
                (expr/tyname-unambp expr-or-tyname))
@@ -3670,8 +3686,7 @@
                  "``Function Names''")
     ").")
    (xdoc::p
-    "After all of that, we disambiguate the body of the function definition,
-     which is a block (i.e. compound statement) in valid code.
+    "After all of that, we disambiguate the body of the function definition.
      But we do not push a new scope for the block,
      because the scope pushed by @(tsee dimb-declor)
      is already the one for the function body.")
@@ -3693,7 +3708,7 @@
                          (ident "__PRETTY_FUNCTION__"))
                    table)
                 table))
-       ((erp new-body table) (dimb-block fundef.body t table))
+       ((erp new-body table) (dimb-comp-stmt fundef.body t table))
        (table (dimb-pop-scope table))
        (table (dimb-add-ident ident (dimb-kind-objfun) table)))
     (retok (make-fundef :extension fundef.extension

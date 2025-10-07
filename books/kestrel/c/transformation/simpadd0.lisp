@@ -411,10 +411,10 @@
                               :next new-next)
              (gout-no-thm gin)))
        :stmt
-       (b* (((mv new-block (gout gout-block))
-             (simpadd0-block expr.block gin))
-            (gin (gin-update gin gout-block)))
-         (mv (expr-stmt new-block)
+       (b* (((mv new-cstmt (gout gout-cstmt))
+             (simpadd0-comp-stmt expr.stmt gin))
+            (gin (gin-update gin gout-cstmt)))
+         (mv (expr-stmt new-cstmt)
              (gout-no-thm gin)))
        :tycompat
        (b* (((mv new-type1 (gout gout-type1))
@@ -1724,12 +1724,12 @@
                   (mv (make-stmt-labeled :label new-label
                                          :stmt new-stmt)
                       (gout-no-thm gin)))
-       :compound (b* (((mv new-block (gout gout-block))
-                       (simpadd0-block stmt.block gin))
-                      (gin (gin-update gin gout-block)))
-                   (xeq-stmt-compound stmt.block
-                                      new-block
-                                      gout-block.thm-name
+       :compound (b* (((mv new-cstmt (gout gout-cstmt))
+                       (simpadd0-comp-stmt stmt.stmt gin))
+                      (gin (gin-update gin gout-cstmt)))
+                   (xeq-stmt-compound stmt.stmt
+                                      new-cstmt
+                                      gout-cstmt.thm-name
                                       gin))
        :expr (b* (((mv new-expr? (gout gout-expr?))
                    (simpadd0-expr-option stmt.expr? gin))
@@ -1839,6 +1839,8 @@
                        (gout-no-thm gin)))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-gout)))
        :goto (mv (stmt-fix stmt) (gout-no-thm gin))
+       :gotoe (b* (((mv new-label gout) (simpadd0-expr stmt.label gin)))
+                (mv (stmt-gotoe new-label) gout))
        :continue (mv (stmt-fix stmt) (gout-no-thm gin))
        :break (mv (stmt-fix stmt) (gout-no-thm gin))
        :return (b* (((mv new-expr? (gout gout-expr?))
@@ -1851,6 +1853,27 @@
                                   gin))
        :asm (mv (stmt-fix stmt) (gout-no-thm gin))))
     :measure (stmt-count stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define simpadd0-comp-stmt ((cstmt comp-stmtp) (gin ginp))
+    :guard (and (comp-stmt-unambp cstmt)
+                (comp-stmt-annop cstmt))
+    :returns (mv (new-cstmt comp-stmtp) (gout goutp))
+    :parents (simpadd0 simpadd0-exprs/decls/stmts)
+    :short "Transform a compound-statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since a compound statement maps
+       to the same thing as its list of block items,
+       in the abstract syntax of the language formalization,
+       we just use the @('gout') for the block items
+       as the @('gout') for the block."))
+    (b* (((comp-stmt cstmt) cstmt)
+         ((mv items gout) (simpadd0-block-item-list cstmt.items gin)))
+      (mv (make-comp-stmt :labels cstmt.labels :items items) gout))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1917,26 +1940,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-block ((block blockp) (gin ginp))
-    :guard (and (block-unambp block)
-                (block-annop block))
-    :returns (mv (new-block blockp) (gout goutp))
-    :parents (simpadd0 simpadd0-exprs/decls/stmts)
-    :short "Transform a block."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Since a block maps to the same thing as its list of block items,
-       in the abstract syntax of the language formalization,
-       we just use the @('gout') for the block items
-       as the @('gout') for the block."))
-    (b* (((block block) block)
-         ((mv items gout) (simpadd0-block-item-list block.items gin)))
-      (mv (make-block :labels block.labels :items items) gout))
-    :measure (block-count block))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done after the unambiguity proofs
@@ -1945,7 +1948,7 @@
 
   (local (in-theory (enable irr-absdeclor
                             irr-dirabsdeclor
-                            irr-block)))
+                            irr-comp-stmt)))
 
   (fty::deffixequiv-mutual simpadd0-exprs/decls/stmts)
 
@@ -2090,15 +2093,15 @@
     (defret stmt-unambp-of-simpadd0-stmt
       (stmt-unambp new-stmt)
       :fn simpadd0-stmt)
+    (defret comp-stmt-unambp-of-simpadd0-block
+      (comp-stmt-unambp new-cstmt)
+      :fn simpadd0-comp-stmt)
     (defret block-item-unambp-of-simpadd0-block-item
       (block-item-unambp new-item)
       :fn simpadd0-block-item)
     (defret block-item-list-unambp-of-simpadd0-block-item-list
       (block-item-list-unambp new-items)
       :fn simpadd0-block-item-list)
-    (defret block-unambp-of-simpadd0-block
-      (block-unambp new-block)
-      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2144,9 +2147,9 @@
                                        simpadd0-decl-list
                                        simpadd0-label
                                        simpadd0-stmt
+                                       simpadd0-comp-stmt
                                        simpadd0-block-item
                                        simpadd0-block-item-list
-                                       simpadd0-block
                                        irr-expr
                                        irr-const-expr
                                        irr-align-spec
@@ -2389,6 +2392,11 @@
       :hyp (and (stmt-unambp stmt)
                 (stmt-annop stmt))
       :fn simpadd0-stmt)
+    (defret comp-stmt-annop-of-simpadd0-comp-stmt
+      (comp-stmt-annop new-cstmt)
+      :hyp (and (comp-stmt-unambp cstmt)
+                (comp-stmt-annop cstmt))
+      :fn simpadd0-comp-stmt)
     (defret block-item-annop-of-simpadd0-block-item
       (block-item-annop new-item)
       :hyp (and (block-item-unambp item)
@@ -2399,11 +2407,6 @@
       :hyp (and (block-item-list-unambp items)
                 (block-item-list-annop items))
       :fn simpadd0-block-item-list)
-    (defret block-annop-of-simpadd0-block
-      (block-annop new-block)
-      :hyp (and (block-unambp block)
-                (block-annop block))
-      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2449,9 +2452,9 @@
                                        simpadd0-decl-list
                                        simpadd0-label
                                        simpadd0-stmt
+                                       simpadd0-comp-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list
-                                       simpadd0-block))))
+                                       simpadd0-block-item-list))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2686,6 +2689,11 @@
       :hyp (and (stmt-unambp stmt)
                 (stmt-aidentp stmt gcc))
       :fn simpadd0-stmt)
+    (defret comp-stmt-aidentp-of-simpadd0-comp-stmt
+      (comp-stmt-aidentp new-cstmt gcc)
+      :hyp (and (comp-stmt-unambp cstmt)
+                (comp-stmt-aidentp cstmt gcc))
+      :fn simpadd0-comp-stmt)
     (defret block-item-aidentp-of-simpadd0-block-item
       (block-item-aidentp new-item gcc)
       :hyp (and (block-item-unambp item)
@@ -2696,11 +2704,6 @@
       :hyp (and (block-item-list-unambp items)
                 (block-item-list-aidentp items gcc))
       :fn simpadd0-block-item-list)
-    (defret block-aidentp-of-simpadd0-block
-      (block-aidentp new-block gcc)
-      :hyp (and (block-unambp block)
-                (block-aidentp block gcc))
-      :fn simpadd0-block)
     :hints (("Goal" :in-theory (enable simpadd0-expr
                                        simpadd0-expr-list
                                        simpadd0-expr-option
@@ -2747,9 +2750,9 @@
                                        simpadd0-decl-list
                                        simpadd0-label
                                        simpadd0-stmt
+                                       simpadd0-comp-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list
-                                       simpadd0-block))))
+                                       simpadd0-block-item-list))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2783,7 +2786,7 @@
      the validation table at the start of the body).
      The validation table at the start of the body
      is put into the @(tsee gin)
-     and passed to @(tsee simpadd0-block).")
+     and passed to @(tsee simpadd0-comp-stmt).")
    (xdoc::p
     "We generate the folllowing theorems:")
    (xdoc::ul
@@ -2839,7 +2842,7 @@
        (vartys (vartys-from-valid-table
                 (fundef-info->table-body-start fundef.info)))
        ((mv new-body (gout gout-body))
-        (simpadd0-block fundef.body (change-gin gin :vartys vartys)))
+        (simpadd0-comp-stmt fundef.body (change-gin gin :vartys vartys)))
        ((gin gin) (gin-update gin gout-body)))
     (xeq-fundef fundef.extension
                 fundef.spec

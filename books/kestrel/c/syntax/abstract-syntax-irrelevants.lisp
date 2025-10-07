@@ -449,17 +449,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-block
-  :short "An irrelevant block."
-  :type blockp
-  :body (make-block :labels nil :items nil))
+(defirrelevant irr-comp-stmt
+  :short "An irrelevant compound statement."
+  :type comp-stmtp
+  :body (make-comp-stmt :labels nil :items nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
-  :body (stmt-compound (irr-block)))
+  :body (stmt-compound (irr-comp-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,7 +521,7 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body (irr-block)
+                     :body (irr-comp-stmt)
                      :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -782,7 +782,7 @@
                                nil
                                env)
         :stmt (b* (((mv items env)
-                    (const-prop-block expr.block env)))
+                    (const-prop-comp-stmt expr.stmt env)))
                 (mv (expr-stmt items)
                     ;; TODO
                     nil
@@ -1766,9 +1766,9 @@
                    (mv (make-stmt-labeled :label label
                                           :stmt stmt)
                        env))
-        :compound (b* (((mv block env)
-                        (const-prop-block stmt.block env)))
-                    (mv (stmt-compound block) env))
+        :compound (b* (((mv cstmt env)
+                        (const-prop-comp-stmt stmt.stmt env)))
+                    (mv (stmt-compound cstmt) env))
         :expr (b* (((mv expr? - env)
                     (const-prop-expr-option stmt.expr? env)))
                 (mv (make-stmt-expr :expr? expr?
@@ -1861,6 +1861,9 @@
         :for-ambig (prog2$ (raise "Misusage error: ~x0." (stmt-fix stmt))
                            (mv (stmt-fix stmt) env))
         :goto (mv (stmt-fix stmt) nil)
+        :gotoe (b* (((mv label - env)
+                     (const-prop-expr stmt.label env)))
+                 (mv (stmt-gotoe label) env))
         :continue (mv (stmt-fix stmt) env)
         :break (mv (stmt-fix stmt) nil)
         :return (b* (((mv expr? - env)
@@ -1906,17 +1909,17 @@
           env))
     :measure (block-item-list-count items))
 
-  (define const-prop-block
-    ((block blockp)
+  (define const-prop-comp-stmt
+    ((cstmt comp-stmtp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::block)."
-    :returns (mv (new-block blockp)
+    :short "Propagate a constant through a @(see c$::comp-stmt)."
+    :returns (mv (new-cstmt comp-stmtp)
                  (new-env envp))
     (b* ((env (push-scope-env env))
-         ((mv items env) (const-prop-block-item-list (block->items block) env))
+         ((mv items env) (const-prop-block-item-list (comp-stmt->items cstmt) env))
          (env (pop-scope-env env)))
-      (mv (make-block :labels (block->labels block) :items items) env))
-    :measure (block-count block))
+      (mv (make-comp-stmt :labels (comp-stmt->labels cstmt) :items items) env))
+    :measure (comp-stmt-count cstmt))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
@@ -1935,7 +1938,7 @@
        ((mv decls -)
         (const-prop-decl-list fundef.decls env))
        ((mv body -)
-        (const-prop-block fundef.body (push-scope-env env))))
+        (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
                  :spec spec
                  :declor declor

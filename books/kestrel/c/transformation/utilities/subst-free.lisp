@@ -201,9 +201,9 @@
        (c$::expr-cast/logand-ambig->arg/arg2 expr))
      ;; Interesting case
      :stmt
-     (b* (((mv block -)
-           (block-subst-free (c$::expr-stmt->block expr) subst bound-vars)))
-       (expr-stmt block))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (c$::expr-stmt->stmt expr) subst bound-vars)))
+       (expr-stmt cstmt))
      :tycompat
      (c$::expr-tycompat
        (tyname-subst-free (c$::expr-tycompat->type1 expr)
@@ -1278,9 +1278,9 @@
                         subst bound-vars))
      ;; Interesting case
      :compound
-     (b* (((mv block -)
-           (block-subst-free (stmt-compound->block stmt) subst bound-vars)))
-       (stmt-compound block))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (stmt-compound->stmt stmt) subst bound-vars)))
+       (stmt-compound cstmt))
      :expr
      (make-stmt-expr
       :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
@@ -1347,6 +1347,7 @@
        (stmt-subst-free (c$::stmt-for-ambig->body stmt)
                         subst bound-vars))
      :goto (stmt-fix stmt)
+     :gotoe (stmt-gotoe (expr-subst-free stmt.label subst bound-vars))
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
      :return
@@ -1402,16 +1403,16 @@
           (ident-set-fix bound-vars)))
     :measure (block-item-list-count block-item-list))
 
-  (define block-subst-free
-    ((block blockp)
+  (define comp-stmt-subst-free
+    ((cstmt comp-stmtp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (mv (result blockp)
+    :returns (mv (result comp-stmtp)
                  (bound-vars ident-setp))
     (b* (((mv items bound-vars)
-          (block-item-list-subst-free (block->items block) subst bound-vars)))
-      (mv (make-block :labels (block->labels block) :items items) bound-vars))
-    :measure (block-count block))
+          (block-item-list-subst-free (comp-stmt->items cstmt) subst bound-vars)))
+      (mv (make-comp-stmt :labels (comp-stmt->labels cstmt) :items items) bound-vars))
+    :measure (comp-stmt-count cstmt))
 
   (define amb-expr/tyname-subst-free
     ((amb-expr/tyname c$::amb-expr/tyname-p)
@@ -1477,7 +1478,7 @@
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv decls body-bound-vars)
         (decl-list-subst-free fundef.decls subst body-bound-vars))
-       ((mv body &) (block-subst-free fundef.body subst body-bound-vars)))
+       ((mv body &) (comp-stmt-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
           :spec spec
