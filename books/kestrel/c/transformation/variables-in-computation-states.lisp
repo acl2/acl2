@@ -224,24 +224,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-return-compustate-vars
-    (b* ((expr? (c::stmt-return->value stmt))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :return)
-                    (or (not expr?)
-                        (not (equal (c::expr-kind expr?) :call)))
-                    (> (c::compustate-frames-number compst) 0)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::var-resolve-of-exec-stmt
-             c::object-type-of-exec-stmt
-             c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defruled stmt-if-compustate-vars
     (b* ((test (c::stmt-if->test stmt))
          (then (c::stmt-if->then stmt))

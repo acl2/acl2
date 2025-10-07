@@ -2182,7 +2182,7 @@
                             (:e c::expr-binary->op)
                             (:e c::binop-kind)
                             (:e c::type-nonchar-integerp)
-                            stmt-return-compustate-vars)
+                            stmt-compustate-vars)
                :use (,expr?-thm-name
                      (:instance
                       stmt-return-value-congruence
@@ -2196,7 +2196,7 @@
              :in-theory '((:e c::stmt-return)
                           (:e c::type-void)
                           (:e set::insert)
-                          stmt-return-compustate-vars)
+                          stmt-compustate-vars)
              :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
