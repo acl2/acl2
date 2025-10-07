@@ -1979,7 +1979,7 @@
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
-                        initer-single-pure-compustate-vars)
+                        initer-compustate-vars)
            :use ((:instance ,expr-thm-name)
                  (:instance initer-single-pure-congruence
                             (old-expr ',old-expr)
