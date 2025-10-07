@@ -734,7 +734,7 @@
 }"
  :gcc t
  :cond (and (stmt-case ast :compound)
-            (equal (block->labels (stmt-compound->block ast))
+            (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab"))))))
 
 (test-parse
@@ -745,7 +745,7 @@
 }"
  :gcc t
  :cond (and (stmt-case ast :compound)
-            (equal (block->labels (stmt-compound->block ast))
+            (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
                                (ident "lab2"))))))
 
@@ -758,7 +758,7 @@
 }"
  :gcc t
  :cond (and (stmt-case ast :compound)
-            (equal (block->labels (stmt-compound->block ast))
+            (equal (comp-stmt->labels (stmt-compound->stmt ast))
                    (list (list (ident "lab1")
                                (ident "lab2"))
                          (list (ident "lab3"))))))

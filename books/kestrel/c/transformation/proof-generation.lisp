@@ -2459,24 +2459,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-stmt-compound ((block blockp)
-                           (block-new blockp)
-                           (block-thm-name symbolp)
+(define xeq-stmt-compound ((cstmt comp-stmtp)
+                           (cstmt-new comp-stmtp)
+                           (cstmt-thm-name symbolp)
                            (gin ginp))
-  :guard (and (block-unambp block)
-              (block-annop block)
-              (block-unambp block-new)
-              (block-annop block-new))
+  :guard (and (comp-stmt-unambp cstmt)
+              (comp-stmt-annop cstmt)
+              (comp-stmt-unambp cstmt-new)
+              (comp-stmt-annop cstmt-new))
   :returns (mv (stmt stmtp) (gout goutp))
   :short "Equality lifting transformation of a compound statement."
   (b* (((gin gin) gin)
-       (stmt (stmt-compound block))
-       (stmt-new (stmt-compound block-new))
-       ((unless block-thm-name)
+       (stmt (stmt-compound cstmt))
+       (stmt-new (stmt-compound cstmt-new))
+       ((unless cstmt-thm-name)
         (mv stmt-new (gout-no-thm gin)))
-       (types (block-types block))
-       ((mv & old-items) (ldm-block block)) ; ERP must be NIL
-       ((mv & new-items) (ldm-block block-new)) ; ERP must be NIL
+       (types (comp-stmt-types cstmt))
+       ((mv & old-items) (ldm-comp-stmt cstmt)) ; ERP must be NIL
+       ((mv & new-items) (ldm-comp-stmt cstmt-new)) ; ERP must be NIL
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (hints
         `(("Goal"
@@ -2485,7 +2485,7 @@
                         c::compustate-frames-number-of-enter-scope
                         c::compustate-has-var-with-type-p-of-enter-scope
                         stmt-compound-compustate-vars)
-           :use ((:instance ,block-thm-name
+           :use ((:instance ,cstmt-thm-name
                             (compst (c::enter-scope compst))
                             (limit (1- limit)))
                  (:instance stmt-compound-congruence
@@ -2512,15 +2512,15 @@
 
   (defret stmt-unambp-of-xeq-stmt-compound
     (stmt-unambp stmt)
-    :hyp (block-unambp block-new))
+    :hyp (comp-stmt-unambp cstmt-new))
 
   (defret stmt-annop-of-xeq-stmt-compound
     (stmt-annop stmt)
-    :hyp (block-annop block-new))
+    :hyp (comp-stmt-annop cstmt-new))
 
   (defret stmt-aidentp-of-xeq-stmt-compound
     (stmt-aidentp stmt gcc)
-    :hyp (block-aidentp block-new gcc)))
+    :hyp (comp-stmt-aidentp cstmt-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3100,8 +3100,8 @@
                     (attribs attrib-spec-listp)
                     (decls decl-listp)
                     (decls-new decl-listp)
-                    (body blockp)
-                    (body-new blockp)
+                    (body comp-stmtp)
+                    (body-new comp-stmtp)
                     (body-thm-name symbolp)
                     (vartys-with-fun c::ident-type-mapp)
                     (info fundef-infop)
@@ -3118,10 +3118,10 @@
               (decl-list-annop decls)
               (decl-list-unambp decls-new)
               (decl-list-annop decls-new)
-              (block-unambp body)
-              (block-annop body)
-              (block-unambp body-new)
-              (block-annop body-new))
+              (comp-stmt-unambp body)
+              (comp-stmt-annop body)
+              (comp-stmt-unambp body-new)
+              (comp-stmt-annop body-new))
   :returns (mv (fundef fundefp) (gout goutp))
   :short "Equality lifting transformation of a function definition."
   :long
@@ -3288,7 +3288,7 @@
                         (:e ldm-ident)
                         (:e ldm-type)
                         (:e ldm-type-set)
-                        (:e ldm-block)
+                        (:e ldm-comp-stmt)
                         (:e c::tyname-to-type)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
@@ -3327,14 +3327,14 @@
     :hyp (and (decl-spec-list-unambp spec-new)
               (declor-unambp declor-new)
               (decl-list-unambp decls-new)
-              (block-unambp body-new)))
+              (comp-stmt-unambp body-new)))
 
   (defret fundef-annop-of-xeq-fundef
     (fundef-annop fundef)
     :hyp (and (decl-spec-list-annop spec-new)
               (declor-annop declor-new)
               (decl-list-annop decls-new)
-              (block-annop body-new)
+              (comp-stmt-annop body-new)
               (fundef-infop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
@@ -3346,5 +3346,5 @@
               (attrib-spec-list-aidentp attribs gcc)
               (decl-list-unambp decls-new)
               (decl-list-aidentp decls-new gcc)
-              (block-unambp body-new)
-              (block-aidentp body-new gcc))))
+              (comp-stmt-unambp body-new)
+              (comp-stmt-aidentp body-new gcc))))
