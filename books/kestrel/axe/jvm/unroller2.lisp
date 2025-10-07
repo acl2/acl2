@@ -41,7 +41,7 @@
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
-(include-book "unroll-java-code") ;for unroll-java-code-rules
+(include-book "unroller") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
 (include-book "../prune-dag-precisely")
 (include-book "../rewriter")
