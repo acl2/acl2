@@ -2095,7 +2095,7 @@
                           c::type-option-of-stmt-value
                           (:e set::in)
                           (:e set::insert)
-                          stmt-null-compustate-vars)
+                          stmt-compustate-vars)
              :use (stmt-null-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt

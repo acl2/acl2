@@ -224,17 +224,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled stmt-null-compustate-vars
-    (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :null)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::exec-stmt))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defruled stmt-expr-compustate-vars
     (b* ((expr (c::stmt-expr->get stmt))
          (compst0 (mv-nth 1 (c::exec-expr expr compst fenv (- limit 1))))
