@@ -176,12 +176,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-compustate-vars
-    (b* ((result+compst1 (c::exec-expr expr compst fenv limit))
-         (result (mv-nth 0 result+compst1))
-         (compst1 (mv-nth 1 result+compst1)))
+    (b* (((mv result compst1) (c::exec-expr expr compst fenv limit)))
       (implies (and (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var1 type compst))
-               (c::compustate-has-var-with-type-p var1 type compst1)))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::compustate-has-var-with-type-p
              c::var-resolve-of-exec-expr
              c::object-type-of-exec-expr
