@@ -14,7 +14,7 @@
 (include-book "kestrel/jvm/read-class-from-hierarchy" :dir :system)
 ;(include-book "../jvm/gather-relevant-classes2")
 (include-book "kestrel/utilities/unify" :dir :system)
-(include-book "unroll-java-code")
+(include-book "unroller")
 (include-book "../tactic-prover")
 (include-book "kestrel/bv/bvdiv-rules" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))

@@ -18,7 +18,7 @@
 ;; See also aes-128-encrypt-regular-and-spec-alt.lisp.
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
-(include-book "kestrel/axe/jvm/unroll-java-code" :dir :system :ttags :all)
+(include-book "kestrel/axe/jvm/unroller" :dir :system :ttags :all)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
 (include-book "kestrel/crypto/aes/aes-spec" :dir :system)
 

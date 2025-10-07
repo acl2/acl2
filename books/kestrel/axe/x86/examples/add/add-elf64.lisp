@@ -18,7 +18,7 @@
 
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
+(include-book "kestrel/axe/x86/unroller" :dir :system)
 
 ;; Lift the subroutine into logic:
 (def-unrolled add-elf64

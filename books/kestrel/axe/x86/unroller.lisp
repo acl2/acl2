@@ -64,7 +64,7 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
-(include-book "../evaluator") ; todo: this book has skip-proofs
+(include-book "../evaluator") ; todo: this book has skip-proofs, for *axe-evaluator-functions* and to support making defuns
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
