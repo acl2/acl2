@@ -940,6 +940,7 @@
                                (union (free-vars-expr-option stmt.next for-bound-vars)
                                       (free-vars-stmt stmt.body for-bound-vars)))))
      :goto nil
+     :gotoe (free-vars-expr stmt.label bound-vars)
      :continue nil
      :break nil
      :return (free-vars-expr-option stmt.expr? bound-vars)

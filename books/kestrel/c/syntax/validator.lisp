@@ -5908,6 +5908,8 @@
        (prog2$ (impossible) (retmsg$ ""))
        :goto
        (retok (stmt-goto stmt.label) nil nil (valid-table-fix table))
+       :gotoe
+       (retok (stmt-gotoe stmt.label) nil nil (valid-table-fix table))
        :continue
        (retok (stmt-continue) nil nil (valid-table-fix table))
        :break

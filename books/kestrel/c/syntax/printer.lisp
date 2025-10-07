@@ -4080,6 +4080,13 @@
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
        pstate)
+     :gotoe
+     (b* ((pstate (print-indent pstate))
+          (pstate (print-astring "goto " pstate))
+          (pstate (print-expr stmt.label (expr-priority-expr) pstate))
+          (pstate (print-astring ";" pstate))
+          (pstate (print-new-line pstate)))
+       pstate)
      :continue
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "continue;" pstate))

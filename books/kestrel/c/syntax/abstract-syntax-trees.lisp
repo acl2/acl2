@@ -3155,6 +3155,9 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
+      "As a GCC extension, we allow expressions to follow @('goto')s.
+       See the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include assembler statements."))
     (:labeled ((label label)
                (stmt stmt)))
@@ -3185,6 +3188,7 @@
                  (next expr-option)
                  (body stmt)))
     (:goto ((label ident)))
+    (:gotoe ((label expr))) ; GCC extension
     (:continue ())
     (:break ())
     (:return ((expr? expr-option)

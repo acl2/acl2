@@ -1839,6 +1839,8 @@
                        (gout-no-thm gin)))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-gout)))
        :goto (mv (stmt-fix stmt) (gout-no-thm gin))
+       :gotoe (b* (((mv new-label gout) (simpadd0-expr stmt.label gin)))
+                (mv (stmt-gotoe new-label) gout))
        :continue (mv (stmt-fix stmt) (gout-no-thm gin))
        :break (mv (stmt-fix stmt) (gout-no-thm gin))
        :return (b* (((mv new-expr? (gout gout-expr?))

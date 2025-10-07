@@ -1521,6 +1521,12 @@ static-assert-declaration =
 ; As a GCC extension, we allow locally declared labels,
 ; which may only occur at the beginning of blocks.
 
+; As a GCC extension, we allow 'goto' to be followed by an expression.
+; This causes a syntactic ambiguity between the case of a label
+; and the case of an identifier expression
+; (e.g. a variable that has been assigned '&&lab' for some label 'lab');
+; the disambiguator disambiguated the two situations.
+
 statement = labeled-statement
           / compound-statement
           / expression-statement
@@ -1566,6 +1572,7 @@ iteration-statement =
       statement
 
 jump-statement = %s"goto" identifier ";"
+               / %s"goto" expression ";" ; GCC extension
                / %s"continue" ";"
                / %s"break" ";"
                / %s"return" [ expression ] ";"
