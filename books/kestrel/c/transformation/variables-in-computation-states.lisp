@@ -159,6 +159,8 @@
                     (var var)
                     (compst compst)))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (local (in-theory (disable acl2::member-of-cons)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,6 +201,18 @@
              c::object-type-of-exec-stmt
              c::not-errorp-when-valuep
              c::valuep-of-read-object-of-objdesign-of-var))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (defruled stmt-compustate-vars-multi
+    (b* (((mv sval compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp sval))
+                    (c::compustate-has-vars-with-types-p vartys compst))
+               (c::compustate-has-vars-with-types-p vartys compst1)))
+    :induct (c::compustate-has-vars-with-types-p vartys compst)
+    :enable (c::compustate-has-vars-with-types-p
+             stmt-compustate-vars))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
