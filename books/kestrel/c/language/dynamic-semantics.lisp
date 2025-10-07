@@ -975,9 +975,7 @@
        does not affect the final result.")
      (xdoc::p
       "If the expression is a function call,
-       we call a separate ACL2 function to handle that.
-       We plan to eliminate that ACL2 function,
-       and fold its code here directly.")
+       its arguments must be all pure expressions.")
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1089,8 +1087,8 @@
        so we must enter a new scope before it and exit the scope after it.
        We are currently not doing that for @('while') loops,
        but we plan to do that;
-       at the moment it does not make a difference
-       for how we use the dynamic semantics."))
+       at the moment it does not make a difference,
+       given how we use the dynamic semantics."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
@@ -1170,10 +1168,10 @@
        We should push and then pop a scope,
        because the body of a loop forms a block [C17:6.8.5/5];
        we plan to do that, but currently that makes no difference
-       for how we are using our dynamic semantics of C.
-       If the body returns a result,
-       we return it from this ACL2 function without continuing the loop.
-       If the body returns no result,
+       given how we are using our dynamic semantics of C.
+       If the body terminates with a @('return'),
+       we terminate the loop with the same result.
+       If the body does not terminate with a @('return'),
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1326,11 +1324,6 @@
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a block item."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Besides an optional value result,
-       we also return a possibly updated computation state."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
