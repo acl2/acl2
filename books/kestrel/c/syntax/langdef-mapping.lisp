@@ -1563,6 +1563,8 @@
        :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
+       :gotoe (reterr (msg "Unsupported 'goto' with expression ~x0."
+                           (stmt-fix stmt)))
        :continue (retok (c::stmt-continue))
        :break (retok (c::stmt-break))
        :return (b* (((erp expr?) (ldm-expr-option stmt.expr?)))

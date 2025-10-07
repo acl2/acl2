@@ -1347,6 +1347,7 @@
        (stmt-subst-free (c$::stmt-for-ambig->body stmt)
                         subst bound-vars))
      :goto (stmt-fix stmt)
+     :gotoe (stmt-gotoe (expr-subst-free stmt.label subst bound-vars))
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
      :return

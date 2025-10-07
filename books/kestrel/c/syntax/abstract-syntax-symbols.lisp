@@ -400,6 +400,7 @@
     make-stmt-for-expr
     make-stmt-for-decl
     make-stmt-return
+    stmt-gotoe
 
     block-itemp
     block-item-fix

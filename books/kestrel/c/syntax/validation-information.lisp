@@ -1117,6 +1117,7 @@
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (expr-option-case

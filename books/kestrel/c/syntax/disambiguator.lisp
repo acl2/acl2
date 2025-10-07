@@ -2959,7 +2959,12 @@
        [C17:6.8.4/3].")
      (xdoc::p
       "An iteration statement forms a new scope, as do its sub-statements
-       [C17:6.8.5/5]."))
+       [C17:6.8.5/5].")
+     (xdoc::p
+      "A @(':gotoe') followed by an expression that is an identifier
+       may need to be re-classified into a @(':goto').
+       We base that on whether the identifier is in scope:
+       if it is not, it must be a label."))
     (b* (((reterr) (irr-stmt) (irr-dimb-table)))
       (stmt-case
        stmt
@@ -3066,6 +3071,15 @@
                        table)))
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
+       :gotoe
+       (b* (((erp new-label table) (dimb-expr stmt.label table))
+            ((unless (expr-case new-label :ident))
+             (retok (stmt-gotoe new-label) table))
+            (ident (expr-ident->ident new-label))
+            (kind (dimb-lookup-ident ident table)))
+         (if kind
+             (retok (stmt-gotoe new-label) table)
+           (retok (stmt-goto ident) table)))
        :continue
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :break

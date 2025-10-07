@@ -646,6 +646,7 @@
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (or (not stmt.expr?)

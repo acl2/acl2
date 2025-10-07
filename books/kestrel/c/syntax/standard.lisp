@@ -193,6 +193,7 @@
    (asm-stmt nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
+   (stmt :gotoe nil)
    (stmt :asm nil)
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))

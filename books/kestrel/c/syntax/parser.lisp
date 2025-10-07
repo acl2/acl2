@@ -8911,12 +8911,26 @@
                  parstate)))
        ;; If token is the 'goto' keyword, we have a jump statement.
        ((token-keywordp token "goto") ; goto
-        (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
-             ((erp last-span parstate) ; goto ident ;
-              (read-punctuator ";" parstate)))
-          (retok (stmt-goto ident)
-                 (span-join span last-span)
-                 parstate)))
+        ;; If GCC extensions are enabled,
+        ;; we parse an expression, which syntactically includes identifiers,
+        ;; so that we also parse labels.
+        ;; The disambiguator will disambiguate this into a label,
+        ;; if applicable.
+        (if (parstate->gcc parstate)
+            (b* (((erp expr & parstate) (parse-expression parstate)) ; goto expr
+                 ((erp last-span parstate) ; goto expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (stmt-gotoe expr)
+                     (span-join span last-span)
+                     parstate))
+          ;; If GCC extensions are not enabled,
+          ;; we can only accept an identifier after 'goto'.
+          (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
+               ((erp last-span parstate) ; goto ident ;
+                (read-punctuator ";" parstate)))
+            (retok (stmt-goto ident)
+                   (span-join span last-span)
+                   parstate))))
        ;; If token is the keyword 'continue', we have a jump statement.
        ((token-keywordp token "continue") ; continue
         (b* (((erp last-span parstate) ; continue ;
