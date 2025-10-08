@@ -2565,7 +2565,8 @@
                         (:e c::type-nonchar-integerp)
                         while-test-hyp
                         while-body-hyp
-                        c::compustate-has-vars-with-types-p)
+                        c::compustate-has-vars-with-types-p
+                        stmt-compustate-vars)
            :use ((:instance
                   ,test-thm-name
                   (compst (while-test-hyp-witness ',old-test

@@ -1413,12 +1413,11 @@
     "From the theorem about @(tsee c::exec-stmt-while),
      we prove the desired one, about @(tsee c::exec-stmt)
      applied to a @('while') loop.
-     This already includes the conclusion about
+     This does not incluce the conclusion about
      the variables in the computation state with certain types,
-     and it also handles the errors.
-     This is why, we noted earlier,
-     it is more than the congruence theorems for non-loop constructs,
-     which have separate theorems for handling errors and variables.")
+     because we can just use the rule @('stmt-compustate-vars') for that.
+     This theorem also handles the errors,
+     so we do not need a separate theorem for that.")
    (xdoc::p
     "The theorems proved here make no claims about the loop terminating.
      The theorems say that, if the loop terminates,
@@ -1552,8 +1551,7 @@
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     (set::in (c::type-option-of-stmt-value old-result)
-                             (set::insert nil types))
-                    (c::compustate-has-vars-with-types-p vartys old-compst))))
+                             (set::insert nil types)))))
     :expand ((c::exec-stmt
               (c::stmt-while old-test old-body) compst old-fenv limit)
              (c::exec-stmt
