@@ -1149,6 +1149,7 @@
                         non-executable
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
+                        max-result-term-size
                         restrict-theory
                         whole-form
                         state)
@@ -1190,6 +1191,7 @@
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
+                              (natp max-result-term-size)
                               (booleanp restrict-theory))
                   :stobjs state
                   :mode :program ; todo
@@ -1219,6 +1221,7 @@
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
        (result-dag-size (dag-or-quotep-size result-dag))
+       (- (cw "Result DAG size: ~x0.~%" result-dag-size))
        (result-dag-fns (dag-or-quotep-fns result-dag))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
@@ -1233,7 +1236,7 @@
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
-        (if (< result-dag-size 100000) ; todo: make customizable
+        (if (< result-dag-size 100000) ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
                                  (if untranslatep
@@ -1244,13 +1247,15 @@
           (progn$ (cw "(DAG:~%")
                   (cw "~X01" result-dag nil)
                   (cw ")~%")))
-        (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
-       ;; Not valid if (not (< result-dag-size 10000)):
-       (maybe-result-term (and (< result-dag-size 10000) ; avoids exploding
+        (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.")
+        (mv :incomplete-run nil state))
+       (termp (<= result-dag-size max-result-term-size)) ; todo: make customizable
+       ;; Not valid if too big:
+       (maybe-result-term (and termp ; avoids exploding
                                (acl2::dag-to-term result-dag)))
        ;; Print the result:
        (- (and print
-               (if (< result-dag-size 10000)
+               (if termp
                    (cw "(Result: ~x0)~%" maybe-result-term)
                  (progn$ (cw "(Result:~%")
                          (cw "~X01" result-dag nil)
@@ -1282,9 +1287,9 @@
         (if (not produce-function)
             (mv (erp-nil) nil)
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
-               (function-body (if (< result-dag-size 1000)
+               (function-body (if termp
                                   maybe-result-term
-                                `(acl2::dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < 1000)
+                                `(acl2::dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < max-result-term-size)
                                                                    ,(acl2::make-acons-nest result-dag-vars)
                                                                    ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
                                                                    '0 ;array depth (not very important)
@@ -1390,6 +1395,7 @@
                                   (non-executable ':auto)
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
+                                  (max-result-term-size '10000)
                                   (restrict-theory 't)       ;todo: deprecate
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
@@ -1426,6 +1432,7 @@
       ',non-executable
       ',produce-theorem
       ',prove-theorem
+      ',max-result-term-size
       ',restrict-theory
       ',whole-form
       state))
@@ -1466,6 +1473,7 @@
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
+         (max-result-term-size "Max size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
          (restrict-theory "To be deprecated..."))
   :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
