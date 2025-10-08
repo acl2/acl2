@@ -5883,7 +5883,7 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            acl2::bvchop-of-if ; pushes the if through ; todo: go to bvif?
+            ;acl2::bvchop-of-if ; pushes the if through ; todo: go to bvif?
             acl2::ifix-of-if
 
             ;; move all of these:
