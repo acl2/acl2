@@ -642,7 +642,8 @@
      :switch nil
      :while (and (expr-pure-formalp stmt.test)
                  (stmt-formalp stmt.body))
-     :dowhile nil
+     :dowhile (and (stmt-formalp stmt.body)
+                   (expr-pure-formalp stmt.test))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)
