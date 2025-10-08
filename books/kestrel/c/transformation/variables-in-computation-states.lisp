@@ -139,6 +139,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled c::compustate-has-var-with-type-p-of-exit-exec-enter
+  :short "Preservation of @(tsee c::compustate-has-var-with-type-p)
+          after entering a new scope,
+          executing a statement,
+          and exiting the scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof is a bit more complicated than desired,
+     having to reach back to some of the internal details
+     of the proofs in the language formalization
+     that support the preservation of variables and their types."))
+  (b* (((mv sval compst1)
+        (c::exec-stmt stmt (c::enter-scope compst) fenv limit)))
+    (implies (and (c::identp var)
+                  (> (c::compustate-frames-number compst) 0)
+                  (not (c::errorp sval))
+                  (c::compustate-has-var-with-type-p var type compst))
+             (c::compustate-has-var-with-type-p
+              var type (c::exit-scope compst1))))
+  :enable (c::compustate-has-var-with-type-p
+           c::peel-frames
+           c::peel-scopes
+           c::valuep-of-read-object-of-objdesign-of-var
+           c::not-errorp-when-valuep
+           c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc)
+  :use ((:instance c::var-resolve-preservep-of-exec-stmt
+                   (s stmt)
+                   (compst (c::enter-scope compst))
+                   (fenv fenv)
+                   (limit limit))
+        (:instance c::var-resolve-preservep-of-exit-scope-when-enter-scope
+                   (compst compst)
+                   (compst1
+                    (mv-nth 1 (c::exec-stmt
+                               stmt (c::enter-scope compst) fenv limit))))
+        (:instance c::var-resolve-preservep-necc
+                   (compst compst)
+                   (compst1
+                    (c::exit-scope
+                     (mv-nth 1 (c::exec-stmt
+                                stmt (c::enter-scope compst) fenv limit))))
+                   (var var)
+                   (n 0)
+                   (m 0))
+        (:instance c::object-type-preservep-of-exec-stmt
+                   (s stmt)
+                   (compst (c::enter-scope compst))
+                   (fenv fenv)
+                   (limit limit))
+        (:instance c::object-type-preservep-of-exit-scope-when-enter-scope
+                   (compst compst)
+                   (compst1
+                    (mv-nth 1 (c::exec-stmt
+                               stmt (c::enter-scope compst) fenv limit))))
+        (:instance c::object-type-preservep-necc
+                   (compst compst)
+                   (compst1
+                    (c::exit-scope
+                     (mv-nth 1 (c::exec-stmt
+                                stmt (c::enter-scope compst) fenv limit))))
+                   (objdes (c::objdesign-of-var var compst))
+                   (n 0)
+                   (m 0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-vars-with-types-p-of-exit-exec-enter
+  :short "Preservation of @(tsee c::compustate-has-vars-with-types-p)
+          after entering a new scope,
+          executing a statement,
+          and exiting the scope."
+  (b* (((mv sval compst1)
+        (c::exec-stmt stmt (c::enter-scope compst) fenv limit)))
+    (implies (and (> (c::compustate-frames-number compst) 0)
+                  (not (c::errorp sval))
+                  (c::compustate-has-vars-with-types-p vartys compst))
+             (c::compustate-has-vars-with-types-p
+              vartys (c::exit-scope compst1))))
+  :induct (c::compustate-has-vars-with-types-p vartys compst)
+  :enable (c::compustate-has-vars-with-types-p
+           c::compustate-has-var-with-type-p-of-exit-exec-enter))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-compustate-vars-theorems
   :short "Theorems about variables in computation states w.r.t. execution."
   :long
