@@ -969,13 +969,26 @@
     (xdoc::topstring
      (xdoc::p
       "For now we only support
-       function calls, (simple) assignments, and pure expressions.
-       We also restrict support so that
-       the exact order of evaluation, which is unspecified by [C17],
+       pure expressions,
+       function calls ,
+       and (simple) assignments,
+       with additional restrictions on function calls and assignments
+       so that the exact order of evaluation, which is unspecified by [C17],
        does not affect the final result.")
      (xdoc::p
+      "If the expression is pure,
+       we execute it as a pure expression.
+       We perform an array-to-pointer conversion,
+       which is appropriate because, in our C subset,
+       this ACL2 function is always used where such a conversion is needed.
+       We also peform an lvalue conversion
+       to return a value and not an expression value,
+       which is appropriate because, in our C subset,
+       this ACL2 function is always used where such a conversion is needed.")
+     (xdoc::p
       "If the expression is a function call,
-       its arguments must be all pure expressions.")
+       its arguments must be all pure expressions.
+       We execute the arguments and then the function .")
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1011,19 +1024,15 @@
        In any case, the right-hand side expression must return a value,
        i.e. it cannot be a @('void') expression.
        Note that the assignment itself is not an lvalue;
-       its result is the value assigned by the assignment.")
-     (xdoc::p
-      "If the expression is neither a function call nor an assignment,
-       we resort to executing it as a pure expression,
-       which returns an error if the expression is not pure.
-       We perform an array-to-pointer conversion,
-       which is appropriate because, in our C subset,
-       this ACL2  function is always used where such a conversion is needed.
-       We also peform an lvalue conversion
-       to return a value and not an expression value,
-       which is appropriate because, in our C subset,
-       this ACL2 function is always used where such a conversion is needed."))
+       its result is the value assigned by the assignment."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (expr-purep e))
+          (b* ((eval (exec-expr-pure e compst))
+               ((when (errorp eval)) (mv eval (compustate-fix compst)))
+               (eval (apconvert-expr-value eval))
+               ((when (errorp eval)) (mv eval (compustate-fix compst))))
+            (mv (expr-value->value eval)
+                (compustate-fix compst))))
          ((when (expr-case e :call))
           (b* ((fun (expr-call->fun e))
                (args (expr-call->args e))
@@ -1044,22 +1053,18 @@
                     (mv (expr-value->value eval) (compustate-fix compst)))))
                ((when (errorp val?)) (mv val? compst))
                ((when (not val?))
-                (mv (error (list :asg-void-expr (expr-fix right))) compst))
+                (mv (error (list :asg-void-expr right)) compst))
                (val val?)
                (eval (exec-expr-pure left compst))
                ((when (errorp eval)) (mv eval compst))
                (objdes (expr-value->object eval))
                ((unless objdes)
-                (mv (error (list :not-lvalue (expr-fix left))) compst))
+                (mv (error (list :not-lvalue left)) compst))
                (compst/error (write-object objdes val compst))
                ((when (errorp compst/error)) (mv compst/error compst))
                (compst compst/error))
-            (mv val compst)))
-         (eval (exec-expr-pure e compst))
-         ((when (errorp eval)) (mv eval (compustate-fix compst)))
-         (eval (apconvert-expr-value eval))
-         ((when (errorp eval)) (mv eval (compustate-fix compst))))
-      (mv (expr-value->value eval)
+            (mv val compst))))
+      (mv (error (list :expression-not-supported (expr-fix e)))
           (compustate-fix compst)))
     :measure (nfix limit))
 
