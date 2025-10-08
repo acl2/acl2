@@ -149,18 +149,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrulel objdesign-kind-of-objdesign-of-var-is-auto/static/alloc
-    (b* ((objdes (c::objdesign-of-var var compst)))
-      (implies objdes
-               (member-equal (c::objdesign-kind objdes)
-                             '(:auto :static :alloc))))
-    :disable c::objdesign-kind-of-objdesign-of-var
-    :use (:instance c::objdesign-kind-of-objdesign-of-var
-                    (var var)
-                    (compst compst)))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (local (in-theory (disable acl2::member-of-cons)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,7 +174,8 @@
              c::var-resolve-of-exec-expr
              c::object-type-of-exec-expr
              c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +189,8 @@
              c::var-resolve-of-exec-stmt
              c::object-type-of-exec-stmt
              c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -227,7 +217,8 @@
              c::var-resolve-of-exec-initer
              c::object-type-of-exec-initer
              c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
