@@ -371,6 +371,30 @@
              (not (errorp x)))
     :enable (expr-valuep errorp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expr-value-option
+  expr-value
+  :short "Fixtype of optional expression values."
+  :pred expr-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-value-option "optional expression values"
+  :enable (errorp
+           expr-value-optionp
+           expr-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection expr-value-option-result-theorems
+  :extension expr-value-option
+
+  (defruled not-errorp-when-expr-value-optionp
+    (implies (expr-value-optionp x)
+             (not (errorp x)))
+    :enable expr-value-optionp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum init-value
