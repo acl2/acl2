@@ -391,6 +391,7 @@
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst))))
+    :enable c::expr-purep
     :expand ((c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
               compst old-fenv limit)
@@ -478,7 +479,8 @@
     (b* ((expr-result (c::exec-expr-pure expr compst))
          (expr-value (c::expr-value->value expr-result))
          (type (c::type-of-value expr-value)))
-      (implies (and (not (c::errorp expr-result))
+      (implies (and (c::expr-purep expr)
+                    (not (c::errorp expr-result))
                     (c::type-nonchar-integerp type)
                     (not (zp limit)))
                (equal (c::exec-expr expr compst fenv limit)
@@ -505,16 +507,8 @@
          ((mv new-result new-compst)
           (c::exec-initer new compst new-fenv limit))
          (type (c::type-of-value old-expr-value)))
-      (implies (and (not (equal (c::expr-kind old-expr) :call))
-                    (not (equal (c::expr-kind new-expr) :call))
-                    (not (and (equal (c::expr-kind old-expr) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op old-expr))
-                                     :asg)))
-                    (not (and (equal (c::expr-kind new-expr) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op new-expr))
-                                     :asg)))
+      (implies (and (c::expr-purep old-expr)
+                    (c::expr-purep new-expr)
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
@@ -582,16 +576,8 @@
          (type (c::type-of-value old-expr-value)))
       (implies (and old-expr
                     new-expr
-                    (not (equal (c::expr-kind old-expr) :call))
-                    (not (equal (c::expr-kind new-expr) :call))
-                    (not (and (equal (c::expr-kind old-expr) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op old-expr))
-                                     :asg)))
-                    (not (and (equal (c::expr-kind new-expr) :binary)
-                              (equal (c::binop-kind
-                                      (c::expr-binary->op new-expr))
-                                     :asg)))
+                    (c::expr-purep old-expr)
+                    (c::expr-purep new-expr)
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
@@ -1071,6 +1057,7 @@
                            (c::expr-binary
                             (c::binop-asg) (c::expr-ident var) expr)
                            compst fenv limit)))))
+    :enable c::expr-purep
     :expand (c::exec-expr (c::expr-binary '(:asg) (c::expr-ident var) expr)
                           compst fenv limit))
 
@@ -1117,10 +1104,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled initer-single-pure-errors
-    (implies (and (not (equal (c::expr-kind expr) :call))
-                  (not (and (equal (c::expr-kind expr) :binary)
-                            (equal (c::binop-kind (c::expr-binary->op expr))
-                                   :asg)))
+    (implies (and (c::expr-purep expr)
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp
               (mv-nth 0 (c::exec-initer
@@ -1142,10 +1126,7 @@
 
   (defruled stmt-return-errors
     (implies (and expr
-                  (not (equal (c::expr-kind expr) :call))
-                  (not (and (equal (c::expr-kind expr) :binary)
-                            (equal (c::binop-kind (c::expr-binary->op expr))
-                                   :asg)))
+                  (c::expr-purep expr)
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp
               (mv-nth 0 (c::exec-stmt (c::stmt-return expr)

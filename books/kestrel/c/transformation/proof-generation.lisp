@@ -454,6 +454,7 @@
                                   (fenv new-fenv)))
                  :in-theory '(c::exec-expr
                               c::errorp-of-error
+                              (:e c::expr-purep)
                               (:e c::expr-kind)
                               (:e c::expr-binary->op)
                               (:e c::binop-kind)
@@ -1975,6 +1976,7 @@
            :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
                         (:e c::initer-single->get)
+                        (:e c::expr-purep)
                         (:e c::expr-kind)
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
@@ -2178,6 +2180,7 @@
                             (:e c::stmt-kind)
                             (:e c::stmt-return)
                             (:e c::stmt-return->value)
+                            (:e c::expr-purep)
                             (:e c::expr-kind)
                             (:e c::expr-binary->op)
                             (:e c::binop-kind)
