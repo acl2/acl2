@@ -985,7 +985,7 @@
                             a character constant with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
-     :escape (valid-escape schar.unwrap max)))
+     :escape (valid-escape schar.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
