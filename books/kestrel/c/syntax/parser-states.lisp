@@ -357,7 +357,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred token+span-listp
-  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 

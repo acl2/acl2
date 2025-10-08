@@ -1246,7 +1246,7 @@
                       cchar.code)
                (pristate-fix pstate)))
            (print-char cchar.code pstate))
-   :escape (print-escape cchar.unwrap pstate))
+   :escape (print-escape cchar.escape pstate))
   :hooks (:fix)
 
   ///
@@ -1379,7 +1379,7 @@
                       schar.code)
                (pristate-fix pstate)))
            (print-char schar.code pstate))
-   :escape (print-escape schar.unwrap pstate))
+   :escape (print-escape schar.escape pstate))
   :hooks (:fix)
 
   ///
