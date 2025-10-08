@@ -847,7 +847,7 @@
                             a character constant with prefix ~x2."
                            cchar.code max (cprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
-     :escape (valid-escape cchar.unwrap max)))
+     :escape (valid-escape cchar.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -771,7 +771,7 @@
      We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
   (:char ((code nat)))
-  (:escape ((unwrap escape)))
+  (:escape ((escape escape)))
   :pred c-char-p
   :layout :fulltree)
 
