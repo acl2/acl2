@@ -36,7 +36,8 @@
                               compst
                               fenv
                               (1- limit))))
-    :enable exec-expr)
+    :enable (exec-expr
+             expr-purep))
 
   (defval *atc-exec-expr-when-call-rules*
     '(exec-expr-when-call-open

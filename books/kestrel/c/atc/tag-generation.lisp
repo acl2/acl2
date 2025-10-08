@@ -622,7 +622,10 @@
                    ,reader
                    ,writer
                    compustate-fix-when-compustatep
-                   not-errorp-when-compustatep)
+                   not-errorp-when-compustatep
+                   expr-purep
+                   binop-purep
+                   (:e member-equal))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-var (expr-ident->get
@@ -677,7 +680,10 @@
                    ,writer
                    ,recognizer
                    compustate-fix-when-compustatep
-                   not-errorp-when-compustatep)
+                   not-errorp-when-compustatep
+                   expr-purep
+                   binop-purep
+                   (:e member-equal))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-object
@@ -930,7 +936,10 @@
           ,checker
           ,@(and length (list length))
           compustate-fix-when-compustatep
-          not-errorp-when-compustatep))
+          not-errorp-when-compustatep
+          expr-purep
+          binop-purep
+          (:e member-equal)))
        (hints-member
         `(("Goal"
            :use
@@ -1033,7 +1042,10 @@
           (:e ident-fix)
           ,@(and length (list length))
           compustate-fix-when-compustatep
-          not-errorp-when-compustatep))
+          not-errorp-when-compustatep
+          expr-purep
+          binop-purep
+          (:e member-equal)))
        (hints-memberp
         `(("Goal"
            :use
