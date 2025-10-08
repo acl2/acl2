@@ -2840,8 +2840,8 @@
                               (omap::update cvar ctype gout-declor.vartys))
                           gout-declor.vartys))
        ((mv new-decls (gout gout-decls))
-        (simpadd0-decl-list fundef.decls (change-gin
-                                          gin :vartys vartys-with-fun)))
+        (simpadd0-decl-list fundef.decls
+                            (change-gin gin :vartys vartys-with-fun)))
        (gin (gin-update gin gout-decls))
        (vartys (vartys-from-valid-table
                 (fundef-info->table-body-start fundef.info)))
@@ -2924,27 +2924,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-extdecl-list ((extdecls extdecl-listp)
-                               (gin ginp))
+(define simpadd0-extdecl-list ((extdecls extdecl-listp) (gin ginp))
   :guard (and (extdecl-list-unambp extdecls)
               (extdecl-list-annop extdecls))
   :returns (mv (new-extdecls extdecl-listp)
                (gout goutp))
   :short "Transform a list of external declarations."
   (b* (((gin gin) gin)
-       ((when (endp extdecls))
-        (mv nil (gout-no-thm gin)))
-       ((mv new-edecl (gout gout-edecl))
-        (simpadd0-extdecl (car extdecls) gin))
+       ((when (endp extdecls)) (mv nil (gout-no-thm gin)))
+       ((mv new-edecl (gout gout-edecl)) (simpadd0-extdecl (car extdecls) gin))
        (gin (gin-update gin gout-edecl))
        ((mv new-edecls (gout gout-edecls))
         (simpadd0-extdecl-list (cdr extdecls)
-                               (change-gin
-                                gin :vartys gout-edecl.vartys)))
+                               (change-gin gin :vartys gout-edecl.vartys)))
        (gin (gin-update gin gout-edecls)))
     (mv (cons new-edecl new-edecls)
-        (change-gout (gout-no-thm gin)
-                     :vartys gout-edecls.vartys)))
+        (change-gout (gout-no-thm gin) :vartys gout-edecls.vartys)))
   :verify-guards :after-returns
   :hooks (:fix)
 
