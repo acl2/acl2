@@ -2974,6 +2974,13 @@
   :returns (mv (new-tunit transunitp)
                (gout goutp))
   :short "Transform a translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('gin') passed as input has @('vartys') set to @('nil')
+     (see @(tsee simpadd0-filepath-transunit-map)),
+     but the theorem index and the list of events
+     may be the result of transforming previous translation units."))
   (b* (((gin gin) gin)
        ((transunit tunit) tunit)
        ((mv new-decls (gout gout-decls))
@@ -3012,7 +3019,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We transform both the file paths and the translation units."))
+    "We transform both the file paths and the translation units.")
+   (xdoc::p
+    "After each translation unit,
+     we reset the @('vartys') component of @('gin') to @('nil'),
+     because each translation unit starts with no variables in scope.
+     This component is initialized to @('nil')
+     in @(tsee simpadd0-code-ensemble),
+     so the first translation unit also has the right @('vartys')."))
   (b* (((gin gin) gin)
        ((when (omap::emptyp map))
         (mv nil (gout-no-thm gin)))
@@ -3020,6 +3034,7 @@
        ((mv new-tunit (gout gout-tunit))
         (simpadd0-transunit tunit gin))
        (gin (gin-update gin gout-tunit))
+       (gin (change-gin gin :vartys nil))
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map (omap::tail map) gin))
        (gin (gin-update gin gout-map)))
@@ -3126,8 +3141,9 @@
   (xdoc::topstring
    (xdoc::p
     "The @('vartys') component of @(tsee gin)
-     is just initialized to @('nil') here;
-     its actual initialization for theorem generation is done elsewhere."))
+     is initialized to @('nil') here,
+     and it applies to the first translation unit (if any):
+     see @(tsee simpadd0-filepath-transunit-map)."))
   (b* (((reterr) '(_))
        (gin (make-gin :ienv (code-ensemble->ienv code-old)
                       :const-new const-new
