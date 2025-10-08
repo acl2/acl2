@@ -1799,9 +1799,13 @@
                      ((mv new-test (gout gout-test))
                       (simpadd0-expr stmt.test gin))
                      (gin (gin-update gin gout-test)))
-                  (mv (make-stmt-dowhile :body new-body
-                                         :test new-test)
-                      (gout-no-thm gin)))
+                  (xeq-stmt-dowhile stmt.body
+                                    new-body
+                                    gout-body.thm-name
+                                    stmt.test
+                                    new-test
+                                    gout-test.thm-name
+                                    gin))
        :for-expr (b* (((mv new-init (gout gout-init))
                        (simpadd0-expr-option stmt.init gin))
                       (gin (gin-update gin gout-init))

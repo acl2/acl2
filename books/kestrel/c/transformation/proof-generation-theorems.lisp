@@ -1309,12 +1309,14 @@
      but since they involve proofs by induction,
      those theorems also combine the equivalent of
      the error theorems in @(see exec-error-theorems)
-     and the variable theorems in @(see exec-compustate-vars-theorems),
+     and (in part) the variable theorems
+     in @(see exec-compustate-vars-theorems),
      because those facts participate in the induction.
      This is why we use the generic term @('exec-loop-theorems') here.")
    (xdoc::p
     "For now we only support @('while') loops,
-     but other kinds of loops should be analogous.")
+     but other kinds of loops should be analogous.
+     We start by explaining @('while') loops.")
    (xdoc::p
     "The starting point to understand these theorems and their proofs
      is that we want something like the aforementioned congruence theorems:
@@ -1425,7 +1427,20 @@
      If the loop fails to terminate,
      @(tsee c::exec-stmt-while), and thus @(tsee c::exec-stmt)
      returns an error due to the limit being exhausted,
-     but the theorems deny that as hypothesis."))
+     but the theorems deny that as hypothesis.")
+   (xdoc::p
+    "The handling of @('do-while') loops is analogous to
+     the handling of @('while') loops, explained above.
+     There are a few more complications which just come from the fact that
+     we are more accurately modeling the execution of @('do-while') loop
+     to reflect the fact that both the loops and their bodies are blocks;
+     in contrast, our model of @('while') loop currently miss that
+     (see documentation of @(tsee c::exec-stmt)).
+     But we plan to extend our model of @('while') loops to have that too,
+     at which point there should be even fewer differences,
+     in the theorems here, between the two kinds of loops."))
+
+  ;; while:
 
   (defund while-induct (old-test
                         new-test
@@ -1556,4 +1571,153 @@
               (c::stmt-while old-test old-body) compst old-fenv limit)
              (c::exec-stmt
               (c::stmt-while new-test new-body) compst new-fenv limit))
-    :use (:instance stmt-while-loop-theorem (limit (1- limit)))))
+    :use (:instance stmt-while-loop-theorem (limit (1- limit))))
+
+  ;; do-while:
+
+  (defund dowhile-induct (old-body
+                          new-body
+                          old-test
+                          new-test
+                          old-fenv
+                          new-fenv
+                          compst
+                          limit)
+    (declare (xargs :measure (nfix limit)
+                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+    (b* (((when (zp limit)) nil)
+         (compst (c::enter-scope compst))
+         ((mv old-sval old-compst)
+          (c::exec-stmt old-body compst old-fenv (1- limit)))
+         ((when (c::errorp old-sval)) nil)
+         ((mv new-sval new-compst)
+          (c::exec-stmt new-body compst new-fenv (1- limit)))
+         ((when (c::errorp new-sval)) nil)
+         ((when (c::stmt-value-case old-sval :return)) nil)
+         ((when (c::stmt-value-case new-sval :return)) nil)
+         ((unless (equal old-compst new-compst)) nil)
+         (compst old-compst)
+         (compst (c::exit-scope compst))
+         (old-test-eval (c::exec-expr-pure old-test compst))
+         ((when (c::errorp old-test-eval)) nil)
+         (new-test-eval (c::exec-expr-pure new-test compst))
+         ((when (c::errorp new-test-eval)) nil)
+         (old-test-val (c::expr-value->value old-test-eval))
+         ((unless (c::type-nonchar-integerp (c::type-of-value old-test-val)))
+          nil)
+         (new-test-val (c::expr-value->value new-test-eval))
+         ((unless (c::type-nonchar-integerp (c::type-of-value new-test-val)))
+          nil)
+         ((unless (equal old-test-val new-test-val)) nil)
+         (old-continuep (c::test-value old-test-val))
+         ((when (c::errorp old-continuep)) nil)
+         (new-continuep (c::test-value new-test-val))
+         ((when (c::errorp new-continuep)) nil)
+         ((when (not old-continuep)) nil)
+         ((when (not new-continuep)) nil))
+      (dowhile-induct old-body
+                      new-body
+                      old-test
+                      new-test
+                      old-fenv
+                      new-fenv
+                      compst
+                      (1- limit))))
+
+  (defund-sk dowhile-body-hyp (old-body new-body old-fenv new-fenv types vartys)
+    (forall (compst limit)
+            (b* (((mv old-body-result old-body-compst)
+                  (c::exec-stmt old-body compst old-fenv limit))
+                 ((mv new-body-result new-body-compst)
+                  (c::exec-stmt new-body compst new-fenv limit)))
+              (implies (and (> (c::compustate-frames-number compst) 0)
+                            (c::compustate-has-vars-with-types-p vartys compst)
+                            (not (c::errorp old-body-result)))
+                       (and (not (c::errorp new-body-result))
+                            (equal old-body-result new-body-result)
+                            (equal old-body-compst new-body-compst)
+                            (set::in
+                             (c::type-option-of-stmt-value old-body-result)
+                             types)
+                            (c::compustate-has-vars-with-types-p
+                             vartys old-body-compst))))))
+
+  (defund-sk dowhile-test-hyp (old-test new-test vartys)
+    (forall (compst)
+            (b* ((old-test-result (c::exec-expr-pure old-test compst))
+                 (new-test-result (c::exec-expr-pure new-test compst))
+                 (old-test-value (c::expr-value->value old-test-result))
+                 (new-test-value (c::expr-value->value new-test-result)))
+              (implies (and (c::compustate-has-vars-with-types-p vartys compst)
+                            (not (c::errorp old-test-result)))
+                       (and (not (c::errorp new-test-result))
+                            (equal old-test-value new-test-value)
+                            (c::type-nonchar-integerp
+                             (c::type-of-value old-test-value)))))))
+
+  (defruled stmt-dowhile-loop-theorem
+    (b* (((mv old-result old-compst)
+          (c::exec-stmt-dowhile old-body old-test compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-stmt-dowhile new-body new-test compst new-fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (c::compustate-has-vars-with-types-p vartys compst)
+                    (dowhile-body-hyp
+                     old-body new-body old-fenv new-fenv types vartys)
+                    (dowhile-test-hyp old-test new-test vartys)
+                    (not (c::errorp old-result)))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil types))
+                    (c::compustate-has-vars-with-types-p vartys old-compst))))
+    :induct (dowhile-induct old-body
+                            new-body
+                            old-test
+                            new-test
+                            old-fenv
+                            new-fenv
+                            compst
+                            limit)
+    :enable (dowhile-induct
+             c::exec-stmt-dowhile
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp
+             c::compustate-has-vars-with-types-p-of-enter-scope
+             c::compustate-has-vars-with-types-p-of-exit-exec-enter)
+    :hints ('(:use ((:instance dowhile-body-hyp-necc
+                               (compst (c::enter-scope compst))
+                               (limit (1- limit)))
+                    (:instance dowhile-test-hyp-necc
+                               (compst
+                                (c::exit-scope
+                                 (mv-nth 1 (c::exec-stmt old-body
+                                                         (c::enter-scope compst)
+                                                         old-fenv
+                                                         (1- limit))))))))))
+
+  (defruled stmt-dowhile-theorem
+    (b* ((old (c::stmt-dowhile old-body old-test))
+         (new (c::stmt-dowhile new-body new-test))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (c::compustate-has-vars-with-types-p vartys compst)
+                    (dowhile-body-hyp
+                     old-body new-body old-fenv new-fenv types vartys)
+                    (dowhile-test-hyp old-test new-test vartys)
+                    (not (c::errorp old-result)))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (set::in (c::type-option-of-stmt-value old-result)
+                             (set::insert nil types)))))
+    :enable c::compustate-has-vars-with-types-p-of-enter-scope
+    :expand ((c::exec-stmt
+              (c::stmt-dowhile old-body old-test) compst old-fenv limit)
+             (c::exec-stmt
+              (c::stmt-dowhile new-body new-test) compst new-fenv limit))
+    :use (:instance stmt-dowhile-loop-theorem
+                    (compst (c::enter-scope compst))
+                    (limit (1- limit)))))

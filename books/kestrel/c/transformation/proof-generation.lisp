@@ -2626,6 +2626,108 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define xeq-stmt-dowhile ((body stmtp)
+                          (body-new stmtp)
+                          (body-thm-name symbolp)
+                          (test exprp)
+                          (test-new exprp)
+                          (test-thm-name symbolp)
+                          (gin ginp))
+  :guard (and (stmt-unambp body)
+              (stmt-annop body)
+              (stmt-unambp body-new)
+              (stmt-annop body-new)
+              (expr-unambp test)
+              (expr-annop test)
+              (expr-unambp test-new)
+              (expr-annop test-new))
+  :returns (mv (stmt stmtp) (gout goutp))
+  :short "Equality lifting transformation of a @('do-while') loop."
+  (b* (((gin gin) gin)
+       (stmt (make-stmt-dowhile :body body
+                                :test test))
+       (stmt-new (make-stmt-dowhile :body body-new
+                                    :test test-new))
+       ((unless (and body-thm-name
+                     test-thm-name))
+        (mv stmt-new (gout-no-thm gin)))
+       (types (stmt-types body))
+       ((mv & old-body) (ldm-stmt body)) ; ERP must be NIL
+       ((mv & new-body) (ldm-stmt body-new)) ; ERP must be NIL
+       ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
+       ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-dowhile)
+                        (:e c::ident-type-map-fix)
+                        (:e omap::emptyp)
+                        (:e omap::head)
+                        (:e omap::tail)
+                        (:e set::insert)
+                        (:e c::type-nonchar-integerp)
+                        dowhile-test-hyp
+                        dowhile-body-hyp
+                        c::compustate-has-vars-with-types-p
+                        stmt-compustate-vars)
+           :use ((:instance
+                  ,body-thm-name
+                  (compst (mv-nth 0 (dowhile-body-hyp-witness ',old-body
+                                                              ',new-body
+                                                              old-fenv
+                                                              new-fenv
+                                                              ',types
+                                                              ',gin.vartys)))
+                  (limit (mv-nth 1 (dowhile-body-hyp-witness ',old-body
+                                                             ',new-body
+                                                             old-fenv
+                                                             new-fenv
+                                                             ',types
+                                                             ',gin.vartys))))
+                 (:instance
+                  ,test-thm-name
+                  (compst (dowhile-test-hyp-witness ',old-test
+                                                    ',new-test
+                                                    ',gin.vartys)))
+                 (:instance
+                  stmt-dowhile-theorem
+                  (old-body ',old-body)
+                  (new-body ',new-body)
+                  (old-test ',old-test)
+                  (new-test ',new-test)
+                  (types ',types)
+                  (vartys ',gin.vartys))))))
+       ((mv thm-event thm-name thm-index)
+        (gen-stmt-thm stmt
+                      stmt-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
+    (mv stmt-new
+        (make-gout :events (cons thm-event gin.events)
+                   :thm-index thm-index
+                   :thm-name thm-name
+                   :vartys gin.vartys)))
+
+  ///
+
+  (defret stmt-unambp-of-xeq-stmt-dowhile
+    (stmt-unambp stmt)
+    :hyp (and (stmt-unambp body-new)
+              (expr-unambp test-new)))
+
+  (defret stmt-annop-of-xeq-stmt-dowhile
+    (stmt-annop stmt)
+    :hyp (and (stmt-annop body-new)
+              (expr-annop test-new)))
+
+  (defret stmt-aidentp-of-xeq-stmt-dowhile
+    (stmt-aidentp stmt gcc)
+    :hyp (and (stmt-aidentp body-new gcc)
+              (expr-aidentp test-new gcc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define xeq-decl-decl ((extension booleanp)
                        (specs decl-spec-listp)
                        (specs-new decl-spec-listp)
