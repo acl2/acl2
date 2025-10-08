@@ -19,6 +19,7 @@
 (include-book "standard")
 (include-book "ascii-identifiers")
 (include-book "type-specifier-lists")
+(include-book "storage-specifier-lists")
 (include-book "abstraction-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,4 +57,5 @@
                     standard
                     ascii-identifiers
                     type-specifier-lists
+                    storage-specifier-lists
                     abstraction-mapping))

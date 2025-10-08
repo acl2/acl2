@@ -17,6 +17,7 @@
 (include-book "builtin")
 (include-book "unambiguity")
 (include-book "type-specifier-lists")
+(include-book "storage-specifier-lists")
 (include-book "validation-information")
 
 (include-book "kestrel/utilities/messages" :dir :system)
