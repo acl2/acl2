@@ -5765,7 +5765,7 @@
     acl2::ash-when-non-negative-becomes-*-of-expt ; todo
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
-    acl2::<-of-15-and-*-of-4
+    ;acl2::<-of-15-and-*-of-4
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
     acl2::not-bvlt-of-max-arg2 ; size is symbolic
     acl2::<-of-*-when-constant-integers
