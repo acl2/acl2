@@ -1213,6 +1213,12 @@
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We extend the variable-type map
+       according to the parameter declarators/declarations,
+       one after the other."))
     (b* (((gin gin) gin)
          ((param-declon paramdeclon) paramdeclon)
          ((mv new-specs (gout gout-specs))
@@ -1238,6 +1244,11 @@
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of parameter declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We extend the variable-type map
+       if it was extended by the parameter declarator."))
     (b* (((gin gin) gin)
          ((when (endp paramdeclons))
           (mv nil (gout-no-thm gin)))
@@ -1256,14 +1267,19 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-param-declor ((paramdeclor param-declorp)
-                                 (gin ginp))
+  (define simpadd0-param-declor ((paramdeclor param-declorp) (gin ginp))
     :guard (and (param-declor-unambp paramdeclor)
                 (param-declor-annop paramdeclor))
     :returns (mv (new-paramdeclor param-declorp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the type of the parameter declarator
+       is in the subset supported by our formal semantics,
+       we extend the variable-type map with the parameter and its type."))
     (b* (((gin gin) gin))
       (param-declor-case
        paramdeclor
@@ -1480,8 +1496,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumer-list ((enumers enumer-listp)
-                                (gin ginp))
+  (define simpadd0-enumer-list ((enumers enumer-listp) (gin ginp))
     :guard (and (enumer-list-unambp enumers)
                 (enumer-list-annop enumers))
     :returns (mv (new-enumers enumer-listp)
@@ -1503,8 +1518,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-statassert ((statassert statassertp)
-                               (gin ginp))
+  (define simpadd0-statassert ((statassert statassertp) (gin ginp))
     :guard (and (statassert-unambp statassert)
                 (statassert-annop statassert))
     :returns (mv (new-statassert statassertp)
@@ -1523,8 +1537,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor ((initdeclor initdeclorp)
-                               (gin ginp))
+  (define simpadd0-initdeclor ((initdeclor initdeclorp) (gin ginp))
     :guard (and (initdeclor-unambp initdeclor)
                 (initdeclor-annop initdeclor))
     :returns (mv (new-initdeclor initdeclorp)
@@ -1577,8 +1590,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp)
-                                    (gin ginp))
+  (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp) (gin ginp))
     :guard (and (initdeclor-list-unambp initdeclors)
                 (initdeclor-list-annop initdeclors))
     :returns (mv (new-initdeclors initdeclor-listp)
