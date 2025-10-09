@@ -671,3 +671,65 @@
   ;; keep recognizer disabled:
 
   (in-theory (disable ppstatep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-ppstate ((data byte-listp) (gcc booleanp) ppstate)
+  :returns (ppstate ppstatep)
+  :short "Initialize the parser state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the state when we start parsing a file.
+     Given (the data of) a file to parse,
+     and a flag saying whether GCC extensions should be accepted or not,
+     the initial parsing state consists of
+     the data to parse,
+     no read characters or lexemes,
+     no unread characters or lexemes,
+     and the initial file position.
+     We also resize the arrays of characters and lexemes
+     to the number of data bytes,
+     which is overkill but certainly sufficient
+     (because we will never lex more characters or lexemes than bytes);
+     if this turns out to be too large,
+     we will pick a different size,
+     but then we may need to resize the array as needed
+     while lexing and parsing."))
+  (b* ((ppstate (update-ppstate->bytes data ppstate))
+       (ppstate (update-ppstate->position (position-init) ppstate))
+       (ppstate (update-ppstate->chars-length (len data) ppstate))
+       (ppstate (update-ppstate->chars-read 0 ppstate))
+       (ppstate (update-ppstate->chars-unread 0 ppstate))
+       (ppstate (update-ppstate->lexemes-length (len data) ppstate))
+       (ppstate (update-ppstate->lexemes-read 0 ppstate))
+       (ppstate (update-ppstate->lexemes-unread 0 ppstate))
+       (ppstate (update-ppstate->gcc gcc ppstate))
+       (ppstate (update-ppstate->size (len data) ppstate)))
+    ppstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ppsize ((ppstate ppstatep))
+  :returns (size natp :rule-classes (:rewrite :type-prescription))
+  :short "Size of the parsing state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a synonym of @(tsee ppstate->size) at this point.
+     It was slightly more elaborate when
+     @(tsee ppstate) was defined via @(tsee fty::defprod)."))
+  (ppstate->size ppstate)
+  :hooks (:fix)
+
+  ///
+
+  (defrule ppsize-of-initppstate
+    (equal (ppsize (init-ppstate nil gcc ppstate))
+           0)
+    :enable init-ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: continue
