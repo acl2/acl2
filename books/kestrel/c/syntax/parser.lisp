@@ -5430,9 +5430,19 @@
       "We also pass the span of the @('struct') or @('union') keyword,
        so that we can return a span for the whole type specifier."))
     (b* (((reterr) (irr-type-spec) (irr-span) parstate)
-         ;; There must be at least one token (identifier or open curly brace),
+         ;; We read zero or more attribute specifiers.
+         ;; These are recognized as such only if GCC extensions are enabled.
+         (psize (parsize parstate))
+         ((erp attrspecs attrspecs-span parstate) ; struct/union [attrs]
+          (parse-*-attribute-specifier parstate))
+         ((unless (mbt (<= (parsize parstate) psize)))
+          (reterr :impossible))
+         ;; There must be at least one token
+         ;; (identifier or open curly brace,
+         ;; or attribute if GCC extensions are enabled),
          ;; so we read a token.
-         ((erp token span parstate) (read-token parstate)))
+         ((erp token span parstate) (read-token parstate))
+         (span (if attrspecs (span-join attrspecs-span span) span)))
       (cond
        ;; If token is an identifier,
        ;; it may be the whole structure or union specifier,
@@ -5442,8 +5452,8 @@
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace, there are two cases.
-           ((token-punctuatorp token2 "{") ; struct/union ident {
-            (if (and structp ; struct ident {
+           ((token-punctuatorp token2 "{") ; struct/union [attrs] ident {
+            (if (and structp ; struct [attrs] ident {
                      (parstate->gcc parstate))
                 ;; If we are parsing a structure type specifier
                 ;; and GCC extensions are enabled,
@@ -5453,8 +5463,9 @@
                   (cond
                    ;; If token3 is a closed curly brace,
                    ;; we have a structure type specifier with no members.
-                   ((token-punctuatorp token3 "}") ; struct ident { }
-                    (retok (type-spec-struct-empty ident)
+                   ((token-punctuatorp token3 "}") ; struct [attrs] ident { }
+                    (retok (make-type-spec-struct-empty :attribs attrspecs
+                                                        :name? ident)
                            (span-join struct/union-span span3)
                            parstate))
                    ;; If token3 is not a closed curly brace,
@@ -5464,16 +5475,17 @@
                    ;; In this case we return a (non-empty)
                    ;; structure type specifier.
                    (t ; struct ident { other
-                    (b* ((parstate ; struct ident {
+                    (b* ((parstate ; struct [attrs] ident {
                           (if token3 (unread-token parstate) parstate))
                          ((erp structdeclons & parstate)
-                          ;; struct ident { structdeclons
+                          ;; struct [attrs] ident { structdeclons
                           (parse-struct-declaration-list parstate))
                          ((erp last-span parstate)
-                          ;; struct ident { structdeclons }
+                          ;; struct [attrs] ident { structdeclons }
                           (read-punctuator "}" parstate)))
                       (retok (type-spec-struct
-                              (make-struni-spec :name? ident
+                              (make-struni-spec :attribs attrspecs
+                                                :name? ident
                                                 :members structdeclons))
                              (span-join struct/union-span last-span)
                              parstate)))))
@@ -5482,39 +5494,43 @@
               ;; we need to parse one of more structure declarations,
               ;; followed by a closed curly brace.
               (b* (((erp structdeclons & parstate)
-                    ;; struct/union ident { structdeclons
+                    ;; union [attrs] ident { structdeclons
                     (parse-struct-declaration-list parstate))
                    ((erp last-span parstate)
-                    ;; struct/union ident { structdeclons }
+                    ;; union [attrs] ident { structdeclons }
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (type-spec-struct
-                             (make-struni-spec :name? ident
-                                               :members structdeclons))
+                            (make-struni-spec :attribs attrspecs
+                                              :name? ident
+                                              :members structdeclons))
                          (type-spec-union
-                             (make-struni-spec :name? ident
-                                               :members structdeclons)))
+                          (make-struni-spec :attribs attrspecs
+                                            :name? ident
+                                            :members structdeclons)))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
            ;; the identifier was the whole structure or union specifier,
            ;; so we put back token2 and return the type specifier.
            (t ; struct/union ident other
-            (b* ((parstate ; struct/union ident
+            (b* ((parstate ; struct/union [attrs] ident
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
                          (type-spec-struct
-                          (make-struni-spec :name? ident
+                          (make-struni-spec :attribs attrspecs
+                                            :name? ident
                                             :members nil))
                        (type-spec-union
-                        (make-struni-spec :name? ident
+                        (make-struni-spec :attribs attrspecs
+                                          :name? ident
                                           :members nil)))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
        ;; we must have a structure or union specifier without name.
        ((token-punctuatorp token "{") ; struct/union {
-        (if (and structp ; struct {
+        (if (and structp ; struct [attrs] {
                  (parstate->gcc parstate))
             ;; If we are parsing a structure type specifier
             ;; and GCC extensions are enabled,
@@ -5524,8 +5540,9 @@
               (cond
                ;; If token3 is a closed curly brace,
                ;; we have a structure type specifier with no members.
-               ((token-punctuatorp token3 "}") ; struct { }
-                (retok (type-spec-struct-empty nil)
+               ((token-punctuatorp token3 "}") ; struct [attrs] { }
+                (retok (make-type-spec-struct-empty :attribs attrspecs
+                                                    :name? nil)
                        (span-join struct/union-span span3)
                        parstate))
                ;; If token3 is not a closed curly brace,
@@ -5534,33 +5551,38 @@
                ;; followed by a closed curly brace.
                ;; In this case we return a (non-empty)
                ;; structure type specifier.
-               (t ; struct { other
-                (b* ((parstate ; struct {
+               (t ; struct [attrs] { other
+                (b* ((parstate ; struct [attrs] {
                       (if token3 (unread-token parstate) parstate))
                      ((erp structdeclons & parstate)
-                      ;; struct { structdeclons
+                      ;; struct [attrs] { structdeclons
                       (parse-struct-declaration-list parstate))
                      ((erp last-span parstate)
-                      ;; struct { structdeclons }
+                      ;; struct [attrs] { structdeclons }
                       (read-punctuator "}" parstate)))
                   (retok (type-spec-struct
-                          (make-struni-spec :name? nil
+                          (make-struni-spec :attribs attrspecs
+                                            :name? nil
                                             :members structdeclons))
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
           ;; or GCC extensions are not enabled,
           ;; we must have one or more structure declarations.
-          (b* (((erp structdeclons & parstate) ; struct/union { structdeclons
+          (b* (((erp structdeclons & parstate)
+                ;; struct/union [attrs] { structdeclons
                 (parse-struct-declaration-list parstate))
-               ((erp last-span parstate) ; struct/union { structdeclons }
+               ((erp last-span parstate)
+                ;; struct/union [attrs] { structdeclons }
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (type-spec-struct
-                        (make-struni-spec :name? nil
+                        (make-struni-spec :attribs attrspecs
+                                          :name? nil
                                           :members structdeclons))
                      (type-spec-union
-                      (make-struni-spec :name? nil
+                      (make-struni-spec :attribs attrspecs
+                                        :name? nil
                                         :members structdeclons)))
                    (span-join struct/union-span last-span)
                    parstate))))
@@ -5571,7 +5593,7 @@
                     :expected "an identifier ~
                                or an open curly brace"
                     :found (token-to-msg token)))))
-    :measure (two-nats-measure (parsize parstate) 0))
+    :measure (two-nats-measure (parsize parstate) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

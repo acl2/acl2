@@ -1490,6 +1490,7 @@
          ((mv members env)
           (const-prop-struct-declon-list struni-spec.members env)))
       (mv (make-struni-spec
+            :attribs struni-spec.attribs
             :name? struni-spec.name?
             :members members)
           env))

@@ -2629,7 +2629,9 @@
          ((struni-spec struni-spec) struni-spec)
          ((erp new-members table)
           (dimb-struct-declon-list struni-spec.members table)))
-      (retok (make-struni-spec :name? struni-spec.name? :members new-members)
+      (retok (make-struni-spec :attribs struni-spec.attribs
+                               :name? struni-spec.name?
+                               :members new-members)
              table))
     :measure (struni-spec-count struni-spec))
 

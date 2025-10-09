@@ -173,7 +173,7 @@
   (defruled type-spec-unambp-when-struct-empty
     (implies (type-spec-case type-spec :struct-empty)
              (type-spec-unambp type-spec))
-    :enable type-spec-unambp)
+    :expand (type-spec-unambp  type-spec))
 
   (defruled spec/qual-unambp-when-typequal
     (implies (spec/qual-case spec/qual :typequal)

@@ -167,6 +167,9 @@
                       (param-declor-standardp
                        (param-declon->declor param-declon))
                       (endp (param-declon->attribs param-declon))))
+   (struni-spec (and (endp (struni-spec->attribs struni-spec))
+                     (struct-declon-list-standardp
+                      (struni-spec->members struni-spec))))
    (struct-declon :member
                   (and (not (struct-declon-member->extension struct-declon))
                        (spec/qual-list-standardp

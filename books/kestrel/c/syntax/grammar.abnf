@@ -1282,6 +1282,9 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; As a GCC extension, we allow structures with no members:
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
 
+; As a GCC extension, we allow attributes just after 'struct' or 'union'
+; in a structure or union specifier.
+
 ; We also allow a lone semicolon as a structure declaration.
 ; This is definitely not grammatical according to [C17],
 ; and we did not find it anywhere in the GCC documentation;
@@ -1362,10 +1365,16 @@ type-specifier = %s"void"
                / typeof-keyword "(" type-name ")"
                / %s"__auto_type"
 
-struct-or-union-specifier =
-      struct-or-union [ identifier ] "{" struct-declaration-list "}"
-    / struct-or-union identifier
-    / %s"struct" [ identifier ] "{" "}" ; GCC extension
+struct-or-union-specifier = struct-or-union
+                            *attribute-specifier ; GCC extension
+                            [ identifier ]
+                            "{" struct-declaration-list "}"
+                          / struct-or-union
+                            *attribute-specifier ; GCC extension
+                            identifier
+                          ; GCC extension:
+                          / %s"struct" *attribute-specifier
+                            [ identifier ] "{" "}"
 
 struct-or-union = %s"struct"
                 / %s"union"
