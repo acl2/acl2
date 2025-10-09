@@ -27,9 +27,7 @@
 
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
-                  (not (equal (expr-kind e) :call))
-                  (not (and (equal (expr-kind e) :binary)
-                            (equal (binop-kind (expr-binary->op e)) :asg)))
+                  (expr-purep e)
                   (not (zp limit))
                   (compustatep compst)
                   (equal eval (exec-expr-pure e compst))
@@ -39,10 +37,10 @@
              (equal (exec-expr e compst fenv limit)
                     (mv (expr-value->value eval1)
                         compst)))
-    :enable exec-expr)
+    :expand (exec-expr e compst fenv limit)
+    :enable (expr-purep
+             binop-purep))
 
   (defval *atc-exec-expr-when-pure-rules*
     '(exec-expr-when-pure
-      (:e expr-kind)
-      (:e expr-binary->op)
-      (:e binop-kind))))
+      (:e expr-purep))))

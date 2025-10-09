@@ -1112,7 +1112,7 @@
                          (stmt-types stmt.else))
      :switch nil
      :while (set::insert nil (stmt-types stmt.body))
-     :dowhile nil
+     :dowhile (set::insert nil (stmt-types stmt.body))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)

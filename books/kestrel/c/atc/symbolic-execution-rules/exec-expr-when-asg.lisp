@@ -64,7 +64,9 @@
     :enable (exec-expr
              exec-expr-pure
              exec-ident
-             write-object-of-objdesign-of-var-to-write-var))
+             write-object-of-objdesign-of-var-to-write-var
+             expr-purep
+             binop-purep))
 
   (defruled exec-expr-when-asg-ident-via-object
     (implies (and (syntaxp (quotep expr))
@@ -88,7 +90,9 @@
                     (mv val compst2)))
     :enable (exec-expr
              exec-expr-pure
-             exec-ident))
+             exec-ident
+             expr-purep
+             binop-purep))
 
   (defval *atc-exec-expr-when-asg-ident-rules*
     '(exec-expr-when-asg-ident
@@ -198,7 +202,9 @@
                               read-object-of-objdesign-of-var-to-read-var
                               ,type-of-value-when-pred
                               ,not-pred-of-value-pointer
-                              ,value-kind-when-pred)
+                              ,value-kind-when-pred
+                              expr-purep
+                              binop-purep)
                      :disable (equal-of-error
                                equal-of-expr-value)
                      :prep-lemmas
@@ -345,7 +351,9 @@
                       integer-range-p
                       ,value-array-read-when-apred
                       ,value-array-write-when-apred
-                      write-object)
+                      write-object
+                      expr-purep
+                      binop-purep)
              :disable (equal-of-error
                        equal-of-expr-value
                        equal-of-objdesign-element)

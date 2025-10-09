@@ -1246,7 +1246,7 @@
                       cchar.code)
                (pristate-fix pstate)))
            (print-char cchar.code pstate))
-   :escape (print-escape cchar.unwrap pstate))
+   :escape (print-escape cchar.escape pstate))
   :hooks (:fix)
 
   ///
@@ -1379,7 +1379,7 @@
                       schar.code)
                (pristate-fix pstate)))
            (print-char schar.code pstate))
-   :escape (print-escape schar.unwrap pstate))
+   :escape (print-escape schar.escape pstate))
   :hooks (:fix)
 
   ///
@@ -4017,7 +4017,8 @@
                     (b* ((pstate (print-new-line pstate))
                          (pstate (inc-pristate-indent pstate))
                          (pstate (print-stmt stmt.body pstate))
-                         (pstate (dec-pristate-indent pstate)))
+                         (pstate (dec-pristate-indent pstate))
+                         (pstate (print-indent pstate)))
                       pstate)))
           (pstate (print-astring "while (" pstate))
           (pstate (print-expr stmt.test (expr-priority-expr) pstate))

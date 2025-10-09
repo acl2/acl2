@@ -143,7 +143,8 @@
               (expr-purep expr.then)
               (expr-purep expr.else)))
   :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o-p o< o-finp))))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -126,6 +126,102 @@
            c::not-errorp-when-valuep
            c::valuep-of-read-object-of-objdesign-of-var))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-vars-with-types-p-of-enter-scope
+  :short "Preservation of @(tsee c::compustate-has-vars-with-types-p)
+          under @(tsee c::enter-scope)."
+  (implies (c::compustate-has-vars-with-types-p vartys compst)
+           (c::compustate-has-vars-with-types-p vartys (c::enter-scope compst)))
+  :induct t
+  :enable (c::compustate-has-vars-with-types-p
+           c::compustate-has-var-with-type-p-of-enter-scope))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-var-with-type-p-of-exit-exec-enter
+  :short "Preservation of @(tsee c::compustate-has-var-with-type-p)
+          after entering a new scope,
+          executing a statement,
+          and exiting the scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The proof is a bit more complicated than desired,
+     having to reach back to some of the internal details
+     of the proofs in the language formalization
+     that support the preservation of variables and their types."))
+  (b* (((mv sval compst1)
+        (c::exec-stmt stmt (c::enter-scope compst) fenv limit)))
+    (implies (and (c::identp var)
+                  (> (c::compustate-frames-number compst) 0)
+                  (not (c::errorp sval))
+                  (c::compustate-has-var-with-type-p var type compst))
+             (c::compustate-has-var-with-type-p
+              var type (c::exit-scope compst1))))
+  :enable (c::compustate-has-var-with-type-p
+           c::peel-frames
+           c::peel-scopes
+           c::valuep-of-read-object-of-objdesign-of-var
+           c::not-errorp-when-valuep
+           c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc)
+  :use ((:instance c::var-resolve-preservep-of-exec-stmt
+                   (s stmt)
+                   (compst (c::enter-scope compst))
+                   (fenv fenv)
+                   (limit limit))
+        (:instance c::var-resolve-preservep-of-exit-scope-when-enter-scope
+                   (compst compst)
+                   (compst1
+                    (mv-nth 1 (c::exec-stmt
+                               stmt (c::enter-scope compst) fenv limit))))
+        (:instance c::var-resolve-preservep-necc
+                   (compst compst)
+                   (compst1
+                    (c::exit-scope
+                     (mv-nth 1 (c::exec-stmt
+                                stmt (c::enter-scope compst) fenv limit))))
+                   (var var)
+                   (n 0)
+                   (m 0))
+        (:instance c::object-type-preservep-of-exec-stmt
+                   (s stmt)
+                   (compst (c::enter-scope compst))
+                   (fenv fenv)
+                   (limit limit))
+        (:instance c::object-type-preservep-of-exit-scope-when-enter-scope
+                   (compst compst)
+                   (compst1
+                    (mv-nth 1 (c::exec-stmt
+                               stmt (c::enter-scope compst) fenv limit))))
+        (:instance c::object-type-preservep-necc
+                   (compst compst)
+                   (compst1
+                    (c::exit-scope
+                     (mv-nth 1 (c::exec-stmt
+                                stmt (c::enter-scope compst) fenv limit))))
+                   (objdes (c::objdesign-of-var var compst))
+                   (n 0)
+                   (m 0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-vars-with-types-p-of-exit-exec-enter
+  :short "Preservation of @(tsee c::compustate-has-vars-with-types-p)
+          after entering a new scope,
+          executing a statement,
+          and exiting the scope."
+  (b* (((mv sval compst1)
+        (c::exec-stmt stmt (c::enter-scope compst) fenv limit)))
+    (implies (and (> (c::compustate-frames-number compst) 0)
+                  (not (c::errorp sval))
+                  (c::compustate-has-vars-with-types-p vartys compst))
+             (c::compustate-has-vars-with-types-p
+              vartys (c::exit-scope compst1))))
+  :induct (c::compustate-has-vars-with-types-p vartys compst)
+  :enable (c::compustate-has-vars-with-types-p
+           c::compustate-has-var-with-type-p-of-exit-exec-enter))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-compustate-vars-theorems
@@ -137,16 +233,6 @@
      and how the execution of constructs preserve and/or modify it."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defrulel objdesign-kind-of-objdesign-of-var-is-auto/static/alloc
-    (b* ((objdes (c::objdesign-of-var var compst)))
-      (implies objdes
-               (member-equal (c::objdesign-kind objdes)
-                             '(:auto :static :alloc))))
-    :disable c::objdesign-kind-of-objdesign-of-var
-    :use (:instance c::objdesign-kind-of-objdesign-of-var
-                    (var var)
-                    (compst compst)))
 
   (local (in-theory (disable acl2::member-of-cons)))
 
@@ -165,147 +251,59 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-compustate-vars
-    (b* ((result+compst1 (c::exec-expr expr compst fenv limit))
-         (result (mv-nth 0 result+compst1))
-         (compst1 (mv-nth 1 result+compst1)))
+    (b* (((mv result compst1) (c::exec-expr expr compst fenv limit)))
       (implies (and (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var1 type compst))
-               (c::compustate-has-var-with-type-p var1 type compst1)))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::compustate-has-var-with-type-p
              c::var-resolve-of-exec-expr
              c::object-type-of-exec-expr
              c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled initer-single-pure-compustate-vars
-    (b* ((expr (c::initer-single->get initer))
-         ((mv result compst1)
-          (c::exec-initer initer compst fenv limit))
-         (type-expr (c::type-of-value
-                     (c::expr-value->value
-                      (c::exec-expr-pure expr compst)))))
-      (implies (and (equal (c::initer-kind initer) :single)
-                    (not (equal (c::expr-kind expr) :call))
-                    (> (c::compustate-frames-number compst) 0)
+  (defruled stmt-compustate-vars
+    (b* (((mv sval compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp sval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (c::compustate-has-var-with-type-p var type compst1)))
+    :enable (c::compustate-has-var-with-type-p
+             c::var-resolve-of-exec-stmt
+             c::object-type-of-exec-stmt
+             c::not-errorp-when-valuep
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (defruled stmt-compustate-vars-multi
+    (b* (((mv sval compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp sval))
+                    (c::compustate-has-vars-with-types-p vartys compst))
+               (c::compustate-has-vars-with-types-p vartys compst1)))
+    :induct (c::compustate-has-vars-with-types-p vartys compst)
+    :enable (c::compustate-has-vars-with-types-p
+             stmt-compustate-vars))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled initer-compustate-vars
+    (b* (((mv result compst1)
+          (c::exec-initer initer compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
                     (not (c::errorp result))
-                    (c::type-nonchar-integerp type-expr)
                     (c::compustate-has-var-with-type-p var type compst))
                (c::compustate-has-var-with-type-p var type compst1)))
     :enable (c::compustate-has-var-with-type-p
              c::var-resolve-of-exec-initer
              c::object-type-of-exec-initer
              c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-null-compustate-vars
-    (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :null)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::exec-stmt))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-expr-compustate-vars
-    (b* ((expr (c::stmt-expr->get stmt))
-         (compst0 (mv-nth 1 (c::exec-expr expr compst fenv (- limit 1))))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :expr)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst0))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-return-compustate-vars
-    (b* ((expr? (c::stmt-return->value stmt))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :return)
-                    (or (not expr?)
-                        (not (equal (c::expr-kind expr?) :call)))
-                    (> (c::compustate-frames-number compst) 0)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::var-resolve-of-exec-stmt
-             c::object-type-of-exec-stmt
-             c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-if-compustate-vars
-    (b* ((test (c::stmt-if->test stmt))
-         (then (c::stmt-if->then stmt))
-         (test-result (c::exec-expr-pure test compst))
-         (test-value (c::expr-value->value test-result))
-         ((mv & compst0) (c::exec-stmt then compst fenv (1- limit)))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :if)
-                    (not (c::errorp result))
-                    (c::type-nonchar-integerp (c::type-of-value test-value))
-                    (or (and (c::test-value test-value)
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                compst0))
-                        (and (not (c::test-value test-value))
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                compst))))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit)
-    :enable (c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-ifelse-compustate-vars
-    (b* ((test (c::stmt-ifelse->test stmt))
-         (then (c::stmt-ifelse->then stmt))
-         (else (c::stmt-ifelse->else stmt))
-         (test-result (c::exec-expr-pure test compst))
-         (test-value (c::expr-value->value test-result))
-         ((mv & then-compst) (c::exec-stmt then compst fenv (1- limit)))
-         ((mv & else-compst) (c::exec-stmt else compst fenv (1- limit)))
-         ((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :ifelse)
-                    (not (c::errorp result))
-                    (c::type-nonchar-integerp (c::type-of-value test-value))
-                    (or (and (c::test-value test-value)
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                then-compst))
-                        (and (not (c::test-value test-value))
-                             (c::compustate-has-var-with-type-p var
-                                                                type
-                                                                else-compst))))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :expand (c::exec-stmt stmt compst fenv limit)
-    :enable (c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled stmt-compound-compustate-vars
-    (b* (((mv result compst1) (c::exec-stmt stmt compst fenv limit)))
-      (implies (and (equal (c::stmt-kind stmt) :compound)
-                    (> (c::compustate-frames-number compst) 0)
-                    (not (c::errorp result))
-                    (c::compustate-has-var-with-type-p var type compst))
-               (c::compustate-has-var-with-type-p var type compst1)))
-    :enable (c::compustate-has-var-with-type-p
-             c::var-resolve-of-exec-stmt
-             c::object-type-of-exec-stmt
-             c::not-errorp-when-valuep
-             c::valuep-of-read-object-of-objdesign-of-var))
+             c::valuep-of-read-object-of-objdesign-of-var
+             c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

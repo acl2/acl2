@@ -873,6 +873,15 @@
       (implies objdes
                (member-equal (objdesign-kind objdes) '(:auto :static)))))
 
+  (defruled objdesign-kind-of-objdesign-of-var-is-auto/static/alloc
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies objdes
+               (member-equal (objdesign-kind objdes) '(:auto :static :alloc))))
+    :disable objdesign-kind-of-objdesign-of-var
+    :use (:instance objdesign-kind-of-objdesign-of-var
+                    (var var)
+                    (compst compst)))
+
   (defruled objdesign-static->name-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
       (implies (and objdes
