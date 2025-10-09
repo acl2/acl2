@@ -1291,7 +1291,9 @@
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
-                      (type-formalp type))
+                      (type-formalp type)
+                      (not (type-case type :void))
+                      (not (type-case type :char)))
                  (b* (((mv & cvar) (ldm-ident ident))
                       ((mv & ctype) (ldm-type type)))
                    (omap::update cvar ctype gin.vartys))
