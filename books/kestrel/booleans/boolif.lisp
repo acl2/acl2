@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -177,6 +177,13 @@
   (implies (not (equal v1 v2))
            (equal (boolif (equal v1 x) nil (equal v2 x))
                   (equal v2 x))))
+
+(defthm boolif-of-equal-and-t-and-not-equal-diff-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal k1 k2)))
+           (equal (boolif (equal k1 x) t (not (equal k2 x)))
+                  (not (equal k2 x)))))
 
 ;; "x or y" and "x" is just x
 ;todo: rename to have 'same' in the name
