@@ -2055,7 +2055,8 @@
     (:float128 ())
     (:float128x ())
     (:builtin-va-list ())
-    (:struct-empty ((name? ident-option)))
+    (:struct-empty ((attribs attrib-spec-list)
+                    (name? ident-option)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
@@ -2626,8 +2627,13 @@
      (xdoc::p
       "This fixtype does not cover structure types with no members,
        which is a GCC extension;
-       this is covered as a separate case in @(tsee type-spec)."))
-    ((name? ident-option)
+       this is covered as a separate case in @(tsee type-spec).")
+     (xdoc::p
+      "As a GCC extension, we allow zero or more attribute specifiers.
+       In the concrete syntax, these come just after @('struct') or @('union');
+       see the ABNF grammar."))
+    ((attribs attrib-spec-list) ; GCC extension
+     (name? ident-option)
      (members struct-declon-list))
     :pred struni-specp
     :layout :fulltree

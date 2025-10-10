@@ -1122,6 +1122,20 @@ error (int __status, int __errnum, const char *__format, ...)
 "
  :gcc t)
 
+(test-parse
+ parse-*-external-declaration
+ "struct __attribute__((aligned(64))) secret {
+  char secret_top_str[20];
+  union secret_data {
+    uint8_t secret_u8s[24];
+    uint16_t secret_u16s[12];
+    uint32_t secret_u32s[6];
+  } secret_data;
+  char secret_bot_str[20];
+};
+"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-translation-unit

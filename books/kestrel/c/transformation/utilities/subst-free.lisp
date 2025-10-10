@@ -929,8 +929,9 @@
           (struct-declon-list-subst-free
             (c$::struni-spec->members struni-spec)
             subst bound-vars)))
-      (struni-spec (c$::struni-spec->name? struni-spec)
-                  members))
+      (struni-spec (c$::struni-spec->attribs struni-spec)
+                   (c$::struni-spec->name? struni-spec)
+                   members))
     :measure (struni-spec-count struni-spec))
 
   (define struct-declon-subst-free ((struct-declon struct-declonp)

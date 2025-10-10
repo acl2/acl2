@@ -334,7 +334,7 @@
 (defirrelevant irr-struni-spec
   :short "An irrelevant structure or union specifier."
   :type struni-specp
-  :body (make-struni-spec :name? nil :members nil))
+  :body (make-struni-spec :attribs nil :name? nil :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
