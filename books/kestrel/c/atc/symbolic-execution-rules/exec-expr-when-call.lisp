@@ -29,13 +29,18 @@
                   (equal (expr-kind expr) :call)
                   (equal vals
                          (exec-expr-pure-list (expr-call->args expr) compst))
-                  (value-listp vals))
+                  (value-listp vals)
+                  (equal val+compst1
+                         (exec-fun (expr-call->fun expr)
+                                   vals
+                                   compst
+                                   fenv
+                                   (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (value-optionp val))
              (equal (exec-expr expr compst fenv limit)
-                    (exec-fun (expr-call->fun expr)
-                              vals
-                              compst
-                              fenv
-                              (1- limit))))
+                    (mv (if val (expr-value val nil) nil) compst1)))
     :enable (exec-expr
              expr-purep))
 

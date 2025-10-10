@@ -539,7 +539,7 @@
                                                compst))
                              (compustatep compst1))
                         (equal (exec-expr expr compst fenv limit)
-                               (mv val compst1))))
+                               (mv (expr-value val nil) compst1))))
              (formula-memberp
               `(implies (and (syntaxp (quotep expr))
                              (equal (expr-kind expr) :binary)
@@ -575,7 +575,7 @@
                                                   compst))
                              (compustatep compst1))
                         (equal (exec-expr expr compst fenv limit)
-                               (mv val compst1))))
+                               (mv (expr-value val nil) compst1))))
              (valuep-when-typep (pack 'valuep-when- typep))
              (value-kind-when-typep (pack 'value-kind-when- typep))
              (consp-when-typep (pack 'consp-when- typep))
@@ -625,7 +625,8 @@
                    not-errorp-when-compustatep
                    expr-purep
                    binop-purep
-                   (:e member-equal))
+                   (:e member-equal)
+                   (:t exec-expr-pure))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-var (expr-ident->get
@@ -683,7 +684,8 @@
                    not-errorp-when-compustatep
                    expr-purep
                    binop-purep
-                   (:e member-equal))
+                   (:e member-equal)
+                   (:t exec-expr-pure))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-object
@@ -812,7 +814,7 @@
                                  compst))
                (compustatep compst1))
           (equal (exec-expr expr compst fenv limit)
-                 (mv val compst1))))
+                 (mv (expr-value val nil) compst1))))
        (formula-memberp
         `(implies
           (and (equal (expr-kind expr) :binary)
@@ -859,7 +861,7 @@
                                     compst))
                (compustatep compst1))
           (equal (exec-expr expr compst fenv limit)
-                 (mv val compst1))))
+                 (mv (expr-value val nil) compst1))))
        (theory-member
         `(exec-expr
           exec-expr-pure-when-arrsub-of-member-no-syntaxp
@@ -939,7 +941,8 @@
           not-errorp-when-compustatep
           expr-purep
           binop-purep
-          (:e member-equal)))
+          (:e member-equal)
+          (:t exec-expr-pure)))
        (hints-member
         `(("Goal"
            :use
@@ -1045,7 +1048,9 @@
           not-errorp-when-compustatep
           expr-purep
           binop-purep
-          (:e member-equal)))
+          (:e member-equal)
+          (:t exec-expr-pure)
+          (:t c::apconvert-expr-value)))
        (hints-memberp
         `(("Goal"
            :use

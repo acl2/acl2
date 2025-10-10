@@ -55,11 +55,11 @@
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :expr)
                   (not (zp limit))
-                  (equal result+compst1
+                  (equal eval?+compst1
                          (exec-expr (stmt-expr->get s) compst fenv (1- limit)))
-                  (equal result (mv-nth 0 result+compst1))
-                  (equal compst1 (mv-nth 1 result+compst1))
-                  (value-optionp result))
+                  (equal eval? (mv-nth 0 eval?+compst1))
+                  (equal compst1 (mv-nth 1 eval?+compst1))
+                  (expr-value-optionp eval?))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-none) compst1)))
     :enable exec-stmt)
@@ -177,11 +177,12 @@
                   (not (zp limit))
                   (equal e (stmt-return->value s))
                   e
-                  (equal val+compst1
+                  (equal eval+compst1
                          (exec-expr e compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val))
+                  (equal eval (mv-nth 0 eval+compst1))
+                  (equal compst1 (mv-nth 1 eval+compst1))
+                  (expr-valuep eval)
+                  (equal val (expr-value->value eval)))
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-return val) compst1)))
     :enable exec-stmt)
