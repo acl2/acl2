@@ -1730,6 +1730,7 @@
                                ,fn-fun-env-thm
                                return-type-of-stmt-value-none
                                expr-value-optionp-when-expr-valuep
+                               (:e c::expr-value-optionp)
                                expr-valuep-of-expr-value))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
@@ -1764,6 +1765,7 @@
                           ,fn-fun-env-thm
                           return-type-of-stmt-value-none
                           expr-value-optionp-when-expr-valuep
+                          (:e c::expr-value-optionp)
                           expr-valuep-of-expr-value))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
