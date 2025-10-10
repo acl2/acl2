@@ -961,12 +961,18 @@
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
-    :returns (mv (result value-option-resultp)
+    :returns (mv (eval expr-value-option-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute an expression."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "We return an optional expression value,
+       and a possibly updated computation state.
+       The optional expression value is @9('nil')
+       for expressions that do not return a value or designate an object,
+       e.g. calls of @('void') functions.")
      (xdoc::p
       "For now we only support
        pure expressions,
@@ -978,13 +984,11 @@
      (xdoc::p
       "If the expression is pure,
        we execute it as a pure expression.
-       We perform an array-to-pointer conversion,
+       For now we perform an array-to-pointer conversion here,
        which is appropriate because, in our C subset,
        this ACL2 function is always used where such a conversion is needed.
-       We also peform an lvalue conversion
-       to return a value and not an expression value,
-       which is appropriate because, in our C subset,
-       this ACL2 function is always used where such a conversion is needed.")
+       But we plan to move that conversion to the callers of this function,
+       which should not perform the conversion itself in general.")
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions.
@@ -1031,39 +1035,43 @@
                ((when (errorp eval)) (mv eval (compustate-fix compst)))
                (eval (apconvert-expr-value eval))
                ((when (errorp eval)) (mv eval (compustate-fix compst))))
-            (mv (expr-value->value eval)
-                (compustate-fix compst))))
+            (mv eval (compustate-fix compst))))
          ((when (expr-case e :call))
           (b* ((fun (expr-call->fun e))
                (args (expr-call->args e))
                (vals (exec-expr-pure-list args compst))
-               ((when (errorp vals)) (mv vals (compustate-fix compst))))
-            (exec-fun fun vals compst fenv (1- limit))))
+               ((when (errorp vals)) (mv vals (compustate-fix compst)))
+               ((mv val? compst) (exec-fun fun vals compst fenv (1- limit)))
+               ((when (errorp val?)) (mv val? compst)))
+            (if val?
+                (mv (make-expr-value :value val? :object nil) compst)
+              (mv nil compst))))
          ((when (and (expr-case e :binary)
                      (binop-case (expr-binary->op e) :asg)))
           (b* ((left (expr-binary->arg1 e))
                (right (expr-binary->arg2 e))
-               ((mv val? compst)
+               ((mv right-eval? compst)
                 (if (expr-case left :ident)
                     (exec-expr right compst fenv (1- limit))
-                  (b* ((eval (exec-expr-pure right compst))
-                       ((when (errorp eval)) (mv eval (compustate-fix compst)))
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) (mv eval (compustate-fix compst))))
-                    (mv (expr-value->value eval) (compustate-fix compst)))))
-               ((when (errorp val?)) (mv val? compst))
-               ((when (not val?))
+                  (b* ((right-eval (exec-expr-pure right compst))
+                       ((when (errorp right-eval))
+                        (mv right-eval (compustate-fix compst)))
+                       (right-eval (apconvert-expr-value right-eval)))
+                    (mv right-eval (compustate-fix compst)))))
+               ((when (errorp right-eval?)) (mv right-eval? compst))
+               ((when (not right-eval?))
                 (mv (error (list :asg-void-expr right)) compst))
-               (val val?)
-               (eval (exec-expr-pure left compst))
-               ((when (errorp eval)) (mv eval compst))
-               (objdes (expr-value->object eval))
+               (right-eval right-eval?)
+               (val (expr-value->value right-eval))
+               (left-eval (exec-expr-pure left compst))
+               ((when (errorp left-eval)) (mv left-eval compst))
+               (objdes (expr-value->object left-eval))
                ((unless objdes)
                 (mv (error (list :not-lvalue left)) compst))
                (compst/error (write-object objdes val compst))
                ((when (errorp compst/error)) (mv compst/error compst))
                (compst compst/error))
-            (mv val compst))))
+            (mv (make-expr-value :value val :object nil) compst))))
       (mv (error (list :expression-not-supported (expr-fix e)))
           (compustate-fix compst)))
     :measure (nfix limit))
@@ -1103,8 +1111,8 @@
                       ((mv sval compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv sval (exit-scope compst)))
-       :expr (b* (((mv result compst) (exec-expr s.get compst fenv (1- limit)))
-                  ((when (errorp result)) (mv result compst)))
+       :expr (b* (((mv eval compst) (exec-expr s.get compst fenv (1- limit)))
+                  ((when (errorp eval)) (mv eval compst)))
                (mv (stmt-value-none) compst))
        :null (mv (stmt-value-none) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
@@ -1140,13 +1148,15 @@
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (b* (((mv val? compst)
+                   (b* (((mv eval? compst)
                          (exec-expr s.value compst fenv (1- limit)))
-                        ((when (errorp val?)) (mv val? compst))
-                        ((when (not val?)) (mv (error (list :return-void-expr
-                                                            s.value))
-                                               compst)))
-                     (mv (stmt-value-return val?) compst))
+                        ((when (errorp eval?)) (mv eval? compst))
+                        ((when (not eval?)) (mv (error (list :return-void-expr
+                                                             s.value))
+                                                compst))
+                        (eval eval?)
+                        (val (expr-value->value eval)))
+                     (mv (stmt-value-return val) compst))
                  (mv (stmt-value-return nil) (compustate-fix compst)))))
     :measure (nfix limit))
 
@@ -1261,11 +1271,12 @@
       (initer-case
        initer
        :single
-       (b* (((mv val compst) (exec-expr initer.get compst fenv (1- limit)))
-            ((when (errorp val)) (mv val compst))
-            ((when (not val))
+       (b* (((mv eval compst) (exec-expr initer.get compst fenv (1- limit)))
+            ((when (errorp eval)) (mv eval compst))
+            ((when (not eval))
              (mv (error (list :void-initializer (initer-fix initer)))
                  compst))
+            (val (expr-value->value eval))
             (ival (init-value-single val)))
          (mv ival compst))
        :list
@@ -1499,7 +1510,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt :hints (("Goal" :in-theory (enable len))))
+  (verify-guards exec-fun
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       len
+       expr-value-optionp-when-expr-value-option-resultp-and-not-errorp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
