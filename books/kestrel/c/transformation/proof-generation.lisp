@@ -437,13 +437,16 @@
               ((mv old-result old-compst)
                (c::exec-expr old-expr compst old-fenv limit))
               ((mv new-result new-compst)
-               (c::exec-expr new-expr compst new-fenv limit)))
+               (c::exec-expr new-expr compst new-fenv limit))
+              (old-value (c::expr-value->value old-result))
+              (new-value (c::expr-value->value new-result)))
            (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (iff old-result new-result)
+                         (equal old-value new-value)
                          (equal old-compst new-compst)
-                         (equal (c::type-of-value old-result) ',ctype)))))
+                         (equal (c::type-of-value old-value) ',ctype)))))
        (hints `(("Goal"
                  :use (,expr-pure-thm
                        (:instance exec-expr-when-exec-expr-pure-integer
@@ -458,7 +461,8 @@
                               (:e c::expr-kind)
                               (:e c::expr-binary->op)
                               (:e c::binop-kind)
-                              (:e c::type-nonchar-integerp)))))
+                              (:e c::type-nonchar-integerp)
+                              (:t c::exec-expr-pure)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -598,11 +602,14 @@
               ((mv old-result old-compst)
                (c::exec-expr old-expr compst old-fenv limit))
               ((mv new-result new-compst)
-               (c::exec-expr new-expr compst new-fenv limit)))
+               (c::exec-expr new-expr compst new-fenv limit))
+              (old-value (c::expr-value->value old-result))
+              (new-value (c::expr-value->value new-result)))
            (implies (and ,@vars-pre
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (iff old-result new-result)
+                         (equal old-value new-value)
                          (equal old-compst new-compst)
                          ,@vars-post))))
        (thm-event `(defrule ,thm-name
@@ -2185,6 +2192,7 @@
                             (:e c::expr-binary->op)
                             (:e c::binop-kind)
                             (:e c::type-nonchar-integerp)
+                            (:t c::exec-expr-pure)
                             stmt-compustate-vars)
                :use (,expr?-thm-name
                      (:instance

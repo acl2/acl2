@@ -380,16 +380,22 @@
           (c::exec-expr old-arg compst old-fenv (1- limit)))
          ((mv new-arg-result new-arg-compst)
           (c::exec-expr new-arg compst new-fenv (1- limit)))
+         (old-arg-value (c::expr-value->value old-arg-result))
+         (new-arg-value (c::expr-value->value new-arg-result))
          ((mv old-result old-compst) (c::exec-expr old compst old-fenv limit))
          ((mv new-result new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
          (val (c::read-object (c::objdesign-of-var var compst) compst)))
       (implies (and (not (c::errorp val))
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
-                    (equal old-arg-result new-arg-result)
+                    (iff old-arg-result new-arg-result)
+                    (equal old-arg-value new-arg-value)
                     (equal old-arg-compst new-arg-compst))
                (and (not (c::errorp new-result))
-                    (equal old-result new-result)
+                    (iff old-result new-result)
+                    (equal old-value new-value)
                     (equal old-compst new-compst))))
     :enable c::expr-purep
     :expand ((c::exec-expr
@@ -484,14 +490,15 @@
                     (c::type-nonchar-integerp type)
                     (not (zp limit)))
                (equal (c::exec-expr expr compst fenv limit)
-                      (mv expr-value (c::compustate-fix compst)))))
+                      (mv expr-result (c::compustate-fix compst)))))
     :use ((:instance c::not-call-when-exec-expr-pure-not-error
                      (expr expr) (compst compst))
           (:instance c::not-asg-when-exec-expr-pure-not-error
                      (expr expr) (compst compst)))
     :enable (c::exec-expr
              c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
+             c::value-kind-not-array-when-value-integerp
+             c::expr-valuep-when-expr-value-resultp-and-not-errorp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -549,10 +556,14 @@
           (c::exec-expr old-expr compst old-fenv (- limit 1)))
          ((mv new-expr-result new-expr-compst)
           (c::exec-expr new-expr compst new-fenv (- limit 1)))
+         (old-expr-value (c::expr-value->value old-expr-result))
+         (new-expr-value (c::expr-value->value new-expr-result))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
          ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
       (implies (and (not (c::errorp old-result))
-                    (equal old-expr-result new-expr-result)
+                    (not (c::errorp new-expr-result))
+                    (iff old-expr-result new-expr-result)
+                    (equal old-expr-value new-expr-value)
                     (equal old-expr-compst new-expr-compst))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
@@ -580,6 +591,7 @@
                     (c::expr-purep new-expr)
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
+                    (iff old-expr-result new-expr-result)
                     (equal old-expr-value new-expr-value)
                     (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
