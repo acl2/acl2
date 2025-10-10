@@ -1206,64 +1206,80 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-param-declon ((paramdecl param-declonp) (gin ginp))
-    :guard (and (param-declon-unambp paramdecl)
-                (param-declon-annop paramdecl))
-    :returns (mv (new-paramdecl param-declonp)
+  (define simpadd0-param-declon ((paramdeclon param-declonp) (gin ginp))
+    :guard (and (param-declon-unambp paramdeclon)
+                (param-declon-annop paramdeclon))
+    :returns (mv (new-paramdeclon param-declonp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We extend the variable-type map
+       according to the parameter declarators/declarations,
+       one after the other."))
     (b* (((gin gin) gin)
-         ((param-declon paramdecl) paramdecl)
+         ((param-declon paramdeclon) paramdeclon)
          ((mv new-specs (gout gout-specs))
-          (simpadd0-decl-spec-list paramdecl.specs gin))
+          (simpadd0-decl-spec-list paramdeclon.specs gin))
          (gin (gin-update gin gout-specs))
          ((mv new-declor (gout gout-declor))
-          (simpadd0-param-declor paramdecl.declor gin))
+          (simpadd0-param-declor paramdeclon.declor gin))
          (gin (gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor
-                             :attribs paramdecl.attribs)
+                             :attribs paramdeclon.attribs)
           (change-gout (gout-no-thm gin)
                        :vartys gout-declor.vartys)))
-    :measure (param-declon-count paramdecl))
+    :measure (param-declon-count paramdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-param-declon-list ((paramdecls param-declon-listp)
+  (define simpadd0-param-declon-list ((paramdeclons param-declon-listp)
                                       (gin ginp))
-    :guard (and (param-declon-list-unambp paramdecls)
-                (param-declon-list-annop paramdecls))
-    :returns (mv (new-paramdecls param-declon-listp)
+    :guard (and (param-declon-list-unambp paramdeclons)
+                (param-declon-list-annop paramdeclons))
+    :returns (mv (new-paramdeclons param-declon-listp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of parameter declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We extend the variable-type map
+       if it was extended by the parameter declarator."))
     (b* (((gin gin) gin)
-         ((when (endp paramdecls))
+         ((when (endp paramdeclons))
           (mv nil (gout-no-thm gin)))
-         ((mv new-paramdecl (gout gout-paramdecl))
-          (simpadd0-param-declon (car paramdecls) gin))
-         (gin (gin-update gin gout-paramdecl))
-         ((mv new-paramdecls (gout gout-paramdecls))
-          (simpadd0-param-declon-list (cdr paramdecls)
+         ((mv new-paramdeclon (gout gout-paramdeclon))
+          (simpadd0-param-declon (car paramdeclons) gin))
+         (gin (gin-update gin gout-paramdeclon))
+         ((mv new-paramdeclons (gout gout-paramdeclons))
+          (simpadd0-param-declon-list (cdr paramdeclons)
                                       (change-gin
-                                       gin :vartys gout-paramdecl.vartys)))
-         (gin (gin-update gin gout-paramdecls)))
-      (mv (cons new-paramdecl new-paramdecls)
+                                       gin :vartys gout-paramdeclon.vartys)))
+         (gin (gin-update gin gout-paramdeclons)))
+      (mv (cons new-paramdeclon new-paramdeclons)
           (change-gout (gout-no-thm gin)
-                       :vartys gout-paramdecls.vartys)))
-    :measure (param-declon-list-count paramdecls))
+                       :vartys gout-paramdeclons.vartys)))
+    :measure (param-declon-list-count paramdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-param-declor ((paramdeclor param-declorp)
-                                 (gin ginp))
+  (define simpadd0-param-declor ((paramdeclor param-declorp) (gin ginp))
     :guard (and (param-declor-unambp paramdeclor)
                 (param-declor-annop paramdeclor))
     :returns (mv (new-paramdeclor param-declorp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the type of the parameter declarator
+       is in the subset supported by our formal semantics,
+       we extend the variable-type map with the parameter and its type."))
     (b* (((gin gin) gin))
       (param-declor-case
        paramdeclor
@@ -1275,7 +1291,9 @@
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
-                      (type-formalp type))
+                      (type-formalp type)
+                      (not (type-case type :void))
+                      (not (type-case type :char)))
                  (b* (((mv & cvar) (ldm-ident ident))
                       ((mv & ctype) (ldm-type type)))
                    (omap::update cvar ctype gin.vartys))
@@ -1480,8 +1498,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-enumer-list ((enumers enumer-listp)
-                                (gin ginp))
+  (define simpadd0-enumer-list ((enumers enumer-listp) (gin ginp))
     :guard (and (enumer-list-unambp enumers)
                 (enumer-list-annop enumers))
     :returns (mv (new-enumers enumer-listp)
@@ -1503,8 +1520,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-statassert ((statassert statassertp)
-                               (gin ginp))
+  (define simpadd0-statassert ((statassert statassertp) (gin ginp))
     :guard (and (statassert-unambp statassert)
                 (statassert-annop statassert))
     :returns (mv (new-statassert statassertp)
@@ -1523,8 +1539,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor ((initdeclor initdeclorp)
-                               (gin ginp))
+  (define simpadd0-initdeclor ((initdeclor initdeclorp) (gin ginp))
     :guard (and (initdeclor-unambp initdeclor)
                 (initdeclor-annop initdeclor))
     :returns (mv (new-initdeclor initdeclorp)
@@ -1577,8 +1592,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp)
-                                    (gin ginp))
+  (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp) (gin ginp))
     :guard (and (initdeclor-list-unambp initdeclors)
                 (initdeclor-list-annop initdeclors))
     :returns (mv (new-initdeclors initdeclor-listp)
@@ -2041,10 +2055,10 @@
       (dirabsdeclor-option-unambp new-dirabsdeclor?)
       :fn simpadd0-dirabsdeclor-option)
     (defret param-declon-unambp-of-simpadd0-param-declon
-      (param-declon-unambp new-paramdecl)
+      (param-declon-unambp new-paramdeclon)
       :fn simpadd0-param-declon)
     (defret param-declon-list-unambp-of-simpadd0-param-declon-list
-      (param-declon-list-unambp new-paramdecls)
+      (param-declon-list-unambp new-paramdeclons)
       :fn simpadd0-param-declon-list)
     (defret param-declor-unambp-of-simpadd0-param-declor
       (param-declor-unambp new-paramdeclor)
@@ -2302,14 +2316,14 @@
                 (dirabsdeclor-option-annop dirabsdeclor?))
       :fn simpadd0-dirabsdeclor-option)
     (defret param-declon-annop-of-simpadd0-param-declon
-      (param-declon-annop new-paramdecl)
-      :hyp (and (param-declon-unambp paramdecl)
-                (param-declon-annop paramdecl))
+      (param-declon-annop new-paramdeclon)
+      :hyp (and (param-declon-unambp paramdeclon)
+                (param-declon-annop paramdeclon))
       :fn simpadd0-param-declon)
     (defret param-declon-list-annop-of-simpadd0-param-declon-list
-      (param-declon-list-annop new-paramdecls)
-      :hyp (and (param-declon-list-unambp paramdecls)
-                (param-declon-list-annop paramdecls))
+      (param-declon-list-annop new-paramdeclons)
+      :hyp (and (param-declon-list-unambp paramdeclons)
+                (param-declon-list-annop paramdeclons))
       :fn simpadd0-param-declon-list)
     (defret param-declor-annop-of-simpadd0-param-declor
       (param-declor-annop new-paramdeclor)
@@ -2599,14 +2613,14 @@
                 (dirabsdeclor-option-aidentp dirabsdeclor? gcc))
       :fn simpadd0-dirabsdeclor-option)
     (defret param-declon-aidentp-of-simpadd0-param-declon
-      (param-declon-aidentp new-paramdecl gcc)
-      :hyp (and (param-declon-unambp paramdecl)
-                (param-declon-aidentp paramdecl gcc))
+      (param-declon-aidentp new-paramdeclon gcc)
+      :hyp (and (param-declon-unambp paramdeclon)
+                (param-declon-aidentp paramdeclon gcc))
       :fn simpadd0-param-declon)
     (defret param-declon-list-aidentp-of-simpadd0-param-declon-list
-      (param-declon-list-aidentp new-paramdecls gcc)
-      :hyp (and (param-declon-list-unambp paramdecls)
-                (param-declon-list-aidentp paramdecls gcc))
+      (param-declon-list-aidentp new-paramdeclons gcc)
+      :hyp (and (param-declon-list-unambp paramdeclons)
+                (param-declon-list-aidentp paramdeclons gcc))
       :fn simpadd0-param-declon-list)
     (defret param-declor-aidentp-of-simpadd0-param-declor
       (param-declor-aidentp new-paramdeclor gcc)
