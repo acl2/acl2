@@ -945,6 +945,7 @@
               (reterr (raise "Internal error: function ~x0 has no info."
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+             (result-fn-thm (atc-fn-info->result-thm fninfo))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -1037,7 +1038,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-when-call-open
+                 '(exec-expr-when-call-value-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1113,7 +1114,9 @@
                    acl2::mv-nth-of-cons
                    (:e zp)
                    value-optionp-when-valuep
-                   (:t ,called-fn)))))
+                   (:t ,called-fn)
+                   ,result-fn-thm
+                   c::star))))
              ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                        :formula call-formula
                                                        :hints call-hints
@@ -5307,7 +5310,8 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-when-call-open
+           '(exec-expr-when-call-value-open
+             exec-expr-when-call-novalue-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
