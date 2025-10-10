@@ -309,7 +309,9 @@
   (xdoc::topstring
    (xdoc::p
     "These are the inputs that define the implementation environment,
-     which we return if the processing of these inputs is successful."))
+     which we return if the processing of these inputs is successful.")
+   (xdoc::p
+    "For now we choose the C17 standard, with or without GCC extensions."))
   (b* (((reterr) (ienv-default))
        ;; Process :GCC input.
        ((unless (booleanp gcc))
@@ -359,12 +361,12 @@
                       but it is ~x0 instead."
                      plain-char-signed)))
        ;; Build the implementation environment.
-       (ienv (make-ienv :short-bytes short-bytes
+       (ienv (make-ienv :version (if gcc (c::version-c17+gcc) (c::version-c17))
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed
-                        :gcc gcc)))
+                        :plain-char-signedp plain-char-signed)))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -501,8 +503,9 @@
                                 (preprocessor string-optionp)
                                 (preprocess-args-presentp booleanp)
                                 (preprocess-extra-args
-                                  (or (acl2::string-stringlist-mapp preprocess-extra-args)
-                                      (string-listp preprocess-extra-args)))
+                                 (or (acl2::string-stringlist-mapp
+                                      preprocess-extra-args)
+                                     (string-listp preprocess-extra-args)))
                                 (process input-files-process-inputp)
                                 (const symbolp)
                                 (keep-going booleanp)

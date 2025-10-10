@@ -82,12 +82,12 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
        (cond (cdr (assoc-eq :cond options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (ienv (make-ienv :version (if gcc (c::version-c17+gcc) (c::version-c17))
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
        (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))
@@ -113,12 +113,12 @@
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (ienv (make-ienv :version (if gcc (c::version-c17+gcc) (c::version-c17))
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
        (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))

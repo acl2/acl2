@@ -60,6 +60,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We include an indication of the version of C,
+     including whether GCC extensions are enabled or not;
+     see @(tsee c::version).
+     Currently we mainly support C17, with and without GCC extensions,
+     but we are starting to adding some support for C23 as well.")
+   (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
      and that there are no padding bits
@@ -79,7 +85,8 @@
     "We also need a flag saying whether GCC extensions are enabled or not.
      This could eventually evolve into a rich set of C versions,
      similar to the options supported by compilers like GCC."))
-  ((short-bytes pos
+  ((version c::version)
+   (short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
                                  (<= long-bytes llong-bytes)
@@ -119,8 +126,7 @@
                                  (<= 8 llong-bytes))
                             llong-bytes
                           8))
-   (plain-char-signedp bool)
-   (gcc bool))
+   (plain-char-signedp bool))
   :require (and (<= short-bytes int-bytes)
                 (<= int-bytes long-bytes)
                 (<= long-bytes llong-bytes)
@@ -178,9 +184,7 @@
                                                   llong-format
                                                   bool-format)))
     (c::make-ienv
-     :version (if ienv.gcc
-                  (c::version-c17+gcc)
-                (c::version-c17))
+     :version ienv.version
      :char+short+int+long+llong+bool-format
      char+short+int+long+llong+bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
@@ -219,12 +223,12 @@
      but we set all the byte sizes to their minima,
      and the plain @('char') flag to @('nil') (i.e. unsigned);
      we also disable GCC extensions."))
-  (make-ienv :short-bytes 2
+  (make-ienv :version (c::version-c17)
+             :short-bytes 2
              :int-bytes 2
              :long-bytes 4
              :llong-bytes 8
-             :plain-char-signedp nil
-             :gcc nil))
+             :plain-char-signedp nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,3 +801,11 @@
     :enable (c::ienv-sllong-rangep
              ienv->sllong-max-correct
              ienv->sllong-min-correct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->gcc ((ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Flag saying whether GCC extensions are enabled or not."
+  (c::version-gccp (ienv->version ienv))
+  :hooks (:fix))
