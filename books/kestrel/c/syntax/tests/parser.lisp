@@ -600,6 +600,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-type-name
+
+(test-parse
+ parse-type-name
+ "_Bool"
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse ; C23
+ parse-type-name
+ "bool"
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-declarator-or-abstract-declarator
 
 (test-parse

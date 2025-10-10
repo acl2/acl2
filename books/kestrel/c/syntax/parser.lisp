@@ -428,7 +428,11 @@
      @('_Float128'),
      @('_Float128x'),
      @('__builtin_va_list'), and
-     @('__auto_type')."))
+     @('__auto_type').")
+   (xdoc::p
+    "We also temporarily include @('bool') as a synonym of @('_Bool').
+     We plan to parameterize this and other functions
+     over the specific version of C, including choice of GCC extensions."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -440,6 +444,7 @@
       (token-keywordp token? "__signed")
       (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
+      (token-keywordp token? "bool") ; C23
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
@@ -482,6 +487,7 @@
         ((token-keywordp token "__signed__")
          (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
+        ((token-keywordp token "bool") (type-spec-bool)) ; C23
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
@@ -3731,7 +3737,12 @@
      (xdoc::p
       "If the token is none of the above,
        including the token being absent,
-       it is an error."))
+       it is an error.")
+     (xdoc::p
+      "We temporarily allow @('true') and @('false')
+       as synonyms of the expressions (constants) @('1') and @('0').
+       We plan to parameterize this and other functions
+       over the specific C version, including choice of GCC extensions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond

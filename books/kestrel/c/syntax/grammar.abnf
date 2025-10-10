@@ -15,6 +15,11 @@
 ; but is meant for use by tools that manipulate C code.
 ; See :doc c$::syntax-for-tools for more information.
 
+; We also include some constructs in [C23],
+; as well as some GCC extensions.
+; We plan to make this grammar more modular,
+; to more clearly specify what is and is not in each C version.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Notation
@@ -449,7 +454,11 @@ preprocessing-token = header-name
 
 ; Keywords [C17:A.1.2] [C17:6.4.1]
 
+; We include a keyword in [C23], as a preliminary approach.
+; We plan to modularize this grammar according to C versions.
+
 keyword = %s"auto"
+        / %s"bool" ; C23
         / %s"break"
         / %s"case"
         / %s"char"
@@ -1197,6 +1206,9 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; Declarations [C17:A.2.2]
 
+; As a temporary C23 extension, we include 'bool' as a synonym of '_Bool'.
+; We plan to modularize this grammar according to C versions.
+
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a (member) structure declaration
 ; and at the start of a (non-static-assertion) declaration.
@@ -1342,6 +1354,7 @@ type-specifier = %s"void"
                / %s"double"
                / signed-keyword
                / %s"unsigned"
+               / %s"bool" ; C23
                / %s"_Bool"
                / %s"_Complex"
                / atomic-type-specifier
