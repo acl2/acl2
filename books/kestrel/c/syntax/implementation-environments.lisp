@@ -156,7 +156,9 @@
      consisting of increasing bit values,
      ended by the sign bit for signed integers.
      The exact choice of bit layout does not matter,
-     since the main purpose of the mapping is to exhibit a correspondence."))
+     since the main purpose of the mapping is to exhibit a correspondence.")
+   (xdoc::p
+    "For now we map to the C17 version."))
   (b* (((ienv ienv) ienv)
        (uchar-format (c::uchar-format-8))
        (schar-format (c::schar-format-8tcnt))
@@ -176,8 +178,11 @@
                                                   llong-format
                                                   bool-format)))
     (c::make-ienv
-     :char+short+int+long+llong+bool-format char+short+int+long+llong+bool-format
-     :gcc ienv.gcc))
+     :version (if ienv.gcc
+                  (c::version-c17+gcc)
+                (c::version-c17))
+     :char+short+int+long+llong+bool-format
+     char+short+int+long+llong+bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
   :hooks (:fix)
 
@@ -187,7 +192,7 @@
       (c::char+short+int+long+llong+bool-format
        '((c::size . 8))
        '((c::signed :twos-complement) (c::trap))
-       (c::char-format (ienv->plain-char-signedp ienv))
+       char-format
        (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
        (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
        (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
