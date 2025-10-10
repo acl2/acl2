@@ -1350,7 +1350,8 @@
          ((mv new-members (gout gout-members))
           (simpadd0-struct-declon-list struni-spec.members gin))
          (gin (gin-update gin gout-members)))
-      (mv (make-struni-spec :name? struni-spec.name?
+      (mv (make-struni-spec :attribs struni-spec.attribs
+                            :name? struni-spec.name?
                             :members new-members)
           (gout-no-thm gin)))
     :measure (struni-spec-count struni-spec))

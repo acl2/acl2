@@ -3091,7 +3091,9 @@
                                    same-table)
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
-                         (retok (type-spec-struct-empty tyspec.name?)
+                         (retok (make-type-spec-struct-empty
+                                 :attribs tyspec.attribs
+                                 :name? tyspec.name?)
                                 (type-struct tyspec.name?)
                                 nil
                                 nil
@@ -4871,7 +4873,8 @@
                    (struni-spec-fix struni-spec)))
          ((erp new-members types table)
           (valid-struct-declon-list struni-spec.members nil table ienv)))
-      (retok (make-struni-spec :name? struni-spec.name?
+      (retok (make-struni-spec :attribs struni-spec.attribs
+                               :name? struni-spec.name?
                                :members new-members)
              types
              table))

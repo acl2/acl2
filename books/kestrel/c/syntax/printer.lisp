@@ -2512,6 +2512,12 @@
      :float128x (print-astring "_Float128x" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
+                        (pstate (if (consp tyspec.attribs)
+                                    (b* ((pstate (print-astring " " pstate))
+                                         (pstate (print-attrib-spec-list
+                                                  tyspec.attribs pstate)))
+                                      pstate)
+                                  pstate))
                         (pstate (if tyspec.name?
                                     (b* ((pstate (print-astring " " pstate))
                                          (pstate (print-ident tyspec.name?
@@ -3221,6 +3227,12 @@
        e.g. when it is a lone top-level construct,
        we should print it on multiple lines."))
     (b* (((struni-spec struni-spec) struni-spec)
+         (pstate (if (consp struni-spec.attribs)
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-attrib-spec-list struni-spec.attribs
+                                                          pstate)))
+                       pstate)
+                   pstate))
          ((unless (or (ident-option-case struni-spec.name? :some)
                       struni-spec.members))
           (raise "Misusage error: empty structure or union specifier.")
