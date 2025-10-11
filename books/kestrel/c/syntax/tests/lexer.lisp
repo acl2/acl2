@@ -21,19 +21,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs gcc cond)
+(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
-    (b* ((parstate (init-parstate (if (stringp ,input)
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  ,gcc
+                                  version
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -49,17 +53,21 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs gcc)
+(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   `(assert!-stobj
-    (b* ((parstate (init-parstate (if (stringp ,input)
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  ,gcc
+                                  version
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))

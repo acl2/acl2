@@ -571,7 +571,7 @@
                                  :preprocessor preprocessor))
                             (input-files-read-files files path state)))
        ;; Parsing is always required.
-       ((erp tunits) (parse-fileset files (ienv->gcc ienv) keep-going))
+       ((erp tunits) (parse-fileset files (ienv->version ienv) keep-going))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))

@@ -20,16 +20,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs gcc cond)
+(defmacro test-parse (fn input &key pos more-inputs std gcc cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
   `(assert!-stobj
-    (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -44,14 +48,18 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs gcc)
+(defmacro test-parse-fail (fn input &key pos more-inputs std gcc)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   `(assert!-stobj
-    (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)

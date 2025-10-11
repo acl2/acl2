@@ -1053,7 +1053,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (gcc booleanp) parstate)
+(define init-parstate ((data byte-listp) (version c::versionp) parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
@@ -1083,7 +1083,6 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
        (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
@@ -1106,7 +1105,7 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil gcc parstate))
+    (equal (parsize (init-parstate nil version parstate))
            0)
     :enable init-parstate))
 
