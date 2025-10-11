@@ -51,16 +51,17 @@
                   (equal left (expr-binary->arg1 expr))
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
-                  (equal val+compst1
+                  (equal eval+compst1
                          (exec-expr right compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val)
+                  (equal eval (mv-nth 0 eval+compst1))
+                  (equal compst1 (mv-nth 1 eval+compst1))
+                  (expr-valuep eval)
+                  (equal val (expr-value->value eval))
                   (valuep (read-var (expr-ident->get left) compst1))
                   (equal compst2 (write-var (expr-ident->get left) val compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
-                    (mv val compst2)))
+                    (mv (expr-value val nil) compst2)))
     :enable (exec-expr
              exec-expr-pure
              exec-ident
@@ -76,18 +77,19 @@
                   (equal left (expr-binary->arg1 expr))
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
-                  (equal val+compst1
+                  (equal eval+compst1
                          (exec-expr right compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val)
+                  (equal eval (mv-nth 0 eval+compst1))
+                  (equal compst1 (mv-nth 1 eval+compst1))
+                  (expr-valuep eval)
+                  (equal val (expr-value->value eval))
                   (equal objdes
                          (objdesign-of-var (expr-ident->get left) compst1))
                   objdes
                   (equal compst2 (write-object objdes val compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
-                    (mv val compst2)))
+                    (mv (expr-value val nil) compst2)))
     :enable (exec-expr
              exec-expr-pure
              exec-ident
@@ -154,7 +156,7 @@
                                       compst))
                  (compustatep compst1))
             (equal (exec-expr expr compst fenv limit)
-                   (mv val compst1))))
+                   (mv (expr-value val nil) compst1))))
          (formula-mod-proofs
           `(implies
             (and (syntaxp (quotep expr))
@@ -186,7 +188,7 @@
                                       compst))
                  (compustatep compst1))
             (equal (exec-expr expr compst fenv limit)
-                   (mv val compst1))))
+                   (mv (expr-value val nil) compst1))))
          (events `((defruled ,name
                      ,formula
                      :expand ((exec-expr-pure (expr-binary->arg1 expr) compst)
@@ -331,7 +333,7 @@
                                       compst))
                  (compustatep compst1))
             (equal (exec-expr expr compst fenv limit)
-                   (mv val compst1))))
+                   (mv (expr-value val nil) compst1))))
          (event
           `(defruled ,name
              ,formula
@@ -407,7 +409,7 @@
                                       compst))
                  (compustatep compst1))
             (equal (exec-expr expr compst fenv limit)
-                   (mv val compst1))))
+                   (mv (expr-value val nil) compst1))))
          (event-mod-prf
           `(defruled ,name-mod-prf
              ,formula-mod-prf

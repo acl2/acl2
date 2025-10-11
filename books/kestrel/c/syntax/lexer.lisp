@@ -146,7 +146,9 @@
      because @(tsee nats=>string) has that as guard
      (more precisely, lists of that).
      If the ASCII string is a keyword, we return a keyword token.
-     Otherwise, we return an identifier token."))
+     Otherwise, we return an identifier token.")
+   (xdoc::p
+    "We temporarily allow the C23 keyword @('bool')"))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp rest-chars last-pos parstate)
         (lex-identifier/keyword-loop first-pos parstate))
@@ -154,6 +156,7 @@
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
     (if (or (member-equal string c::*keywords*)
+            (equal string "bool") ; C23
             (and (parstate->gcc parstate)
                  (member-equal string *gcc-keywords*)))
         (retok (lexeme-token (token-keyword string)) span parstate)

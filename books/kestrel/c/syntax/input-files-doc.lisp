@@ -60,6 +60,7 @@
      "             :process           ...  ; default :validate"
      "             :const             ...  ; required, no default"
      "             :keep-going        ...  ; default nil"
+     "             :std               ...  ; default 17"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -261,6 +262,15 @@
        against the dropped files."))
 
     (xdoc::desc
+     "@(':std') &mdash; default 17"
+     (xdoc::p
+      "Either 17 or 23 saying which C standard should be used,
+       namely C17 or C23.")
+     (xdoc::p
+      "Currently support for C23 is very limited,
+       but it is being extended."))
+
+    (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
      (xdoc::p
       "Boolean flag saying whether certain GCC extensions
@@ -309,6 +319,7 @@
 
     (xdoc::p
      "Together, the inputs
+      @(':std'),
       @(':gcc'),
       @(':short-bytes'),
       @(':int-bytes'),
