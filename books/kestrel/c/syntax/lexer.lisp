@@ -11,8 +11,9 @@
 (in-package "C$")
 
 (include-book "reader")
-(include-book "keywords")
 (include-book "abstract-syntax-irrelevants")
+
+(include-book "../language/keywords")
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
@@ -155,10 +156,10 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (or (member-equal string c::*keywords*)
+    (if (or (member-equal string c::*keywords-c17*)
             (equal string "bool") ; C23
             (and (parstate->gcc parstate)
-                 (member-equal string *gcc-keywords*)))
+                 (member-equal string c::*keywords-gcc-c17*)))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
