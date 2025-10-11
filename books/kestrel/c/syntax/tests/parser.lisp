@@ -328,6 +328,32 @@
  "(x->y >= (f()) && x->y < (g()))"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "true"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "true"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator

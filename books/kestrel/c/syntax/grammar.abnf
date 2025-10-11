@@ -454,7 +454,7 @@ preprocessing-token = header-name
 
 ; Keywords [C17:A.1.2] [C17:6.4.1]
 
-; We include a keyword in [C23], as a preliminary approach.
+; We include three keywords in [C23], as a preliminary approach.
 ; We plan to modularize this grammar according to C versions.
 
 keyword = %s"auto"
@@ -470,6 +470,7 @@ keyword = %s"auto"
         / %s"else"
         / %s"enum"
         / %s"extern"
+        / %s"false" ; C23
         / %s"float"
         / %s"for"
         / %s"goto"
@@ -486,6 +487,7 @@ keyword = %s"auto"
         / %s"static"
         / %s"struct"
         / %s"switch"
+        / %s"true" ; C23
         / %s"typedef"
         / %s"union"
         / %s"unsigned"
@@ -887,6 +889,10 @@ lexeme = token
 
 ; Expressions [C17:A.2.1]
 
+; As a temporary C23 extension,
+; we allow 'true' and 'false' as synonyms of '0' and '1'.
+; We plan to modularize this grammar according to C versions.
+
 ; As a GCC extension, we include statement expressions,
 ; i.e. expressions that consists of a parenthesized compound statement
 ; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html).
@@ -963,6 +969,8 @@ primary-expression = identifier
                    / offsetof-call
                    / va-arg-call
                    / %s"__extension__" primary-expression
+                   / %s"true" ; C23
+                   / %s"false" ; C23
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
