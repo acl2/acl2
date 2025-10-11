@@ -82,15 +82,16 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
        (cond (cdr (assoc-eq :cond options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (ienv (make-ienv :version version
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
             ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
@@ -113,15 +114,16 @@
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (ienv (make-ienv :version version
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc nil))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
             ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))

@@ -79,9 +79,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-init-parstate (list gcc)
+(defmacro test-init-parstate (list std gcc)
   `(assert!-stobj
-    (b* ((parstate (init-parstate ,list ,gcc parstate)))
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate ,list version parstate)))
       (mv (and (equal (parstate->bytes parstate) ,list)
                (equal (parstate->position parstate) (irr-position))
                (equal (parstate->chars-length parstate) (len ,list))
@@ -94,44 +97,44 @@
           parstate))
     parstate))
 
-(test-init-parstate nil nil)
+(test-init-parstate nil 17 nil)
 
-(test-init-parstate nil t)
+(test-init-parstate nil 17 t)
 
-(test-init-parstate (list 1) nil)
+(test-init-parstate (list 1) 17 nil)
 
-(test-init-parstate (list 1) t)
+(test-init-parstate (list 1) 17 t)
 
-(test-init-parstate (list 1 2 3) nil)
+(test-init-parstate (list 1 2 3) 17 nil)
 
-(test-init-parstate (list 1 2 3) t)
+(test-init-parstate (list 1 2 3) 17 t)
 
-(test-init-parstate (acl2::string=>nats "abc") nil)
+(test-init-parstate (acl2::string=>nats "abc") 17 nil)
 
-(test-init-parstate (acl2::string=>nats "abc") t)
+(test-init-parstate (acl2::string=>nats "abc") 17 t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert!-stobj
- (b* ((parstate (init-parstate nil nil parstate)))
+ (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
    (mv (equal (parsize parstate) 0)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate nil t parstate)))
+ (b* ((parstate (init-parstate nil (c::version-c17+gcc) parstate)))
    (mv (equal (parsize parstate) 0)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate (list 72 99 21) nil parstate)))
+ (b* ((parstate (init-parstate (list 72 99 21) (c::version-c17) parstate)))
    (mv (equal (parsize parstate) 3)
        parstate))
  parstate)
 
 (assert!-stobj
- (b* ((parstate (init-parstate (list 72 99 21) t parstate)))
+ (b* ((parstate (init-parstate (list 72 99 21) (c::version-c17+gcc) parstate)))
    (mv (equal (parsize parstate) 3)
        parstate))
  parstate)

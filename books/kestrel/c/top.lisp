@@ -65,7 +65,7 @@
      "."))
    (xdoc::p
     "In the documentation of this library,
-     these source are referenced as `[C23]', `[C17]', and `[GCC];
+     these source are referenced as `[C23]', `[C17]', `[GCCM]', and `[GCCL]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
@@ -74,14 +74,14 @@
      e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
      as nouns or parenthetically.
-     In the case of [GCC], we also give URL links,
-     which, given their form, may be useful to locate
+     In the case of [GCCM] and [GCCL], we also give URL links,
+     which, given the characters that form them, may be useful to locate
      documentation that has moved or otherwise changed,
-     given that [GCC] is a live document;
+     given that [GCCM] and [GCCL] are live documents;
      an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
-                 "[GCC:6]")
-    ", which currently refers to Section 6,
+                 "[GCCM:6]")
+    ", which currently refers to Section 6 of [GCCM],
      titled `Extensions to the C Language Family',
      and whose URL includes @('C-Extensions.html').")
    (xdoc::p

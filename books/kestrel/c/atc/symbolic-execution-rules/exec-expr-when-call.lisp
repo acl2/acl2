@@ -24,23 +24,49 @@
 (defsection atc-exec-expr-when-call-rules
   :short "Rules for executing function call expressions."
 
-  (defruled exec-expr-when-call-open
+  (defruled exec-expr-when-call-value-open
     (implies (and (not (zp limit))
                   (equal (expr-kind expr) :call)
                   (equal vals
                          (exec-expr-pure-list (expr-call->args expr) compst))
-                  (value-listp vals))
+                  (value-listp vals)
+                  (equal val+compst1
+                         (exec-fun (expr-call->fun expr)
+                                   vals
+                                   compst
+                                   fenv
+                                   (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val))
              (equal (exec-expr expr compst fenv limit)
-                    (exec-fun (expr-call->fun expr)
-                              vals
-                              compst
-                              fenv
-                              (1- limit))))
+                    (mv (expr-value val nil) compst1)))
+    :enable (exec-expr
+             expr-purep))
+
+  (defruled exec-expr-when-call-novalue-open
+    (implies (and (not (zp limit))
+                  (equal (expr-kind expr) :call)
+                  (equal vals
+                         (exec-expr-pure-list (expr-call->args expr) compst))
+                  (value-listp vals)
+                  (equal val+compst1
+                         (exec-fun (expr-call->fun expr)
+                                   vals
+                                   compst
+                                   fenv
+                                   (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (not val))
+             (equal (exec-expr expr compst fenv limit)
+                    (mv nil compst1)))
     :enable (exec-expr
              expr-purep))
 
   (defval *atc-exec-expr-when-call-rules*
-    '(exec-expr-when-call-open
+    '(exec-expr-when-call-value-open
+      exec-expr-when-call-novalue-open
       (:e expr-kind)
       (:e expr-call->fun)
       (:e expr-call->args))))

@@ -1727,7 +1727,11 @@
                                ,@extobj-recognizers
                                ,@correct-thms
                                ,@measure-thms
-                               ,fn-fun-env-thm))
+                               ,fn-fun-env-thm
+                               return-type-of-stmt-value-none
+                               expr-value-optionp-when-expr-valuep
+                               (:e c::expr-value-optionp)
+                               expr-valuep-of-expr-value))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
                                  ,@(alist-to-doublets instantiation))
@@ -1758,7 +1762,11 @@
                           ,@extobj-recognizers
                           ,@correct-thms
                           ,@measure-thms
-                          ,fn-fun-env-thm))))))
+                          ,fn-fun-env-thm
+                          return-type-of-stmt-value-none
+                          expr-value-optionp-when-expr-valuep
+                          (:e c::expr-value-optionp)
+                          expr-valuep-of-expr-value))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -4252,7 +4260,8 @@
                                ,@extobj-recognizers
                                ,@result-thms
                                ,@correct-thms
-                               ,@measure-thms))
+                               ,@measure-thms
+                               expr-value-optionp-when-expr-valuep))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))

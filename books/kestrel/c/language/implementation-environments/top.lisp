@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "versions")
 (include-book "uchar-formats")
 (include-book "signed-formats")
 (include-book "schar-formats")
@@ -78,12 +79,12 @@
     "For now this only contains the following information:")
    (xdoc::ul
     (xdoc::li
+     "The version of C.")
+    (xdoc::li
      "The formats of the three character types.")
     (xdoc::li
      "The formats of the standard signed integer types
-      and their unsigned counterparts.")
-    (xdoc::li
-     "A flag saying whether the GCC extensions are enabled or not."))
+      and their unsigned counterparts."))
    (xdoc::p
     "We plan to add more information.")
    (xdoc::p
@@ -91,16 +92,14 @@
      the ``intermediate'' fixtype @(tsee char+short+int+long+llong+bool-format)
      is the same as explained in @(tsee integer-format)
      about the ``intermediate'' fixtype used there.
-     We may eliminate this at some point.")
-   (xdoc::p
-    "The GCC flag could evolve into a rich set of C versions."))
-  ((char+short+int+long+llong+bool-format
+     We may eliminate this at some point."))
+  ((version versionp)
+   (char+short+int+long+llong+bool-format
     char+short+int+long+llong+bool-format
     :reqfix (if (char+short+int+long+llong+bool-format-wfp
                  char+short+int+long+llong+bool-format)
                 char+short+int+long+llong+bool-format
-              (char8+short16+int16+long32+llong64+bool0-tcnt)))
-   (gcc bool))
+              (char8+short16+int16+long32+llong64+bool0-tcnt))))
   :require (char+short+int+long+llong+bool-format-wfp
             char+short+int+long+llong+bool-format)
   :pred ienvp)
