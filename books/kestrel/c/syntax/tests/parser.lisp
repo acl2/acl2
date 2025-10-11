@@ -618,9 +618,20 @@
             (equal (tyname->declor? ast)
                    nil)))
 
-(test-parse ; C23
+(test-parse
  parse-type-name
  "bool"
+ :std 17
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-typedef (ident "bool")))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "bool"
+ :std 23
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec (type-spec-bool))))
             (equal (tyname->declor? ast)
