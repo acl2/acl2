@@ -76,6 +76,7 @@
         :preprocess-args
         :process
         :const
+        :std
         :gcc
         :short-bytes
         :int-bytes
@@ -219,15 +220,21 @@
     (implies (not (acl2::string-stringlist-mapp preprocess-extra-args))
              (string-listp preprocess-extra-args))
     :hints
-    (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
-             :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args))))
+    (("Goal"
+      :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
+      :in-theory
+      (disable
+       return-type-of-input-files-process-preprocess-args.preprocess-extra-args))))
 
   (defret string-stringlist-mapp-of-input-files-process-preprocess-args.preprocess-extra-args
     (implies (not (string-listp preprocess-extra-args))
              (acl2::string-stringlist-mapp preprocess-extra-args))
     :hints
-    (("Goal" :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
-             :in-theory (disable return-type-of-input-files-process-preprocess-args.preprocess-extra-args)))))
+    (("Goal"
+      :use return-type-of-input-files-process-preprocess-args.preprocess-extra-args
+      :in-theory
+      (disable
+       return-type-of-input-files-process-preprocess-args.preprocess-extra-args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +297,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-ienv (gcc
+(define input-files-process-ienv (std
+                                  gcc
                                   short-bytes
                                   int-bytes
                                   long-bytes
@@ -298,6 +306,7 @@
                                   plain-char-signed)
   :returns (mv erp (ienv ienvp))
   :short "Process the
+          @(':std'),
           @(':gcc'),
           @(':short-bytes'),
           @(':int-bytes'),
@@ -309,10 +318,13 @@
   (xdoc::topstring
    (xdoc::p
     "These are the inputs that define the implementation environment,
-     which we return if the processing of these inputs is successful.")
-   (xdoc::p
-    "For now we choose the C17 standard, with or without GCC extensions."))
+     which we return if the processing of these inputs is successful."))
   (b* (((reterr) (ienv-default))
+       ;; Process :STD input.
+       ((unless (member-equal std '(17 23)))
+        (reterr (msg "The :STD input must be 17 or 23, ~
+                      but it is ~x0 instead."
+                     std)))
        ;; Process :GCC input.
        ((unless (booleanp gcc))
         (reterr (msg "The :GCC input must be a boolean, ~
@@ -361,7 +373,15 @@
                       but it is ~x0 instead."
                      plain-char-signed)))
        ;; Build the implementation environment.
-       (ienv (make-ienv :version (if gcc (c::version-c17+gcc) (c::version-c17))
+       (version (cond ((= std 17)
+                       (if gcc
+                           (c::version-c17+gcc)
+                         (c::version-c17)))
+                      ((= std 23)
+                       (if gcc
+                           (c::version-c23+gcc)
+                         (c::version-c23)))))
+       (ienv (make-ienv :version version
                         :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
@@ -381,6 +401,7 @@
                                     (const-presentp booleanp)
                                     const
                                     keep-going
+                                    std
                                     gcc
                                     short-bytes
                                     int-bytes
@@ -425,7 +446,8 @@
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
        ((erp keep-going) (input-files-process-keep-going keep-going))
-       ((erp ienv) (input-files-process-ienv gcc
+       ((erp ienv) (input-files-process-ienv std
+                                             gcc
                                              short-bytes
                                              int-bytes
                                              long-bytes
@@ -448,15 +470,21 @@
     (implies (not (acl2::string-stringlist-mapp preprocess-extra-args))
              (string-listp preprocess-extra-args))
     :hints
-    (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
-             :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
+    (("Goal"
+      :use return-type-of-input-files-process-inputs.preprocess-extra-args
+      :in-theory
+      (disable
+       return-type-of-input-files-process-inputs.preprocess-extra-args))))
 
   (defret string-stringlist-mapp-of-input-files-process-inputs.preprocess-extra-args
     (implies (not (string-listp preprocess-extra-args))
              (acl2::string-stringlist-mapp preprocess-extra-args))
     :hints
-    (("Goal" :use return-type-of-input-files-process-inputs.preprocess-extra-args
-             :in-theory (disable return-type-of-input-files-process-inputs.preprocess-extra-args))))
+    (("Goal"
+      :use return-type-of-input-files-process-inputs.preprocess-extra-args
+      :in-theory
+      (disable
+       return-type-of-input-files-process-inputs.preprocess-extra-args))))
 
   (defret input-files-process-inputs.new-process
     (implies (not erp)
@@ -593,6 +621,7 @@
                                                    (const-presentp booleanp)
                                                    const
                                                    keep-going
+                                                   std
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -633,6 +662,7 @@
                                     const-presentp
                                     const
                                     keep-going
+                                    std
                                     gcc
                                     short-bytes
                                     int-bytes
@@ -663,9 +693,7 @@
     :hyp (or (equal process :disambiguate)
              (equal process :validate))
     :hints
-    (("Goal"
-      :in-theory
-      (enable input-files-process-inputs.new-process)))))
+    (("Goal" :in-theory (enable input-files-process-inputs.new-process)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -679,6 +707,7 @@
                         (const-presentp booleanp)
                         const
                         keep-going
+                        std
                         gcc
                         short-bytes
                         int-bytes
@@ -705,6 +734,7 @@
                                                    const-presentp
                                                    const
                                                    keep-going
+                                                   std
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -727,6 +757,7 @@
                               (process ':validate)
                               (const 'nil const-presentp)
                               (keep-going 'nil)
+                              (std '17)
                               (gcc 'nil)
                               (short-bytes '2)
                               (int-bytes '4)
@@ -744,6 +775,7 @@
                        ',const-presentp
                        ',const
                        ',keep-going
+                       ',std
                        ',gcc
                        ',short-bytes
                        ',int-bytes
@@ -771,6 +803,7 @@
     "                  :preprocess-args   ...  ; no default"
     "                  :process           ...  ; default :validate"
     "                  :keep-going        ...  ; default nil"
+    "                  :std               ...  ; default 17"
     "                  :gcc               ...  ; default nil"
     "                  :short-bytes       ...  ; default 2"
     "                  :int-bytes         ...  ; default 4"
@@ -818,6 +851,7 @@
                              (const-presentp booleanp)
                              const
                              keep-going
+                             std
                              gcc
                              short-bytes
                              int-bytes
@@ -845,6 +879,7 @@
                                                    const-presentp
                                                    const
                                                    keep-going
+                                                   std
                                                    gcc
                                                    short-bytes
                                                    int-bytes
@@ -874,6 +909,7 @@
                                    (process ':validate)
                                    (const 'nil const-presentp)
                                    (keep-going 'nil)
+                                   (std '17)
                                    (gcc 'nil)
                                    (short-bytes '2)
                                    (int-bytes '4)
@@ -890,6 +926,7 @@
                           ',const-presentp
                           ',const
                           ',keep-going
+                          ',std
                           ',gcc
                           ',short-bytes
                           ',int-bytes
