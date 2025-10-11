@@ -20,7 +20,7 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-; (depends-on "grammar.abnf")
+; (depends-on "grammar/all.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,7 +30,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See the documentation comments in @('grammar.abnf')."))
+    "See the documentation comments in @('grammar/all.abnf')."))
   :order-subtopics t
   :default-parent t)
 
@@ -42,14 +42,14 @@
   (xdoc::topstring
    (xdoc::p
     "We use our verified grammar parser and our abstractor
-     to turn the grammar in the @('grammar.abnf') file
+     to turn the grammar in the @('grammar/all.abnf') file
      into an ACL2 representation.")
    (xdoc::p
     "We use @(tsee acl2::add-const-to-untranslate-preprocess)
      to keep this constant unexpanded in output.")
    (xdoc::p
     "We show that the grammar is well-formed, closed, and Unicode."))
-  :file "grammar.abnf"
+  :file "grammar/all.abnf"
   :untranslate t
   :well-formed t
   :closed t
