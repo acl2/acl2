@@ -809,3 +809,17 @@
   :short "Flag saying whether GCC extensions are enabled or not."
   (c::version-gccp (ienv->version ienv))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->std ((ienv ienvp))
+  :returns (number posp
+                   :hints (("Goal" :in-theory (enable c::version-std-c17p
+                                                      c::version-std-c23p))))
+  :short "Numeric version of the C standard (regardless of GCC extensions)."
+  (b* (((ienv ienv) ienv))
+    (cond ((c::version-std-c17p ienv.version) 17)
+          ((c::version-std-c23p ienv.version) 23)))
+  :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
+                                           c::version-std-c23p)))
+  :hooks (:fix))
