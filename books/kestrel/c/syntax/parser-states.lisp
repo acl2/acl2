@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "../language/implementation-environments/versions")
+
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -533,15 +535,10 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "We include a boolean flag saying whether
-     certain GCC extensions should be accepted or not.
-     These GCC extensions are limited to the ones
-     currently captured in our grammar and abstract syntax.
+    "We include the C version.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
-     to avoid passing an additional parameter.
-     This parser state component could potentially evolve into
-     a richer set of options for different versions and dialects of C.")
+     to avoid passing an additional parameter.")
    (xdoc::p
     "For speed, we cache the value returned by
      the function @(tsee parsize) defined later.
@@ -637,8 +634,8 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (gcc :type (satisfies booleanp)
-           :initially nil)
+      (version :type (satisfies c::versionp)
+               :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
       :renaming (;; field recognizers:
@@ -650,7 +647,7 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (gccp raw-parstate->gcc-p)
+                 (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
@@ -663,7 +660,7 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (gcc raw-parstate->gcc)
+                 (version raw-parstate->version)
                  (size raw-parstate->size)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
@@ -676,7 +673,7 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-gcc raw-update-parstate->gcc)
+                 (update-version raw-update-parstate->version)
                  (update-size raw-update-parstate->size))))
 
   ;; fixer:
@@ -816,12 +813,12 @@
          :exec (raw-parstate->tokens-unread parstate))
     :hooks (:fix))
 
-  (define parstate->gcc (parstate)
-    :returns (gcc booleanp)
+  (define parstate->version (parstate)
+    :returns (version c::versionp)
     (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->gcc parstate)
-                  nil)
-         :exec (raw-parstate->gcc parstate))
+                    (raw-parstate->version parstate)
+                  (c::version-c23))
+         :exec (raw-parstate->version parstate))
     :hooks (:fix))
 
   (define parstate->size (parstate)
@@ -935,10 +932,10 @@
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :hooks (:fix))
 
-  (define update-parstate->gcc ((gcc booleanp) parstate)
+  (define update-parstate->version ((version c::versionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->gcc (bool-fix gcc) parstate))
+      (raw-update-parstate->version (c::version-fix version) parstate))
     :hooks (:fix))
 
   (define update-parstate->size ((size natp) parstate)
@@ -1048,6 +1045,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parstate->gcc ((parstate parstatep))
+  :returns (gcc booleanp)
+  :short "Flag saying whether GCC extensions are supported or not."
+  (c::version-gccp (parstate->version parstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-parstate ((data byte-listp) (gcc booleanp) parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
@@ -1056,7 +1061,7 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a flag saying whether GCC extensions should be accepted or not,
+     and a C version,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1078,7 +1083,8 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->gcc gcc parstate))
+       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
   :hooks (:fix))
@@ -1116,8 +1122,7 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (gcc bool))
-  :prepwork ((local (in-theory (enable nfix)))))
+   (version c::version)))
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
 ; To construct the lists of read and unread characters,
@@ -1134,7 +1139,7 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :gcc (parstate->gcc parstate))
+   :version (parstate->version parstate))
 
   :prepwork
 
