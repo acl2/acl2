@@ -5768,14 +5768,14 @@
     ;acl2::<-of-15-and-*-of-4
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
     acl2::not-bvlt-of-max-arg2 ; size is symbolic
-    acl2::<-of-*-when-constant-integers
+    ;acl2::<-of-*-when-constant-integers
     ;;separate-when-separate-2 ; todo: drop? but that caused problems
     acl2::collect-constants-over-<-2
     acl2::commutativity-of-*-when-constant
-    acl2::<-of-*-of-constant-and-constant
+    ;acl2::<-of-*-of-constant-and-constant
     acl2::rationalp-when-integerp
     acl2::+-of-+-of---same
-    acl2::<-of-minus-and-constant ; ensure needed
+    ; acl2::<-of-minus-and-constant ; ensure needed
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
     ;;rflagsbits->af-of-myif
