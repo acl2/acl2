@@ -58,6 +58,7 @@
                 nats=>string
                 packn-pos
                 pos
+                pos-fix
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
