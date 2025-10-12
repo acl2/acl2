@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "../language/implementation-environments/versions")
+
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -151,36 +153,6 @@
              token)
     :rule-classes :forward-chaining))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define token-to-msg ((token token-optionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a token as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in parser error messages,
-     so it does not have to provide a complete description of the token
-     for all possible tokens.
-     We only give a complete description of keyword and punctuator tokens,
-     because those are the kinds that may be a mismatch
-     (e.g. expecing a @(':'), found a @(';') instead).
-     For the other kinds, we give a more generic description.")
-   (xdoc::p
-    "It is convenient to treat uniformly tokens and @('nil'),
-     which happens when the end of the file is reached.
-     This is why this function takes an optional token as input."))
-  (if token
-      (token-case
-       token
-       :keyword (msg "the keyword ~x0" token.unwrap)
-       :ident "an identifier"
-       :const "a constant"
-       :string "a string literal"
-       :punctuator (msg "the punctuator ~x0" token.unwrap))
-    "end of file"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod position
@@ -242,18 +214,6 @@
    (xdoc::p
     "The column is reset to 0."))
   (make-position :line (+ (position->line pos) lines) :column 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-to-msg ((pos positionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a position as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented error messages."))
-  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,20 +286,6 @@
      from the start of the first span to the end of the second span."))
   (make-span :start (span->start span1)
              :end (span->end span2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-to-msg ((span spanp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a span as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented messages."))
-  (msg "[~@0 to ~@1]"
-       (position-to-msg (span->start span))
-       (position-to-msg (span->end span))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,15 +479,10 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "We include a boolean flag saying whether
-     certain GCC extensions should be accepted or not.
-     These GCC extensions are limited to the ones
-     currently captured in our grammar and abstract syntax.
+    "We include the C version.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
-     to avoid passing an additional parameter.
-     This parser state component could potentially evolve into
-     a richer set of options for different versions and dialects of C.")
+     to avoid passing an additional parameter.")
    (xdoc::p
     "For speed, we cache the value returned by
      the function @(tsee parsize) defined later.
@@ -637,8 +578,8 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (gcc :type (satisfies booleanp)
-           :initially nil)
+      (version :type (satisfies c::versionp)
+               :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
       :renaming (;; field recognizers:
@@ -650,7 +591,7 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (gccp raw-parstate->gcc-p)
+                 (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
@@ -663,7 +604,7 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (gcc raw-parstate->gcc)
+                 (version raw-parstate->version)
                  (size raw-parstate->size)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
@@ -676,7 +617,7 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-gcc raw-update-parstate->gcc)
+                 (update-version raw-update-parstate->version)
                  (update-size raw-update-parstate->size))))
 
   ;; fixer:
@@ -816,12 +757,12 @@
          :exec (raw-parstate->tokens-unread parstate))
     :hooks (:fix))
 
-  (define parstate->gcc (parstate)
-    :returns (gcc booleanp)
+  (define parstate->version (parstate)
+    :returns (version c::versionp)
     (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->gcc parstate)
-                  nil)
-         :exec (raw-parstate->gcc parstate))
+                    (raw-parstate->version parstate)
+                  (c::version-c23))
+         :exec (raw-parstate->version parstate))
     :hooks (:fix))
 
   (define parstate->size (parstate)
@@ -935,10 +876,10 @@
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :hooks (:fix))
 
-  (define update-parstate->gcc ((gcc booleanp) parstate)
+  (define update-parstate->version ((version c::versionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->gcc (bool-fix gcc) parstate))
+      (raw-update-parstate->version (c::version-fix version) parstate))
     :hooks (:fix))
 
   (define update-parstate->size ((size natp) parstate)
@@ -1048,7 +989,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (gcc booleanp) parstate)
+(define parstate->gcc ((parstate parstatep))
+  :returns (gcc booleanp)
+  :short "Flag saying whether GCC extensions are supported or not."
+  (c::version-gccp (parstate->version parstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-parstate ((data byte-listp) (version c::versionp) parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
@@ -1056,7 +1005,7 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a flag saying whether GCC extensions should be accepted or not,
+     and a C version,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1078,7 +1027,7 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->gcc gcc parstate))
+       (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
   :hooks (:fix))
@@ -1100,7 +1049,7 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil gcc parstate))
+    (equal (parsize (init-parstate nil version parstate))
            0)
     :enable init-parstate))
 
@@ -1116,8 +1065,7 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (gcc bool))
-  :prepwork ((local (in-theory (enable nfix)))))
+   (version c::version)))
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
 ; To construct the lists of read and unread characters,
@@ -1134,7 +1082,7 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :gcc (parstate->gcc parstate))
+   :version (parstate->version parstate))
 
   :prepwork
 
@@ -1189,39 +1137,3 @@
        (cons (parstate->token i parstate)
              (to-parstate$-tokens-unread (1- n) parstate)))
      :guard-hints (("Goal" :in-theory (enable natp zp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ reterr-msg (&key where expected found extra)
-  :short "Return an error consisting of a message
-          with information about what was expected and what was found where."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used by our lexing and parsing functions
-     to more concisely return more uniform error messages.")
-   (xdoc::p
-    "This macro assumes that a suitable local macro @('reterr') is in scope
-     (see "
-    (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
-    "), which is the case for our lexing and parsing functions.
-     This macro takes as inputs four terms,
-     which must evaluate to messages (i.e. values satisfying @(tsee msgp)).
-     Those are used to form a larger message,
-     in the manner that should be obvious from the body of this macro.
-     Note that the fourth term is optional,
-     in case we want to provide additional information.")
-   (xdoc::p
-    "For now we also include, at the end of the message,
-     an indication of the ACL2 function that caused the error.
-     This is useful as we are debugging the parser,
-     but we may remove it once the parser is more tested or even verified."))
-  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
-                 [from function ~x4]~%"
-                ,expected
-                ,where
-                ,found
-                ,(if extra
-                     `(msg " ~@0" ,extra)
-                   "")
-                __function__)))

@@ -15,14 +15,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key gcc cond)
+(defmacro test-dimb (input &key std gcc cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variable AST.
   `(assert-event
-    (b* (((mv erp1 ast) (parse-file (filepath "test")
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    ,gcc))
+                                    version))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))

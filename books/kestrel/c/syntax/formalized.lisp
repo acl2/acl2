@@ -881,7 +881,8 @@
     "The name must be present,
      and each structure declaration must be supported."))
   (b* (((struni-spec struni-spec) struni-spec))
-    (and struni-spec.name?
+    (and (endp struni-spec.attribs)
+         struni-spec.name?
          (ident-formalp struni-spec.name?)
          (struct-declon-list-formalp struni-spec.members)))
   :hooks (:fix))

@@ -35,8 +35,7 @@
                   (equal eval1 (apconvert-expr-value eval))
                   (expr-valuep eval1))
              (equal (exec-expr e compst fenv limit)
-                    (mv (expr-value->value eval1)
-                        compst)))
+                    (mv eval1 compst)))
     :expand (exec-expr e compst fenv limit)
     :enable (expr-purep
              binop-purep))

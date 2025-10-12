@@ -1031,6 +1031,9 @@
        (tyspec (decl-spec-typespec->spec declspec))
        ((when (type-spec-case tyspec :struct))
         (b* (((struni-spec struni-spec) (type-spec-struct->spec tyspec))
+             ((unless (endp struni-spec.attribs))
+              (reterr (msg "Unsupported attributes in structure specifier ~x0."
+                           struni-spec)))
              ((unless struni-spec.name?)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident struni-spec.name?))

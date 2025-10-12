@@ -29,11 +29,12 @@
                   (equal (initer-kind initer) :single)
                   (not (zp limit))
                   (equal expr (initer-single->get initer))
-                  (equal val+compst1
+                  (equal eval+compst1
                          (exec-expr expr compst fenv (1- limit)))
-                  (equal val (mv-nth 0 val+compst1))
-                  (equal compst1 (mv-nth 1 val+compst1))
-                  (valuep val))
+                  (equal eval (mv-nth 0 eval+compst1))
+                  (equal compst1 (mv-nth 1 eval+compst1))
+                  (expr-valuep eval)
+                  (equal val (expr-value->value eval)))
              (equal (exec-initer initer compst fenv limit)
                     (mv (init-value-single val) compst1)))
     :enable exec-initer)

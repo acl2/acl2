@@ -119,6 +119,7 @@
     boolif-of-not-same-arg2-alt ; harmless
     boolif-of-not-same-arg3-alt ; harmless
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
+    boolif-of-equal-and-t-and-not-equal-diff-constants
     boolif-when-quotep-and-not-booleanp-arg2
     boolif-when-quotep-and-not-booleanp-arg3
     ;; Rules about equal:

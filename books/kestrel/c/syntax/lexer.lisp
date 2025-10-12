@@ -11,8 +11,9 @@
 (in-package "C$")
 
 (include-book "reader")
-(include-book "keywords")
 (include-book "abstract-syntax-irrelevants")
+
+(include-book "../language/keywords")
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
@@ -122,10 +123,7 @@
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
      matches a keyword.
-     If GCC extensions are supported,
-     we check the grammatical identifier
-     against some additional keywords;
-     see the ABNF grammar rule for @('gcc-keyword').")
+     We use the C version to determine the keywords to be matched.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -153,9 +151,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (or (member-equal string c::*keywords*)
-            (and (parstate->gcc parstate)
-                 (member-equal string *gcc-keywords*)))
+    (if (member-equal string (c::keywords (parstate->version parstate)))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 

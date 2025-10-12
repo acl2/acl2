@@ -10,9 +10,8 @@
 
 (in-package "C$")
 
-(include-book "parser-states")
+(include-book "parser-messages")
 
-(include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
@@ -66,95 +65,6 @@
      It provides a layer upon which the @(see lexer) is built."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char-to-msg ((char nat-optionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp
-                                                   character-alistp))))
-  :short "Represent an optional character as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As mentioned in @(tsee parstate),
-     we represent characters as natural numbers,
-     meant to be Unicode code points (more precisely, Unicode scalar values),
-     including ASCII codes as a subset.
-     When an unexpected character is encountered during lexing,
-     we return user-oriented error messages
-     that include a description of the unexpected character.
-     This ACL2 function constructs that description.")
-   (xdoc::p
-    "We use @(tsee read-char) (defined later) to read characters.
-     That function recognizes three new-line delimiters:
-     line feed, carriage return, and carriage return followed by line feed.
-     That function turns all these three into just a line feed.
-     Thus, when this function is called to convert to a message
-     a character coming from @(tsee read-char),
-     that character has never code 13 (for carriage return),
-     and if it has code 10 (line feed)
-     it is not necessarily a line feed in the file,
-     but it could be a carriage return possibly followed by line feed.
-     For this reason, we treat the case of code 10 a bit differently,
-     and our @('*ascii-control-char-names*') table
-     has an internal-error-signaling entry for codes 10 and 13,
-     because we do not access that table for those two codes.")
-   (xdoc::p
-    "We also allow the character to be absent, i.e. to be @('nil').
-     This happens when we reach the end of the file:
-     attempting to read a character returns @('nil'),
-     instead of a natural number (see @(tsee read-char)).
-     For error messages, it is convenient to treat this case
-     similarly to the case of an actual character.
-     So, for @('nil'), this function returns a description of `end of file'."))
-  (cond ((not char) "end of file")
-        ((= char 10) (msg "the new-line character (LF, CR, or CR LF)"))
-        ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
-                          (nth char *ascii-control-char-names*) char))
-        ((= char 32) "the SP (space) character (ASCII code 32)")
-        ((and (<= 33 char) (<= char 126))
-         (msg "the ~s0 character (ASCII code ~x1)"
-              (str::implode (list (code-char char))) char))
-        ((= char 127) "the DEL (delete) character (ASCII code 127)")
-        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
-  :guard-hints (("Goal" :in-theory (enable character-listp
-                                           nat-optionp)))
-
-  :prepwork
-  ((defconst *ascii-control-char-names*
-     '("NUL"
-       "SOH"
-       "STX"
-       "ETX"
-       "EOT"
-       "ENQ"
-       "ACK"
-       "BEL"
-       "BS (backspace)"
-       "HT (horizontal tab)"
-       "<INTERNAL ERROR IF THIS SHOWS>"
-       "VT (vertical tab)"
-       "FF (form feed)"
-       "<INTERNAL ERROR IF THIS SHOWS>"
-       "SO"
-       "SI"
-       "DLE"
-       "DC1"
-       "DC2"
-       "DC3"
-       "DC4"
-       "NAK"
-       "SYN"
-       "ETB"
-       "CAN"
-       "EM"
-       "SUB"
-       "ESC"
-       "FS"
-       "GS"
-       "RS"
-       "US"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -11,7 +11,6 @@
 (in-package "C$")
 
 (include-book "code-ensembles")
-(include-book "keywords")
 
 (include-book "../language/portable-ascii-identifiers")
 
@@ -81,8 +80,8 @@
      to also exclude the GCC keywords."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x *keywords*))
-       (or (not gcc) (not (member-equal x *gcc-keywords*))))
+       (not (member-equal x c::*keywords-c17*))
+       (or (not gcc) (not (member-equal x c::*keywords-gcc-c17*))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

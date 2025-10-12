@@ -1651,7 +1651,8 @@
                                          (not (type-case type-to2 :function))
                                          (type-compatiblep type-to1 type-to2))))
                            (and (ienv->gcc ienv)
-                                (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                (expr-null-pointer-constp
+                                 (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1666,11 +1667,15 @@
                                       (let ((type-to1 (type-pointer->to type1))
                                             (type-to2 (type-pointer->to type2)))
                                         (or (and (type-case type-to1 :void)
-                                                 (not (type-case type-to2 :function)))
+                                                 (not (type-case type-to2
+                                                                 :function)))
                                             (and (type-case type-to2 :void)
-                                                 (not (type-case type-to1 :function))))))
-                                 (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
-                           (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                                 (not (type-case type-to1
+                                                                 :function))))))
+                                 (expr-null-pointer-constp
+                                  (expr-binary->arg2 expr) type2))
+                           (and (expr-null-pointer-constp
+                                 (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1700,10 +1705,15 @@
                                              (type-to2 (type-pointer->to type2)))
                                          (or (type-compatiblep type-to1 type-to2)
                                              (and (type-case type-to1 :void)
-                                                  (not (type-case type-to2 :function)))
+                                                  (not
+                                                   (type-case type-to2
+                                                              :function)))
                                              (and (type-case type-to2 :void)
-                                                  (not (type-case type-to1 :function))))))
-                                  (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
+                                                  (not
+                                                   (type-case type-to1
+                                                              :function))))))
+                                  (expr-null-pointer-constp
+                                   (expr-binary->arg2 expr) type2)))
                          (and (type-case type1 :bool)
                               (type-case type2 :pointer))))
              (reterr msg)))
@@ -3091,7 +3101,9 @@
                                    same-table)
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
-                         (retok (type-spec-struct-empty tyspec.name?)
+                         (retok (make-type-spec-struct-empty
+                                 :attribs tyspec.attribs
+                                 :name? tyspec.name?)
                                 (type-struct tyspec.name?)
                                 nil
                                 nil
@@ -3625,13 +3637,20 @@
                                    (type-case type :unknown)))
                           (and (type-case target-type :pointer)
                                (or (and (type-case type :pointer)
-                                        (let ((target-type-to (type-pointer->to target-type))
+                                        (let ((target-type-to
+                                               (type-pointer->to target-type))
                                               (type-to (type-pointer->to type)))
-                                          (or (type-compatiblep target-type-to type-to)
-                                              (and (type-case target-type-to :void)
-                                                   (not (type-case type-to :function)))
+                                          (or (type-compatiblep target-type-to
+                                                                type-to)
+                                              (and (type-case target-type-to
+                                                              :void)
+                                                   (not
+                                                    (type-case type-to
+                                                               :function)))
                                               (and (type-case type-to :void)
-                                                   (not (type-case target-type-to :function))))))
+                                                   (not
+                                                    (type-case target-type-to
+                                                               :function))))))
                                    (type-case type :unknown)
                                    (expr-null-pointer-constp expr type)))))
               (retmsg$ "The initializer ~x0 for the target type ~x1 ~
@@ -4871,7 +4890,8 @@
                    (struni-spec-fix struni-spec)))
          ((erp new-members types table)
           (valid-struct-declon-list struni-spec.members nil table ienv)))
-      (retok (make-struni-spec :name? struni-spec.name?
+      (retok (make-struni-spec :attribs struni-spec.attribs
+                               :name? struni-spec.name?
                                :members new-members)
              types
              table))
@@ -6283,7 +6303,8 @@
                (initdeclor-unambp new-initdeclor))
       :hyp (initdeclor-unambp initdeclor)
       :fn valid-initdeclor
-      :hints ('(:expand ((valid-initdeclor initdeclor type storspecs table ienv)))))
+      :hints
+      ('(:expand ((valid-initdeclor initdeclor type storspecs table ienv)))))
     (defret initdeclor-list-unambp-of-valid-initdeclor-list
       (implies (not erp)
                (initdeclor-list-unambp new-initdeclors))

@@ -20,16 +20,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (fn input &key pos more-inputs gcc cond)
+(defmacro test-parse (fn input &key pos more-inputs std gcc cond)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, SPAN, PARSTATE
   ;; and also EOF-POS for PARSE-*-EXTERNAL-DECLARATION.
   `(assert!-stobj
-    (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -44,14 +48,18 @@
           parstate))
     parstate))
 
-(defmacro test-parse-fail (fn input &key pos more-inputs gcc)
+(defmacro test-parse-fail (fn input &key pos more-inputs std gcc)
   ;; INPUT is an ACL2 term with the text to parse,
   ;; where the term evaluates to a string.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   `(assert!-stobj
-    (b* ((parstate (init-parstate (acl2::string=>nats ,input) ,gcc parstate))
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -319,6 +327,32 @@
  parse-expression
  "(x->y >= (f()) && x->y < (g()))"
  :gcc t)
+
+(test-parse
+ parse-expression
+ "true"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "true"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -597,6 +631,37 @@
  parse-parameter-declaration
  "int (x)(y))"
  :cond (param-declor-case (param-declon->declor ast) :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-type-name
+
+(test-parse
+ parse-type-name
+ "_Bool"
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "bool"
+ :std 17
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-typedef (ident "bool")))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "bool"
+ :std 23
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool))))
+            (equal (tyname->declor? ast)
+                   nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1119,6 +1184,20 @@ error (int __status, int __errnum, const char *__format, ...)
   my_label: __attribute__((unused))
   return 1;
 }
+"
+ :gcc t)
+
+(test-parse
+ parse-*-external-declaration
+ "struct __attribute__((aligned(64))) secret {
+  char secret_top_str[20];
+  union secret_data {
+    uint8_t secret_u8s[24];
+    uint16_t secret_u16s[12];
+    uint32_t secret_u32s[6];
+  } secret_data;
+  char secret_bot_str[20];
+};
 "
  :gcc t)
 

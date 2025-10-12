@@ -945,6 +945,7 @@
               (reterr (raise "Internal error: function ~x0 has no info."
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+             (result-fn-thm (atc-fn-info->result-thm fninfo))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -1007,7 +1008,8 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                                   (mv ,result ,new-compst)))
+                                   (mv ,(and result `(expr-value ,result nil))
+                                       ,new-compst)))
              (exec-formula (atc-contextualize exec-formula
                                               gin.context
                                               gin.fn
@@ -1036,7 +1038,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-when-call-open
+                 '(exec-expr-when-call-value-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1108,7 +1110,13 @@
                    type-of-value-when-ullong-arrayp
                    type-of-value-when-sllong-arrayp
                    ,@(atc-string-taginfo-alist-to-type-of-value-thms
-                      gin.prec-tags)))))
+                      gin.prec-tags)
+                   acl2::mv-nth-of-cons
+                   (:e zp)
+                   value-optionp-when-valuep
+                   (:t ,called-fn)
+                   ,result-fn-thm
+                   c::star))))
              ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                        :formula call-formula
                                                        :hints call-hints
@@ -1166,7 +1174,11 @@
                                     ,gin.compst-var
                                     ,gin.fenv-var
                                     ,gin.limit-var)
-                         (mv ,uterm* ,gin.compst-var)))
+                         (mv (expr-value ,uterm*
+                                         (expr-value->object
+                                          (exec-expr-pure ',pure.expr
+                                                          ,gin.compst-var)))
+                             ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
        (formula1 (atc-contextualize formula1
                                     gin.context
@@ -1187,26 +1199,36 @@
                                     nil
                                     wrld))
        (formula `(and ,formula1 ,formula2))
-       (hints `(("Goal" :in-theory '(compustatep-of-add-frame
-                                     compustatep-of-add-var
-                                     compustatep-of-enter-scope
-                                     compustatep-of-update-var
-                                     compustatep-of-update-object
-                                     compustatep-of-exit-scope
-                                     compustatep-of-if*-when-both-compustatep
-                                     exec-expr-when-pure
-                                     (:e expr-purep)
-                                     (:e expr-kind)
-                                     (:e expr-binary->op)
-                                     (:e binop-kind)
-                                     not-zp-of-limit-variable
-                                     ,pure.thm-name
-                                     expr-valuep-of-expr-value
-                                     expr-value->value-of-expr-value
-                                     value-fix-when-valuep
-                                     ,valuep-when-type-pred
-                                     apconvert-expr-value-when-not-value-array
-                                     ,value-kind-when-type-pred))))
+       (hints
+        `(("Goal" :in-theory '(compustatep-of-add-frame
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-exit-scope
+                               compustatep-of-if*-when-both-compustatep
+                               exec-expr-when-pure
+                               (:e expr-purep)
+                               (:e expr-kind)
+                               (:e expr-binary->op)
+                               (:e binop-kind)
+                               not-zp-of-limit-variable
+                               ,pure.thm-name
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred
+                               expr-value->object-of-expr-value
+                               (:e objdesign-option-fix)
+                               objdesign-optionp-of-objdesign-of-var
+                               objdesign-option-fix-when-objdesign-optionp
+                               return-type-of-objdesign-element
+                               objdesign-optionp-when-objdesignp
+                               objdesign-option-fix-when-objdesign-optionp
+                               return-type-of-objdesign-member
+                               objdesignp-of-value-pointer->designator))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -1479,7 +1501,10 @@
                         compustate-frames-number-of-add-frame-not-zero
                         compustate-frames-number-of-update-var
                         compustate-frames-number-of-update-object
-                        compustatep-of-add-var))))
+                        compustatep-of-add-var
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
                                                      :hints item-hints
@@ -1677,7 +1702,9 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
-                               value-optionp-when-valuep))))
+                               value-optionp-when-valuep
+                               expr-value-optionp-when-expr-valuep
+                               expr-valuep-of-expr-value))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -1808,7 +1835,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,rhs.result ,new-compst)))
+                             (mv (expr-value ,rhs.result nil) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1880,7 +1907,10 @@
                         write-static-var-okp-when-valuep-of-read-static-var
                         read-object-of-objdesign-static
                         compustatep-of-update-var
-                        compustatep-of-update-static-var))))
+                        compustatep-of-update-static-var
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2153,7 +2183,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,uterm ,new-compst)))
+                             (mv (expr-value ,uterm nil) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -2269,7 +2299,10 @@
              equal-of-ident-and-ident
              (:e str-fix)
              compustatep-of-update-object
-             compustatep-of-update-static-var))))
+             compustatep-of-update-static-var
+             expr-valuep-of-expr-value
+             expr-value->value-of-expr-value
+             value-fix-when-valuep))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2554,7 +2587,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,uterm ,new-compst)))
+                             (mv (expr-value ,uterm nil) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -2621,7 +2654,10 @@
                  ,@type-of-value-thms
                  ,@writer-return-thms
                  compustatep-of-add-var
-                 compustatep-of-update-object)))
+                 compustatep-of-update-object
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -2661,7 +2697,10 @@
                compustate-frames-number-of-update-var
                write-var-okp-of-update-var
                compustatep-of-add-var
-               compustatep-of-update-var)))))
+               compustatep-of-update-var
+               expr-valuep-of-expr-value
+               expr-value->value-of-expr-value
+               value-fix-when-valuep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2747,7 +2786,10 @@
               equal-of-ident-and-ident
               (:e str-fix)
               ident-fix-when-identp
-              identp-of-ident)
+              identp-of-ident
+              expr-valuep-of-expr-value
+              expr-value->value-of-expr-value
+              value-fix-when-valuep)
           `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
@@ -2759,7 +2801,10 @@
             equal-of-ident-and-ident
             (:e str-fix)
             ident-fix-when-identp
-            identp-of-ident)))
+            identp-of-ident
+            expr-valuep-of-expr-value
+            expr-value->value-of-expr-value
+            value-fix-when-valuep)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -3003,7 +3048,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,uterm ,new-compst)))
+                             (mv (expr-value ,uterm nil) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3087,7 +3132,10 @@
                  ,@type-of-value-thms
                  ,@writer-return-thms
                  compustatep-of-add-var
-                 compustatep-of-update-object)))
+                 compustatep-of-update-object
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -3135,7 +3183,10 @@
                compustate-frames-number-of-update-var
                write-var-okp-of-update-var
                compustatep-of-add-var
-               compustatep-of-update-var)))))
+               compustatep-of-update-var
+               expr-valuep-of-expr-value
+               expr-value->value-of-expr-value
+               value-fix-when-valuep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3223,7 +3274,10 @@
               equal-of-ident-and-ident
               (:e str-fix)
               ident-fix-when-identp
-              identp-of-ident)
+              identp-of-ident
+              expr-valuep-of-expr-value
+              expr-value->value-of-expr-value
+              value-fix-when-valuep)
           `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
@@ -3235,7 +3289,10 @@
             equal-of-ident-and-ident
             (:e str-fix)
             ident-fix-when-identp
-            identp-of-ident)))
+            identp-of-ident
+            expr-valuep-of-expr-value
+            expr-value->value-of-expr-value
+            value-fix-when-valuep)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -3398,7 +3455,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,uterm ,new-compst)))
+                             (mv (expr-value ,uterm nil) ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3460,7 +3517,10 @@
                         write-object-okp-when-valuep-of-read-object-no-syntaxp
                         ,type-of-value-thm
                         ,type-pred-of-integer-write-fn
-                        compustatep-of-update-object))))
+                        compustatep-of-update-object
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -4349,7 +4409,10 @@
                                (:e zp)
                                ,valuep-when-type-pred
                                ,expr.thm-name
-                               ,@type-thms))))
+                               ,@type-thms
+                               c::expr-valuep-of-expr-value
+                               c::expr-value->value-of-expr-value
+                               c::value-fix-when-valuep))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5217,7 +5280,8 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv ,result ,new-compst)))
+                             (mv ,(and result `(expr-value ,result nil))
+                                 ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -5246,7 +5310,8 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-when-call-open
+           '(exec-expr-when-call-value-open
+             exec-expr-when-call-novalue-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
@@ -5419,7 +5484,10 @@
                                compustatep-of-update-static-var
                                mv-nth-of-cons
                                (:e zp)
-                               (:e value-optionp)))))
+                               (:e value-optionp)
+                               expr-value-optionp-when-expr-valuep
+                               expr-valuep-of-expr-value
+                               (:e expr-value-optionp)))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
