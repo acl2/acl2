@@ -26,11 +26,24 @@
 
 (defxdoc+ grammar
   :parents (concrete-syntax)
-  :short "An ABNF grammar of C for use by tools."
+  :short "An ABNF grammar (family) of C for use by tools."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See the documentation comments in @('grammar/all.abnf')."))
+    "Since the conrete syntax varies slightly based on "
+    (xdoc::seetopic "c::versions" "the C version")
+    ", we actually define a family of grammars,
+     parameterized over the C version.")
+   (xdoc::p
+    "The grammar family is defined using the files @('grammar/*.abnf'),
+     which contain various components which are parsed into ACL2 representations
+     and combined into full grammars parameterized by the versions.
+     This parameterization is actually work in progress:
+     currently there is a single grammar file,
+     but we plan to split it soon.")
+   (xdoc::p
+    "The details of the grammar(s) are described in
+     the documentation comments in the files @('grammar/*.abnf')."))
   :order-subtopics t
   :default-parent t)
 

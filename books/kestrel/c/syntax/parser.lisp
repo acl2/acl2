@@ -100,6 +100,7 @@
      this could be part of the idea of generating the parser automatically,
      mentioned above."))
   :order-subtopics (parser-states
+                    parser-messages
                     reader
                     lexer
                     t)
