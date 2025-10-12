@@ -13,10 +13,13 @@
 (include-book "parser-states")
 
 (include-book "kestrel/fty/character-list" :dir :system)
+(include-book "kestrel/fty/nat-option" :dir :system)
 (include-book "std/strings/letter-uscore-chars" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
@@ -575,6 +578,15 @@
 
   ;; readers over writers:
 
+  (defrule ppstate->chars-length-of-update-ppstate->bytes
+    (equal (ppstate->chars-length (update-ppstate->bytes bytes ppstate))
+           (ppstate->chars-length ppstate))
+    :enable (ppstate->chars-length
+             update-ppstate->bytes
+             ppstatep
+             ppstate-fix
+             length))
+
   (defrule ppstate->size-of-update-ppstate->bytes
     (equal (ppstate->size (update-ppstate->bytes bytes ppstate))
            (ppstate->size ppstate))
@@ -709,27 +721,116 @@
     ppstate)
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppsize ((ppstate ppstatep))
-  :returns (size natp :rule-classes (:rewrite :type-prescription))
-  :short "Size of the parsing state."
+(define pchar-to-msg ((char nat-optionp))
+  :returns (msg msgp
+                :hints (("Goal" :in-theory (enable msgp
+                                                   character-alistp))))
+  :short "Represent an optional character as a message,
+          in the preprocessor."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a synonym of @(tsee ppstate->size) at this point.
-     It was slightly more elaborate when
-     @(tsee ppstate) was defined via @(tsee fty::defprod)."))
-  (ppstate->size ppstate)
-  :hooks (:fix)
+    "This is almost identical to @(tsee char-to-msg)
+     (see its documentation first)
+     with the difference that we consider LF and CR separately.
+     This matches the fact that @(tsee pread-char), unlike @(tsee read-char),
+     does not normalize the three possible kinds of new lines to LF."))
+  (cond ((not char) "end of file")
+        ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
+                          (nth char *pchar-to-msg-ascii-control-char-names*)
+                          char))
+        ((= char 32) "the SP (space) character (ASCII code 32)")
+        ((and (<= 33 char) (<= char 126))
+         (msg "the ~s0 character (ASCII code ~x1)"
+              (str::implode (list (code-char char))) char))
+        ((= char 127) "the DEL (delete) character (ASCII code 127)")
+        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
+  :guard-hints (("Goal" :in-theory (enable character-listp
+                                           nat-optionp)))
+
+  :prepwork
+  ((defconst *pchar-to-msg-ascii-control-char-names*
+     '("NUL"
+       "SOH"
+       "STX"
+       "ETX"
+       "EOT"
+       "ENQ"
+       "ACK"
+       "BEL"
+       "BS (backspace)"
+       "HT (horizontal tab)"
+       "LF (line feed)"
+       "VT (vertical tab)"
+       "FF (form feed)"
+       "CR (carriage return)"
+       "SO"
+       "SI"
+       "DLE"
+       "DC1"
+       "DC2"
+       "DC3"
+       "DC4"
+       "NAK"
+       "SYN"
+       "ETB"
+       "CAN"
+       "EM"
+       "SUB"
+       "ESC"
+       "FS"
+       "GS"
+       "RS"
+       "US"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define update-ppstate-for-char ((char natp)
+                                 (new-bytes byte-listp)
+                                 (new-position positionp)
+                                 (size-decrement posp)
+                                 (ppstate ppstatep))
+  :guard (and (< (ppstate->chars-read ppstate)
+                 (ppstate->chars-length ppstate))
+              (>= (ppstate->size ppstate) size-decrement))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Update the preprocessor state for a character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when @(tsee pread-char)
+     reads a character from the data bytes (not from the unread characters).
+     The @('new-bytes') input consists of the remaining data bytes,
+     i.e. after the one ore more bytes that form the character
+     have already been removed (and decoded).
+     The @('new-position') input consists of the next position,
+     which is normally one column more than the current one,
+     except when dealing with new-line characters."))
+  (b* ((position (ppstate->position ppstate))
+       (chars-read (ppstate->chars-read ppstate))
+       (size (ppstate->size ppstate))
+       (new-size (- size (pos-fix size-decrement)))
+       (char+pos (make-char+position :char char :position position))
+       (ppstate (update-ppstate->bytes new-bytes ppstate))
+       (ppstate (update-ppstate->char chars-read char+pos ppstate))
+       (ppstate (update-ppstate->chars-read (1+ chars-read) ppstate))
+       (ppstate (update-ppstate->position new-position ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
 
   ///
 
-  (defrule ppsize-of-initppstate
-    (equal (ppsize (init-ppstate nil gcc ppstate))
-           0)
-    :enable init-ppstate))
+  (defret ppstate->size-of-update-ppstate-for-char
+    (equal (ppstate->size new-ppstate)
+           (- (ppstate->size ppstate)
+              (pos-fix size-decrement)))
+    :hyp (>= (ppstate->size ppstate)
+             (pos-fix size-decrement))
+    :hints (("Goal" :in-theory (enable nfix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; TODO: continue
