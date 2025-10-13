@@ -3806,6 +3806,7 @@
     set-rewrite-stack-limit
     set-ruler-extenders
     set-state-ok
+    set-subgoal-loop-limits
     set-tau-auto-mode
     set-verify-guards-eagerness
     set-well-founded-relation))
