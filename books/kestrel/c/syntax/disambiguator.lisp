@@ -3074,14 +3074,14 @@
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :gotoe
-       (b* (((erp new-label table) (dimb-expr stmt.label table))
-            ((unless (expr-case new-label :ident))
-             (retok (stmt-gotoe new-label) table))
-            (ident (expr-ident->ident new-label))
-            (kind (dimb-lookup-ident ident table)))
-         (if kind
-             (retok (stmt-gotoe new-label) table)
-           (retok (stmt-goto ident) table)))
+       (b* (((when (and (expr-case stmt.label :ident)
+                        (not (dimb-lookup-ident
+                              (expr-ident->ident stmt.label)
+                              table))))
+             (retok (stmt-goto (expr-ident->ident stmt.label))
+                    (dimb-table-fix table)))
+            ((erp new-label table) (dimb-expr stmt.label table)))
+         (retok (stmt-gotoe new-label) table))
        :continue
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :break
@@ -3606,7 +3606,8 @@
     (defret stmt-unambp-of-dimb-stmt
       (implies (not erp)
                (stmt-unambp new-stmt))
-      :fn dimb-stmt)
+      :fn dimb-stmt
+      :hints ('(:expand (stmt-unambp stmt))))
     (defret comp-stmt-unambp-of-dimb-comp-stmt
       (implies (not erp)
                (comp-stmt-unambp new-cstmt))
