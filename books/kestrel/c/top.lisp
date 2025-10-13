@@ -39,7 +39,9 @@
       the shallowly embedded ACL2 representation of C constructs,
       and generates proofs based on the deep embedding.")
     (xdoc::li
-     "A tool-oriented syntax of C."))
+     "A tool-oriented syntax of C.")
+    (xdoc::li
+     "A toolkit of proof-generating C-to-C transformations."))
    (xdoc::p
     "The library is work in progress.")
    (xdoc::p
@@ -85,13 +87,20 @@
      titled `Extensions to the C Language Family',
      and whose URL includes @('C-Extensions.html').")
    (xdoc::p
-    "Although GCC provides extensions to the ISO/IEC standard,
-     they are sufficiently prevalent and important that
+    "The GCC extensions to the ISO/IEC standard
+     are sufficiently prevalent and important that
      we need to take them into account
      for our library of C to be of practical use.
      But in the documentation of this ACL2 library,
      we always clearly distinguish between
-     standard C and GCC extensions."))
+     standard C and GCC extensions.")
+   (xdoc::p
+    "When referencing concepts that are the same in [C23] and [C17],
+     we prefer to just reference [C23].
+     However, since we started developing this library before [C23],
+     there are still many references to [C17].
+     When there is some difference between [C17] and [C23],
+     we take care to reference both."))
   :order-subtopics (language
                     representation
                     atc
