@@ -283,8 +283,8 @@
                     :initially 0)
       (lexemes-unread :type (integer 0 *)
                       :initially 0)
-      (gcc :type (satisfies booleanp)
-           :initially nil)
+      (version :type (satisfies c::versionp)
+               :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
       :renaming (;; field recognizers:
@@ -296,7 +296,7 @@
                  (lexemesp raw-ppstate->lexemes-p)
                  (lexemes-readp raw-ppstate->lexemes-read-p)
                  (lexemes-unreadp raw-ppstate->lexemes-unread-p)
-                 (gccp raw-ppstate->gcc-p)
+                 (versionp raw-ppstate->version-p)
                  (sizep raw-ppstate->size-p)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -309,7 +309,7 @@
                  (lexemesi raw-ppstate->lexeme)
                  (lexemes-read raw-ppstate->lexemes-read)
                  (lexemes-unread raw-ppstate->lexemes-unread)
-                 (gcc raw-ppstate->gcc)
+                 (version raw-ppstate->version)
                  (size raw-ppstate->size)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -322,7 +322,7 @@
                  (update-lexemesi raw-update-ppstate->lexeme)
                  (update-lexemes-read raw-update-ppstate->lexemes-read)
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
-                 (update-gcc raw-update-ppstate->gcc)
+                 (update-version raw-update-ppstate->version)
                  (update-size raw-update-ppstate->size))))
 
   ;; fixer:
@@ -462,12 +462,12 @@
          :exec (raw-ppstate->lexemes-unread ppstate))
     :hooks (:fix))
 
-  (define ppstate->gcc (ppstate)
-    :returns (gcc booleanp)
+  (define ppstate->version (ppstate)
+    :returns (version c::versionp)
     (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->gcc ppstate)
-                  nil)
-         :exec (raw-ppstate->gcc ppstate))
+                    (raw-ppstate->version ppstate)
+                  (c::version-c23))
+         :exec (raw-ppstate->version ppstate))
     :hooks (:fix))
 
   (define ppstate->size (ppstate)
@@ -581,10 +581,10 @@
       (raw-update-ppstate->lexemes-unread (nfix lexemes-unread) ppstate))
     :hooks (:fix))
 
-  (define update-ppstate->gcc ((gcc booleanp) ppstate)
+  (define update-ppstate->version ((version c::versionp) ppstate)
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->gcc (bool-fix gcc) ppstate))
+      (raw-update-ppstate->version (c::version-fix version) ppstate))
     :hooks (:fix))
 
   (define update-ppstate->size ((size natp) ppstate)
@@ -703,7 +703,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((data byte-listp) (gcc booleanp) ppstate)
+(define init-ppstate ((data byte-listp) (version c::versionp) ppstate)
   :returns (ppstate ppstatep)
   :short "Initialize the parser state."
   :long
@@ -711,7 +711,7 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a flag saying whether GCC extensions should be accepted or not,
+     and a C version,
      the initial parsing state consists of
      the data to parse,
      no read characters or lexemes,
@@ -733,7 +733,7 @@
        (ppstate (update-ppstate->lexemes-length (len data) ppstate))
        (ppstate (update-ppstate->lexemes-read 0 ppstate))
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
-       (ppstate (update-ppstate->gcc gcc ppstate))
+       (ppstate (update-ppstate->version version ppstate))
        (ppstate (update-ppstate->size (len data) ppstate)))
     ppstate)
   :hooks (:fix))
