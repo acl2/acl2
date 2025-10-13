@@ -1015,7 +1015,9 @@
                    (new-size (- ppstate.size 2))
                    (ppstate (update-ppstate->bytes new-bytes ppstate))
                    (ppstate (update-ppstate->position new-position ppstate))
-                   (ppstate (update-ppstate->size new-size ppstate)))
+                   (ppstate (update-ppstate->size new-size ppstate))
+                   ((unless (consp new-bytes))
+                    (reterr (msg "File ends with backslash and new line."))))
                 (pread-char ppstate)))
              ((when (= (car bytes) 13)) ; \ CR
               (if (and (consp (cdr bytes))
@@ -1034,7 +1036,10 @@
                        (new-size (- ppstate.size 3))
                        (ppstate (update-ppstate->bytes new-bytes ppstate))
                        (ppstate (update-ppstate->position new-position ppstate))
-                       (ppstate (update-ppstate->size new-size ppstate)))
+                       (ppstate (update-ppstate->size new-size ppstate))
+                       ((unless (consp new-bytes))
+                        (reterr
+                         (msg "File ends with backslash and new line."))))
                     (pread-char ppstate))
                 (b* (((when (endp (cdr bytes))) ; \ CR EOF
                       (reterr (msg "File ends with backslash and new line ~
@@ -1050,7 +1055,9 @@
                      (new-size (- ppstate.size 2))
                      (ppstate (update-ppstate->bytes new-bytes ppstate))
                      (ppstate (update-ppstate->position new-position ppstate))
-                     (ppstate (update-ppstate->size new-size ppstate)))
+                     (ppstate (update-ppstate->size new-size ppstate))
+                     ((unless (consp new-bytes))
+                      (reterr (msg "File ends with backslash and new line."))))
                   (pread-char ppstate))))
              ;; just \, no line splicing
              (new-position (position-inc-column 1 ppstate.position))
