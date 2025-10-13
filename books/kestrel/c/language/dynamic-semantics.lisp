@@ -970,7 +970,7 @@
      (xdoc::p
       "We return an optional expression value,
        and a possibly updated computation state.
-       The optional expression value is @9('nil')
+       The optional expression value is @('nil')
        for expressions that do not return a value or designate an object,
        e.g. calls of @('void') functions.")
      (xdoc::p
@@ -996,37 +996,25 @@
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
-       its evaluation must return an expression value with an object designator.
+       if it were not pure,
+       it could potentially change the value of the right-hand side,
+       if evaluated before the right-hand side,
+       so it is conservatively safe to require the left-hand side to be pure.
+       The evaluation of the right-hand side must yield
+       an expression value with an object designator.
        The right-hand side must be a pure expression (lvalue or not),
        but if the left-hand side is just an identifier,
-       then we allow the right-hand side to be a supported expression
+       then we allow the right-hand side to be any supported expression
        (we recursively call @(tsee exec-expr) on it).
-       These restrictions are motivated by the fact that
-       there are no sequence points [C17:5.1.2.3] within assignments.
-       Thus, if both sides are pure, the order of evaluation does not matter,
-       and we can evaluate them in any order.
-       The case of a left-hand side that is an identifier (i.e. variable)
-       and a right-hand side that is not pure
-       (a function call or other assignment)
-       is allowed here because,
-       even though the function call could modify the value of the variable,
-       its value is not actually used to perform the assignment:
-       it is overwritten by the result of the function call.
-       The right-hand side cannot put a named variable into of out of existence,
-       because that depends on scoping;
-       thus, the successful or unsuccessul retrieval
-       of the object designator of the named variable
-       is the same whether it is performed before or after the function call.
-       Therefore it does not matter in which order
-       we evaluate the subexpressions of the assignment.
-       We should formally prove the fact mentioned just above
-       that the existence of a named variable
-       is not affected by a function call;
-       this may be actually part of a larger plan to model and support
-       assignments with arbitrary expressions,
-       where our model will cover all possible evaluation orders.
-       In any case, the right-hand side expression must return a value,
-       i.e. it cannot be a @('void') expression.
+       The latter relaxation is justified by the fact that,
+       if the left-hand side is a variable,
+       it the object that it designates is not affected
+       by any side effect of the right-hand side
+       (see @(see variable-resolution-preservation)):
+       it is always the same variable,
+       whose value may be affected by the right-hand side,
+       but its value is not used for the assignment,
+       as it is overwritten by the assignment.
        Note that the assignment itself is not an lvalue;
        its result is the value assigned by the assignment."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1050,6 +1038,12 @@
                      (binop-case (expr-binary->op e) :asg)))
           (b* ((left (expr-binary->arg1 e))
                (right (expr-binary->arg2 e))
+               (left-eval (exec-expr-pure left compst))
+               ((when (errorp left-eval))
+                (mv left-eval (compustate-fix compst)))
+               (objdes (expr-value->object left-eval))
+               ((unless objdes)
+                (mv (error (list :not-lvalue left)) (compustate-fix compst)))
                ((mv right-eval? compst)
                 (if (expr-case left :ident)
                     (exec-expr right compst fenv (1- limit))
@@ -1063,11 +1057,6 @@
                 (mv (error (list :asg-void-expr right)) compst))
                (right-eval right-eval?)
                (val (expr-value->value right-eval))
-               (left-eval (exec-expr-pure left compst))
-               ((when (errorp left-eval)) (mv left-eval compst))
-               (objdes (expr-value->object left-eval))
-               ((unless objdes)
-                (mv (error (list :not-lvalue left)) compst))
                (compst/error (write-object objdes val compst))
                ((when (errorp compst/error)) (mv compst/error compst))
                (compst compst/error))
