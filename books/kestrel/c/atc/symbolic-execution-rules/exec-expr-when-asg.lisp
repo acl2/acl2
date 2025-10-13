@@ -23,6 +23,8 @@
 (include-book "integers")
 (include-book "exec-expr-pure")
 
+(local (include-book "../../language/variable-resolution-preservation"))
+
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -57,17 +59,25 @@
                   (equal compst1 (mv-nth 1 eval+compst1))
                   (expr-valuep eval)
                   (equal val (expr-value->value eval))
-                  (valuep (read-var (expr-ident->get left) compst1))
+                  (valuep (read-var (expr-ident->get left) compst))
                   (equal compst2 (write-var (expr-ident->get left) val compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
                     (mv (expr-value val nil) compst2)))
+    :use (:instance write-object-of-objdesign-of-var-to-write-var
+                    (var (expr-ident->get (expr-binary->arg1 expr)))
+                    (val (expr-value->value
+                          (mv-nth 0 (exec-expr (expr-binary->arg2 expr)
+                                               compst fenv (+ -1 limit)))))
+                    (compst (mv-nth 1 (exec-expr (expr-binary->arg2 expr)
+                                                 compst fenv (+ -1 limit)))))
+    :disable cons-equal
     :enable (exec-expr
              exec-expr-pure
              exec-ident
-             write-object-of-objdesign-of-var-to-write-var
              expr-purep
-             binop-purep))
+             binop-purep
+             var-resolve-of-exec-expr))
 
   (defruled exec-expr-when-asg-ident-via-object
     (implies (and (syntaxp (quotep expr))
@@ -84,7 +94,7 @@
                   (expr-valuep eval)
                   (equal val (expr-value->value eval))
                   (equal objdes
-                         (objdesign-of-var (expr-ident->get left) compst1))
+                         (objdesign-of-var (expr-ident->get left) compst))
                   objdes
                   (equal compst2 (write-object objdes val compst1))
                   (compustatep compst2))
