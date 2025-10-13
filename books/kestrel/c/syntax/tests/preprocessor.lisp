@@ -313,6 +313,19 @@
        ppstate))
  ppstate)
 
+(assert!-stobj ; \ n
+ (b* ((ppstate (init (list (char-code #\\) (char-code #\n))))
+      ((mv erp char pos ppstate) (pread-char ppstate))
+      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
+   (mv (and (not erp)
+            (equal char (char-code #\\))
+            (equal pos (position 1 0))
+            (not erp2)
+            (equal char2 (char-code #\n))
+            (equal pos2 (position 1 1)))
+       ppstate))
+ ppstate)
+
 (assert!-stobj ; 2-byte UTF-8 encoding of Greek capital letter sigma
  (b* ((ppstate (init (acl2::string=>nats "Σ")))
       ((mv erp char? pos ppstate) (pread-char ppstate)))
