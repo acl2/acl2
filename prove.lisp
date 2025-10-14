@@ -4107,7 +4107,7 @@
 
 ; If processor proc has been applied to clause cl more than cnt times in the
 ; history we return t; otherwise nil.  Cnt must be a natural number and is,
-; presumably, initially set to (cdr subgoal-loop-limits).  
+; presumably, initially set to (cdr subgoal-loop-limits).
 
 ; We know that proc cannot be any of certain clause processors (listed in
 ; too-many-proc-cl-occurrences below) that can routinely occur multiple times
@@ -4387,7 +4387,7 @@
 ; delicate handling of interrupts and time limits.  So we'll detect the
 ; waterfall-loop ``error'' not by just looking at erp below but by also
 ; inspecting waterfall-loop-clause-id.
- 
+
         (mv@par step-limit 'error nil nil pspv state))
        ((eq processor 'apply-top-hints-clause) ; this case returns state
         (apply-top-hints-clause@par cl-id clause hist pspv wrld ctx state
@@ -4429,68 +4429,64 @@
 ; We will act like an error occurred.  We have to decided which kind of
 ; error.
 
-        (mv-let@par (error-string abort-cause)
-                    (cond
-                     ((eq bad-historyp t)
-                      (mv "Subgoal-path-length-violation"
-                          'subgoal-path-length-violation))
-                     (bad-historyp
-                      (mv "Waterfall-loop" 'waterfall-loop))
-                     ((eq erp *interrupt-string*)
-                      (mv "Interrupt" 'interrupt))
-                     (t (mv "Time-limit" 'time-limit)))
-                    (mv-let@par (erp2 val state)
-                                (er-soft@par
-                                 ctx error-string
-                                 "~@0"
-                                 (cond
-                                  ((eq abort-cause
-                                       'subgoal-path-length-violation)
-                                   (msg "The maximum subgoal depth has of ~x0 ~
-                                         has been reached.  The proof attempt ~
-                                         has failed.  See :DOC ~
-                                         set-subgoal-loop-limits."
-                                        (car subgoal-loop-limits)))
-                                  ((eq abort-cause 'waterfall-loop)
-                                   (msg "The clause processor ~x0 has been ~
-                                         applied to the same formula more ~
-                                         than ~x1 times, namely at ~*2.  That ~
-                                         suggests a loop in the waterfall.  ~
-                                         Consequently, we are aborting!  The ~
-                                         following list shows the runes used ~
-                                         in each passage through the loop ~
-                                         between successive ~
-                                         subgoals.~%~%~X34.~%For more ~
-                                         information see :DOC ~
-                                         set-subgoal-loop-limits."
-                                        (access history-entry (car hist) :processor)
-                                        bad-historyp ; number of occurrences
-                                        (list "" "~s*" "~s* and " "~s*, "
-                                              (collect-proc-cl-clause-id-strings
-                                               (access history-entry (car hist) :processor)
-                                               (access history-entry (car hist) :clause)
-                                               hist
-                                               (cdr subgoal-loop-limits)
-                                               nil))
-                                        (helpful-subgoal-loop-data
-                                         hist
-                                         (cdr subgoal-loop-limits))
-                                        nil))
-                                  (t erp)))
-                                (declare (ignore erp2 val))
-                                (pprogn@par
-                                 (assert$
-                                  (null ttree)
-                                  (mv-let@par
-                                   (erp3 val state)
-                                   (accumulate-ttree-and-step-limit-into-state@par
-                                    (add-to-tag-tree! 'abort-cause abort-cause nil)
-                                    step-limit
-                                    state)
-                                   (declare (ignore val))
-                                   (assert$ (null erp3)
-                                            (state-mac@par))))
-                                 (mv@par step-limit 'error nil nil nil nil state)))))
+        (mv-let (error-string abort-cause)
+          (cond
+           ((eq bad-historyp t)
+            (mv "Subgoal-path-length-violation"
+                'subgoal-path-length-violation))
+           (bad-historyp
+            (mv "Waterfall-loop" 'waterfall-loop))
+           ((eq erp *interrupt-string*)
+            (mv "Interrupt" 'interrupt))
+           (t (mv "Time-limit" 'time-limit)))
+          (mv-let@par (erp2 val state)
+                      (er-soft@par
+                       ctx error-string
+                       "~@0"
+                       (cond
+                        ((eq abort-cause
+                             'subgoal-path-length-violation)
+                         (msg "The maximum subgoal depth has of ~x0 has been ~
+                               reached.  The proof attempt has failed.  See ~
+                               :DOC set-subgoal-loop-limits."
+                              (car subgoal-loop-limits)))
+                        ((eq abort-cause 'waterfall-loop)
+                         (msg "The clause processor ~x0 has been applied to ~
+                               the same formula more than ~x1 times, namely ~
+                               at ~*2.  That suggests a loop in the ~
+                               waterfall.  Consequently, we are aborting!  ~
+                               The following list shows the runes used in ~
+                               each passage through the loop between ~
+                               successive subgoals.~%~%~X34.~%For more ~
+                               information see :DOC set-subgoal-loop-limits."
+                              (access history-entry (car hist) :processor)
+                              bad-historyp ; number of occurrences
+                              (list "" "~s*" "~s* and " "~s*, "
+                                    (collect-proc-cl-clause-id-strings
+                                     (access history-entry (car hist) :processor)
+                                     (access history-entry (car hist) :clause)
+                                     hist
+                                     (cdr subgoal-loop-limits)
+                                     nil))
+                              (helpful-subgoal-loop-data
+                               hist
+                               (cdr subgoal-loop-limits))
+                              nil))
+                        (t erp)))
+                      (declare (ignore erp2 val))
+                      (pprogn@par
+                       (assert$
+                        (null ttree)
+                        (mv-let@par
+                         (erp3 val state)
+                         (accumulate-ttree-and-step-limit-into-state@par
+                          (add-to-tag-tree! 'abort-cause abort-cause nil)
+                          step-limit
+                          state)
+                         (declare (ignore val))
+                         (assert$ (null erp3)
+                                  (state-mac@par))))
+                       (mv@par step-limit 'error nil nil nil nil state)))))
        (t
         (pprogn@par ; account for bddnote in case we do not have a hit
          (cond ((and (eq processor 'apply-top-hints-clause)
