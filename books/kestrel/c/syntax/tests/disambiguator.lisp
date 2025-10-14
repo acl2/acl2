@@ -401,3 +401,11 @@
 "
  :gcc t
  :cond (not (cw "~x0" ast)))
+
+(test-dimb
+ "void foo (void) {
+ mylabel:
+   goto mylabel;
+}
+"
+ :gcc t)
