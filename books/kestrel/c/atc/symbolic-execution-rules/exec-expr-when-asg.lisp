@@ -53,17 +53,20 @@
                   (equal left (expr-binary->arg1 expr))
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
+                  (equal var (expr-ident->get left))
+                  (equal oldval (read-var var compst))
+                  (valuep oldval)
+                  (not (equal (value-kind oldval) :array))
                   (equal eval+compst1
                          (exec-expr right compst fenv (1- limit)))
                   (equal eval (mv-nth 0 eval+compst1))
                   (equal compst1 (mv-nth 1 eval+compst1))
                   (expr-valuep eval)
-                  (equal val (expr-value->value eval))
-                  (valuep (read-var (expr-ident->get left) compst))
-                  (equal compst2 (write-var (expr-ident->get left) val compst1))
+                  (equal newval (expr-value->value eval))
+                  (equal compst2 (write-var var newval compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
-                    (mv (expr-value val nil) compst2)))
+                    (mv (expr-value newval nil) compst2)))
     :use (:instance write-object-of-objdesign-of-var-to-write-var
                     (var (expr-ident->get (expr-binary->arg1 expr)))
                     (val (expr-value->value
@@ -77,7 +80,9 @@
              exec-ident
              expr-purep
              binop-purep
-             var-resolve-of-exec-expr))
+             var-resolve-of-exec-expr
+             apconvert-expr-value-when-not-value-array
+             read-object-of-objdesign-of-var-to-read-var))
 
   (defruled exec-expr-when-asg-ident-via-object
     (implies (and (syntaxp (quotep expr))
@@ -87,15 +92,17 @@
                   (equal left (expr-binary->arg1 expr))
                   (equal right (expr-binary->arg2 expr))
                   (equal (expr-kind left) :ident)
+                  (equal objdes
+                         (objdesign-of-var (expr-ident->get left) compst))
+                  objdes
+                  (not (equal (value-kind (read-object objdes compst))
+                              :array))
                   (equal eval+compst1
                          (exec-expr right compst fenv (1- limit)))
                   (equal eval (mv-nth 0 eval+compst1))
                   (equal compst1 (mv-nth 1 eval+compst1))
                   (expr-valuep eval)
                   (equal val (expr-value->value eval))
-                  (equal objdes
-                         (objdesign-of-var (expr-ident->get left) compst))
-                  objdes
                   (equal compst2 (write-object objdes val compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
@@ -104,7 +111,8 @@
              exec-expr-pure
              exec-ident
              expr-purep
-             binop-purep))
+             binop-purep
+             apconvert-expr-value-when-not-value-array))
 
   (defval *atc-exec-expr-when-asg-ident-rules*
     '(exec-expr-when-asg-ident
@@ -159,7 +167,10 @@
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
                  (,pred val)
-                 (valuep (read-object (value-pointer->designator ptr) compst))
+                 (equal oldval
+                        (read-object (value-pointer->designator ptr) compst))
+                 (valuep oldval)
+                 (not (equal (value-kind oldval) :array))
                  (equal compst1
                         (write-object (value-pointer->designator ptr)
                                       val
@@ -191,7 +202,10 @@
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
                  (,pred val)
-                 (valuep (read-object (value-pointer->designator ptr) compst))
+                 (equal oldval
+                        (read-object (value-pointer->designator ptr) compst))
+                 (valuep oldval)
+                 (not (equal (value-kind oldval) :array))
                  (equal compst1
                         (write-object (value-pointer->designator ptr)
                                       (,writer val)

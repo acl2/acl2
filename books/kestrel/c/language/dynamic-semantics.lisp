@@ -1000,8 +1000,9 @@
        it could potentially change the value of the right-hand side,
        if evaluated before the right-hand side,
        so it is conservatively safe to require the left-hand side to be pure.
-       The evaluation of the right-hand side must yield
-       an expression value with an object designator.
+       We perform array-to-pointer conversion [C23:6.3.3.1]
+       on the result of evaluating the left-hand side;
+       this must yield an expression value with an object designator.
        The right-hand side must be a pure expression (lvalue or not),
        but if the left-hand side is just an identifier,
        then we allow the right-hand side to be any supported expression
@@ -1039,6 +1040,9 @@
           (b* ((left (expr-binary->arg1 e))
                (right (expr-binary->arg2 e))
                (left-eval (exec-expr-pure left compst))
+               ((when (errorp left-eval))
+                (mv left-eval (compustate-fix compst)))
+               (left-eval (apconvert-expr-value left-eval))
                ((when (errorp left-eval))
                 (mv left-eval (compustate-fix compst)))
                (objdes (expr-value->object left-eval))
