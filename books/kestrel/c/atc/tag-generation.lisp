@@ -1050,7 +1050,8 @@
           binop-purep
           (:e member-equal)
           (:t exec-expr-pure)
-          (:t c::apconvert-expr-value)))
+          (:t c::apconvert-expr-value)
+          ,value-kind-when-elemfixtypep))
        (hints-memberp
         `(("Goal"
            :use

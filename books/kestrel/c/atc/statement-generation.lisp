@@ -1858,6 +1858,8 @@
                                         wrld))
        (asg-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type (atc-type-to-valuep-thm rhs.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm rhs.type gin.prec-tags))
        (type-of-value-when-type
         (atc-type-to-type-of-value-thm rhs.type gin.prec-tags))
        (asg-hints
@@ -1910,7 +1912,8 @@
                         compustatep-of-update-static-var
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        ,value-kind-when-type-pred))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
