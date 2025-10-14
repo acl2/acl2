@@ -891,8 +891,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-desiniter-list ((desiniters desiniter-listp)
-                                   (gin ginp))
+  (define simpadd0-desiniter-list ((desiniters desiniter-listp) (gin ginp))
     :guard (and (desiniter-list-unambp desiniters)
                 (desiniter-list-annop desiniters))
     :returns (mv (new-desiniters desiniter-listp)
@@ -937,8 +936,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-designor-list ((designors designor-listp)
-                                  (gin ginp))
+  (define simpadd0-designor-list ((designors designor-listp) (gin ginp))
     :guard (and (designor-list-unambp designors)
                 (designor-list-annop designors))
     :returns (mv (new-designors designor-listp)
@@ -960,28 +958,38 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-declor ((declor declorp) (gin ginp))
+  (define simpadd0-declor ((declor declorp) (fundefp booleanp) (gin ginp))
     :guard (and (declor-unambp declor)
                 (declor-annop declor))
     :returns (mv (new-declor declorp)
+                 (new-fundefp booleanp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundefp') flag is set iff
+       the declarator is (part of) the one of a function definition
+       whose parameters have not been transformed yet;
+       see the callers of this function.
+       A possibly changed flag is returned as output:
+       see @(tsee simpadd0-dirdeclor) for its use and possile change."))
     (b* (((gin gin) gin)
          ((declor declor) declor)
-         ((mv new-direct (gout gout-direct))
-          (simpadd0-dirdeclor declor.direct gin))
+         ((mv new-direct fundefp (gout gout-direct))
+          (simpadd0-dirdeclor declor.direct fundefp gin))
          (gin (gin-update gin gout-direct)))
       (mv (make-declor :pointers declor.pointers
                        :direct new-direct)
+          fundefp
           (change-gout (gout-no-thm gin)
                        :vartys gout-direct.vartys)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-declor-option ((declor? declor-optionp)
-                                  (gin ginp))
+  (define simpadd0-declor-option ((declor? declor-optionp) (gin ginp))
     :guard (and (declor-option-unambp declor?)
                 (declor-option-annop declor?))
     :returns (mv (new-declor? declor-optionp)
@@ -991,30 +999,65 @@
     (b* (((gin gin) gin))
       (declor-option-case
        declor?
-       :some (simpadd0-declor declor?.val gin)
+       :some (b* (((mv new-declor & gout)
+                   (simpadd0-declor declor?.val nil gin)))
+               (mv new-declor gout))
        :none (mv nil (gout-no-thm gin))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-dirdeclor ((dirdeclor dirdeclorp) (gin ginp))
+  (define simpadd0-dirdeclor ((dirdeclor dirdeclorp)
+                              (fundefp booleanp)
+                              (gin ginp))
     :guard (and (dirdeclor-unambp dirdeclor)
                 (dirdeclor-annop dirdeclor))
     :returns (mv (new-dirdeclor dirdeclorp)
+                 (new-fundefp booleanp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundefp') flag is set iff
+       the direct declarator is (part of) the one of a function definition
+       whose parameters have not been transformed yet;
+       this function is only called by @(tsee simpadd0-declor)
+       (see how the callers of @(tsee simpadd0-declor) set @('fundefp')),
+       and recursively by itself.")
+     (xdoc::p
+      "The @('fundefp') flag is just threaded through most recursively calls.
+       For the @(':function-params') kind of direct declarator,
+       if @('fundefp') is @('t'),
+       then the variable-type map resulting from
+       transforming the parameter declarations
+       is return as part of the @('gout') of this ACL2 function,
+       so that the extended map is available for the function's body.
+       Additionally, in this case the @('fundefp') result is @('nil'),
+       because the parameters of the function definition have been
+       transformed and the variable-type map has been extended for the body.
+       If instead the input @('fundefp') is @('nil'),
+       the variable-type map resulting from the parameters
+       is discarded and not returned as part of the @('gout').")
+     (xdoc::p
+      "In the @(':function-names') case,
+       there is no extension of the variable-type map,
+       but we set the @('fundefp') output to @('nil')."))
     (b* (((gin gin) gin))
       (dirdeclor-case
        dirdeclor
-       :ident (mv (dirdeclor-fix dirdeclor) (gout-no-thm gin))
-       :paren (b* (((mv new-declor (gout gout-declor))
-                    (simpadd0-declor dirdeclor.inner gin))
+       :ident (mv (dirdeclor-fix dirdeclor)
+                  (acl2::bool-fix fundefp)
+                  (gout-no-thm gin))
+       :paren (b* (((mv new-declor fundefp (gout gout-declor))
+                    (simpadd0-declor dirdeclor.inner fundefp gin))
                    (gin (gin-update gin gout-declor)))
                 (mv (dirdeclor-paren new-declor)
+                    fundefp
                     (gout-no-thm gin)))
-       :array (b* (((mv new-decl (gout gout-decl))
-                    (simpadd0-dirdeclor dirdeclor.declor gin))
+       :array (b* (((mv new-decl fundefp (gout gout-decl))
+                    (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
                    (gin (gin-update gin gout-decl))
                    ((mv new-expr? (gout gout-expr?))
                     (simpadd0-expr-option dirdeclor.size? gin))
@@ -1022,9 +1065,10 @@
                 (mv (make-dirdeclor-array :declor new-decl
                                           :qualspecs dirdeclor.qualspecs
                                           :size? new-expr?)
+                    fundefp
                     (gout-no-thm gin)))
-       :array-static1 (b* (((mv new-decl (gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.declor gin))
+       :array-static1 (b* (((mv new-decl fundefp (gout gout-decl))
+                            (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
                            (gin (gin-update gin gout-decl))
                            ((mv new-expr (gout gout-expr))
                             (simpadd0-expr dirdeclor.size gin))
@@ -1033,9 +1077,10 @@
                              :declor new-decl
                              :qualspecs dirdeclor.qualspecs
                              :size new-expr)
+                            fundefp
                             (gout-no-thm gin)))
-       :array-static2 (b* (((mv new-decl (gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.declor gin))
+       :array-static2 (b* (((mv new-decl fundefp (gout gout-decl))
+                            (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
                            (gin (gin-update gin gout-decl))
                            ((mv new-expr (gout gout-expr))
                             (simpadd0-expr dirdeclor.size gin))
@@ -1044,32 +1089,39 @@
                              :declor new-decl
                              :qualspecs dirdeclor.qualspecs
                              :size new-expr)
+                            fundefp
                             (gout-no-thm gin)))
-       :array-star (b* (((mv new-decl (gout gout-decl))
-                         (simpadd0-dirdeclor dirdeclor.declor gin))
+       :array-star (b* (((mv new-decl fundefp (gout gout-decl))
+                         (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
                         (gin (gin-update gin gout-decl)))
                      (mv (make-dirdeclor-array-star
                           :declor new-decl
                           :qualspecs dirdeclor.qualspecs)
+                         fundefp
                          (gout-no-thm gin)))
-       :function-params (b* (((mv new-decl (gout gout-decl))
-                              (simpadd0-dirdeclor dirdeclor.declor gin))
-                             (gin (gin-update gin gout-decl))
+       :function-params (b* (((mv new-declor fundefp (gout gout-declor))
+                              (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
+                             (gin (gin-update gin gout-declor))
                              ((mv new-params (gout gout-params))
-                              (simpadd0-param-declon-list dirdeclor.params
-                                                          gin))
-                             (gin (gin-update gin gout-params)))
+                              (simpadd0-param-declon-list dirdeclor.params gin))
+                             (gin (gin-update gin gout-params))
+                             (gout (if fundefp
+                                       (change-gout (gout-no-thm gin)
+                                                    :vartys gout-params.vartys)
+                                     (gout-no-thm gin))))
                           (mv (make-dirdeclor-function-params
-                               :declor new-decl
+                               :declor new-declor
                                :params new-params
                                :ellipsis dirdeclor.ellipsis)
-                              (gout-no-thm gin)))
-       :function-names (b* (((mv new-decl (gout gout-decl))
-                             (simpadd0-dirdeclor dirdeclor.declor gin))
-                            (gin (gin-update gin gout-decl)))
+                              nil
+                              gout))
+       :function-names (b* (((mv new-declor & (gout gout-declor))
+                             (simpadd0-dirdeclor dirdeclor.declor fundefp gin))
+                            (gin (gin-update gin gout-declor)))
                          (mv (make-dirdeclor-function-names
-                              :declor new-decl
+                              :declor new-declor
                               :names dirdeclor.names)
+                             nil
                              (gout-no-thm gin)))))
     :measure (dirdeclor-count dirdeclor))
 
@@ -1284,8 +1336,8 @@
       (param-declor-case
        paramdeclor
        :nonabstract
-       (b* (((mv new-declor (gout gout-declor))
-             (simpadd0-declor paramdeclor.declor gin))
+       (b* (((mv new-declor & (gout gout-declor))
+             (simpadd0-declor paramdeclor.declor nil gin))
             (gin (gin-update gin gout-declor))
             (type (param-declor-nonabstract-info->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
@@ -1557,8 +1609,8 @@
       "If the type of the declared identifier is supported for proof generation,
        we update the variable-type map."))
     (b* (((initdeclor initdeclor) initdeclor)
-         ((mv new-declor (gout gout-declor))
-          (simpadd0-declor initdeclor.declor gin))
+         ((mv new-declor & (gout gout-declor))
+          (simpadd0-declor initdeclor.declor nil gin))
          (gin (gin-update gin gout-declor))
          ((mv new-init? (gout gout-init?))
           (simpadd0-initer-option initdeclor.init?
@@ -2841,8 +2893,8 @@
        ((mv new-spec (gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
        (gin (gin-update gin gout-spec))
-       ((mv new-declor (gout gout-declor))
-        (simpadd0-declor fundef.declor gin))
+       ((mv new-declor & (gout gout-declor))
+        (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
        (type (fundef-info->type fundef.info))
        (ident (declor->ident fundef.declor))
