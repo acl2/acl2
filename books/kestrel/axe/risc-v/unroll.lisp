@@ -635,7 +635,7 @@
                                   ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                   (if (= 0 target-offset)
                                       base-address-var ; avoids adding 0
-                                    `(bvplus 32 ',target-offset ,base-address-var)))
+                                    `(bvplus '32 ',target-offset ,base-address-var)))
                               ;; Not position-independent, so the target is a concrete address:
                               (acl2::enquote target-offset)))
        (assumptions (append  `((equal (pc stat) ,target-address-term)
