@@ -224,7 +224,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-var-assertions ((vartys c::ident-type-mapp) (compst symbolp))
+(define gen-var-assertions ((vartys c::ident-type-mapp)
+                            (compst "An untranslated term."))
   :returns (assertions true-listp)
   :short "Generate assertions about certain variables
           having values of certain types in a computation state."
@@ -237,8 +238,8 @@
      the variable can be read from the computation state
      and it contains a value of the associated type.")
    (xdoc::p
-    "The symbol @('compst') is the ACL2 variable name
-     to use for the computation state."))
+    "The input @('compst') is the (untranslated) term
+     to use for the computation state (often just a variable)."))
   (b* (((when (omap::emptyp (c::ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
        (asrt `(c::compustate-has-var-with-type-p ',var ',type ,compst))
@@ -2822,7 +2823,6 @@
        ((mv & cvar) (ldm-ident var))
        ((mv & old-initer) (ldm-initer initer))
        ((mv & new-initer) (ldm-initer initer-new))
-       (vartys-post (omap::update cvar ctype gin.vartys))
        (hints `(("Goal"
                  :in-theory
                  '((:e c::obj-declon->scspec)
@@ -3209,7 +3209,6 @@
                     (body comp-stmtp)
                     (body-new comp-stmtp)
                     (body-thm-name symbolp)
-                    (vartys-with-fun c::ident-type-mapp)
                     (info fundef-infop)
                     (gin ginp))
   :guard (and (decl-spec-list-unambp spec)
@@ -3237,19 +3236,7 @@
      only under certain conditions,
      including the fact that a theorem for the body gets generated.")
    (xdoc::p
-    "For the body of the function,
-     currently we obtain the variable-type map from
-     the validation table that annotates the function definition
-     (the validation table at the start of the body,
-     not at the start of the function definition;
-     we plan to avoid this, and use instead the variable-type map
-     coming from the transformation of the constructs preceding the body,
-     since now we may have sufficient propagation of variable-type maps,
-     which was not the case some time ago
-     (which motivated the use of
-     the validation table at the start of the body).")
-   (xdoc::p
-    "We generate the folllowing theorems:")
+    "We generate the following theorems:")
    (xdoc::ul
     (xdoc::li
      "A theorem about the initial scope of the function body.
@@ -3278,9 +3265,16 @@
      but for now proof generation does not handle global variables,
      so we generate proofs for the body only if
      the theorems about the initial scope and the parameters
-     suffice to establish the variable-type hypotheses of the body."))
+     suffice to establish the variable-type hypotheses of the body.")
+   (xdoc::p
+    "The function may use global variables not hidden by parameters.
+     No assertions about global variables
+     are returned by @(tsee gen-from-params).
+     We generate them directly from @('gin.vartys'),
+     after removing from that map
+     any keys that are also function parameters,
+     which hide the corresponding global variables."))
   (b* (((gin gin) gin)
-       (vartys (vartys-from-valid-table (fundef-info->table-body-start info)))
        (fundef (make-fundef :extension extension
                             :spec spec
                             :declor declor
@@ -3297,14 +3291,17 @@
                                 :decls decls-new
                                 :body body-new
                                 :info info))
-       (gout-no-thm (change-gout (gout-no-thm gin)
-                                 :vartys vartys-with-fun))
-       ((unless (equal vartys vartys-with-fun))
-        (raise "Internal error: ~
-                calculated variable-type map ~x0 differs ~
-                from variable-type map from validation table."
-               vartys vartys-with-fun)
-        (mv new-fundef gout-no-thm))
+       (type (fundef-info->type info))
+       (ident (declor->ident declor))
+       (vartys-after-fundef (if (and (ident-formalp ident)
+                                     (type-formalp type)
+                                     (not (type-case type :void))
+                                     (not (type-case type :char)))
+                                (b* (((mv & cvar) (ldm-ident ident))
+                                     ((mv & ctype) (ldm-type type)))
+                                  (omap::update cvar ctype gin.vartys))
+                              gin.vartys))
+       (gout-no-thm (change-gout (gout-no-thm gin) :vartys vartys-after-fundef))
        ((unless body-thm-name) (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
        ((declor declor) declor)
@@ -3332,7 +3329,6 @@
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
-       ((unless (equal param-vartys vartys)) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
         (gen-init-scope-thm ldm-params
                             args
@@ -3351,6 +3347,15 @@
                         thm-index))
        (events (append (rev param-thm-events) events))
        ((mv thm-name thm-index) (gen-thm-name gin.const-new thm-index))
+       (global-vartys (omap::delete* (omap::keys param-vartys) gin.vartys))
+       (global-vars-pre
+        (gen-var-assertions global-vartys
+                            `(c::push-frame
+                              (c::frame ',(c::ident fun)
+                                        (list
+                                         (c::init-scope ',ldm-params
+                                                        (list ,@args))))
+                              compst)))
        (formula
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
@@ -3359,7 +3364,8 @@
                (c::exec-fun fun (list ,@args) compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-fun fun (list ,@args) compst new-fenv limit)))
-           (implies (and ,@arg-types
+           (implies (and ,@global-vars-pre
+                         ,@arg-types
                          (equal (c::fun-env-lookup fun old-fenv)
                                 (c::fun-info-from-fundef
                                  (mv-nth 1 (ldm-fundef old))))
@@ -3415,7 +3421,9 @@
         (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
-                   :vartys vartys-with-fun)))
+                   :vartys vartys-after-fundef)))
+
+  :guard-debug t ; <<<<<<<<<<<<<<
 
   :prepwork
   ((local (in-theory (disable (:e tau-system)))) ; for speed
