@@ -251,57 +251,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define vartys-from-valid-table ((table valid-tablep))
-  :returns (vatys c::ident-type-mapp)
-  :short "Generate, from a validation table,
-          a map from identifiers to types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The validation table is from validation annotations.
-     The resulting map contains all the variables in scope
-     whose names satisfy @(tsee ident-formalp)
-     and whose types satisfy @(tsee type-formalp);
-     variables not satisfying these requirements are skipped.
-     Given that later scopes may contain variables that shadow earlier scopes,
-     we process the scopes in the validation table
-     from oldest to newest, overriding map entries as applicable."))
-  (vartys-from-valid-scope-list (valid-table->scopes table))
-
-  :prepwork
-  ((define vartys-from-valid-scope-list ((scopes valid-scope-listp))
-     :returns (vartys c::ident-type-mapp :hyp :guard)
-     :parents nil
-     (cond ((endp scopes) nil)
-           (t (omap::update*
-               (vartys-from-valid-scope-list (cdr scopes))
-               (vartys-from-valid-scope (car scopes)))))
-     :verify-guards :after-returns
-
-     :prepwork
-     ((define vartys-from-valid-scope ((scope valid-scopep))
-        :returns (vartys c::ident-type-mapp)
-        :parents nil
-        (vartys-from-valid-ord-scope (valid-scope->ord scope))
-
-        :prepwork
-        ((define vartys-from-valid-ord-scope ((oscope valid-ord-scopep))
-           :returns (vartys c::ident-type-mapp :hyp :guard)
-           :parents nil
-           (b* (((when (endp oscope)) nil)
-                ((cons ident info) (car oscope))
-                (vartys (vartys-from-valid-ord-scope (cdr oscope)))
-                ((unless (ident-formalp ident)) vartys)
-                ((unless (valid-ord-info-case info :objfun)) vartys)
-                (type (valid-ord-info-objfun->type info))
-                ((unless (type-formalp type)) vartys)
-                ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because of FORMALP
-                ((mv & ctype) (ldm-type type))) ; ERP is NIL because of FORMALP
-             (omap::update cvar ctype vartys))
-           :verify-guards :after-returns)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define gen-thm-name ((const-new symbolp) (thm-index posp))
   :returns (mv (name symbolp)
                (updated-thm-index posp))
