@@ -100,6 +100,7 @@
      this could be part of the idea of generating the parser automatically,
      mentioned above."))
   :order-subtopics (parser-states
+                    parser-messages
                     reader
                     lexer
                     t)
@@ -712,7 +713,9 @@
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
            (token-keywordp token? "__builtin_va_arg")
-           (token-keywordp token? "__extension__")))
+           (token-keywordp token? "__extension__")
+           (token-keywordp token? "true") ; C23
+           (token-keywordp token? "false"))) ; C23
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -3748,6 +3751,24 @@
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
+       ((token-keywordp token "true") ; C23
+        (retok (expr-const
+                (const-int
+                 (make-iconst :core (dec/oct/hex-const-dec 1)
+                              :suffix? nil
+                              :info nil)))
+               span
+               parstate))
+       ((token-keywordp token "false") ; C23
+        (retok (expr-const
+                (const-int
+                 (make-iconst :core (make-dec/oct/hex-const-oct
+                                     :leading-zeros 1
+                                     :value 0)
+                              :suffix? nil
+                              :info nil)))
+               span
+               parstate))
        ((and token (token-case token :ident)) ; identifier
         (retok (make-expr-ident :ident (token-ident->unwrap token)
                                 :info nil)

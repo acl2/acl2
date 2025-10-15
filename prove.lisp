@@ -4103,6 +4103,183 @@
                                             (erase-rw-cache-from-pspv new-pspv)))))
                     state))))))))
 
+(defun too-many-proc-cl-occurrences1 (proc cl hist cnt)
+
+; If processor proc has been applied to clause cl more than cnt times in the
+; history we return t; otherwise nil.  Cnt must be a natural number and is,
+; presumably, initially set to (cdr subgoal-loop-limits).  
+
+; We know that proc cannot be any of certain clause processors (listed in
+; too-many-proc-cl-occurrences below) that can routinely occur multiple times
+; with the same clause.  So we don't count occurrences of cl with those
+; processors.  But we don't have to go out of our way to do that since we only
+; count occurrences of proc and cl, and proc is checked by our caller to
+; confirm it's not excluded.
+
+  (cond ((endp hist) nil)
+        ((and (eq proc (access history-entry (car hist) :processor))
+              (equal cl (access history-entry (car hist) :clause)))
+         (if (= cnt 0)
+             t
+             (too-many-proc-cl-occurrences1 proc cl (cdr hist) (- cnt 1))))
+        (t (too-many-proc-cl-occurrences1 proc cl (cdr hist) cnt))))
+
+(defun too-many-proc-cl-occurrences (proc cl hist cnt)
+  (cond ((or (eq proc 'apply-top-hints-clause)
+             (eq proc 'preprocess-clause)
+             (eq proc 'settled-down-clause)
+             (eq proc 'fertilize-clause))
+         nil)
+        (t (too-many-proc-cl-occurrences1 proc cl hist cnt))))
+
+(defun waterfall-loop-detector (subgoal-loop-limits history)
+
+; subgoal-loop-limits is a pair whose car is nil or the maximum allowed history
+; length and whose cdr is nil or a positive natp specifying the maximum number
+; of times a given clause processor and clause can appear together in history.
+; For example, if the history can be no longer than 1000 and a processor and
+; clause can occur together at most 2 times, the subgoal-loop-limits should be
+; (1000 . 2).
+
+; This function returns one of three values: nil, t, or a natural.  Nil means
+; no problem was found wrt the subgoal-loop-limits and the history.  T
+; means that the history is too long.  A number means that the first history
+; entry, which concerns a processor and a clause, occurs at least that many
+; times (which is too many times).
+
+  (cond
+   ((null (car subgoal-loop-limits))
+    (cond ((null (cdr subgoal-loop-limits))
+; No restrictions enforced
+           nil)
+          ((too-many-proc-cl-occurrences
+            (access history-entry (car history) :processor)
+            (access history-entry (car history) :clause)
+            history
+            (cdr subgoal-loop-limits))
+; No length restriction but too many occurrences
+           (cdr subgoal-loop-limits))
+          (t
+; No violations
+           nil)))
+   ((length-exceedsp history (car subgoal-loop-limits))
+; Length restriction violated
+    t)
+   ((null (cdr subgoal-loop-limits))
+; No violations
+    nil)
+   ((too-many-proc-cl-occurrences
+     (access history-entry (car history) :processor)
+     (access history-entry (car history) :clause)
+     history
+     (cdr subgoal-loop-limits))
+; No length restriction but too many occurrences
+    (cdr subgoal-loop-limits))
+   (t
+; No violation
+    nil)))
+
+(defun collect-proc-cl-clause-id-strings (proc cl hist cnt ans)
+; This function should only be run when (too-many-proc-cl-occurrences proc cl
+; hist cnt) returns a natural.  We return the list of reoccurring clause-ids in
+; chronological order, appended to ans.
+  (cond ((endp hist) ans)
+        ((and (eq proc (access history-entry (car hist) :processor))
+              (equal cl (access history-entry (car hist) :clause)))
+         (let ((new-ans
+		(cons (string-for-tilde-@-clause-id-phrase
+		       (access history-entry
+			       (car hist)
+			       :cl-id))
+                      ans)))
+	   (if (= cnt 0)
+               new-ans
+               (collect-proc-cl-clause-id-strings
+                proc cl (cdr hist) (- cnt 1)
+                new-ans))))
+        (t (collect-proc-cl-clause-id-strings proc cl (cdr hist) cnt ans))))
+
+(defun helpful-subgoal-loop-data1 (proc cl hist cnt runes goal2 ans)
+
+; This function should only be run when (too-many-proc-cl-occurrences proc cl
+; hist cnt) returns a natural.  This function returns the data structure that
+; we show the user to help explain the loop. Suppose that
+; collect-proc-cl-clause-id-strings returns say ("Goal" "Goal'3'" "Goal'6'"
+; "Goal'9'"), and the same set of runes are used in each loop, then we return:
+
+; (("Goal"    (<rune1> ... <runek>) "Goal'3'")
+;  ("Goal'3'" (<rune1> ... <runek>) "Goal'6'")
+;  ("Goal'6'" (<rune1> ... <runek>) "Goal'9'"))
+
+; Since hist is in reverse chronological order the last goal, e.g., "Goal'9'"
+; here, is the first one we encounter.  The top-level call of this function
+; should have that goal as the goal2 formal, and runes should be the runes in
+; that goal's history entry.  Then, this function scans down the cdr of history
+; counting down cnt.  When it encounters the next goal marked with proc and cl,
+; which would be "Goal'6'" in this example, it should pause and cons (list
+; "Goal'6'" <sort the runes> "Goal'9'") onto ans and then recur with "Goal'6'"
+; as the new goal2 and runes initialized to the runes in the current
+; history-entry.
+
+  (cond ((endp hist) ans)
+        ((and (eq proc (access history-entry (car hist) :processor))
+              (equal cl (access history-entry (car hist) :clause)))
+         (let* ((goal1 (string-for-tilde-@-clause-id-phrase
+                        (access history-entry
+                                (car hist)
+                                :cl-id)))
+                (new-ans (cons (list goal1 (merge-sort-runes runes) goal2)
+                               ans)))
+           (if (= cnt 0)
+               new-ans
+               (helpful-subgoal-loop-data1 proc cl
+                                           (cdr hist)
+                                           (- cnt 1)
+                                           (all-runes-in-ttree ; new set of runes
+                                            (access history-entry (car hist) :ttree)
+                                            nil)
+                                           goal1 ; now used as goal2
+                                           new-ans))))
+        (t (helpful-subgoal-loop-data1
+            proc cl
+            (cdr hist)
+            cnt
+            (all-runes-in-ttree
+             (access history-entry (car hist) :ttree)
+             runes)
+            goal2
+            ans))))
+
+(defun helpful-subgoal-loop-data (hist cnt)
+  (helpful-subgoal-loop-data1 (access history-entry (car hist) :processor)
+                              (access history-entry (car hist) :clause)
+                              (cdr hist)
+                              cnt
+                              (all-runes-in-ttree
+                               (access history-entry (car hist) :ttree)
+                               nil)
+                              (string-for-tilde-@-clause-id-phrase
+                               (access history-entry
+                                       (car hist)
+                                       :cl-id))
+                              nil))
+
+; The following trace$ form is handy for debugging false positives found by
+; loop detection.  On entry it prints the processor, clause-id, clause, and
+; hist, and on exit it prints the output signal, new clauses, and new hist.
+
+; (trace$ (acl2::waterfall-step
+;          :entry (list 'acl2::waterfall-step
+;                       (nth 0 acl2::arglist)   ; processor
+;                       (acl2::string-for-tilde-@-clause-id-phrase
+;                        (nth 1 acl2::arglist)) ; clause-id
+;                       (nth 2 acl2::arglist)   ; clause
+;                       (nth 3 acl2::arglist))  ; hist
+;          :exit  (list 'acl2::waterfall-step
+;                       (nth 1 values)          ; signal
+;                       (nth 2 values)          ; new-clauses
+;                       (nth 3 values))))       ; new-hist
+
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
 
@@ -4180,20 +4357,49 @@
 ;                A :backtrack hint was applicable, and suitable results are
 ;                returned for handling it.
 
-  (sl-let@par
-   (erp signal clauses ttree new-pspv state)
-   (catch-time-limit5@par
-    (cond ((eq processor 'apply-top-hints-clause) ; this case returns state
-           (apply-top-hints-clause@par cl-id clause hist pspv wrld ctx state
-                                       step-limit))
-          (t
-           (sl-let
-            (signal clauses ttree new-pspv)
-            (waterfall-step1@par processor cl-id clause hist pspv wrld state
-                                 step-limit)
-            (mv@par step-limit signal clauses ttree new-pspv state)))))
-   (pprogn@par
-    (serial-first-form-parallel-second-form@par
+; We first check whether we're in a waterfall loop.  But whether we are or are
+; not we then check for time limits, etc., because our treatment of a loop is
+; the equivalent to our running out of time or being interrupted by the user.
+; Waterfall loops are detected by waterfall-loop-detector which takes parameter
+; limiting the length of the history and the number of repetitions of a given
+; clause and processor.  That parameter is stored in the acl2-defaults-table
+; under the key :subgoal-loop-limits.
+
+
+  (let* ((subgoal-loop-limits (subgoal-loop-limits wrld))
+         (bad-historyp ; nil, t, or a number
+          (waterfall-loop-detector subgoal-loop-limits
+                                   hist)))
+    (sl-let@par
+     (erp signal clauses ttree new-pspv state)
+     (catch-time-limit5@par
+      (cond
+       (bad-historyp
+
+; We detected a loop or an excessively long history.  Because we're in a
+; catch-time-limit5@par our first returned value must be a step-limit.  The erp
+; in the sl-let@par form above is ultimately either nil, the
+; *interrupt-string*, or msg about running out of time, where the two non-nil
+; possibilities indicate an error due to either an out-of-time or an interrupt.
+; But there is a third possibility, which is that we detected a loop in the
+; waterfall.  It would have been nice to indicate this error by some
+; appropriate setting of erp here, but we didn't want to mess with the rather
+; delicate handling of interrupts and time limits.  So we'll detect the
+; waterfall-loop ``error'' not by just looking at erp below but by also
+; inspecting waterfall-loop-clause-id.
+ 
+        (mv@par step-limit 'error nil nil pspv state))
+       ((eq processor 'apply-top-hints-clause) ; this case returns state
+        (apply-top-hints-clause@par cl-id clause hist pspv wrld ctx state
+                                    step-limit))
+       (t
+        (sl-let
+         (signal clauses ttree new-pspv)
+         (waterfall-step1@par processor cl-id clause hist pspv wrld state
+                              step-limit)
+         (mv@par step-limit signal clauses ttree new-pspv state)))))
+     (pprogn@par
+      (serial-first-form-parallel-second-form@par
 
 ; Since wormholes (in particular, brr wormholes) don't change the values of the
 ; state globals that implement iprinting, we formerly called
@@ -4214,63 +4420,96 @@
 ; here or in ld-read-command, or both, to avoid failures for certification of
 ; community book books/demos/brr-test-book.
 
-     (brr-evisc-tuple-oracle-update state)
-     (prog2$ (iprint-oracle-updates@par)
-             (brr-evisc-tuple-oracle-update@par)))
-    (cond
-     (erp ; from out-of-time or clause-processor fail; treat as 'error signal
-      (let ((time-limit-reached-p
+       (brr-evisc-tuple-oracle-update state)
+       (prog2$ (iprint-oracle-updates@par)
+               (brr-evisc-tuple-oracle-update@par)))
+      (cond
+       ((or erp bad-historyp)
 
-; As noted in comments above the definition of *acl2-time-limit*, the variable
-; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
-; units of internal-time-units-per-second) by with-prover-time-limit, and is
-; set to 0 to indicate that a proof has been interrupted (see our-abort).
+; We will act like an error occurred.  We have to decided which kind of
+; error.
 
-             (not (equal erp *interrupt-string*))))
-        (mv-let@par (erp2 val state)
-                    (er-soft@par ctx
-                                 (if time-limit-reached-p
-                                     "Time-limit"
-                                   "Interrupt")
+        (mv-let@par (error-string abort-cause)
+                    (cond
+                     ((eq bad-historyp t)
+                      (mv "Subgoal-path-length-violation"
+                          'subgoal-path-length-violation))
+                     (bad-historyp
+                      (mv "Waterfall-loop" 'waterfall-loop))
+                     ((eq erp *interrupt-string*)
+                      (mv "Interrupt" 'interrupt))
+                     (t (mv "Time-limit" 'time-limit)))
+                    (mv-let@par (erp2 val state)
+                                (er-soft@par
+                                 ctx error-string
                                  "~@0"
-                                 erp)
-                    (declare (ignore erp2 val))
-                    (pprogn@par
-                     (assert$
-                      (null ttree)
-                      (mv-let@par
-                       (erp3 val state)
-                       (accumulate-ttree-and-step-limit-into-state@par
-                        (add-to-tag-tree! 'abort-cause
-                                          (if time-limit-reached-p
-                                              'time-limit-reached
-                                            'interrupt)
-                                          nil)
-                        step-limit
-                        state)
-                       (declare (ignore val))
-                       (assert$ (null erp3)
-                                (state-mac@par))))
-                     (mv@par step-limit 'error nil nil nil nil state)))))
-     (t
-      (pprogn@par ; account for bddnote in case we do not have a hit
-       (cond ((and (eq processor 'apply-top-hints-clause)
-                   (member-eq signal '(error miss))
-                   ttree) ; a bddnote; see bdd-clause
-              (error-in-parallelism-mode@par
+                                 (cond
+                                  ((eq abort-cause
+                                       'subgoal-path-length-violation)
+                                   (msg "The maximum subgoal depth has of ~x0 ~
+                                         has been reached.  The proof attempt ~
+                                         has failed.  See :DOC ~
+                                         set-subgoal-loop-limits."
+                                        (car subgoal-loop-limits)))
+                                  ((eq abort-cause 'waterfall-loop)
+                                   (msg "The clause processor ~x0 has been ~
+                                         applied to the same formula more ~
+                                         than ~x1 times, namely at ~*2.  That ~
+                                         suggests a loop in the waterfall.  ~
+                                         Consequently, we are aborting!  The ~
+                                         following list shows the runes used ~
+                                         in each passage through the loop ~
+                                         between successive ~
+                                         subgoals.~%~%~X34.~%For more ~
+                                         information see :DOC ~
+                                         set-subgoal-loop-limits."
+                                        (access history-entry (car hist) :processor)
+                                        bad-historyp ; number of occurrences
+                                        (list "" "~s*" "~s* and " "~s*, "
+                                              (collect-proc-cl-clause-id-strings
+                                               (access history-entry (car hist) :processor)
+                                               (access history-entry (car hist) :clause)
+                                               hist
+                                               (cdr subgoal-loop-limits)
+                                               nil))
+                                        (helpful-subgoal-loop-data
+                                         hist
+                                         (cdr subgoal-loop-limits))
+                                        nil))
+                                  (t erp)))
+                                (declare (ignore erp2 val))
+                                (pprogn@par
+                                 (assert$
+                                  (null ttree)
+                                  (mv-let@par
+                                   (erp3 val state)
+                                   (accumulate-ttree-and-step-limit-into-state@par
+                                    (add-to-tag-tree! 'abort-cause abort-cause nil)
+                                    step-limit
+                                    state)
+                                   (declare (ignore val))
+                                   (assert$ (null erp3)
+                                            (state-mac@par))))
+                                 (mv@par step-limit 'error nil nil nil nil state)))))
+       (t
+        (pprogn@par ; account for bddnote in case we do not have a hit
+         (cond ((and (eq processor 'apply-top-hints-clause)
+                     (member-eq signal '(error miss))
+                     ttree) ; a bddnote; see bdd-clause
+                (error-in-parallelism-mode@par
 
 ; Parallelism blemish: we disable the following addition of BDD notes to the
 ; state.  Until a user requests it, we don't see a need to implement this.
 
-               (state-mac@par)
-               (f-put-global 'bddnotes
-                             (cons ttree
-                                   (f-get-global 'bddnotes state))
-                             state)))
-             (t (state-mac@par)))
-       (mv-let@par
-        (signal clauses new-hist new-pspv jppl-flg state)
-        (cond ((eq signal 'error)
+                 (state-mac@par)
+                 (f-put-global 'bddnotes
+                               (cons ttree
+                                     (f-get-global 'bddnotes state))
+                               state)))
+               (t (state-mac@par)))
+         (mv-let@par
+          (signal clauses new-hist new-pspv jppl-flg state)
+          (cond ((eq signal 'error)
 
 ; As of this writing, the only processor which might cause an error is
 ; apply-top-hints-clause.  But processors can't actually cause errors in the
@@ -4280,49 +4519,49 @@
 ; (fmt-string . alist) suitable for giving error1.  Moreover, in this case
 ; ttree is an alist assigning state global variables to values.
 
-               (mv-let@par (erp val state)
-                           (error1@par ctx "Prove" (car clauses) (cdr clauses)
-                                       state)
-                           (declare (ignore erp val))
-                           (mv@par 'error nil nil nil nil state)))
-              ((eq signal 'miss)
-               (mv@par 'miss nil hist
-                       (accumulate-rw-cache-into-pspv processor ttree pspv)
-                       nil state))
-              (t
-               (mv-let@par
-                (signal clauses ttree new-hist new-pspv state)
-                (waterfall-step-cleanup@par processor cl-id clause hist wrld
-                                            state signal clauses ttree pspv
-                                            new-pspv step-limit)
-                (mv-let@par
-                 (erp new-hint-settings new-hints state)
-                 (cond
-                  ((or (eq signal 'miss) ; presumably specious
-                       (eq processor 'settled-down-clause)) ; not user-visible
-                   (mv@par nil nil nil state))
-                  (t (process-backtrack-hint@par cl-id clause clauses processor
-                                                 new-hist new-pspv ctx wrld
-                                                 state)))
-                 (cond
-                  (erp
-                   (mv@par 'error nil nil nil nil state))
-                  (new-hint-settings
-                   (mv@par 'top-of-waterfall-hint
-                           new-hint-settings
-                           processor
-                           :pspv-for-backtrack
-                           new-hints
-                           state))
-                  (t
-                   (mv-let@par
-                    (jppl-flg new-pspv state)
-                    (waterfall-msg@par processor cl-id clause signal clauses
-                                       new-hist ttree new-pspv state)
-                    (mv@par signal clauses new-hist new-pspv jppl-flg
-                            state))))))))
-        (mv@par step-limit signal clauses new-hist new-pspv jppl-flg
-                state))))))))
+                 (mv-let@par (erp val state)
+                             (error1@par ctx "Prove" (car clauses) (cdr clauses)
+                                         state)
+                             (declare (ignore erp val))
+                             (mv@par 'error nil nil nil nil state)))
+                ((eq signal 'miss)
+                 (mv@par 'miss nil hist
+                         (accumulate-rw-cache-into-pspv processor ttree pspv)
+                         nil state))
+                (t
+                 (mv-let@par
+                  (signal clauses ttree new-hist new-pspv state)
+                  (waterfall-step-cleanup@par processor cl-id clause hist wrld
+                                              state signal clauses ttree pspv
+                                              new-pspv step-limit)
+                  (mv-let@par
+                   (erp new-hint-settings new-hints state)
+                   (cond
+                    ((or (eq signal 'miss) ; presumably specious
+                         (eq processor 'settled-down-clause)) ; not user-visible
+                     (mv@par nil nil nil state))
+                    (t (process-backtrack-hint@par cl-id clause clauses processor
+                                                   new-hist new-pspv ctx wrld
+                                                   state)))
+                   (cond
+                    (erp
+                     (mv@par 'error nil nil nil nil state))
+                    (new-hint-settings
+                     (mv@par 'top-of-waterfall-hint
+                             new-hint-settings
+                             processor
+                             :pspv-for-backtrack
+                             new-hints
+                             state))
+                    (t
+                     (mv-let@par
+                      (jppl-flg new-pspv state)
+                      (waterfall-msg@par processor cl-id clause signal clauses
+                                         new-hist ttree new-pspv state)
+                      (mv@par signal clauses new-hist new-pspv jppl-flg
+                              state))))))))
+          (mv@par step-limit signal clauses new-hist new-pspv jppl-flg
+                  state)))))))))
 
 ; Section:  FIND-APPLICABLE-HINT-SETTINGS
 

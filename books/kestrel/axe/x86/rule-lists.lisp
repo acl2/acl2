@@ -1800,6 +1800,8 @@
     sse-cmp-of-bvchop-arg2
     sse-cmp-of-bvchop-arg3
     sse-cmp-of-bvchop-arg4
+    sse-cmp-of-bvcat-irrel-arg2
+    sse-cmp-of-bvcat-irrel-arg3
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
     integerp-of-mv-nth-2-of-sse-cmp
     mv-nth-1-of-sse-cmp-of-mv-nth-2-of-sse-cmp
@@ -2117,6 +2119,7 @@
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
 
+;use in lifter-rules-common?
 (defund zmm-rules-common ()
   (declare (xargs :guard t))
   '(zmmi-becomes-zmm
@@ -2153,7 +2156,9 @@
     set-flag-of-set-zmm
     !rflags-of-set-zmm
     set-undef-of-set-zmm
-    set-mxcsr-of-set-zmm))
+    set-mxcsr-of-set-zmm
+
+    part-install-width-low-of-zmm-becomes-bvcat))
 
 (defund zmm-rules64 ()
   (declare (xargs :guard t))
@@ -5416,6 +5421,25 @@
      !rflags-of-set-rbp
 
      if-of-set-rip-and-set-rip-same
+
+     ;; we bury the set-mxcsr:
+     set-mxcsr-of-set-rax
+     set-mxcsr-of-set-rbx
+     set-mxcsr-of-set-rcx
+     set-mxcsr-of-set-rdx
+     set-mxcsr-of-set-rsi
+     set-mxcsr-of-set-rdi
+     set-mxcsr-of-set-r8
+     set-mxcsr-of-set-r9
+     set-mxcsr-of-set-r10
+     set-mxcsr-of-set-r11
+     set-mxcsr-of-set-r12
+     set-mxcsr-of-set-r13
+     set-mxcsr-of-set-r14
+     set-mxcsr-of-set-r15
+     set-mxcsr-of-set-rsp
+     set-mxcsr-of-set-rbp
+     set-mxcsr-of-write
      )))
 
 (defund unroller-rules64 ()

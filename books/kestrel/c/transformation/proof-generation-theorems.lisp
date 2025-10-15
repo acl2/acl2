@@ -1059,16 +1059,15 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-asg-errors
-    (b* (((mv right-result right-compst)
-          (c::exec-expr expr compst fenv (1- limit))))
-      (implies (or (c::errorp right-result)
-                   (c::errorp
-                    (c::exec-expr-pure (c::expr-ident var) right-compst)))
-               (c::errorp
-                (mv-nth 0 (c::exec-expr
-                           (c::expr-binary
-                            (c::binop-asg) (c::expr-ident var) expr)
-                           compst fenv limit)))))
+    (implies (or (c::errorp
+                  (c::exec-expr-pure (c::expr-ident var) compst))
+                 (c::errorp
+                  (mv-nth 0 (c::exec-expr expr compst fenv (1- limit)))))
+             (c::errorp
+              (mv-nth 0 (c::exec-expr
+                         (c::expr-binary
+                          (c::binop-asg) (c::expr-ident var) expr)
+                         compst fenv limit))))
     :enable c::expr-purep
     :expand (c::exec-expr (c::expr-binary '(:asg) (c::expr-ident var) expr)
                           compst fenv limit))

@@ -328,6 +328,32 @@
  "(x->y >= (f()) && x->y < (g()))"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "true"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 17
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-expression
+ "true"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
+
+(test-parse
+ parse-expression
+ "false"
+ :std 23
+ :cond (and (expr-case ast :const)
+            (const-case (expr-const->const ast) :int)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-designator
@@ -618,9 +644,20 @@
             (equal (tyname->declor? ast)
                    nil)))
 
-(test-parse ; C23
+(test-parse
  parse-type-name
  "bool"
+ :std 17
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-typedef (ident "bool")))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "bool"
+ :std 23
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec (type-spec-bool))))
             (equal (tyname->declor? ast)

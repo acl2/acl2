@@ -171,6 +171,13 @@
            (equal (boolif (equal v1 x) nil (equal v2 x))
                   (equal v2 x))))
 
+(defthm boolif-of-equal-and-t-and-not-equal-diff-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal k1 k2)))
+           (equal (boolif (equal k1 x) t (not (equal k2 x)))
+                  (not (equal k2 x)))))
+
 ;; "x or y" and "x" is just x
 ;todo: rename to have 'same' in the name
 (defthm boolif-of-boolif-of-t-and-nil

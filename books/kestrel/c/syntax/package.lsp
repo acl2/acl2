@@ -58,6 +58,7 @@
                 nats=>string
                 packn-pos
                 pos
+                pos-fix
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
@@ -78,5 +79,4 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp
-                c::*keywords*)))
+                str::oct-digit-char-listp)))
