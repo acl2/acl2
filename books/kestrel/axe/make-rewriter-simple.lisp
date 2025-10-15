@@ -2107,12 +2107,11 @@
                                              quoted-val
                                              rewrite-stobj2 ,@maybe-state
                                              (and memoization
-                                                  (add-pairs-to-memoization (cons ;todo: we could avoid this cons
-                                                                              tree ;; the original tree, with unsimplified args (might be ground, but that might be rare)
-                                                                              ;; should we include here fn applied to simplified-args? could use a separate memoization for ground terms
-                                                                              trees-equal-to-tree)
-                                                                            quoted-val ;the quoted constant to which TREE and all the TREES-EQUAL-TO-TREE rewrote
-                                                                            memoization))
+                                                  (add-pair-and-pairs-to-memoization tree ;; the original tree, with unsimplified args (might be ground, but that might be rare)
+                                                                                     ;; should we include here fn applied to simplified-args? could use a separate memoization for ground terms
+                                                                                     trees-equal-to-tree
+                                                                                     quoted-val ;the quoted constant to which TREE and all the TREES-EQUAL-TO-TREE rewrote
+                                                                                     memoization))
                                              hit-counts tries limits
                                              node-replacement-array))
                                      ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
@@ -3414,6 +3413,7 @@
                      (:rewrite ,(pack$ 'len-of-mv-nth-1-of-simplify-trees-and-add-to-dag- suffix))
                      (:rewrite maybe-bounded-memoizationp-monotone)
                      (:rewrite maybe-bounded-memoizationp-of-add-pairs-to-memoization)
+                     (:rewrite maybe-bounded-memoizationp-of-add-pair-and-pairs-to-memoization)
                      (:rewrite maybe-bounded-memoizationp-of-nil)
                      (:rewrite member-equal-when-member-equal-and-subsetp-equal)
                      (:rewrite mv-nth-of-cons-safe)
@@ -3497,6 +3497,7 @@
                      (:rewrite wf-dagp-after-add-function-call-expr-to-dag-array)
                      (:rewrite wf-dagp-after-add-variable-to-dag-array)
                      (:type-prescription add-pairs-to-memoization)
+                     (:type-prescription add-pair-and-pairs-to-memoization$inline)
                      (:type-prescription alist-suitable-for-hyp-args-and-hypsp)
                      (:type-prescription alist-suitable-for-hypsp)
                      (:type-prescription alistp)
