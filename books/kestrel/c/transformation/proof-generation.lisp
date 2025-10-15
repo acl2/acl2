@@ -224,7 +224,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-var-assertions ((vartys c::ident-type-mapp) (compst symbolp))
+(define gen-var-assertions ((vartys c::ident-type-mapp)
+                            (compst "An untranslated term."))
   :returns (assertions true-listp)
   :short "Generate assertions about certain variables
           having values of certain types in a computation state."
@@ -237,8 +238,8 @@
      the variable can be read from the computation state
      and it contains a value of the associated type.")
    (xdoc::p
-    "The symbol @('compst') is the ACL2 variable name
-     to use for the computation state."))
+    "The input @('compst') is the (untranslated) term
+     to use for the computation state (often just a variable)."))
   (b* (((when (omap::emptyp (c::ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
        (asrt `(c::compustate-has-var-with-type-p ',var ',type ,compst))
