@@ -362,10 +362,12 @@
      ubyte5-fix
      acl2::ubyte12-fix
      acl2::ubyte20-fix
+     acl2::ubyte32-fix
 
      ubyte5p
      acl2::ubyte12p
      acl2::ubyte20p
+     acl2::ubyte32p
 
      riscv::op-imm-funct-fix$inline
      riscv::instr-kind$inline
