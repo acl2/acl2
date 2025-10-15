@@ -601,16 +601,11 @@
     "This is the type of the annotations that
      the validator adds to function definitions.
      The information consists of
-     the validation table at the start of the function definition,
-     the validation table at the start of the body
-     (i.e. just after the opening curly brace),
      the type of the function (not just the result; the function type),
      and a "
     (xdoc::seetopic "uid" "unique identifier")
     "."))
-  ((table-start valid-table)
-   (table-body-start valid-table)
-   (type type)
+  ((type type)
    (uid uid))
   :pred fundef-infop)
 

@@ -6441,7 +6441,6 @@
   (b* (((reterr) (irr-fundef) (irr-valid-table))
        ((fundef fundef) fundef)
        ((valid-table table) table)
-       (table-start table)
        ((erp new-spec type storspecs types table)
         (valid-decl-spec-list fundef.spec nil nil nil table ienv))
        ((erp new-declor & type ident more-types table)
@@ -6567,12 +6566,9 @@
                                   :uid uid)
                                  table)
                 table))
-       (table-body-start table)
        ((erp new-body & & table) (valid-comp-stmt fundef.body t table ienv))
        (table (valid-pop-scope table))
-       (info (make-fundef-info :table-start table-start
-                               :table-body-start table-body-start
-                               :type type
+       (info (make-fundef-info :type type
                                :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
