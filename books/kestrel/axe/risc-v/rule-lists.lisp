@@ -426,7 +426,7 @@
      riscv::instr-lui->rd$inline
      riscv::instr-lui->imm$inline
 
-     exec32-instr-base
+     exec32-instr-base ; requires the instr to be constant
 
      exec32-add
      exec32-addi
@@ -442,7 +442,6 @@
      exec32-branch
      exec32-div
      exec32-divu
-     exec32-instr
      exec32-jal
      exec32-jalr
      exec32-lb
