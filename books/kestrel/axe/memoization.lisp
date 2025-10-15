@@ -724,9 +724,10 @@
 (defthm maybe-bounded-memoizationp-of-add-pair-to-memoization
   (implies (and (dargp-less-than result bound)
                 (tree-to-memoizep tree)
+                ;; we could replace these 2 hyps with (bounded-memoizationp memoization bound)
+                ;; but the caller uses maybe-bounded-memoizationp more:
                 (maybe-bounded-memoizationp memoization bound)
-                memoization ; todo?
-                )
+                memoization)
            (maybe-bounded-memoizationp (add-pair-to-memoization tree result memoization) bound))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
@@ -734,8 +735,7 @@
   (implies (and (dargp-less-than result bound)
                 (trees-to-memoizep trees)
                 (maybe-bounded-memoizationp memoization bound)
-                memoization ; todo?
-                )
+                memoization)
            (maybe-bounded-memoizationp (add-pairs-to-memoization trees result memoization) bound))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
@@ -744,8 +744,7 @@
                 (tree-to-memoizep tree)
                 (trees-to-memoizep trees)
                 (maybe-bounded-memoizationp memoization bound)
-                memoization ; todo?
-                )
+                memoization)
            (maybe-bounded-memoizationp (add-pair-and-pairs-to-memoization tree trees result memoization) bound))
   :hints (("Goal" :in-theory (enable add-pair-and-pairs-to-memoization))))
 
