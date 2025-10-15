@@ -707,15 +707,15 @@
 
 (define init-ppstate ((data byte-listp) (version c::versionp) ppstate)
   :returns (ppstate ppstatep)
-  :short "Initialize the parser state."
+  :short "Initialize the preprocessor state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the state when we start parsing a file.
-     Given (the data of) a file to parse,
+    "This is the state when we start preprocessing a file.
+     Given (the data of) a file to preprocess,
      and a C version,
-     the initial parsing state consists of
-     the data to parse,
+     the initial preprocessing state consists of
+     the data to preprocess,
      no read characters or lexemes,
      no unread characters or lexemes,
      and the initial file position.
@@ -726,7 +726,7 @@
      if this turns out to be too large,
      we will pick a different size,
      but then we may need to resize the array as needed
-     while lexing and parsing."))
+     while preprocessing."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -1349,6 +1349,98 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-char ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a character during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move the character from the sequence of read characters
+     to the sequence of unread characters,
+     by incrementing @('chars-unread') and decrementing @('chars-read').")
+   (xdoc::p
+    "It is an internal error if @('chars-read') is 0.
+     It means that the calling code is wrong.
+     In this case, after raising the hard error,
+     logically we return a preprocessing state
+     where we still increment @('chars-unread')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((ppstate.chars-read (ppstate->chars-read ppstate))
+       (ppstate.chars-unread (ppstate->chars-unread ppstate))
+       (ppstate.size (ppstate->size ppstate))
+       ((unless (> ppstate.chars-read 0))
+        (raise "Internal error: no character to unread.")
+        (b* ((ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
+                                                      ppstate))
+             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+          ppstate))
+       (ppstate (update-ppstate->chars-read (1- ppstate.chars-read)
+                                              ppstate))
+       (ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
+                                                ppstate))
+       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+
+  ///
+
+  (defret ppstate->size-of-punread-char
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))
+    :hints (("Goal" :in-theory (enable len nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-chars ((n natp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a specified number of characters during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move characters
+     from the sequence of read characters
+     to the sequence of unread characters
+     by incrementing the number of unread characters by @('n')
+     and decrementing the number of read characters by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of character read so far.
+     In this case, after raising the hard error,
+     logically we return a preprocessing state
+     where we still increment @('chars-unread')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((n (nfix n))
+       (chars-read (ppstate->chars-read ppstate))
+       (chars-unread (ppstate->chars-unread ppstate))
+       (size (ppstate->size ppstate))
+       ((unless (<= n chars-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 characters ~
+                from ~x1 read characters."
+               n chars-read)
+        (b* ((ppstate
+              (update-ppstate->chars-unread (+ chars-unread n) ppstate))
+             (ppstate
+              (update-ppstate->size (+ size n) ppstate)))
+          ppstate))
+       (new-chars-read (- chars-read n))
+       (new-chars-unread (+ chars-unread n))
+       (new-size (+ size n))
+       (ppstate (update-ppstate->chars-read new-chars-read ppstate))
+       (ppstate (update-ppstate->chars-unread new-chars-unread ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+
+  ///
+
+  (defret ppstate->size-of-punread-chars
+    (equal (ppstate->size new-ppstate)
+           (+ (ppstate->size ppstate) (nfix n)))
+    :hints (("Goal" :in-theory (enable nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
