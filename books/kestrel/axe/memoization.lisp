@@ -239,7 +239,9 @@
                                (bounded-axe-treep tree 1152921504606846974) ; todo: not 2^60-1?
                                (natp acc)
                                (< acc *memoization-size*))
-                   :split-types t)
+                   :split-types t
+                   :verify-guards nil ;done below
+                   )
             (type (integer 0 1048575) acc))
    (if (atom tree)
        (if (symbolp tree)
@@ -257,9 +259,7 @@
  (defun axe-tree-hash-aux-lst (trees acc)
    (declare (xargs :guard (and (bounded-axe-tree-listp trees 1152921504606846974)
                                (natp acc)
-                               (< acc *memoization-size*))
-                   :verify-guards nil ;done below
-                   ))
+                               (< acc *memoization-size*))))
    (if (atom trees)
        acc
      (axe-tree-hash-aux-lst (cdr trees) (combine-value-into-hash 555 (axe-tree-hash-aux (car trees) acc))))))
@@ -314,7 +314,7 @@
 
 ;bozo eventually pass in the memoization length?
 ;this is the index into the memo array
-(defund axe-tree-hash (tree)
+(defund-inline axe-tree-hash (tree)
   (declare (xargs :guard (tree-to-memoizep tree)
                   :guard-hints (("Goal" :in-theory (enable tree-to-memoizep)))))
   (axe-tree-hash-aux tree 0))
@@ -472,6 +472,31 @@
            (memoizationp (add-pairs-to-memoization trees result memoization)))
   :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization memoizationp trees-to-memoizep)
                                   (dargp natp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This just saves having to cons TREE onto TREEs
+(defund-inline add-pair-and-pairs-to-memoization (tree trees result memoization)
+  (declare (xargs :guard (and (tree-to-memoizep tree)
+                              (trees-to-memoizep trees)
+                              (dargp result)
+                              (memoizationp memoization))))
+  (add-pairs-to-memoization trees result (add-pair-to-memoization tree result memoization)))
+
+;; Sanity check:
+(thm
+  (equal (add-pair-and-pairs-to-memoization tree trees result memoization)
+         (add-pairs-to-memoization (cons tree trees) result memoization))
+  :hints (("Goal" :in-theory (enable add-pair-and-pairs-to-memoization
+                                     add-pairs-to-memoization))))
+
+(defthm memoizationp-of-add-pair-and-pairs-to-memoization
+  (implies (and (memoizationp memoization)
+                (dargp result)
+                (tree-to-memoizep tree)
+                (trees-to-memoizep trees))
+           (memoizationp (add-pair-and-pairs-to-memoization tree trees result memoization)))
+  :hints (("Goal" :in-theory (enable add-pair-and-pairs-to-memoization))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,14 +721,33 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
-(defthm maybe-bounded-memoizationp-of-add-pairs-to-memoization
-  (implies (and (dargp-less-than tree bound)
-                (trees-to-memoizep trees-equal-to-tree)
+(defthm maybe-bounded-memoizationp-of-add-pair-to-memoization
+  (implies (and (dargp-less-than result bound)
+                (tree-to-memoizep tree)
                 (maybe-bounded-memoizationp memoization bound)
                 memoization ; todo?
                 )
-           (maybe-bounded-memoizationp (add-pairs-to-memoization trees-equal-to-tree tree memoization) bound))
+           (maybe-bounded-memoizationp (add-pair-to-memoization tree result memoization) bound))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
+
+(defthm maybe-bounded-memoizationp-of-add-pairs-to-memoization
+  (implies (and (dargp-less-than result bound)
+                (trees-to-memoizep trees)
+                (maybe-bounded-memoizationp memoization bound)
+                memoization ; todo?
+                )
+           (maybe-bounded-memoizationp (add-pairs-to-memoization trees result memoization) bound))
+  :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
+
+(defthm maybe-bounded-memoizationp-of-add-pair-and-pairs-to-memoization
+  (implies (and (dargp-less-than result bound)
+                (tree-to-memoizep tree)
+                (trees-to-memoizep trees)
+                (maybe-bounded-memoizationp memoization bound)
+                memoization ; todo?
+                )
+           (maybe-bounded-memoizationp (add-pair-and-pairs-to-memoization tree trees result memoization) bound))
+  :hints (("Goal" :in-theory (enable add-pair-and-pairs-to-memoization))))
 
 (defthm maybe-memoizationp-when-maybe-bounded-memoizationp
   (implies (maybe-bounded-memoizationp memoization bound)
