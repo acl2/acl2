@@ -3299,6 +3299,12 @@
                                 :info info))
        (gout-no-thm (change-gout (gout-no-thm gin)
                                  :vartys vartys-with-fun))
+       ((unless (equal vartys vartys-with-fun))
+        (raise "Internal error: ~
+                calculated variable-type map ~x0 differs ~
+                from variable-type map from validation table."
+               vartys vartys-with-fun)
+        (mv new-fundef gout-no-thm))
        ((unless body-thm-name) (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
        ((declor declor) declor)
