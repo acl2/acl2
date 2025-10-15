@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,8 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
 (include-book "bool-fix")
-
-(defund boolif (test x y)
-  (declare (xargs :guard t))
-  (if (if test x y)
-      t
-    nil))
+(include-book "boolif-def") ; brings in the definition of boolif
 
 ;; Only needed for Axe?
 (defthmd booleanp-of-boolif
