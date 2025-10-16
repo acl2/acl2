@@ -22,6 +22,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
+  ;; INPUT is an ACL2 term with the text to lex,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional POS is the initial position for the preprocessing state.
+  ;; Optional MORE-INPUTS go just before preprocessing state input.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; Optional COND may be over variables AST, POS/SPAN, PPSTATE.
+  `(assert!-stobj
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (ppstate (init-ppstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                version
+                                ppstate))
+         ,@(and pos
+                `((ppstate (update-ppstate->position ,pos ppstate))))
+         ((mv erp ?ast ?pos/span ppstate)
+          (,fn ,@more-inputs ppstate)))
+      (mv
+       (if erp
+           (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
+         ,(or cond t)) ; assertion passes if COND is absent or else holds
+       ppstate))
+    ppstate))
+
+(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
+  ;; INPUT is an ACL2 term with the text to lex,
+  ;; where the term evaluates to a string or a list of bytes.
+  ;; Optional POS is the initial position for the preprocessing state.
+  ;; Optional MORE-INPUTS go just before preproceessing state input.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  `(assert!-stobj
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (ppstate (init-ppstate (if (stringp ,input)
+                                    (acl2::string=>nats ,input)
+                                  ,input)
+                                version
+                                ppstate))
+         ,@(and pos
+                `((ppstate (update-ppstate->position ,pos ppstate))))
+         ((mv erp & & ppstate)
+          (,fn ,@more-inputs ppstate)))
+      (mv erp ppstate))
+    ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; pread-char
 
 (assert!-stobj ; empty file
@@ -387,3 +440,55 @@
       (- (cw "~@0" erp)))
    (mv erp ppstate))
  ppstate)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-identifier
+
+(test-lex
+ plex-identifier
+ " abc"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\w) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "w")))
+            (equal pos/span (span (position 8 3) (position 8 3)))))
+
+(test-lex
+ plex-identifier
+ "abc456"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\u) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "uabc456")))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
+
+(test-lex
+ plex-identifier
+ "tatic"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\s) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "static")))
+            (equal pos/span (span (position 8 3) (position 8 8)))))
+
+(test-lex
+ plex-identifier
+ "nclude"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\i) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "include")))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
+
+(test-lex
+ plex-identifier
+ "nclud_"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\i) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "includ_")))
+            (equal pos/span (span (position 8 3) (position 8 9)))))
+
+(test-lex
+ plex-identifier
+ "nclud+"
+ :pos (position 8 4)
+ :more-inputs ((char-code #\i) (position 8 3))
+ :cond (and (equal ast (plexeme-ident (ident "includ")))
+            (equal pos/span (span (position 8 3) (position 8 8)))))
