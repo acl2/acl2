@@ -1913,7 +1913,8 @@
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
                         value-fix-when-valuep
-                        ,value-kind-when-type-pred))))
+                        ,value-kind-when-type-pred
+                        apconvert-expr-value-when-not-value-array))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints

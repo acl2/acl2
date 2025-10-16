@@ -62,7 +62,9 @@
                   (equal eval (mv-nth 0 eval+compst1))
                   (equal compst1 (mv-nth 1 eval+compst1))
                   (expr-valuep eval)
-                  (equal newval (expr-value->value eval))
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1)
+                  (equal newval (expr-value->value eval1))
                   (equal compst2 (write-var var newval compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
@@ -70,8 +72,9 @@
     :use (:instance write-object-of-objdesign-of-var-to-write-var
                     (var (expr-ident->get (expr-binary->arg1 expr)))
                     (val (expr-value->value
-                          (mv-nth 0 (exec-expr (expr-binary->arg2 expr)
-                                               compst fenv (+ -1 limit)))))
+                          (apconvert-expr-value
+                           (mv-nth 0 (exec-expr (expr-binary->arg2 expr)
+                                                compst fenv (+ -1 limit))))))
                     (compst (mv-nth 1 (exec-expr (expr-binary->arg2 expr)
                                                  compst fenv (+ -1 limit)))))
     :disable cons-equal
@@ -102,7 +105,9 @@
                   (equal eval (mv-nth 0 eval+compst1))
                   (equal compst1 (mv-nth 1 eval+compst1))
                   (expr-valuep eval)
-                  (equal val (expr-value->value eval))
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1)
+                  (equal val (expr-value->value eval1))
                   (equal compst2 (write-object objdes val compst1))
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
