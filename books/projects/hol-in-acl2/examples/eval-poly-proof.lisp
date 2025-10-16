@@ -81,7 +81,7 @@
 ; guard-verify this function.
 
 ; This is a bit ad hoc.  Eventually it might be nice for h2a to work regardless
-; of the ground type of x, but then we'll presumalby need an hta argument.
+; of the ground type of x, but then we'll presumably need an hta argument.
 
   (let ((val (hp-value x))
         (typ (hp-type x)))
