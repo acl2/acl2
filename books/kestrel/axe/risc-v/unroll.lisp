@@ -1098,8 +1098,8 @@
 ;;         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
-         (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")
-         (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
+         (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (@('t'), @('nil'), or @(':compact')).")
+         (count-hits "Whether to count rule hits during rewriting (@('t') means count hits for every rule, @(':total') means just count the total number of hits, @('nil') means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (untranslatep "Whether to untranslate terms when printing.")
