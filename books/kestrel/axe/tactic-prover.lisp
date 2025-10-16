@@ -27,6 +27,7 @@
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
 ;(include-book "dag-size")
+(include-book "dagify") ; for dag-or-term-to-term
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
