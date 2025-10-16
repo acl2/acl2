@@ -3899,11 +3899,15 @@
           ((mv erp new-tunit) (dimb-transunit tunit gcc))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "~@0~%" erp)
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                           (filepath->unwrap path)
+                           erp)
                        (dimb-transunit-ensemble-loop (omap::tail tumap)
                                                      gcc
                                                      keep-going))
-             (reterr erp)))
+             (retmsg$ "Error in translation unit ~x0: ~@1"
+                      (filepath->unwrap path)
+                      erp)))
           ((erp new-tumap)
            (dimb-transunit-ensemble-loop (omap::tail tumap) gcc keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
