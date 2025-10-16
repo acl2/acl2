@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read from bytes.
+; pread-char
 
 (assert!-stobj ; empty file
  (b* ((ppstate (init nil))
