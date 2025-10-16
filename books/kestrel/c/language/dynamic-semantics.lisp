@@ -83,8 +83,10 @@
      so that we can construct a pointer to it.
      Non-array expression values are left unchanged.
      If the array has no object designator, we return an error;
-     this should only happen for arrays with temporary lifetime [C17:6.2.4/8],
-     which are currently not part of our C subset.")
+     this should actually never happen (at least in our model),
+     but we need to formulate and prove an invariant
+     saying that every array expression value includes an object designator,
+     which at the moment we do not have.")
    (xdoc::p
     "We make a slight approximation for now:
      instead of returning a pointer to the first element of the array,
