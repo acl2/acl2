@@ -396,6 +396,7 @@
                          (iff old-result new-result)
                          (equal old-value new-value)
                          (equal old-compst new-compst)
+                         old-value
                          (equal (c::type-of-value old-value) ',ctype)))))
        (hints `(("Goal"
                  :use (,expr-pure-thm
@@ -412,7 +413,8 @@
                               (:e c::expr-binary->op)
                               (:e c::binop-kind)
                               (:e c::type-nonchar-integerp)
-                              (:t c::exec-expr-pure)))))
+                              (:t c::exec-expr-pure)
+                              (:t c::expr-value->value)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -541,11 +543,20 @@
        ((unless (equal new-left old-left))
         (raise "Internal error: ~x0 and ~x1 differ." old-left new-left)
         (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (equal (expr-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys 'compst))
        (vars-post (gen-var-assertions vartys 'old-compst))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
        ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP must be NIL
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
@@ -561,6 +572,8 @@
                          (iff old-result new-result)
                          (equal old-value new-value)
                          (equal old-compst new-compst)
+                         old-result
+                         (equal (c::type-of-value old-value) ',ctype)
                          ,@vars-post))))
        (thm-event `(defrule ,thm-name
                      ,formula
