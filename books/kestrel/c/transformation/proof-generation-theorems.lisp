@@ -386,7 +386,8 @@
          ((mv new-result new-compst) (c::exec-expr new compst new-fenv limit))
          (old-value (c::expr-value->value old-result))
          (new-value (c::expr-value->value new-result))
-         (val (c::read-object (c::objdesign-of-var var compst) compst)))
+         (val (c::read-object (c::objdesign-of-var var compst) compst))
+         (type (c::type-of-value old-arg-value)))
       (implies (and (not (c::errorp val))
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
@@ -396,7 +397,9 @@
                (and (not (c::errorp new-result))
                     (iff old-result new-result)
                     (equal old-value new-value)
-                    (equal old-compst new-compst))))
+                    (equal old-compst new-compst)
+                    old-result
+                    (equal (c::type-of-value old-value) type))))
     :enable c::expr-purep
     :expand ((c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
