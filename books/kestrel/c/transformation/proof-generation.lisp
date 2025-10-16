@@ -1745,6 +1745,7 @@
                  (:e c::binop-kind)
                  (:e c::binop-asg)
                  (:e c::ident)
+                 (:e c::type-nonchar-integerp)
                  c::not-errorp-when-compustate-has-var-with-type-p
                  expr-compustate-vars)
                :use (,arg1-thm-name
