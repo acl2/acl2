@@ -19,6 +19,7 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
+(include-book "kestrel/fty/string-stringlist-map" :dir :system)
 
 (include-book "kestrel/json-parser/parse-json-file" :dir :system)
 (include-book "kestrel/json/top" :dir :system)
@@ -29,6 +30,8 @@
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "system/extend-pathname" :dir :system)
+
+(include-book "external-preprocessing")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -742,7 +745,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define to-preproc-db
+;; TODO: take path and normalize key set
+(define to-preprocess-db
   ((db comp-dbp)
    (drop-shared booleanp)
    state)
@@ -757,9 +761,9 @@
     db)
   :hooks (:fix))
 
-(define preproc-db-to-map
+(define preprocess-db-to-map
   ((db comp-dbp))
-  :returns (map omap::mapp)
+  :returns (map acl2::string-stringlist-mapp)
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
@@ -767,28 +771,28 @@
        ((comp-db-entry entry) (cdr (first db))))
     (omap::update file
                   (comp-db-arg-list-to-string-list entry.arguments)
-                  (preproc-db-to-map (rest db))))
+                  (preprocess-db-to-map (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
   :hooks (:fix))
 
-(define to-preproc-map
+(define to-preprocess-map
   ((db comp-dbp)
    (drop-shared booleanp)
    state)
-  :returns (map omap::mapp)
-  (preproc-db-to-map (to-preproc-db db drop-shared state))
+  :returns (map acl2::string-stringlist-mapp)
+  (preprocess-db-to-map (to-preprocess-db db drop-shared state))
   :hooks (:fix))
 
-(define preproc-map-from-comp-file
+(define preprocess-map-from-comp-file
   ((filename stringp)
    (drop-shared booleanp)
    (warnings-onp booleanp)
    (warnings acl2::msg-listp)
    state)
   :returns (mv erp
-               (map omap::mapp)
+               (map acl2::string-stringlist-mapp)
                (warnings acl2::msg-listp)
                state)
   (b* ((warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
@@ -796,4 +800,44 @@
        ((reterr) nil warnings state)
        ((erp db warnings state)
         (parse-comp-db filename warnings-onp warnings state)))
-    (retok (to-preproc-map db drop-shared state) warnings state)))
+    (retok (to-preprocess-map db drop-shared state) warnings state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define show-warnings
+  ((warnings acl2::msg-listp))
+  (if (endp warnings)
+      nil
+    (prog2$ (cw "[Warning] ~@0~%" (first warnings))
+            (show-warnings (rest warnings)))))
+
+(define defpreprocess-map-fn
+  ((const-name symbolp)
+   (filename stringp)
+   (drop-shared booleanp)
+   (show-warnings booleanp)
+   state)
+  :returns (mv erp event state)
+  (b* (((mv erp map warnings state)
+        (preprocess-map-from-comp-file filename
+                                       drop-shared
+                                       show-warnings
+                                       nil
+                                       state))
+       (- (if show-warnings
+              (show-warnings warnings)
+            nil))
+       ((when erp)
+        (mv erp nil state)))
+    (value
+      `(defconst ,const-name
+         ',map))))
+
+(defmacro defpreprocess-map
+  (name
+   &key
+   file
+   (drop-shared 'nil)
+   (show-warnings 't))
+  `(make-event
+     (defpreprocess-map-fn ',name ',file ',drop-shared ',show-warnings state)))
