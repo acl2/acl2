@@ -4368,6 +4368,8 @@
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
@@ -4414,9 +4416,11 @@
                                ,valuep-when-type-pred
                                ,expr.thm-name
                                ,@type-thms
-                               c::expr-valuep-of-expr-value
-                               c::expr-value->value-of-expr-value
-                               c::value-fix-when-valuep))))
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints

@@ -1157,6 +1157,8 @@
                                                              s.value))
                                                 compst))
                         (eval eval?)
+                        (eval (apconvert-expr-value eval))
+                        ((when (errorp eval)) (mv eval compst))
                         (val (expr-value->value eval)))
                      (mv (stmt-value-return val) compst))
                  (mv (stmt-value-return nil) (compustate-fix compst)))))
