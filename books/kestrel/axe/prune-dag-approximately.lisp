@@ -31,7 +31,7 @@
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
-(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove (since this book knows about boolif)
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; do not remove (since this book knows about boolif)
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "merge-term-into-dag-array-simple")
