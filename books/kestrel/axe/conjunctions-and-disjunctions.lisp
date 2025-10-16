@@ -14,7 +14,7 @@
 
 (include-book "dag-arrays")
 (include-book "possibly-negated-nodenums")
-(include-book "kestrel/booleans/boolif" :dir :system) ; since we handle boolif specially
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; since we handle boolif specially
 (include-book "kestrel/booleans/booland" :dir :system) ; since we handle booland specially
 (include-book "kestrel/booleans/boolor" :dir :system) ; since we handle boolor specially
 (include-book "tools/flag" :dir :system)

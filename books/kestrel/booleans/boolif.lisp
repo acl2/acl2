@@ -11,15 +11,8 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
 (include-book "bool-fix")
-
-(defund boolif (test x y)
-  (declare (xargs :guard t))
-  (if (if test x y)
-      t
-    nil))
+(include-book "boolif-def") ; brings in the definition of boolif
 
 ;; Only needed for Axe?
 (defthmd booleanp-of-boolif

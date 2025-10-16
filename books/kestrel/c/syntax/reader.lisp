@@ -584,7 +584,12 @@
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable parsize len fix nfix)))))
+    :hints (("Goal" :in-theory (enable parsize len fix nfix))))
+
+  (defret read-char.char?-type-prescription
+    (or (natp char?)
+        (equal char? nil))
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
