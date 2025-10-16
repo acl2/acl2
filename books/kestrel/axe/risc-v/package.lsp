@@ -92,34 +92,6 @@
             expt2$inline
             ifloor$inline
 
-            boolif
-            booland
-            boolor
-            bool-fix
-            bool-fix$inline
-
-            bvplus
-            bvminus
-            bvuminus
-            bvchop
-            slice
-            getbit
-            bvcat
-            bvcat2
-            bvlt
-            bvle
-            bvgt
-            bvge
-            bvand
-            bvor
-            bvxor
-            bvnot
-            bvif
-
-            trim
-
-            putbyte
-
             power-of-2p
             lg
 
@@ -128,14 +100,6 @@
             term-should-be-converted-to-bvp
 
             packbv-little
-
-            list-to-bv-array
-            list-to-bv-array-aux
-            bv-arrayp
-            bv-array-read
-            bv-array-read-chunk-little
-            bv-array-write
-            array-of-zeros
 
             bv-list-read-chunk-little
 
@@ -269,6 +233,7 @@
             riscv::instr.rs2
             riscv::instr.imm
             )
+          *axe-functions*
           *axe-tools*
           *axe-implementation-functions*
           (set-difference-eq *acl2-exports*

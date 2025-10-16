@@ -1404,12 +1404,14 @@
     bool-fix$inline
 
     list-to-bv-array
+    list-to-bv-array-aux
     bv-array-to-list
     bv-array-to-list-aux
     bv-array-read
     bv-array-write
     bv-array-read-chunk-little
-    bv-arrayp))
+    bv-arrayp
+    array-of-zeros))
 
 (defconst *symbols-from-acl2-package*
   (append
