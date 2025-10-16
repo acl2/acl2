@@ -994,7 +994,7 @@
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions.
-       We execute the arguments and then the function .")
+       We execute the arguments and then the function.")
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1087,6 +1087,12 @@
     (xdoc::topstring
      (xdoc::p
       "For now we only support the execution of certain statements.")
+     (xdoc::p
+      "Since an expression statement discards
+       the value returned by the expression (if any),
+       there is no need to perform array-to-pointer conversion [C23:6.3.3.1].
+       The fact that array-to-pointer conversion may return an error
+       is just an artifact of our current model, which we plan to eliminate.")
      (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
