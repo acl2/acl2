@@ -1457,6 +1457,8 @@
                                         t
                                         wrld))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm type gin.prec-tags))
        (type-of-value-when-type-pred
         (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
@@ -1504,7 +1506,9 @@
                         compustatep-of-add-var
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-when-type-pred))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
                                                      :hints item-hints

@@ -1280,6 +1280,8 @@
             ((when (not eval))
              (mv (error (list :void-initializer (initer-fix initer)))
                  compst))
+            (eval (apconvert-expr-value eval))
+            ((when (errorp eval)) (mv eval compst))
             (val (expr-value->value eval))
             (ival (init-value-single val)))
          (mv ival compst))
