@@ -66,7 +66,9 @@
 (defun defconst-x86-fn (defconst-name filename state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((mv erp contents state) (parse-executable filename state))
-       ((when erp) (mv t nil state)))
+       ((when erp)
+        (cw "~%ERROR parsing ~s0: ~x1.~%" filename erp)
+        (mv t nil state)))
       (mv nil `(defconst ,defconst-name ',contents) state)))
 
 ;; Define a constant containing the parsed contents of the x86 executable file FILENAME

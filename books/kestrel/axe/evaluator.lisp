@@ -26,7 +26,7 @@
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us sbvdiv
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
