@@ -32,7 +32,7 @@
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 ;(local (include-book "../axe-rules-mixed")) ; drop?
 (local (include-book "../rules3")) ;drop ; maybe for <-of-constant-and-bvchop-when-equal-of-getbit
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))

@@ -1245,10 +1245,10 @@
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
     acl2::loghead-becomes-bvchop
-    acl2::bvchop-of-lognot-becomes-bvnot
-    acl2::bvchop-of-logand-becomes-bvand
-    acl2::bvchop-of-logior-becomes-bvor
-    acl2::bvchop-of-logxor-becomes-bvxor
+    ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logior-becomes-bvor
+    ;;acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
 
     acl2::logapp-becomes-bvcat-bind-free-axe
@@ -5177,8 +5177,6 @@
      set-flag-of-set-rsp
      set-flag-of-set-rbp
 
-
-
      ;; set-rip-of-myif
      ;; set-rax-of-myif
      ;; set-rbx-of-myif
@@ -5555,8 +5553,8 @@
      acl2::if-of-nil
      acl2::if-of-t
 
-     acl2::bvplus-of-logext-arg2
-     acl2::bvplus-of-logext-arg3
+     acl2::bvplus-of-logext-arg2 ; drop?
+     acl2::bvplus-of-logext-arg3 ; drop?
      acl2::signed-byte-p-logext
      read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
      )
@@ -5791,17 +5789,17 @@
     acl2::ash-when-non-negative-becomes-*-of-expt ; todo
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
-    acl2::<-of-15-and-*-of-4
+    ;acl2::<-of-15-and-*-of-4
     acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-    acl2::not-bvlt-of-max-arg2
-    acl2::<-of-*-when-constant-integers
+    acl2::not-bvlt-of-max-arg2 ; size is symbolic
+    ;acl2::<-of-*-when-constant-integers
     ;;separate-when-separate-2 ; todo: drop? but that caused problems
     acl2::collect-constants-over-<-2
     acl2::commutativity-of-*-when-constant
-    acl2::<-of-*-of-constant-and-constant
+    ;acl2::<-of-*-of-constant-and-constant
     acl2::rationalp-when-integerp
     acl2::+-of-+-of---same
-    acl2::<-of-minus-and-constant ; ensure needed
+    ; acl2::<-of-minus-and-constant ; ensure needed
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
     ;;rflagsbits->af-of-myif
@@ -5863,8 +5861,7 @@
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
     acl2::equal-of-bvplus-constant-and-constant
     acl2::equal-of-bvplus-constant-and-constant-alt
-    acl2::bvchop-of-bvshr-same
-    acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
+    ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
     acl2::equal-of-constant-and-bitand
@@ -5910,7 +5907,7 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            acl2::bvchop-of-if
+            ;acl2::bvchop-of-if ; pushes the if through ; todo: go to bvif?
             acl2::ifix-of-if
 
             ;; move all of these:
@@ -6026,14 +6023,12 @@
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
             acl2::bvplus-commutative-increasing-axe
-            ;acl2::bvchop-of-bvmod ; just use bvchop-identity-axe
             acl2::bvuminus-of-bvif-constants
             acl2::equal-of-bvif ;restrict to constant x?
             acl2::equal-of-bvif-alt ;restrict to constant x?
             ;; just include boolean-rules?
             acl2::boolif-when-quotep-arg2
             acl2::boolif-when-quotep-arg3
-            acl2::bvchop-of-bvuminus-same
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less

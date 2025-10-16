@@ -982,9 +982,9 @@
 
 (thm (equal (not (bool-fix x)) (not x)))
 
-(thm (equal (boolif (bool-fix test) x y) (boolif test x y)))
-(thm (equal (boolif test (bool-fix x) y) (boolif test x y)))
-(thm (equal (boolif test x (bool-fix y)) (boolif test x y)))
+(thm (equal (boolif (bool-fix test) x y) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
+(thm (equal (boolif test (bool-fix x) y) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
+(thm (equal (boolif test x (bool-fix y)) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
 
 ;; Determines the type (if any) for NODENUM induced by PARENT-EXPR. For
 ;; example, (bvplus '32 100 200) induces a BV type of width 32 for node 100 and

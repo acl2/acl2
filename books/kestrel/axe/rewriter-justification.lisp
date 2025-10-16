@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
+(local (include-book "kestrel/booleans/boolif" :dir :system))
 
 (thm
   (implies test
