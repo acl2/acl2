@@ -16,7 +16,7 @@
 (include-book "test-cases")
 (include-book "evaluator") ; for apply-axe-evaluator ; todo: use basic eval but need to evaluate dag-val-with-axe-evaluator in examples like rc4-loop, make this file a generator that takes an evaluator?
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
-(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/acl2-arrays/aset1-safe" :dir :system) ; todo: drop once we no longer call aset1-safe below
 (include-book "kestrel/acl2-arrays/print-array" :dir :system)

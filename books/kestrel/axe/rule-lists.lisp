@@ -386,7 +386,7 @@
     unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
-    unsigned-byte-p-forced-of-bool-to-bit
+    unsigned-byte-p-of-bool-to-bit
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
