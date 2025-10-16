@@ -1016,6 +1016,9 @@
        whose value may be affected by the right-hand side,
        but its value is not used for the assignment,
        as it is overwritten by the assignment.
+       Array-to-pointer conversion [C23:6.3.3.1] is applied
+       to the result of evaluating the right-hand side,
+       which must return an expression value (not @('nil')).
        Note that the assignment itself is not an lvalue;
        its result is the value assigned by the assignment."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1051,15 +1054,13 @@
                ((mv right-eval? compst)
                 (if (expr-case left :ident)
                     (exec-expr right compst fenv (1- limit))
-                  (b* ((right-eval (exec-expr-pure right compst))
-                       ((when (errorp right-eval))
-                        (mv right-eval (compustate-fix compst)))
-                       (right-eval (apconvert-expr-value right-eval)))
-                    (mv right-eval (compustate-fix compst)))))
+                  (mv (exec-expr-pure right compst) (compustate-fix compst))))
                ((when (errorp right-eval?)) (mv right-eval? compst))
                ((when (not right-eval?))
                 (mv (error (list :asg-void-expr right)) compst))
                (right-eval right-eval?)
+               (right-eval (apconvert-expr-value right-eval))
+               ((when (errorp right-eval)) (mv right-eval compst))
                (val (expr-value->value right-eval))
                (compst/error (write-object objdes val compst))
                ((when (errorp compst/error)) (mv compst/error compst))
