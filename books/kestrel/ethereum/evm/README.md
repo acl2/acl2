@@ -9,27 +9,27 @@ Ethereum/EVM version.
 
 ### Python Executable Specifications
 
+https://github.com/ethereum/execution-specs
+
 As of October, 2025 this appears to be up-to-date, covering versions
 through Prague.
 
-https://github.com/ethereum/execution-specs
+### Ethereum Yellow Paper
 
-### Yellow Paper
+https://github.com/ethereum/yellowpaper
 
 A LaTex document describing the EVM, etc.  As of October, 2025, the
 Yellow Paper is out-of-date, only covering versions through Shanghai.
 
-https://github.com/ethereum/yellowpaper
-
 ### KEVM
-
-A formalization of the EVM in the K framework.  As of October, 2025,
-it appears to be actively maintained and to have support for versions
-through Prague.
 
 https://github.com/runtimeverification/evm-semantics
 
 https://jellopaper.org/
+
+A formalization of the EVM in the K framework.  As of October, 2025,
+it appears to be actively maintained and to have support for versions
+through Prague.
 
 ### Dafny-EVM
 
@@ -41,17 +41,23 @@ https://franck44.github.io/publications/papers/dafnyevm-fm-23.pdf
 
 https://github.com/bluealloy/revm
 
+### LEVM (Lambda EVM), implemented in Rust
+
+https://github.com/lambdaclass/ethrex/tree/main/crates/vm/levm
+
+As of October, 2025 this appears to be up-to-date as it supports Prague.
+
 ### Geth (Go Ethereum)
 
 https://github.com/ethereum/go-ethereum/tree/master
 
 ### A formalization in LEM
 
+https://github.com/pirapira/eth-isabelle
+
 A formalization in LEM, which can be translated to Isabelle/HOL and
 other systems.  As of October, 2025, it appears out-of-date, having
 not been changed since 2018.
-
-https://github.com/pirapira/eth-isabelle
 
 ### A formalization in F*
 
