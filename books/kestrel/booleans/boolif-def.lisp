@@ -13,7 +13,7 @@
 
 ;; See rules in boolif.lisp.
 
-;; Could require all args to be booleand and them optimize this.
+;; Could require all args to be boolean and then optimize this.
 (defund boolif (test x y)
   (declare (xargs :guard t))
   (if (if test x y)
