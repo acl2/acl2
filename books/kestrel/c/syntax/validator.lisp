@@ -6781,13 +6781,17 @@
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "~@0~%" erp)
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                           (filepath->unwrap path)
+                           erp)
                        (valid-transunit-ensemble-loop (omap::tail map)
                                                       externals
                                                       next-uid
                                                       ienv
                                                       keep-going))
-             (reterr erp)))
+             (retmsg$ "Error in translation unit ~x0: ~@1"
+                      (filepath->unwrap path)
+                      erp)))
           ((valid-table table) table)
           ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
                                                         table.externals
