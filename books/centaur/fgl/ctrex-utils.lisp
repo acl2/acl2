@@ -2717,37 +2717,44 @@ compute a value for @('x').</p>
 ;; ------------------------------------------------------------------------
 
 
-(defines fgl-object-vars
-  (define fgl-object-vars ((x fgl-object-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
+(defines fgl-object-vars-memo
+  (define fgl-object-vars-memo ((x fgl-object-p) (acc pseudo-var-list-p) (memo))
+    :returns (mv (vars pseudo-var-list-p) new-memo)
     :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :verify-guards nil
-    (fgl-object-case x
-      :g-var (add-to-set-eq x.name (pseudo-var-list-fix acc))
-      :g-apply (fgl-objectlist-vars x.args acc)
-      :g-ite (fgl-object-vars x.test (fgl-object-vars x.then (fgl-object-vars x.else acc)))
-      :g-cons (fgl-object-vars x.car (fgl-object-vars x.cdr acc))
-      :g-map (fgl-object-alist-vars x.alist acc)
-      :otherwise (pseudo-var-list-fix acc)))
+    (if (hons-get (fgl-object-fix x) memo)
+        (mv (pseudo-var-list-fix acc) memo)
+      (b* ((memo (hons-acons (fgl-object-fix x) t memo)))
+        (fgl-object-case x
+          :g-var (mv (add-to-set-eq x.name (pseudo-var-list-fix acc)) memo)
+          :g-apply (fgl-objectlist-vars-memo x.args acc memo)
+          :g-ite (b* (((mv acc memo) (fgl-object-vars-memo x.then acc memo))
+                      ((mv acc memo) (fgl-object-vars-memo x.else acc memo)))
+                   (fgl-object-vars-memo x.test acc memo))
+          :g-cons (b* (((mv acc memo) (fgl-object-vars-memo x.car acc memo)))
+                    (fgl-object-vars-memo x.cdr acc memo))
+          :g-map (fgl-object-alist-vars-memo x.alist acc memo)
+          :otherwise (mv (pseudo-var-list-fix acc) memo)))))
 
-  (define fgl-objectlist-vars ((x fgl-objectlist-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
+  (define fgl-objectlist-vars-memo ((x fgl-objectlist-p) (acc pseudo-var-list-p) (memo))
+    :returns (mv (vars pseudo-var-list-p) new-memo)
     :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (if (atom x)
-        (pseudo-var-list-fix acc)
-      (fgl-objectlist-vars (cdr x) (fgl-object-vars (car x) acc))))
+        (mv (pseudo-var-list-fix acc) memo)
+      (b* (((mv acc memo)  (fgl-object-vars-memo (car x) acc memo)))
+        (fgl-objectlist-vars-memo (cdr x) acc memo))))
 
-  (define fgl-object-alist-vars ((x fgl-object-alist-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
+  (define fgl-object-alist-vars-memo ((x fgl-object-alist-p) (acc pseudo-var-list-p) memo)
+    :returns (mv (vars pseudo-var-list-p) new-memo)
     :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     (if (atom x)
-        (pseudo-var-list-fix acc)
-      (fgl-object-alist-vars (cdr x)
-                            (if (mbt (consp (car x)))
-                                (fgl-object-vars (cdar x) acc)
-                              acc))))
+        (mv (pseudo-var-list-fix acc) memo)
+      (b* (((mv acc memo) (if (mbt (consp (car x)))
+                              (fgl-object-vars-memo (cdar x) acc memo)
+                            (mv acc memo))))
+      (fgl-object-alist-vars-memo (cdr x) acc memo))))
   ///
-  (verify-guards fgl-object-vars)
+  (verify-guards fgl-object-vars-memo)
 
   (local (defthm fgl-object-alist-fix-when-bad-car
            (implies (and (consp x) (not (Consp (car x))))
@@ -2755,7 +2762,21 @@ compute a value for @('x').</p>
                            (fgl-object-alist-fix (cdr x))))
            :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
 
-  (fty::deffixequiv-mutual fgl-object-vars))
+  (fty::deffixequiv-mutual fgl-object-vars-memo))
+
+(define fgl-object-vars ((x fgl-object-p))
+  :Returns (vars pseudo-var-list-p)
+  (b* (((mv acc memo) (fgl-object-vars-memo x nil nil)))
+    (fast-alist-free memo)
+    acc))
+
+(define fgl-object-alist-vars ((x fgl-object-alist-p))
+  :Returns (vars pseudo-var-list-p)
+  (b* (((mv acc memo) (fgl-object-alist-vars-memo x nil nil)))
+    (fast-alist-free memo)
+    acc))
+
+
 
 (define counterex-bindings-summarize-errors (infer-errors eval-errors)
   (if infer-errors
@@ -2764,6 +2785,11 @@ compute a value for @('x').</p>
         (msg "~@0" infer-errors))
     (and eval-errors (msg "~@0" eval-errors))))
 
+(local (defthm fgl-object-alist-p-when-bindings
+         (implies (fgl-object-bindings-p x)
+                  (fgl-object-alist-p x))
+         :hints(("Goal" :in-theory (enable fgl-object-alist-p
+                                           fgl-object-bindings-p)))))
 
 (local (defthm fgl-objectlist-p-alist-vals-of-fgl-object-bindings
          (implies (fgl-object-bindings-p x)
@@ -2845,7 +2871,7 @@ compute a value for @('x').</p>
                      '(:in-theory (enable interp-st-bfrs-ok
                                           bfr-listp-when-not-member-witness))))
   (b* ((x (fgl-object-bindings-fix x))
-       (vars (fgl-object-alist-vars x nil))
+       (vars (fgl-object-alist-vars x))
        ((mv infer-err interp-st)
         (interp-st-infer-ctrex-var-assignments vars interp-st state))
        ((mv eval-err binding-vals)
@@ -2895,7 +2921,7 @@ compute a value for @('x').</p>
                       :hints(("Goal" :in-theory (enable fgl-object-alist-p
                                                         fgl-object-bindings-p))))))
   (b* ((x (fgl-object-fix x))
-       (vars (fgl-object-vars x nil))
+       (vars (fgl-object-vars x))
        ((mv infer-err interp-st)
         (interp-st-infer-ctrex-var-assignments vars interp-st state))
        ;; ((when err)

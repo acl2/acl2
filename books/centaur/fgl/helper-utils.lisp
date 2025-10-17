@@ -86,6 +86,8 @@
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
 
+(fancy-ev-add-primitive acl2::time-tracker-fn t)
+
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (define interp-st-print-aignet-stats ((name stringp) interp-st)

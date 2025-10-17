@@ -5289,9 +5289,9 @@
 
 
       (define fgl-maybe-interp ((test interp-st-bfr-p)
-                               (x pseudo-termp)
-                               (interp-st interp-st-bfrs-ok)
-                               state)
+                                (x pseudo-termp)
+                                (interp-st interp-st-bfrs-ok)
+                                state)
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020
                        (pseudo-term-binding-count x)
@@ -5305,6 +5305,16 @@
           (b* (((when (interp-st->errmsg interp-st))
                 ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
                 (fgl-interp-value nil nil))
+               (unconditionalp (pseudo-term-case x
+                                 :fncall (eq x.fn 'unconditional)
+                                 :otherwise nil))
+               ((when unconditionalp)
+                (b* (((fgl-interp-value ans)
+                      (fgl-interp-term-top x interp-st state))
+                     ((when (eq (interp-st->errmsg interp-st) :unreachable))
+                      (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
+                        (fgl-interp-value t nil))))
+                  (fgl-interp-value nil ans)))
                ((mv contra interp-st)
                 (interp-st-pathcond-assume test interp-st))
                ((when contra)
