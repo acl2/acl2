@@ -11,6 +11,7 @@
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/x86/portcullis" :dir :system)
 
+;; We import these symbols because they may be called from the Axe variants.
 ;move this list?
 (defconst *axe-implementation-functions*
   '(erp-nil
@@ -233,7 +234,7 @@
             riscv::instr.rs2
             riscv::instr.imm
             )
-          *axe-functions*
+          *axe-symbols*
           *axe-tools*
           *axe-implementation-functions*
           (set-difference-eq *acl2-exports*
