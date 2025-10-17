@@ -148,7 +148,31 @@
            @('blkx86isa'). This device is essentially a view into the gigabyte of
            physical memory at address @('0x100000000'). This could be useful for
            transfering files into and out of the Linux system running in the
-           model. You can mount it like any other drive on a Linux system.</p>"))
+           model. You can mount it like any other drive on a Linux system.</p>
+
+           <p>To measure the performance of running Linux on the @('x86isa') model
+           (running on your specific machine), add a function of the form</p>
+
+           <code>
+           (defun run-model-count-steps (n x86)
+            (declare (xargs :mode :program
+                            :stobjs (x86)))
+            (b* (((when (equal (cpl x86) 3)) (mv n x86))
+                 (x86 (x86-fetch-decode-execute x86)))
+              (run-model-count-steps (1+ n) x86)))
+           </code>
+
+           <p>and run it with</p>
+
+           <code>
+           (time$ (run-model-count-steps 0 x86))
+           </code>
+
+           <p>This may take a while. At the end, it should print
+           the time elapsed (from @(tsee time$))
+           and the number of instructions (i.e. steps) executed (from the function).
+           Dividing the latter by the former yields
+           the average number of executed instructions per second.</p>"))
 
 (defxdoc building-linux
          :parents (running-linux)
