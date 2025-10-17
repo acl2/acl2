@@ -386,18 +386,24 @@
          ((mv new-result new-compst) (c::exec-expr new compst new-fenv limit))
          (old-value (c::expr-value->value old-result))
          (new-value (c::expr-value->value new-result))
-         (val (c::read-object (c::objdesign-of-var var compst) compst)))
+         (val (c::read-object (c::objdesign-of-var var compst) compst))
+         (type (c::type-of-value old-arg-value)))
       (implies (and (not (c::errorp val))
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
                     (iff old-arg-result new-arg-result)
                     (equal old-arg-value new-arg-value)
-                    (equal old-arg-compst new-arg-compst))
+                    (equal old-arg-compst new-arg-compst)
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (iff old-result new-result)
                     (equal old-value new-value)
-                    (equal old-compst new-compst))))
-    :enable c::expr-purep
+                    (equal old-compst new-compst)
+                    old-result
+                    (equal (c::type-of-value old-value) type))))
+    :enable (c::expr-purep
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)
     :expand ((c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
               compst old-fenv limit)

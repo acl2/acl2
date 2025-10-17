@@ -785,8 +785,8 @@
 
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
-       ;; Now we can set the magic number (todo: call this :executable-type?):
-       (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
+       ;; Now we can set the executable-type:
+       (result (acons :executable-type (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
        (result (acons :class class result))
        (data (lookup-safe ei_data *data-encodings*))
        (result (acons :data data result))
@@ -908,6 +908,8 @@
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
+       ;; Check the :executable-type:
+       (member-eq (lookup-eq :executable-type parsed-elf) '(:elf-64 :elf-32))
        ;; Check the bytes:
        (assoc-eq :bytes parsed-elf)
        (byte-listp (lookup-eq :bytes parsed-elf))

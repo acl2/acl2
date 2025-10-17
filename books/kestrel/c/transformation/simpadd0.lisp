@@ -2840,55 +2840,32 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We generate a theorem for the function
-     only under certain conditions,
-     including the fact that a theorem for the body gets generated.")
+    "The variable-type map resulting from
+     the transformation of the function declarator
+     includes the applicable parameters of the function,
+     if the function declarator has the @(':function-params') kind.
+     We extend this variable-type map with the function itself,
+     which is in scope just after the declarator;
+     currently this extension is a no-op,
+     because @(tsee type-formalp) does not hold on function types,
+     but we want to have the more general code here.
+     If declarations follow, which is the case only if
+     the function declarator has the @(':function-names') kind,
+     the declarations may further extend the variable-type map before the body,
+     with entries for the parameters declared there.
+     In any case, the body is transformed with the variable-type map
+     after the declarator and any following declarations.")
    (xdoc::p
-    "For the body of the function,
-     currently we obtain the variable-type map from
-     the validation table that annotates the function definition
-     (the validation table at the start of the body,
-     not at the start of the function definition;
-     we plan to avoid this, and use instead the variable-type map
-     coming from the transformation of the constructs preceding the body,
-     since now we may have sufficient propagation of variable-type maps,
-     which was not the case some time ago
-     (which motivated the use of
-     the validation table at the start of the body).
-     The validation table at the start of the body
-     is put into the @(tsee gin)
-     and passed to @(tsee simpadd0-comp-stmt).")
-   (xdoc::p
-    "We generate the folllowing theorems:")
-   (xdoc::ul
-    (xdoc::li
-     "A theorem about the initial scope of the function body.
-      See @(tsee gen-init-scope-thm).")
-    (xdoc::li
-     "For each function parameter, a theorem saying that,
-      after pushing a frame with the initial scope above,
-      the computation state has a variable for the parameter
-      with the associated type.")
-    (xdoc::li
-     "The main theorem for the function definition,
-      saying that, if the execution of the old function does not yield an error,
-      neither does the execition of the new function,
-      and they return the same results and computation states."))
-   (xdoc::p
-    "We use @(tsee gen-from-params) to obtain
-     certain information from the parameters,
-     which is used to generate the theorems.
-     This information includes the variable-type map
-     corresponding to the function parameters:
-     we ensure that it is the same as
-     the variable-type map from the validation table
-     that annotates the start of the function body.
-     In general the former is a sub-map of the latter,
-     because the validation table could include global variables;
-     but for now proof generation does not handle global variables,
-     so we generate proofs for the body only if
-     the theorems about the initial scope and the parameters
-     suffice to establish the variable-type hypotheses of the body."))
+    "The variable-type map resulting from transforming the body is discarded.
+     We call a separate function, @(tsee xeq-fundef),
+     to complete the transformation and possibly generate a theorem.
+     That function returns, among other things,
+     a variable-type map that is
+     like the one at the beginning of the function definition
+     (before its declaration specifiers, declarator, etc.),
+     with the addition of the function itself
+     (no addition currently, as explained above,
+     but the code is more general for future extensions)."))
   (b* (((fundef fundef) fundef)
        ((mv new-spec (gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin))
@@ -2910,10 +2887,10 @@
         (simpadd0-decl-list fundef.decls
                             (change-gin gin :vartys vartys-with-fun)))
        (gin (gin-update gin gout-decls))
-       (vartys (vartys-from-valid-table
-                (fundef-info->table-body-start fundef.info)))
+       (vartys-for-body gout-decls.vartys)
        ((mv new-body (gout gout-body))
-        (simpadd0-comp-stmt fundef.body (change-gin gin :vartys vartys)))
+        (simpadd0-comp-stmt fundef.body
+                            (change-gin gin :vartys vartys-for-body)))
        ((gin gin) (gin-update gin gout-body)))
     (xeq-fundef fundef.extension
                 fundef.spec
@@ -2927,7 +2904,6 @@
                 fundef.body
                 new-body
                 gout-body.thm-name
-                vartys-with-fun
                 fundef.info
                 gin))
   :hooks (:fix)

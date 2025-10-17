@@ -210,25 +210,26 @@
     (#x4000 . :IMAGE_FILE_UP_SYSTEM_ONLY)
     (#x8000 . :IMAGE_FILE_BYTES_REVERSED_HI)))
 
-;; Returns (mv erp header bytes).
+;; Returns (mv erp header executable-type bytes).
 (defund parse-coff-file-header (bytes)
   (declare (xargs :guard (byte-listp bytes)))
   (b* ((header nil)
        ;; machine:
        ((mv erp machine bytes) (parse-u16 bytes))
-       ((when erp) (mv erp nil bytes))
-       (header (acons :machine (lookup-safe machine *machine-types*) header))
+       ((when erp) (mv erp nil nil bytes))
+       (machine-type (lookup-safe machine *machine-types*)) ; also used below
+       (header (acons :machine machine-type header))
        ;; number-of-sections:
        ((mv erp number-of-sections bytes) (parse-u16 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        (header (acons :number-of-sections number-of-sections header))
        ;; time-date-stamp:
        ((mv erp time-date-stamp bytes) (parse-u32 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        (header (acons :time-date-stamp time-date-stamp header))
        ;; pointer-to-symbol-table:
        ((mv erp pointer-to-symbol-table bytes) (parse-u32 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        ;; pecoff.pdf says: "This value should be zero for an image because COFF debugging information is deprecated."
        ;; However, non-zero values seem to happen a lot.
        (- (and (not (eql 0 pointer-to-symbol-table))
@@ -236,7 +237,7 @@
        (header (acons :pointer-to-symbol-table pointer-to-symbol-table header))
        ;; number-of-symbols:
        ((mv erp number-of-symbols bytes) (parse-u32 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        ;; pecoff.pdf says: This value should be zero for an image because COFF debugging information is deprecated.
        ;; However, non-zero values seem to happen a lot.
        (- (and (not (eql 0 number-of-symbols))
@@ -244,15 +245,22 @@
        (header (acons :number-of-symbols number-of-symbols header))
        ;; size-of-optional-header:
        ((mv erp size-of-optional-header bytes) (parse-u16 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        (header (acons :size-of-optional-header size-of-optional-header header)) ;TODO: Use this to decide whether to parse an optional-header
        ;; characteristics:
        ((mv erp characteristics bytes) (parse-u16 bytes))
-       ((when erp) (mv erp nil bytes))
+       ((when erp) (mv erp nil nil bytes))
        (header (acons :characteristics (decode-flags characteristics
                                                      *pe-characteristic-flags-alist*)
-                      header)))
-    (mv nil (reverse header) bytes)))
+                      header))
+       ;; executable-type (returned and included in the top-level parsed-pe):
+       (executable-type (if (eq machine-type :IMAGE_FILE_MACHINE_I386)
+                            :pe-32
+                          (if (eq machine-type :IMAGE_FILE_MACHINE_AMD64)
+                              :pe-64
+                            ;; todo: error for now?:
+                            :pe-unknown))))
+    (mv nil (reverse header) executable-type bytes)))
 
 (local
   (defthm alistp-of-mv-nth-1-of-parse-coff-file-header
@@ -260,9 +268,9 @@
     :hints (("Goal" :in-theory (enable parse-coff-file-header)))))
 
 (local
-  (defthm byte-listp-of-mv-nth-2-of-parse-coff-file-header
+  (defthm byte-listp-of-mv-nth-3-of-parse-coff-file-header
     (implies (byte-listp bytes)
-             (byte-listp (mv-nth 2 (parse-coff-file-header bytes))))
+             (byte-listp (mv-nth 3 (parse-coff-file-header bytes))))
     :hints (("Goal" :in-theory (enable parse-coff-file-header)))))
 
 ;; Returns (mv erp header bytes).
@@ -964,7 +972,7 @@
        ;;(pe (acons :sig sig pe))
        (pe (acons :sig-as-string (bytes-to-printable-string sig) pe))
        ;; Parse the coff-file-header:
-       ((mv erp coff-file-header bytes) (parse-coff-file-header bytes))
+       ((mv erp coff-file-header executable-type bytes) (parse-coff-file-header bytes))
        ((when erp) (mv erp nil))
        (pe (acons :coff-file-header coff-file-header pe))
        ;; Parse the symbol table:
@@ -1027,6 +1035,7 @@
        ((when erp) (mv erp nil))
        (pe (acons :sections sections pe))
        ;;TODO: What other data do we need to parse?
+       (pe (acons :executable-type executable-type pe)) ; todo: arrange to put this first?
        ) ;todo: Can we somehow check that all bytes are used?
     (mv nil (reverse pe))))
 

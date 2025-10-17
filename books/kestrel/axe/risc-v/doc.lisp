@@ -12,7 +12,7 @@
 
 ;; TODO: Add more doc for this variant
 
-(include-book "unroll")
+(include-book "unroller")
 ;(include-book "prove-equivalence")
 
 ;; todo: extend this

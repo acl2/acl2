@@ -83,8 +83,10 @@
      so that we can construct a pointer to it.
      Non-array expression values are left unchanged.
      If the array has no object designator, we return an error;
-     this should only happen for arrays with temporary lifetime [C17:6.2.4/8],
-     which are currently not part of our C subset.")
+     this should actually never happen (at least in our model),
+     but we need to formulate and prove an invariant
+     saying that every array expression value includes an object designator,
+     which at the moment we do not have.")
    (xdoc::p
     "We make a slight approximation for now:
      instead of returning a pointer to the first element of the array,
@@ -992,7 +994,7 @@
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions.
-       We execute the arguments and then the function .")
+       We execute the arguments and then the function.")
      (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1016,6 +1018,9 @@
        whose value may be affected by the right-hand side,
        but its value is not used for the assignment,
        as it is overwritten by the assignment.
+       Array-to-pointer conversion [C23:6.3.3.1] is applied
+       to the result of evaluating the right-hand side,
+       which must return an expression value (not @('nil')).
        Note that the assignment itself is not an lvalue;
        its result is the value assigned by the assignment."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1051,15 +1056,13 @@
                ((mv right-eval? compst)
                 (if (expr-case left :ident)
                     (exec-expr right compst fenv (1- limit))
-                  (b* ((right-eval (exec-expr-pure right compst))
-                       ((when (errorp right-eval))
-                        (mv right-eval (compustate-fix compst)))
-                       (right-eval (apconvert-expr-value right-eval)))
-                    (mv right-eval (compustate-fix compst)))))
+                  (mv (exec-expr-pure right compst) (compustate-fix compst))))
                ((when (errorp right-eval?)) (mv right-eval? compst))
                ((when (not right-eval?))
                 (mv (error (list :asg-void-expr right)) compst))
                (right-eval right-eval?)
+               (right-eval (apconvert-expr-value right-eval))
+               ((when (errorp right-eval)) (mv right-eval compst))
                (val (expr-value->value right-eval))
                (compst/error (write-object objdes val compst))
                ((when (errorp compst/error)) (mv compst/error compst))
@@ -1084,6 +1087,12 @@
     (xdoc::topstring
      (xdoc::p
       "For now we only support the execution of certain statements.")
+     (xdoc::p
+      "Since an expression statement discards
+       the value returned by the expression (if any),
+       there is no need to perform array-to-pointer conversion [C23:6.3.3.1].
+       The fact that array-to-pointer conversion may return an error
+       is just an artifact of our current model, which we plan to eliminate.")
      (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
@@ -1148,6 +1157,8 @@
                                                              s.value))
                                                 compst))
                         (eval eval?)
+                        (eval (apconvert-expr-value eval))
+                        ((when (errorp eval)) (mv eval compst))
                         (val (expr-value->value eval)))
                      (mv (stmt-value-return val) compst))
                  (mv (stmt-value-return nil) (compustate-fix compst)))))
@@ -1269,6 +1280,8 @@
             ((when (not eval))
              (mv (error (list :void-initializer (initer-fix initer)))
                  compst))
+            (eval (apconvert-expr-value eval))
+            ((when (errorp eval)) (mv eval compst))
             (val (expr-value->value eval))
             (ival (init-value-single val)))
          (mv ival compst))

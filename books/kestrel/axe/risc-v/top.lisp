@@ -37,7 +37,7 @@
 
 ;;Lifters:
 (include-book "lifter-rules")
-(include-book "unroll")
+(include-book "unroller")
 ;(include-book "loop-lifter")
 
 ;; Formal Unit Tester:

@@ -1457,6 +1457,8 @@
                                         t
                                         wrld))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm type gin.prec-tags))
        (type-of-value-when-type-pred
         (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
@@ -1504,7 +1506,9 @@
                         compustatep-of-add-var
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-when-type-pred))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
                                                      :hints item-hints
@@ -1913,7 +1917,8 @@
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
                         value-fix-when-valuep
-                        ,value-kind-when-type-pred))))
+                        ,value-kind-when-type-pred
+                        apconvert-expr-value-when-not-value-array))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -4367,6 +4372,8 @@
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
@@ -4413,9 +4420,11 @@
                                ,valuep-when-type-pred
                                ,expr.thm-name
                                ,@type-thms
-                               c::expr-valuep-of-expr-value
-                               c::expr-value->value-of-expr-value
-                               c::value-fix-when-valuep))))
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
