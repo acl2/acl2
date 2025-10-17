@@ -67,6 +67,8 @@
     dag-size
 
     ensure-rules-known
+    widen-margins
+    unwiden-margins
     ))
 
 (defconst *bv-symbols-to-import*
@@ -217,6 +219,7 @@
     print-levelp
     count-hits-argp
     normalize-xors-optionp
+    lifter-targetp
     rule-alistp
     pseudo-dagp
     this-step-increment
@@ -228,6 +231,7 @@
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
 
+    make-term-into-dag-basic
     dag-to-term
     dag-node-to-term
     dag-or-quotep-to-term
@@ -242,6 +246,7 @@
     print-dag-nicely
     print-dag-nicely-with-base
     print-level-at-least-tp
+    print-level-at-least-briefp
     nat-to-string
     defmacrodoc
 
@@ -260,8 +265,6 @@
     lookup-eq-safe
     lookup
     lookup-safe
-
-    make-rule-alist
 
     translate-term
 
@@ -298,7 +301,7 @@
     equivalent-dagsp2
     maybe-add-debug-rules
 
-        call-of
+    call-of
     pack-in-package-of-symbol
     pack-in-package-of-first-symbol
     myif
@@ -321,6 +324,16 @@
     any-result-unexpectedp
 
     _  ; for printing non-pure node patterns
+
+    make-event-quiet
+    print-list
+    print-dag-info
+    pack$
+    make-acons-nest
+    make-interpreted-function-alist
+    get-non-built-in-supporting-fns-list
+    *axe-evaluator-functions*
+    get-conjuncts-of-terms2
     ))
 
 (defconst *arithmetic-symbols*
