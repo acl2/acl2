@@ -144,6 +144,13 @@
   :prepwork ((set-induction-depth-limit 1)
              (local (in-theory (enable fix (:e str::letter/uscore-char-p))))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-pnumber
+  :short "An irrelevant preprocessing number."
+  :type pnumberp
+  :body (pnumber-digit #\0))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum newline
@@ -1455,7 +1462,7 @@
            (+ (ppstate->size ppstate) (nfix n)))
     :hints (("Goal" :in-theory (enable nfix fix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plex-identifier ((first-char (unsigned-byte-p 8 first-char))
                          (first-pos positionp)
@@ -1538,6 +1545,184 @@
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-pp-number ((dot booleanp)
+                        (digit str::dec-digit-char-p)
+                        (first-pos positionp)
+                        ppstate)
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a preprocessing number during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after the initial digit, or dot followed by digit,
+     has been read; see the grammar rule for @('pp-number').
+     The @('dot') input says whether the preprocessing number starts with a dot,
+     and the @('digit') input is the first digit (preceded by @('.') or not).")
+   (xdoc::p
+    "The initial digit, or dot followed by digit,
+     already forms a preprocessing number.
+     We keep reading characters
+     so long as we can ``extend'' the preprocessing number,
+     according to the grammar rule.
+     Eventually we return the full preprocessing number and the full span."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       (initial-pnumber (if dot
+                            (pnumber-dot-digit digit)
+                          (pnumber-digit digit)))
+       ((erp final-pnumber last-pos ppstate)
+        (plex-pp-number-loop initial-pnumber first-pos ppstate)))
+    (retok (plexeme-number final-pnumber)
+           (make-span :start first-pos :end last-pos)
+           ppstate))
+
+  :prepwork
+
+  ((define plex-pp-number-loop ((current-pnumber pnumberp)
+                                (current-pos positionp)
+                                ppstate)
+     :returns (mv erp
+                  (final-pnumber pnumberp)
+                  (last-pos positionp)
+                  (ppstate ppstatep :hyp (ppstatep ppstate)))
+     :parents nil
+     (b* (((reterr) (irr-pnumber) (irr-position) ppstate)
+          ((erp char pos ppstate) (pread-char ppstate)))
+       (cond
+        ((not char) ; pp-number EOF
+         (retok (pnumber-fix current-pnumber)
+                (position-fix current-pos)
+                ppstate))
+        ((and (<= (char-code #\0) char)
+              (<= char (char-code #\9))) ; pp-number digit
+         (plex-pp-number-loop (make-pnumber-number-digit
+                               :number current-pnumber
+                               :digit (code-char char))
+                              pos
+                              ppstate))
+        ((= char (char-code #\e)) ; pp-number e
+         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+           (cond
+            ((and char2 (= char2 (char-code #\+))) ; pp-number e +
+             (plex-pp-number-loop (make-pnumber-number-locase-e-sign
+                                   :number current-pnumber
+                                   :sign (sign-plus))
+                                  pos2
+                                  ppstate))
+            ((and char2 (= char2 (char-code #\-))) ; pp-number e -
+             (plex-pp-number-loop (make-pnumber-number-locase-e-sign
+                                   :number current-pnumber
+                                   :sign (sign-minus))
+                                  pos2
+                                  ppstate))
+            (t ; pp-number e other
+             (b* ((ppstate ; pp-number e
+                   (if char2 (punread-char ppstate) ppstate)))
+               (plex-pp-number-loop (make-pnumber-number-nondigit
+                                     :number current-pnumber
+                                     :nondigit #\e)
+                                    pos
+                                    ppstate))))))
+        ((= char (char-code #\E)) ; pp-number E
+         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+           (cond
+            ((and char2 (= char2 (char-code #\+))) ; pp-number E +
+             (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
+                                   :number current-pnumber
+                                   :sign (sign-plus))
+                                  pos2
+                                  ppstate))
+            ((and char2 (= char2 (char-code #\-))) ; pp-number E -
+             (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
+                                   :number current-pnumber
+                                   :sign (sign-minus))
+                                  pos2
+                                  ppstate))
+            (t ; pp-number E other
+             (b* ((ppstate ; pp-number E
+                   (if char2 (punread-char ppstate) ppstate)))
+               (plex-pp-number-loop (make-pnumber-number-nondigit
+                                     :number current-pnumber
+                                     :nondigit #\E)
+                                    pos
+                                    ppstate))))))
+        ((= char (char-code #\p)) ; pp-number p
+         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+           (cond
+            ((and char2 (= char2 (char-code #\+))) ; pp-number p +
+             (plex-pp-number-loop (make-pnumber-number-locase-p-sign
+                                   :number current-pnumber
+                                   :sign (sign-plus))
+                                  pos2
+                                  ppstate))
+            ((and char2 (= char2 (char-code #\-))) ; pp-number p -
+             (plex-pp-number-loop (make-pnumber-number-locase-p-sign
+                                   :number current-pnumber
+                                   :sign (sign-minus))
+                                  pos2
+                                  ppstate))
+            (t ; pp-number p other
+             (b* ((ppstate ; pp-number p
+                   (if char2 (punread-char ppstate) ppstate)))
+               (plex-pp-number-loop (make-pnumber-number-nondigit
+                                     :number current-pnumber
+                                     :nondigit #\p)
+                                    pos
+                                    ppstate))))))
+        ((= char (char-code #\P)) ; pp-number P
+         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+           (cond
+            ((and char2 (= char2 (char-code #\+))) ; pp-number P +
+             (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
+                                   :number current-pnumber
+                                   :sign (sign-plus))
+                                  pos2
+                                  ppstate))
+            ((and char2 (= char2 (char-code #\-))) ; pp-number P -
+             (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
+                                   :number current-pnumber
+                                   :sign (sign-minus))
+                                  pos2
+                                  ppstate))
+            (t ; pp-number P other
+             (b* ((ppstate ; pp-number P
+                   (if char2 (punread-char ppstate) ppstate)))
+               (plex-pp-number-loop (make-pnumber-number-nondigit
+                                     :number current-pnumber
+                                     :nondigit #\P)
+                                    pos
+                                    ppstate))))))
+        ((or (and (<= (char-code #\A) char)
+                  (<= char (char-code #\Z)))
+             (and (<= (char-code #\a) char)
+                  (<= char (char-code #\z)))
+             (= char (char-code #\_))) ; pp-number identifier-nondigit
+         (plex-pp-number-loop (make-pnumber-number-nondigit
+                               :number current-pnumber
+                               :nondigit (code-char char))
+                              pos
+                              ppstate))
+        ((= char (char-code #\.)) ; pp-number .
+         (plex-pp-number-loop (make-pnumber-number-dot
+                               :number current-pnumber)
+                              pos ppstate))
+        (t ; pp-number other
+         (b* ((ppstate ; pp-number
+               (if char (punread-char ppstate) ppstate)))
+           (retok (pnumber-fix current-pnumber)
+                  (position-fix current-pos)
+                  ppstate)))))
+     :measure (ppstate->size ppstate)
+     :guard-hints (("Goal" :in-theory (enable integerp-when-natp
+                                              rationalp-when-natp
+                                              acl2-numberp-when-natp
+                                              dec-digit-char-p
+                                              str::letter/uscore-char-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

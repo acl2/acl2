@@ -492,3 +492,198 @@
  :more-inputs ((char-code #\i) (position 8 3))
  :cond (and (equal ast (plexeme-ident (ident "includ")))
             (equal pos/span (span (position 8 3) (position 8 8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-pp-number
+
+(test-lex
+ plex-pp-number
+ ""
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number (pnumber-digit #\3))))
+
+(test-lex
+ plex-pp-number
+ "+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number (pnumber-digit #\3))))
+
+(test-lex
+ plex-pp-number
+ ""
+ :more-inputs (t #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number (pnumber-dot-digit #\3))))
+
+(test-lex
+ plex-pp-number
+ "+"
+ :more-inputs (t #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number (pnumber-dot-digit #\3))))
+
+(test-lex
+ plex-pp-number
+ "4"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-digit #\3) #\4))))
+
+(test-lex
+ plex-pp-number
+ "4"
+ :more-inputs (t #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-dot-digit #\3) #\4))))
+
+(test-lex
+ plex-pp-number
+ "e+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-locase-e-sign (pnumber-digit #\3)
+                                             (sign-plus)))))
+
+(test-lex
+ plex-pp-number
+ "e-"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-locase-e-sign (pnumber-digit #\3)
+                                             (sign-minus)))))
+
+(test-lex
+ plex-pp-number
+ "e*"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\e))))
+
+(test-lex
+ plex-pp-number
+ "E+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-upcase-e-sign (pnumber-digit #\3)
+                                             (sign-plus)))))
+
+(test-lex
+ plex-pp-number
+ "E-"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-upcase-e-sign (pnumber-digit #\3)
+                                             (sign-minus)))))
+
+(test-lex
+ plex-pp-number
+ "E/"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\E))))
+
+(test-lex
+ plex-pp-number
+ "p+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-locase-p-sign (pnumber-digit #\3)
+                                             (sign-plus)))))
+
+(test-lex
+ plex-pp-number
+ "p-"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-locase-p-sign (pnumber-digit #\3)
+                                             (sign-minus)))))
+
+(test-lex
+ plex-pp-number
+ "p*"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\p))))
+
+(test-lex
+ plex-pp-number
+ "P+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-upcase-p-sign (pnumber-digit #\3)
+                                             (sign-plus)))))
+
+(test-lex
+ plex-pp-number
+ "P-"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-upcase-p-sign (pnumber-digit #\3)
+                                             (sign-minus)))))
+
+(test-lex
+ plex-pp-number
+ "P/"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\P))))
+
+(test-lex
+ plex-pp-number
+ "a"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+
+(test-lex
+ plex-pp-number
+ "a+"
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+
+(test-lex
+ plex-pp-number
+ "."
+ :more-inputs (nil #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-dot (pnumber-digit #\3)))))
+
+(test-lex
+ plex-pp-number
+ "7abP-.x"
+ :more-inputs (t #\3 (position 3 7))
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit
+                (pnumber-number-dot
+                 (pnumber-number-upcase-p-sign
+                  (pnumber-number-nondigit
+                   (pnumber-number-nondigit
+                    (pnumber-number-digit
+                     (pnumber-dot-digit #\3)
+                     #\7)
+                    #\a)
+                   #\b)
+                  (sign-minus)))
+                #\x))))
