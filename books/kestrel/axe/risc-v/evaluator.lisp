@@ -140,7 +140,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: import more of these into the X package, if needed:
+;; todo: import more of these into the R package, if needed:
 (defconst *axe-evaluator-risc-v-fns-and-aliases*
   (append '(implies ; push back to basic evaluator?
             (riscv::decodex riscv::decodex-unguarded)
