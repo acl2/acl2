@@ -334,6 +334,7 @@
     get-non-built-in-supporting-fns-list
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
+    parsed-executablep
     ))
 
 (defconst *arithmetic-symbols*

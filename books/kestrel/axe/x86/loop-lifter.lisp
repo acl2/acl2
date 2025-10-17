@@ -2542,19 +2542,16 @@
                            extra-rules
                            remove-rules
                            produce-theorem
-                           ;;output
+                           ;;output ; an output-indicatorp
                            extra-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
-                           non-executable
+                           non-executable ; boolean
                            ;;restrict-theory
                            monitor
                            measures
                            whole-form
                            print
                            state)
-  (declare (xargs :guard (and
-;                              (output-indicatorp output)
-;                              (booleanp non-executable)
-                           )
+  (declare (xargs :guard t ;; should avoid invariant risk
                   :mode :program
                   :stobjs state)
            (ignore produce-theorem ; todo
@@ -2564,33 +2561,43 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
-       ;; Check user input:
+       ;; Check the lifted-name argument:
        ((when (not (symbolp lifted-name)))
         (er hard? 'lift-subroutine-fn "The name to create should be a symbol, but it is ~x0." lifted-name)
         (mv (erp-t) nil state))
+       ;; Check the target argument:
        ((when (not (stringp target)))
         (er hard? 'lift-subroutine-fn "No :target supplied (must be the name of a subroutine).")
         (mv (erp-t) nil state))
+       ;; Check the executable argument:
        ((when (eq :none executable))
-        (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option (need a predicate for that)
+        (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option
         (mv (erp-t) nil state))
-       ((when (eq :none loop-alist))
-        (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
+       ((when (not (or (stringp executable)
+                       (acl2::parsed-executablep executable))))
+        (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0.")
         (mv (erp-t) nil state))
+       ;; Check the stack-slots-needed argument:
        ((when (not (natp stack-slots-needed)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots-needed: ~x0" stack-slots-needed)
                 (mv (erp-t) nil state)))
+       ;; Check the loop-alist argument::
+       ((when (eq :none loop-alist))
+        (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
+        (mv (erp-t) nil state))
        ((when (not (and (loop-alistp loop-alist))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
+       ;; Check the monitor argument:
        ((when (not (or (symbol-listp monitor)
                        (eq :debug monitor))))
         (er hard? 'lift-subroutine-fn "Bad value for :monitor (should be a symbol-list or :debug): ~x0" monitor)
         (mv (erp-t) nil state))
+       ;; Check the print argument:
        ((when (not (acl2::print-levelp print)))
         (er hard? 'lift-subroutine-fn "Bad value for :print (should be a print-level): ~x0" print)
         (mv (erp-t) nil state))
-
+       ;; Done checking inputs:
        (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
        ((mv erp parsed-executable state)

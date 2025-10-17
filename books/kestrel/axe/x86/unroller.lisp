@@ -286,7 +286,7 @@
                         position-independentp
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
-                              ;; parsed-executable ; todo: add a guard (even if it's weak for now)
+                              (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -928,7 +928,7 @@
                              untranslatep
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
-                              ;; parsed-executable ; todo: add a guard (even if it's weak for now)
+                              (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -1455,8 +1455,8 @@
          (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
-         (remove-rules "Rules to turn off.")
+         (extra-rules "A symbol-list indicating rules to use, in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
+         (remove-rules "A symbol-list indicating rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")

@@ -807,7 +807,8 @@
        ((mv erp cmds) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
        ((when erp) (mv erp nil)))
     (mv nil
-        (list (cons :magic magic)
+        (list (cons :executable-type (if (eql architecture 32) :mach-o-32 :mach-o-64)) ; for use by parsed-executable-type
+              (cons :magic magic)
               (cons :header header)
               (cons :cmds cmds)
               (cons :bytes all-bytes) ; todo: some bytes are replicated in the :contents fields of sections!  avoid that.
