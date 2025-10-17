@@ -506,7 +506,7 @@
                                 untranslatep
                                 state)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
-                              ;; parsed-executable ; todo: add a guard (even if it's weak for now)
+                              (acl2::parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               ;;(booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
@@ -540,7 +540,7 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
+                  :mode :program ; todo: because of wrap-in-output-extractor
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -549,8 +549,12 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
+       ((when (not (eq :elf-32 executable-type)))
+        (er hard? 'unroll-risc-v-code-core "The executable type must be :pe-32, but it is ~x0." executable-type)
+        (mv :bad-executable-type nil state))
        ;; Make sure it's a RISC-V executable:
        (- (acl2::ensure-risc-v parsed-executable))
+
        ;; Handle a :position-independent of :auto:
 
        (position-independentp position-independent)
@@ -826,14 +830,14 @@
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Check inputs:
        ((when (eq :none executable))
-        (er hard? 'def-unrolled-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option (need a predicate for that)
+        (er hard? 'def-unrolled-fn "No :executable supplied.  This should usually be a string (file name/path).") ; todo: mention the parsed-executable option?
         (mv (erp-t) nil state))
        ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
             (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable: ; todo: can we deprecate this case?  could be de-obfuscated
+          ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
@@ -1073,7 +1077,7 @@
   :parents (acl2::axe-risc-v acl2::axe-lifters)
   :short "A tool to lift RISC-V binary code into logic, unrolling loops as needed."
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
-         (executable "The risc-v binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.") ; todo: defconst-risc-v?
+         (executable "The RISC-V binary executable that contains the target function.  Usually this is a string representing the file name/path of the executable.  However, it can instead be a parsed executable (satisfying @('parsed-executablep')).")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
 ;;         (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
