@@ -15,6 +15,7 @@
 
 (include-book "kestrel/fty/character-list" :dir :system)
 (include-book "kestrel/fty/nat-option" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -46,6 +47,18 @@
 
 (defruledl acl2-numberp-when-bytep
   (implies (bytep x)
+           (acl2-numberp x)))
+
+(defruledl integerp-when-natp
+  (implies (natp x)
+           (integerp x)))
+
+(defruledl rationalp-when-natp
+  (implies (natp x)
+           (rationalp x)))
+
+(defruledl acl2-numberp-when-natp
+  (implies (natp x)
            (acl2-numberp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,15 +720,15 @@
 
 (define init-ppstate ((data byte-listp) (version c::versionp) ppstate)
   :returns (ppstate ppstatep)
-  :short "Initialize the parser state."
+  :short "Initialize the preprocessor state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the state when we start parsing a file.
-     Given (the data of) a file to parse,
+    "This is the state when we start preprocessing a file.
+     Given (the data of) a file to preprocess,
      and a C version,
-     the initial parsing state consists of
-     the data to parse,
+     the initial preprocessing state consists of
+     the data to preprocess,
      no read characters or lexemes,
      no unread characters or lexemes,
      and the initial file position.
@@ -726,7 +739,7 @@
      if this turns out to be too large,
      we will pick a different size,
      but then we may need to resize the array as needed
-     while lexing and parsing."))
+     while preprocessing."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -1349,6 +1362,182 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-char ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a character during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move the character from the sequence of read characters
+     to the sequence of unread characters,
+     by incrementing @('chars-unread') and decrementing @('chars-read').")
+   (xdoc::p
+    "It is an internal error if @('chars-read') is 0.
+     It means that the calling code is wrong.
+     In this case, after raising the hard error,
+     logically we return a preprocessing state
+     where we still increment @('chars-unread')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((ppstate.chars-read (ppstate->chars-read ppstate))
+       (ppstate.chars-unread (ppstate->chars-unread ppstate))
+       (ppstate.size (ppstate->size ppstate))
+       ((unless (> ppstate.chars-read 0))
+        (raise "Internal error: no character to unread.")
+        (b* ((ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
+                                                      ppstate))
+             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+          ppstate))
+       (ppstate (update-ppstate->chars-read (1- ppstate.chars-read)
+                                              ppstate))
+       (ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
+                                                ppstate))
+       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+
+  ///
+
+  (defret ppstate->size-of-punread-char
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))
+    :hints (("Goal" :in-theory (enable len nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-chars ((n natp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a specified number of characters during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move characters
+     from the sequence of read characters
+     to the sequence of unread characters
+     by incrementing the number of unread characters by @('n')
+     and decrementing the number of read characters by @('n').")
+   (xdoc::p
+    "It is an internal error if @('n') exceeds
+     the number of character read so far.
+     In this case, after raising the hard error,
+     logically we return a preprocessing state
+     where we still increment @('chars-unread')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((n (nfix n))
+       (chars-read (ppstate->chars-read ppstate))
+       (chars-unread (ppstate->chars-unread ppstate))
+       (size (ppstate->size ppstate))
+       ((unless (<= n chars-read))
+        (raise "Internal error: ~
+                attempting to unread ~x0 characters ~
+                from ~x1 read characters."
+               n chars-read)
+        (b* ((ppstate
+              (update-ppstate->chars-unread (+ chars-unread n) ppstate))
+             (ppstate
+              (update-ppstate->size (+ size n) ppstate)))
+          ppstate))
+       (new-chars-read (- chars-read n))
+       (new-chars-unread (+ chars-unread n))
+       (new-size (+ size n))
+       (ppstate (update-ppstate->chars-read new-chars-read ppstate))
+       (ppstate (update-ppstate->chars-unread new-chars-unread ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable natp)))
+
+  ///
+
+  (defret ppstate->size-of-punread-chars
+    (equal (ppstate->size new-ppstate)
+           (+ (ppstate->size ppstate) (nfix n)))
+    :hints (("Goal" :in-theory (enable nfix fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-identifier ((first-char (unsigned-byte-p 8 first-char))
+                         (first-pos positionp)
+                         (ppstate ppstatep))
+  :guard (or (and (<= (char-code #\A) first-char)
+                  (<= first-char (char-code #\Z)))
+             (and (<= (char-code #\a) first-char)
+                  (<= first-char (char-code #\z)))
+             (= first-char (char-code #\_)))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex an identifier during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is quite similar to @(tsee lex-identifier/keyword),
+     except that there are no keywords to consider during preprocessing,
+     just identifiers.")
+   (xdoc::p
+    "Like @(tsee lex-identifier/keyword),
+     this is called after the first character of the identifier
+     has been already read;
+     that character is passed to this function.
+     The position of that character is also passed as input."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp rest-chars last-pos ppstate)
+        (plex-identifier-loop first-pos ppstate))
+       (span (make-span :start first-pos :end last-pos))
+       (chars (cons first-char rest-chars))
+       (string (acl2::nats=>string chars)))
+    (retok (plexeme-ident (ident string)) span ppstate))
+
+  :prepwork
+
+  ((define plex-identifier-loop ((pos-so-far positionp) (ppstate ppstatep))
+     :returns (mv erp
+                  (chars (unsigned-byte-listp 8 chars)
+                         :hints (("Goal"
+                                  :induct t
+                                  :in-theory (enable unsigned-byte-p
+                                                     integer-range-p
+                                                     integerp-when-natp))))
+                  (last-pos positionp)
+                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+     :parents nil
+     (b* (((reterr) nil (irr-position) ppstate)
+          ((erp char pos ppstate) (pread-char ppstate))
+          ((when (not char))
+           (retok nil (position-fix pos-so-far) ppstate))
+          ((unless ; A-Z a-z 0-9 _
+               (or (and (<= (char-code #\A) char) (<= char (char-code #\Z)))
+                   (and (<= (char-code #\a) char) (<= char (char-code #\z)))
+                   (and (<= (char-code #\0) char) (<= char (char-code #\9)))
+                   (= char (char-code #\_))))
+           (b* ((ppstate (punread-char ppstate)))
+             (retok nil (position-fix pos-so-far) ppstate)))
+          ((erp chars last-pos ppstate)
+           (plex-identifier-loop pos ppstate)))
+       (retok (cons char chars) last-pos ppstate))
+     :measure (ppstate->size ppstate)
+     :verify-guards nil ; done below
+
+     ///
+
+     (verify-guards plex-identifier-loop
+       :hints (("Goal" :in-theory (enable rationalp-when-natp
+                                          acl2-numberp-when-natp))))
+
+     (defret ppstate->size-of-lex-identifier-loop-<=
+       (<= (ppstate->size new-ppstate)
+           (ppstate->size ppstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret ppstate->size-of-lex-identifier-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
