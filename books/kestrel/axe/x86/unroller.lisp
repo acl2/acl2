@@ -100,18 +100,18 @@
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(acl2::ensure-rules-known (unroller-rules32))
-(acl2::ensure-rules-known (unroller-rules64))
-(acl2::ensure-rules-known (read-and-write-rules-bv))
-;; (acl2::ensure-rules-known (read-and-write-rules-non-bv))
-(acl2::ensure-rules-known (assumption-simplification-rules32))
-(acl2::ensure-rules-known (assumption-simplification-rules64))
-(acl2::ensure-rules-known (step-opener-rules32))
-(acl2::ensure-rules-known (step-opener-rules64))
-(acl2::ensure-rules-known (new-normal-form-rules-common))
-(acl2::ensure-rules-known (canonical-rules-bv))
-(acl2::ensure-rules-known (new-normal-form-rules64))
-(acl2::ensure-rules-known (unsigned-canonical-rules))
+(ensure-rules-known (unroller-rules32))
+(ensure-rules-known (unroller-rules64))
+(ensure-rules-known (read-and-write-rules-bv))
+;; (ensure-rules-known (read-and-write-rules-non-bv))
+(ensure-rules-known (assumption-simplification-rules32))
+(ensure-rules-known (assumption-simplification-rules64))
+(ensure-rules-known (step-opener-rules32))
+(ensure-rules-known (step-opener-rules64))
+(ensure-rules-known (new-normal-form-rules-common))
+(ensure-rules-known (canonical-rules-bv))
+(ensure-rules-known (new-normal-form-rules64))
+(ensure-rules-known (unsigned-canonical-rules))
 ;; todo: more?
 
 (local (defthm symbol-listp-of-unroller-rules32 (symbol-listp (unroller-rules32))))
@@ -143,7 +143,7 @@
                            acl2::append-of-cons-arg1
                            acl2::append-of-cons ; bad?
                            w
-                           acl2::myquotep
+                           myquotep
                            quotep
                            mv-nth)))
 
@@ -217,7 +217,7 @@
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
-                              (acl2::count-hits-argp count-hits))
+                              (count-hits-argp count-hits))
                   :stobjs state))
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -234,7 +234,7 @@
        ((mv erp assumptions)
         (simplify-conjunction-basic assumptions
                                     assumption-rule-alist
-                                    (acl2::known-booleans (w state))
+                                    (known-booleans (w state))
                                     nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
                                     *no-warn-ground-functions*
                                     nil ; don't memoize (avoids time spent making empty-memoizations)
@@ -242,8 +242,8 @@
                                     t   ; todo: warn just once
                                     ))
        ((when erp) (mv erp nil nil state))
-       (assumptions (acl2::get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
-       ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
+       (assumptions (get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
+       ((mv assumption-simp-elapsed state) (real-time-since assumption-simp-start-real-time state))
        (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
           (print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
@@ -285,8 +285,8 @@
                         executable-type
                         position-independentp
                         state)
-  (declare (xargs :guard (and (acl2::lifter-targetp target)
-                              (acl2::parsed-executablep parsed-executable)
+  (declare (xargs :guard (and (lifter-targetp target)
+                              (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -301,8 +301,8 @@
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
 
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::print-levelp print)
+                              (count-hits-argp count-hits)
+                              (print-levelp print)
                               ;todo: more
                               )
                   :mode :program ; because of translate-terms
@@ -325,7 +325,7 @@
            ((when erp) (mv erp nil nil nil nil state))
            (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
            ;; Translate all the assumptions:
-           (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+           (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
            ;; Maybe simplify the assumptions:
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
@@ -354,7 +354,7 @@
              ((when erp) (mv erp nil nil nil nil state))
              (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
              ;; Translate all the assumptions:
-             (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+             (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
              ;; Maybe simplify the assumptions:
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
@@ -383,7 +383,7 @@
                ((when erp) (mv erp nil nil nil nil state))
                (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                ;; Translate all the assumptions:
-               (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+               (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
                ;; Maybe simplify the assumptions:
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
@@ -536,8 +536,8 @@
         ;;         (mv nil nil)))
         ;;      (automatic-assumptions (append standard-assumptions input-assumptions))
         ;;      (untranslated-assumptions (append automatic-assumptions extra-assumptions))
-        ;;      (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
-        ;;      (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+        ;;      (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+        ;;      (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
         ;;                                                            (print-terms-elided assumptions
         ;;                                                                                '(;(standard-assumptions-elf-64 t nil t t t t)
         ;;                                                                                  (standard-assumptions-mach-o-64 t nil t t t t)
@@ -633,8 +633,8 @@
              (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
              (assumptions (append assumptions extra-assumptions))
              (assumptions-to-return assumptions) ; untranslated?
-             (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
-             (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+             (assumptions (translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+             (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                    (print-terms-elided assumptions
                                                                                        '(;; (standard-assumptions-elf-64 t nil t t t t)
                                                                                          ;; (standard-assumptions-mach-o-64 t nil t t t t)
@@ -694,10 +694,10 @@
                                   state)
   (declare (xargs :guard (and (natp steps-done)
                               (natp step-limit)
-                              (acl2::step-incrementp step-increment)
-                              (acl2::pseudo-dagp dag)
-                              (acl2::rule-alistp rule-alist)
-                              (acl2::rule-alistp pruning-rule-alist)
+                              (step-incrementp step-increment)
+                              (pseudo-dagp dag)
+                              (rule-alistp rule-alist)
+                              (rule-alistp pruning-rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbolp step-opener-rule)
                               (symbol-listp rules-to-monitor)
@@ -707,9 +707,9 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::print-levelp print)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
+                              (print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
                               (booleanp memoizep))
@@ -722,7 +722,7 @@
           (<= step-limit steps-done))
       (mv (erp-nil) dag state)
     (b* (;; Decide how many steps to do this time:
-         (this-step-increment (acl2::this-step-increment step-increment steps-done))
+         (this-step-increment (this-step-increment step-increment steps-done))
          (steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
          ((when (not (posp steps-for-this-iteration))) ; use mbt?
           (er hard? 'repeatedly-run "Temination problem.")
@@ -735,16 +735,16 @@
          ;;                       (cw ")~%"))))
          ;; Limit the run to the given number of steps:
          (limits nil) ; todo: call this empty-rule-limits?
-         (limits (acl2::add-limit-for-rules (list step-opener-rule)
-                                            steps-for-this-iteration
-                                            limits)) ; don't recompute for each small run?
+         (limits (add-limit-for-rules (list step-opener-rule)
+                                      steps-for-this-iteration
+                                      limits)) ; don't recompute for each small run?
          ;; Do the run:
          ((mv erp dag-or-constant limits state)
           (acl2::simplify-dag-x86 dag
                                   assumptions
                                   rule-alist
                                   nil ; interpreted-function-alist
-                                  (acl2::known-booleans (w state))
+                                  (known-booleans (w state))
                                   normalize-xors
                                   limits
                                   memoizep
@@ -757,12 +757,12 @@
          ((when erp) (mv erp nil state))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
-           (acl2::limit-for-rule step-opener-rule
-                                 limits))
+           (limit-for-rule step-opener-rule
+                           limits))
          (steps-done-this-time (- steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
-         ((mv elapsed state) (acl2::real-time-since start-real-time state))
+         ((mv elapsed state) (real-time-since start-real-time state))
          (- (cw " (~x0 steps took " steps-done-this-time)
-            (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+            (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
             (cw "s.)"))
          (- (cw ")~%")) ; matches "(Running"
          ((when (quotep dag-or-constant))
@@ -771,13 +771,13 @@
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; TODO: Consider not pruning if this increment didn't create any new branches:
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
-         ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
-                                                                              dag
-                                                                              (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                              *no-warn-ground-functions*
-                                                                              print
-                                                                              60000 ; todo: pass in
-                                                                              state))
+         ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
+                                                                        dag
+                                                                        (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                        *no-warn-ground-functions*
+                                                                        print
+                                                                        60000 ; todo: pass in
+                                                                        state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
@@ -789,26 +789,26 @@
          ;; Prune precisely if feasible:
          ;; TODO: Maybe don't prune if the run has completed (but do simplify in that case)?
          ((mv erp dag-or-constant state)
-          (acl2::maybe-prune-dag-precisely prune-precise ; if a natp, can help prevent explosion.
-                                           dag
-                                           ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
-                                           ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
-                                           ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
-                                           nil ; assumptions ; todo: include assumptions about canonical?
-                                           :none
-                                           pruning-rule-alist
-                                           nil ; interpreted-function-alist
-                                           rules-to-monitor
-                                           t ;call-stp
-                                           *no-warn-ground-functions*
-                                           print
-                                           state))
+          (maybe-prune-dag-precisely prune-precise ; if a natp, can help prevent explosion.
+                                     dag
+                                     ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
+                                     ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
+                                     ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
+                                     nil ; assumptions ; todo: include assumptions about canonical?
+                                     :none
+                                     pruning-rule-alist
+                                     nil ; interpreted-function-alist
+                                     rules-to-monitor
+                                     t ;call-stp
+                                     *no-warn-ground-functions*
+                                     print
+                                     state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-constant state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
-         (- (and print ;(acl2::print-level-at-least-tp print)
+         (- (and print ;(print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
                          (cw "~X01" dag nil)
                          (cw ")~%"))))
@@ -852,7 +852,7 @@
                                           assumptions
                                           rule-alist
                                           nil ; interpreted-function-alist
-                                          (acl2::known-booleans (w state))
+                                          (known-booleans (w state))
                                           normalize-xors
                                           limits
                                           memoizep
@@ -887,7 +887,7 @@
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
-               (if (acl2::print-level-at-least-tp print)
+               (if (print-level-at-least-tp print)
                    (print-dag-nicely-with-base dag (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
                  state)))
           (repeatedly-run steps-done step-limit
@@ -927,8 +927,8 @@
                              print-base
                              untranslatep
                              state)
-  (declare (xargs :guard (and (acl2::lifter-targetp target)
-                              (acl2::parsed-executablep parsed-executable)
+  (declare (xargs :guard (and (lifter-targetp target)
+                              (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -950,14 +950,14 @@
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (natp step-limit)
-                              (acl2::step-incrementp step-increment)
+                              (step-incrementp step-increment)
                               (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::print-levelp print)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
+                              (print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
@@ -965,11 +965,11 @@
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (state (acl2::widen-margins state))
+       (state (widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type *executable-types64*))
-       (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
+       (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Make sure it's an x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
        ;; Handle a :position-independent of :auto:
@@ -1036,8 +1036,8 @@
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil nil nil state))
        (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (acl2::print-level-at-least-tp print)
-                                 (acl2::print-list assumptions)
+                             (if (print-level-at-least-tp print)
+                                 (print-list assumptions)
                                (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
                                                                  (equal t nil))))
                              (cw ")~%"))))
@@ -1056,7 +1056,7 @@
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
+       ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        ((when (quotep dag-to-simulate))
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
@@ -1083,12 +1083,12 @@
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
        ;; Make the rule-alist for lifting:
        ((mv erp lifter-rule-alist)
-        (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
+        (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil nil nil state))
        ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
        (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
        ((mv erp pruning-rule-alist)
-        (acl2::make-rule-alist pruning-rules (w state)))
+        (make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        ;; Decide which rules to monitor:
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
@@ -1101,16 +1101,16 @@
                           (first (step-opener-rules32)))
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
-       (state (acl2::unwiden-margins state))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (state (unwiden-margins state))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Lifting took ")
-          (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
        ;; Print the result (todo: allow suppressing this):
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
             (progn$ (cw " Lifting produced a dag:~%")
-                    (acl2::print-dag-info result-dag-or-quotep 'result t)
+                    (print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
     (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
@@ -1154,7 +1154,7 @@
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
-                              (acl2::lifter-targetp target)
+                              (lifter-targetp target)
                               ;; executable
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
@@ -1177,14 +1177,14 @@
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (natp step-limit)
-                              (acl2::step-incrementp step-increment)
+                              (step-incrementp step-increment)
                               (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::print-levelp print)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
+                              (print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
                               (booleanp produce-function)
@@ -1252,7 +1252,7 @@
        (termp (<= result-dag-size max-result-term-size)) ; todo: make customizable
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (acl2::dag-to-term result-dag)))
+                               (dag-to-term result-dag)))
        ;; Print the result:
        (- (and print
                (if termp
@@ -1289,13 +1289,13 @@
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
                (function-body (if termp
                                   maybe-result-term
-                                `(acl2::dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < max-result-term-size)
-                                                                   ,(acl2::make-acons-nest result-dag-vars)
-                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
-                                                                   '0 ;array depth (not very important)
-                                                                   )))
+                                `(dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < max-result-term-size)
+                                                             ,(make-acons-nest result-dag-vars)
+                                                             ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-dag-fns *axe-evaluator-functions* (w state)) (w state))
+                                                             '0 ;array depth (not very important)
+                                                             )))
                (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
-               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
+               (function-body-retranslated (translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
                 (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01.  Re-translated body was ~X23" function-body nil function-body-retranslated nil)
@@ -1333,7 +1333,7 @@
                   (prog2$ (cw "Suppressing theorem because :stop-pcs were given.~%")
                           nil)
                 t)
-              (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
+              (let* ((defthm `(defthm ,(pack$ lifted-name '-correct)
                                 (implies (and ,@assumptions)
                                          (equal ,term-to-simulate
                                                 (,lifted-name ,@fn-formals)))
@@ -1347,13 +1347,13 @@
                                `(skip-proofs ,defthm))))
                 (list defthm))))
        (events (cons defconst-form (append defuns defthms)))
-       (event-names (acl2::strip-cadrs events))
+       (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event)))
-       (event (acl2::extend-progn event `(value-triple '(,@event-names))))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (extend-progn event `(value-triple '(,@event-names))))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s, not including event submission.)~%")))
     (mv nil event state)))
 
@@ -1398,7 +1398,7 @@
                                   (max-result-term-size '10000)
                                   (restrict-theory 't)       ;todo: deprecate
                                   )
-  `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
+  `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
       ,target
