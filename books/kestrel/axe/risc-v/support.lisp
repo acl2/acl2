@@ -105,7 +105,7 @@
               (b3 (read32-mem-ubyte8 (+ 3 (ifix addr))
                                      stat)))
            (bvcat2 8 b3 8 b2 8 b1 8 b0)))
-  :hints (("Goal" :in-theory (e/d (read32-mem-ubyte32-lendian acl2::bvcat logapp ash) (acl2::logapp-equal-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (read32-mem-ubyte32-lendian bvcat logapp ash) (acl2::logapp-equal-rewrite)))))
 
 (defthmd ash-when-<-becomes-floor
   (implies (and (< c 0)
@@ -198,8 +198,8 @@
   :hints (("Goal" :in-theory (enable ubyte32p))))
 
 (defthm unsigned-byte-listp-of-ubyte32-list-fix
-  (unsigned-byte-listp 32 (acl2::ubyte32-list-fix x))
-  :hints (("Goal" :in-theory (enable acl2::ubyte32-list-fix ubyte32-fix))))
+  (unsigned-byte-listp 32 (ubyte32-list-fix x))
+  :hints (("Goal" :in-theory (enable ubyte32-list-fix ubyte32-fix))))
 
 (defthm unsigned-byte-listp-of-stat32i->xregs
   (unsigned-byte-listp 32 (stat32i->xregs stat))
@@ -220,7 +220,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (defthm write32-xreg-of-write32-xreg-diff
-  (implies (and (acl2::smaller-termp reg2 reg1)
+  (implies (and (smaller-termp reg2 reg1)
                 (not (equal reg1 reg2)))
            (equal (write32-xreg reg1 val1 (write32-xreg reg2 val2 stat))
                   (write32-xreg reg2 val2 (write32-xreg reg1 val1 stat))))
