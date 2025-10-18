@@ -34,7 +34,7 @@
   (xdoc::topstring
    (xdoc::p
     "Currently this library contains a formal model of some aspects of the "
-    (xdoc::a :href "https://ethereum.org" "Ethereum")
+    (xdoc::ahref "https://ethereum.org" "Ethereum")
     " ``world computer''.
      It is expected that this library will be extended with more
      Ethereum-related formalizations and tools.")
@@ -42,14 +42,16 @@
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
+     "The documentation on the "
+     (xdoc::ahref "https://ethereum.org" "Ethereum web site")
+     ", referenced as `[Doc]' in the documentation of this ACL2 library.")
+    (xdoc::li
      "The Ethereum Wiki,
       referenced as `[Wiki]' in the documentation of this library.
       This Ethereum Wiki can no longer be found at the URL it had at the time,
       but presumably its contents have been migrated (and likely updated)
-      to the "
-     (xdoc::ahref "https://ethereum.org/en/developers/docs/"
-                  "Ethereum development documentation")
-     ".")
+      to the aforementioned [Doc].
+      We plan to update the [Wiki] references to [Doc] references.")
     (xdoc::li
      "The BYZANTIUM VERSION 3e36772 of the "
      (xdoc::a :href "https://github.com/ethereum/yellowpaper"
