@@ -10,8 +10,6 @@
 
 (in-package "ETHEREUM")
 
-; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the RLP topic below:
 (include-book "big-endian")
 (include-book "trees")
 (include-book "encoding")
@@ -29,4 +27,9 @@
    "RLP is a serialization (encoding) method for Ethereum,
     described in [YP:B] and in Page `RLP' of [Wiki];
     we reference that page of [Wiki] as `[Wiki:RLP]').")
-  :order-subtopics t)
+  :order-subtopics (big-endian
+                    trees
+                    encoding
+                    decodability
+                    decoding-declarative
+                    decoding-executable))
