@@ -10,8 +10,6 @@
 
 (in-package "ETHEREUM")
 
-; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the ETHEREUM topic below:
 (include-book "basics")
 (include-book "crypto")
 (include-book "rlp/top")
@@ -72,4 +70,11 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics t)
+  :order-subtopics (basics
+                    cryptography
+                    rlp
+                    database
+                    hex-prefix
+                    mmp-trees
+                    transactions
+                    addresses))
