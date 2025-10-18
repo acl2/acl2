@@ -985,12 +985,7 @@
        does not affect the final result.")
      (xdoc::p
       "If the expression is pure,
-       we execute it as a pure expression.
-       For now we perform an array-to-pointer conversion here,
-       which is appropriate because, in our C subset,
-       this ACL2 function is always used where such a conversion is needed.
-       But we plan to move that conversion to the callers of this function,
-       which should not perform the conversion itself in general.")
+       we execute it as a pure expression.")
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions.
@@ -1025,11 +1020,7 @@
        its result is the value assigned by the assignment."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          ((when (expr-purep e))
-          (b* ((eval (exec-expr-pure e compst))
-               ((when (errorp eval)) (mv eval (compustate-fix compst)))
-               (eval (apconvert-expr-value eval))
-               ((when (errorp eval)) (mv eval (compustate-fix compst))))
-            (mv eval (compustate-fix compst))))
+          (mv (exec-expr-pure e compst) (compustate-fix compst)))
          ((when (expr-case e :call))
           (b* ((fun (expr-call->fun e))
                (args (expr-call->args e))
