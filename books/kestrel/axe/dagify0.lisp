@@ -121,8 +121,7 @@
            (iff (dargp (lookup-equal var alist))
                 (assoc-equal var alist)))
   :hints (("Goal" :induct t
-           :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
-                           ()))))
+           :in-theory (enable darg-listp lookup-equal strip-cdrs))))
 
 (local (in-theory (enable consp-of-cdr
                           bounded-renaming-entriesp-of-aset1-special-gen

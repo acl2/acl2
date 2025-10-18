@@ -48,32 +48,16 @@
      given any two arbitrary function environments."))
 
   (defthm-exec-flag
-    (defthm exec-expr-call-without-calls
-      t
-      :rule-classes nil
-      :flag exec-expr-call)
-    (defthm exec-expr-call-or-pure-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-pure)
-    (defthm exec-expr-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-asg e compst fenv limit)
-                      (exec-expr-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-asg)
-    (defthm exec-expr-call-or-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-expr-call-or-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-asg)
     (defthm exec-fun-without-calls
       t
       :rule-classes nil
       :flag exec-fun)
+    (defthm exec-expr-without-calls
+      (implies (expr-nocallsp e)
+               (equal (exec-expr e compst fenv limit)
+                      (exec-expr e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr)
     (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)
@@ -87,6 +71,13 @@
                       (exec-stmt-while test body compst fenv1 limit)))
       :rule-classes nil
       :flag exec-stmt-while)
+    (defthm exec-stmt-dowhile-without-calls
+      (implies (and (expr-nocallsp test)
+                    (stmt-nocallsp body))
+               (equal (exec-stmt-dowhile body test compst fenv limit)
+                      (exec-stmt-dowhile body test compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-stmt-dowhile)
     (defthm exec-initer-without-calls
       (implies (initer-nocallsp initer)
                (equal (exec-initer initer compst fenv limit)
@@ -112,12 +103,10 @@
       :rule-classes nil
       :flag exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable exec-expr-call
-                                exec-expr-call-or-pure
-                                exec-expr-asg
-                                exec-expr-call-or-asg
+             :in-theory (enable exec-expr
                                 exec-stmt
                                 exec-stmt-while
+                                exec-stmt-dowhile
                                 exec-initer
                                 exec-obj-declon
                                 exec-block-item

@@ -388,7 +388,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-make/adjust-expr-cast ((type tynamep) (arg exprp))
+(define dimb-make/adjust-expr-cast ((type tynamep)
+                                    (inc/dec inc/dec-op-listp)
+                                    (arg exprp))
   :guard (and (tyname-unambp type)
               (expr-unambp arg))
   :returns (expr exprp)
@@ -396,9 +398,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to build or adjust cast expression,
-     in @(tsee dimb-expr) and other functions.
-     When @(tsee dimb-expr) encounters a cast expression,
+    "This is used to build or adjust a cast expression during disambiguation.")
+   (xdoc::p
+    "When @(tsee dimb-expr) encounters a cast expression,
      it recursively disambiguates
      the type name @('T0') and the argument expression @('E0'),
      obtaining a type name @('T') and an argument expression @('E').
@@ -422,33 +424,72 @@
      a binary expression with @'op\''),
      pushing the cast down.")
    (xdoc::p
-    "The same kind of adjustment may be needed, besides in @(tsee dimb-expr),
-     also in functions like @(tsee dimb-cast/call-to-cast),
-     which also normally build cast expressions.")
+    "The same kind of adjustment may be needed, besides @(tsee dimb-expr),
+     also in functions like @(tsee dimb-cast/and-to-cast),
+     which turns ambiguous expressions of the form @('( X ) IncDec & E'),
+     which is explained in @(tsee expr),
+     into cast expressions,
+     possibly also applying the increment/decrement operators @('IncDec')
+     to the @('& E') expression.
+     But note that the parser, when constructing such an ambiguous expression,
+     i.e. an expression of type @(tsee expr) of kind @(':cast/and-ambig'),
+     may need to put an equality binary expression into @('E')
+     (a proper equality expression, or one with higher priority),
+     e.g. we may have @('(X) ++ & A == B'),
+     which must be grouped like @('[ (X) [ ++ [ & A ] ] ] == B')
+     and not like @('[ (X) [ ++ [ & [ A == B ] ] ] ]'),
+     where the square brackets describe grouping in the AST
+     but are not part of the syntax.
+     Thus, we need to recursively push the increment/decrement operators in,
+     as we go into possibly nested binary expressions.")
    (xdoc::p
-    "This function takes @('T') and @('E') as inputs.
+    "This function takes @('T'), @('IncDec'), and @('E') as inputs.
      If @('E') is not a binary expression,
      we return the cast expression @('(T) E').
      If @('E') is a binary expression, let that be @('A op B'),
-     then we return @('[ TA ] op B'),
-     where TA is the result of recursively calling this function
-     on @('T') and @('A'),
-     and where the square brackets show how things are grouped.")
+     then we return @('[ TIncDecA ] op B'),
+     where @('TIncDecA') is the result of recursively calling this function
+     on @('T'), @('IncDec'), and @('A').")
    (xdoc::p
-    "In other words, this builds and adjusts the expression
+    "The @('arg') input of this function is always a binary expression,
+     or an expression of lower priority.
+     We stop the recursion as soon as the expression is not binary,
+     in which case the expression could be
+     a cast or unary or postfix or primary.
+     If there are no @('IncDec') operators,
+     any of these kinds of expressions is appropriate as
+     argument of the newly constructed cast expression.
+     If there are @('IncDec') operators,
+     then the cast case would not be appropriate,
+     but this should never happen by construction;
+     we double-check that and throw a hard error if that happens.
+     We also throw a hard error if @('arg') has
+     a lower priority than a logical conjunction expression,
+     because that should never happen by construction.")
+   (xdoc::p
+    "In summary, this function builds and adjusts the expression
      so that the sub-expressions have priorities greater than or equal to
      the ones expected by the super-expressions at those place.
      Another way to express this condition on priorities
      is that the expression prints without any added parentheses.
      But this is not a function to adjust all kinds of priority mismatches:
      it only works on the ones that may arise during disambiguation."))
-  (if (expr-case arg :binary)
-      (make-expr-binary :op (expr-binary->op arg)
-                        :arg1 (dimb-make/adjust-expr-cast
-                               type (expr-binary->arg1 arg))
-                        :arg2 (expr-binary->arg2 arg)
-                        :info nil)
-    (make-expr-cast :type type :arg arg))
+  (cond
+   ((expr-case arg :binary)
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-cast
+                             type inc/dec (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+   ((expr-priority-< (expr->priority arg)
+                     (expr-priority-logand))
+    (prog2$ (raise "Internal error: ~x0 has lower priority than &&." arg)
+            (expr-fix arg)))
+   ((and (consp inc/dec)
+         (expr-case arg :cast))
+    (prog2$ (raise "Internal error: ~x0 applied to ~x1." inc/dec arg)
+            (expr-fix arg)))
+   (t (make-expr-cast :type type :arg (apply-pre-inc/dec-ops inc/dec arg))))
   :measure (expr-count arg)
   :verify-guards :after-returns
   :hooks (:fix)
@@ -514,7 +555,7 @@
      because for instance the expression @('(x) + y * (z) & w')
      could not lead, without adjustment, to @('[ (x) + y ] * [ (z) & w ]'),
      because the parser would parse all of @('y * (z) & w') after the @('+'),
-     but the generality is easies to handle,
+     but the generality is easier to handle,
      compared to establishing restrictions on what the parser can produce.
      So we consider a case like @('[ (x) + y ] * [ (z) & w ]') possible,
      with both sub-expressions mismatching,
@@ -633,7 +674,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee dimb-make/adjust-expr-cast)
-     and @(tsee dimb-make/adjust-expr-binary).
+     and @(tsee dimb-make/adjust-expr-binary):
+     see those functions' documentation first.
      Since some of the unary operators expect a cast expression as argument
      (as well as an expression with priority higher than a cast),
      the argument of a unary operators, as produced by the parser,
@@ -697,6 +739,49 @@
     :hyp (expr-unambp arg)
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-label-addr ((arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, a label address expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee dimb-make/adjust-expr-unary),
+     but for label address expression,
+     which are conceptually similar to unary expressions,
+     but have a different AST structure.")
+   (xdoc::p
+    "The unary operator @('&&') expects an identifier,
+     so we test directly for that.
+     If the argument is not an identifier,
+     it must be a binary expression;
+     the caller takes care of checking this."))
+  (b* (((when (expr-case arg :ident))
+        (expr-label-addr (expr-ident->ident arg)))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of unary operator &&."
+               (expr-fix arg))
+        (expr-fix arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-label-addr
+                             (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+  :measure (expr-count arg)
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-label-addr
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/call-to-cast ((tyname tynamep)
@@ -728,10 +813,8 @@
      If @('X') is a type name,
      the increment and decrement operators, if any,
      are pre-increment and pre-decrement operators
-     applied to the expression @('(E)Pr').
-     We apply them and we form a cast expression."))
-  (dimb-make/adjust-expr-cast tyname
-                              (apply-pre-inc/dec-ops inc/dec arg))
+     applied to the expression @('(E)Pr')."))
+  (dimb-make/adjust-expr-cast tyname inc/dec arg)
   :hooks (:fix)
 
   ///
@@ -853,9 +936,8 @@
      Note that the @('*'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               (unop-indir)
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary (unop-indir) arg))
   :hooks (:fix)
 
   ///
@@ -917,9 +999,8 @@
      Note that the @('+') or @('-'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               plus/minus
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary plus/minus arg))
   :hooks (:fix)
 
   ///
@@ -981,9 +1062,8 @@
      Note that the @('&'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (dimb-make/adjust-expr-unary
-                               (unop-address)
-                               (apply-pre-inc/dec-ops inc/dec arg)))
+                              inc/dec
+                              (dimb-make/adjust-expr-unary (unop-address) arg))
   :hooks (:fix)
 
   ///
@@ -1018,6 +1098,64 @@
   ///
 
   (defret expr-unambp-of-dimb-cast/and-to-and
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/logand-to-cast ((tyname tynamep)
+                                  (inc/dec inc/dec-op-listp)
+                                  (arg exprp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or logical conjunction expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
+     but for a different kind of ambiguous expression.
+     Note that the @('&&'), which is unary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              inc/dec
+                              (dimb-make/adjust-expr-label-addr arg))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/logand-to-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/logand-to-logand ((arg1 exprp)
+                                    (inc/dec inc/dec-op-listp)
+                                    (arg2 exprp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or logical conjunction expression
+          to be a logical conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
+     but for a different kind of ambiguous expression.
+     Note that the @('&&'), which is binary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-binary (binop-logand)
+                                (apply-post-inc/dec-ops arg1 inc/dec)
+                                arg2)
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/logand-to-logand
     (expr-unambp expr)
     :hyp (and (expr-unambp arg1)
               (expr-unambp arg2))))
@@ -1251,6 +1389,8 @@
          (retok (dimb-make/adjust-expr-unary expr.op
                                              new-arg)
                 table))
+       :label-addr
+       (retok (expr-fix expr) (dimb-table-fix table))
        :sizeof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
          (retok (expr-sizeof new-tyname) table))
@@ -1271,7 +1411,7 @@
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))
-         (retok (dimb-make/adjust-expr-cast new-type new-arg)
+         (retok (dimb-make/adjust-expr-cast new-type nil new-arg)
                 table))
        :binary
        (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
@@ -1386,9 +1526,27 @@
                                  expr.inc/dec
                                  new-arg/arg2)
            table)))
+       :cast/logand-ambig
+       (b* (((erp expr/tyname table)
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
+            ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
+         (expr/tyname-case
+          expr/tyname
+          :tyname
+          (retok
+           (dimb-cast/logand-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+                                     expr.inc/dec
+                                     new-arg/arg2)
+           table)
+          :expr
+          (retok
+           (dimb-cast/logand-to-logand (expr/tyname-expr->unwrap expr/tyname)
+                                       expr.inc/dec
+                                       new-arg/arg2)
+           table)))
        :stmt
-       (b* (((erp items table) (dimb-block-item-list expr.items table)))
-         (retok (expr-stmt items) table))
+       (b* (((erp cstmt table) (dimb-comp-stmt expr.stmt nil table)))
+         (retok (expr-stmt cstmt) table))
        :tycompat
        (b* (((erp type1 table) (dimb-tyname expr.type1 table))
             ((erp type2 table) (dimb-tyname expr.type2 table)))
@@ -1607,6 +1765,12 @@
                                        (ident->unwrap tyspec.name))))
        :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
                       (dimb-table-fix table))
+       :locase-float80 (retok (type-spec-locase-float80)
+                              (dimb-table-fix table))
+       :locase-float128 (retok (type-spec-locase-float128)
+                               (dimb-table-fix table))
+       :float16 (retok (type-spec-float16) (dimb-table-fix table))
+       :float16x (retok (type-spec-float16x) (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
        :float32x (retok (type-spec-float32x) (dimb-table-fix table))
        :float64 (retok (type-spec-float64) (dimb-table-fix table))
@@ -2465,7 +2629,9 @@
          ((struni-spec struni-spec) struni-spec)
          ((erp new-members table)
           (dimb-struct-declon-list struni-spec.members table)))
-      (retok (make-struni-spec :name? struni-spec.name? :members new-members)
+      (retok (make-struni-spec :attribs struni-spec.attribs
+                               :name? struni-spec.name?
+                               :members new-members)
              table))
     :measure (struni-spec-count struni-spec))
 
@@ -2481,14 +2647,14 @@
       (struct-declon-case
        structdeclon
        :member
-       (b* (((erp new-specqual table)
-             (dimb-spec/qual-list structdeclon.specqual table))
-            ((erp new-declor table)
-             (dimb-struct-declor-list structdeclon.declor table)))
+       (b* (((erp new-specquals table)
+             (dimb-spec/qual-list structdeclon.specquals table))
+            ((erp new-declors table)
+             (dimb-struct-declor-list structdeclon.declors table)))
          (retok (make-struct-declon-member :extension structdeclon.extension
-                                           :specqual new-specqual
-                                           :declor new-declor
-                                           :attrib structdeclon.attrib)
+                                           :specquals new-specquals
+                                           :declors new-declors
+                                           :attribs structdeclon.attribs)
                 table))
        :statassert
        (b* (((erp new-statassert table)
@@ -2795,7 +2961,12 @@
        [C17:6.8.4/3].")
      (xdoc::p
       "An iteration statement forms a new scope, as do its sub-statements
-       [C17:6.8.5/5]."))
+       [C17:6.8.5/5].")
+     (xdoc::p
+      "A @(':gotoe') followed by an expression that is an identifier
+       may need to be re-classified into a @(':goto').
+       We base that on whether the identifier is in scope:
+       if it is not, it must be a label."))
     (b* (((reterr) (irr-stmt) (irr-dimb-table)))
       (stmt-case
        stmt
@@ -2805,10 +2976,8 @@
          (retok (make-stmt-labeled :label new-label :stmt new-stmt)
                 table))
        :compound
-       (b* ((table (dimb-push-scope table))
-            ((erp new-items table) (dimb-block-item-list stmt.items table))
-            (table (dimb-pop-scope table)))
-         (retok (stmt-compound new-items) table))
+       (b* (((erp cstmt table) (dimb-comp-stmt stmt.stmt nil table)))
+         (retok (stmt-compound cstmt) table))
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-expr :expr? new-expr? :info nil) table))
@@ -2904,6 +3073,15 @@
                        table)))
        :goto
        (retok (stmt-fix stmt) (dimb-table-fix table))
+       :gotoe
+       (b* (((when (and (expr-case stmt.label :ident)
+                        (not (dimb-lookup-ident
+                              (expr-ident->ident stmt.label)
+                              table))))
+             (retok (stmt-goto (expr-ident->ident stmt.label))
+                    (dimb-table-fix table)))
+            ((erp new-label table) (dimb-expr stmt.label table)))
+         (retok (stmt-gotoe new-label) table))
        :continue
        (retok (stmt-fix stmt) (dimb-table-fix table))
        :break
@@ -2914,6 +3092,34 @@
        :asm
        (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-comp-stmt ((cstmt comp-stmtp)
+                          (fundefp booleanp)
+                          (table dimb-tablep))
+    :returns (mv (erp maybe-msgp)
+                 (new-cstmt comp-stmtp)
+                 (new-table dimb-tablep))
+    :parents (disambiguator dimb-exprs/decls/stmts)
+    :short "Disambiguate a compound statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundefp') flag says whether the compound statement
+       is the body of a function definition.
+       If that is the case, we do not push a new scope and then pop it,
+       because that is already done in @(tsee dimb-fundef):
+       the body itself of the function does not start a new scope;
+       it is the function definition itself that starts a new scope,
+       involving the parameters."))
+    (b* (((reterr) (irr-comp-stmt) (irr-dimb-table))
+         ((comp-stmt cstmt) cstmt)
+         (table (if fundefp table (dimb-push-scope table)))
+         ((erp new-items table) (dimb-block-item-list cstmt.items table))
+         (table (if fundefp table (dimb-pop-scope table))))
+      (retok (make-comp-stmt :labels cstmt.labels :items new-items) table))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3400,7 +3606,12 @@
     (defret stmt-unambp-of-dimb-stmt
       (implies (not erp)
                (stmt-unambp new-stmt))
-      :fn dimb-stmt)
+      :fn dimb-stmt
+      :hints ('(:expand (stmt-unambp stmt))))
+    (defret comp-stmt-unambp-of-dimb-comp-stmt
+      (implies (not erp)
+               (comp-stmt-unambp new-cstmt))
+      :fn dimb-comp-stmt)
     (defret block-item-unambp-of-dimb-block-item
       (implies (not erp)
                (block-item-unambp new-item))
@@ -3478,8 +3689,7 @@
                  "``Function Names''")
     ").")
    (xdoc::p
-    "After all of that, we disambiguate the body of the function definition,
-     which is a block (i.e. compound statement) in valid code.
+    "After all of that, we disambiguate the body of the function definition.
      But we do not push a new scope for the block,
      because the scope pushed by @(tsee dimb-declor)
      is already the one for the function body.")
@@ -3501,14 +3711,14 @@
                          (ident "__PRETTY_FUNCTION__"))
                    table)
                 table))
-       ((erp new-items table) (dimb-block-item-list fundef.body table))
+       ((erp new-body table) (dimb-comp-stmt fundef.body t table))
        (table (dimb-pop-scope table))
        (table (dimb-add-ident ident (dimb-kind-objfun) table)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
                         :declor new-declor
                         :decls new-decls
-                        :body new-items
+                        :body new-body
                         :info fundef.info)
            table))
   :hooks (:fix)
@@ -3647,7 +3857,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit-ensemble ((tuens transunit-ensemblep) (gcc booleanp))
+(define dimb-transunit-ensemble ((tuens transunit-ensemblep)
+                                 (gcc booleanp)
+                                 (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
@@ -3659,14 +3871,24 @@
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->unwrap tuens))
-       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc)))
+       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc keep-going))
+       (- (if keep-going
+              (b* ((len-tumap (omap::size tumap))
+                   (len-new-tumap (omap::size new-tumap))
+                   (diff (- len-tumap len-new-tumap)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Disambiguated ~x0/~x1 translation units.~%"
+                      len-new-tumap len-tumap)))
+            nil)))
     (retok (transunit-ensemble new-tumap)))
   :hooks (:fix)
 
   :prepwork
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (gcc booleanp))
+                                         (gcc booleanp)
+                                         (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-transunit-mapp
                              :hyp (filepath-transunit-mapp tumap)))
@@ -3674,16 +3896,28 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((erp new-tunit) (dimb-transunit tunit gcc))
+          ((mv erp new-tunit) (dimb-transunit tunit gcc))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                           (filepath->unwrap path)
+                           erp)
+                       (dimb-transunit-ensemble-loop (omap::tail tumap)
+                                                     gcc
+                                                     keep-going))
+             (retmsg$ "Error in translation unit ~x0: ~@1"
+                      (filepath->unwrap path)
+                      erp)))
           ((erp new-tumap)
-           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc)))
+           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((gcc booleanp)))
+       :args ((gcc booleanp)
+              (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
        (implies (not erp)

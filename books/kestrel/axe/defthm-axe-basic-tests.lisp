@@ -16,7 +16,7 @@
 (include-book "rules-in-rule-lists")
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
-(include-book "kestrel/booleans/booleans" :dir :system) ;for boolif-when-quotep-arg3\
+(include-book "kestrel/booleans/booleans" :dir :system) ;for boolif-when-quotep-arg3
 
 ; Matt K. mod: Avoid ACL2(p) error.
 (set-waterfall-parallelism nil)

@@ -601,16 +601,11 @@
     "This is the type of the annotations that
      the validator adds to function definitions.
      The information consists of
-     the validation table at the start of the function definition,
-     the validation table at the start of the body
-     (i.e. just after the opening curly brace),
      the type of the function (not just the result; the function type),
      and a "
     (xdoc::seetopic "uid" "unique identifier")
     "."))
-  ((table-start valid-table)
-   (table-body-start valid-table)
-   (type type)
+  ((type type)
    (uid uid))
   :pred fundef-infop)
 
@@ -700,6 +695,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                    (type-spec-fix type-spec)))
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -738,7 +735,7 @@
    (fundef (and (decl-spec-list-annop (fundef->spec fundef))
                 (declor-annop (fundef->declor fundef))
                 (decl-list-annop (fundef->decls fundef))
-                (block-item-list-annop (fundef->body fundef))
+                (comp-stmt-annop (fundef->body fundef))
                 (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
@@ -816,7 +813,7 @@
            (and (decl-spec-list-annop spec)
                 (declor-annop declor)
                 (decl-list-annop decls)
-                (block-item-list-annop body)
+                (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
              (fundef extension spec declor asm? attribs decls body info))
@@ -930,9 +927,9 @@
              (decl-list-annop (fundef->decls fundef)))
     :enable fundef-annop)
 
-  (defruled block-item-list-annop-of-fundef->body
+  (defruled comp-stmt-annop-of-fundef->body
     (implies (fundef-annop fundef)
-             (block-item-list-annop (fundef->body fundef)))
+             (comp-stmt-annop (fundef->body fundef)))
     :enable fundef-annop)
 
   (defruled fundef-infop-of-fundef->info
@@ -981,7 +978,7 @@
      decl-spec-list-annop-of-fundef->spec
      declor-annop-of-fundef->declor
      decl-list-annop-of-fundef->decls
-     block-item-list-annop-of-fundef->body
+     comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls
      transunit-infop-of-transunit->info)))
@@ -1029,6 +1026,7 @@
    :memberp (type-unknown)
    :complit (type-unknown)
    :unary (expr-unary-info->type expr.info)
+   :label-addr (type-pointer (type-void))
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (tyname-info->type (tyname->info expr.type))
@@ -1102,18 +1100,19 @@
     (stmt-case
      stmt
      :labeled (stmt-types stmt.stmt)
-     :compound (block-item-list-types stmt.items)
+     :compound (comp-stmt-types stmt.stmt)
      :expr (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
                          (stmt-types stmt.else))
      :switch nil
      :while (set::insert nil (stmt-types stmt.body))
-     :dowhile nil
+     :dowhile (set::insert nil (stmt-types stmt.body))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (expr-option-case
@@ -1122,6 +1121,15 @@
               :none (set::insert (type-void) nil))
      :asm nil)
     :measure (stmt-count stmt))
+
+  (define comp-stmt-types ((cstmt comp-stmtp))
+    :guard (and (comp-stmt-unambp cstmt)
+                (comp-stmt-annop cstmt))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts/types)
+    :short "Types of a compound statement, from the validation information."
+    (block-item-list-types (comp-stmt->items cstmt))
+    :measure (comp-stmt-count cstmt))
 
   (define block-item-types ((item block-itemp))
     :guard (and (block-item-unambp item)
@@ -1196,10 +1204,8 @@
     "The set of possible types returned by the function is
      the set of possible types returned by the body,
      roughly speaking.
-     More precisely, the latter is a set of optional types
-     (see @(tsee block-item-list-types)),
-     where @('nil') means that the list of block items
-     terminates without a @('return').
+     More precisely, the latter is a set of optional types,
+     where @('nil') means that the body terminates without a @('return').
      For a function, this is equivalent to a @('return') without expression.
      Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
      obtaining the set of types (not optional types) of the function's result.
@@ -1215,7 +1221,7 @@
      possibly subject to conversions.
      However, our formal semantics of C does not cover those conversions yet,
      so we adopt the more general view here."))
-  (b* ((types (block-item-list-types (fundef->body fundef)))
+  (b* ((types (comp-stmt-types (fundef->body fundef)))
        (types (if (set::in nil types)
                   (set::insert (type-void) (set::delete nil types))
                 types)))

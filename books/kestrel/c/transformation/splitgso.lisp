@@ -243,7 +243,7 @@
       ;; TODO: properly handle struct declarations with multiple declarators
       ;;   instead of returning error.
       :member (b* (((erp ident)
-                    (struct-declor-list-get-ident struct-declon.declor)))
+                    (struct-declor-list-get-ident struct-declon.declors)))
                 (retok (and (member-equal ident names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"
@@ -323,12 +323,14 @@
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
+                                          :attribs nil
                                           :name? new1
                                           :members remanining-struct-decls)))))
                      (c$::make-decl-decl
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
+                                          :attribs nil
                                           :name? new2
                                           :members split-struct-decls))))))))
       :statassert (retok nil nil (list (decl-fix decl)))))
@@ -695,12 +697,16 @@
              (c$::decl-spec-typespec
                (c$::type-spec-struct
                  (c$::make-struni-spec
-                   :name? new1-type))))
+                    :attribs nil
+                    :name? new1-type
+                    :members nil))))
            (decl-new2-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
                  (c$::make-struni-spec
-                   :name? new2-type)))))
+                   :attribs nil
+                   :name? new2-type
+                   :members nil)))))
         (retok
           t
           (list (c$::make-decl-decl

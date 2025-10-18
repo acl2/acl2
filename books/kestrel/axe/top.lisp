@@ -110,7 +110,6 @@
 (include-book "largest-non-quotep")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "lenconsmeta")
-(include-book "lifter-common")
 (include-book "make-assumption-array")
 (include-book "make-axe-bind-free-evaluator")
 (include-book "make-axe-rules")
@@ -253,13 +252,11 @@
 (include-book "math-rules")
 (include-book "set-rules")
 
-
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
 (include-book "rewriter-basic")
 ;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
-(include-book "def-simplified")
 (include-book "unroll-spec-basic")
 (include-book "defthm-axe-basic")
 
@@ -293,11 +290,18 @@
 (include-book "equivalence-checker-helpers")
 (include-book "equivalence-checker")
 
+;; Utilities used by multiple tools:
+(include-book "lifter-common")
+(include-book "tester-common")
+
 ;; The JVM-specific Axe tools:
 (include-book "jvm/top")
 
 ;; The x86-specific Axe tools:
 (include-book "x86/top")
+
+;; The RISC-V-specific Axe tools:
+(include-book "risc-v/top")
 
 ;; The r1cs-specific Axe tools:
 (include-book "r1cs/top")

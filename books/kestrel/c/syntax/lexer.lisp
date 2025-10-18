@@ -11,8 +11,9 @@
 (in-package "C$")
 
 (include-book "reader")
-(include-book "keywords")
 (include-book "abstract-syntax-irrelevants")
+
+(include-book "../language/keywords")
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
@@ -42,6 +43,16 @@
 (defruledl acl2-numberp-when-natp
   (implies (natp x)
            (acl2-numberp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro utf8-= (x y)
+  `(= (the unsigned-byte ,x)
+      (the unsigned-byte ,y)))
+
+(defmacro utf8-<= (x y)
+  `(<= (the unsigned-byte ,x)
+       (the unsigned-byte ,y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,7 +86,8 @@
   (:comment ())
   (:prepr-directive ())
   (:whitespace ())
-  :pred lexemep)
+  :pred lexemep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -100,11 +112,11 @@
 (define lex-identifier/keyword ((first-char (unsigned-byte-p 8 first-char))
                                 (first-pos positionp)
                                 (parstate parstatep))
-  :guard (or (and (<= (char-code #\A) first-char)
-                  (<= first-char (char-code #\Z)))
-             (and (<= (char-code #\a) first-char)
-                  (<= first-char (char-code #\z)))
-             (= first-char (char-code #\_)))
+  :guard (or (and (utf8-<= (char-code #\A) first-char)
+                  (utf8-<= first-char (char-code #\Z)))
+             (and (utf8-<= (char-code #\a) first-char)
+                  (utf8-<= first-char (char-code #\z)))
+             (utf8-= first-char (char-code #\_)))
   :returns (mv erp
                (lexeme lexemep)
                (span spanp)
@@ -122,10 +134,7 @@
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
      matches a keyword.
-     If GCC extensions are supported,
-     we check the grammatical identifier
-     against some additional keywords;
-     see the ABNF grammar rule for @('gcc-keyword').")
+     We use the C version to determine the keywords to be matched.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -153,9 +162,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (or (member-equal string c::*keywords*)
-            (and (parstate->gcc parstate)
-                 (member-equal string *gcc-keywords*)))
+    (if (member-equal string (c::keywords (parstate->version parstate)))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -178,10 +185,13 @@
           ((when (not char))
            (retok nil (position-fix pos-so-far) parstate))
           ((unless ; A-Z a-z 0-9 _
-               (or (and (<= (char-code #\A) char) (<= char (char-code #\Z)))
-                   (and (<= (char-code #\a) char) (<= char (char-code #\z)))
-                   (and (<= (char-code #\0) char) (<= char (char-code #\9)))
-                   (= char (char-code #\_))))
+               (or (and (utf8-<= (char-code #\A) char)
+                        (utf8-<= char (char-code #\Z)))
+                   (and (utf8-<= (char-code #\a) char)
+                        (utf8-<= char (char-code #\z)))
+                   (and (utf8-<= (char-code #\0) char)
+                        (utf8-<= char (char-code #\9)))
+                   (utf8-= char (char-code #\_))))
            (b* ((parstate (unread-char parstate)))
              (retok nil (position-fix pos-so-far) parstate)))
           ((erp chars last-pos parstate)
@@ -235,12 +245,12 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char)))
-       ((unless (or (and (<= (char-code #\0) char) ; 0
-                         (<= char (char-code #\9))) ; 9
-                    (and (<= (char-code #\A) char) ; A
-                         (<= char (char-code #\F))) ; F
-                    (and (<= (char-code #\a) char) ; a
-                         (<= char (char-code #\f))))) ; f
+       ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
+                         (utf8-<= char (char-code #\9))) ; 9
+                    (and (utf8-<= (char-code #\A) char) ; A
+                         (utf8-<= char (char-code #\F))) ; F
+                    (and (utf8-<= (char-code #\a) char) ; a
+                         (utf8-<= char (char-code #\f))))) ; f
         (reterr-msg :where (position-to-msg pos)
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char))))
@@ -344,8 +354,8 @@
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos parstate))
-       ((unless (and (<= (char-code #\0) char) ; 0
-                     (<= char (char-code #\9)))) ; 9
+       ((unless (and (utf8-<= (char-code #\0) char) ; 0
+                     (utf8-<= char (char-code #\9)))) ; 9
         (b* ((parstate (unread-char parstate)))
           (retok nil (position-fix pos-so-far) pos parstate)))
        (decdig (code-char char))
@@ -413,12 +423,12 @@
        ((erp char pos parstate) (read-char parstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos parstate))
-       ((unless (or (and (<= (char-code #\0) char) ; 0
-                         (<= char (char-code #\9))) ; 9
-                    (and (<= (char-code #\A) char) ; A
-                         (<= char (char-code #\F))) ; F
-                    (and (<= (char-code #\a) char) ; a
-                         (<= char (char-code #\f))))) ; f
+       ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
+                         (utf8-<= char (char-code #\9))) ; 9
+                    (and (utf8-<= (char-code #\A) char) ; A
+                         (utf8-<= char (char-code #\F))) ; F
+                    (and (utf8-<= (char-code #\a) char) ; a
+                         (utf8-<= char (char-code #\f))))) ; f
         (b* ((parstate (unread-char parstate)))
           (retok nil (position-fix pos-so-far) pos parstate)))
        (hexdig (code-char char))
@@ -492,43 +502,43 @@
                              or a letter in {a, b, f, n, r, t, v, u, U, x} ~
                              or an octal digit"
                   :found (char-to-msg char)))
-     ((= char (char-code #\')) ; \ '
+     ((utf8-= char (char-code #\')) ; \ '
       (retok (escape-simple (simple-escape-squote)) pos parstate))
-     ((= char (char-code #\")) ; \ "
+     ((utf8-= char (char-code #\")) ; \ "
       (retok (escape-simple (simple-escape-dquote)) pos parstate))
-     ((= char (char-code #\?)) ; \ ?
+     ((utf8-= char (char-code #\?)) ; \ ?
       (retok (escape-simple (simple-escape-qmark)) pos parstate))
-     ((= char (char-code #\\)) ; \ \
+     ((utf8-= char (char-code #\\)) ; \ \
       (retok (escape-simple (simple-escape-bslash)) pos parstate))
-     ((= char (char-code #\a)) ; \ a
+     ((utf8-= char (char-code #\a)) ; \ a
       (retok (escape-simple (simple-escape-a)) pos parstate))
-     ((= char (char-code #\b)) ; \ b
+     ((utf8-= char (char-code #\b)) ; \ b
       (retok (escape-simple (simple-escape-b)) pos parstate))
-     ((= char (char-code #\f)) ; \ f
+     ((utf8-= char (char-code #\f)) ; \ f
       (retok (escape-simple (simple-escape-f)) pos parstate))
-     ((= char (char-code #\n)) ; \ n
+     ((utf8-= char (char-code #\n)) ; \ n
       (retok (escape-simple (simple-escape-n)) pos parstate))
-     ((= char (char-code #\r)) ; \ r
+     ((utf8-= char (char-code #\r)) ; \ r
       (retok (escape-simple (simple-escape-r)) pos parstate))
-     ((= char (char-code #\t)) ; \ t
+     ((utf8-= char (char-code #\t)) ; \ t
       (retok (escape-simple (simple-escape-t)) pos parstate))
-     ((= char (char-code #\v)) ; \ v
+     ((utf8-= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
-     ((and (= char (char-code #\%)) ; \ %
+     ((and (utf8-= char (char-code #\%)) ; \ %
            (parstate->gcc parstate))
       (retok (escape-simple (simple-escape-percent)) pos parstate))
-     ((and (<= (char-code #\0) char)
-           (<= char (char-code #\7))) ; \ octdig
+     ((and (utf8-<= (char-code #\0) char)
+           (utf8-<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((and char2
-               (<= (char-code #\0) char2)
-               (<= char2 (char-code #\7))) ; \ octdig octdig
+               (utf8-<= (char-code #\0) char2)
+               (utf8-<= char2 (char-code #\7))) ; \ octdig octdig
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((and char3
-                   (<= (char-code #\0) char3)
-                   (<= char3 (char-code #\7))) ; \ octdig octdig octdig
+                   (utf8-<= (char-code #\0) char3)
+                   (utf8-<= char3 (char-code #\7))) ; \ octdig octdig octdig
               (retok (escape-oct (oct-escape-three (code-char char)
                                                    (code-char char2)
                                                    (code-char char3)))
@@ -547,7 +557,7 @@
             (retok (escape-oct (oct-escape-one (code-char char)))
                    pos
                    parstate))))))
-     ((= char (char-code #\x))
+     ((utf8-= char (char-code #\x))
       (b* (((erp hexdigs last-pos next-pos parstate)
             (lex-*-hexadecimal-digit pos parstate)))
         (if hexdigs
@@ -555,10 +565,10 @@
           (reterr-msg :where (position-to-msg next-pos)
                       :expected "one or more hexadecimal digits"
                       :found "none"))))
-     ((= char (char-code #\u))
+     ((utf8-= char (char-code #\u))
       (b* (((erp quad pos parstate) (lex-hex-quad parstate)))
         (retok (escape-univ (univ-char-name-locase-u quad)) pos parstate)))
-     ((= char (char-code #\U))
+     ((utf8-= char (char-code #\U))
       (b* (((erp quad1 & parstate) (lex-hex-quad parstate))
            ((erp quad2 pos parstate) (lex-hex-quad parstate)))
         (retok (escape-univ (make-univ-char-name-upcase-u :quad1 quad1
@@ -635,16 +645,16 @@
                                any character other than ~
                                single quote or backslash or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\'))) ; '
+       ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos parstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp cchar & parstate)
-        (if (= char (char-code #\\)) ; \
+        (if (utf8-= char (char-code #\\)) ; \
             (b* (((erp escape pos parstate) (lex-escape-sequence parstate))
                  (cchar (c-char-escape escape)))
               (retok cchar pos parstate))
@@ -713,16 +723,16 @@
                                any character other than ~
                                double quote or backslash"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\"))) ; "
+       ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
                     :found (char-to-msg char)))
        ((erp schar & parstate)
-        (if (= char (char-code #\\)) ; \
+        (if (utf8-= char (char-code #\\)) ; \
             (b* (((erp escape pos parstate) (lex-escape-sequence parstate))
                  (schar (s-char-escape escape)))
               (retok schar pos parstate))
@@ -876,9 +886,9 @@
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\>))) ; >
+       ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos parstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -943,9 +953,9 @@
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\"))) ; "
+       ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -997,7 +1007,7 @@
                   :expected "a greater-than ~
                              or a double quote"
                   :found (char-to-msg char)))
-     ((= char (char-code #\<)) ; <
+     ((utf8-= char (char-code #\<)) ; <
       (b* (((erp hchars closing-angle-pos parstate) (lex-*-h-char parstate))
            (span (make-span :start first-pos :end closing-angle-pos))
            ((unless hchars)
@@ -1007,7 +1017,7 @@
         (retok (header-name-angles hchars)
                span
                parstate)))
-     ((= char (char-code #\")) ; "
+     ((utf8-= char (char-code #\")) ; "
       (b* (((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate))
            (span (make-span :start first-pos :end closing-dquote-pos))
            ((unless qchars)
@@ -1084,22 +1094,22 @@
     (cond
      ((not char) ; EOF
       (retok nil pos parstate))
-     ((= char (char-code #\l)) ; l
+     ((utf8-= char (char-code #\l)) ; l
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; l EOF
           (retok (isuffix-l (lsuffix-locase-l)) pos parstate))
-         ((= char2 (char-code #\l)) ; l l
+         ((utf8-= char2 (char-code #\l)) ; l l
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; l l EOF
               (retok (isuffix-l (lsuffix-locase-ll)) pos2 parstate))
-             ((= char3 (char-code #\u)) ; l l u
+             ((utf8-= char3 (char-code #\u)) ; l l u
               (retok (make-isuffix-lu :length (lsuffix-locase-ll)
                                       :unsigned (usuffix-locase-u))
                      pos3
                      parstate))
-             ((= char3 (char-code #\U)) ; l l U
+             ((utf8-= char3 (char-code #\U)) ; l l U
               (retok (make-isuffix-lu :length (lsuffix-locase-ll)
                                       :unsigned (usuffix-upcase-u))
                      pos3
@@ -1107,12 +1117,12 @@
              (t ; l l other
               (b* ((parstate (unread-char parstate))) ; l l
                 (retok (isuffix-l (lsuffix-locase-ll)) pos2 parstate))))))
-         ((= char2 (char-code #\u)) ; l u
+         ((utf8-= char2 (char-code #\u)) ; l u
           (retok (make-isuffix-lu :length (lsuffix-locase-l)
                                   :unsigned (usuffix-locase-u))
                  pos2
                  parstate))
-         ((= char2 (char-code #\U)) ; l U
+         ((utf8-= char2 (char-code #\U)) ; l U
           (retok (make-isuffix-lu :length (lsuffix-locase-l)
                                   :unsigned (usuffix-upcase-u))
                  pos2
@@ -1120,22 +1130,22 @@
          (t ; l other
           (b* ((parstate (unread-char parstate))) ; l
             (retok (isuffix-l (lsuffix-locase-l)) pos parstate))))))
-     ((= char (char-code #\L)) ; L
+     ((utf8-= char (char-code #\L)) ; L
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; L EOF
           (retok (isuffix-l (lsuffix-upcase-l)) pos parstate))
-         ((= char2 (char-code #\L)) ; L L
+         ((utf8-= char2 (char-code #\L)) ; L L
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; L L EOF
               (retok (isuffix-l (lsuffix-upcase-ll)) pos2 parstate))
-             ((= char3 (char-code #\u)) ; L L u
+             ((utf8-= char3 (char-code #\u)) ; L L u
               (retok (make-isuffix-lu :length (lsuffix-upcase-ll)
                                       :unsigned (usuffix-locase-u))
                      pos3
                      parstate))
-             ((= char3 (char-code #\U)) ; L L U
+             ((utf8-= char3 (char-code #\U)) ; L L U
               (retok (make-isuffix-lu :length (lsuffix-upcase-ll)
                                       :unsigned (usuffix-upcase-u))
                      pos3
@@ -1143,12 +1153,12 @@
              (t ; L L other
               (b* ((parstate (unread-char parstate))) ; LL
                 (retok (isuffix-l (lsuffix-upcase-ll)) pos2 parstate))))))
-         ((= char2 (char-code #\u)) ; L u
+         ((utf8-= char2 (char-code #\u)) ; L u
           (retok (make-isuffix-lu :length (lsuffix-upcase-l)
                                   :unsigned (usuffix-locase-u))
                  pos2
                  parstate))
-         ((= char2 (char-code #\U)) ; L U
+         ((utf8-= char2 (char-code #\U)) ; L U
           (retok (make-isuffix-lu :length (lsuffix-upcase-l)
                                   :unsigned (usuffix-upcase-u))
                  pos2
@@ -1156,12 +1166,12 @@
          (t ; L other
           (b* ((parstate (unread-char parstate))) ; L
             (retok (isuffix-l (lsuffix-upcase-l)) pos parstate))))))
-     ((= char (char-code #\u)) ; u
+     ((utf8-= char (char-code #\u)) ; u
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; u EOF
           (retok (isuffix-u (usuffix-locase-u)) pos parstate))
-         ((= char2 (char-code #\l)) ; u l
+         ((utf8-= char2 (char-code #\l)) ; u l
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; u l EOF
@@ -1169,7 +1179,7 @@
                                       :length (lsuffix-locase-l))
                      pos2
                      parstate))
-             ((= char3 (char-code #\l)) ; u l l
+             ((utf8-= char3 (char-code #\l)) ; u l l
               (retok (make-isuffix-ul :unsigned (usuffix-locase-u)
                                       :length (lsuffix-locase-ll))
                      pos3
@@ -1180,7 +1190,7 @@
                                         :length (lsuffix-locase-l))
                        pos2
                        parstate))))))
-         ((= char2 (char-code #\L)) ; u L
+         ((utf8-= char2 (char-code #\L)) ; u L
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; u L EOF
@@ -1188,7 +1198,7 @@
                                       :length (lsuffix-upcase-l))
                      pos2
                      parstate))
-             ((= char3 (char-code #\L)) ; u L L
+             ((utf8-= char3 (char-code #\L)) ; u L L
               (retok (make-isuffix-ul :unsigned (usuffix-locase-u)
                                       :length (lsuffix-upcase-ll))
                      pos3
@@ -1202,12 +1212,12 @@
          (t ; u other
           (b* ((parstate (unread-char parstate)))
             (retok (isuffix-u (usuffix-locase-u)) pos parstate))))))
-     ((= char (char-code #\U)) ; U
+     ((utf8-= char (char-code #\U)) ; U
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; U EOF
           (retok (isuffix-u (usuffix-upcase-u)) pos parstate))
-         ((= char2 (char-code #\l)) ; U l
+         ((utf8-= char2 (char-code #\l)) ; U l
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; U l EOF
@@ -1215,7 +1225,7 @@
                                       :length (lsuffix-locase-l))
                      pos2
                      parstate))
-             ((= char3 (char-code #\l)) ; U l l
+             ((utf8-= char3 (char-code #\l)) ; U l l
               (retok (make-isuffix-ul :unsigned (usuffix-upcase-u)
                                       :length (lsuffix-locase-ll))
                      pos3
@@ -1226,7 +1236,7 @@
                                         :length (lsuffix-locase-l))
                        pos2
                        parstate))))))
-         ((= char2 (char-code #\L)) ; U L
+         ((utf8-= char2 (char-code #\L)) ; U L
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; U L EOF
@@ -1234,7 +1244,7 @@
                                       :length (lsuffix-upcase-l))
                      pos2
                      parstate))
-             ((= char3 (char-code #\L)) ; U L L
+             ((utf8-= char3 (char-code #\L)) ; U L L
               (retok (make-isuffix-ul :unsigned (usuffix-upcase-u)
                                       :length (lsuffix-upcase-ll))
                      pos3
@@ -1278,25 +1288,93 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If a suffix is found, the @('last/next-pos') output is its position.
+    "If a suffix is found,
+     the @('last/next-pos') output is the position of its last character.
      Otherwise, it is the position where the suffix would be.")
    (xdoc::p
     "If there is no next character, there is no suffix.
      Otherwise, there are four possibilities for suffixes.
      If the next character is not part of any suffix,
-     we unread the character and return no suffix."))
+     we unread the character and return no suffix.")
+   (xdoc::p
+    "If GCC extensions are enabled,
+     we allow the @('f') or @('F') suffix
+     to be followed by @('<n>') or @('<n>x'),
+     with @('<n>') among @('16'), @('32'), @('64'), or @('128')."))
   (b* (((reterr) nil (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
-     ((not char)
+     ((not char) ; EOF
       (retok nil pos parstate))
-     ((= char (char-code #\f)) ; f
-      (retok (fsuffix-locase-f) pos parstate))
-     ((= char (char-code #\F)) ; F
-      (retok (fsuffix-upcase-f) pos parstate))
-     ((= char (char-code #\l)) ; l
+     ((utf8-= char (char-code #\f)) ; f
+      (b* (((unless (parstate->gcc parstate))
+            (retok (fsuffix-locase-f) pos parstate))
+           ((erp digits digits-last-pos & parstate) ; f [digits]
+            (lex-*-digit pos parstate)))
+        (cond
+         (digits ; f digits
+          (b* ((n (str::dec-digit-chars-value digits))
+               ((unless (member-equal n '(16 32 64 128)))
+                (reterr-msg :where (position-to-msg pos)
+                            :expected "one of ~
+                                       f16, f32, f64, f128, ~
+                                       f16x, f32x, f64x, f128x"
+                            :found (msg "f~x0" n)))
+               ((erp charx posx parstate) (read-char parstate)))
+            (cond
+             ((eql charx (char-code #\x)) ; f digits x
+              (b* ((fsuffix (case n
+                              (16 (fsuffix-locase-f16 t))
+                              (32 (fsuffix-locase-f32 t))
+                              (64 (fsuffix-locase-f64 t))
+                              (128 (fsuffix-locase-f128 t)))))
+                (retok fsuffix posx parstate)))
+             (t ; f digits other
+              (b* ((parstate (if charx (unread-char parstate) parstate))
+                   (fsuffix (case n
+                              (16 (fsuffix-locase-f16 nil))
+                              (32 (fsuffix-locase-f32 nil))
+                              (64 (fsuffix-locase-f64 nil))
+                              (128 (fsuffix-locase-f128 nil)))))
+                (retok fsuffix digits-last-pos parstate))))))
+         (t ; f nondigits
+          (retok (fsuffix-locase-f) pos parstate)))))
+     ((utf8-= char (char-code #\F)) ; F
+      (b* (((unless (parstate->gcc parstate))
+            (retok (fsuffix-upcase-f) pos parstate))
+           ((erp digits digits-last-pos & parstate) ; f [digits]
+            (lex-*-digit pos parstate)))
+        (cond
+         (digits ; F digits
+          (b* ((n (str::dec-digit-chars-value digits))
+               ((unless (member-equal n '(16 32 64 128)))
+                (reterr-msg :where (position-to-msg pos)
+                            :expected "one of ~
+                                       f16, f32, f64, f128, ~
+                                       f16x, f32x, f64x, f128x"
+                            :found (msg "f~x0" n)))
+               ((erp charx posx parstate) (read-char parstate)))
+            (cond
+             ((eql charx (char-code #\x)) ; F digits x
+              (b* ((fsuffix (case n
+                              (16 (fsuffix-upcase-f16 t))
+                              (32 (fsuffix-upcase-f32 t))
+                              (64 (fsuffix-upcase-f64 t))
+                              (128 (fsuffix-upcase-f128 t)))))
+                (retok fsuffix posx parstate)))
+             (t ; F digits other
+              (b* ((parstate (if charx (unread-char parstate) parstate))
+                   (fsuffix (case n
+                              (16 (fsuffix-upcase-f16 nil))
+                              (32 (fsuffix-upcase-f32 nil))
+                              (64 (fsuffix-upcase-f64 nil))
+                              (128 (fsuffix-upcase-f128 nil)))))
+                (retok fsuffix digits-last-pos parstate))))))
+         (t ; F nondigits
+          (retok (fsuffix-upcase-f) pos parstate)))))
+     ((utf8-= char (char-code #\l)) ; l
       (retok (fsuffix-locase-l) pos parstate))
-     ((= char (char-code #\L)) ; L
+     ((utf8-= char (char-code #\L)) ; L
       (retok (fsuffix-upcase-l) pos parstate))
      (t ; other
       (b* ((parstate (unread-char parstate)))
@@ -1340,9 +1418,9 @@
     (cond
      ((not char)
       (retok nil pos parstate))
-     ((= char (char-code #\+)) ; +
+     ((utf8-= char (char-code #\+)) ; +
       (retok (sign-plus) pos parstate))
-     ((= char (char-code #\-)) ; -
+     ((utf8-= char (char-code #\-)) ; -
       (retok (sign-minus) pos parstate))
      (t ; other
       (b* ((parstate (unread-char parstate)))
@@ -1365,7 +1443,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-expo-if-present ((parstate parstatep))
+(define lex-?-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo? dec-expo-optionp)
                (last/next-pos positionp)
@@ -1392,9 +1470,9 @@
     (cond
      ((not char)
       (retok nil pos parstate))
-     ((or (= char (char-code #\e)) ; e
-          (= char (char-code #\E))) ; E
-      (b* ((prefix (if (= char (char-code #\e))
+     ((or (utf8-= char (char-code #\e)) ; e
+          (utf8-= char (char-code #\E))) ; E
+      (b* ((prefix (if (utf8-= char (char-code #\e))
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
            ((erp sign? sign-pos parstate) (lex-?-sign parstate))
@@ -1418,12 +1496,12 @@
 
   ///
 
-  (defret parsize-of-lex-dec-expo-if-present-uncond
+  (defret parsize-of-lex-?-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-dec-expo-if-present-cond
+  (defret parsize-of-lex-?-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1432,7 +1510,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-dec-expo ((parstate parstatep))
+(define lex-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo dec-expop)
                (last-pos positionp)
@@ -1453,9 +1531,9 @@
       (reterr-msg :where (position-to-msg pos)
                   :expected "a character in {e, E}"
                   :found (char-to-msg char)))
-     ((or (= char (char-code #\e)) ; e
-          (= char (char-code #\E))) ; E
-      (b* ((prefix (if (= char (char-code #\e))
+     ((or (utf8-= char (char-code #\e)) ; e
+          (utf8-= char (char-code #\E))) ; E
+      (b* ((prefix (if (utf8-= char (char-code #\e))
                        (dec-expo-prefix-locase-e)
                      (dec-expo-prefix-upcase-e)))
            ((erp sign? sign-last-pos parstate)
@@ -1479,12 +1557,12 @@
 
   ///
 
-  (defret parsize-of-lex-dec-expo-uncond
+  (defret parsize-of-lex-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-dec-expo-cond
+  (defret parsize-of-lex-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1493,7 +1571,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-bin-expo ((parstate parstatep))
+(define lex-binary-exponent-part ((parstate parstatep))
   :returns (mv erp
                (expo bin-expop)
                (last-pos positionp)
@@ -1514,8 +1592,8 @@
       (reterr-msg :where (position-to-msg pos)
                   :expected "a character in {p, P}"
                   :found (char-to-msg char)))
-     ((or (= char (char-code #\p)) ; p
-          (= char (char-code #\P))) ; P
+     ((or (utf8-= char (char-code #\p)) ; p
+          (utf8-= char (char-code #\P))) ; P
       (b* ((prefix (if (= char (char-code #\p))
                        (bin-expo-prefix-locase-p)
                      (bin-expo-prefix-upcase-p)))
@@ -1540,12 +1618,12 @@
 
   ///
 
-  (defret parsize-of-lex-bin-expo-uncond
+  (defret parsize-of-lex-binary-exponent-part-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-bin-expo-cond
+  (defret parsize-of-lex-binary-exponent-part-cond
     (implies (and (not erp)
                   expo?)
              (<= (parsize new-parstate)
@@ -1648,17 +1726,17 @@
   (b* (((reterr) parstate)
        ((erp char pos parstate) (read-char parstate))
        ((when (not char)) (retok parstate))
-       ((when (or (and (<= (char-code #\A) char)
-                       (<= char (char-code #\Z)))
-                  (and (<= (char-code #\a) char)
-                       (<= char (char-code #\a)))
-                  (and (<= (char-code #\0) char)
-                       (<= char (char-code #\9)))
-                  (= char (char-code #\_))
-                  (= char (char-code #\.))
+       ((when (or (and (utf8-<= (char-code #\A) char)
+                       (utf8-<= char (char-code #\Z)))
+                  (and (utf8-<= (char-code #\a) char)
+                       (utf8-<= char (char-code #\a)))
+                  (and (utf8-<= (char-code #\0) char)
+                       (utf8-<= char (char-code #\9)))
+                  (utf8-= char (char-code #\_))
+                  (utf8-= char (char-code #\.))
                   (and ends-in-e
-                       (or (= char (char-code #\+))
-                           (= char (char-code #\-))))))
+                       (or (utf8-= char (char-code #\+))
+                           (utf8-= char (char-code #\-))))))
         (reterr-msg :where (position-to-msg pos)
                     :expected (msg "a character other than ~
                                     a letter ~
@@ -1736,7 +1814,7 @@
           (reterr-msg :where (position-to-msg pos)
                       :expected "a hexadecimal digit or a dot"
                       :found (char-to-msg char)))
-         ((= char (char-code #\.)) ; 0 x/X .
+         ((utf8-= char (char-code #\.)) ; 0 x/X .
           (b* (((erp hexdigs2 & hexdigs2-next-pos parstate)
                 (lex-*-hexadecimal-digit pos parstate)))
             ;; 0 x/X . [hexdigs2]
@@ -1747,7 +1825,7 @@
                           :found (char-to-msg nil)))
              (t ; 0 x/X . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate)))
+                    (lex-binary-exponent-part parstate)))
                 ;; 0 x/X . hexdigs2 expo
                 (b* (((erp fsuffix? suffix-last/next-pos parstate)
                       (lex-?-floating-suffix parstate))
@@ -1782,14 +1860,14 @@
                    :info nil))
                  hexdigs-last-pos
                  parstate))
-         ((= char (char-code #\.)) ; 0 x/X hexdigs .
+         ((utf8-= char (char-code #\.)) ; 0 x/X hexdigs .
           (b* (((erp hexdigs2 & & parstate)
                 (lex-*-hexadecimal-digit pos parstate)))
             ;; 0 x/X hexdigs . [hexdigs2]
             (cond
              ((not hexdigs2) ; 0 x/X hexdigs .
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1809,7 +1887,7 @@
                        parstate)))
              (t ; 0 x/X hexdigs . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
-                    (lex-bin-expo parstate))
+                    (lex-binary-exponent-part parstate))
                    ;; 0 x/X hexdigs . hexdigs2 expo
                    ((erp fsuffix? suffix-last/next-pos parstate)
                     (lex-?-floating-suffix parstate))
@@ -1827,10 +1905,11 @@
                        (cond (fsuffix? suffix-last/next-pos)
                              (t expo-last-pos))
                        parstate))))))
-         ((or (= char (char-code #\p)) ; 0 x/X hexdigs p
-              (= char (char-code #\P))) ; 0 x/X hexdigs P
+         ((or (utf8-= char (char-code #\p)) ; 0 x/X hexdigs p
+              (utf8-= char (char-code #\P))) ; 0 x/X hexdigs P
           (b* ((parstate (unread-char parstate)) ; 0 x/X hexdigs
-               ((erp expo expo-last-pos parstate) (lex-bin-expo parstate))
+               ((erp expo expo-last-pos parstate)
+                (lex-binary-exponent-part parstate))
                ;; 0 x/X hexdigs expo
                ((erp fsuffix? suffix-last/next-pos parstate)
                 (lex-?-floating-suffix parstate))
@@ -1951,12 +2030,12 @@
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
              parstate))
-     ((= char (char-code #\.)) ; 1-9 [decdigs] .
+     ((utf8-= char (char-code #\.)) ; 1-9 [decdigs] .
       (b* (((erp decdigs2 decdigs2-last-pos & parstate)
             (lex-*-digit pos parstate))
            ;; 1-9 [decdigs] . [decdigs2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 1-9 [decdigs] . [decdigs2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -1997,10 +2076,10 @@
                      (decdigs2 decdigs2-last-pos)
                      (t pos))
                parstate)))
-     ((or (= char (char-code #\e)) ; 1-9 [decdigs] e
-          (= char (char-code #\E))) ; 1-9 [decdigs] E
+     ((or (utf8-= char (char-code #\e)) ; 1-9 [decdigs] e
+          (utf8-= char (char-code #\E))) ; 1-9 [decdigs] E
       (b* ((parstate (unread-char parstate)) ; 1-9 [decdigs]
-           ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
+           ((erp expo expo-last-pos parstate) (lex-exponent-part parstate))
            ;; 1-9 [decdigs] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2074,7 +2153,7 @@
         (lex-*-digit first-pos-after-dot parstate))
        ;; . decdig [decdigs]
        ((erp expo? expo-last/next-pos parstate)
-        (lex-dec-expo-if-present parstate))
+        (lex-?-exponent-part parstate))
        ;; . decdig [decdigs] [expo]
        ((erp fsuffix? suffix-last/next-pos parstate)
         (lex-?-floating-suffix parstate))
@@ -2134,8 +2213,8 @@
        ((unless char)
         (raise "Internal error: no non-octal digit found.")
         (reterr t))
-       ((unless (and (<= (char-code #\0) char)
-                     (<= char (char-code #\7))))
+       ((unless (and (utf8-<= (char-code #\0) char)
+                     (utf8-<= char (char-code #\7))))
         (retok char pos parstate)))
     (lex-non-octal-digit parstate))
   :measure (parsize parstate)
@@ -2248,12 +2327,12 @@
           (reterr-msg :where (position-to-msg pos)
                       :expected "octal digit"
                       :found (char-to-msg nonoctdig))))))
-     ((= char (char-code #\.)) ; 0 [digits] .
+     ((utf8-= char (char-code #\.)) ; 0 [digits] .
       (b* (((erp digits2 digits2-last-pos & parstate)
             (lex-*-digit pos parstate))
            ;; 0 [digits] . [digits2]
            ((erp expo? expo-last/next-pos parstate)
-            (lex-dec-expo-if-present parstate))
+            (lex-?-exponent-part parstate))
            ;; 0 [digits] . [digits2] [expo]
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2296,10 +2375,10 @@
                      (digits2 digits2-last-pos)
                      (t pos))
                parstate)))
-     ((or (= char (char-code #\e)) ; 0 [digits] e
-          (= char (char-code #\E))) ; 0 [digits] E
+     ((or (utf8-= char (char-code #\e)) ; 0 [digits] e
+          (utf8-= char (char-code #\E))) ; 0 [digits] E
       (b* ((parstate (unread-char parstate)) ; 0 [digits]
-           ((erp expo expo-last-pos parstate) (lex-dec-expo parstate))
+           ((erp expo expo-last-pos parstate) (lex-exponent-part parstate))
            ;; 0 [digits] expo
            ((erp fsuffix? suffix-last/next-pos parstate)
             (lex-?-floating-suffix parstate))
@@ -2403,9 +2482,9 @@
                    :info nil))
                  (position-fix first-pos)
                  parstate))
-         ((or (= char (char-code #\x)) ; 0 x
-              (= char (char-code #\X))) ; 0 X
-          (b* ((hprefix (if (= char (char-code #\x))
+         ((or (utf8-= char (char-code #\x)) ; 0 x
+              (utf8-= char (char-code #\X))) ; 0 X
+          (b* ((hprefix (if (utf8-= char (char-code #\x))
                             (hprefix-locase-0x)
                           (hprefix-upcase-0x))))
             (lex-hex-iconst/fconst hprefix pos parstate)))
@@ -2476,7 +2555,7 @@
                        :extra (msg "The block comment starting at ~@1 ~
                                     never ends."
                                    (position-to-msg first-pos))))
-          ((= char (char-code #\*)) ; *
+          ((utf8-= char (char-code #\*)) ; *
            (lex-rest-of-block-comment-after-star first-pos parstate))
           (t ; other
            (lex-rest-of-block-comment first-pos parstate))))
@@ -2497,9 +2576,9 @@
                        :extra (msg "The block comment starting at ~@1 ~
                                     never ends."
                                    (position-to-msg first-pos))))
-          ((= char (char-code #\/)) ; /
+          ((utf8-= char (char-code #\/)) ; /
            (retok pos parstate))
-          ((= char (char-code #\*)) ; *
+          ((utf8-= char (char-code #\*)) ; *
            (lex-rest-of-block-comment-after-star first-pos parstate))
           (t ; other
            (lex-rest-of-block-comment first-pos parstate))))
@@ -2597,7 +2676,7 @@
                      :extra (msg "The line comment starting at ~@1 ~
                                   never ends."
                                  (position-to-msg first-pos))))
-        ((= char 10) ; new-line
+        ((utf8-= char 10) ; new-line
          (retok pos parstate))
         (t ; other
          (lex-line-comment-loop first-pos parstate))))
@@ -2679,7 +2758,7 @@
                      :extra (msg "The preprocessing directive starting at ~@1 ~
                                   never ends."
                                  (position-to-msg first-pos))))
-        ((= char 10) ; new-line
+        ((utf8-= char 10) ; new-line
          (retok pos parstate))
         (t ; other
          (lex-prepr-directive-loop first-pos parstate))))
@@ -2730,7 +2809,7 @@
      into a single line feed character,
      we detect new-lines by simply checking for a line feed."))
   (b* ((chars-read (parstate->chars-read parstate))
-       ((when (= chars-read 1))
+       ((when (utf8-= chars-read 1))
         t)
        ((when (or (< chars-read 1)
                   (<= (parstate->chars-length parstate) chars-read)))
@@ -2749,10 +2828,10 @@
      :returns (all-whitespace booleanp)
      (b* ((char+pos (parstate->char i parstate))
           (char (char+position->char char+pos)))
-       (cond ((= char 10) ; new-line
+       (cond ((utf8-= char 10) ; new-line
               t)
-             ((or (= char 32) ; SP
-                  (and (<= 9 char) (<= char 12))) ; HT VT FF
+             ((or (utf8-= char 32) ; SP
+                  (and (utf8-<= 9 char) (utf8-<= char 12))) ; HT VT FF
               (if (= (mbe :logic (nfix i)
                           :exec (the unsigned-byte i))
                      0)
@@ -2770,6 +2849,7 @@
                (lexeme? lexeme-optionp)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
+  :guard-debug t
   :short "Lex a lexeme."
   :long
   (xdoc::topstring
@@ -2902,31 +2982,31 @@
 
     (cond
 
-     ((or (= char 32) ; SP
-          (and (<= 9 char) (<= char 12))) ; HT LF VT FF
+     ((or (utf8-= char 32) ; SP
+          (and (utf8-<= 9 char) (utf8-<= char 12))) ; HT LF VT FF
       (retok (lexeme-whitespace)
              (make-span :start first-pos :end first-pos)
              parstate))
 
-     ((= char (char-code #\u)) ; u
+     ((utf8-= char (char-code #\u)) ; u
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; u EOF
           (retok (lexeme-token (token-ident (ident "u")))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\')) ; u '
+         ((utf8-= char2 (char-code #\')) ; u '
           (lex-character-constant (cprefix-locase-u) first-pos parstate))
-         ((= char2 (char-code #\")) ; u "
+         ((utf8-= char2 (char-code #\")) ; u "
           (lex-string-literal (eprefix-locase-u) first-pos parstate))
-         ((= char2 (char-code #\8)) ; u 8
+         ((utf8-= char2 (char-code #\8)) ; u 8
           (b* (((erp char3 & parstate) (read-char parstate)))
             (cond
              ((not char3) ; u 8 EOF
               (retok (lexeme-token (token-ident (ident "u8")))
                      (make-span :start first-pos :end pos2)
                      parstate))
-             ((= char3 (char-code #\")) ; u 8 "
+             ((utf8-= char3 (char-code #\")) ; u 8 "
               (lex-string-literal (eprefix-locase-u8) first-pos parstate))
              (t ; u 8 other
               (b* ((parstate (unread-char parstate)) ; u 8
@@ -2936,62 +3016,62 @@
           (b* ((parstate (unread-char parstate))) ; u
             (lex-identifier/keyword char first-pos parstate))))))
 
-     ((= char (char-code #\U)) ; U
+     ((utf8-= char (char-code #\U)) ; U
       (b* (((erp char2 & parstate) (read-char parstate)))
         (cond
          ((not char2) ; U EOF
           (retok (lexeme-token (token-ident (ident "U")))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\')) ; U '
+         ((utf8-= char2 (char-code #\')) ; U '
           (lex-character-constant (cprefix-upcase-u) first-pos parstate))
-         ((= char2 (char-code #\")) ; U "
+         ((utf8-= char2 (char-code #\")) ; U "
           (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
           (b* ((parstate (unread-char parstate))) ; U
             (lex-identifier/keyword char first-pos parstate))))))
 
-     ((= char (char-code #\L)) ; L
+     ((utf8-= char (char-code #\L)) ; L
       (b* (((erp char2 & parstate) (read-char parstate)))
         (cond
          ((not char2) ; L EOF
           (retok (lexeme-token (token-ident (ident "L")))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\')) ; L '
+         ((utf8-= char2 (char-code #\')) ; L '
           (lex-character-constant (cprefix-upcase-l) first-pos parstate))
-         ((= char2 (char-code #\")) ; L "
+         ((utf8-= char2 (char-code #\")) ; L "
           (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
           (b* ((parstate (unread-char parstate))) ; L
             (lex-identifier/keyword char first-pos parstate))))))
 
-     ((or (and (<= (char-code #\A) char) (<= char (char-code #\Z))) ; A-Z
-          (and (<= (char-code #\a) char) (<= char (char-code #\z))) ; a-z
+     ((or (and (utf8-<= (char-code #\A) char) (utf8-<= char (char-code #\Z))) ; A-Z
+          (and (utf8-<= (char-code #\a) char) (utf8-<= char (char-code #\z))) ; a-z
           (= char (char-code #\_))) ; _
       (lex-identifier/keyword char first-pos parstate))
 
-     ((and (<= (char-code #\0) char) (<= char (char-code #\9))) ; 0-9
+     ((and (utf8-<= (char-code #\0) char) (utf8-<= char (char-code #\9))) ; 0-9
       (b* (((erp const last-pos parstate)
             (lex-iconst/fconst (code-char char) first-pos parstate)))
         (retok (lexeme-token (token-const const))
                (make-span :start first-pos :end last-pos)
                parstate)))
 
-     ((= char (char-code #\.)) ; .
+     ((utf8-= char (char-code #\.)) ; .
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; . EOF
           (retok (lexeme-token (token-punctuator "."))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((and (<= (char-code #\0) char2) (<= char2 (char-code #\9))) ; . 0-9
+         ((and (utf8-<= (char-code #\0) char2) (utf8-<= char2 (char-code #\9))) ; . 0-9
           (b* (((erp const last-pos parstate)
                 (lex-dec-fconst (code-char char2) pos2 parstate)))
             (retok (lexeme-token (token-const const))
                    (make-span :start first-pos :end last-pos)
                    parstate)))
-         ((= char2 (char-code #\.)) ; . .
+         ((utf8-= char2 (char-code #\.)) ; . .
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; . . EOF
@@ -2999,7 +3079,7 @@
                 (retok (lexeme-token (token-punctuator "."))
                        (make-span :start first-pos :end first-pos)
                        parstate)))
-             ((= char3 (char-code #\.)) ; . . .
+             ((utf8-= char3 (char-code #\.)) ; . . .
               (retok (lexeme-token (token-punctuator "..."))
                      (make-span :start first-pos :end pos3)
                      parstate))
@@ -3015,24 +3095,24 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\')) ; '
+     ((utf8-= char (char-code #\')) ; '
       (lex-character-constant nil first-pos parstate))
 
-     ((= char (char-code #\")) ; "
+     ((utf8-= char (char-code #\")) ; "
       (lex-string-literal nil first-pos parstate))
 
-     ((= char (char-code #\/)) ; /
+     ((utf8-= char (char-code #\/)) ; /
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; / EOF
           (retok (lexeme-token (token-punctuator "/"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\*)) ; / *
+         ((utf8-= char2 (char-code #\*)) ; / *
           (lex-block-comment first-pos parstate))
-         ((= char2 (char-code #\/)) ; / /
+         ((utf8-= char2 (char-code #\/)) ; / /
           (lex-line-comment first-pos parstate))
-         ((= char2 (char-code #\=)) ; / =
+         ((utf8-= char2 (char-code #\=)) ; / =
           (retok (lexeme-token (token-punctuator "/="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3042,33 +3122,33 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((and (= char (char-code #\#))
+     ((and (utf8-= char (char-code #\#))
            (only-whitespace-backward-through-line parstate))
       (lex-prepr-directive first-pos parstate))
 
-     ((or (= char (char-code #\[)) ; [
-          (= char (char-code #\])) ; ]
-          (= char (char-code #\()) ; (
-          (= char (char-code #\))) ; )
-          (= char (char-code #\{)) ; {
-          (= char (char-code #\})) ; }
-          (= char (char-code #\~)) ; ~
-          (= char (char-code #\?)) ; ?
-          (= char (char-code #\,)) ; ,
-          (= char (char-code #\;))) ; ;
+     ((or (utf8-= char (char-code #\[)) ; [
+          (utf8-= char (char-code #\])) ; ]
+          (utf8-= char (char-code #\()) ; (
+          (utf8-= char (char-code #\))) ; )
+          (utf8-= char (char-code #\{)) ; {
+          (utf8-= char (char-code #\})) ; }
+          (utf8-= char (char-code #\~)) ; ~
+          (utf8-= char (char-code #\?)) ; ?
+          (utf8-= char (char-code #\,)) ; ,
+          (utf8-= char (char-code #\;))) ; ;
       (retok (lexeme-token
               (token-punctuator (str::implode (list (code-char char)))))
              (make-span :start first-pos :end first-pos)
              parstate))
 
-     ((= char (char-code #\*)) ; *
+     ((utf8-= char (char-code #\*)) ; *
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; * EOF
           (retok (lexeme-token (token-punctuator "*"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\=)) ; * =
+         ((utf8-= char2 (char-code #\=)) ; * =
           (retok (lexeme-token (token-punctuator "*="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3078,14 +3158,14 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\^)) ; ^
+     ((utf8-= char (char-code #\^)) ; ^
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; ^ EOF
           (retok (lexeme-token (token-punctuator "^"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\=)) ; ^ =
+         ((utf8-= char2 (char-code #\=)) ; ^ =
           (retok (lexeme-token (token-punctuator "^="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3095,14 +3175,14 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\!)) ; !
+     ((utf8-= char (char-code #\!)) ; !
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; ! EOF
           (retok (lexeme-token (token-punctuator "!"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\=)) ; ! =
+         ((utf8-= char2 (char-code #\=)) ; ! =
           (retok (lexeme-token (token-punctuator "!="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3112,14 +3192,14 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\=)) ; =
+     ((utf8-= char (char-code #\=)) ; =
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; = EOF
           (retok (lexeme-token (token-punctuator "="))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\=)) ; = =
+         ((utf8-= char2 (char-code #\=)) ; = =
           (retok (lexeme-token (token-punctuator "=="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3129,14 +3209,14 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\:)) ; :
+     ((utf8-= char (char-code #\:)) ; :
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; : EOF
           (retok (lexeme-token (token-punctuator ":"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\>)) ; : >
+         ((utf8-= char2 (char-code #\>)) ; : >
           (retok (lexeme-token (token-punctuator ":>"))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3146,14 +3226,14 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\#)) ; #
+     ((utf8-= char (char-code #\#)) ; #
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; # EOF
           (retok (lexeme-token (token-punctuator "#"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\#)) ; # #
+         ((utf8-= char2 (char-code #\#)) ; # #
           (retok (lexeme-token (token-punctuator "##"))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3163,18 +3243,18 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\&)) ; &
+     ((utf8-= char (char-code #\&)) ; &
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; & EOF
           (retok (lexeme-token (token-punctuator "&"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\&)) ; & &
+         ((utf8-= char2 (char-code #\&)) ; & &
           (retok (lexeme-token (token-punctuator "&&"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\=)) ; & =
+         ((utf8-= char2 (char-code #\=)) ; & =
           (retok (lexeme-token (token-punctuator "&="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3184,18 +3264,18 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\|)) ; |
+     ((utf8-= char (char-code #\|)) ; |
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; | EOF
           (retok (lexeme-token (token-punctuator "|"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\|)) ; | |
+         ((utf8-= char2 (char-code #\|)) ; | |
           (retok (lexeme-token (token-punctuator "||"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\=)) ; | =
+         ((utf8-= char2 (char-code #\=)) ; | =
           (retok (lexeme-token (token-punctuator "|="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3205,18 +3285,18 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\+)) ; +
+     ((utf8-= char (char-code #\+)) ; +
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; + EOF
           (retok (lexeme-token (token-punctuator "+"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\+)) ; + +
+         ((utf8-= char2 (char-code #\+)) ; + +
           (retok (lexeme-token (token-punctuator "++"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\=)) ; + =
+         ((utf8-= char2 (char-code #\=)) ; + =
           (retok (lexeme-token (token-punctuator "+="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3226,22 +3306,22 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\-)) ; -
+     ((utf8-= char (char-code #\-)) ; -
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; - EOF
           (retok (lexeme-token (token-punctuator "-"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\>)) ; - >
+         ((utf8-= char2 (char-code #\>)) ; - >
           (retok (lexeme-token (token-punctuator "->"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\-)) ; - -
+         ((utf8-= char2 (char-code #\-)) ; - -
           (retok (lexeme-token (token-punctuator "--"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\=)) ; - =
+         ((utf8-= char2 (char-code #\=)) ; - =
           (retok (lexeme-token (token-punctuator "-="))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3251,21 +3331,21 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\>)) ; >
+     ((utf8-= char (char-code #\>)) ; >
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; > EOF
           (retok (lexeme-token (token-punctuator ">"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\>)) ; > >
+         ((utf8-= char2 (char-code #\>)) ; > >
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; > > EOF
               (retok (lexeme-token (token-punctuator ">>"))
                      (make-span :start first-pos :end pos2)
                      parstate))
-             ((= char3 (char-code #\=))
+             ((utf8-= char3 (char-code #\=))
               (retok (lexeme-token (token-punctuator ">>="))
                      (make-span :start first-pos :end pos3)
                      parstate))
@@ -3274,7 +3354,7 @@
                 (retok (lexeme-token (token-punctuator ">>"))
                        (make-span :start first-pos :end pos2)
                        parstate))))))
-         ((= char2 (char-code #\=)) ; > =
+         ((utf8-= char2 (char-code #\=)) ; > =
           (retok (lexeme-token (token-punctuator ">="))
                  (make-span :start first-pos :end first-pos)
                  parstate))
@@ -3284,25 +3364,25 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\%)) ; %
+     ((utf8-= char (char-code #\%)) ; %
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; % EOF
           (retok (lexeme-token (token-punctuator "%"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\=)) ; % =
+         ((utf8-= char2 (char-code #\=)) ; % =
           (retok (lexeme-token (token-punctuator "%="))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\:)) ; % :
+         ((utf8-= char2 (char-code #\:)) ; % :
           (b* (((erp char3 & parstate) (read-char parstate)))
             (cond
              ((not char3) ; % : EOF
               (retok (lexeme-token (token-punctuator "%:"))
                      (make-span :start first-pos :end pos2)
                      parstate))
-             ((= char3 (char-code #\%)) ; % : %
+             ((utf8-= char3 (char-code #\%)) ; % : %
               (b* (((erp char4 pos4 parstate) (read-char parstate)))
                 (cond
                  ((not char4) ; % : % EOF
@@ -3310,7 +3390,7 @@
                     (retok (lexeme-token (token-punctuator "%:"))
                            (make-span :start first-pos :end pos2)
                            parstate)))
-                 ((= char4 (char-code #\:)) ; % : % :
+                 ((utf8-= char4 (char-code #\:)) ; % : % :
                   (retok (lexeme-token (token-punctuator "%:%:"))
                          (make-span :start first-pos :end pos4)
                          parstate))
@@ -3331,21 +3411,21 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((= char (char-code #\<)) ; <
+     ((utf8-= char (char-code #\<)) ; <
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
         (cond
          ((not char2) ; < EOF
           (retok (lexeme-token (token-punctuator "<"))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((= char2 (char-code #\<)) ; < <
+         ((utf8-= char2 (char-code #\<)) ; < <
           (b* (((erp char3 pos3 parstate) (read-char parstate)))
             (cond
              ((not char3) ; < < EOF
               (retok (lexeme-token (token-punctuator "<<"))
                      (make-span :start first-pos :end pos2)
                      parstate))
-             ((= char3 (char-code #\=)) ; < < =
+             ((utf8-= char3 (char-code #\=)) ; < < =
               (retok (lexeme-token (token-punctuator "<<="))
                      (make-span :start first-pos :end pos3)
                      parstate))
@@ -3354,15 +3434,15 @@
                 (retok (lexeme-token (token-punctuator "<<"))
                        (make-span :start first-pos :end pos2)
                        parstate))))))
-         ((= char2 (char-code #\=)) ; < =
+         ((utf8-= char2 (char-code #\=)) ; < =
           (retok (lexeme-token (token-punctuator "<="))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\:)) ; < :
+         ((utf8-= char2 (char-code #\:)) ; < :
           (retok (lexeme-token (token-punctuator "<:"))
                  (make-span :start first-pos :end pos2)
                  parstate))
-         ((= char2 (char-code #\%)) ; < %
+         ((utf8-= char2 (char-code #\%)) ; < %
           (retok (lexeme-token (token-punctuator "<%"))
                  (make-span :start first-pos :end pos2)
                  parstate))
@@ -3410,7 +3490,8 @@
                                            unsigned-byte-p
                                            integer-range-p
                                            dec-digit-char-p
-                                           natp)))
+                                           natp
+                                           the-check)))
 
   ///
 

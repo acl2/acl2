@@ -20,7 +20,8 @@
 
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
-                                 '(position
+                                 '(block
+                                   position
                                    read-char
                                    read-files
                                    schar
@@ -36,6 +37,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                character-list
                 defirrelevant
                 defmacro+
                 defxdoc+
@@ -56,6 +58,7 @@
                 nats=>string
                 packn-pos
                 pos
+                pos-fix
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
@@ -76,5 +79,4 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp
-                c::*keywords*)))
+                str::oct-digit-char-listp)))

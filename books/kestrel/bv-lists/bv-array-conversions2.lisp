@@ -169,7 +169,7 @@
 ;;          (list-to-bv-array-aux2 element-size len i lst array))
 ;;   :hints (("Goal" :expand (list-to-bv-array-aux2 element-size len i lst array)
 ;;            :in-theory (enable list-to-bv-array-aux2-alt
-;;                               list-to-bv-array-aux2))))t
+;;                               list-to-bv-array-aux2))))
 
 (defthm list-to-bv-array-aux2-of-bv-array-write
   (implies (and (< g i) ; so the write is to an element not affected by the list-to-bv-array-aux2

@@ -1,5 +1,4 @@
 ; C Library
-
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -121,7 +120,7 @@
        ((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor)
        (position?
-        (block-item-list-try-split-fn-when fundef.body triggers))
+        (block-item-list-try-split-fn-when (comp-stmt->items fundef.body) triggers))
        ((unless position?)
         (retok fundef nil))
        ((erp fun-name)

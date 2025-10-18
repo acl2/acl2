@@ -53,7 +53,7 @@
   :rule-classes nil ;; since this calls axe-syntaxp
   :hints (("Goal"
            :use (:instance run-until-return-from-stack-height-opener-fast)
-           :in-theory (e/d (stack-height jvm::step jvm::op-code th) ()))))
+           :in-theory (enable stack-height jvm::step jvm::op-code th))))
 
 ;; This can only fire on a make-state, not a myif.
 ;; This version introduces STEP, not DO-INST.

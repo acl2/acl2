@@ -340,7 +340,10 @@
            :predec nil
            :postinc nil
            :postdec nil
-           :sizeof nil)
+           :sizeof nil
+           :real nil
+           :imag nil)
+   :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
@@ -363,6 +366,7 @@
    :cast/add-ambig (impossible)
    :cast/sub-ambig (impossible)
    :cast/and-ambig (impossible)
+   :cast/logand-ambig (impossible)
    :stmt nil
    :tycompat nil
    :offsetof nil
@@ -394,7 +398,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-call).
+    "These are the call expressions supported by @(tsee c::exec-expr).
      The expression must be a function call,
      the function sub-expression must be an identifier,
      and the arguments must be supported pure expressions."))
@@ -414,7 +418,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-asg).
+    "These are the assignment expressions supported by @(tsee c::exec-expr).
      The expression must be a simple assignment expression.
      The sub-expressions must have formal dynamic semantics.
      The left expression must be pure.
@@ -426,9 +430,12 @@
        (if (expr-case (expr-binary->arg1 expr) :ident)
            (and (ident-formalp (expr-ident->ident (expr-binary->arg1 expr)))
                 (or (expr-pure-formalp (expr-binary->arg2 expr))
-                    (expr-call-formalp (expr-binary->arg2 expr))))
+                    (expr-call-formalp (expr-binary->arg2 expr))
+                    (expr-asg-formalp (expr-binary->arg2 expr))))
          (and (expr-pure-formalp (expr-binary->arg1 expr))
               (expr-pure-formalp (expr-binary->arg2 expr)))))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -601,13 +608,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines stmts/blocks-formalp
-  :short "Chek if statements and blocks have formal dynamic semantics."
+(defines stmts-formalp
+  :short "Check if statements and related entities
+          have formal dynamic semantics."
 
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -621,8 +629,9 @@
     (stmt-case
      stmt
      :labeled nil
-     :compound (block-item-list-formalp stmt.items)
+     :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
+               (expr-pure-formalp stmt.expr?)
                (expr-call-formalp stmt.expr?)
                (expr-asg-formalp stmt.expr?))
      :if (and (expr-pure-formalp stmt.test)
@@ -633,11 +642,13 @@
      :switch nil
      :while (and (expr-pure-formalp stmt.test)
                  (stmt-formalp stmt.body))
-     :dowhile nil
+     :dowhile (and (stmt-formalp stmt.body)
+                   (expr-pure-formalp stmt.test))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (or (not stmt.expr?)
@@ -646,10 +657,20 @@
      :asm nil)
     :measure (stmt-count stmt))
 
+  (define comp-stmt-formalp ((cstmt comp-stmtp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset stmts-formalp)
+    :short "Check if a compound statement has formal dynamic semantics."
+    (b* (((comp-stmt cstmt) cstmt))
+      (and (not cstmt.labels)
+           (block-item-list-formalp cstmt.items)))
+    :measure (comp-stmt-count cstmt))
+
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -665,7 +686,7 @@
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -680,7 +701,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual stmts/blocks-formalp))
+  (fty::deffixequiv-mutual stmts-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -825,13 +846,13 @@
    :member (and (not structdeclon.extension)
                 (b* (((mv okp tyspecs)
                       (check-spec/qual-list-all-typespec
-                       structdeclon.specqual)))
+                       structdeclon.specquals)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp structdeclon.declor)
-                (endp (cdr structdeclon.declor))
-                (struct-declor-formalp (car structdeclon.declor))
-                (endp structdeclon.attrib))
+                (consp structdeclon.declors)
+                (endp (cdr structdeclon.declors))
+                (struct-declor-formalp (car structdeclon.declors))
+                (endp structdeclon.attribs))
    :statassert nil
    :empty nil)
   :hooks (:fix))
@@ -860,7 +881,8 @@
     "The name must be present,
      and each structure declaration must be supported."))
   (b* (((struni-spec struni-spec) struni-spec))
-    (and struni-spec.name?
+    (and (endp struni-spec.attribs)
+         struni-spec.name?
          (ident-formalp struni-spec.name?)
          (struct-declon-list-formalp struni-spec.members)))
   :hooks (:fix))
@@ -1064,7 +1086,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.decls)
-         (block-item-list-formalp fundef.body)))
+         (comp-stmt-formalp fundef.body)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

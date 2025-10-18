@@ -11,14 +11,13 @@
 
 (in-package "X")
 
-;; See also the Formal Unit Tester for Java.
+;; See also ../jvm/tester.lisp, the Formal Unit Tester for Java.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
-(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
@@ -26,13 +25,14 @@
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
-(include-book "unroll-x86-code")
+(include-book "unroller")
 (include-book "tester-rules-bv")
 (include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")
 (include-book "../bv-array-rules")
+(include-book "../tester-common")
 ;(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-right
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
@@ -46,9 +46,8 @@
 
 ;; TODO: Parens in output may not be balanced?
 
-(acl2::def-constant-opener alistp) ; why?
+;(acl2::def-constant-opener alistp) ; why?
 
-;; todo: use these
 (defund get-x86-tester-table (state)
   (declare (xargs :stobjs state))
   (table-alist 'x86-tester-table (w state)))
@@ -187,70 +186,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Print OK if expected, otherwise ERROR
-(defund print-test-summary-aux (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (prog2$
-     (let* ((entry (first result-alist))
-            (name (car entry)) ; a string
-            (val (cdr entry)))
-       (if (not (and (stringp name)
-                     (= 3 (len val))))
-           (er hard? 'print-test-summary-aux "Bad entry in result-alist: ~x0." entry)
-         (let* ((result (first val)) ; either :pass or :fail
-                (expected-result (second val)) ; :pass or :fail or :any
-                (elapsed (third val))
-                (elapsed (if (and (rationalp elapsed)
-                                  (<= 0 elapsed))
-                             elapsed
-                           (prog2$ (er hard? 'print-test-summary-aux "Bad elapsed time: ~x0." elapsed)
-                                   0)))
-                (result-string (if (eq :pass result) "pass" "fail"))
-                (numspaces (nfix (- 40 (len (coerce name 'list)))))
-                )
-           (if (equal result expected-result)
-               (progn$ (cw "Test ~s0:~_1 OK (~s2)   " name numspaces result-string)
-                       (acl2::print-to-hundredths elapsed)
-                       (cw "s.~%"))
-             (if (eq :any expected-result)
-                 ;; In this case, we don't know whether the test is supposed to pass:
-                 (progn$ (cw "Test ~s0:~_1 ?? (~s2)   " name numspaces result-string)
-                         (acl2::print-to-hundredths elapsed)
-                         (cw "s.~%"))
-               (progn$ (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3).  " name numspaces result-string (if (eq :pass expected-result) "pass" "fail"))
-                       (acl2::print-to-hundredths elapsed)
-                       (cw "s~%")))))))
-     (print-test-summary-aux (rest result-alist)))))
-
-(defund print-test-summary (result-alist executable-path)
-  (declare (xargs :guard (and (alistp result-alist)
-                              (stringp executable-path))))
-  (progn$ (cw"~%========================================~%")
-          (cw "SUMMARY OF RESULTS for ~x0:~%" executable-path)
-          (print-test-summary-aux result-alist)
-          (cw"========================================~%")))
-
-(defun any-result-unexpectedp (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (let* ((entry (first result-alist))
-           ;; (name (car entry)) ; a string
-           (val (cdr entry)))
-      (if (not (and ;; (stringp name)
-                (= 3 (len val))))
-          (er hard? 'any-result-unexpectedp "Bad entry in result-alist: ~x0." entry)
-        (let* ((result (first val))           ; either :pass or :fail
-               (expected-result (second val))  ; :pass or :fail or :any
-               (expectedp (or (eq :any expected-result)
-                              (equal result expected-result))))
-          (or (not expectedp)
-              (any-result-unexpectedp (rest result-alist))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns an (mv erp passedp time state).
 ;; TODO: Add redundancy checking -- where?
 ;; Parsing of the executable is done outside this function (so we don't do it more than once).
@@ -377,7 +312,7 @@
                     acl2::maybe-get-mach-o-segment-constant-opener
                     acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
                     acl2::maybe-get-mach-o-section-constant-opener
-                    acl2::alistp-constant-opener
+                    ;acl2::alistp-constant-opener
                     ;;acl2::const-assumptions-mach-o-64
                     ;;acl2::data-assumptions-mach-o-64
                     ;;acl2::get-mach-o-constants-address-constant-opener

@@ -19,7 +19,7 @@
 (include-book "dag-arrays")
 (include-book "evaluator-basic")
 ;(include-book "evaluate-test-case-common")
-(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
 (local (include-book "rational-lists"))

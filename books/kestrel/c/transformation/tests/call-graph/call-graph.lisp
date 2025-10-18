@@ -23,7 +23,7 @@
 (acl2::must-succeed*
   (c$::input-files
     :const *test*
-    :files ("main.c" "file1.c"))
+    :files '("main.c" "file1.c"))
 
   (defconst *call-graph*
     (call-graph-transunit-ensemble
@@ -32,26 +32,26 @@
   (acl2::assert-equal
     *call-graph*
     '((((filepath?)
-        (ident (c$::unwrap . "call_main")))
+        (ident "call_main"))
        ((filepath?)
-        (ident (c$::unwrap . "main"))))
+        (ident "main")))
       (((filepath?)
-        (ident (c$::unwrap . "main")))
+        (ident "main"))
        ((filepath? (c$::unwrap . "main.c"))
-        (ident (c$::unwrap . "foo"))))
+        (ident "foo")))
       (((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "fibonacci")))
+        (ident "fibonacci"))
        ((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "fibonacci"))))
+        (ident "fibonacci")))
       (((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "foo")))
+        (ident "foo"))
        ((filepath?)
-        (ident (c$::unwrap . "call_main"))))
+        (ident "call_main")))
       (((filepath? (c$::unwrap . "main.c"))
-        (ident (c$::unwrap . "foo")))
+        (ident "foo"))
        nil
        ((filepath?)
-        (ident (c$::unwrap . "main"))))))
+        (ident "main")))))
 
   (defconst *reachable-from-main*
     (call-graph-transitive-closure
@@ -62,9 +62,9 @@
     *reachable-from-main*
     '(nil
       ((filepath?)
-       (ident (c$::unwrap . "main")))
+       (ident "main"))
       ((filepath? (c$::unwrap . "main.c"))
-       (ident (c$::unwrap . "foo")))))
+       (ident "foo"))))
 
   :with-output-off nil)
 
@@ -73,7 +73,7 @@
 (acl2::must-succeed*
   (c$::input-files
     :const *test*
-    :files ("main2.c" "file1.c"))
+    :files '("main2.c" "file1.c"))
 
   (defconst *call-graph*
     (call-graph-transunit-ensemble
@@ -82,26 +82,26 @@
   (acl2::assert-equal
     *call-graph*
     '((((filepath?)
-        (ident (c$::unwrap . "call_main")))
+        (ident "call_main"))
        ((filepath?)
-        (ident (c$::unwrap . "main"))))
+        (ident "main")))
       (((filepath?)
-        (ident (c$::unwrap . "main")))
+        (ident "main"))
        ((filepath? (c$::unwrap . "main2.c"))
-        (ident (c$::unwrap . "foo"))))
+        (ident "foo")))
       (((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "fibonacci")))
+        (ident "fibonacci"))
        ((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "fibonacci"))))
+        (ident "fibonacci")))
       (((filepath? (c$::unwrap . "file1.c"))
-        (ident (c$::unwrap . "foo")))
+        (ident "foo"))
        ((filepath?)
-        (ident (c$::unwrap . "call_main"))))
+        (ident "call_main")))
       (((filepath? (c$::unwrap . "main2.c"))
-        (ident (c$::unwrap . "foo")))
+        (ident "foo"))
        nil
        ((filepath?)
-        (ident (c$::unwrap . "main"))))))
+        (ident "main")))))
 
   (defconst *reachable-from-main*
     (call-graph-transitive-closure
@@ -112,8 +112,8 @@
     *reachable-from-main*
     '(nil
       ((filepath?)
-       (ident (c$::unwrap . "main")))
+       (ident "main"))
       ((filepath? (c$::unwrap . "main2.c"))
-       (ident (c$::unwrap . "foo")))))
+       (ident "foo"))))
 
   :with-output-off nil)

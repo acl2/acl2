@@ -190,6 +190,28 @@
   :rule-classes ((:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :by my-floor-lower-bound-alt)))
 
+;; In this version, we have multiplied through by j (and j is negative)
+(defthm my-floor-lower-bound-alt-neg
+  (implies (and (< j 0) ; note this
+                (rationalp i)
+                (rationalp j))
+           (< (+ j (* j (floor i j))) i))
+  :hints (("Goal"
+           :use ((:instance my-floor-lower-bound)
+                 (:instance <-of-*-and-*-cancel
+                            (x1 (+ -1 (* i (/ j))))
+                            (x2 (floor i j))
+                            (y j)))
+           :in-theory (disable my-floor-lower-bound
+                               <-of-*-and-*-cancel))))
+
+(defthm my-floor-lower-bound-alt-neg-linear
+  (implies (and (< j 0) ; note this
+                (rationalp i)
+                (rationalp j))
+           (< (+ j (* j (floor i j))) i))
+  :rule-classes :linear)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd my-floor-upper-bound ;floor-upper-bound is a theorem in rtl

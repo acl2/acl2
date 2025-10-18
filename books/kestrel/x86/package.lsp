@@ -1,4 +1,4 @@
-; A package for x86 proof work
+; The "X" package for x86 Axe proofs
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute
@@ -11,8 +11,10 @@
 
 (in-package "ACL2")
 
-;; The "X" package, for doing proofs about x86 code.  We could improve the name
-;; if we want, but "X86" is taken.
+;; Users of the x86 variant of Axe can use this "X" package for their books
+;; that use Axe to lift/verify x86 code.
+
+;; We could perhaps improve on the name "X", but "X86" is taken.
 
 ;; In general, we import function names, but not theorem names, from other
 ;; packages into this package.
@@ -22,6 +24,456 @@
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
+
+;; TODO: Add more?
+(defconst *axe-tools*
+  '(unroll-spec-basic
+    unroll-spec
+
+    prove-equal-with-axe
+    prove-equality
+    prove-with-axe
+    prove-equal-with-tactics
+
+    defthm-axe
+    defthm-axe-basic
+    defthm-stp
+    prove-with-stp
+
+    symbolic-byte-assumptions
+    symbolic-list
+    symbolic-array
+    symbolic-byte-list
+
+    byte-types-for-vars
+    make-var-names
+
+    set-axe-rule-priority
+
+    def-constant-opener
+    defopeners
+    add-known-boolean
+
+    defconst-x86
+    defconst-computed
+    defconst-computed2 ;drop?
+    defconst-computed3
+    defconst-computed-simple
+
+    def-simplified-basic
+    basic ; name of the basic rewriter (may be printed by "The ~x0 rewriter lacks SMT support ...")
+
+    dag-info
+    dag-fns
+    dag-vars
+    dag-size
+
+    ensure-rules-known
+    widen-margins
+    unwiden-margins
+    ))
+
+(defconst *bv-symbols-to-import*
+  '(bvchop
+    getbit
+    bvlt
+    bvle
+    bvgt
+    bvge
+    sbvlt
+    sbvle
+    sbvgt
+    sbvge
+    bvcat
+    bvcat2
+    bvplus
+    bvminus
+    bvuminus
+    bvmult
+    bvshl
+    bvshr
+    bvashr
+    bvdiv
+    sbvdiv
+    bvmod
+    sbvrem
+    slice ;note that we don't get the slice from x86isa
+    putbits
+    putbit
+    putbyte
+    trim
+    bvcount
+    bitxor
+    bitnot
+    bitand
+    bitor
+    bvxor
+    bvand
+    bvor
+    bvnot
+    bvif
+    bvsx
+    repeatbit
+    leftrotate
+    rightrotate
+    leftrotate32
+    rightrotate32
+
+    unsigned-byte-p-forced
+    ))
+
+(defconst *boolean-symbols-to-import*
+  '(bit-to-bool
+    bool-to-bit
+    boolif
+    boolor
+    booland
+    bool-fix
+    bool-fix$inline))
+
+(defconst *array-symbols-to-import*
+  '(list-to-bv-array
+    list-to-bv-array-aux
+    bv-array-to-list
+    bv-array-to-list-aux
+    bv-array-read
+    bv-array-write
+    bv-array-read-chunk-little
+    bv-arrayp
+    array-of-zeros))
+
+;; Symbols that appear in terms that Axe "knows" about.
+;; BV, boolean, and array symbols
+(defconst *axe-term-symbols*
+  (append *bv-symbols-to-import*
+          *boolean-symbols-to-import*
+          *array-symbols-to-import*))
+
+(defconst *logops-symbols*
+  '(loghead
+    loghead$inline
+    logtail
+    logtail$inline
+    logcar
+    logcar$inline
+    logcdr
+    logcdr$inline
+
+    logapp ; not inline
+    logmask
+    logmask$inline
+
+    expt2 ; used in logapp
+    expt2$inline
+
+    ifloor ; used in logtail
+    ifloor$inline
+
+    logext
+
+    binary-logand
+    binary-logxor
+    binary-logior))
+
+(defconst *axe-rule-symbols*
+  '(axe-syntaxp
+    axe-bind-free
+    axe-binding-hyp
+    axe-smt
+    work-hard ; may not be needed
+    axe-rewrite-objective ; may not be needed
+
+    ;; These are for writing axe-syntaxp and axe-bind-free functions:
+    pseudo-dag-arrayp
+    dargs
+    darg1
+    darg2
+    darg3
+    darg4
+    dargs
+
+    dag-array ; for calls of axe-syntaxp functions
+
+    ;; axe-syntaxp and axe-bind-free functions:
+    bind-bv-size-axe
+
+    syntactic-call-of
+    term-should-be-trimmed-axe
+    term-should-be-converted-to-bvp
+    lighter-dargp
+    ))
+
+;; We import these symbols because they may be called in the implementations of
+;; the Axe variants.
+(defconst *axe-implementation-symbols*
+  '(;; Stuff supporting b*
+    b*
+    when
+    patbind-when ; todo: more?
+    unless
+
+    *t*
+    *nil*
+    erp-nil
+    erp-t
+    myquotep
+    step-incrementp
+    print-levelp
+    count-hits-argp
+    normalize-xors-optionp
+    lifter-targetp
+    rule-alistp
+    pseudo-dagp
+    this-step-increment
+    add-limit-for-rules
+    limit-for-rule
+    simplify-dag-basic
+    known-booleans
+    real-time-since
+    maybe-prune-dag-approximately
+    maybe-prune-dag-precisely
+
+    make-term-into-dag-basic
+    dag-to-term
+    dag-node-to-term
+    dag-or-quotep-to-term
+    dag-or-quotep-size
+    dag-or-quotep-fns
+    dag-or-quotep-vars
+
+    remove-assumptions-about
+    *non-stp-assumption-functions*
+    equivalent-dagsp2
+    print-to-hundredths
+    print-dag-nicely
+    print-dag-nicely-with-base
+    print-level-at-least-tp
+    print-level-at-least-briefp
+    nat-to-string
+    defmacrodoc
+
+    ;; todo: organize
+
+    fargs
+    ffn-symb
+    farg1
+    farg2
+    farg3
+    farg4
+
+    lookup-equal
+    lookup-equal-safe
+    lookup-eq
+    lookup-eq-safe
+    lookup
+    lookup-safe
+
+    translate-term
+
+    _ ;; used to print non-pure patterns
+
+    simp-dag
+
+    compose-term-and-dag
+    compose-term-and-dags
+    compose-dags
+    make-axe-rules
+    make-axe-rules!
+    axe-quotep
+    result-array-stobj
+
+    nat-to-string
+    print-dag-nicely
+    print-dag-nicely-with-base
+    print-terms-elided
+    make-term-into-dag
+    remove-assumptions-about
+    acl2::*non-stp-assumption-functions*
+    ;; simplify-terms-using-each-other
+    make-cons-nest ; move?
+    make-rule-alist
+    make-rule-alist!
+    dagify-term
+    dagify-term2
+    def-simplified-x86
+    dag-val-with-axe-evaluator
+    defmacrodoc
+    simplify-conjunction-basic
+    print-to-hundredths
+    equivalent-dagsp2
+    maybe-add-debug-rules
+
+    call-of
+    pack-in-package-of-symbol
+    pack-in-package-of-first-symbol
+    myif
+    extend-progn
+    get-vars-from-term
+    doublets-to-alist
+    translate-term
+    translate-terms
+    myquotep
+    variablep
+    empty-alist
+    empty-acc
+    defforall-simple
+    subset-eq
+    submit-event
+    strip-cadrs
+
+    ;; formal unit tester common stuff:
+    print-test-summary
+    any-result-unexpectedp
+
+    _  ; for printing non-pure node patterns
+
+    make-event-quiet
+    print-list
+    print-dag-info
+    pack$
+    make-acons-nest
+    make-interpreted-function-alist
+    get-non-built-in-supporting-fns-list
+    *axe-evaluator-functions*
+    get-conjuncts-of-terms2
+    parsed-executablep
+    ))
+
+(defconst *arithmetic-symbols*
+  '(ceiling-of-lg
+    lg
+    log2
+    power-of-2p))
+
+(defconst *apt-symbols*
+  '(;; APT transformations (sometimes used to verify lifted code):
+    wrap-output
+    extract-output
+    rename-params
+    flatten-params
+    drop-irrelevant-params
+    tailrec
+    make-tail-rec-bv-up
+    make-tail-rec-bv-up2
+    def ; handy APT utility
+    ))
+
+(defconst *axe-rule-lists*
+  '(lookup-rules
+    list-rules
+    core-rules-bv
+    amazing-rules-bv
+    trim-rules))
+
+;; todo: classify
+(defconst *symbols-from-acl2-package*
+  '(;; list and bv-list stuff:
+    prefixp
+    ;; byte-listp ; todo: clash!
+    all-integerp
+    all-all-unsigned-byte-p
+    all-true-listp
+    items-have-len
+    all-unsigned-byte-p
+
+    check-arities
+
+    want-to-weaken ; for polarity-based reasoning
+    want-to-strengthen ; for polarity-based reasoning
+
+    ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
+    my-sublis-var
+
+    define
+    __function__
+    ///
+    defrule
+
+    defpun
+    defp
+
+    memberp
+
+    ;; utilities:
+
+    ;; x86 stuff:
+    elf-info
+    parse-elf-file-bytes ; helpful for tracing ; todo: more
+    parsed-elfp
+
+    ;; Testing utilities:
+    assert-equal
+    deftest
+    must-be-redundant ; move
+    must-fail ; move
+
+    ruleset
+    e/d*
+
+    memory-regionp
+    memory-regionsp
+    memory-region-addresses-and-lens
+
+    ))
+
+;; Ideally, these would all be rewritten to BV ops
+(defconst *symbols-from-bitops*
+  '(bitops::part-select ; a macro
+    bitops::part-select-low-high
+    bitops::part-select-low-high$inline
+    bitops::part-select-width-low
+    bitops::part-select-width-low$inline
+    bitops::part-install ; a macro
+    bitops::part-install-width-low
+    bitops::part-install-width-low$inline
+    b-xor ; from ihs, via bitops
+    b-xor$inline ; really from ihs
+    logbit
+    logbit$inline ; really from ihs
+
+    bool->bit$inline
+    bool->bit
+    bit->bool$inline
+    bit->bool
+
+    acl2::bfix
+    ;; acl2::bfix$ ; doesn't seem to exist
+    acl2::bfix$inline
+    ))
+
+;; Ideally, these would all be rewritten away
+(defconst *symbols-from-rtl*
+  '(rtl::fl
+    rtl::bitn
+    rtl::bits
+    rtl::binary-cat
+    rtl::bvecp
+    rtl::daz
+    rtl::nanp
+    rtl::snanp
+    rtl::qnanp
+    rtl::denormp
+    rtl::infp
+    rtl::unsupp
+    rtl::formatp
+    rtl::encodingp
+    rtl::explicitp
+    rtl::sigw
+    rtl::expf
+    rtl::sgnf
+    rtl::manf
+    rtl::sigf
+    rtl::prec
+    rtl::mxcsr-masks
+    ;; rtl::set-flag ; conflict with our set-flag
+    rtl::zencode
+    rtl::iencode
+    rtl::dencode
+    rtl::nencode
+    rtl::decode
+    rtl::ddecode
+    rtl::zencode
+    rtl::mxcsr-rc))
 
 ;; TODO: Add a bunch of x86 ISA stuff here
 (defconst *symbols-from-x86isa*
@@ -1305,369 +1757,6 @@
 
     x86isa::bitcount8))
 
-;; TODO: Add more?
-(defconst *axe-tools*
-  '(unroll-spec-basic
-    unroll-spec
-
-    prove-equal-with-axe
-    prove-equality
-    prove-with-axe
-    prove-equal-with-tactics
-
-    defthm-axe
-    defthm-axe-basic
-    defthm-stp
-    prove-with-stp
-
-    symbolic-byte-assumptions
-    symbolic-list
-    symbolic-array
-    symbolic-byte-list
-
-    byte-types-for-vars
-    make-var-names
-
-    set-axe-rule-priority
-
-    def-constant-opener
-    defopeners
-    add-known-boolean
-
-    defconst-x86
-    defconst-computed
-    defconst-computed2 ;drop?
-    defconst-computed3
-
-    def-simplified-basic
-    basic ; name of the basic rewriter (may be printed by "The ~x0 rewriter lacks SMT support ...")
-
-    dag-info
-    dag-fns
-    dag-vars
-    dag-size
-    ))
-
-;; BV, boolean, and array function
-(defconst *axe-functions*
-  '(bvchop
-    getbit
-    bvlt
-    bvle
-    bvgt
-    bvge
-    sbvlt
-    sbvle
-    sbvgt
-    sbvge
-    bvcat
-    bvcat2
-    bvplus
-    bvminus
-    bvuminus
-    bvmult
-    bvshl
-    bvshr
-    bvashr
-    bvdiv
-    sbvdiv
-    bvmod
-    sbvrem
-    slice ;note that we don't get the slice from x86isa
-    putbits
-    putbit
-    putbyte
-    trim
-    bvcount
-    bitxor
-    bitnot
-    bitand
-    bitor
-    bvxor
-    bvand
-    bvor
-    bvnot
-    bvif
-    bvsx
-    repeatbit
-    leftrotate
-    rightrotate
-    leftrotate32
-    rightrotate32
-
-    bit-to-bool
-    bool-to-bit
-    boolif
-    boolor
-    booland
-    bool-fix
-    bool-fix$inline
-
-    list-to-bv-array
-    bv-array-to-list
-    bv-array-to-list-aux
-    bv-array-read
-    bv-array-write
-    bv-array-read-chunk-little
-    bv-arrayp))
-
-(defconst *symbols-from-acl2-package*
-  (append
-    '(loghead
-      loghead$inline
-      logtail
-      logtail$inline
-      logcar
-      logcar$inline
-      logcdr
-      logcdr$inline
-
-      logapp ; not inline
-      logmask
-      logmask$inline
-
-      expt2$inline ; from IHS
-
-      logext
-
-      binary-logand
-      binary-logxor
-      binary-logior
-
-      unsigned-byte-p-forced
-
-      ceiling-of-lg
-      lg
-      log2
-      power-of-2p
-
-      ;; list and bv-list stuff:
-      prefixp
-      ;; byte-listp ; todo: clash!
-      all-integerp
-      all-all-unsigned-byte-p
-      all-true-listp
-      items-have-len
-      all-unsigned-byte-p
-
-      farg1
-      farg2
-      farg3
-      farg4
-      check-arities
-
-      lookup-eq
-      lookup-eq-safe
-      lookup
-      lookup-safe
-      lookup-equal
-      lookup-equal-safe
-
-      want-to-weaken ; for polarity-based reasoning
-      want-to-strengthen ; for polarity-based reasoning
-
-      ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
-      my-sublis-var
-      *t*
-      *nil*
-      ffn-symb
-
-      define
-      __function__
-      defrule
-
-      defpun
-      defp
-
-      erp-nil
-      erp-t
-
-      ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
-      simp-dag
-      compose-term-and-dag
-      compose-term-and-dags
-      compose-dags
-      make-axe-rules
-      make-axe-rules!
-      axe-quotep
-      result-array-stobj
-      dag-to-term
-      dag-or-quotep-to-term
-      nat-to-string
-      print-dag-nicely
-      print-dag-nicely-with-base
-      print-terms-elided
-      make-term-into-dag
-      remove-assumptions-about
-      acl2::*non-stp-assumption-functions*
-      ;; simplify-terms-using-each-other
-      make-cons-nest
-      dag-or-quotep-fns
-      dag-or-quotep-vars
-      dag-or-quotep-size
-      make-rule-alist
-      make-rule-alist!
-      dagify-term
-      dagify-term2
-      axe-syntaxp
-      axe-bind-free
-      axe-binding-hyp
-      axe-smt
-      work-hard ; may not be needed
-      axe-rewrite-objective ; may not be needed
-      dag-array ; for calls of axe-syntaxp functions
-      def-simplified-x86
-      dag-val-with-axe-evaluator
-      defmacrodoc
-      simplify-conjunction-basic
-      print-to-hundredths
-      equivalent-dagsp2
-      maybe-add-debug-rules
-
-      ;; These are for writing axe-syntaxp and axe-bind-free functions:
-      pseudo-dag-arrayp
-      dargs
-      darg1
-      darg2
-      darg3
-      darg4
-
-      ;; axe-syntaxp and axe-bind-free functions:
-      bind-bv-size-axe
-
-      syntactic-call-of
-      term-should-be-trimmed-axe
-      lighter-dargp
-
-      ;; rule lists:
-      lookup-rules
-      list-rules
-      core-rules-bv
-      amazing-rules-bv
-      trim-rules
-
-      memberp
-
-      ;; Stuff supporting b*
-      b*
-      when
-      unless
-      ///
-
-      ;; APT transformations (sometimes used to verify listed code):
-      wrap-output
-      extract-output
-      rename-params
-      flatten-params
-      drop-irrelevant-params
-      tailrec
-      make-tail-rec-bv-up
-      make-tail-rec-bv-up2
-      def ; handy APT utility
-
-      ;; utilities:
-      call-of
-      fargs
-      pack-in-package-of-symbol
-      pack-in-package-of-first-symbol
-      myif
-      extend-progn
-      get-vars-from-term
-      doublets-to-alist
-      translate-term
-      translate-terms
-      myquotep
-      variablep
-      empty-alist
-      empty-acc
-      defforall-simple
-      subset-eq
-      submit-event
-      must-be-redundant
-      must-fail
-      strip-cadrs
-
-      ;; x86 stuff (move to x package?):
-      elf-info
-      parse-elf-file-bytes ; helpful for tracing
-      parsed-elfp
-
-      ;; Testing utilities:
-      assert-equal
-      deftest
-
-      ruleset
-      e/d*
-
-      defconst-computed-simple
-
-      _  ; for printing non-pure node patterns
-
-      memory-regionp
-      memory-regionsp
-      memory-region-addresses-and-lens
-      )
-    *axe-functions*))
-
-;; Ideally, these would all be rewritten to BV ops
-(defconst *symbols-from-bitops*
-  '(bitops::part-select ; a macro
-    bitops::part-select-low-high
-    bitops::part-select-low-high$inline
-    bitops::part-select-width-low
-    bitops::part-select-width-low$inline
-    bitops::part-install ; a macro
-    bitops::part-install-width-low
-    bitops::part-install-width-low$inline
-    b-xor ; from ihs, via bitops
-    b-xor$inline ; really from ihs
-    logbit
-    logbit$inline ; really from ihs
-
-    bool->bit$inline
-    bool->bit
-    bit->bool$inline
-    bit->bool
-
-    acl2::bfix
-    ;; acl2::bfix$ ; doesn't seem to exist
-    acl2::bfix$inline
-    ))
-
-;; Ideally, these would all be rewritten away
-(defconst *symbols-from-rtl*
-  '(rtl::fl
-    rtl::bitn
-    rtl::bits
-    rtl::binary-cat
-    rtl::bvecp
-    rtl::daz
-    rtl::nanp
-    rtl::snanp
-    rtl::qnanp
-    rtl::denormp
-    rtl::infp
-    rtl::unsupp
-    rtl::formatp
-    rtl::encodingp
-    rtl::explicitp
-    rtl::sigw
-    rtl::expf
-    rtl::sgnf
-    rtl::manf
-    rtl::sigf
-    rtl::prec
-    rtl::mxcsr-masks
-    ;; rtl::set-flag ; conflict with our set-flag
-    rtl::zencode
-    rtl::iencode
-    rtl::dencode
-    rtl::nencode
-    rtl::decode
-    rtl::ddecode
-    rtl::zencode
-    rtl::mxcsr-rc))
-
 ;; formals that appear in theorems (or do we want to import these from acl2?):
 ;; also includes some vars that are let-bound in definitions
 (defconst *common-x86isa-formals*
@@ -1764,6 +1853,13 @@
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
+                    *axe-rule-lists*
+                    *apt-symbols*
+                    *axe-term-symbols*
+                    *axe-implementation-symbols*
+                    *axe-rule-symbols*
+                    *arithmetic-symbols*
+                    *logops-symbols*
                     *axe-tools*
                     *symbols-from-x86isa*
                     *symbols-from-bitops*

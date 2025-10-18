@@ -16,6 +16,8 @@
 
 (include-book "builtin")
 (include-book "unambiguity")
+(include-book "type-specifier-lists")
+(include-book "storage-specifier-lists")
 (include-book "validation-information")
 
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -629,7 +631,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (prog2$ (impossible) (irr-type)))))
+          (t (type-unknown))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -776,9 +778,9 @@
   (b* (((reterr) 0))
     (escape-case
      esc
-     :simple (retok (valid-simple-escape esc.unwrap))
-     :oct (valid-oct-escape esc.unwrap max)
-     :hex (b* ((code (str::hex-digit-chars-value esc.unwrap)))
+     :simple (retok (valid-simple-escape esc.escape))
+     :oct (valid-oct-escape esc.escape max)
+     :hex (b* ((code (str::hex-digit-chars-value esc.escape)))
             (if (<= code (nfix max))
                 (retok code)
               (retmsg$ "The hexadecimal escape sequence ~x0 has value ~x1, ~
@@ -788,7 +790,7 @@
                        (escape-fix esc)
                        code
                        (nfix max))))
-     :univ (valid-univ-char-name esc.unwrap max)))
+     :univ (valid-univ-char-name esc.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -830,22 +832,22 @@
               (ienv->uchar-max ienv))))
     (c-char-case
      cchar
-     :char (cond ((= cchar.unwrap (char-code #\'))
+     :char (cond ((= cchar.code (char-code #\'))
                   (retmsg$ "Single quote cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 10)
+                 ((= cchar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= cchar.unwrap 13)
+                 ((= cchar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> cchar.unwrap max)
+                 ((> cchar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceed the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           cchar.unwrap max (cprefix-option-fix prefix?)))
-                 (t (retok cchar.unwrap)))
-     :escape (valid-escape cchar.unwrap max)))
+                           cchar.code max (cprefix-option-fix prefix?)))
+                 (t (retok cchar.code)))
+     :escape (valid-escape cchar.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -968,22 +970,22 @@
               (ienv->uchar-max ienv))))
     (s-char-case
      schar
-     :char (cond ((= schar.unwrap (char-code #\"))
+     :char (cond ((= schar.code (char-code #\"))
                   (retmsg$ "Double quote cannot be used directly ~
                             in a string literal."))
-                 ((= schar.unwrap 10)
+                 ((= schar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
                             in a character constant."))
-                 ((= schar.unwrap 13)
+                 ((= schar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
                             in a character constant."))
-                 ((> schar.unwrap max)
+                 ((> schar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceeds the maximum ~x1 allowed for ~
                             a character constant with prefix ~x2."
-                           schar.unwrap max (eprefix-option-fix prefix?)))
-                 (t (retok schar.unwrap)))
-     :escape (valid-escape schar.unwrap max)))
+                           schar.code max (eprefix-option-fix prefix?)))
+                 (t (retok schar.code)))
+     :escape (valid-escape schar.escape max)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1369,7 +1371,12 @@
      The type of the result is the same as the operand
      [C17:6.5.2.4/2] [C17:6.5.2.4/3].
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C17:6.5.2.4/1]."))
+     because those result in pointers, not lvalues as required [C17:6.5.2.4/1].")
+   (xdoc::p
+    "The @('__real__') and @('__imag__') operators (GCC extensions)
+     require a complex operand and return a corresponding real operand.
+     This is what the GCC documentation seems to suggest,
+     although the description is not as precise as in [C17]."))
   (b* (((reterr) (irr-type))
        (msg (msg$ "In the unary expression ~x0, ~
                    the sub-expression has type ~x1."
@@ -1409,6 +1416,18 @@
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
                  (retok (type-unknown))))
+      (:real (type-case type-arg
+                        :floatc (retok (type-float))
+                        :doublec (retok (type-double))
+                        :ldoublec (retok (type-ldouble))
+                        :unknown (retok (type-unknown))
+                        :otherwise (reterr msg)))
+      (:imag (type-case type-arg
+                        :floatc (retok (type-float))
+                        :doublec (retok (type-double))
+                        :ldoublec (retok (type-ldouble))
+                        :unknown (retok (type-unknown))
+                        :otherwise (reterr msg)))
       (t (prog2$ (impossible) (retmsg$ "")))))
   :hooks (:fix))
 
@@ -1632,7 +1651,8 @@
                                          (not (type-case type-to2 :function))
                                          (type-compatiblep type-to1 type-to2))))
                            (and (ienv->gcc ienv)
-                                (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                (expr-null-pointer-constp
+                                 (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1647,11 +1667,15 @@
                                       (let ((type-to1 (type-pointer->to type1))
                                             (type-to2 (type-pointer->to type2)))
                                         (or (and (type-case type-to1 :void)
-                                                 (not (type-case type-to2 :function)))
+                                                 (not (type-case type-to2
+                                                                 :function)))
                                             (and (type-case type-to2 :void)
-                                                 (not (type-case type-to1 :function))))))
-                                 (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
-                           (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                                 (not (type-case type-to1
+                                                                 :function))))))
+                                 (expr-null-pointer-constp
+                                  (expr-binary->arg2 expr) type2))
+                           (and (expr-null-pointer-constp
+                                 (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1681,10 +1705,15 @@
                                              (type-to2 (type-pointer->to type2)))
                                          (or (type-compatiblep type-to1 type-to2)
                                              (and (type-case type-to1 :void)
-                                                  (not (type-case type-to2 :function)))
+                                                  (not
+                                                   (type-case type-to2
+                                                              :function)))
                                              (and (type-case type-to2 :void)
-                                                  (not (type-case type-to1 :function))))))
-                                  (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
+                                                  (not
+                                                   (type-case type-to1
+                                                              :function))))))
+                                  (expr-null-pointer-constp
+                                   (expr-binary->arg2 expr) type2)))
                          (and (type-case type1 :bool)
                               (type-case type2 :pointer))))
              (reterr msg)))
@@ -1970,6 +1999,46 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((type-spec-list-locase-float80-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-locase-float128-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-locase-float80-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-locase-float128-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128x-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float16x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float32x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float64x-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128-complex-p tyspecs)
+      (retok (type-unknown)))
+     ((type-spec-list-float128x-complex-p tyspecs)
+      (retok (type-unknown)))
      ((or (type-spec-list-int128-p tyspecs)
           (type-spec-list-signed-int128-p tyspecs))
       (retok (type-unknown)))
@@ -2375,6 +2444,9 @@
        the number of scopes in the validation table is 1 or not
        (recall that this number is never 0).")
      (xdoc::p
+      "A unary @('&&') expression has type @('void *'),
+       according to the GCC documentation.")
+     (xdoc::p
       "In a conditional expression, the second operand may be absent;
        this is a GCC extension.
        However, for validation, we normalize the situation
@@ -2497,6 +2569,10 @@
                        type
                        types-arg
                        table))
+       :label-addr (retok (expr-label-addr expr.arg)
+                          (type-pointer (type-void))
+                          nil
+                          (valid-table-fix table))
        :sizeof (b* (((erp new-type type types table)
                      (valid-tyname expr.type table ienv))
                     ((erp type1) (valid-sizeof/alignof expr type)))
@@ -2555,12 +2631,10 @@
                        type
                        (set::union types1 types2)
                        table))
-       :stmt (b* ((table (valid-push-scope table))
-                  ((erp new-items types type? table)
-                   (valid-block-item-list expr.items table ienv))
-                  (table (valid-pop-scope table))
+       :stmt (b* (((erp new-cstmt types type? table)
+                   (valid-comp-stmt expr.stmt nil table ienv))
                   (type (or type? (type-void))))
-               (retok (expr-stmt new-items) type types table))
+               (retok (expr-stmt new-cstmt) type types table))
        :tycompat (b* (((erp new-type1 & types1 table)
                        (valid-tyname expr.type1 table ienv))
                       ((erp new-type2 & types2 table)
@@ -3007,48 +3081,18 @@
                       ext-tyspecs
                       nil
                       same-table)
-       :float32 (if (endp tyspecs)
-                    (retok (type-spec-float32)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float32x (if (endp tyspecs)
-                     (retok (type-spec-float32x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float64 (if (endp tyspecs)
-                    (retok (type-spec-float64)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
-       :float64x (if (endp tyspecs)
-                     (retok (type-spec-float64x)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128 (if (endp tyspecs)
-                     (retok (type-spec-float128)
-                            (type-unknown)
-                            nil
-                            nil
-                            same-table)
-                   (reterr msg-bad-preceding))
-       :float128x (if (endp tyspecs)
-                      (retok (type-spec-float128x)
-                             (type-unknown)
-                             nil
-                             nil
-                             same-table)
-                    (reterr msg-bad-preceding))
+       :locase-float80 (retok (type-spec-locase-float80)
+                              nil ext-tyspecs nil same-table)
+       :locase-float128 (retok (type-spec-locase-float128)
+                               nil ext-tyspecs nil same-table)
+       :float16 (retok (type-spec-float16) nil ext-tyspecs nil same-table)
+       :float16x (retok (type-spec-float16x) nil ext-tyspecs nil same-table)
+       :float32 (retok (type-spec-float32) nil ext-tyspecs nil same-table)
+       :float32x (retok (type-spec-float32x) nil ext-tyspecs nil same-table)
+       :float64 (retok (type-spec-float64) nil ext-tyspecs nil same-table)
+       :float64x (retok (type-spec-float64x) nil ext-tyspecs nil same-table)
+       :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-table)
+       :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-table)
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
                                    (type-unknown)
@@ -3057,7 +3101,9 @@
                                    same-table)
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
-                         (retok (type-spec-struct-empty tyspec.name?)
+                         (retok (make-type-spec-struct-empty
+                                 :attribs tyspec.attribs
+                                 :name? tyspec.name?)
                                 (type-struct tyspec.name?)
                                 nil
                                 nil
@@ -3591,13 +3637,20 @@
                                    (type-case type :unknown)))
                           (and (type-case target-type :pointer)
                                (or (and (type-case type :pointer)
-                                        (let ((target-type-to (type-pointer->to target-type))
+                                        (let ((target-type-to
+                                               (type-pointer->to target-type))
                                               (type-to (type-pointer->to type)))
-                                          (or (type-compatiblep target-type-to type-to)
-                                              (and (type-case target-type-to :void)
-                                                   (not (type-case type-to :function)))
+                                          (or (type-compatiblep target-type-to
+                                                                type-to)
+                                              (and (type-case target-type-to
+                                                              :void)
+                                                   (not
+                                                    (type-case type-to
+                                                               :function)))
                                               (and (type-case type-to :void)
-                                                   (not (type-case target-type-to :function))))))
+                                                   (not
+                                                    (type-case target-type-to
+                                                               :function))))))
                                    (type-case type :unknown)
                                    (expr-null-pointer-constp expr type)))))
               (retmsg$ "The initializer ~x0 for the target type ~x1 ~
@@ -4837,7 +4890,8 @@
                    (struni-spec-fix struni-spec)))
          ((erp new-members types table)
           (valid-struct-declon-list struni-spec.members nil table ienv)))
-      (retok (make-struni-spec :name? struni-spec.name?
+      (retok (make-struni-spec :attribs struni-spec.attribs
+                               :name? struni-spec.name?
                                :members new-members)
              types
              table))
@@ -4884,15 +4938,15 @@
       (struct-declon-case
        structdeclon
        :member
-       (b* (((erp new-specqual type types table)
-             (valid-spec/qual-list structdeclon.specqual nil nil table ienv))
-            ((erp new-declor previous more-types table)
+       (b* (((erp new-specquals type types table)
+             (valid-spec/qual-list structdeclon.specquals nil nil table ienv))
+            ((erp new-declors previous more-types table)
              (valid-struct-declor-list
-              structdeclon.declor previous type table ienv)))
+              structdeclon.declors previous type table ienv)))
          (retok (make-struct-declon-member :extension structdeclon.extension
-                                           :specqual new-specqual
-                                           :declor new-declor
-                                           :attrib structdeclon.attrib)
+                                           :specquals new-specquals
+                                           :declors new-declors
+                                           :attribs structdeclon.attribs)
                 previous
                 (set::union types more-types)
                 table))
@@ -5591,7 +5645,7 @@
       (label-case
        label
        :name
-       (retok (label-name label.unwrap) nil (valid-table-fix table))
+       (retok (label-fix label) nil (valid-table-fix table))
        :casexpr
        (b* (((erp new-expr type types table)
              (valid-const-expr label.expr table ienv))
@@ -5717,11 +5771,9 @@
                 type?
                 table))
        :compound
-       (b* ((table (valid-push-scope table))
-            ((erp new-items types type? table)
-             (valid-block-item-list stmt.items table ienv))
-            (table (valid-pop-scope table)))
-         (retok (stmt-compound new-items) types type? table))
+       (b* (((erp new-cstmt types type? table)
+             (valid-comp-stmt stmt.stmt nil table ienv)))
+         (retok (stmt-compound new-cstmt) types type? table))
        :expr
        (b* (((erp new-expr? type? types table)
              (valid-expr-option stmt.expr? table ienv)))
@@ -5877,6 +5929,8 @@
        (prog2$ (impossible) (retmsg$ ""))
        :goto
        (retok (stmt-goto stmt.label) nil nil (valid-table-fix table))
+       :gotoe
+       (retok (stmt-gotoe stmt.label) nil nil (valid-table-fix table))
        :continue
        (retok (stmt-continue) nil nil (valid-table-fix table))
        :break
@@ -5892,6 +5946,50 @@
        :asm
        (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-comp-stmt ((cstmt comp-stmtp)
+                           (fundefp booleanp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (mv (erp maybe-msgp)
+                 (new-cstmt comp-stmtp)
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a compound statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the same kind of type results
+       as @(tsee valid-stmt) (see that function's documentation),
+       with the modification that
+       the @('last-expr-type?') result is a type exactly when
+       the list of block items is not empty
+       and the validation of the last block item
+       returns a type as that result.")
+     (xdoc::p
+      "The @('fundefp') flag says whether the compound statement
+       is the body of a function definition.
+       If that is the case, we do not push a new scope and then pop it,
+       because that is already done in @(tsee valid-fundef):
+       the body itself of the function does not start a new scope;
+       it is the function definition itself that starts a new scope,
+       involving the parameters."))
+    (b* (((reterr) (irr-comp-stmt) nil nil (irr-valid-table))
+         ((comp-stmt cstmt) cstmt)
+         (table (if fundefp table (valid-push-scope table)))
+         ((erp new-items types last-expr-type? table)
+          (valid-block-item-list cstmt.items table ienv))
+         (table (if fundefp table (valid-pop-scope table))))
+      (retok (make-comp-stmt :labels cstmt.labels :items new-items)
+             types
+             last-expr-type?
+             table))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6205,7 +6303,8 @@
                (initdeclor-unambp new-initdeclor))
       :hyp (initdeclor-unambp initdeclor)
       :fn valid-initdeclor
-      :hints ('(:expand ((valid-initdeclor initdeclor type storspecs table ienv)))))
+      :hints
+      ('(:expand ((valid-initdeclor initdeclor type storspecs table ienv)))))
     (defret initdeclor-list-unambp-of-valid-initdeclor-list
       (implies (not erp)
                (initdeclor-list-unambp new-initdeclors))
@@ -6231,6 +6330,11 @@
                (stmt-unambp new-stmt))
       :hyp (stmt-unambp stmt)
       :fn valid-stmt)
+    (defret comp-stmt-unambp-of-valid-comp-stmt
+      (implies (not erp)
+               (comp-stmt-unambp new-cstmt))
+      :hyp (comp-stmt-unambp cstmt)
+      :fn valid-comp-stmt)
     (defret block-item-unambp-of-valid-block-item
       (implies (not erp)
                (block-item-unambp new-item))
@@ -6337,7 +6441,6 @@
   (b* (((reterr) (irr-fundef) (irr-valid-table))
        ((fundef fundef) fundef)
        ((valid-table table) table)
-       (table-start table)
        ((erp new-spec type storspecs types table)
         (valid-decl-spec-list fundef.spec nil nil nil table ienv))
        ((erp new-declor & type ident more-types table)
@@ -6463,12 +6566,9 @@
                                   :uid uid)
                                  table)
                 table))
-       (table-body-start table)
-       ((erp new-body & & table) (valid-block-item-list fundef.body table ienv))
+       ((erp new-body & & table) (valid-comp-stmt fundef.body t table ienv))
        (table (valid-pop-scope table))
-       (info (make-fundef-info :table-start table-start
-                               :table-body-start table-body-start
-                               :type type
+       (info (make-fundef-info :type type
                                :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
                         :spec new-spec
@@ -6632,7 +6732,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
+(define valid-transunit-ensemble ((tunits transunit-ensemblep)
+                                  (ienv ienvp)
+                                  (keep-going booleanp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (mv (erp maybe-msgp) (new-tunits transunit-ensemblep))
   :short "Validate a translation unit ensemble."
@@ -6647,16 +6749,26 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
+       (map (transunit-ensemble->unwrap tunits))
        ((erp new-map)
-        (valid-transunit-ensemble-loop
-         (transunit-ensemble->unwrap tunits) nil (uid 0) ienv)))
+        (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
+       (- (if keep-going
+              (b* ((len-map (omap::size map))
+                   (len-new-map (omap::size new-map))
+                   (diff (- len-map len-new-map)))
+                (if (= (the integer diff) 0)
+                    nil
+                  (cw "Validated ~x0/~x1 translation units.~%"
+                      len-new-map len-map)))
+            nil)))
     (retok (transunit-ensemble new-map)))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (externals valid-externalsp)
                                           (next-uid uidp)
-                                          (ienv ienvp))
+                                          (ienv ienvp)
+                                          (keep-going booleanp))
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
@@ -6665,20 +6777,35 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit table)
+          ((mv erp new-tunit table)
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
+          ((when erp)
+           (if keep-going
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+                           (filepath->unwrap path)
+                           erp)
+                       (valid-transunit-ensemble-loop (omap::tail map)
+                                                      externals
+                                                      next-uid
+                                                      ienv
+                                                      keep-going))
+             (retmsg$ "Error in translation unit ~x0: ~@1"
+                      (filepath->unwrap path)
+                      erp)))
           ((valid-table table) table)
           ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
                                                         table.externals
                                                         table.next-uid
-                                                        ienv)))
+                                                        ienv
+                                                        keep-going)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((ienv ienvp)))
+       :args ((ienv ienvp)
+              (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
        (implies (not erp)

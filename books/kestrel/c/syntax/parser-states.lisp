@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax-trees")
 
+(include-book "../language/implementation-environments/versions")
+
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -55,11 +57,11 @@
      Thus, it is useful to have an abstract-syntax-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
-    "We represent a C keyword or puncutator as an ACL2 string,
+    "We represent a C keyword or punctuator as an ACL2 string,
      which suffices to represent all C keywords and punctuators,
      which are all ASCII.
      We could consider defining enumeration fixtypes
-     for keywords and puncutators instead,
+     for keywords and punctuators instead,
      and use them here instead of strings.")
    (xdoc::p
     "We use the identifiers, constants, and string literals
@@ -74,7 +76,8 @@
   (:const ((unwrap const)))
   (:string ((unwrap stringlit)))
   (:punctuator ((unwrap stringp)))
-  :pred tokenp)
+  :pred tokenp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -119,8 +122,8 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :keyword)
-       (equal (token-keyword->unwrap token)
-              keyword))
+       (equal (the string (token-keyword->unwrap token))
+              (the string keyword)))
 
   ///
 
@@ -141,8 +144,8 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :punctuator)
-       (equal (token-punctuator->unwrap token)
-              punctuator))
+       (equal (the string (token-punctuator->unwrap token))
+              (the string punctuator)))
 
   ///
 
@@ -150,36 +153,6 @@
     (implies (token-punctuatorp token punctuator)
              token)
     :rule-classes :forward-chaining))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define token-to-msg ((token token-optionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a token as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in parser error messages,
-     so it does not have to provide a complete description of the token
-     for all possible tokens.
-     We only give a complete description of keyword and punctuator tokens,
-     because those are the kinds that may be a mismatch
-     (e.g. expecing a @(':'), found a @(';') instead).
-     For the other kinds, we give a more generic description.")
-   (xdoc::p
-    "It is convenient to treat uniformly tokens and @('nil'),
-     which happens when the end of the file is reached.
-     This is why this function takes an optional token as input."))
-  (if token
-      (token-case
-       token
-       :keyword (msg "the keyword ~x0" token.unwrap)
-       :ident "an identifier"
-       :const "a constant"
-       :string "a string literal"
-       :punctuator (msg "the punctuator ~x0" token.unwrap))
-    "end of file"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +174,8 @@
      is also consistent with Emacs."))
   ((line pos)
    (column nat))
-  :pred positionp)
+  :pred positionp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -219,7 +193,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is at line 1 and column 0."))
-  (make-position :line 1 :column 0))
+  (make-position :line 1 :column 0)
+  :inline t
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,7 +206,10 @@
   (xdoc::topstring
    (xdoc::p
     "The line number is unchanged."))
-  (change-position pos :column (+ (position->column pos) columns)))
+  (change-position pos :column (+ (the unsigned-byte (position->column pos))
+                                  (the unsigned-byte columns)))
+  :inline t
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,19 +220,11 @@
   (xdoc::topstring
    (xdoc::p
     "The column is reset to 0."))
-  (make-position :line (+ (position->line pos) lines) :column 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-to-msg ((pos positionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a position as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented error messages."))
-  (msg "(line ~x0, column ~x1)" (position->line pos) (position->column pos)))
+  (make-position :line (+ (the (integer 1 *) (position->line pos))
+                          (the (integer 1 *) lines))
+                 :column 0)
+  :inline t
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,7 +232,8 @@
   :short "Fixtype of pairs each consisting of a character and a position."
   ((char nat)
    (position position))
-  :pred char+position-p)
+  :pred char+position-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,7 +276,8 @@
      The ending position of a span is inclusive."))
   ((start position)
    (end position))
-  :pred spanp)
+  :pred spanp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -327,27 +300,14 @@
   (make-span :start (span->start span1)
              :end (span->end span2)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-to-msg ((span spanp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a span as a message."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in user-oriented messages."))
-  (msg "[~@0 to ~@1]"
-       (position-to-msg (span->start span))
-       (position-to-msg (span->end span))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod token+span
   :short "Fixtype of pairs each consisting of a token and a span."
   ((token token)
    (span span))
-  :pred token+span-p)
+  :pred token+span-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -357,7 +317,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred token+span-listp
-  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -534,15 +493,10 @@
      via the three stobj components
      @('tokens'), @('tokens-read'), and @('tokens-unread').")
    (xdoc::p
-    "We include a boolean flag saying whether
-     certain GCC extensions should be accepted or not.
-     These GCC extensions are limited to the ones
-     currently captured in our grammar and abstract syntax.
+    "We include the C version.
      This parser state component is set at the beginning and never changes,
      but it is useful to have it as part of the parser state
-     to avoid passing an additional parameter.
-     This parser state component could potentially evolve into
-     a richer set of options for different versions and dialects of C.")
+     to avoid passing an additional parameter.")
    (xdoc::p
     "For speed, we cache the value returned by
      the function @(tsee parsize) defined later.
@@ -638,8 +592,8 @@
                    :initially 0)
       (tokens-unread :type (integer 0 *)
                      :initially 0)
-      (gcc :type (satisfies booleanp)
-           :initially nil)
+      (version :type (satisfies c::versionp)
+               :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
       :renaming (;; field recognizers:
@@ -651,7 +605,7 @@
                  (tokensp raw-parstate->tokens-p)
                  (tokens-readp raw-parstate->tokens-read-p)
                  (tokens-unreadp raw-parstate->tokens-unread-p)
-                 (gccp raw-parstate->gcc-p)
+                 (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
@@ -664,7 +618,7 @@
                  (tokensi raw-parstate->token)
                  (tokens-read raw-parstate->tokens-read)
                  (tokens-unread raw-parstate->tokens-unread)
-                 (gcc raw-parstate->gcc)
+                 (version raw-parstate->version)
                  (size raw-parstate->size)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
@@ -677,8 +631,9 @@
                  (update-tokensi raw-update-parstate->token)
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
-                 (update-gcc raw-update-parstate->gcc)
-                 (update-size raw-update-parstate->size))))
+                 (update-version raw-update-parstate->version)
+                 (update-size raw-update-parstate->size))
+      :inline t))
 
   ;; fixer:
 
@@ -688,6 +643,8 @@
                     parstate
                   (create-parstate))
          :exec parstate)
+    :inline t
+    :no-function t
     ///
     (defrule parstate-fix-when-parstatep
       (implies (parstatep parstate)
@@ -731,6 +688,8 @@
                     (raw-parstate->bytes parstate)
                   nil)
          :exec (raw-parstate->bytes parstate))
+    :inline t
+    :no-function t
     :hooks (:fix)
     ///
     (more-returns
@@ -741,7 +700,9 @@
     (mbe :logic (if (parstatep parstate)
                     (raw-parstate->position parstate)
                   (irr-position))
-         :exec (raw-parstate->position parstate)))
+         :exec (raw-parstate->position parstate))
+    :inline t
+    :no-function t)
 
   (define parstate->chars-length (parstate)
     :returns (length natp)
@@ -749,6 +710,8 @@
                     (raw-parstate->chars-length parstate)
                   1)
          :exec (raw-parstate->chars-length parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->char ((i natp) parstate)
@@ -762,6 +725,8 @@
                   (make-char+position :char 0
                                       :position (irr-position)))
          :exec (raw-parstate->char i parstate))
+    :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length))))
 
   (define parstate->chars-read (parstate)
@@ -770,6 +735,8 @@
                     (raw-parstate->chars-read parstate)
                   0)
          :exec (raw-parstate->chars-read parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->chars-unread (parstate)
@@ -778,6 +745,8 @@
                     (raw-parstate->chars-unread parstate)
                   0)
          :exec (raw-parstate->chars-unread parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->tokens-length (parstate)
@@ -786,6 +755,8 @@
                     (raw-parstate->tokens-length parstate)
                   1)
          :exec (raw-parstate->tokens-length parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->token ((i natp) parstate)
@@ -799,6 +770,8 @@
                   (make-token+span :token (irr-token)
                                    :span (irr-position)))
          :exec (raw-parstate->token i parstate))
+    :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length))))
 
   (define parstate->tokens-read (parstate)
@@ -807,6 +780,8 @@
                     (raw-parstate->tokens-read parstate)
                   0)
          :exec (raw-parstate->tokens-read parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->tokens-unread (parstate)
@@ -815,14 +790,18 @@
                     (raw-parstate->tokens-unread parstate)
                   0)
          :exec (raw-parstate->tokens-unread parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
-  (define parstate->gcc (parstate)
-    :returns (gcc booleanp)
+  (define parstate->version (parstate)
+    :returns (version c::versionp)
     (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->gcc parstate)
-                  nil)
-         :exec (raw-parstate->gcc parstate))
+                    (raw-parstate->version parstate)
+                  (c::version-c23))
+         :exec (raw-parstate->version parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define parstate->size (parstate)
@@ -831,6 +810,8 @@
                     (raw-parstate->size parstate)
                   0)
          :exec (raw-parstate->size parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   ;; writers:
@@ -839,23 +820,31 @@
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->bytes (byte-list-fix bytes) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->position ((position positionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->position (position-fix position) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->chars-length ((length natp) parstate)
     :returns (parstate parstatep
-                       :hints (("Goal"
-                                :in-theory (enable nfix
-                                                   parstate-fix
-                                                   length
-                                                   char+position-listp-of-resize-list))))
+                       :hints
+                       (("Goal"
+                         :in-theory
+                         (enable nfix
+                                 parstate-fix
+                                 length
+                                 char+position-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-length (nfix length) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->char ((i natp)
@@ -876,29 +865,38 @@
                                                  parstate)
                     parstate)
            :exec (raw-update-parstate->char i char+pos parstate)))
+    :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix))))
 
   (define update-parstate->chars-read ((chars-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-read (nfix chars-read) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->chars-unread ((chars-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-unread (nfix chars-unread) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->tokens-length ((length natp) parstate)
     :returns (parstate parstatep
-                       :hints (("Goal"
-                                :in-theory (enable nfix
-                                                   parstate-fix
-                                                   length
-                                                   token+span-listp-of-resize-list))))
+                       :hints
+                       (("Goal"
+                         :in-theory (enable nfix
+                                            parstate-fix
+                                            length
+                                            token+span-listp-of-resize-list))))
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-length (nfix length) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->token ((i natp)
@@ -919,30 +917,40 @@
                                                   parstate)
                     parstate)
            :exec (raw-update-parstate->token i token+span parstate)))
+    :inline t
+    :no-function t
     :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix))))
 
   (define update-parstate->tokens-read ((tokens-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-read (nfix tokens-read) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->tokens-unread ((tokens-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
-  (define update-parstate->gcc ((gcc booleanp) parstate)
+  (define update-parstate->version ((version c::versionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->gcc (bool-fix gcc) parstate))
+      (raw-update-parstate->version (c::version-fix version) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   (define update-parstate->size ((size natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->size (lnfix size) parstate))
+    :inline t
+    :no-function t
     :hooks (:fix))
 
   ;; readers over writers:
@@ -1046,7 +1054,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (gcc booleanp) parstate)
+(define parstate->gcc ((parstate parstatep))
+  :returns (gcc booleanp)
+  :short "Flag saying whether GCC extensions are supported or not."
+  (c::version-gccp (parstate->version parstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-parstate ((data byte-listp) (version c::versionp) parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
@@ -1054,7 +1070,7 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a flag saying whether GCC extensions should be accepted or not,
+     and a C version,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1076,7 +1092,7 @@
        (parstate (update-parstate->tokens-length (len data) parstate))
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
-       (parstate (update-parstate->gcc gcc parstate))
+       (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
   :hooks (:fix))
@@ -1093,12 +1109,14 @@
      It was slightly more elaborate when
      @(tsee parstate) was defined via @(tsee fty::defprod)."))
   (parstate->size parstate)
+  :inline t
+  :no-function t
   :hooks (:fix)
 
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil gcc parstate))
+    (equal (parsize (init-parstate nil version parstate))
            0)
     :enable init-parstate))
 
@@ -1114,8 +1132,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (gcc bool))
-  :prepwork ((local (in-theory (enable nfix)))))
+   (version c::version))
+  :layout :fulltree)
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
 ; To construct the lists of read and unread characters,
@@ -1132,7 +1150,7 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :gcc (parstate->gcc parstate))
+   :version (parstate->version parstate))
 
   :prepwork
 
@@ -1187,39 +1205,3 @@
        (cons (parstate->token i parstate)
              (to-parstate$-tokens-unread (1- n) parstate)))
      :guard-hints (("Goal" :in-theory (enable natp zp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ reterr-msg (&key where expected found extra)
-  :short "Return an error consisting of a message
-          with information about what was expected and what was found where."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used by our lexing and parsing functions
-     to more concisely return more uniform error messages.")
-   (xdoc::p
-    "This macro assumes that a suitable local macro @('reterr') is in scope
-     (see "
-    (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
-    "), which is the case for our lexing and parsing functions.
-     This macro takes as inputs four terms,
-     which must evaluate to messages (i.e. values satisfying @(tsee msgp)).
-     Those are used to form a larger message,
-     in the manner that should be obvious from the body of this macro.
-     Note that the fourth term is optional,
-     in case we want to provide additional information.")
-   (xdoc::p
-    "For now we also include, at the end of the message,
-     an indication of the ACL2 function that caused the error.
-     This is useful as we are debugging the parser,
-     but we may remove it once the parser is more tested or even verified."))
-  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
-                 [from function ~x4]~%"
-                ,expected
-                ,where
-                ,found
-                ,(if extra
-                     `(msg " ~@0" ,extra)
-                   "")
-                __function__)))

@@ -138,7 +138,7 @@
      acl2::unsigned-byte-listp-of-cons
      acl2::unsigned-byte-listp-constant-opener
 
-     bv-array-read-shorten-8
+     ;;bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
      acl2::not-equal-of-constant-and-bv-term-alt-axe
@@ -362,10 +362,12 @@
      ubyte5-fix
      acl2::ubyte12-fix
      acl2::ubyte20-fix
+     acl2::ubyte32-fix
 
      ubyte5p
      acl2::ubyte12p
      acl2::ubyte20p
+     acl2::ubyte32p
 
      riscv::op-imm-funct-fix$inline
      riscv::instr-kind$inline
@@ -424,7 +426,7 @@
      riscv::instr-lui->rd$inline
      riscv::instr-lui->imm$inline
 
-     exec32-instr-base
+     exec32-instr-base ; requires the instr to be constant
 
      exec32-add
      exec32-addi
@@ -440,7 +442,6 @@
      exec32-branch
      exec32-div
      exec32-divu
-     exec32-instr
      exec32-jal
      exec32-jalr
      exec32-lb

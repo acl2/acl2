@@ -911,9 +911,7 @@
            (equal (max-key dag max-so-far)
                   (max (car (car dag))
                        max-so-far)))
-  :hints (("Goal" ;:cases ()
-           :do-not '(generalize)
-           :in-theory (enable pseudo-dagp-aux max-key))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux max-key))))
 
 (defthm max-key-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)

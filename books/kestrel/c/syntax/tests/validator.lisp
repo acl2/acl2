@@ -61,7 +61,6 @@
                   (make-dummy-filepath-filedata-map (rest filepath-names)
                                                     (rest input)))))
 
-
 (define make-dummy-fileset (input)
   :returns (fileset fileset)
   (fileset (make-dummy-filepath-filedata-map
@@ -83,17 +82,18 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
        (cond (cdr (assoc-eq :cond options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (ienv (make-ienv :version version
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -114,17 +114,18 @@
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
-       (ienv (make-ienv :short-bytes short-bytes
+       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (ienv (make-ienv :version version
+                        :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
-                        :plain-char-signedp plain-char-signedp
-                        :gcc gcc))
+                        :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ,gcc))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv)))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -237,7 +238,8 @@ void f() {
             (edecls (transunit->decls transunit))
             (edecl (cadr edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (items (fundef->body fundef))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
             (decl (block-item-decl->decl item))
             (ideclors (decl-decl->init decl))
@@ -864,18 +866,18 @@ void bar(void) {
              (bar-param-declon (param-declon->declor (first bar-params)))
              (x-param-uid (param-declor-nonabstract-info->uid (param-declor-nonabstract->info bar-param-declon)))
              ;; (- (cw "x-param uid: ~x0~%" x-param-uid))
-             (bar-body-decl1 (first (fundef->body bar-fundef)))
+             (bar-body-decl1 (first (comp-stmt->items (fundef->body bar-fundef))))
              (foo-init2 (first (decl-decl->init (block-item-decl->decl bar-body-decl1))))
              (foo-init2-uid (initdeclor-info->uid? (initdeclor->info foo-init2)))
              ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
              (x-expr (initer-single->expr (initdeclor->init? foo-init2)))
              (x-expr-uid (var-info->uid (expr-ident->info x-expr)))
              ;; (- (cw "x-expr uid: ~x0~%" x-expr-uid))
-             (bar-body-decl2 (first (stmt-compound->items (block-item-stmt->stmt (second (fundef->body bar-fundef))))))
+             (bar-body-decl2 (first (comp-stmt->items (stmt-compound->stmt (block-item-stmt->stmt (second (comp-stmt->items (fundef->body bar-fundef))))))))
              (foo-init3 (first (decl-decl->init (block-item-decl->decl bar-body-decl2))))
              (foo-init3-uid (initdeclor-info->uid? (initdeclor->info foo-init3)))
              ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
-             (bar-return-stmt (block-item-stmt->stmt (third (fundef->body bar-fundef))))
+             (bar-return-stmt (block-item-stmt->stmt (third (comp-stmt->items (fundef->body bar-fundef)))))
              (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
              (edecls2 (transunit->decls transunit2))
@@ -885,7 +887,7 @@ void bar(void) {
              (foo-fundef (extdecl-fundef->unwrap (second edecls2)))
              (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
              ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
-             (foo-return-stmt (block-item-stmt->stmt (first (fundef->body foo-fundef))))
+             (foo-return-stmt (block-item-stmt->stmt (first (comp-stmt->items (fundef->body foo-fundef)))))
              (bar-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
              ;; (- (cw "bar-expr uid: ~x0~%" bar-expr-uid))
              )
@@ -1075,3 +1077,13 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
   return (int [1][1]) {42}[0][0];
 }
 ")
+
+(test-valid
+ "_Complex _Float128 x;
+"
+ :gcc t)
+
+(test-valid
+ "_Float128 x;
+"
+ :gcc t)

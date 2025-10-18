@@ -27,6 +27,7 @@
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
 ;(include-book "dag-size")
+(include-book "dagify") ; for dag-or-term-to-term
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
@@ -414,6 +415,7 @@
                     nil                ;no interpreted-fns (todo)
                     nil                ;no point in monitoring anything
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
@@ -460,6 +462,7 @@
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state))

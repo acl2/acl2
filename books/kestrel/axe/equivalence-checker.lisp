@@ -1619,7 +1619,7 @@
       (hard-error 'find-a-val-in-traces "All traces are empty!" nil)
     (let* ((trace (first traces)))
       (if (endp trace) ;this trace is empty, so skip it:
-          (prog2$ (hard-error 'find-a-val-in-traces "this shoult not happen" nil)
+          (prog2$ (hard-error 'find-a-val-in-traces "this should not happen" nil)
                   (find-a-val-in-traces (rest traces)))
 ;found a non empty trace; return its first value:
         (first trace)))))
@@ -9865,8 +9865,8 @@
               (and (integerp val)
                    (equal ''0 (aref1 dag-array-name dag-array val))))
           (cons (car entry)
-                (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array))
-        (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array)))))
+                (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array))
+        (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array)))))
 
 ;is this just make-alist?
 (defun cons-list (x y)
@@ -18047,7 +18047,7 @@
 ;;                     ALIST
 ;;                     FORM-LST INTERPRETED-FUNCTION-ALIST)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0) ()))))
+;;            :in-theory (enable NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0))))
 
 ;; (defthm EVAL-GROUND-TERM-LST-FOR-AXE-EVALUATOR-opener
 ;;   (implies (not (endp form-lst))

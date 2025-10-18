@@ -113,6 +113,7 @@
                      (expr-subst-free (c$::expr-unary->arg expr)
                                       subst bound-vars)
                      (c$::expr-unary->info expr))
+     :label-addr (expr-fix expr)
      :sizeof
      (expr-sizeof
        (tyname-subst-free (c$::expr-sizeof->type expr)
@@ -191,12 +192,18 @@
        (c$::expr-cast/and-ambig->inc/dec expr)
        (expr-subst-free (c$::expr-cast/and-ambig->arg/arg2 expr)
                         subst bound-vars))
+     :cast/logand-ambig
+     (c$::expr-cast/logand-ambig
+       (amb-expr/tyname-subst-free
+         (c$::expr-cast/logand-ambig->type/arg1 expr)
+         subst bound-vars)
+       (c$::expr-cast/logand-ambig->inc/dec expr)
+       (c$::expr-cast/logand-ambig->arg/arg2 expr))
      ;; Interesting case
      :stmt
-     (b* (((mv items -)
-           (block-item-list-subst-free (c$::expr-stmt->items expr)
-                                       subst bound-vars)))
-       (expr-stmt items))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (c$::expr-stmt->stmt expr) subst bound-vars)))
+       (expr-stmt cstmt))
      :tycompat
      (c$::expr-tycompat
        (tyname-subst-free (c$::expr-tycompat->type1 expr)
@@ -355,6 +362,10 @@
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
+     :locase-float80 (type-spec-fix type-spec)
+     :locase-float128 (type-spec-fix type-spec)
+     :float16 (type-spec-fix type-spec)
+     :float16x (type-spec-fix type-spec)
      :float32 (type-spec-fix type-spec)
      :float32x (type-spec-fix type-spec)
      :float64 (type-spec-fix type-spec)
@@ -918,8 +929,9 @@
           (struct-declon-list-subst-free
             (c$::struni-spec->members struni-spec)
             subst bound-vars)))
-      (struni-spec (c$::struni-spec->name? struni-spec)
-                  members))
+      (struni-spec (c$::struni-spec->attribs struni-spec)
+                   (c$::struni-spec->name? struni-spec)
+                   members))
     :measure (struni-spec-count struni-spec))
 
   (define struct-declon-subst-free ((struct-declon struct-declonp)
@@ -930,19 +942,19 @@
     (struct-declon-case
      struct-declon
      :member
-     (b* ((specqual (spec/qual-list-subst-free
-                     (c$::struct-declon-member->specqual struct-declon)
-                     subst bound-vars))
-          ((mv declor bound-vars)
+     (b* ((specquals (spec/qual-list-subst-free
+                      (c$::struct-declon-member->specquals struct-declon)
+                      subst bound-vars))
+          ((mv declors bound-vars)
            (struct-declor-list-subst-free
-            (c$::struct-declon-member->declor struct-declon)
+            (c$::struct-declon-member->declors struct-declon)
             subst bound-vars)))
        (mv (c$::struct-declon-member
             (c$::struct-declon-member->extension struct-declon)
-            specqual
-            declor
+            specquals
+            declors
             (attrib-spec-list-subst-free
-             (c$::struct-declon-member->attrib struct-declon)
+             (c$::struct-declon-member->attribs struct-declon)
              subst bound-vars))
            (ident-set-fix bound-vars)))
      :statassert
@@ -1267,10 +1279,9 @@
                         subst bound-vars))
      ;; Interesting case
      :compound
-     (b* (((mv items -)
-           (block-item-list-subst-free (stmt-compound->items stmt)
-                                       subst bound-vars)))
-       (stmt-compound items))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (stmt-compound->stmt stmt) subst bound-vars)))
+       (stmt-compound cstmt))
      :expr
      (make-stmt-expr
       :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
@@ -1337,6 +1348,7 @@
        (stmt-subst-free (c$::stmt-for-ambig->body stmt)
                         subst bound-vars))
      :goto (stmt-fix stmt)
+     :gotoe (stmt-gotoe (expr-subst-free stmt.label subst bound-vars))
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
      :return
@@ -1391,6 +1403,17 @@
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
     :measure (block-item-list-count block-item-list))
+
+  (define comp-stmt-subst-free
+    ((cstmt comp-stmtp)
+     (subst ident-expr-mapp)
+     (bound-vars ident-setp))
+    :returns (mv (result comp-stmtp)
+                 (bound-vars ident-setp))
+    (b* (((mv items bound-vars)
+          (block-item-list-subst-free (comp-stmt->items cstmt) subst bound-vars)))
+      (mv (make-comp-stmt :labels (comp-stmt->labels cstmt) :items items) bound-vars))
+    :measure (comp-stmt-count cstmt))
 
   (define amb-expr/tyname-subst-free
     ((amb-expr/tyname c$::amb-expr/tyname-p)
@@ -1456,7 +1479,7 @@
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv decls body-bound-vars)
         (decl-list-subst-free fundef.decls subst body-bound-vars))
-       ((mv body &) (block-item-list-subst-free fundef.body subst body-bound-vars)))
+       ((mv body &) (comp-stmt-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
           :spec spec

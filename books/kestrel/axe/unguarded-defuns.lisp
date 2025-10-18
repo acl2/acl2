@@ -438,7 +438,7 @@
 (defthm getbit-unguarded-correct
   (equal (getbit-unguarded n x)
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice) ()))))
+  :hints (("Goal" :in-theory (enable getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

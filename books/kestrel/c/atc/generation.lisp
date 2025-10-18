@@ -53,7 +53,7 @@
   (xdoc::topstring
    (xdoc::p
     "We generate C abstract syntax,
-     which we pretty-print to a file
+     which we pretty-print to files
      and also assign to a named constant.")
    (xdoc::p
     "Given the restrictions on the target functions,

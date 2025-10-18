@@ -315,3 +315,13 @@
            :in-theory (disable bvminus-of-bvchop-arg3-same
                                bvminus-of-bvchop-arg3
                                bvminus-becomes-bvplus-of-bvuminus))))
+
+(defthm bvminus-of-ifix-arg2
+  (equal (bvminus size (ifix x) y)
+         (bvminus size x y))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-ifix-arg3
+  (equal (bvminus size x (ifix y))
+         (bvminus size x y))
+  :hints (("Goal" :in-theory (enable bvminus))))

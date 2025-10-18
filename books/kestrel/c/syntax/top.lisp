@@ -13,15 +13,12 @@
 (include-book "implementation-environments")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
-(include-book "preprocess-file")
+(include-book "preprocessing")
 (include-book "parsing")
 (include-book "disambiguation")
 (include-book "validation")
-(include-book "ascii-identifiers")
-(include-book "standard")
-(include-book "purity")
+(include-book "printing")
 (include-book "builtin")
-(include-book "printer")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")
@@ -193,10 +190,7 @@
                     parsing
                     disambiguation
                     validation
-                    ascii-identifiers
-                    standard
-                    purity
-                    printer
+                    printing
                     input-files
                     output-files
                     mapping-to-language-definition

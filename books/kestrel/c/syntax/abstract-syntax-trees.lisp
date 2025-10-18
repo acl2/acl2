@@ -159,7 +159,8 @@
      in addition, parsing code compliant to [C17]
      will result in specific forms of identifiers."))
   ((unwrap any))
-  :pred identp)
+  :pred identp
+  :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,6 +174,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred ident-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist ident-list-list
+  :short "Fixtype of lists of lists of identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Identifiers are defined in @(tsee ident)."))
+  :elt-type ident-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred ident-list-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +242,8 @@
   (:upcase-l ())
   (:locase-ll ())
   (:upcase-ll ())
-  :pred lsuffixp)
+  :pred lsuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +256,8 @@
      This captures the two possible suffixes @('u') and @('U')."))
   (:locase-u ())
   (:upcase-u ())
-  :pred usuffixp)
+  :pred usuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +278,8 @@
         (length lsuffix)))
   (:lu ((length lsuffix)
         (unsigned usuffix)))
-  :pred isuffixp)
+  :pred isuffixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,7 +303,8 @@
      This captures the two possible prefixes @('0x') and @('0X')."))
   (:locase-0x ())
   (:upcase-0x ())
-  :pred hprefixp)
+  :pred hprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,7 +357,8 @@
          (value nat)))
   (:hex ((prefix hprefix)
          (digits hex-digit-char-list)))
-  :pred dec/oct/hex-constp)
+  :pred dec/oct/hex-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,7 +378,8 @@
   ((core dec/oct/hex-const)
    (suffix? isuffix-option)
    (info any))
-  :pred iconstp)
+  :pred iconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,12 +401,27 @@
    (xdoc::p
     "This corresponds to <i>floating-suffix</i> in the grammar in [C17].
      This captures the four possible suffixes
-     @('f'), @('F'), @('l'), and @('L')."))
+     @('f'), @('F'), @('l'), and @('L').")
+   (xdoc::p
+    "As a GCC extension, we also allow
+     @('f<n>'), @('F<n>'), @('f<n>x'), and @('F<n>x'),
+     with @('<n>') being @('16'), @('32'), @('64'), or @('128').
+     See the ABNF grammar."))
   (:locase-f ())
   (:upcase-f ())
   (:locase-l ())
   (:upcase-l ())
-  :pred fsuffixp)
+  (:locase-f16 ((x bool)))
+  (:locase-f32 ((x bool)))
+  (:locase-f64 ((x bool)))
+  (:locase-f128 ((x bool)))
+  (:upcase-f16 ((x bool)))
+  (:upcase-f32 ((x bool)))
+  (:upcase-f64 ((x bool)))
+  (:upcase-f128 ((x bool)))
+  :pred fsuffixp
+  :xvar f
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -411,7 +446,8 @@
      used in the exponents of floating constants."))
   (:plus ())
   (:minus ())
-  :pred signp)
+  :pred signp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,7 +471,8 @@
      in <i>exponent-part</i> in the grammar in [C17]."))
   (:locase-e ())
   (:upcase-e ())
-  :pred dec-expo-prefixp)
+  :pred dec-expo-prefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,7 +485,8 @@
      in <i>binary-exponent-part</i> in the grammar in [C17]."))
   (:locase-p ())
   (:upcase-p ())
-  :pred bin-expo-prefixp)
+  :pred bin-expo-prefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -464,7 +502,8 @@
   ((prefix dec-expo-prefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred dec-expop)
+  :pred dec-expop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -493,7 +532,8 @@
   ((prefix bin-expo-prefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred bin-expop)
+  :pred bin-expop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -515,7 +555,8 @@
      and can be ruled out by predicates over this abstract syntax."))
   ((before dec-digit-char-list)
    (after dec-digit-char-list))
-  :pred dec-frac-constp)
+  :pred dec-frac-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,7 +578,8 @@
      and can be ruled out by predicates over this abstract syntax."))
   ((before hex-digit-char-list)
    (after hex-digit-char-list))
-  :pred hex-frac-constp)
+  :pred hex-frac-constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,7 +603,8 @@
           (expo? dec-expo-option)))
   (:int ((significand dec-digit-char-list)
          (expo dec-expo)))
-  :pred dec-core-fconstp)
+  :pred dec-core-fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,7 +625,8 @@
           (expo bin-expo)))
   (:int ((significand hex-digit-char-list)
          (expo bin-expop)))
-  :pred hex-core-fconstp)
+  :pred hex-core-fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,7 +644,8 @@
   (:hex ((prefix hprefix)
          (core hex-core-fconst)
          (suffix? fsuffix-option)))
-  :pred fconstp)
+  :pred fconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +682,8 @@
   (:t ())
   (:v ())
   (:percent ())
-  :pred simple-escapep)
+  :pred simple-escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,7 +702,8 @@
   (:three ((digit1 oct-digit-char)
            (digit2 oct-digit-char)
            (digit3 oct-digit-char)))
-  :pred oct-escapep)
+  :pred oct-escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,7 +717,8 @@
    (2nd hex-digit-char)
    (3rd hex-digit-char)
    (4th hex-digit-char))
-  :pred hex-quad-p)
+  :pred hex-quad-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -686,7 +734,8 @@
   (:locase-u ((quad hex-quad)))
   (:upcase-u ((quad1 hex-quad)
               (quad2 hex-quad)))
-  :pred univ-char-name-p)
+  :pred univ-char-name-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -700,11 +749,12 @@
      we use lists of hexadecimal digit characters,
      which correspond to <i>hexadecimal-escape-sequence</i>
      without the implicit @('\\x') prefix."))
-  (:simple ((unwrap simple-escape)))
-  (:oct ((unwrap oct-escape)))
-  (:hex ((unwrap hex-digit-char-list)))
-  (:univ ((unwrap univ-char-name)))
-  :pred escapep)
+  (:simple ((escape simple-escape)))
+  (:oct ((escape oct-escape)))
+  (:hex ((escape hex-digit-char-list)))
+  (:univ ((escape univ-char-name)))
+  :pred escapep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -720,9 +770,10 @@
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
-  (:char ((unwrap nat)))
-  (:escape ((unwrap escape)))
-  :pred c-char-p)
+  (:char ((code nat)))
+  (:escape ((escape escape)))
+  :pred c-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -751,7 +802,8 @@
   (:upcase-l ())
   (:locase-u ())
   (:upcase-u ())
-  :pred cprefixp)
+  :pred cprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -774,7 +826,8 @@
     "This corresponds to <i>character-constant</i> in the grammar in [C17]."))
   ((prefix? cprefix-option)
    (cchars c-char-list))
-  :pred cconstp)
+  :pred cconstp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,7 +841,8 @@
   (:float ((unwrap fconst)))
   (:enum ((unwrap ident)))
   (:char ((unwrap cconst)))
-  :pred constp)
+  :pred constp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -815,9 +869,10 @@
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
-  (:char ((unwrap nat)))
-  (:escape ((unwrap escape)))
-  :pred s-char-p)
+  (:char ((code nat)))
+  (:escape ((escape escape)))
+  :pred s-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -846,7 +901,8 @@
   (:locase-u ())
   (:upcase-u ())
   (:upcase-l ())
-  :pred eprefixp)
+  :pred eprefixp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -883,7 +939,8 @@
     "This corresponds to <i>string-literal</i> in the grammar in [C17]."))
   ((prefix? eprefix-option)
    (schars s-char-list))
-  :pred stringlitp)
+  :pred stringlitp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -915,7 +972,8 @@
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
   ((char nat))
-  :pred h-char-p)
+  :pred h-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -949,7 +1007,8 @@
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
   ((char nat))
-  :pred q-char-p)
+  :pred q-char-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,7 +1035,8 @@
     "This corresponds to <i>header-name</i> in the grammar in [C17]."))
   (:angles ((chars h-char-list)))
   (:quotes ((chars q-char-list)))
-  :pred header-namep)
+  :pred header-namep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1004,10 +1064,11 @@
      @('++') (prefix),
      @('--') (prefix),
      @('++') (postfix),
-     @('--') (postfix), and
-     @('sizeof').
-     The latter is the variant on expressions;
-     see @(tsee expr)."))
+     @('--') (postfix),
+     @('sizeof') (the variant on expressions; see @(tsee expr)),
+     @('__real__'), and
+     @('__imag__').
+     The latter two are GCC extensions; see the ABNF grammar."))
   (:address ())
   (:indir ())
   (:plus ())
@@ -1019,7 +1080,10 @@
   (:postinc ())
   (:postdec ())
   (:sizeof ())
-  :pred unopp)
+  (:real ()) ; GCC extension
+  (:imag ()) ; GCC extension
+  :pred unopp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1094,7 +1158,8 @@
   (:asg-and ())
   (:asg-xor ())
   (:asg-ior ())
-  :pred binopp)
+  :pred binopp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1113,7 +1178,8 @@
      (see @(tsee expr))."))
   (:inc ())
   (:dec ())
-  :pred inc/dec-opp)
+  :pred inc/dec-opp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1146,7 +1212,8 @@
   (:none ())
   (:start ())
   (:both ())
-  :pred keyword-uscores-p)
+  :pred keyword-uscores-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1175,7 +1242,8 @@
   (:thread ((local bool)))
   (:auto ())
   (:register ())
-  :pred stor-specp)
+  :pred stor-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1224,7 +1292,8 @@
   (:atomic ())
   (:seg-fs ())
   (:seg-gs ())
-  :pred type-qualp)
+  :pred type-qualp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1243,7 +1312,8 @@
      to the @(':inline') case."))
   (:inline ((uscores keyword-uscores)))
   (:noreturn ())
-  :pred fun-specp)
+  :pred fun-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1279,7 +1349,8 @@
      This way, we preserve the information about adjacent string literals."))
   ((strings stringlit-list)
    (uscores keyword-uscores))
-  :pred asm-name-specp)
+  :pred asm-name-specp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1303,7 +1374,8 @@
   (:volatile ((uscores keyword-uscores)))
   (:inline ((uscores keyword-uscores)))
   (:goto ())
-  :pred asm-qualp)
+  :pred asm-qualp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1327,7 +1399,8 @@
    (xdoc::p
     "These are a GCC extension; see ABNF grammar."))
   ((unwrap stringlit-list))
-  :pred asm-clobberp)
+  :pred asm-clobberp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1339,7 +1412,7 @@
     "Assembler clobbers are defined in @(tsee asm-clobber)."))
   :elt-type asm-clobber
   :true-listp t
-  :elementp-of-nil nil
+  :elementp-of-nil t
   :pred asm-clobber-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1354,7 +1427,8 @@
      We use an ACL2 string to represent a keyword."))
   (:ident ((unwrap ident)))
   (:keyword ((unwrap string)))
-  :pred attrib-namep)
+  :pred attrib-namep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1467,6 +1541,13 @@
        we preserve the information about adjacent string literals,
        as opposed to concatenating them into one.")
      (xdoc::p
+      "As a GCC extension, we allow @('&&') to be used as a unary operator
+       applied to an identifier (which should be a label);
+       see the ABNF grammar.
+       We make this a new kind of expression
+       due to the restricted nature of its operand,
+       compared to the kind of unary expressions in this fixtype.")
+     (xdoc::p
       "The @(':sizeof') case of this fixtype
        captures @('sizeof') applied to a type name.
        The @('sizeof') applied to an expression is instead captured
@@ -1511,20 +1592,23 @@
        a list of expressions (it associates to the left).
        But for now the current model is adequate.")
      (xdoc::p
-      "The last five kinds of expressions capture
+      "The six kinds @(':cast/...-ambig') of expressions capture
        syntactically ambiguous expressions of the forms")
      (xdoc::codeblock
       "( X ) IncDec ( E ) Pr"
       "( X ) IncDec * E"
       "( X ) IncDec + E"
       "( X ) IncDec - E"
-      "( X ) IncDec & E")
+      "( X ) IncDec & E"
+      "( X ) IncDec && E")
      (xdoc::p
       "where @('X') is an ambiguous expression or type name,
        @('IncDec') is a sequence of zero or more
        increment and decrement operators @('++') and @('--'),
        @('E') is an expression,
-       and @('Pr') is a possibly empty rest of a postfix expression.
+       @('Pr') is a possibly empty rest of a postfix expression,
+       and the last one is ambiguous only if
+       GCC extensions are enabled,
        All of this is now explained in detail.")
      (xdoc::p
       "If @('X') is an ambiguous expression or type name
@@ -1547,7 +1631,7 @@
        we capture the ambiguous constructs explicitly in our abstract syntax.
        But for these ambiguous casts, the situation is more complex.")
      (xdoc::p
-      "In the five patterns shown above,
+      "In the six patterns shown above,
        it is easier to ignore the @('IncDec') part at first,
        pretending it is not there.
        In the first pattern, the @('Pr') is either empty
@@ -1596,13 +1680,15 @@
        includes, between the components for @('X') and @('(E)Pr'),
        a list of zero or more increment and decrement operators.")
      (xdoc::p
-      "The other four of the five patterns shown earlier
+      "The other five of the six patterns shown earlier
        are more uniform with each other.
        Again, ignore @('IncDec') initially.
-       The issue here is that the operators @('*'), @('+'), @('-'), @('&')
-       are both unary and binary.
+       The issue here is that the operators
+       @('*'), @('+'), @('-'), @('&'), and @('&&')
+       are both unary and binary
+       (the last one only if GCC extensions are enabled).
        Thus, if @('X') is a type name,
-       the @('* E') or @('+ E') or @('- E') or @('& E')
+       the @('* E') or @('+ E') or @('- E') or @('& E') or @('&& E')
        is a unary expression that is the argument of the cast;
        the operator is unary.
        If instead @('X') is an expression,
@@ -1610,11 +1696,14 @@
        The cases
        @(':cast/mul-ambig'),
        @(':cast/add-ambig'),
-       @(':cast/sub-ambig'), and
-       @(':cast/and-ambig') of this fixtype
+       @(':cast/sub-ambig'),
+       @(':cast/and-ambig'), and
+       @(':cast/logand-ambig')
+       of this fixtype
        capture these ambiguous situations.
        They are either casts or
-       multiplications/additions/subtractions/conjunctions.
+       multiplications/additions/subtractions/conjunctions
+       (the latter strict or conditional).
        Their first component is @('X'),
        and their last component is @('E').
        Their middle component is a list of zero or more
@@ -1623,7 +1712,7 @@
        Their presence maintain the ambiguity:
        if @('X') is a type name,
        they are pre-increment and pre-decrement operators
-       applied to @('* E') or @('+ E') or @('- E') or @('& E');
+       applied to @('* E') or @('+ E') or @('- E') or @('& E') or @('&& E');
        if @('X') is an expression,
        they are post-increment and post-decrement operators applied to @('X'),
        forming the left operand of the binary operators.")
@@ -1646,17 +1735,26 @@
        captures all and only the ambiguous expressions
        that start with @('(X)')
        where @('X') is an ambiguous type name or expression.
-       Also see how @(see parser) handles
-       possibly ambiguous cast expressions.")
+       Also see how the @(see parser) handles these ambiguities.")
+     (xdoc::p
+      "Although the ambiguity with @('&&') arises
+       only when @('E') is an identifier,
+       the AST accommodates a more general expression
+       because when the parser constructs that AST,
+       it has to include the possibility of @('E') being
+       the right side of a binary @('&&').
+       The same applies to the other unary/binary operators:
+       the expression @('E') may have a lower grammatical priority
+       than allowed if the operator were unary.
+       The @(see disambiguator) takes care of repackaging @('E')
+       when resolving the ambiguity.")
      (xdoc::p
       "As a GCC extension, we allow the omission of
        the `then' sub-expression of a conditional expression.
        See the ABNF grammar.")
      (xdoc::p
       "As a GCC extension, we include statement expressions,
-       i.e. expressions consisting of compound statements.
-       The @(':stmt') case of this fixtype includes
-       the block items that comprise the compound statement.")
+       i.e. expressions consisting of compound statements.")
      (xdoc::p
       "As a GCC extension, we include calls of
        the built-in function @('__builtin_types_compatible_p').
@@ -1700,10 +1798,11 @@
     (:unary ((op unop)
              (arg expr)
              (info any)))
+    (:label-addr ((arg ident))) ; GCC extension
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
-               (uscores keyword-uscores)))
+               (uscores keyword-uscores))) ; GCC extension
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)
@@ -1711,7 +1810,7 @@
               (arg2 expr)
               (info any)))
     (:cond ((test expr)
-            (then expr-option)
+            (then expr-option) ; absence is GCC extension
             (else expr)))
     (:comma ((first expr)
              (next expr)))
@@ -1730,7 +1829,11 @@
     (:cast/and-ambig ((type/arg1 amb-expr/tyname)
                       (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
-    (:stmt ((items block-item-list)))
+    (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
+                         (inc/dec inc/dec-op-list)
+                         (arg/arg2 expr)))
+    (:stmt ((stmt comp-stmt)))
+    ;; GCC extensions:
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)
@@ -1739,6 +1842,7 @@
               (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -1784,6 +1888,7 @@
        with separate predicates that enforce that."))
     ((expr expr))
     :pred const-exprp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -1812,6 +1917,7 @@
             (expr expr)))
     (:default ((expr expr)))
     :pred genassocp
+    :layout :fulltree
     :base-case-override :default
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -1850,6 +1956,7 @@
     (:sub ((member member-designor)
            (index expr)))
     :pred member-designorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1886,6 +1993,10 @@
        but has been observed in real code and is accepted by GCC.")
      (xdoc::p
       "We also include the GCC extensions
+       @('__float80'),
+       @('__float128'),
+       @('_Float16'),
+       @('_Float16x'),
        @('_Float32'),
        @('_Float32x'),
        @('_Float64'),
@@ -1933,6 +2044,10 @@
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ((uscoret bool)))
+    (:locase-float80 ())
+    (:locase-float128 ())
+    (:float16 ())
+    (:float16x ())
     (:float32 ())
     (:float32x ())
     (:float64 ())
@@ -1940,7 +2055,8 @@
     (:float128 ())
     (:float128x ())
     (:builtin-va-list ())
-    (:struct-empty ((name? ident-option)))
+    (:struct-empty ((attribs attrib-spec-list)
+                    (name? ident-option)))
     (:typeof-expr ((expr expr)
                    (uscores keyword-uscores-p)))
     (:typeof-type ((type tyname)
@@ -1949,6 +2065,7 @@
                     (uscores keyword-uscores-p)))
     (:auto-type ())
     :pred type-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1972,6 +2089,7 @@
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2016,6 +2134,7 @@
     (:alignas-ambig ((expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2045,6 +2164,7 @@
     (:stdcall ()) ; GCC extension
     (:declspec ((arg identp))) ; GCC extension
     :pred decl-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2073,6 +2193,7 @@
     (:type ((unwrap type-qual)))
     (:attrib ((unwrap attrib-spec)))
     :pred typequal/attribspec-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2126,6 +2247,7 @@
             (final-comma bool)))
     :pred initerp
     :base-case-override :single
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2161,6 +2283,7 @@
      (initer initer))
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :pred desiniterp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2196,6 +2319,7 @@
            (range? const-expr-option)))
     (:dot ((name ident)))
     :pred designorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2234,6 +2358,7 @@
     ((pointers typequal/attribspec-list-list)
      (direct dirdeclor))
     :pred declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2305,6 +2430,7 @@
     (:function-names ((declor dirdeclor)
                       (names ident-list)))
     :pred dirdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2328,6 +2454,7 @@
     ((pointers typequal/attribspec-list-list)
      (direct? dirabsdeclor-option))
     :pred absdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2376,6 +2503,7 @@
                 (params param-declon-list)
                 (ellipsis bool)))
     :pred dirabsdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2408,8 +2536,9 @@
        as a GCC extension (see ABNF grammar)."))
     ((specs decl-spec-list)
      (declor param-declor)
-     (attribs attrib-spec-list))
+     (attribs attrib-spec-list)) ; GCC extension
     :pred param-declonp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2455,6 +2584,7 @@
     (:none ())
     (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2473,6 +2603,7 @@
      (declor? absdeclor-option)
      (info any))
     :pred tynamep
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2496,10 +2627,16 @@
      (xdoc::p
       "This fixtype does not cover structure types with no members,
        which is a GCC extension;
-       this is covered as a separate case in @(tsee type-spec)."))
-    ((name? ident-option)
+       this is covered as a separate case in @(tsee type-spec).")
+     (xdoc::p
+      "As a GCC extension, we allow zero or more attribute specifiers.
+       In the concrete syntax, these come just after @('struct') or @('union');
+       see the ABNF grammar."))
+    ((attribs attrib-spec-list) ; GCC extension
+     (name? ident-option)
      (members struct-declon-list))
     :pred struni-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2533,12 +2670,13 @@
        we also include an empty external declaration,
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
-              (specqual spec/qual-list)
-              (declor struct-declor-list)
-              (attrib attrib-spec-list))) ; GCC extension
+              (specquals spec/qual-list)
+              (declors struct-declor-list)
+              (attribs attrib-spec-list))) ; GCC extension
     (:statassert ((unwrap statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2577,6 +2715,7 @@
     ((declor? declor-option)
      (expr? const-expr-option))
     :pred struct-declorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2613,6 +2752,7 @@
      (list enumer-list)
      (final-comma bool))
     :pred enum-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2627,6 +2767,7 @@
     ((name ident)
      (value const-expr-option))
     :pred enumerp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2664,6 +2805,7 @@
     ((test const-expr)
      (message stringlit-list))
     :pred statassertp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2710,6 +2852,7 @@
     (:name-param ((name attrib-name)
                   (param expr-list)))
     :pred attribp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2748,6 +2891,7 @@
     ((uscores bool)
      (attribs attrib-list))
     :pred attrib-specp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2789,6 +2933,7 @@
      (init? initer-option)
      (info any))
     :pred initdeclorp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2827,6 +2972,7 @@
     (:statassert ((unwrap statassert)))
     :pred declp
     :base-case-override :statassert
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2862,15 +3008,21 @@
        There are three possible kinds of labels:
        names (identifiers),
        constant expressions in @('case'),
-       and the @('default') label.
-       As a GCC extension,
+       and the @('default') label.")
+     (xdoc::p
+      "As a GCC extension,
+       we allow label attributes (see ABNF grammar).")
+     (xdoc::p
+      "As a GCC extension,
        we allow an optional additional constant expression in @('case'),
        to capture ranges (see ABNF grammar)."))
-    (:name ((unwrap ident)))
+    (:name ((name ident)
+            (attribs attrib-spec-list)))
     (:casexpr ((expr const-expr)
                (range? const-expr-option)))
     (:default ())
     :pred labelp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2886,6 +3038,7 @@
      (constraint stringlit-list)
      (lvalue expr))
     :pred asm-outputp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2916,6 +3069,7 @@
      (constraint stringlit-list)
      (rvalue expr))
     :pred asm-inputp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -2969,6 +3123,7 @@
      (clobbers asm-clobber-list)
      (labels ident-list))
     :pred asm-stmtp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3004,10 +3159,13 @@
        the initialization part of a @('for') looks like,
        when it is an expression.")
      (xdoc::p
+      "As a GCC extension, we allow expressions to follow @('goto')s.
+       See the ABNF grammar.")
+     (xdoc::p
       "As a GCC extension, we include assembler statements."))
     (:labeled ((label label)
                (stmt stmt)))
-    (:compound ((items block-item-list)))
+    (:compound ((stmt comp-stmt)))
     (:expr ((expr? expr-option)
             (info any)))
     (:if ((test expr)
@@ -3034,13 +3192,38 @@
                  (next expr-option)
                  (body stmt)))
     (:goto ((label ident)))
+    (:gotoe ((label expr))) ; GCC extension
     (:continue ())
     (:break ())
     (:return ((expr? expr-option)
               (info any)))
     (:asm ((unwrap asm-stmt)))
     :pred stmtp
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod comp-stmt
+    :parents (abstract-syntax-trees exprs/decls/stmts)
+    :short "Fixtype of compond-statements."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As a GCC extension, we include
+       lists of lists of identifiers at the beginning of compound statements.
+       These represent sequences of label declarations:
+       the outer list captures the sequence of declarations
+       (@('nil') if there are no label declarations),
+       and each inner list captures the labels declared
+       in the corresponding label declaration;
+       currently we do not capture the restriction that
+       each inner list must be non-empty."))
+    ((labels ident-list-list)
+     (items block-item-list))
+    :pred comp-stmtp
+    :layout :fulltree
+    :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3061,6 +3244,7 @@
     (:ambig ((unwrap amb-decl/stmt)))
     :pred block-itemp
     :base-case-override :stmt
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -3126,6 +3310,7 @@
     ((expr expr)
      (tyname tyname))
     :pred amb-expr/tyname-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 5))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3157,6 +3342,7 @@
     ((declor declor)
      (absdeclor absdeclor))
     :pred amb-declor/absdeclor-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3195,6 +3381,7 @@
     ((decl decl)
      (stmt expr))
     :pred amb-decl/stmt-p
+    :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3243,7 +3430,8 @@
   :short "Fixtype of expressions or type names."
   (:expr ((unwrap expr)))
   (:tyname ((unwrap tyname)))
-  :pred expr/tyname-p)
+  :pred expr/tyname-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3251,7 +3439,8 @@
   :short "Fixtype of declarators or abstract declarators."
   (:declor ((unwrap declor)))
   (:absdeclor ((unwrap absdeclor)))
-  :pred declor/absdeclor-p)
+  :pred declor/absdeclor-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3259,7 +3448,8 @@
   :short "Fixtype of declarations or (expression) statements."
   (:decl ((unwrap decl)))
   (:stmt ((unwrap expr)))
-  :pred decl/stmt-p)
+  :pred decl/stmt-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3278,7 +3468,8 @@
   (:expr ((unwrap expr)))
   (:tyname ((unwrap tyname)))
   (:ambig ((unwrap amb-expr/tyname)))
-  :pred amb?-expr/tyname-p)
+  :pred amb?-expr/tyname-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3299,7 +3490,8 @@
   (:declor ((unwrap declor)))
   (:absdeclor ((unwrap absdeclor)))
   (:ambig ((unwrap amb-declor/absdeclor)))
-  :pred amb?-declor/absdeclor-p)
+  :pred amb?-declor/absdeclor-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3317,7 +3509,8 @@
   (:decl ((unwrap decl)))
   (:stmt ((unwrap expr)))
   (:ambig ((unwrap amb-decl/stmt)))
-  :pred amb?-decl/stmt-p)
+  :pred amb?-decl/stmt-p
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3327,9 +3520,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>function-definition</i> in the grammar in [C17].
-     The grammar constrains the function body to be a compound statement;
-     in this fixtype we capture that restriction by using a list of block items,
-     which the compound statement consists of.")
+     The grammar constrains the function body to be a compound statement.")
    (xdoc::p
     "As a GCC extension,
      we include the possibility that
@@ -3347,9 +3538,10 @@
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
    (decls decl-list)
-   (body block-item-list)
+   (body comp-stmt)
    (info any))
-  :pred fundefp)
+  :pred fundefp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3381,7 +3573,8 @@
   (:decl ((unwrap decl)))
   (:empty ()) ; GCC extension
   (:asm ((unwrap asm-stmt))) ; GCC extension
-  :pred extdeclp)
+  :pred extdeclp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3411,7 +3604,8 @@
      We also add a slot with additional information, e.g. from validation."))
   ((decls extdecl-list)
    (info any))
-  :pred transunitp)
+  :pred transunitp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3457,4 +3651,5 @@
      with some elements of the ensembles
      that may be headers instead of source files."))
   ((unwrap filepath-transunit-map))
-  :pred transunit-ensemblep)
+  :pred transunit-ensemblep
+  :layout :fulltree)

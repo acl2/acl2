@@ -436,6 +436,27 @@
                   (compst1 compst1))
   :enable exit-scope-of-enter-scope)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled object-type-preservep-of-trans-exit-scope-when-enter-scope
+  :short "This combines
+          @(tsee object-type-preservep-of-exit-scope-when-enter-scope)
+          with transitivity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is used, in @(tsee object-type-preservep-of-exec),
+     to handle the execution of @('do-while') statements."))
+  (implies (and (object-type-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0)
+                (object-type-preservep (exit-scope compst1) compst2))
+           (object-type-preservep compst compst2))
+  :use object-type-preservep-of-exit-scope-when-enter-scope)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled object-type-preservep-of-pop-frame-and-pop-frame
@@ -531,31 +552,16 @@
      and the computation state after execution."))
 
   (defthm-exec-flag
-    (defthm object-type-preservep-of-exec-expr-call
-      (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
-        (implies (not (errorp result))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-call)
-    (defthm object-type-preservep-of-exec-expr-call-or-pure
-      (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-        (implies (not (errorp result))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-call-or-pure)
-    (defthm object-type-preservep-of-exec-expr-asg
-      (b* ((compst1 (exec-expr-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-asg)
-    (defthm object-type-preservep-of-exec-expr-call-or-asg
-      (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
-                 (object-type-preservep compst compst1)))
-      :flag exec-expr-call-or-asg)
     (defthm object-type-preservep-of-exec-fun
       (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
         (implies (not (errorp result))
                  (object-type-preservep compst compst1)))
       :flag exec-fun)
+    (defthm object-type-preservep-of-exec-expr
+      (b* (((mv result compst1) (exec-expr e compst fenv limit)))
+        (implies (not (errorp result))
+                 (object-type-preservep compst compst1)))
+      :flag exec-expr)
     (defthm object-type-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -568,6 +574,12 @@
                       (not (errorp result)))
                  (object-type-preservep compst compst1)))
       :flag exec-stmt-while)
+    (defthm object-type-preservep-of-exec-stmt-dowhile
+      (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+        (implies (and (> (compustate-frames-number compst) 0)
+                      (not (errorp result)))
+                 (object-type-preservep compst compst1)))
+      :flag exec-stmt-dowhile)
     (defthm object-type-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -595,30 +607,27 @@
     :hints (("Goal"
              :in-theory
              (enable
-              exec-expr-call
-              exec-expr-call-or-pure
-              exec-expr-asg
-              exec-expr-call-or-asg
               exec-fun
+              exec-expr
               exec-stmt
               exec-stmt-while
+              exec-stmt-dowhile
               exec-initer
               exec-obj-declon
               exec-block-item
               exec-block-item-list
               object-type-preservep-of-create-var
               object-type-preservep-of-exit-scope-when-enter-scope
+              object-type-preservep-of-trans-exit-scope-when-enter-scope
               object-type-preservep-of-pop-frame-when-push-frame
               object-type-preservep-of-write-object
               len))))
 
-  (in-theory (disable object-type-preservep-of-exec-expr-call
-                      object-type-preservep-of-exec-expr-call-or-pure
-                      object-type-preservep-of-exec-expr-asg
-                      object-type-preservep-of-exec-expr-call-or-asg
-                      object-type-preservep-of-exec-fun
+  (in-theory (disable object-type-preservep-of-exec-fun
+                      object-type-preservep-of-exec-expr
                       object-type-preservep-of-exec-stmt
                       object-type-preservep-of-exec-stmt-while
+                      object-type-preservep-of-exec-stmt-dowhile
                       object-type-preservep-of-exec-initer
                       object-type-preservep-of-exec-obj-declon
                       object-type-preservep-of-exec-block-item
@@ -628,80 +637,6 @@
 
 (defsection object-type-of-exec
   :short "Preservation of object types under execution."
-
-  (defruled object-type-of-exec-expr-call
-    (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled object-type-of-exec-expr-call-or-pure
-    (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call-or-pure
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled object-type-of-exec-expr-asg
-    (b* ((compst1 (exec-expr-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-asg
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1 (exec-expr-asg e compst fenv limit))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled object-type-of-exec-call-or-asg
-    (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
-                    (member-equal (objdesign-kind objdes)
-                                  '(:auto :static :alloc))
-                    (not (errorp (read-object objdes compst))))
-               (and (not (errorp (read-object objdes compst1)))
-                    (equal (type-of-value (read-object objdes compst1))
-                           (type-of-value (read-object objdes compst))))))
-    :use (object-type-preservep-of-exec-expr-call-or-asg
-          (:instance object-type-preservep-necc
-                     (objdes (objdesign-fix objdes))
-                     (compst1 (exec-expr-call-or-asg e compst fenv limit))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
 
   (defruled object-type-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
@@ -716,6 +651,25 @@
           (:instance object-type-preservep-necc
                      (objdes (objdesign-fix objdes))
                      (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled object-type-of-exec-expr
+    (b* (((mv result compst1) (exec-expr e compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :use (object-type-preservep-of-exec-expr
+          (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
+                     (compst1
+                      (mv-nth 1 (exec-expr e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
@@ -755,6 +709,26 @@
                      (objdes (objdesign-fix objdes))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled object-type-of-exec-stmt-dowhile
+    (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+      (implies (and (> (compustate-frames-number compst) 0)
+                    (not (errorp result))
+                    (member-equal (objdesign-kind objdes)
+                                  '(:auto :static :alloc))
+                    (not (errorp (read-object objdes compst))))
+               (and (not (errorp (read-object objdes compst1)))
+                    (equal (type-of-value (read-object objdes compst1))
+                           (type-of-value (read-object objdes compst))))))
+    :use (object-type-preservep-of-exec-stmt-dowhile
+          (:instance object-type-preservep-necc
+                     (objdes (objdesign-fix objdes))
+                     (compst1
+                      (mv-nth 1 (exec-stmt-dowhile body test compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

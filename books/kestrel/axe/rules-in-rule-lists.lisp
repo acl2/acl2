@@ -27,6 +27,7 @@
 (include-book "trim-intro-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe")
+(include-book "arithmetic-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
 (include-book "kestrel/bv-lists/map-packbv-and-map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)

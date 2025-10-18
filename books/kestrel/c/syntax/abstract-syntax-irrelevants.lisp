@@ -334,7 +334,7 @@
 (defirrelevant irr-struni-spec
   :short "An irrelevant structure or union specifier."
   :type struni-specp
-  :body (make-struni-spec :name? nil :members nil))
+  :body (make-struni-spec :attribs nil :name? nil :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -449,10 +449,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-comp-stmt
+  :short "An irrelevant compound statement."
+  :type comp-stmtp
+  :body (make-comp-stmt :labels nil :items nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
-  :body (stmt-compound nil))
+  :body (stmt-compound (irr-comp-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,7 +521,7 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body nil
+                     :body (irr-comp-stmt)
                      :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

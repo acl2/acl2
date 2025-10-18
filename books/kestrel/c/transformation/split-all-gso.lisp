@@ -43,7 +43,7 @@
    ;; TODO: properly handle struct declarations with multiple declarators
    ;;   instead of returning error.
    :member (b* (((mv erp ident)
-                 (struct-declor-list-get-ident struct-declon.declor)))
+                 (struct-declor-list-get-ident struct-declon.declors)))
              (if erp
                  nil
                ident))
@@ -375,9 +375,9 @@
           ;; TODO: prove that splitgso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv)))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))
           ((erp tunits$)
-           (c$::valid-transunit-ensemble tunits$ ienv))
+           (c$::valid-transunit-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
            (retmsg$ "Invalid translation unit ensemble.")))

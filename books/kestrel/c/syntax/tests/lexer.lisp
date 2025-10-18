@@ -21,19 +21,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs gcc cond)
+(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
-    (b* ((parstate (init-parstate (if (stringp ,input)
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  ,gcc
+                                  version
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -49,17 +53,21 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs gcc)
+(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   `(assert!-stobj
-    (b* ((parstate (init-parstate (if (stringp ,input)
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         (parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  ,gcc
+                                  version
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -862,7 +870,121 @@
  "other"
  :cond (equal ast nil))
 
+(test-lex
+ lex-?-floating-suffix
+ "f16"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f16 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f64"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f64 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f128"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f128 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f16x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f16 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f64x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f64 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f128x"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f128 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F16"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f16 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F32"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f32 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F64"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f64 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F128"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f128 nil)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F16x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f16 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F32x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f32 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F64x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f64 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "F128x"
+ :gcc t
+ :cond (equal ast (fsuffix-upcase-f128 t)))
+
+(test-lex
+ lex-?-floating-suffix
+ "f32y"
+ :gcc t
+ :cond (equal ast (fsuffix-locase-f32 nil)))
+
+(test-lex-fail
+ lex-?-floating-suffix
+ "f33"
+ :gcc t)
+
+(test-lex-fail
+ lex-?-floating-suffix
+ "f168"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-sign
 
 (test-lex
  lex-?-sign
@@ -893,3 +1015,150 @@
  lex-?-sign
  "L"
  :cond (equal ast nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-?-exponent-part
+
+(test-lex
+ lex-?-exponent-part
+ ""
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-exponent-part
+ "not-e-or-E"
+ :cond (equal ast nil))
+
+(test-lex
+ lex-?-exponent-part
+ "e10"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        nil
+                        (list #\1 #\0))))
+
+(test-lex
+ lex-?-exponent-part
+ "E0223"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        nil
+                        (list #\0 #\2 #\2 #\3))))
+
+(test-lex
+ lex-?-exponent-part
+ "e+5"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        (sign-plus)
+                        (list #\5))))
+
+(test-lex
+ lex-?-exponent-part
+ "E-500"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        (sign-minus)
+                        (list #\5 #\0 #\0))))
+
+(test-lex
+ lex-?-exponent-part
+ "e*10"
+ :cond (equal ast nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-exponent-part
+
+(test-lex-fail
+ lex-exponent-part
+ "")
+
+(test-lex-fail
+ lex-exponent-part
+ "not-e-or-E")
+
+(test-lex
+ lex-exponent-part
+ "e10"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        nil
+                        (list #\1 #\0))))
+
+(test-lex
+ lex-exponent-part
+ "E0223"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        nil
+                        (list #\0 #\2 #\2 #\3))))
+
+(test-lex
+ lex-exponent-part
+ "e+5"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-locase-e)
+                        (sign-plus)
+                        (list #\5))))
+
+(test-lex
+ lex-exponent-part
+ "E-500"
+ :cond (equal ast
+              (dec-expo (dec-expo-prefix-upcase-e)
+                        (sign-minus)
+                        (list #\5 #\0 #\0))))
+
+(test-lex-fail
+ lex-exponent-part
+ "e*10")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-binary-exponent-part
+
+(test-lex-fail
+ lex-binary-exponent-part
+ "")
+
+(test-lex-fail
+ lex-binary-exponent-part
+ "not-p-or-P")
+
+(test-lex
+ lex-binary-exponent-part
+ "p10"
+ :cond (equal ast
+              (bin-expo (bin-expo-prefix-locase-p)
+                        nil
+                        (list #\1 #\0))))
+
+(test-lex
+ lex-binary-exponent-part
+ "P0223"
+ :cond (equal ast
+              (bin-expo (bin-expo-prefix-upcase-p)
+                        nil
+                        (list #\0 #\2 #\2 #\3))))
+
+(test-lex
+ lex-binary-exponent-part
+ "p+5"
+ :cond (equal ast
+              (bin-expo (bin-expo-prefix-locase-p)
+                        (sign-plus)
+                        (list #\5))))
+
+(test-lex
+ lex-binary-exponent-part
+ "P-500"
+ :cond (equal ast
+              (bin-expo (bin-expo-prefix-upcase-p)
+                        (sign-minus)
+                        (list #\5 #\0 #\0))))
+
+(test-lex-fail
+ lex-binary-exponent-part
+ "p*10")

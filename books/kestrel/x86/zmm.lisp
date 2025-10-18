@@ -21,6 +21,7 @@
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for alignment-checking-enabled-p
 (local (include-book "read-over-write-rules64"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system)) ; to handle part-install-width-low below
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,8 +208,8 @@
   :hints (("Goal" :in-theory (enable set-zmm))))
 
 (defthm read-bytes-of-set-zmm
-  (equal (read-bytes addr n (set-zmm reg val x86))
-         (read-bytes addr n x86))
+  (equal (read-bytes n addr (set-zmm reg val x86))
+         (read-bytes n addr x86))
   :hints (("Goal" :in-theory (enable set-zmm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -278,3 +279,24 @@
 (defthm set-zmm-of-set-r15 (equal (set-zmm reg val (set-r15 r15 x86)) (set-r15 r15 (set-zmm reg val x86))) :hints (("Goal" :in-theory (enable set-zmm))))
 (defthm set-zmm-of-set-rbp (equal (set-zmm reg val (set-rbp rbp x86)) (set-rbp rbp (set-zmm reg val x86))) :hints (("Goal" :in-theory (enable set-zmm))))
 (defthm set-zmm-of-set-rsp (equal (set-zmm reg val (set-rsp rsp x86)) (set-rsp rsp (set-zmm reg val x86))) :hints (("Goal" :in-theory (enable set-zmm))))
+
+;; special case for ZMM
+;; this does double the number of refs to (zmm x x86).  another option is to use putbits.
+(defthm part-install-width-low-of-zmm-becomes-bvcat
+  (implies (and (natp low)
+                (natp width))
+           (equal (part-install-width-low val (zmm n x86) width low)
+                  (bvcat (- 512 (+ width low))
+                         (slice 511 (+ low width) (zmm n x86))
+                         (+ width low)
+                         (bvcat width
+                                val
+                                low
+                                (zmm n x86)))))
+  :hints (("Goal" :use (:instance acl2::part-install-width-low-becomes-bvcat
+                                  (x (zmm n x86))
+                                  (xsize 512)
+                                  (acl2::low low)
+                                  (acl2::width width)
+                                  (acl2::val val))
+           :in-theory (disable acl2::part-install-width-low-becomes-bvcat))))

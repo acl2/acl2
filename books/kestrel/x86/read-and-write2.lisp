@@ -365,14 +365,14 @@
                 (natp ad1)
                 (natp len)
                 (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes ad2 len x86))
+           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 x86))
                   (read-byte (bvplus 48 ad1 ad2) x86)))
-  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes ad2 len x86)
+  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes len ad2 x86)
            ;(read-induct-two-sizes len ad1 ad2 x86)
            :in-theory (enable read-bytes))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion48p
-  (implies (and (equal bytes (read-bytes ad2 n2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
@@ -428,8 +428,8 @@
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86)))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-alt
@@ -438,8 +438,8 @@
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86)))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-gen
@@ -454,8 +454,8 @@
                 (unsigned-byte-p '48 len2)
                 (unsigned-byte-p '48 n1)
                 (unsigned-byte-p '48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86))))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-gen-alt
   (implies (and (disjoint-regions48p len2 start2 len1 start1) ; free vars
@@ -469,8 +469,8 @@
                 (unsigned-byte-p '48 len2)
                 (unsigned-byte-p '48 n1)
                 (unsigned-byte-p '48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86))))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

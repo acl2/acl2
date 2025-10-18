@@ -29,6 +29,8 @@
 
     ident-listp
 
+    ident-list-listp
+
     ident-set
     ident-setp
     ident-set-fix
@@ -60,6 +62,8 @@
     binopp
     binop-case
     binop-kind
+
+    asm-name-spec-optionp
 
     exprp
     expr-fix
@@ -343,6 +347,8 @@
     statassert
     make-statassert
 
+    attrib-spec-listp
+
     initdeclorp
     initdeclor-fix
     initdeclor-count
@@ -373,6 +379,7 @@
     label-fix
     label-count
     label-case
+    make-label-name
     make-label-casexpr
 
     stmtp
@@ -381,6 +388,8 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->stmt
+    make-stmt-compound
     stmt-compound->items
     make-stmt-expr
     make-stmt-if
@@ -391,6 +400,7 @@
     make-stmt-for-expr
     make-stmt-for-decl
     make-stmt-return
+    stmt-gotoe
 
     block-itemp
     block-item-fix
@@ -402,6 +412,13 @@
     block-item-listp
     block-item-list-fix
     block-item-list-count
+
+    comp-stmt
+    make-comp-stmt
+    comp-stmtp
+    comp-stmt-count
+    comp-stmt->labels
+    comp-stmt->items
 
     fundefp
     fundef
@@ -468,6 +485,7 @@
     irr-param-declor
     irr-decl
     irr-stmt
+    irr-comp-stmt
     irr-block-item
     irr-fundef
     irr-transunit-ensemble
@@ -522,6 +540,7 @@
     decl-list-unambp
     label-unambp
     stmt-unambp
+    comp-stmt-unambp
     block-item-unambp
     block-item-list-unambp
     fundef-unambp
@@ -540,6 +559,7 @@
     ;; ASCII identifiers:
 
     ident-aidentp
+    ident-list-list-aidentp
     const-aidentp
     expr-aidentp
     expr-list-aidentp
@@ -581,12 +601,14 @@
     enumer-aidentp
     enumer-list-aidentp
     statassert-aidentp
+    attrib-spec-list-aidentp
     initdeclor-aidentp
     initdeclor-list-aidentp
     decl-aidentp
     decl-list-aidentp
     label-aidentp
     stmt-aidentp
+    comp-stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
     fundef-aidentp
@@ -623,6 +645,7 @@
     ldm-type-spec-list
     ldm-decl-obj
     ldm-stmt
+    ldm-comp-stmt
     ldm-block-item
     ldm-block-item-list
     ldm-param-declon-list
@@ -670,15 +693,30 @@
     initdeclor-info->typedefp
 
     fundef-info
+    fundef-infop
     fundef-info->type
     fundef-info->table-body-start
 
     expr-type
     initer-type
     stmt-types
+    comp-stmt-types
     block-item-types
     block-item-list-types
     fundef-types
+
+    valid-ord-info-case
+    valid-ord-info-objfun->type
+
+    valid-ord-scopep
+
+    valid-scopep
+    valid-scope->ord
+
+    valid-scope-listp
+
+    valid-tablep
+    valid-table->scopes
 
     iconst-annop
     const-annop
@@ -728,6 +766,7 @@
     decl-list-annop
     label-annop
     stmt-annop
+    comp-stmt-annop
     block-item-annop
     block-item-list-annop
     fundef-annop

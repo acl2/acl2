@@ -41,9 +41,7 @@
     (xdoc::li
      "Starts with a letter or underscore.")
     (xdoc::li
-     "Differs from all the "
-     (xdoc::seetopic "*keywords*" "keywords")
-     "."))
+     "Differs from all the @(see keywords)."))
    (xdoc::p
     "The rationale behind this notion is the following.")
    (xdoc::p
@@ -128,5 +126,10 @@
           (xdoc::seetopic "portable-ascii-identifiers"
                           "portable ASCII identifier")
           ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only check distinctness with the C17 keywords,
+     but we plan to generalize that to other C versions."))
   (and (paident-char-listp (str::explode str))
-       (not (member-equal str *keywords*))))
+       (not (member-equal str *keywords-c17*))))

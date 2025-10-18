@@ -507,6 +507,10 @@
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
        (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       ((when (not (symbol-alistp arg-descriptions)))
+        (er hard? 'defmacrodoc "Ill-formed :args: ~x0." arg-descriptions))
+       ((when (not (no-duplicatesp-equal (strip-cars arg-descriptions))))
+        (er hard? 'defmacrodoc "Duplicate keys among the :args: ~x0." arg-descriptions))
        ((when (not short))
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args

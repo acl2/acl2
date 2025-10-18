@@ -11,7 +11,6 @@
 (in-package "C$")
 
 (include-book "code-ensembles")
-(include-book "keywords")
 
 (include-book "../language/portable-ascii-identifiers")
 
@@ -25,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ascii-identifiers
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "ASCII identifiers in the C abstract syntax of tools."
   :long
   (xdoc::topstring
@@ -81,8 +80,8 @@
      to also exclude the GCC keywords."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x *keywords*))
-       (or (not gcc) (not (member-equal x *gcc-keywords*))))
+       (not (member-equal x c::*keywords-c17*))
+       (or (not gcc) (not (member-equal x c::*keywords-gcc-c17*))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,6 +110,7 @@
      to call @(tsee ascii-ident-stringp) on the unwrapped value."))
   :types (ident
           ident-list
+          ident-list-list
           ident-option
           const
           attrib-name

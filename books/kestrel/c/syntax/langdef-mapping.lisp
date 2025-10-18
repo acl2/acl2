@@ -754,7 +754,10 @@
           :predec (retok (c::expr-predec arg))
           :postinc (retok (c::expr-postinc arg))
           :postdec (retok (c::expr-postdec arg))
-          :sizeof (reterr (msg "Unsupported sizeof operator."))))
+          :sizeof (reterr (msg "Unsupported sizeof operator."))
+          :real (reterr (msg "Unsupported __real__ operator."))
+          :imag (reterr (msg "Unsupported __imag__ operator."))))
+       :label-addr (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :sizeof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :sizeof-ambig (prog2$ (impossible) (reterr t))
        :alignof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
@@ -780,6 +783,7 @@
        :cast/add-ambig (prog2$ (impossible) (reterr t))
        :cast/sub-ambig (prog2$ (impossible) (reterr t))
        :cast/and-ambig (prog2$ (impossible) (reterr t))
+       :cast/logand-ambig (prog2$ (impossible) (reterr t))
        :stmt (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :tycompat (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :offsetof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
@@ -892,8 +896,8 @@
         (reterr (msg "Unsupported GCC extension keyword ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
-       (specquals (struct-declon-member->specqual structdeclon))
-       (declors (struct-declon-member->declor structdeclon))
+       (specquals (struct-declon-member->specquals structdeclon))
+       (declors (struct-declon-member->declors structdeclon))
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
@@ -915,8 +919,8 @@
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon))))
        ((erp objdeclor) (ldm-declor-obj declor.declor?))
-       (attrib (struct-declon-member->attrib structdeclon))
-       ((when attrib)
+       (attribs (struct-declon-member->attribs structdeclon))
+       ((when attribs)
         (reterr (msg "Unsupporte GCC attributes ~
                       in structure declaration ~x0."
                      (struct-declon-fix structdeclon)))))
@@ -1027,6 +1031,9 @@
        (tyspec (decl-spec-typespec->spec declspec))
        ((when (type-spec-case tyspec :struct))
         (b* (((struni-spec struni-spec) (type-spec-struct->spec tyspec))
+             ((unless (endp struni-spec.attribs))
+              (reterr (msg "Unsupported attributes in structure specifier ~x0."
+                           struni-spec)))
              ((unless struni-spec.name?)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident struni-spec.name?))
@@ -1490,7 +1497,10 @@
   (b* (((reterr) (c::label-default)))
     (label-case
      label
-     :name (b* (((erp ident1) (ldm-ident label.unwrap)))
+     :name (b* (((erp ident1) (ldm-ident label.name))
+                ((unless (endp label.attribs))
+                 (reterr (msg "Unsupported label with attributes ~x0."
+                              (label-fix label)))))
              (retok (c::label-name ident1)))
      :casexpr (b* (((erp expr) (ldm-expr (const-expr->expr label.expr)))
                    ((when label.range?)
@@ -1502,14 +1512,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines ldm-stmts/blocks
-  :short "Map statements and blocks to
-          statements and blocks in the language definition."
+(defines ldm-stmts
+  :short "Map statements and related entities to
+          statements and related entities in the language definition."
 
   (define ldm-stmt ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (mv erp (stmt1 c::stmtp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a statement to a statement in the language definition."
     (b* (((reterr) (c::stmt-null)))
       (stmt-case
@@ -1517,8 +1527,8 @@
        :labeled (b* (((erp label1) (ldm-label stmt.label))
                      ((erp stmt1) (ldm-stmt stmt.stmt)))
                   (retok (c::make-stmt-labeled :label label1 :body stmt1)))
-       :compound (b* (((erp items1) (ldm-block-item-list stmt.items)))
-                   (retok (c::make-stmt-compound :items items1)))
+       :compound (b* (((erp items) (ldm-comp-stmt stmt.stmt)))
+                   (retok (c::make-stmt-compound :items items)))
        :expr (expr-option-case
               stmt.expr?
               :some (b* (((erp expr1) (ldm-expr stmt.expr?.val)))
@@ -1556,6 +1566,8 @@
        :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
+       :gotoe (reterr (msg "Unsupported 'goto' with expression ~x0."
+                           (stmt-fix stmt)))
        :continue (retok (c::stmt-continue))
        :break (retok (c::stmt-break))
        :return (b* (((erp expr?) (ldm-expr-option stmt.expr?)))
@@ -1564,10 +1576,29 @@
                          (stmt-fix stmt)))))
     :measure (stmt-count stmt))
 
+  (define ldm-comp-stmt ((cstmt comp-stmtp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (mv erp (items c::block-item-listp))
+    :parents (mapping-to-language-definition ldm-stmts)
+    :short "Map a compound statement to
+            a list of block items in the language definition."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The abstract syntax in the language definition
+       does not have a type for compound statements,
+       so this function returns lists of block items."))
+    (b* (((reterr) nil)
+         ((comp-stmt cstmt) cstmt)
+         ((when cstmt.labels)
+          (reterr (msg "Unsupported label declarations ~x0." cstmt.labels))))
+      (ldm-block-item-list cstmt.items))
+    :measure (comp-stmt-count cstmt))
+
   (define ldm-block-item ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (mv erp (item1 c::block-itemp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a block item to a block item in the language definition."
     (b* (((reterr) (c::block-item-stmt (c::stmt-null))))
       (block-item-case
@@ -1582,7 +1613,7 @@
   (define ldm-block-item-list ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (mv erp (items1 c::block-item-listp))
-    :parents (mapping-to-language-definition ldm-stmts/blocks)
+    :parents (mapping-to-language-definition ldm-stmts)
     :short "Map a list of block items to
             a list of block items in the language definition."
     (b* (((reterr) nil)
@@ -1596,13 +1627,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual ldm-stmts/blocks)
+  (fty::deffixequiv-mutual ldm-stmts)
 
-  (defret-mutual ldm-stmts/blocks-ok-when-stmts/blocks-formalp
+  (defret-mutual ldm-stmts-ok-when-stmts-formalp
     (defret ldm-stmt-ok-when-stmt-formalp
       (not erp)
       :hyp (stmt-formalp stmt)
       :fn ldm-stmt)
+    (defret ldm-comp-stmt-ok-when-comp-stmt-formalp
+      (not erp)
+      :hyp (comp-stmt-formalp cstmt)
+      :fn ldm-comp-stmt)
     (defret ldm-block-item-ok-when-block-item-formalp
       (not erp)
       :hyp (block-item-formalp item)
@@ -1614,6 +1649,7 @@
     :hints (("Goal"
              :expand (stmt-formalp stmt)
              :in-theory (enable stmt-formalp
+                                comp-stmt-formalp
                                 block-item-formalp
                                 block-item-list-formalp
                                 expr-option-some->val)))))
@@ -1656,7 +1692,7 @@
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((erp body) (ldm-block-item-list fundef.body)))
+       ((erp body) (ldm-comp-stmt fundef.body)))
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
                            :body body)))

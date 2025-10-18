@@ -176,7 +176,7 @@
 ;;                 ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
 ;;                 (if bvp
 ;;                     ;; alternate formulation for bv/smt proofs:
-;;                     `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
+;;                     `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes))
 ;;                   `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
 ;;                                 ',bytes
 ;;                                 ,state-var)))
@@ -210,7 +210,7 @@
 ;;                 ;; Assert that the chunk is loaded into memory:
 ;;                 ,(if bvp
 ;;                      ;; alternate formulation for bv/smt proofs:
-;;                      `(equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
+;;                      `(equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes)
 ;;                    `(program-at ,first-addr-term ; todo: use something better that includes the length, for speed
 ;;                                 ',bytes
 ;;                                 ,state-var))
@@ -486,7 +486,7 @@
                                            ))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
+                      `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes))
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       (if (posp existing-stack-slots)
@@ -511,7 +511,7 @@
                 (mv nil ; no error
                     `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                       ;; Assert that the chunk is loaded into memory:
-                      (equal (read-bytes ',first-addr ',(len bytes) ,state-var) ',bytes)
+                      (equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)
                        ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                        ;; TODO: Do this only for writable chunks?
                        ,@(if (posp existing-stack-slots)

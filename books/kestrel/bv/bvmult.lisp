@@ -46,6 +46,11 @@
          (bvchop size y))
   :hints (("Goal" :in-theory (enable bvmult))))
 
+(defthm bvmult-of-1-arg3
+  (equal (bvmult size x 1)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
 (defthm bvmult-of-bvchop-arg3
   (equal (bvmult size x (bvchop size y))
          (bvmult size x y))

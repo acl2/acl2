@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ standard
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Standard syntax (i.e. without GCC extensions)."
   :long
   (xdoc::topstring
@@ -60,8 +60,9 @@
     "We override predicates for types that may involve GCC extensions.
      We exclude the @('\\%') simple escape,
      the variant keywords with underscores,
+     the unary @('&&') operator,
      absent `then' branchs in conditional expressions,
-     statement epxressions,
+     statement expressions,
      built-in functions that take type names as inputs,
      expressions preceded by @('__extension__'),
      the GCC type specifiers,
@@ -98,12 +99,15 @@
   :combine and
   :override
   ((simple-escape :percent nil)
+   (unop :real nil)
+   (unop :imag nil)
    (type-qual :restrict (keyword-uscores-case
                          (type-qual-restrict->uscores type-qual) :none))
    (type-qual :volatile (keyword-uscores-case
                          (type-qual-volatile->uscores type-qual) :none))
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
+   (expr :label-addr nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :alignof (and (tyname-standardp (expr-alignof->type expr))
@@ -124,6 +128,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (expr :stmt nil)
    (expr :tycompat nil)
    (expr :offsetof nil)
@@ -132,6 +138,8 @@
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))
    (type-spec :int128 nil)
+   (type-spec :float16 nil)
+   (type-spec :float16x nil)
    (type-spec :float32 nil)
    (type-spec :float32x nil)
    (type-spec :float64 nil)
@@ -154,13 +162,21 @@
    (dirabsdeclor :dummy-base (raise "Internal error: ~
                                      dummy base case of ~
                                      direct abstract declarator."))
+   (param-declon (and (decl-spec-list-standardp
+                       (param-declon->specs param-declon))
+                      (param-declor-standardp
+                       (param-declon->declor param-declon))
+                      (endp (param-declon->attribs param-declon))))
+   (struni-spec (and (endp (struni-spec->attribs struni-spec))
+                     (struct-declon-list-standardp
+                      (struni-spec->members struni-spec))))
    (struct-declon :member
                   (and (not (struct-declon-member->extension struct-declon))
                        (spec/qual-list-standardp
-                        (struct-declon-member->specqual struct-declon))
+                        (struct-declon-member->specquals struct-declon))
                        (struct-declor-list-standardp
-                        (struct-declon-member->declor struct-declon))
-                       (endp (struct-declon-member->attrib struct-declon))))
+                        (struct-declon-member->declors struct-declon))
+                       (endp (struct-declon-member->attribs struct-declon))))
    (struct-declon :empty nil)
    (attrib nil)
    (attrib-spec nil)
@@ -171,6 +187,7 @@
    (decl :decl (and (not (decl-decl->extension decl))
                     (decl-spec-list-standardp (decl-decl->specs decl))
                     (initdeclor-list-standardp (decl-decl->init decl))))
+   (label :name (endp (label-name->attribs label)))
    (label :casexpr (and (const-expr-standardp (label-casexpr->expr label))
                         (const-expr-option-case
                          (label-casexpr->range? label) :none)))
@@ -179,7 +196,10 @@
    (asm-stmt nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
+   (stmt :gotoe nil)
    (stmt :asm nil)
+   (comp-stmt (and (endp (comp-stmt->labels comp-stmt))
+                   (block-item-list-standardp (comp-stmt->items comp-stmt))))
    (block-item :ambig (raise "Internal error: ambiguous ~x0."
                              (block-item-fix block-item)))
    (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
@@ -195,6 +215,7 @@
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))
                 (decl-list-standardp (fundef->decls fundef))
-                (block-item-list-standardp (fundef->body fundef))))
+                (comp-stmt-standardp (fundef->body fundef))))
    (extdecl :empty nil)
-   (extdecl :asm nil)))
+   (extdecl :asm nil)
+   (transunit (consp (transunit->decls transunit)))))

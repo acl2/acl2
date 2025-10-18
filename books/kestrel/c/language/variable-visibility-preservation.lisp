@@ -333,6 +333,27 @@
                   (compst1 compst1))
   :enable exit-scope-of-enter-scope)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled var-visible-preservep-of-trans-exit-scope-when-enter-scope
+  :short "This combines
+          @(tsee var-visible-preservep-of-exit-scope-when-enter-scope)
+          with transitivity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem is used, in @(tsee var-visible-preservep-of-exec),
+     to handle the execution of @('do-while') statements."))
+  (implies (and (var-visible-preservep (enter-scope compst) compst1)
+                (equal (compustate-frames-number compst1)
+                       (compustate-frames-number compst))
+                (equal (compustate-scopes-numbers compst1)
+                       (compustate-scopes-numbers (enter-scope compst)))
+                (> (compustate-frames-number compst) 0)
+                (var-visible-preservep (exit-scope compst1) compst2))
+           (var-visible-preservep compst compst2))
+  :use var-visible-preservep-of-exit-scope-when-enter-scope)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled var-visible-preservep-of-pop-frame-and-pop-frame
@@ -420,31 +441,16 @@
      and the computation state after execution."))
 
   (defthm-exec-flag
-    (defthm var-visible-preservep-of-exec-expr-call
-      (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
-        (implies (not (errorp result))
-                 (var-visible-preservep compst compst1)))
-      :flag exec-expr-call)
-    (defthm var-visible-preservep-of-exec-expr-call-or-pure
-      (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-        (implies (not (errorp result))
-                 (var-visible-preservep compst compst1)))
-      :flag exec-expr-call-or-pure)
-    (defthm var-visible-preservep-of-exec-expr-asg
-      (b* ((compst1 (exec-expr-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
-                 (var-visible-preservep compst compst1)))
-      :flag exec-expr-asg)
-    (defthm var-visible-preservep-of-exec-expr-call-or-asg
-      (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-        (implies (not (errorp compst1))
-                 (var-visible-preservep compst compst1)))
-      :flag exec-expr-call-or-asg)
     (defthm var-visible-preservep-of-exec-fun
       (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
         (implies (not (errorp result))
                  (var-visible-preservep compst compst1)))
       :flag exec-fun)
+    (defthm var-visible-preservep-of-exec-expr
+      (b* (((mv result compst1) (exec-expr e compst fenv limit)))
+        (implies (not (errorp result))
+                 (var-visible-preservep compst compst1)))
+      :flag exec-expr)
     (defthm var-visible-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -457,6 +463,12 @@
                       (not (errorp result)))
                  (var-visible-preservep compst compst1)))
       :flag exec-stmt-while)
+    (defthm var-visible-preservep-of-exec-stmt-dowhile
+      (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+        (implies (and (> (compustate-frames-number compst) 0)
+                      (not (errorp result)))
+                 (var-visible-preservep compst compst1)))
+      :flag exec-stmt-dowhile)
     (defthm var-visible-preservep-of-exec-initer
       (b* (((mv result compst1) (exec-initer initer compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -484,30 +496,27 @@
     :hints (("Goal"
              :in-theory
              (enable
-              exec-expr-call
-              exec-expr-call-or-pure
-              exec-expr-asg
-              exec-expr-call-or-asg
               exec-fun
+              exec-expr
               exec-stmt
               exec-stmt-while
+              exec-stmt-dowhile
               exec-initer
               exec-obj-declon
               exec-block-item
               exec-block-item-list
               var-visible-preservep-of-create-var
               var-visible-preservep-of-exit-scope-when-enter-scope
+              var-visible-preservep-of-trans-exit-scope-when-enter-scope
               var-visible-preservep-of-pop-frame-when-push-frame
               var-visible-preservep-of-write-object
               len))))
 
-  (in-theory (disable var-visible-preservep-of-exec-expr-call
-                      var-visible-preservep-of-exec-expr-call-or-pure
-                      var-visible-preservep-of-exec-expr-asg
-                      var-visible-preservep-of-exec-expr-call-or-asg
-                      var-visible-preservep-of-exec-fun
+  (in-theory (disable var-visible-preservep-of-exec-fun
+                      var-visible-preservep-of-exec-expr
                       var-visible-preservep-of-exec-stmt
                       var-visible-preservep-of-exec-stmt-while
+                      var-visible-preservep-of-exec-stmt-dowhile
                       var-visible-preservep-of-exec-initer
                       var-visible-preservep-of-exec-obj-declon
                       var-visible-preservep-of-exec-block-item
@@ -518,64 +527,6 @@
 (defsection var-visible-of-exec
   :short "Preservation of variable visibility under execution."
 
-  (defruled var-visible-of-exec-expr-call
-    (b* (((mv result compst1) (exec-expr-call fun args compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (objdesign-of-var var compst))
-               (objdesign-of-var var compst1)))
-    :use (var-visible-preservep-of-exec-expr-call
-          (:instance var-visible-preservep-necc
-                     (var (ident-fix var))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call fun args compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled var-visible-of-exec-expr-call-or-pure
-    (b* (((mv result compst1) (exec-expr-call-or-pure e compst fenv limit)))
-      (implies (and (not (errorp result))
-                    (objdesign-of-var var compst))
-               (objdesign-of-var var compst1)))
-    :use (var-visible-preservep-of-exec-expr-call-or-pure
-          (:instance var-visible-preservep-necc
-                     (var (ident-fix var))
-                     (compst1
-                      (mv-nth 1 (exec-expr-call-or-pure e compst fenv limit)))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled var-visible-of-exec-expr-asg
-    (b* ((compst1 (exec-expr-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
-                    (objdesign-of-var var compst))
-               (objdesign-of-var var compst1)))
-    :use (var-visible-preservep-of-exec-expr-asg
-          (:instance var-visible-preservep-necc
-                     (var (ident-fix var))
-                     (compst1 (exec-expr-asg e compst fenv limit))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
-  (defruled var-visible-of-exec-call-or-asg
-    (b* ((compst1 (exec-expr-call-or-asg e compst fenv limit)))
-      (implies (and (not (errorp compst1))
-                    (objdesign-of-var var compst))
-               (objdesign-of-var var compst1)))
-    :use (var-visible-preservep-of-exec-expr-call-or-asg
-          (:instance var-visible-preservep-necc
-                     (var (ident-fix var))
-                     (compst1 (exec-expr-call-or-asg e compst fenv limit))
-                     (n 0)
-                     (m 0)))
-    :enable (peel-frames
-             peel-scopes))
-
   (defruled var-visible-of-exec-fun
     (b* (((mv result compst1) (exec-fun fun args compst fenv limit)))
       (implies (and (not (errorp result))
@@ -585,6 +536,21 @@
           (:instance var-visible-preservep-necc
                      (var (ident-fix var))
                      (compst1 (mv-nth 1 (exec-fun fun args compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-visible-of-exec-expr
+    (b* (((mv result compst1) (exec-expr e compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (objdesign-of-var var compst))
+               (objdesign-of-var var compst1)))
+    :use (var-visible-preservep-of-exec-expr
+          (:instance var-visible-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-expr e compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames
@@ -616,6 +582,23 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-stmt-while test body compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-visible-of-exec-stmt-dowhile
+    (b* (((mv result compst1) (exec-stmt-dowhile body test compst fenv limit)))
+      (implies (and (> (compustate-frames-number compst) 0)
+                    (not (errorp result))
+                    (objdesign-of-var var compst))
+               (objdesign-of-var var compst1)))
+    :use (var-visible-preservep-of-exec-stmt-dowhile
+          (:instance var-visible-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-stmt-dowhile
+                                 body test compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

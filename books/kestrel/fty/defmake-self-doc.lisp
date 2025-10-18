@@ -101,7 +101,7 @@
        are listed in order as subtopics."))
 
     (xdoc::desc
-     "@('<type>-<make-self')"
+     "@('<type>-make-self')"
      (xdoc::p
       "For each type @('<type>') in the same clique specified by the
        @('type') input, as well as all type dependencies,
