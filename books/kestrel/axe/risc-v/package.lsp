@@ -1,4 +1,4 @@
-; Package for RISC-V proofs
+; The "R" package for RISC-V Axe proofs
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -10,6 +10,14 @@
 
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/x86/portcullis" :dir :system)
+
+;; Users of the RISC-V variant of Axe can use this "R" package for their books
+;; that use Axe to lift/verify RISC-V code.
+
+;; This is similar to the "X" package used by the x86 variant of Axe.
+
+;; In general, we import function names, but not theorem names, from other
+;; packages into this package.
 
 (defconst *risc-v-symbols*
   '(riscv::memory32i-fix

@@ -1,4 +1,4 @@
-; A package for x86 proof work
+; The "X" package for x86 Axe proofs
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute
@@ -11,8 +11,10 @@
 
 (in-package "ACL2")
 
-;; The "X" package, for doing proofs about x86 code.  We could improve the name
-;; if we want, but "X86" is taken.
+;; Users of the x86 variant of Axe can use this "X" package for their books
+;; that use Axe to lift/verify x86 code.
+
+;; We could perhaps improve on the name "X", but "X86" is taken.
 
 ;; In general, we import function names, but not theorem names, from other
 ;; packages into this package.
@@ -334,6 +336,7 @@
     get-non-built-in-supporting-fns-list
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
+    parsed-executablep
     ))
 
 (defconst *arithmetic-symbols*

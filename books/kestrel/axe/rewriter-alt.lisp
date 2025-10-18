@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,6 +26,7 @@
 (include-book "result-array-stobj")
 (include-book "equivalent-dags")
 (include-book "prover")
+(include-book "dagify") ; for merge-term-into-dag-array
 (include-book "add-bvxor-nest-to-dag-array")
 (include-book "merge-and-remove-pairs-of-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
