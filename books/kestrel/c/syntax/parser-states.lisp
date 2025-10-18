@@ -57,11 +57,11 @@
      Thus, it is useful to have an abstract-syntax-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
-    "We represent a C keyword or puncutator as an ACL2 string,
+    "We represent a C keyword or punctuator as an ACL2 string,
      which suffices to represent all C keywords and punctuators,
      which are all ASCII.
      We could consider defining enumeration fixtypes
-     for keywords and puncutators instead,
+     for keywords and punctuators instead,
      and use them here instead of strings.")
    (xdoc::p
     "We use the identifiers, constants, and string literals
