@@ -28,14 +28,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A Modified Merkle Patricia tree
-     (which we abbreviate as `MMP tree'
-     in the documentation of our Ethereum model)
-     is an Ethereum data structure
-     that combines characteristics of
+    "A Modified Merkle Patricia tree (which we abbreviate as `MMP tree')
+     is an Ethereum data structure that combines characteristics of
      Merkle trees and Patricia (a.k.a. radix) trees.
-     MMP trees are described in [YP:D] and in Page `Patricia Tree' of [Wiki];
-     we reference that page of [Wiki] as `[Wiki:MMP]'.")
+     MMP trees are described in [YP:D] and in the "
+    (xdoc::ahref
+     "https://ethereum.org/developers/docs/data-structures-and-encoding/patricia-merkle-trie/"
+     "`Merkle Patricia Tree' page of [Doc]")
+    "; we reference the latter as `[Doc:MMP]`.
+     An earlier reference is the page `Patricia Tree' of [Wiki],
+     which we reference as `[Wiki:MMP]'.")
    (xdoc::p
     "MMP trees are not merely implementation-level entities.
      Their root hashes appear
@@ -52,13 +54,9 @@
 
 (fty::defomap bytelist-bytelist-map
   :parents (mmp-trees)
-  :short "Finite maps from byte arrays to byte arrays."
+  :short "Fixtype of maps from byte arrays to byte arrays."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We introduce a <see topic='@(url acl2::fty)'>fixtype</see> for finite maps
-     from <see topic='@(url byte-arrays)'>byte arrays</see> to byte arrrays,
-     based on the fixtype of <see topic='@(url omap::omaps)'>omaps</see>.")
    (xdoc::p
     "An MMP tree represents a finite map from byte arrays to byte arrays,
      as described by @($\\mathfrak{I}$) [YP:(188)].
@@ -77,14 +75,9 @@
 
 (fty::defomap nibblelist-bytelist-map
   :parents (mmp-trees)
-  :short "Finite maps from nibble arrays to byte arrays."
+  :short "Fixtype of maps from nibble arrays to byte arrays."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We introduce a <see topic='@(url acl2::fty)'>fixtype</see> for finite maps
-     from <see topic='@(url nibble-arrays)'>nibble arrays</see>
-     to <see topic='@(url byte-arrays)'>byte arrrays</see>,
-     based on the fixtype of <see topic='@(url omap::omaps)'>omaps</see>.")
    (xdoc::p
     "This is similar to @(tsee bytelist-bytelist-map),
      but the keys of the map are nibble arrays instead of byte arrays.
