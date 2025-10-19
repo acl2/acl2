@@ -28,7 +28,7 @@
     (xdoc::ahref
      "https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator"
      "Section `Specification: Compact encoding of hex sequence with optional terminator'")
-    " of Page `Patricia Tree' of [Wiki]</a>."))
+    " of Page `Patricia Tree' of [Wiki]."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
