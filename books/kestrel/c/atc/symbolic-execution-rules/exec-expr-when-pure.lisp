@@ -36,6 +36,7 @@
                     (mv eval compst)))
     :expand (exec-expr e compst fenv limit)
     :enable (expr-purep
+             exec-expr-pure
              binop-purep))
 
   (defval *atc-exec-expr-when-pure-rules*
