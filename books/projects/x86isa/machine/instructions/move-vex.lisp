@@ -433,19 +433,19 @@
 
   :parents (two-byte-opcodes fp-opcodes)
 
-  :short "VMOVUPS, VMOVUPD, VMMOVDQU:
+  :short "VMOVAPS, VMOVAPD, VMMOVDQA:
           move unaligned packed single/double-precision floating-point values
           and unaligned packed integer values
           (VEX encoding, Op/En B)"
 
   :long
   "<p>
-   These instructions are listed under MOVUPS, MOVUPD, and MOVDQU
+   These instructions are listed under MOVAPS, MOVAPD, and MOVDQA
    in Intel Manual Volume 2 (Jun 2025).
    </p>
    <p>
    This semantic function covers the two VEX-encoded variants
-   (of each of VMOVUPS, MOVUPD, and VMOVDQU)
+   (of each of VMOVAPS, MOVAPD, and VMOVDQA)
    that move from register to to register or memory (i.e. Op/En B).
    </p>
    <p>
@@ -455,16 +455,16 @@
    there may also be performance differences at the level lower than the ISA.
    </p>
    <code>
-   VMOVUPS xmm2/m128, xmm1
-   VMOVUPS ymm2/m256, ymm1
+   VMOVAPS xmm2/m128, xmm1
+   VMOVAPS ymm2/m256, ymm1
    </code>
    <code>
-   VMOVUPD xmm2/m128, xmm1
-   VMOVUPD ymm2/m256, ymm1
+   VMOVAPD xmm2/m128, xmm1
+   VMOVAPD ymm2/m256, ymm1
    </code>
    <code>
-   VMOVDQU xmm2/m128, xmm1
-   VMOVDQU ymm2/m256, ymm1
+   VMOVDQA xmm2/m128, xmm1
+   VMOVDQA ymm2/m256, ymm1
    </code>"
 
   :vex t
