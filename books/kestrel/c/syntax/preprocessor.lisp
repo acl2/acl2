@@ -2177,7 +2177,8 @@
                (closing-angle-pos positionp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
   :short "Lex zero or more characters
-          in a header name between angle brackets."
+          in a header name between angle brackets,
+          during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2228,7 +2229,8 @@
                (closing-dquote-pos positionp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
   :short "Lex zero or more characters
-          in a header name between double quotes."
+          in a header name between double quotes,
+          during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
