@@ -481,7 +481,6 @@
           :returns (x86 x86p :hyp (x86p x86))
 
           :guard-hints (("Goal" :in-theory (e/d* (add-to-*ip-is-i48p-rewrite-rule) (signed-byte-p unsigned-byte-p))))
-          :guard-debug t
 
           :modr/m t
 
@@ -853,7 +852,6 @@
 
   :modr/m t
   :vex t
-  :guard-debug t
   :body
   ;; placeholder
   (b* ((operand-size (if (and (eql proc-mode #.*64-bit-mode*)

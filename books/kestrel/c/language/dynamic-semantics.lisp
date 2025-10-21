@@ -639,7 +639,16 @@
    (xdoc::p
     "If no error occurs, none of the expressions has side effects.
      Thus, the order in which the subexpressions are evaluated does not matter:
-     we just proceed left to right."))
+     we just proceed left to right.")
+   (xdoc::p
+    "We plan to remove this function,
+     after moving (and suitably generalizing) its code to @(tsee exec-expr).
+     The plan is for @(tsee exec-expr) to support the execution of
+     expressions that are not necessarily pure
+     but still have a well-defined order of evaluation.
+     (Further extending our dynamic semantics
+     to support multiple possible orders of evaluation
+     is something we will look at further in the future.)"))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -982,7 +991,12 @@
        and (simple) assignments,
        with additional restrictions on function calls and assignments
        so that the exact order of evaluation, which is unspecified by [C17],
-       does not affect the final result.")
+       does not affect the final result.
+       As noted at the end of the documentation of @(tsee exec-expr-pure),
+       we are in the process of moving that function's code here,
+       and then eliminating that function.
+       For now we have just added support for variables and constants,
+       which happen to be pure and have trivially deterministic evaluation.")
      (xdoc::p
       "If the expression is pure,
        we execute it as a pure expression.")
@@ -1018,49 +1032,55 @@
        which must return an expression value (not @('nil')).
        Note that the assignment itself is not an lvalue;
        its result is the value assigned by the assignment."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         ((when (expr-purep e))
-          (mv (exec-expr-pure e compst) (compustate-fix compst)))
-         ((when (expr-case e :call))
-          (b* ((fun (expr-call->fun e))
-               (args (expr-call->args e))
-               (vals (exec-expr-pure-list args compst))
-               ((when (errorp vals)) (mv vals (compustate-fix compst)))
-               ((mv val? compst) (exec-fun fun vals compst fenv (1- limit)))
-               ((when (errorp val?)) (mv val? compst)))
-            (if val?
-                (mv (make-expr-value :value val? :object nil) compst)
-              (mv nil compst))))
-         ((when (and (expr-case e :binary)
-                     (binop-case (expr-binary->op e) :asg)))
-          (b* ((left (expr-binary->arg1 e))
-               (right (expr-binary->arg2 e))
-               (left-eval (exec-expr-pure left compst))
-               ((when (errorp left-eval))
-                (mv left-eval (compustate-fix compst)))
-               (left-eval (apconvert-expr-value left-eval))
-               ((when (errorp left-eval))
-                (mv left-eval (compustate-fix compst)))
-               (objdes (expr-value->object left-eval))
-               ((unless objdes)
-                (mv (error (list :not-lvalue left)) (compustate-fix compst)))
-               ((mv right-eval? compst)
-                (if (expr-case left :ident)
-                    (exec-expr right compst fenv (1- limit))
-                  (mv (exec-expr-pure right compst) (compustate-fix compst))))
-               ((when (errorp right-eval?)) (mv right-eval? compst))
-               ((when (not right-eval?))
-                (mv (error (list :asg-void-expr right)) compst))
-               (right-eval right-eval?)
-               (right-eval (apconvert-expr-value right-eval))
-               ((when (errorp right-eval)) (mv right-eval compst))
-               (val (expr-value->value right-eval))
-               (compst/error (write-object objdes val compst))
-               ((when (errorp compst/error)) (mv compst/error compst))
-               (compst compst/error))
-            (mv (make-expr-value :value val :object nil) compst))))
-      (mv (error (list :expression-not-supported (expr-fix e)))
-          (compustate-fix compst)))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
+      (expr-case
+       e
+       :ident (mv (exec-ident e.get compst) (compustate-fix compst))
+       :const (mv (exec-const e.get) (compustate-fix compst))
+       :otherwise
+       (b* (((when (expr-purep e))
+             (mv (exec-expr-pure e compst) (compustate-fix compst)))
+            ((when (expr-case e :call))
+             (b* ((fun (expr-call->fun e))
+                  (args (expr-call->args e))
+                  (vals (exec-expr-pure-list args compst))
+                  ((when (errorp vals)) (mv vals (compustate-fix compst)))
+                  ((mv val? compst) (exec-fun fun vals compst fenv (1- limit)))
+                  ((when (errorp val?)) (mv val? compst)))
+               (if val?
+                   (mv (make-expr-value :value val? :object nil) compst)
+                 (mv nil compst))))
+            ((when (and (expr-case e :binary)
+                        (binop-case (expr-binary->op e) :asg)))
+             (b* ((left (expr-binary->arg1 e))
+                  (right (expr-binary->arg2 e))
+                  (left-eval (exec-expr-pure left compst))
+                  ((when (errorp left-eval))
+                   (mv left-eval (compustate-fix compst)))
+                  (left-eval (apconvert-expr-value left-eval))
+                  ((when (errorp left-eval))
+                   (mv left-eval (compustate-fix compst)))
+                  (objdes (expr-value->object left-eval))
+                  ((unless objdes)
+                   (mv (error (list :not-lvalue left)) (compustate-fix compst)))
+                  ((mv right-eval? compst)
+                   (if (expr-case left :ident)
+                       (exec-expr right compst fenv (1- limit))
+                     (mv (exec-expr-pure right compst)
+                         (compustate-fix compst))))
+                  ((when (errorp right-eval?)) (mv right-eval? compst))
+                  ((when (not right-eval?))
+                   (mv (error (list :asg-void-expr right)) compst))
+                  (right-eval right-eval?)
+                  (right-eval (apconvert-expr-value right-eval))
+                  ((when (errorp right-eval)) (mv right-eval compst))
+                  (val (expr-value->value right-eval))
+                  (compst/error (write-object objdes val compst))
+                  ((when (errorp compst/error)) (mv compst/error compst))
+                  (compst compst/error))
+               (mv (make-expr-value :value val :object nil) compst))))
+         (mv (error (list :expression-not-supported (expr-fix e)))
+             (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

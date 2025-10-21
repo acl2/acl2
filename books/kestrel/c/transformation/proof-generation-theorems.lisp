@@ -502,6 +502,7 @@
           (:instance c::not-asg-when-exec-expr-pure-not-error
                      (expr expr) (compst compst)))
     :enable (c::exec-expr
+             c::exec-expr-pure
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::expr-valuep-when-expr-value-resultp-and-not-errorp))
@@ -534,6 +535,7 @@
     :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
              (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
     :enable (c::exec-expr
+             c::exec-expr-pure
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
@@ -610,6 +612,7 @@
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr
+             c::exec-expr-pure
              c::type-of-value
              c::apconvert-expr-value-when-not-array
              c::type-nonchar-integerp
@@ -1127,7 +1130,8 @@
               (mv-nth 0 (c::exec-initer
                          (c::initer-single expr) compst fenv limit))))
     :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
-    :enable c::exec-expr)
+    :enable (c::exec-expr
+             c::exec-expr-pure))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1151,7 +1155,8 @@
                                       fenv
                                       limit))))
     :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable c::exec-expr)
+    :enable (c::exec-expr
+             c::exec-expr-pure))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
