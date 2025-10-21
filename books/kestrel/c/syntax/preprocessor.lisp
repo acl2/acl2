@@ -21,6 +21,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -37,6 +38,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Library extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruledl integerp-when-bytep
   (implies (bytep x)
@@ -61,6 +64,22 @@
 (defruledl acl2-numberp-when-natp
   (implies (natp x)
            (acl2-numberp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro utf8-= (x y)
+  `(= (the unsigned-byte ,x)
+      (the unsigned-byte ,y)))
+
+(defmacro utf8-<= (x y)
+  `(<= (the unsigned-byte ,x)
+       (the unsigned-byte ,y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruledl car-of-byte-list-geq-0
+  (implies (byte-listp x)
+           (>= (car x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,7 +479,8 @@
     :guard (< i (ppstate->lexemes-length ppstate))
     :returns (lexeme+span plexeme+span-p
                           :hints
-                          (("Goal" :in-theory (enable ppstate->lexemes-length))))
+                          (("Goal"
+                            :in-theory (enable ppstate->lexemes-length))))
     (mbe :logic (if (and (ppstatep ppstate)
                          (< (nfix i) (ppstate->lexemes-length ppstate)))
                     (raw-ppstate->lexeme (nfix i) ppstate)
@@ -789,11 +809,11 @@
         ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
                           (nth char *pchar-to-msg-ascii-control-char-names*)
                           char))
-        ((= char 32) "the SP (space) character (ASCII code 32)")
-        ((and (<= 33 char) (<= char 126))
+        ((utf8-= char 32) "the SP (space) character (ASCII code 32)")
+        ((and (utf8-<= 33 char) (utf8-<= char 126))
          (msg "the ~s0 character (ASCII code ~x1)"
               (str::implode (list (code-char char))) char))
-        ((= char 127) "the DEL (delete) character (ASCII code 127)")
+        ((utf8-= char 127) "the DEL (delete) character (ASCII code 127)")
         (t (msg "the non-ASCII Unicode character with code ~x0" char)))
   :guard-hints (("Goal" :in-theory (enable character-listp
                                            nat-optionp)))
@@ -979,24 +999,24 @@
                (ppstate->chars-length ppstate))
         (reterr t))
        ;; new lines:
-       ((when (= byte 13)) ; CR
-        (b* ((lf-follows-cr-p (and (consp bytes) (= (car bytes) 10)))
+       ((when (utf8-= byte 13)) ; CR
+        (b* ((lf-follows-cr-p (and (consp bytes) (utf8-= (car bytes) 10)))
              (new-position (if lf-follows-cr-p
                                ppstate.position
                              (position-inc-line 1 ppstate.position)))
              (ppstate
               (update-ppstate-for-char 13 bytes new-position 1 ppstate)))
           (retok 13 ppstate.position ppstate)))
-       ((when (= byte 10)) ; LF
+       ((when (utf8-= byte 10)) ; LF
         (b* ((new-position (position-inc-line 1 ppstate.position))
              (ppstate
               (update-ppstate-for-char 10 bytes new-position 1 ppstate)))
           (retok 10 ppstate.position ppstate)))
        ;; trigraph sequences (or just '?'):
-       ((when (= byte (char-code #\?))) ; ?
+       ((when (utf8-= byte (char-code #\?))) ; ?
         (b* (((mv char new-bytes num-chars/bytes)
               (if (and (consp bytes)
-                       (= (car bytes) (char-code #\?)) ; ??
+                       (utf8-= (car bytes) (char-code #\?)) ; ??
                        (consp (cdr bytes)))
                   (b* (((unless (>= ppstate.size 3))
                         (raise "Internal error: ~
@@ -1004,23 +1024,23 @@
                                 but the size of the preprocessing state is ~x0."
                                ppstate.size)
                         (mv 0 nil 1)))
-                    (cond ((= (cadr bytes) (char-code #\=)) ; ??=
+                    (cond ((utf8-= (cadr bytes) (char-code #\=)) ; ??=
                            (mv (char-code #\#) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\()) ; ??(
+                          ((utf8-= (cadr bytes) (char-code #\()) ; ??(
                            (mv (char-code #\[) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\/)) ; ??/
+                          ((utf8-= (cadr bytes) (char-code #\/)) ; ??/
                            (mv (char-code #\\) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\))) ; ??)
+                          ((utf8-= (cadr bytes) (char-code #\))) ; ??)
                            (mv (char-code #\]) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\')) ; ??'
+                          ((utf8-= (cadr bytes) (char-code #\')) ; ??'
                            (mv (char-code #\^) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\<)) ; ??<
+                          ((utf8-= (cadr bytes) (char-code #\<)) ; ??<
                            (mv (char-code #\{) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\!)) ; ??!
+                          ((utf8-= (cadr bytes) (char-code #\!)) ; ??!
                            (mv (char-code #\|) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\>)) ; ??>
+                          ((utf8-= (cadr bytes) (char-code #\>)) ; ??>
                            (mv (char-code #\}) (cddr bytes) 3))
-                          ((= (cadr bytes) (char-code #\-)) ; ??-
+                          ((utf8-= (cadr bytes) (char-code #\-)) ; ??-
                            (mv (char-code #\~) (cddr bytes) 3))
                           (t (mv byte bytes 1)))) ; just ?, not a tripgraph
                 (mv byte bytes 1))) ; just ?, not a trigraph
@@ -1031,10 +1051,10 @@
                char new-bytes new-position num-chars/bytes ppstate)))
           (retok char ppstate.position ppstate)))
        ;; line splicing (or just '\'):
-       ((when (= byte (char-code #\\))) ; \
+       ((when (utf8-= byte (char-code #\\))) ; \
         (b* (((when (endp bytes)) ; \ EOF
               (reterr (msg "File ends with backslash instead of new line.")))
-             ((when (= (car bytes) 10)) ; \ LF
+             ((when (utf8-= (car bytes) 10)) ; \ LF
               (b* (((unless (>= ppstate.size 2))
                     (raise "Internal error: ~
                             there are two or more bytes ~
@@ -1050,9 +1070,9 @@
                    ((unless (consp new-bytes))
                     (reterr (msg "File ends with backslash and new line."))))
                 (pread-char ppstate)))
-             ((when (= (car bytes) 13)) ; \ CR
+             ((when (utf8-= (car bytes) 13)) ; \ CR
               (if (and (consp (cdr bytes))
-                       (= (cadr bytes) 10)) ; \ CR LF
+                       (utf8-= (cadr bytes) 10)) ; \ CR LF
                   (b* (((when (endp (cddr bytes))) ; \ CR LF EOF
                         (reterr (msg "File ends with backslash and new line ~
                                       instead of new line.")))
@@ -1096,16 +1116,16 @@
               (update-ppstate-for-char byte bytes new-position 1 ppstate)))
           (retok byte ppstate.position ppstate)))
        ;; other ASCII:
-       ((when (or (= byte 9) ; HT
-                  (= byte 11) ; VT
-                  (= byte 12) ; FF
-                  (and (<= 32 byte) (<= byte 126))))
+       ((when (or (utf8-= byte 9) ; HT
+                  (utf8-= byte 11) ; VT
+                  (utf8-= byte 12) ; FF
+                  (and (utf8-<= 32 byte) (utf8-<= byte 126))))
         (b* ((new-position (position-inc-column 1 ppstate.position))
              (ppstate
               (update-ppstate-for-char byte bytes new-position 1 ppstate)))
           (retok byte ppstate.position ppstate)))
        ;; 2-byte UTF-8:
-       ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
+       ((when (utf8-= (logand byte #b11100000) #b11000000)) ; 110xxxyy
         (b* (((unless (consp bytes))
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "another byte after ~
@@ -1123,7 +1143,7 @@
               (reterr t))
              (byte2 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+             ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1147,7 +1167,7 @@
               (update-ppstate-for-char code bytes new-position 2 ppstate)))
           (retok code ppstate.position ppstate)))
        ;; 3-byte UTF-8:
-       ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
+       ((when (utf8-= (logand byte #b11110000) #b11100000)) ; 1110xxxx
         (b* (((unless (consp bytes))
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "another byte after ~
@@ -1165,7 +1185,7 @@
               (reterr t))
              (byte2 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
+             ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1195,7 +1215,7 @@
               (reterr t))
              (byte3 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
+             ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1218,10 +1238,10 @@
                                           (~x0 ~x1 ~x2)"
                                          byte byte2 byte3)
                           :found (msg "the value ~x0" code)))
-             ((when (or (and (<= #x202a code)
-                             (<= code #x202e))
-                        (and (<= #x2066 code)
-                             (<= code #x2069))))
+             ((when (or (and (utf8-<= #x202a code)
+                             (utf8-<= code #x202e))
+                        (and (utf8-<= #x2066 code)
+                             (utf8-<= code #x2069))))
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
@@ -1233,7 +1253,7 @@
               (update-ppstate-for-char code bytes new-position 3 ppstate)))
           (retok code ppstate.position ppstate)))
        ;; 4-byte UTF-8:
-       ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+       ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "another byte after ~
@@ -1251,7 +1271,7 @@
               (reterr t))
              (byte2 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+             ((unless (utf8-= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1281,7 +1301,7 @@
               (reterr t))
              (byte3 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
+             ((unless (utf8-= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1317,7 +1337,7 @@
               (reterr t))
              (byte4 (car bytes))
              (bytes (cdr bytes))
-             ((unless (= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
+             ((unless (utf8-= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
               (reterr-msg :where (position-to-msg ppstate.position)
                           :expected (msg "a byte of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -1357,9 +1377,16 @@
   :guard-hints (("Goal" :in-theory (enable len fix natp)))
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
                                        rationalp-when-bytep
-                                       integerp-when-bytep))))
+                                       integerp-when-bytep
+                                       car-of-byte-list-geq-0))))
 
   ///
+
+  (more-returns
+   (char? (or (equal char? nil)
+              (natp char?))
+          :rule-classes :type-prescription
+          :name pread-char.char?-type-prescription))
 
   (defret ppstate->size-of-pread-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -1403,13 +1430,13 @@
        ((unless (> ppstate.chars-read 0))
         (raise "Internal error: no character to unread.")
         (b* ((ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
-                                                      ppstate))
+                                                    ppstate))
              (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
           ppstate))
        (ppstate (update-ppstate->chars-read (1- ppstate.chars-read)
-                                              ppstate))
+                                            ppstate))
        (ppstate (update-ppstate->chars-unread (1+ ppstate.chars-unread)
-                                                ppstate))
+                                              ppstate))
        (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
     ppstate)
   :guard-hints (("Goal" :in-theory (enable natp)))
@@ -1476,11 +1503,11 @@
 (define plex-identifier ((first-char (unsigned-byte-p 8 first-char))
                          (first-pos positionp)
                          (ppstate ppstatep))
-  :guard (or (and (<= (char-code #\A) first-char)
-                  (<= first-char (char-code #\Z)))
-             (and (<= (char-code #\a) first-char)
-                  (<= first-char (char-code #\z)))
-             (= first-char (char-code #\_)))
+  :guard (or (and (utf8-<= (char-code #\A) first-char)
+                  (utf8-<= first-char (char-code #\Z)))
+             (and (utf8-<= (char-code #\a) first-char)
+                  (utf8-<= first-char (char-code #\z)))
+             (utf8-= first-char (char-code #\_)))
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
@@ -1514,8 +1541,7 @@
                          :hints (("Goal"
                                   :induct t
                                   :in-theory (enable unsigned-byte-p
-                                                     integer-range-p
-                                                     integerp-when-natp))))
+                                                     integer-range-p))))
                   (last-pos positionp)
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
@@ -1524,10 +1550,13 @@
           ((when (not char))
            (retok nil (position-fix pos-so-far) ppstate))
           ((unless ; A-Z a-z 0-9 _
-               (or (and (<= (char-code #\A) char) (<= char (char-code #\Z)))
-                   (and (<= (char-code #\a) char) (<= char (char-code #\z)))
-                   (and (<= (char-code #\0) char) (<= char (char-code #\9)))
-                   (= char (char-code #\_))))
+               (or (and (utf8-<= (char-code #\A) char)
+                        (utf8-<= char (char-code #\Z)))
+                   (and (utf8-<= (char-code #\a) char)
+                        (utf8-<= char (char-code #\z)))
+                   (and (utf8-<= (char-code #\0) char)
+                        (utf8-<= char (char-code #\9)))
+                   (utf8-= char (char-code #\_))))
            (b* ((ppstate (punread-char ppstate)))
              (retok nil (position-fix pos-so-far) ppstate)))
           ((erp chars last-pos ppstate)
@@ -1607,23 +1636,23 @@
          (retok (pnumber-fix current-pnumber)
                 (position-fix current-pos)
                 ppstate))
-        ((and (<= (char-code #\0) char)
-              (<= char (char-code #\9))) ; pp-number digit
+        ((and (utf8-<= (char-code #\0) char)
+              (utf8-<= char (char-code #\9))) ; pp-number digit
          (plex-pp-number-loop (make-pnumber-number-digit
                                :number current-pnumber
                                :digit (code-char char))
                               pos
                               ppstate))
-        ((= char (char-code #\e)) ; pp-number e
+        ((utf8-= char (char-code #\e)) ; pp-number e
          (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
            (cond
-            ((and char2 (= char2 (char-code #\+))) ; pp-number e +
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number e +
              (plex-pp-number-loop (make-pnumber-number-locase-e-sign
                                    :number current-pnumber
                                    :sign (sign-plus))
                                   pos2
                                   ppstate))
-            ((and char2 (= char2 (char-code #\-))) ; pp-number e -
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number e -
              (plex-pp-number-loop (make-pnumber-number-locase-e-sign
                                    :number current-pnumber
                                    :sign (sign-minus))
@@ -1637,16 +1666,16 @@
                                      :nondigit #\e)
                                     pos
                                     ppstate))))))
-        ((= char (char-code #\E)) ; pp-number E
+        ((utf8-= char (char-code #\E)) ; pp-number E
          (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
            (cond
-            ((and char2 (= char2 (char-code #\+))) ; pp-number E +
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number E +
              (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
                                    :number current-pnumber
                                    :sign (sign-plus))
                                   pos2
                                   ppstate))
-            ((and char2 (= char2 (char-code #\-))) ; pp-number E -
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number E -
              (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
                                    :number current-pnumber
                                    :sign (sign-minus))
@@ -1660,16 +1689,16 @@
                                      :nondigit #\E)
                                     pos
                                     ppstate))))))
-        ((= char (char-code #\p)) ; pp-number p
+        ((utf8-= char (char-code #\p)) ; pp-number p
          (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
            (cond
-            ((and char2 (= char2 (char-code #\+))) ; pp-number p +
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number p +
              (plex-pp-number-loop (make-pnumber-number-locase-p-sign
                                    :number current-pnumber
                                    :sign (sign-plus))
                                   pos2
                                   ppstate))
-            ((and char2 (= char2 (char-code #\-))) ; pp-number p -
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number p -
              (plex-pp-number-loop (make-pnumber-number-locase-p-sign
                                    :number current-pnumber
                                    :sign (sign-minus))
@@ -1683,16 +1712,16 @@
                                      :nondigit #\p)
                                     pos
                                     ppstate))))))
-        ((= char (char-code #\P)) ; pp-number P
+        ((utf8-= char (char-code #\P)) ; pp-number P
          (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
            (cond
-            ((and char2 (= char2 (char-code #\+))) ; pp-number P +
+            ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number P +
              (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
                                    :number current-pnumber
                                    :sign (sign-plus))
                                   pos2
                                   ppstate))
-            ((and char2 (= char2 (char-code #\-))) ; pp-number P -
+            ((and char2 (utf8-= char2 (char-code #\-))) ; pp-number P -
              (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
                                    :number current-pnumber
                                    :sign (sign-minus))
@@ -1706,17 +1735,17 @@
                                      :nondigit #\P)
                                     pos
                                     ppstate))))))
-        ((or (and (<= (char-code #\A) char)
-                  (<= char (char-code #\Z)))
-             (and (<= (char-code #\a) char)
-                  (<= char (char-code #\z)))
-             (= char (char-code #\_))) ; pp-number identifier-nondigit
+        ((or (and (utf8-<= (char-code #\A) char)
+                  (utf8-<= char (char-code #\Z)))
+             (and (utf8-<= (char-code #\a) char)
+                  (utf8-<= char (char-code #\z)))
+             (utf8-= char (char-code #\_))) ; pp-number identifier-nondigit
          (plex-pp-number-loop (make-pnumber-number-nondigit
                                :number current-pnumber
                                :nondigit (code-char char))
                               pos
                               ppstate))
-        ((= char (char-code #\.)) ; pp-number .
+        ((utf8-= char (char-code #\.)) ; pp-number .
          (plex-pp-number-loop (make-pnumber-number-dot
                                :number current-pnumber)
                               pos ppstate))
@@ -1772,12 +1801,12 @@
         (reterr-msg :where (position-to-msg pos)
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char)))
-       ((unless (or (and (<= (char-code #\0) char) ; 0
-                         (<= char (char-code #\9))) ; 9
-                    (and (<= (char-code #\A) char) ; A
-                         (<= char (char-code #\F))) ; F
-                    (and (<= (char-code #\a) char) ; a
-                         (<= char (char-code #\f))))) ; f
+       ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
+                         (utf8-<= char (char-code #\9))) ; 9
+                    (and (utf8-<= (char-code #\A) char) ; A
+                         (utf8-<= char (char-code #\F))) ; F
+                    (and (utf8-<= (char-code #\a) char) ; a
+                         (utf8-<= char (char-code #\f))))) ; f
         (reterr-msg :where (position-to-msg pos)
                     :expected "a hexadecimal digit"
                     :found (char-to-msg char))))
@@ -1863,12 +1892,12 @@
        ((erp char pos ppstate) (pread-char ppstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos ppstate))
-       ((unless (or (and (<= (char-code #\0) char) ; 0
-                         (<= char (char-code #\9))) ; 9
-                    (and (<= (char-code #\A) char) ; A
-                         (<= char (char-code #\F))) ; F
-                    (and (<= (char-code #\a) char) ; a
-                         (<= char (char-code #\f))))) ; f
+       ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
+                         (utf8-<= char (char-code #\9))) ; 9
+                    (and (utf8-<= (char-code #\A) char) ; A
+                         (utf8-<= char (char-code #\F))) ; F
+                    (and (utf8-<= (char-code #\a) char) ; a
+                         (utf8-<= char (char-code #\f))))) ; f
         (b* ((ppstate (punread-char ppstate)))
           (retok nil (position-fix pos-so-far) pos ppstate)))
        (hexdig (code-char char))
@@ -1918,43 +1947,43 @@
                              or a letter in {a, b, f, n, r, t, v, u, U, x} ~
                              or an octal digit"
                   :found (char-to-msg char)))
-     ((= char (char-code #\')) ; \ '
+     ((utf8-= char (char-code #\')) ; \ '
       (retok (escape-simple (simple-escape-squote)) pos ppstate))
-     ((= char (char-code #\")) ; \ "
+     ((utf8-= char (char-code #\")) ; \ "
       (retok (escape-simple (simple-escape-dquote)) pos ppstate))
-     ((= char (char-code #\?)) ; \ ?
+     ((utf8-= char (char-code #\?)) ; \ ?
       (retok (escape-simple (simple-escape-qmark)) pos ppstate))
-     ((= char (char-code #\\)) ; \ \
+     ((utf8-= char (char-code #\\)) ; \ \
       (retok (escape-simple (simple-escape-bslash)) pos ppstate))
-     ((= char (char-code #\a)) ; \ a
+     ((utf8-= char (char-code #\a)) ; \ a
       (retok (escape-simple (simple-escape-a)) pos ppstate))
-     ((= char (char-code #\b)) ; \ b
+     ((utf8-= char (char-code #\b)) ; \ b
       (retok (escape-simple (simple-escape-b)) pos ppstate))
-     ((= char (char-code #\f)) ; \ f
+     ((utf8-= char (char-code #\f)) ; \ f
       (retok (escape-simple (simple-escape-f)) pos ppstate))
-     ((= char (char-code #\n)) ; \ n
+     ((utf8-= char (char-code #\n)) ; \ n
       (retok (escape-simple (simple-escape-n)) pos ppstate))
-     ((= char (char-code #\r)) ; \ r
+     ((utf8-= char (char-code #\r)) ; \ r
       (retok (escape-simple (simple-escape-r)) pos ppstate))
-     ((= char (char-code #\t)) ; \ t
+     ((utf8-= char (char-code #\t)) ; \ t
       (retok (escape-simple (simple-escape-t)) pos ppstate))
-     ((= char (char-code #\v)) ; \ v
+     ((utf8-= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos ppstate))
-     ((and (= char (char-code #\%)) ; \ %
+     ((and (utf8-= char (char-code #\%)) ; \ %
            (ppstate->gcc ppstate))
       (retok (escape-simple (simple-escape-percent)) pos ppstate))
-     ((and (<= (char-code #\0) char)
-           (<= char (char-code #\7))) ; \ octdig
+     ((and (utf8-<= (char-code #\0) char)
+           (utf8-<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
         (cond
          ((and char2
-               (<= (char-code #\0) char2)
-               (<= char2 (char-code #\7))) ; \ octdig octdig
+               (utf8-<= (char-code #\0) char2)
+               (utf8-<= char2 (char-code #\7))) ; \ octdig octdig
           (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
             (cond
              ((and char3
-                   (<= (char-code #\0) char3)
-                   (<= char3 (char-code #\7))) ; \ octdig octdig octdig
+                   (utf8-<= (char-code #\0) char3)
+                   (utf8-<= char3 (char-code #\7))) ; \ octdig octdig octdig
               (retok (escape-oct (oct-escape-three (code-char char)
                                                    (code-char char2)
                                                    (code-char char3)))
@@ -1973,7 +2002,7 @@
             (retok (escape-oct (oct-escape-one (code-char char)))
                    pos
                    ppstate))))))
-     ((= char (char-code #\x))
+     ((utf8-= char (char-code #\x))
       (b* (((erp hexdigs last-pos next-pos ppstate)
             (plex-*-hexadecimal-digit pos ppstate)))
         (if hexdigs
@@ -1981,10 +2010,10 @@
           (reterr-msg :where (position-to-msg next-pos)
                       :expected "one or more hexadecimal digits"
                       :found "none"))))
-     ((= char (char-code #\u))
+     ((utf8-= char (char-code #\u))
       (b* (((erp quad pos ppstate) (plex-hex-quad ppstate)))
         (retok (escape-univ (univ-char-name-locase-u quad)) pos ppstate)))
-     ((= char (char-code #\U))
+     ((utf8-= char (char-code #\U))
       (b* (((erp quad1 & ppstate) (plex-hex-quad ppstate))
            ((erp quad2 pos ppstate) (plex-hex-quad ppstate)))
         (retok (escape-univ (make-univ-char-name-upcase-u :quad1 quad1
@@ -2043,16 +2072,16 @@
                                any character other than ~
                                single quote or backslash or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\'))) ; '
+       ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos ppstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
                                single quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp cchar & ppstate)
-        (if (= char (char-code #\\)) ; \
+        (if (utf8-= char (char-code #\\)) ; \
             (b* (((erp escape pos ppstate) (plex-escape-sequence ppstate))
                  (cchar (c-char-escape escape)))
               (retok cchar pos ppstate))
@@ -2103,16 +2132,16 @@
                                any character other than ~
                                double quote or backslash"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\"))) ; "
+       ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
                                double quote or backslash"
                     :found (char-to-msg char)))
        ((erp schar & ppstate)
-        (if (= char (char-code #\\)) ; \
+        (if (utf8-= char (char-code #\\)) ; \
             (b* (((erp escape pos ppstate) (plex-escape-sequence ppstate))
                  (schar (s-char-escape escape)))
               (retok schar pos ppstate))
@@ -2161,9 +2190,9 @@
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\>))) ; >
+       ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos ppstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -2212,9 +2241,9 @@
                     :expected "any character other than ~
                                greater-than or new-line"
                     :found (char-to-msg char)))
-       ((when (= char (char-code #\"))) ; "
+       ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (= char 10)) ; new-line
+       ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
