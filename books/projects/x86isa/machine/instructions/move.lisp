@@ -1029,3 +1029,186 @@
        (x86 (!flgi-undefined :of x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+;; ======================================================================
+;; INSTRUCTION: MOVBE
+;; ======================================================================
+
+(define movbe-reverse-bytes ((val (unsigned-byte-p (* 8 size) val)) (size natp))
+  :returns (rev-val (unsigned-byte-p (* 8 size) rev-val)
+                    :hyp :guard
+                    :hints
+                    (("Goal"
+                      :use (:instance
+                            returns-lemma
+                            (l (loghead 8 val))
+                            (h (movbe-reverse-bytes (logtail 8 val)
+                                                    (+ -1 size)))
+                            (m 256)
+                            (n (* 8 (1- size)))))))
+  :short "Reverse the bytes in an operand of a given byte size."
+  (cond ((zp size) 0)
+        (t (logapp (* 8 (1- size))
+                   (movbe-reverse-bytes (logtail 8 val) (1- size))
+                   (loghead 8 val))))
+
+  :prepwork
+  ((defruledl returns-lemma
+     (implies (and (natp l)
+                   (natp h)
+                   (posp m)
+                   (natp n)
+                   (< l (expt (expt 2 m) n))
+                   (< h (expt 2 m)))
+              (< (+ l (* (expt (expt 2 m) n) h))
+                 (expt (expt 2 m) (1+ n))))
+     :cases ((<= (* (expt (expt 2 m) n) h)
+                 (- (expt (expt 2 m) (1+ n)) (expt (expt 2 m) n))))
+     :prep-books ((include-book "arithmetic-5/top" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movbe-op/en-rm
+
+  :parents (two-byte-opcodes)
+
+  :short "MOVBE: Move data after swapping bytes."
+
+  :long
+  "<p>This is the variant that moves from memory to register.</p>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+
+       ((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode
+                             nil ; byte-operand?
+                             rex-byte
+                             nil ; imm?
+                             prefixes
+                             nil ; default64?
+                             nil ; ignore-rex?
+                             nil ; ignore-p3-64?
+                             x86))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ((mv flg operand (the (unsigned-byte 3) increment-rip-by) ?addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               t ; inst-ac?
+                                               nil ; memory-ptr?
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; num-imm-bytes
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ; #GP(0)
+
+       (result (movbe-reverse-bytes operand operand-size))
+
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        result
+                        rex-byte
+                        x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-movbe-op/en-mr
+
+  :parents (two-byte-opcodes)
+
+  :short "MOVBE: Move data after swapping bytes."
+
+  :long
+  "<p>This is the variant that moves from register to memory.</p>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* ((p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+
+       ((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode
+                             nil ; byte-operand?
+                             rex-byte
+                             nil ; imm?
+                             prefixes
+                             nil ; default64?
+                             nil ; ignore-rex?
+                             nil ; ignore-p3-64?
+                             x86))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (operand (rgfi-size operand-size
+                           (reg-index reg rex-byte #.*r*)
+                           rex-byte
+                           x86))
+
+       (result (movbe-reverse-bytes operand operand-size))
+
+       ((mv flg
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-rip-by)
+            x86)
+        (x86-effective-addr proc-mode
+                            p4?
+                            temp-rip
+                            rex-byte
+                            r/m
+                            mod
+                            sib
+                            0 ; num-imm-bytes
+                            x86))
+       ((when flg) (!!ms-fresh :x86-effective-addr-error flg))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ; #GP(0)
+
+       ((mv flg x86)
+        (x86-operand-to-reg/mem proc-mode
+                                operand-size
+                                t ; inst-ac?
+                                nil ; memory-ptr?
+                                result
+                                seg-reg
+                                addr
+                                rex-byte
+                                r/m
+                                mod
+                                x86))
+       ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))

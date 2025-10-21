@@ -19908,7 +19908,7 @@
     (INST "MOVBE" (OP :OP #xF38F0 :PFX :NO-PREFIX
                       :FEAT '(:MOVBE))
           (ARG :OP1 '(G Y) :OP2 '(M Y))
-          'NIL
+          '(X86-MOVBE-OP/EN-RM)
           '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
@@ -19916,7 +19916,7 @@
     (INST "MOVBE" (OP :OP #xF38F0 :PFX :66
                       :FEAT '(:MOVBE))
           (ARG :OP1 '(G W) :OP2 '(M W))
-          'NIL
+          '(X86-MOVBE-OP/EN-RM)
           '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
@@ -19937,7 +19937,7 @@
     (INST "MOVBE" (OP :OP #xF38F1 :PFX :NO-PREFIX
                       :FEAT '(:MOVBE))
           (ARG :OP1 '(M Y) :OP2 '(G Y))
-          'NIL
+          '(X86-MOVBE-OP/EN-MR)
           '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
@@ -19945,7 +19945,7 @@
     (INST "MOVBE" (OP :OP #xF38F1 :PFX :66
                       :FEAT '(:MOVBE))
           (ARG :OP1 '(M W) :OP2 '(G W))
-          'NIL
+          '(X86-MOVBE-OP/EN-MR)
           '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
