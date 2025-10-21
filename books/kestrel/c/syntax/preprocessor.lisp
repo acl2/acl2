@@ -12,6 +12,7 @@
 
 (include-book "parser-states")
 (include-book "parser-messages")
+(include-book "abstract-syntax-irrelevants")
 
 (include-book "kestrel/fty/character-list" :dir :system)
 (include-book "kestrel/fty/nat-option" :dir :system)
@@ -722,6 +723,14 @@
   ;; keep recognizer disabled:
 
   (in-theory (disable ppstatep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ppstate->gcc ((ppstate ppstatep))
+  :returns (gcc booleanp)
+  :short "Flag saying whether GCC extensions are supported or not."
+  (c::version-gccp (ppstate->version ppstate))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1533,7 +1542,7 @@
        :hints (("Goal" :in-theory (enable rationalp-when-natp
                                           acl2-numberp-when-natp))))
 
-     (defret ppstate->size-of-lex-identifier-loop-<=
+     (defret ppstate->size-of-plex-identifier-loop-uncond
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
@@ -1541,7 +1550,7 @@
 
   ///
 
-  (defret ppstate->size-of-lex-identifier-uncond
+  (defret ppstate->size-of-plex-identifier-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear))
@@ -1589,7 +1598,7 @@
      :returns (mv erp
                   (final-pnumber pnumberp)
                   (last-pos positionp)
-                  (ppstate ppstatep :hyp (ppstatep ppstate)))
+                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
      (b* (((reterr) (irr-pnumber) (irr-position) ppstate)
           ((erp char pos ppstate) (pread-char ppstate)))
@@ -1722,7 +1731,516 @@
                                               rationalp-when-natp
                                               acl2-numberp-when-natp
                                               dec-digit-char-p
-                                              str::letter/uscore-char-p))))))
+                                              str::letter/uscore-char-p)))
+
+     ///
+
+     (defret ppstate->size-of-plex-pp-number-loop-uncond
+       (<= (ppstate->size new-ppstate)
+           (ppstate->size ppstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret ppstate->size-of-plex-pp-number-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-hexadecimal-digit ((ppstate ppstatep))
+  :returns (mv erp
+               (hexdig hex-digit-char-p
+                       :hints
+                       (("Goal" :in-theory (enable hex-digit-char-p
+                                                   unsigned-byte-p
+                                                   integer-range-p
+                                                   integerp-when-natp))))
+               (pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a hexadecimal digit during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-hexadecimal-digit),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) #\0 (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((when (not char))
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "a hexadecimal digit"
+                    :found (char-to-msg char)))
+       ((unless (or (and (<= (char-code #\0) char) ; 0
+                         (<= char (char-code #\9))) ; 9
+                    (and (<= (char-code #\A) char) ; A
+                         (<= char (char-code #\F))) ; F
+                    (and (<= (char-code #\a) char) ; a
+                         (<= char (char-code #\f))))) ; f
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "a hexadecimal digit"
+                    :found (char-to-msg char))))
+    (retok (code-char char) pos ppstate))
+  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
+                                           integerp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-hexadecimal-digit-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-hexadecimal-digit-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-hex-quad ((ppstate ppstatep))
+  :returns (mv erp
+               (quad hex-quad-p)
+               (last-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a quadruple of hexadecimal digits during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-hex-quad),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) (irr-hex-quad) (irr-position) ppstate)
+       ((erp hexdig1 & ppstate) (plex-hexadecimal-digit ppstate))
+       ((erp hexdig2 & ppstate) (plex-hexadecimal-digit ppstate))
+       ((erp hexdig3 & ppstate) (plex-hexadecimal-digit ppstate))
+       ((erp hexdig4 pos ppstate) (plex-hexadecimal-digit ppstate)))
+    (retok (make-hex-quad :1st hexdig1
+                          :2nd hexdig2
+                          :3rd hexdig3
+                          :4th hexdig4)
+           pos
+           ppstate))
+
+  ///
+
+  (defret ppstate->size-of-plex-hex-quad-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-hex-quad-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-*-hexadecimal-digit ((pos-so-far positionp) (ppstate ppstatep))
+  :returns (mv erp
+               (hexdigs hex-digit-char-listp
+                        :hints
+                        (("Goal"
+                          :induct t
+                          :in-theory (enable plex-*-hexadecimal-digit
+                                             hex-digit-char-p
+                                             unsigned-byte-p
+                                             integer-range-p
+                                             integerp-when-natp))))
+               (last-pos positionp)
+               (next-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex zero or more hexadecimal digits, as many as available,
+          during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-*-hexadecimal-digit),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) nil (irr-position) (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((when (not char))
+        (retok nil (position-fix pos-so-far) pos ppstate))
+       ((unless (or (and (<= (char-code #\0) char) ; 0
+                         (<= char (char-code #\9))) ; 9
+                    (and (<= (char-code #\A) char) ; A
+                         (<= char (char-code #\F))) ; F
+                    (and (<= (char-code #\a) char) ; a
+                         (<= char (char-code #\f))))) ; f
+        (b* ((ppstate (punread-char ppstate)))
+          (retok nil (position-fix pos-so-far) pos ppstate)))
+       (hexdig (code-char char))
+       ((erp hexdigs last-pos next-pos ppstate)
+        (plex-*-hexadecimal-digit pos ppstate)))
+    (retok (cons hexdig hexdigs) last-pos next-pos ppstate))
+  :measure (ppstate->size ppstate)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
+                                           integerp-when-natp)))
+
+  ///
+
+  (more-returns
+   (hexdigs true-listp
+            :rule-classes :type-prescription))
+
+  (defret ppstate->size-of-plex-*-hexadecimal-digit-uncond
+    (<= (ppstate->size new-ppstate)
+        (- (ppstate->size ppstate)
+           (len hexdigs)))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-escape-sequence ((ppstate ppstatep))
+  :returns (mv erp
+               (escape escapep)
+               (last-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex an escape sequence during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-escape-sequence),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) (irr-escape) (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate)))
+    (cond
+     ((not char)
+      (reterr-msg :where (position-to-msg pos)
+                  :expected "a single quote ~
+                             or a double quote ~
+                             or a question mark ~
+                             or a backslash ~
+                             or a letter in {a, b, f, n, r, t, v, u, U, x} ~
+                             or an octal digit"
+                  :found (char-to-msg char)))
+     ((= char (char-code #\')) ; \ '
+      (retok (escape-simple (simple-escape-squote)) pos ppstate))
+     ((= char (char-code #\")) ; \ "
+      (retok (escape-simple (simple-escape-dquote)) pos ppstate))
+     ((= char (char-code #\?)) ; \ ?
+      (retok (escape-simple (simple-escape-qmark)) pos ppstate))
+     ((= char (char-code #\\)) ; \ \
+      (retok (escape-simple (simple-escape-bslash)) pos ppstate))
+     ((= char (char-code #\a)) ; \ a
+      (retok (escape-simple (simple-escape-a)) pos ppstate))
+     ((= char (char-code #\b)) ; \ b
+      (retok (escape-simple (simple-escape-b)) pos ppstate))
+     ((= char (char-code #\f)) ; \ f
+      (retok (escape-simple (simple-escape-f)) pos ppstate))
+     ((= char (char-code #\n)) ; \ n
+      (retok (escape-simple (simple-escape-n)) pos ppstate))
+     ((= char (char-code #\r)) ; \ r
+      (retok (escape-simple (simple-escape-r)) pos ppstate))
+     ((= char (char-code #\t)) ; \ t
+      (retok (escape-simple (simple-escape-t)) pos ppstate))
+     ((= char (char-code #\v)) ; \ v
+      (retok (escape-simple (simple-escape-v)) pos ppstate))
+     ((and (= char (char-code #\%)) ; \ %
+           (ppstate->gcc ppstate))
+      (retok (escape-simple (simple-escape-percent)) pos ppstate))
+     ((and (<= (char-code #\0) char)
+           (<= char (char-code #\7))) ; \ octdig
+      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+        (cond
+         ((and char2
+               (<= (char-code #\0) char2)
+               (<= char2 (char-code #\7))) ; \ octdig octdig
+          (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
+            (cond
+             ((and char3
+                   (<= (char-code #\0) char3)
+                   (<= char3 (char-code #\7))) ; \ octdig octdig octdig
+              (retok (escape-oct (oct-escape-three (code-char char)
+                                                   (code-char char2)
+                                                   (code-char char3)))
+                     pos3
+                     ppstate))
+             (t ; \ octdig \octdig other
+              (b* ((ppstate
+                    ;; \ octdig octdig
+                    (if char3 (punread-char ppstate) ppstate)))
+                (retok (escape-oct (oct-escape-two (code-char char)
+                                                   (code-char char2)))
+                       pos2
+                       ppstate))))))
+         (t ; \ octdig other
+          (b* ((ppstate (if char2 (punread-char ppstate) ppstate))) ; \octdig
+            (retok (escape-oct (oct-escape-one (code-char char)))
+                   pos
+                   ppstate))))))
+     ((= char (char-code #\x))
+      (b* (((erp hexdigs last-pos next-pos ppstate)
+            (plex-*-hexadecimal-digit pos ppstate)))
+        (if hexdigs
+            (retok (escape-hex hexdigs) last-pos ppstate)
+          (reterr-msg :where (position-to-msg next-pos)
+                      :expected "one or more hexadecimal digits"
+                      :found "none"))))
+     ((= char (char-code #\u))
+      (b* (((erp quad pos ppstate) (plex-hex-quad ppstate)))
+        (retok (escape-univ (univ-char-name-locase-u quad)) pos ppstate)))
+     ((= char (char-code #\U))
+      (b* (((erp quad1 & ppstate) (plex-hex-quad ppstate))
+           ((erp quad2 pos ppstate) (plex-hex-quad ppstate)))
+        (retok (escape-univ (make-univ-char-name-upcase-u :quad1 quad1
+                                                          :quad2 quad2))
+               pos
+               ppstate)))
+     (t
+      (reterr-msg :where (position-to-msg pos)
+                  :expected "a single quote ~
+                             or a double quote ~
+                             or a question mark ~
+                             or a backslash ~
+                             or a letter in {a, b, f, n, r, t, v, u, U, x} ~
+                             or an octal digit"
+                  :found (char-to-msg char)))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp
+                                           rationalp-when-natp
+                                           integerp-when-natp
+                                           oct-digit-char-p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+
+  ///
+
+  (defret ppstate->size-of-plex-escape-sequence-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-escape-sequence-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-*-c-char ((ppstate ppstatep))
+  :returns (mv erp
+               (cchars c-char-listp)
+               (closing-squote-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex zero or more characters and escape sequences
+          in a character constant,
+          during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-*-c-char),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) nil (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "an escape sequence or ~
+                               any character other than ~
+                               single quote or backslash or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\'))) ; '
+        (retok nil pos ppstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "an escape sequence or ~
+                               any character other than ~
+                               single quote or backslash or new-line"
+                    :found (char-to-msg char)))
+       ((erp cchar & ppstate)
+        (if (= char (char-code #\\)) ; \
+            (b* (((erp escape pos ppstate) (plex-escape-sequence ppstate))
+                 (cchar (c-char-escape escape)))
+              (retok cchar pos ppstate))
+          (b* ((cchar (c-char-char char)))
+            (retok cchar pos ppstate))))
+       ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate)))
+    (retok (cons cchar cchars) closing-squote-pos ppstate))
+  :measure (ppstate->size ppstate)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-*-c-char-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plex-*-c-char-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (- (ppstate->size ppstate)
+                        (len cchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-*-s-char ((ppstate ppstatep))
+  :returns (mv erp
+               (schars s-char-listp)
+               (closing-dquote-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex zero or more characters and escape sequences
+          in a string literal,
+          during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-*-s-char),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) nil (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "an escape sequence or ~
+                               any character other than ~
+                               double quote or backslash"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\"))) ; "
+        (retok nil pos ppstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "an escape sequence or ~
+                               any character other than ~
+                               double quote or backslash"
+                    :found (char-to-msg char)))
+       ((erp schar & ppstate)
+        (if (= char (char-code #\\)) ; \
+            (b* (((erp escape pos ppstate) (plex-escape-sequence ppstate))
+                 (schar (s-char-escape escape)))
+              (retok schar pos ppstate))
+          (b* ((schar (s-char-char char)))
+            (retok schar pos ppstate))))
+       ((erp schars closing-dquote-pos ppstate) (plex-*-s-char ppstate)))
+    (retok (cons schar schars) closing-dquote-pos ppstate))
+  :measure (ppstate->size ppstate)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-*-s-char-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plex-*-s-char-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (- (ppstate->size ppstate)
+                        (len schars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable len fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-*-h-char ((ppstate ppstatep))
+  :returns (mv erp
+               (hchars h-char-listp)
+               (closing-angle-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex zero or more characters
+          in a header name between angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-*-h-char),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) nil (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\>))) ; >
+        (retok nil pos ppstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (hchar (h-char char))
+       ((erp hchars closing-angle-pos ppstate) (plex-*-h-char ppstate)))
+    (retok (cons hchar hchars) closing-angle-pos ppstate))
+  :measure (ppstate->size ppstate)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-*-h-char-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plex-*-h-char-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (- (ppstate->size ppstate)
+                        (len hchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-*-q-char ((ppstate ppstatep))
+  :returns (mv erp
+               (qchars q-char-listp)
+               (closing-dquote-pos positionp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex zero or more characters
+          in a header name between double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-*-q-char),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) nil (irr-position) ppstate)
+       ((erp char pos ppstate) (pread-char ppstate))
+       ((unless char)
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       ((when (= char (char-code #\"))) ; "
+        (retok nil pos ppstate))
+       ((when (= char 10)) ; new-line
+        (reterr-msg :where (position-to-msg pos)
+                    :expected "any character other than ~
+                               greater-than or new-line"
+                    :found (char-to-msg char)))
+       (qchar (q-char char))
+       ((erp qchars closing-dquote-pos ppstate) (plex-*-q-char ppstate)))
+    (retok (cons qchar qchars) closing-dquote-pos ppstate))
+  :measure (ppstate->size ppstate)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-*-q-char-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plex-*-q-char-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (- (ppstate->size ppstate)
+                        (len qchars)))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t :in-theory (enable fix len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
