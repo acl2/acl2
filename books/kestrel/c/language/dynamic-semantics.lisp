@@ -995,7 +995,7 @@
        As noted at the end of the documentation of @(tsee exec-expr-pure),
        we are in the process of moving that function's code here,
        and then eliminating that function.
-       For now we have just added support for variables,
+       For now we have just added support for variables and constants,
        which happen to be pure and have trivially deterministic evaluation.")
      (xdoc::p
       "If the expression is pure,
@@ -1036,6 +1036,7 @@
       (expr-case
        e
        :ident (mv (exec-ident e.get compst) (compustate-fix compst))
+       :const (mv (exec-const e.get) (compustate-fix compst))
        :otherwise
        (b* (((when (expr-purep e))
              (mv (exec-expr-pure e compst) (compustate-fix compst)))

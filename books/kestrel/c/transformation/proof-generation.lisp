@@ -407,6 +407,7 @@
                                   (expr ',new-expr)
                                   (fenv new-fenv)))
                  :in-theory '(c::exec-expr
+                              c::exec-expr-pure-when-const
                               c::errorp-of-error
                               (:e c::expr-purep)
                               (:e c::expr-kind)
