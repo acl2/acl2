@@ -985,24 +985,29 @@
        for expressions that do not return a value or designate an object,
        e.g. calls of @('void') functions.")
      (xdoc::p
-      "For now we only support
-       pure expressions,
-       function calls ,
-       and (simple) assignments,
-       with additional restrictions on function calls and assignments
-       so that the exact order of evaluation, which is unspecified by [C17],
-       does not affect the final result.
-       As noted at the end of the documentation of @(tsee exec-expr-pure),
-       we are in the process of moving that function's code here,
-       and then eliminating that function.
-       For now we have just added support for variables and constants,
-       which happen to be pure and have trivially deterministic evaluation.")
+      "We support the execution of expressions whose order of evaluation
+       is determined by [C17] or does not matter;
+       we characterize this subset of the expressions conservatively,
+       returning errors on expressions outside the characterization.
+       As noted in @(tsee exec-expr-pure),
+       we are in the process of moving the code from there to here,
+       and we will eventually eliminate @(tsee exec-expr-pure);
+       as we move the code here, we also generalize it
+       in the sense of supporting the execution of more expressions,
+       namely ones that are not pure but have
+       a deterministic order of evaluation.")
      (xdoc::p
-      "If the expression is pure,
-       we execute it as a pure expression.")
+      "The code of this function starts by cases on expressions,
+       but only covers some of the cases;
+       the rest of the cases contain (some of) the old code of this function,
+       which handles certain kinds of expressions.")
+     (xdoc::p
+      "Variables and constants are always deterministic,
+       so they are supported in all cases.")
      (xdoc::p
       "If the expression is a function call,
-       its arguments must be all pure expressions.
+       its arguments must be all pure expressions;
+       if they were not, they might modify the function-valued expression.
        We execute the arguments and then the function.")
      (xdoc::p
       "If the expression is an assignment,
@@ -1037,19 +1042,17 @@
        e
        :ident (mv (exec-ident e.get compst) (compustate-fix compst))
        :const (mv (exec-const e.get) (compustate-fix compst))
-       :otherwise
-       (b* (((when (expr-purep e))
-             (mv (exec-expr-pure e compst) (compustate-fix compst)))
-            ((when (expr-case e :call))
-             (b* ((fun (expr-call->fun e))
-                  (args (expr-call->args e))
-                  (vals (exec-expr-pure-list args compst))
+       :call (b* ((vals (exec-expr-pure-list e.args compst))
                   ((when (errorp vals)) (mv vals (compustate-fix compst)))
-                  ((mv val? compst) (exec-fun fun vals compst fenv (1- limit)))
+                  ((mv val? compst)
+                   (exec-fun e.fun vals compst fenv (1- limit)))
                   ((when (errorp val?)) (mv val? compst)))
                (if val?
                    (mv (make-expr-value :value val? :object nil) compst)
-                 (mv nil compst))))
+                 (mv nil compst)))
+       :otherwise
+       (b* (((when (expr-purep e))
+             (mv (exec-expr-pure e compst) (compustate-fix compst)))
             ((when (and (expr-case e :binary)
                         (binop-case (expr-binary->op e) :asg)))
              (b* ((left (expr-binary->arg1 e))

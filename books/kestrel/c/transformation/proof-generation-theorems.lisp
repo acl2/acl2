@@ -533,9 +533,12 @@
                     (equal (c::init-type-of-init-value old-result)
                            (c::init-type-single type)))))
     :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
-             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
+             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit)
+             (c::exec-expr old-expr compst old-fenv (+ -1 limit))
+             (c::exec-expr new-expr compst new-fenv (+ -1 limit)))
     :enable (c::exec-expr
              c::exec-expr-pure
+             c::expr-purep
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
@@ -610,9 +613,12 @@
                     (set::in (c::type-option-of-stmt-value old-result)
                              (set::insert type nil)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
-             (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
+             (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit)
+             (c::exec-expr old-expr compst old-fenv (+ -1 limit))
+             (c::exec-expr new-expr compst new-fenv (+ -1 limit)))
     :enable (c::exec-expr
              c::exec-expr-pure
+             c::expr-purep
              c::type-of-value
              c::apconvert-expr-value-when-not-array
              c::type-nonchar-integerp
@@ -1129,9 +1135,11 @@
              (c::errorp
               (mv-nth 0 (c::exec-initer
                          (c::initer-single expr) compst fenv limit))))
-    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
+    :expand ((c::exec-initer (c::initer-single expr) compst fenv limit)
+             (c::exec-expr expr compst fenv (+ -1 limit)))
     :enable (c::exec-expr
-             c::exec-expr-pure))
+             c::exec-expr-pure
+             c::expr-purep))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,9 +1162,11 @@
                                       compst
                                       fenv
                                       limit))))
-    :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
+    :expand ((c::exec-stmt (c::stmt-return expr) compst fenv limit)
+             (c::exec-expr expr compst fenv (+ -1 limit)))
     :enable (c::exec-expr
-             c::exec-expr-pure))
+             c::exec-expr-pure
+             c::expr-purep))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
