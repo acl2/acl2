@@ -139,7 +139,6 @@
          (equal (len stat.xregs) (1- xnum))
          (unsigned-byte-p xlen stat.pc)
          (equal (len stat.memory) (expt 2 xlen))))
-  :hooks (:fix)
 
   ///
 
@@ -229,7 +228,6 @@
         0
       (unsigned-byte-fix (feat->xlen feat)
                          (nth (1- reg) (stat->xregs stat)))))
-  :hooks (:fix)
   :type-prescription (natp (read-xreg-unsigned reg stat feat))
 
   ///
@@ -274,7 +272,6 @@
      Several instructions interpret registers as signed."))
   (logext (feat->xlen feat)
           (read-xreg-unsigned reg stat feat))
-  :hooks (:fix)
   :type-prescription (integerp (read-xreg-signed reg stat feat))
 
   ///
@@ -319,7 +316,6 @@
      so it is useful to introduce this abbreviation,
      which reads the whole integer and keeps the low 32 bits."))
   (loghead 32 (read-xreg-unsigned reg stat feat))
-  :hooks (:fix)
   :type-prescription (natp (read-xreg-unsigned32 reg stat feat))
 
   ///
@@ -343,7 +339,6 @@
      but it is useful when the 32 bits of the register
      are treated as a signed integer instead of unsigned."))
   (logext 32 (read-xreg-unsigned reg stat feat))
-  :hooks (:fix)
   :type-prescription (integerp (read-xreg-signed32 reg stat feat))
 
   ///
@@ -379,7 +374,6 @@
       (change-stat stat :xregs (update-nth (1- reg)
                                            (loghead (feat->xlen feat) val)
                                            (stat->xregs stat)))))
-  :hooks (:fix)
 
   ///
 
@@ -415,7 +409,6 @@
      keeps the low 32 bits,
      and writes their sign extension to the register."))
   (write-xreg reg (logext 32 val) stat feat)
-  :hooks (:fix)
 
   ///
 
@@ -443,7 +436,6 @@
      as explained in @(tsee stat)."))
   (unsigned-byte-fix (feat->xlen feat)
                      (stat->pc stat))
-  :hooks (:fix)
   :type-prescription (natp (read-pc stat feat))
 
   ///
@@ -476,7 +468,6 @@
      This function handles the wrapping around,
      see e.g. @(tsee inc4-pc)."))
   (change-stat stat :pc (loghead (feat->xlen feat) (lnfix pc)))
-  :hooks (:fix)
 
   ///
 
@@ -501,7 +492,6 @@
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write-pc) wraps around if needed [ISA:1.4]."))
   (write-pc (+ (read-pc stat feat) 4) stat feat)
-  :hooks (:fix)
 
   ///
 
@@ -530,7 +520,6 @@
     (ubyte8-fix (nth addr (stat->memory stat))))
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
-  :hooks (:fix)
   :type-prescription (natp (read-mem8 addr stat feat))
 
   ///
@@ -578,7 +567,6 @@
           ((feat-big-endianp feat) (logappn 8 b1
                                             8 b0))
           (t (impossible))))
-  :hooks (:fix)
 
   ///
 
@@ -623,7 +611,6 @@
                                             8 b1
                                             8 b0))
           (t (impossible))))
-  :hooks (:fix)
 
   ///
 
@@ -680,7 +667,6 @@
                                             8 b1
                                             8 b0))
           (t (impossible))))
-  :hooks (:fix)
 
   ///
 
@@ -713,7 +699,6 @@
     (change-stat stat :memory (update-nth addr
                                           (ubyte8-fix val)
                                           (stat->memory stat))))
-  :hooks (:fix)
 
   ///
 
@@ -756,7 +741,6 @@
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
                                            integer-range-p)))
-  :hooks (:fix)
 
   ///
 
@@ -802,7 +786,6 @@
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
                                            integer-range-p)))
-  :hooks (:fix)
 
   ///
 
@@ -857,7 +840,6 @@
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
                                            integer-range-p)))
-  :hooks (:fix)
 
   ///
 
@@ -909,7 +891,6 @@
              8 b1
              8 b2
              8 b3))
-  :hooks (:fix)
 
   ///
 
@@ -933,7 +914,6 @@
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
   (stat->error stat)
-  :hooks (:fix)
 
   ///
 
@@ -967,7 +947,6 @@
   :returns (new-stat statp)
   :short "Set the error flag in the state."
   (change-stat stat :error t)
-  :hooks (:fix)
 
   ///
 

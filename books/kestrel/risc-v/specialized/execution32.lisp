@@ -49,8 +49,7 @@
        (enc (read32-mem-ubyte32-lendian pc stat))
        (instr? (decodex enc (feat-rv32im-le)))
        ((unless instr?) (error32 stat)))
-    (exec32-instr instr? pc stat))
-  :hooks (:fix))
+    (exec32-instr instr? pc stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,5 +64,4 @@
      If @('n') is 0, we return the state unchanged."))
   (cond ((zp n) (stat32i-fix stat))
         ((error32p stat) (stat32i-fix stat))
-        (t (step32n (1- n) (step32 stat))))
-  :hooks (:fix))
+        (t (step32n (1- n) (step32 stat)))))

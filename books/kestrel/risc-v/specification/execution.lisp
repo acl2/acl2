@@ -55,7 +55,6 @@
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
   :guard-hints (("Goal" :in-theory (enable decode-iff-encoding-validp)))
-  :hooks (:fix)
 
   ///
 

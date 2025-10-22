@@ -48,8 +48,7 @@
        (enc (read64-mem-ubyte32-lendian pc stat))
        (instr? (decodex enc (feat-rv64im-le)))
        ((unless instr?) (error64 stat)))
-    (exec64-instr instr? pc stat))
-  :hooks (:fix))
+    (exec64-instr instr? pc stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,5 +63,4 @@
      If @('n') is 0, we return the state unchanged."))
   (cond ((zp n) (state64-fix stat))
         ((error64p stat) (state64-fix stat))
-        (t (step64n (1- n) (step64 stat))))
-  :hooks (:fix))
+        (t (step64n (1- n) (step64 stat)))))
