@@ -35,6 +35,7 @@
 
 (defun controlled-configuration-fn (induction-depth
                                     no-function
+                                    hooks
                                     state)
   (declare (xargs :stobjs state))
   `(progn
@@ -47,10 +48,13 @@
                                :absent
                                (w state))
                      :absent))
-            `((std::make-define-config :no-function ,no-function)))))
+            `((std::make-define-config :no-function ,no-function
+                                       :hooks ,hooks)))))
 
 (defmacro controlled-configuration (&key (induction-depth '0)
-                                         (no-function 't))
+                                         (no-function 't)
+                                         (hooks '(:fix)))
   `(make-event (controlled-configuration-fn ,induction-depth
                                             ,no-function
+                                            ',hooks
                                             state)))
