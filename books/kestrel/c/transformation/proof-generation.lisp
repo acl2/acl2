@@ -311,13 +311,13 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
        ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
        ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (vars-pre (gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
@@ -331,11 +331,10 @@
                          (equal old-value new-value)
                          (equal (c::type-of-value old-value) ',ctype)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
-       (thm-event
-        `(defrule ,thm-name
-           ,formula
-           :rule-classes nil
-           :hints ,hints)))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
   (fty::deffixequiv gen-expr-pure-thm
