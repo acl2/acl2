@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "unambiguity")
+(include-book "purity")
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
@@ -434,6 +435,115 @@
                     (expr-asg-formalp (expr-binary->arg2 expr))))
          (and (expr-pure-formalp (expr-binary->arg1 expr))
               (expr-pure-formalp (expr-binary->arg2 expr)))))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-formalp ((expr exprp))
+  :guard (expr-unambp expr)
+  :returns (yes/no booleanp)
+  :short "Check if an expression has a formal dynamic semantics."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expressions not supported by @(tsee ldm-expr)
+     are not supported here either.
+     The remaining expressions are supported or not
+     according to @(tsee c::exec-expr)
+     and the specialized functions it calls (e.g. @(tsee c::exec-arrsub))."))
+  (expr-case
+   expr
+   :ident (ident-formalp expr.ident)
+   :const (const-formalp expr.const)
+   :string nil
+   :paren (expr-formalp expr.inner)
+   :gensel nil
+   :arrsub (and (expr-formalp expr.arg1)
+                (expr-formalp expr.arg2)
+                (expr-purep expr.arg1)
+                (expr-purep expr.arg2))
+   :funcall (and (expr-case expr.fun :ident)
+                 (ident-formalp (expr-ident->ident expr.fun))
+                 (expr-list-pure-formalp expr.args))
+   :member (and (expr-formalp expr.arg)
+                (expr-purep expr.arg)
+                (ident-formalp expr.name))
+   :memberp (and (expr-formalp expr.arg)
+                 (expr-purep expr.arg)
+                 (ident-formalp expr.name))
+   :complit nil
+   :unary (unop-case
+           expr.op
+           :address (and (expr-formalp expr.arg)
+                         (expr-purep expr.arg))
+           :indir (and (expr-pure-formalp expr.arg)
+                       (expr-purep expr.arg))
+           :plus (and (expr-formalp expr.arg)
+                      (expr-purep expr.arg))
+           :minus (and (expr-formalp expr.arg)
+                       (expr-purep expr.arg))
+           :bitnot (and (expr-formalp expr.arg)
+                        (expr-purep expr.arg))
+           :lognot (and (expr-formalp expr.arg)
+                        (expr-purep expr.arg))
+           :preinc nil
+           :predec nil
+           :postinc nil
+           :postdec nil
+           :sizeof nil
+           :real nil
+           :imag nil)
+   :label-addr nil
+   :sizeof nil
+   :sizeof-ambig (impossible)
+   :alignof nil
+   :cast (and (tyname-formalp expr.type)
+              (expr-formalp expr.arg)
+              (expr-purep expr.arg))
+   :binary (cond
+            ((member-eq (binop-kind expr.op)
+                        '(:mul :div :rem :add :sub :shl :shr
+                          :lt :gt :le :ge :eq :ne
+                          :bitand :bitxor :bitior :logand :logor))
+             (and (expr-formalp expr.arg1)
+                  (expr-formalp expr.arg2)
+                  (expr-purep expr.arg1)
+                  (expr-purep expr.arg2)))
+            ((eq (binop-kind expr.op) :asg)
+             (and (expr-formalp expr.arg1)
+                  (expr-formalp expr.arg2)
+                  (or (and (expr-case expr.arg1 :ident)
+                           (or (expr-case expr.arg2 :funcall)
+                               (and (expr-case expr.arg2 :binary)
+                                    (binop-case (expr-binary->op expr.arg2)
+                                                :asg))))
+                      (and (expr-purep expr.arg1)
+                           (expr-purep expr.arg2)))))
+            (t nil))
+   :cond (and (expr-formalp expr.test)
+              (expr-option-case expr.then
+                                :some (expr-formalp expr.then.val)
+                                :none nil)
+              (expr-formalp expr.else)
+              (expr-purep expr.test)
+              (expr-option-case expr.then
+                                :some (expr-purep expr.then.val)
+                                :none nil)
+              (expr-purep expr.else))
+   :comma nil
+   :cast/call-ambig (impossible)
+   :cast/mul-ambig (impossible)
+   :cast/add-ambig (impossible)
+   :cast/sub-ambig (impossible)
+   :cast/and-ambig (impossible)
+   :cast/logand-ambig (impossible)
+   :stmt nil
+   :tycompat nil
+   :offsetof nil
+   :va-arg nil
+   :extension nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
