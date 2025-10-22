@@ -47,7 +47,7 @@
 (defthm all-all-unsigned-byte-p-of-group2
   (implies (all-unsigned-byte-p size x)
            (all-all-unsigned-byte-p size (group2 n x)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (enable all-all-unsigned-byte-p group2))))
 
 (defthm all-all-unsigned-byte-p-of-group2-back
@@ -56,7 +56,7 @@
                 (all-all-unsigned-byte-p size (group2 n x)))
            (all-unsigned-byte-p size x))
   :hints (("subgoal *1/4" :use (:instance list-split (n n)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
+          ("Goal"
            :in-theory (e/d (all-all-unsigned-byte-p group2)
                            (append-of-take-and-nthcdr-2)))))
 
@@ -88,8 +88,7 @@
                 (posp b))
            (equal (group2 c (ungroup b x))
                   (map-ungroup b (group2 a x))))
-  :hints (("Goal" :in-theory (enable ungroup map-ungroup group2 posp)
-           :do-not '(generalize eliminate-destructors))))
+  :hints (("Goal" :in-theory (enable ungroup map-ungroup group2 posp))))
 
 ;restrict to constants?
 (defthm group2-of-ungroup
@@ -113,7 +112,7 @@
                   (map-ungroup b (group (/ c b) x))))
   :hints (("Goal" :in-theory (enable posp equal-of-0-and-mod)
 ;           :cases ((equal b 1))
-           :do-not '(generalize eliminate-destructors))))
+           )))
 
 ;; drop?
 (defmap map-map-unpackbv (itemcount itemsize bv-lst) (map-unpackbv itemcount itemsize bv-lst) :fixed (itemcount itemsize))
@@ -157,7 +156,7 @@
                 )
            (equal (map-packbv 32 1 (map-ungroup 8 (map-map-unpackbv 8 1 4bv-list)))
                   (map-packbv 4 8 4bv-list)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (e/d (map-packbv map-ungroup map-map-unpackbv
                                        CAR-BECOMES-NTH-OF-0
                                        packbv-opener

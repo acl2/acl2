@@ -438,7 +438,7 @@
 (defthm getbit-unguarded-correct
   (equal (getbit-unguarded n x)
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice) ()))))
+  :hints (("Goal" :in-theory (enable getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,7 +559,8 @@
 
 (defund bvsx-unguarded (new-size old-size val)
   (declare (xargs :guard t))
-  (if (not (posp old-size))
+  (if (not (and (posp old-size)
+                (natp new-size)))
       0
       (if (<-unguarded new-size old-size)
           (bvchop-unguarded new-size val)
@@ -781,7 +782,7 @@
 (defthm bit-to-bool-unguarded-correct
   (equal (bit-to-bool-unguarded x)
          (bit-to-bool x))
-  :hints (("Goal" :in-theory (enable bit-to-bool-unguarded))))
+  :hints (("Goal" :in-theory (enable bit-to-bool bit-to-bool-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

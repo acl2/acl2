@@ -12,6 +12,8 @@
 (in-package "ACL2")
 
 (include-book "logtail-def")
+(include-book "kestrel/arithmetic-light/power-of-2p-def" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (local (include-book "../library-wrappers/ihs-logops-lemmas"))
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
@@ -24,6 +26,7 @@
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor-and-expt"))
+(local (include-book "../arithmetic-light/lg"))
 
 (in-theory (disable logtail))
 
@@ -268,23 +271,6 @@
            (<= 0 (logtail n x)))
   :rule-classes :linear)
 
-(defthmd logtail-becomes-ash
-  (implies (natp n)
-           (equal (logtail n x)
-                  (ash x (- n))))
-  :hints (("Goal" :in-theory (enable logtail ash))))
-
-(defthmd ash-becomes-logtail
-  (implies (and (<= n 0)
-                (integerp n))
-           (equal (ash x n)
-                  (logtail (- n) x)))
-  :hints (("Goal" :use (:instance logtail-becomes-ash (n (- n))))))
-
-(theory-invariant (incompatible (:rewrite ash-becomes-logtail)
-                                (:rewrite logtail-becomes-ash)))
-
-
 (defthmd equal-of-logtail
   (implies (and (natp pos)
                 (integerp i))
@@ -352,7 +338,10 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable logtail))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;Disabled since logtail is more complex than floor
+;drop since we have the general one
 (defthmd floor-of-2-becomes-logtail-of-1
   (implies (integerp x)
            (equal (floor x 2)
@@ -361,12 +350,27 @@
 
 (theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
 
-(defthmd ash-of-negative-becomes-logtail
-  (implies (and (<= amt 0)
-                (integerp amt))
-           (equal (ash x amt)
-                  (logtail (- amt) x)))
-  :hints (("Goal" :in-theory (enable logtail ash))))
+;Disabled since logtail is more complex than floor
+(defthmd floor-of-expt-becomes-logtail
+  (implies (and (integerp x)
+                (natp n))
+           (equal (floor x (expt 2 n))
+                  (logtail n x)))
+  :hints (("Goal" :in-theory (enable logtail ifix))))
+
+(theory-invariant (incompatible (:rewrite floor-of-expt-becomes-logtail) (:definition logtail)))
+
+(defthmd floor-of-power-of-2-becomes-logtail
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (integerp x))
+           (equal (floor x k)
+                  (logtail (lg k) x)))
+  :hints (("Goal" :in-theory (enable logtail ifix))))
+
+(theory-invariant (incompatible (:rewrite floor-of-power-of-2-becomes-logtail) (:definition logtail)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm logtail-of-floor-of-expt
   (implies (and (integerp x)

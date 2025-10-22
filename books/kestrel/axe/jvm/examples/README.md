@@ -8,7 +8,7 @@ The [formal-unit-tester/](formal-unit-tester) subdirectory contains "formal unit
 
 See :doc STP, here:
 
-https://www.cs.utexas.edu/~moore/acl2/manuals/latest/?topic=ACL2____STP
+https://acl2.org/doc/?topic=ACL2____STP
 
 for information about installing the STP SMT solver, which is used by
 Axe.

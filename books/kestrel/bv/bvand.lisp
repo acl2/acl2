@@ -555,3 +555,13 @@
             (equal (bvand size k x)
                    (bvand newsize k x)))
    :hints (("Goal" :in-theory (enable bvand-tighten-1))))
+
+(defthm bvand-of-ifix-arg2
+  (equal (bvand size (ifix x) y)
+         (bvand size x y))
+  :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm bvand-of-ifix-arg3
+  (equal (bvand size x (ifix y))
+         (bvand size x y))
+  :hints (("Goal" :in-theory (enable ifix))))

@@ -34,3 +34,13 @@
 
 (theory-invariant (incompatible (:rewrite lognot-of-logext)
                                 (:rewrite logext-of-lognot)))
+
+(defthm logapp-of-logext-low
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y))
+           (equal (logapp size (logext size2 x) y)
+                  (logapp size x y)))
+  :hints (("Goal" :in-theory (enable logapp))))

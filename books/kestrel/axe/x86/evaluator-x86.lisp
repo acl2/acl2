@@ -13,11 +13,11 @@
 (in-package "ACL2") ; change to X package?
 
 (include-book "../evaluator-basic")
+(include-book "../unguarded-defuns2")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline, has ttag :UNDEF-FLG
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline, has ttag :OTHER-NON-DET
-(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))
@@ -39,20 +39,6 @@
 
 (in-theory (disable acl2::posp-redefinition ; yuck, from std/basic/arith-equivs
                     ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund integer-range-p-unguarded (lower upper x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (not (<-unguarded x lower))
-       (<-unguarded x upper)))
-
-(defthm integer-range-p-unguarded-correct
-  (equal (integer-range-p-unguarded lower upper x)
-         (integer-range-p lower upper x))
-  :hints (("Goal" :in-theory (enable integer-range-p-unguarded
-                                     integer-range-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +104,7 @@
 (defthm 2bits-fix-unguarded-correct
   (equal (x86isa::2bits-fix-unguarded x)
          (x86isa::2bits-fix x))
-  :hints (("Goal" :in-theory (enable x86isa::2bits-fix-unguarded X86ISA::2BITS-FIX))))
+  :hints (("Goal" :in-theory (enable x86isa::2bits-fix-unguarded x86isa::2bits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +115,7 @@
 (defthm 4bits-fix-unguarded-correct
   (equal (x86isa::4bits-fix-unguarded x)
          (x86isa::4bits-fix x))
-  :hints (("Goal" :in-theory (enable x86isa::4bits-fix-unguarded X86ISA::4BITS-FIX))))
+  :hints (("Goal" :in-theory (enable x86isa::4bits-fix-unguarded x86isa::4bits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,7 +126,7 @@
 (defthm 8bits-fix-unguarded-correct
   (equal (x86isa::8bits-fix-unguarded x)
          (x86isa::8bits-fix x))
-  :hints (("Goal" :in-theory (enable x86isa::8bits-fix-unguarded X86ISA::8BITS-FIX))))
+  :hints (("Goal" :in-theory (enable x86isa::8bits-fix-unguarded x86isa::8bits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,7 +137,7 @@
 (defthm 10bits-fix-unguarded-correct
   (equal (x86isa::10bits-fix-unguarded x)
          (x86isa::10bits-fix x))
-  :hints (("Goal" :in-theory (enable x86isa::10bits-fix-unguarded X86ISA::10BITS-FIX))))
+  :hints (("Goal" :in-theory (enable x86isa::10bits-fix-unguarded x86isa::10bits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,50 +149,6 @@
   (equal (x86isa::prefixes-fix$inline-unguarded x)
          (x86isa::prefixes-fix$inline x))
   :hints (("Goal" :in-theory (enable x86isa::prefixes-fix$inline-unguarded x86isa::prefixes-fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund loghead$inline-unguarded (n x)
-  (declare (xargs :guard t))
-  (loghead$inline (nfix n) (ifix x)))
-
-(defthm loghead$inline-unguarded-correct
-  (equal (loghead$inline-unguarded n x)
-         (loghead$inline n x))
-  :hints (("Goal" :in-theory (enable loghead$inline-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund logbitp-unguarded (i j)
-  (declare (xargs :guard t))
-  (logbitp (nfix i) (ifix j)))
-
-(defthm logbitp-unguarded-correct
-  (equal (logbitp-unguarded i j)
-         (logbitp i j))
-  :hints (("Goal" :in-theory (enable logbitp-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-logand-unguarded (i j)
-  (declare (xargs :guard t))
-  (binary-logand (ifix i) (ifix j)))
-
-(defthm binary-logand-unguarded-correct
-  (equal (binary-logand-unguarded i j)
-         (binary-logand i j))
-  :hints (("Goal" :in-theory (enable binary-logand-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-logior-unguarded (i j)
-  (declare (xargs :guard t))
-  (binary-logior (ifix i) (ifix j)))
-
-(defthm binary-logior-unguarded-correct
-  (equal (binary-logior-unguarded i j)
-         (binary-logior i j))
-  :hints (("Goal" :in-theory (enable binary-logior-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,13 +165,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::PREFIXES->OPR-unguarded (x)
+(defund x86isa::prefixes->opr-unguarded (x)
   (declare (xargs :guard t ))
-  (X86ISA::PREFIXES->OPR (X86ISA::PREFIXES-FIX$inline-unguarded X)))
+  (x86isa::prefixes->opr (x86isa::prefixes-fix$inline-unguarded x)))
 
-(defthm X86ISA::PREFIXES->OPR-unguarded-correct
-  (equal (X86ISA::PREFIXES->OPR-unguarded x)
-         (X86ISA::PREFIXES->OPR x))
+(defthm x86isa::prefixes->opr-unguarded-correct
+  (equal (x86isa::prefixes->opr-unguarded x)
+         (x86isa::prefixes->opr x))
   :hints (("Goal" :in-theory (enable x86isa::prefixes->opr-unguarded x86isa::prefixes->opr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -348,29 +290,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bitops::part-select-width-low$inline-unguarded (x width low)
-  (declare (xargs :guard t))
-  (loghead$inline-unguarded width (logtail$inline-unguarded low x)))
-
-(defthm bitops::part-select-width-low$inline-unguarded-correct
-  (equal (bitops::part-select-width-low$inline-unguarded x width low)
-         (bitops::part-select-width-low$inline x width low))
-  :hints (("Goal" :in-theory (enable bitops::part-select-width-low$inline-unguarded bitops::part-select-width-low$inline))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund zip-unguarded (x)
-  (declare (xargs :guard t))
-  (zip (ifix x)))
-
-(defthm zip-unguarded-correct
-  (equal (zip-unguarded x)
-         (zip x))
-  :hints (("Goal" :in-theory (enable zip-unguarded zip))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund X86ISA::MODR/M-FIX$inline-unguarded (x)
+(defund x86isa::modr/m-fix$inline-unguarded (x)
   (declare (xargs :guard t))
   (loghead$inline-unguarded 8 (ifix x)))
 
@@ -414,7 +334,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits-FIX$inline-unguarded (x)
+(defund x86isa::rflagsbits-fix$inline-unguarded (x)
   (declare (xargs :guard t))
   (loghead$inline-unguarded 32 (ifix x)))
 
@@ -425,80 +345,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->cf$inline-unguarded (x)
+(defund x86isa::rflagsbits->cf$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->cf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->cf$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->cf-unguarded-correct
-  (equal (X86ISA::rflagsbits->cf$inline-unguarded x)
-         (X86ISA::rflagsbits->cf$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->cf$inline-unguarded X86ISA::rflagsbits->cf$inline))))
+(defthm x86isa::rflagsbits->cf-unguarded-correct
+  (equal (x86isa::rflagsbits->cf$inline-unguarded x)
+         (x86isa::rflagsbits->cf$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->cf$inline-unguarded x86isa::rflagsbits->cf$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->pf$inline-unguarded (x)
+(defund x86isa::rflagsbits->pf$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->pf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->pf$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->pf-unguarded-correct
-  (equal (X86ISA::rflagsbits->pf$inline-unguarded x)
-         (X86ISA::rflagsbits->pf$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->pf$inline-unguarded X86ISA::rflagsbits->pf$inline))))
+(defthm x86isa::rflagsbits->pf-unguarded-correct
+  (equal (x86isa::rflagsbits->pf$inline-unguarded x)
+         (x86isa::rflagsbits->pf$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->pf$inline-unguarded x86isa::rflagsbits->pf$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->af$inline-unguarded (x)
+(defund x86isa::rflagsbits->af$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->af$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->af$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->af-unguarded-correct
-  (equal (X86ISA::rflagsbits->af$inline-unguarded x)
-         (X86ISA::rflagsbits->af$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->af$inline-unguarded X86ISA::rflagsbits->af$inline))))
+(defthm x86isa::rflagsbits->af-unguarded-correct
+  (equal (x86isa::rflagsbits->af$inline-unguarded x)
+         (x86isa::rflagsbits->af$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->af$inline-unguarded x86isa::rflagsbits->af$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->of$inline-unguarded (x)
+(defund x86isa::rflagsbits->of$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->of$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->of$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->of-unguarded-correct
-  (equal (X86ISA::rflagsbits->of$inline-unguarded x)
-         (X86ISA::rflagsbits->of$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->of$inline-unguarded X86ISA::rflagsbits->of$inline))))
+(defthm x86isa::rflagsbits->of-unguarded-correct
+  (equal (x86isa::rflagsbits->of$inline-unguarded x)
+         (x86isa::rflagsbits->of$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->of$inline-unguarded x86isa::rflagsbits->of$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->sf$inline-unguarded (x)
+(defund x86isa::rflagsbits->sf$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->sf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->sf$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->sf-unguarded-correct
-  (equal (X86ISA::rflagsbits->sf$inline-unguarded x)
-         (X86ISA::rflagsbits->sf$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->sf$inline-unguarded X86ISA::rflagsbits->sf$inline))))
+(defthm x86isa::rflagsbits->sf-unguarded-correct
+  (equal (x86isa::rflagsbits->sf$inline-unguarded x)
+         (x86isa::rflagsbits->sf$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->sf$inline-unguarded x86isa::rflagsbits->sf$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::rflagsbits->zf$inline-unguarded (x)
+(defund x86isa::rflagsbits->zf$inline-unguarded (x)
   (declare (xargs :guard t))
-  (X86ISA::rflagsbits->zf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::rflagsbits->zf$inline (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::rflagsbits->zf-unguarded-correct
-  (equal (X86ISA::rflagsbits->zf$inline-unguarded x)
-         (X86ISA::rflagsbits->zf$inline x))
-  :hints (("Goal" :in-theory (enable X86ISA::rflagsbits->zf$inline-unguarded X86ISA::rflagsbits->zf$inline))))
+(defthm x86isa::rflagsbits->zf-unguarded-correct
+  (equal (x86isa::rflagsbits->zf$inline-unguarded x)
+         (x86isa::rflagsbits->zf$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::rflagsbits->zf$inline-unguarded x86isa::rflagsbits->zf$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund X86ISA::!rflagsbits->af$inline-unguarded (af x)
+(defund x86isa::!rflagsbits->af$inline-unguarded (af x)
   (declare (xargs :guard t))
-  (X86ISA::!rflagsbits->af$inline (bfix$inline af) (X86ISA::rflagsbits-FIX$inline-unguarded X)))
+  (x86isa::!rflagsbits->af$inline (bfix$inline af) (x86isa::rflagsbits-fix$inline-unguarded x)))
 
-(defthm X86ISA::!rflagsbits->af-unguarded-correct
-  (equal (X86ISA::!rflagsbits->af$inline-unguarded af x)
-         (X86ISA::!rflagsbits->af$inline af x))
-  :hints (("Goal" :in-theory (enable X86ISA::!rflagsbits->af$inline-unguarded X86ISA::!rflagsbits->af$inline))))
+(defthm x86isa::!rflagsbits->af-unguarded-correct
+  (equal (x86isa::!rflagsbits->af$inline-unguarded af x)
+         (x86isa::!rflagsbits->af$inline af x))
+  :hints (("Goal" :in-theory (enable x86isa::!rflagsbits->af$inline-unguarded x86isa::!rflagsbits->af$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -532,39 +452,6 @@
   (equal (x86isa::n64-to-i64$inline-unguarded x)
          (x86isa::n64-to-i64$inline x))
   :hints (("Goal" :in-theory (enable x86isa::n64-to-i64$inline-unguarded x86isa::n64-to-i64$inline))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund evenp-unguarded (x)
-  (declare (xargs :guard t ))
-  (INTEGERP (binary-*-unguarded X (unary-/-unguarded 2))))
-
-(defthm evenp-unguarded-correct
-  (equal (evenp-unguarded x)
-         (evenp x))
-  :hints (("Goal" :in-theory (enable evenp-unguarded evenp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund logcount-unguarded (x)
-  (declare (xargs :guard t ))
-  (logcount (ifix x)))
-
-(defthm logcount-unguarded-correct
-  (equal (logcount-unguarded x)
-         (logcount x))
-  :hints (("Goal" :in-theory (enable logcount-unguarded logcount))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund ash-unguarded (i c)
-  (declare (xargs :guard t ))
-  (ash (ifix i) (ifix c)))
-
-(defthm ash-unguarded-correct
-  (equal (ash-unguarded i c)
-         (ash i c))
-  :hints (("Goal" :in-theory (enable ash-unguarded ash))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -752,75 +639,6 @@
                                      x86isa::sib-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::assoc-keyword-unguarded (key l)
-  (declare (xargs :guard t))
-  (cond ((atom l) nil)
-        ((equal key (car l)) l)
-        (t (assoc-keyword-unguarded key (acl2::cdr-unguarded (acl2::cdr-unguarded l))))))
-
-(defthm assoc-keyword-unguarded-correct
-  (equal (acl2::assoc-keyword-unguarded key l)
-         (assoc-keyword key l))
-  :hints (("Goal" :in-theory (enable acl2::assoc-keyword-unguarded))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::header-unguarded (name l)
-  (declare (xargs :guard t))
-  (if (or (array1p name l)
-          (array2p name l))
-      (header name l)
-    ;; todo: make an assoc-eq-unguarded:
-    (acl2::assoc-equal-unguarded :header l)))
-
-(defthm header-unguarded-correct
-  (equal (acl2::header-unguarded name l)
-         (acl2::header name l))
-  :hints (("Goal" :in-theory (enable acl2::header-unguarded acl2::header))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::default-unguarded (name l)
-  (declare (xargs :guard t
-                  :guard-hints (("Goal" :in-theory (disable dimensions default)))))
-  (if (or (array1p name l)
-          (array2p name l))
-      ;; normal case:
-      (cadr (assoc-keyword :default (cdr (header name l))))
-    (acl2::car-unguarded (acl2::cdr-unguarded (acl2::assoc-keyword-unguarded :default (acl2::cdr-unguarded (acl2::header-unguarded name l)))))))
-
-(defthm default-unguarded-correct
-  (equal (acl2::default-unguarded name l)
-         (acl2::default name l))
-  :hints (("Goal" :in-theory (enable acl2::default-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; I hope this is still fast in the normal case.
-;; TOOD: For some reason, I am seeing slow array warnings.
-(defund acl2::aref1-unguarded (name l n)
-  (declare (xargs :guard t
-                  :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))
-  (if (and (symbolp name)
-           (array1p name l)
-           (natp n)
-           (let ((dims (dimensions name l)))
-             (and (consp dims)
-                  (let ((len (car dims)))
-                    (and (natp len)
-                         (< n len))))))
-      ;; hope this is fast:
-      (aref1 name l n)
-    (let ((x (and (not (eq n :header))
-                  (acl2::assoc-equal-unguarded n l))))
-      (cond ((null x) (acl2::default-unguarded name l))
-            (t (acl2::cdr-unguarded x))))))
-
-(defthm aref1-unguarded-correct
-  (equal (acl2::aref1-unguarded name l n)
-         (acl2::aref1 name l n))
-  :hints (("Goal" :in-theory (enable acl2::aref1-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1109,23 +927,6 @@
   (equal (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline-unguarded x86isa::opcode x86isa::prefixes)
          (x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline x86isa::opcode x86isa::prefixes))
   :hints (("Goal" :in-theory (enable x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund bv-array-read-chunk-little-unguarded (element-count element-size array-len index array)
-  (declare (xargs :guard t))
-  (if (zp-unguarded element-count)
-      0
-    (bvcat-unguarded (binary-*-unguarded element-size (binary-+-unguarded -1 element-count))
-                     (bv-array-read-chunk-little-unguarded (binary-+-unguarded -1 element-count) element-size array-len (binary-+-unguarded 1 index) array)
-                     element-size
-                     (bv-array-read-unguarded element-size array-len index array))))
-
-(defthm bv-array-read-chunk-little-unguarded-correct
-  (equal (bv-array-read-chunk-little-unguarded element-count element-size array-len index array)
-         (bv-array-read-chunk-little element-count element-size array-len index array))
-  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little-unguarded
-                                     bv-array-read-chunk-little))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

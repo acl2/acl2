@@ -69,6 +69,8 @@ gcc -o psub.macho64 psub.c
 gcc -o pand.macho64 pand.c
 gcc -o por.macho64 por.c
 gcc -o pxor.macho64 pxor.c
+gcc -o mul.macho64 mul.c
+gcc -o vpadd128.macho64 vpadd128.c
 
 ;; Done on Dell Latitude 5480, Intel Core i5 64-bit Windows
 
@@ -78,6 +80,7 @@ gcc -o and.pe64 and.c
 gcc -o or.pe64 or.c
 gcc -o xor.pe64 xor.c
 gcc -o cmp.pe64 cmp.c
+gcc -o mul.pe64 mul.c
 
 
 ;; Done on Linux 12th Gen Intel Core i9
@@ -93,4 +96,5 @@ gcc -o psub.c psub.elf64
 gcc -o pand.c pand.elf64
 gcc -o por.c por.elf64
 gcc -o pxor.c pxor.elf64
-
+gcc -o mul.c mul.elf64
+gcc -o vpadd128.c vpadd128.elf64

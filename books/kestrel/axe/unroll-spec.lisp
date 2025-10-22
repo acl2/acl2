@@ -20,7 +20,7 @@
 (include-book "dag-size-fast")
 (include-book "jvm/rule-lists-jvm") ;for amazing-rules-spec-and-dag
 (include-book "rules-in-rule-lists")
-(include-book "util2") ;; not strictly needed
+(include-book "utilities") ;; not strictly needed
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)

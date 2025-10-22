@@ -162,7 +162,9 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (param-declor-nonabstract initdeclor.declor))
+           :declor (make-param-declor-nonabstract :declor initdeclor.declor
+                                                  :info nil)
+           :attribs nil)
          (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -236,13 +238,16 @@
       :specs param-declon.specs
       :declor (param-declor-case
                 param-declon.declor
-                :nonabstract (param-declor-nonabstract
-                               (add-pointer-declor param-declon.declor.declor))
+                :nonabstract (make-param-declor-nonabstract
+                              :declor (add-pointer-declor
+                                       param-declon.declor.declor)
+                              :info nil)
                 ;; TODO (not used here, but should be implemented for a general
                 ;; utility).
                 :abstract (param-declor-fix param-declon.declor)
                 :none (param-declor-fix param-declon.declor)
-                :ambig (param-declor-fix param-declon.declor)))))
+                :ambig (param-declor-fix param-declon.declor))
+      :attribs param-declon.attribs)))
 
 (define map-add-pointer-param-declon
   ((param-declons param-declon-listp))
@@ -314,7 +319,8 @@
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
                             :params (map-add-pointer-param-declon params)))
-        :body (stmt-compound items))))
+        :body (make-comp-stmt :labels nil :items items)
+        :info nil)))
   :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
   ((define ident-param-declon-map-filter
@@ -367,18 +373,22 @@
               (abstract-fn new-fn-name spec pointers items decls)))
           (retok new-fn
                  (list
-                   (block-item-stmt
-                     (stmt-return
+                   (make-block-item-stmt
+                    :stmt
+                     (make-stmt-return
+                      :expr?
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (map-address-ident-list idents))))))))
+                         :args (map-address-ident-list idents))
+                      :info nil)
+                    :info nil)))))
        ((when (endp items))
         (retmsg$ "Bad split point specifier"))
        (item (first items))
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
                                (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
@@ -408,41 +418,39 @@
                (fundef2 fundef-optionp))
   (b* (((reterr) (c$::irr-fundef) nil)
        ((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (b* (((mv well-formedp fundef-name params)
-             (dirdeclor-case
-               fundef.declor.direct
-               :function-params
-               (mv t
-                   (c$::dirdeclor->ident fundef.declor.direct.declor)
-                   fundef.declor.direct.params)
-               :function-names
-               (mv t
-                   (c$::dirdeclor->ident fundef.declor.direct.declor)
-                   nil)
-               :otherwise (mv nil nil nil)))
-           ((unless (and well-formedp
-                         (equal target-fn fundef-name)))
-            (retok (fundef-fix fundef) nil))
-           ((erp new-fn truncated-items)
-              (split-fn-block-item-list
-                new-fn-name
-                fundef.body.items
-                fundef.spec
-                fundef.declor.pointers
-                (param-declon-list-to-ident-param-declon-map params)
-                split-point)))
-        (retok new-fn
-                 (make-fundef
-                   :extension fundef.extension
-                   :spec fundef.spec
-                   :declor fundef.declor
-                   :decls fundef.decls
-                   :body (stmt-compound truncated-items))))
-      :otherwise (retok (fundef-fix fundef) nil))))
+       ((declor fundef.declor) fundef.declor)
+       ((mv well-formedp fundef-name params)
+        (dirdeclor-case
+         fundef.declor.direct
+         :function-params
+         (mv t
+             (c$::dirdeclor->ident fundef.declor.direct.declor)
+             fundef.declor.direct.params)
+         :function-names
+         (mv t
+             (c$::dirdeclor->ident fundef.declor.direct.declor)
+             nil)
+         :otherwise (mv nil nil nil)))
+       ((unless (and well-formedp
+                     (equal target-fn fundef-name)))
+        (retok (fundef-fix fundef) nil))
+       ((erp new-fn truncated-items)
+        (split-fn-block-item-list
+         new-fn-name
+         (comp-stmt->items fundef.body)
+         fundef.spec
+         fundef.declor.pointers
+         (param-declon-list-to-ident-param-declon-map params)
+         split-point)))
+    (retok new-fn
+           (make-fundef
+            :extension fundef.extension
+            :spec fundef.spec
+            :declor fundef.declor
+            :decls fundef.decls
+            :body (make-comp-stmt :labels (comp-stmt->labels fundef.body)
+                                  :items truncated-items)
+            :info fundef.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

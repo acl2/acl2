@@ -445,3 +445,14 @@
               (or (eq 'myif (car expr))
                   ;(eq 'bvif (car expr))
                   )))))
+
+;;todo: should we check for nodenums of constants?
+(defund dargs-equalp (darg1 darg2 dag-array)
+  (declare (xargs :guard (and (or (myquotep darg1)
+                                  (and (natp darg1)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg1))))
+                              (or (myquotep darg2)
+                                  (and (natp darg2)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2))))))
+           (ignore dag-array))
+  (equal darg1 darg2))

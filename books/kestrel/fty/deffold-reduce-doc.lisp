@@ -333,9 +333,63 @@
           to the tail of the map.")))))
 
     (xdoc::desc
+     "Accompanying product theorems."
+     (xdoc::p
+      "For each @(tsee defprod) type @('<type>')
+       specified by the @(':types') input,
+       such that the @(':override') input
+       does not include an element @('(<type> ...)'),
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-<type>')"))
+     (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated,
+       for each field @('<field>') of @('<type>')
+       such that the field has type @('<field-type>'):")
+     (xdoc::ul
+      (xdoc::li
+       "@('<field-type>-<suffix>-of-<type>-><field>')"))
+     (xdoc::p
+      "All these generated theorems are disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
+     "Accompanying sum theorems."
+     (xdoc::p
+      "For each kind @('<kind>') of each  @(tsee deftagsum) type @('<type>')
+       specified by the @(':types') input,
+       such that the @(':override') input
+       does not include an element @('(<type> <kind> ...)'),
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-<type>-<kind>'),
+        if the summand with kind @('<kind>') has one or more fields.")
+      (xdoc::li
+       "@('<type>-<suffix>-when-<kind>'),
+        if the summand with kind @('<kind>') has no fields."))
+     (xdoc::p
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated,
+       for each field @('<field>') ofthe kind @('<kind>') of @('<type>')
+       such that the field has type @('<field-type>'):")
+     (xdoc::ul
+      (xdoc::li
+       "@('<field-type>-<suffix>-of-<type>-<kind>-><field>')"))
+     (xdoc::p
+      "All these generated theorems are disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
      "Accompanying list theorems."
      (xdoc::p
-      "For each @(tsee deflist) type specified by the @(':types') input,
+      "For each @(tsee deflist) type @('<type>')
+       specified by the @(':types') input,
+       with element type @('<elemtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
@@ -344,35 +398,64 @@
       (xdoc::li
        "@('<type>-<suffix>-of-cons')"))
      (xdoc::p
-      "These theorems are disabled,
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-append')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-rcons')")
+      (xdoc::li
+       "@('<elemtype>-<suffix>-of-car-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-cdr-when-<type>-<suffix>')"))
+     (xdoc::p
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
      "Accompanying option theorems."
      (xdoc::p
       "If @(':combine') is @(tsee and) and @(':default') is @('t'),
-       for each @(tsee defoption) type specified by the @(':types') input,
+       for each @(tsee defoption) type @('<type>')
+       specified by the @(':types') input,
        whose base type is @('<base>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-when-<base>-<suffix>')"))
+       "@('<type>-<suffix>-when-<base>-<suffix>')")
+      (xdoc::li
+       "@('<base>-<suffix>-when-<type>-<suffix>-and-not-nil')")
+      (xdoc::li
+       "@('<base>-<suffix>-of-<type>-some->val')"))
      (xdoc::p
-      "These theorems are disabled,
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
-     "Accompanying omap type theorems."
+     "Accompanying omap theorems."
      (xdoc::p
-      "For each @(tsee defomap) type specified by the @(':types') input,
+      "For each @(tsee defomap) type @('<type>')
+       specified by the @(':types') input,
+       with key type @('<keytype>') and value type @('<valtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
        "@('<type>-<suffix>-when-emptyp')"))
      (xdoc::p
-      "These theorems are disabled,
+      "If @(':combine') is @(tsee and) and @(':default') is @('t'),
+       the following additional theorems are generated:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-of-tail')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-update')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
+     (xdoc::p
+      "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc

@@ -15,6 +15,7 @@
 
 ;; TODO: Add guards (will require defining what a well-formed parsed mach-o looks like)
 
+(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
@@ -131,17 +132,25 @@
 (defund parsed-mach-o-p (parsed-mach-o)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-mach-o)
-       (equal (strip-cars parsed-mach-o) '(:magic :header :cmds :bytes))
-       (let ((magic (lookup-eq :magic parsed-mach-o))
+       (equal (strip-cars parsed-mach-o) '(:executable-type :magic :header :cmds :bytes))
+       (let ((executable-type (lookup-eq :executable-type parsed-mach-o))
+             (magic (lookup-eq :magic parsed-mach-o))
              (header (lookup-eq :header parsed-mach-o))
              (cmds (lookup-eq :cmds parsed-mach-o))
              (bytes (lookup-eq :bytes parsed-mach-o)))
-         (and (or (member-eq magic *32-bit-magic-numbers*)
+         (and (member-eq executable-type '(:mach-o-32 :mach-o-64))
+              (or (member-eq magic *32-bit-magic-numbers*)
                   (member-eq magic *64-bit-magic-numbers*))
               (symbol-alistp header) ; todo: strengthen
               (mach-o-command-listp cmds)
               (mach-o-symbol-tablep (lookup-equal :syms (get-mach-o-load-command :lc_symtab cmds)))
               (byte-listp bytes)))))
+
+(defthm parsed-mach-o-p-forward-to-symbol-alistp
+  (implies (parsed-mach-o-p e)
+           (symbol-alistp e))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-mach-o-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

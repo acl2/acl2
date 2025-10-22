@@ -39,7 +39,9 @@
       the shallowly embedded ACL2 representation of C constructs,
       and generates proofs based on the deep embedding.")
     (xdoc::li
-     "A tool-oriented syntax of C."))
+     "A tool-oriented syntax of C.")
+    (xdoc::li
+     "A toolkit of proof-generating C-to-C transformations."))
    (xdoc::p
     "The library is work in progress.")
    (xdoc::p
@@ -57,10 +59,15 @@
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"
                   "GCC Manual for the current development")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://www.gnu.org/software/c-intro-and-ref/manual"
+                  "GNU C Language Intro and Reference Manual")
      "."))
    (xdoc::p
     "In the documentation of this library,
-     these source are referenced as `[C23]', `[C17]', and `[GCC];
+     these source are referenced as `[C23]', `[C17]', `[GCCM]', and `[GCCL]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
@@ -69,24 +76,31 @@
      e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
      as nouns or parenthetically.
-     In the case of [GCC], we also give URL links,
-     which, given their form, may be useful to locate
+     In the case of [GCCM] and [GCCL], we also give URL links,
+     which, given the characters that form them, may be useful to locate
      documentation that has moved or otherwise changed,
-     given that [GCC] is a live document;
+     given that [GCCM] and [GCCL] are live documents;
      an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
-                 "[GCC:6]")
-    ", which currently refers to Section 6,
+                 "[GCCM:6]")
+    ", which currently refers to Section 6 of [GCCM],
      titled `Extensions to the C Language Family',
      and whose URL includes @('C-Extensions.html').")
    (xdoc::p
-    "Although GCC provides extensions to the ISO/IEC standard,
-     they are sufficiently prevalent and important that
+    "The GCC extensions to the ISO/IEC standard
+     are sufficiently prevalent and important that
      we need to take them into account
      for our library of C to be of practical use.
      But in the documentation of this ACL2 library,
      we always clearly distinguish between
-     standard C and GCC extensions."))
+     standard C and GCC extensions.")
+   (xdoc::p
+    "When referencing concepts that are the same in [C23] and [C17],
+     we prefer to just reference [C23].
+     However, since we started developing this library before [C23],
+     there are still many references to [C17].
+     When there is some difference between [C17] and [C23],
+     we take care to reference both."))
   :order-subtopics (language
                     representation
                     atc

@@ -40,6 +40,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-listp" :dir :system)
+(include-book "kestrel/typed-lists-light/integer-list-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/lists-light/union-eql-tail" :dir :system)
@@ -402,11 +403,11 @@
 ;; (defun standard-assumptions (local-0-array-size local-1-array-size local-2-array-size)
 ;;   (declare (xargs :mode :program))
 ;;   `((equal (get-field (jvm::nth-local '0 locals) ',(array-contents-pair) initial-heap)
-;;            ,(bit-blasted-bv-array-write-nest-for-vars 'key local-0-array-size 8))
+;;            ,(bit-blasted-symbolic-array 'key local-0-array-size 8))
 ;;     (equal (get-field (jvm::nth-local '1 locals) ',(array-contents-pair) initial-heap)
-;;            ,(bit-blasted-bv-array-write-nest-for-vars 'in local-1-array-size 8))
+;;            ,(bit-blasted-symbolic-array 'in local-1-array-size 8))
 ;;     (equal (get-field (jvm::nth-local '2 locals) ',(array-contents-pair) initial-heap)
-;;            ,(bit-blasted-bv-array-write-nest-for-vars 'out local-2-array-size 8))
+;;            ,(bit-blasted-symbolic-array 'out local-2-array-size 8))
 ;;     (array-refp-aux (jvm::nth-local '0 locals)
 ;;                     (cons ',local-0-array-size 'nil)
 ;;                     ':byte
@@ -1228,12 +1229,7 @@
            (min-so-far (min min-so-far integer-value)))
       (min-and-max-integer-list (rest list) min-so-far max-so-far))))
 
-(defun integer-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (integer-listp (first x))
-         (integer-list-listp (rest x)))))
+
 
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
@@ -1623,7 +1619,7 @@
       (hard-error 'find-a-val-in-traces "All traces are empty!" nil)
     (let* ((trace (first traces)))
       (if (endp trace) ;this trace is empty, so skip it:
-          (prog2$ (hard-error 'find-a-val-in-traces "this shoult not happen" nil)
+          (prog2$ (hard-error 'find-a-val-in-traces "this should not happen" nil)
                   (find-a-val-in-traces (rest traces)))
 ;found a non empty trace; return its first value:
         (first trace)))))
@@ -9869,8 +9865,8 @@
               (and (integerp val)
                    (equal ''0 (aref1 dag-array-name dag-array val))))
           (cons (car entry)
-                (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array))
-        (keep-keys-paired-with-quoted-zero (cdr alist)dag-array-name dag-array)))))
+                (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array))
+        (keep-keys-paired-with-quoted-zero (cdr alist) dag-array-name dag-array)))))
 
 ;is this just make-alist?
 (defun cons-list (x y)
@@ -18051,7 +18047,7 @@
 ;;                     ALIST
 ;;                     FORM-LST INTERPRETED-FUNCTION-ALIST)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (e/d (NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0) ()))))
+;;            :in-theory (enable NTH-OF-CONS true-listp NTH-OF-CONS-CONSTANT-VERSION NTH-0))))
 
 ;; (defthm EVAL-GROUND-TERM-LST-FOR-AXE-EVALUATOR-opener
 ;;   (implies (not (endp form-lst))
@@ -20110,9 +20106,9 @@
 ;;                               local-2-name
 ;;                               local-2-array-size heap)
 ;;   (declare (xargs :mode :program))
-;;   `((equal (get-field (jvm::nth-local '0 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-0-name local-0-array-size 8))
-;;     (equal (get-field (jvm::nth-local '1 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-1-name local-1-array-size 8))
-;;     (equal (get-field (jvm::nth-local '2 locals) ',(array-contents-pair) ,heap) ,(bv-array-write-nest-for-vars local-2-name local-2-array-size 8))
+;;   `((equal (get-field (jvm::nth-local '0 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-0-name local-0-array-size 8))
+;;     (equal (get-field (jvm::nth-local '1 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-1-name local-1-array-size 8))
+;;     (equal (get-field (jvm::nth-local '2 locals) ',(array-contents-pair) ,heap) ,(symbolic-array local-2-name local-2-array-size 8))
 ;;     (array-refp-aux (jvm::nth-local '0 locals) (cons ',local-0-array-size 'nil) ':byte ,heap 'nil)
 ;;     (array-refp-aux (jvm::nth-local '1 locals) (cons ',local-1-array-size 'nil) ':byte ,heap 'nil)
 ;;     (array-refp-aux (jvm::nth-local '2 locals) (cons ',local-2-array-size 'nil) ':byte ,heap 'nil)))

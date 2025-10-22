@@ -1,7 +1,7 @@
 ; Rules about lookup-equal
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
          nil)
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-;disabled in favor of lookup-equal-of-cons-safe
+;disabled but see lookup-equal-of-cons-safe below
 (defthmd lookup-equal-of-cons
   (equal (lookup-equal key (cons pair alist))
          (if (equal key (car pair))
@@ -26,7 +26,9 @@
            (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
-;prevents splitting into many cases when lookup-equal's second argument is a big constant alist
+;; The syntaxp hyp prevents splitting into many cases when lookup-equal's
+;; second argument is a big constant alist (which ACL2 will unify with the call
+;; of CONS).
 (defthm lookup-equal-of-cons-safe
   (implies (syntaxp (not (and (quotep pair)
                               (quotep alist))))
@@ -34,6 +36,15 @@
                   (if (equal key (car pair))
                       (cdr pair)
                     (lookup-equal key alist))))
+  :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(defthm lookup-equal-of-cons-of-cons-safe
+  (implies (syntaxp (and (quotep key)
+                         (quotep key2)))
+           (equal (lookup-equal key (cons (cons key2 val) alist))
+                  (if (equal key key2) ; gets evaluated
+                      val
+                      (lookup-equal key alist))))
   :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm lookup-equal-of-acons

@@ -624,7 +624,7 @@
                               (equal (alen1 'candidate-deps-array candidate-deps-array)
                                      (+ 1 max-relevant-nodenum))
                               (dag-variable-alistp dag-variable-alist))
-                  :guard-hints (("Goal" :in-theory (e/d () (natp assoc-equal))))))
+                  :guard-hints (("Goal" :in-theory (disable natp assoc-equal)))))
   (if (endp var-ordering)
       candidate-deps-array
     (let* ((var (first var-ordering))

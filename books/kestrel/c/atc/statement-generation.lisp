@@ -266,7 +266,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in generation of type assertions in modular proofs,
+    "This is used in the generation of type assertions in modular proofs,
      precisely in @(tsee atc-gen-term-type-formula).
      A term may return one or more results, in general.
      For terms that represent C constructs, each result has a C type,
@@ -325,12 +325,15 @@
               (raise "Internal error: malformed LET or LET* ~x0." uterm)
               (mv nil nil nil))
              (bindings (cadr uterm))
-             ((unless (and (alistp bindings) ; really a doublet list
-                           (symbol-listp (strip-cars bindings))))
+             ((unless (alistp bindings)) ; really a doublet list
               (raise "Internal error: malformed LET or LET* bindings ~x0."
                      bindings)
               (mv nil nil nil))
              (vars (strip-cars bindings))
+             ((unless (symbol-listp vars))
+              (raise "Internal error: malformed LET or LET* bindings ~x0."
+                     bindings)
+              (mv nil nil nil))
              (body-uterm (caddr uterm))
              ((mv body-uterms varsp body-bound-vars)
               (atc-uterm-to-components body-uterm comps)))
@@ -738,12 +741,6 @@
 
 (fty::defprod stmt-gout
   :short "Outputs for C statement generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We actually generate a list of block items.
-     These can be regarded as forming a compound statement,
-     but lists of block items are compositional (via concatenation)."))
   ((items block-item-list
           "We actually generate a list of block items.
            These can be regarded as forming a compound statement,
@@ -752,8 +749,8 @@
          "The type returned by the block items.
           It may be @('void').")
    (term pseudo-termp
-         "The term from which the block items are generated.
-          The term is transformed by replacing @(tsee if) with @(tsee if*)
+         "The term from which the block items are generated,
+          transformed by replacing @(tsee if) with @(tsee if*)
           and a few other changes.")
    (context atc-context
             "Described in @(see atc-implementation).
@@ -847,7 +844,7 @@
      the transformed term,
      the term for the C result of the expression,
      the term for the C computation state after the execution of the expression,
-     a limit that suffices for @(tsee exec-expr-call-or-pure)
+     a limit that suffices for @(tsee exec-expr)
      to execute the expression completely,
      and then the usual outputs.")
    (xdoc::p
@@ -859,9 +856,8 @@
      we ensure that this type is not @('void').
      A sufficient limit for @(tsee exec-fun) to execute the called function
      is retrieved from the called function's information;
-     we add 2 to it, to take into account the decrementing of the limit
-     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).
+     we add 1 to it, to take into account the decrementing of the limit
+     to go from @(tsee exec-expr) to @(tsee exec-fun).
      If the called function affects no objects,
      the @('result') term is essentially the untranslation of the input term,
      and @('new-compst') is the same as the computation state variable;
@@ -872,7 +868,7 @@
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
+     As limit we return 1, which suffices for @(tsee exec-expr)
      to not stop right away due to the limit being 0.
      In this case, @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
@@ -949,6 +945,7 @@
               (reterr (raise "Internal error: function ~x0 has no info."
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+             (result-fn-thm (atc-fn-info->result-thm fninfo))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -956,7 +953,7 @@
                      term
                      nil
                      nil
-                     `(binary-+ '2 ,limit)
+                     `(binary-+ '1 ,limit)
                      args.events
                      nil
                      gin.inscope
@@ -1000,18 +997,19 @@
               (reterr
                (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                       called-fn called-formals args.terms)))
-             (call-limit `(binary-+ '2 ,limit))
+             (call-limit `(binary-+ '1 ,limit))
              ((mv result new-compst)
               (atc-gen-call-result-and-endstate out-type
                                                 gin.affect
                                                 gin.inscope
                                                 gin.compst-var
                                                 uterm))
-             (exec-formula `(equal (exec-expr-call-or-pure ',expr
-                                                           ,gin.compst-var
-                                                           ,gin.fenv-var
-                                                           ,gin.limit-var)
-                                   (mv ,result ,new-compst)))
+             (exec-formula `(equal (exec-expr ',expr
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                                   (mv ,(and result `(expr-value ,result nil))
+                                       ,new-compst)))
              (exec-formula (atc-contextualize exec-formula
                                               gin.context
                                               gin.fn
@@ -1040,8 +1038,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-call-or-pure-when-call
-                   exec-expr-call-open
+                 '(exec-expr-when-call-value-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1113,7 +1110,13 @@
                    type-of-value-when-ullong-arrayp
                    type-of-value-when-sllong-arrayp
                    ,@(atc-string-taginfo-alist-to-type-of-value-thms
-                      gin.prec-tags)))))
+                      gin.prec-tags)
+                   acl2::mv-nth-of-cons
+                   (:e zp)
+                   value-optionp-when-valuep
+                   (:t ,called-fn)
+                   ,result-fn-thm
+                   c::star))))
              ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                        :formula call-formula
                                                        :hints call-hints
@@ -1123,7 +1126,7 @@
                  term
                  result
                  new-compst
-                 `(binary-+ '2 ,limit)
+                 `(binary-+ '1 ,limit)
                  (append args.events
                          (list guard-lemma-event
                                call-event))
@@ -1167,11 +1170,15 @@
        (value-kind-when-type-pred
         (atc-type-to-value-kind-thm pure.type gin.prec-tags))
        (uterm* (untranslate$ pure.term nil state))
-       (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
-                                                 ,gin.compst-var
-                                                 ,gin.fenv-var
-                                                 ,gin.limit-var)
-                         (mv ,uterm* ,gin.compst-var)))
+       (formula1 `(equal (exec-expr ',pure.expr
+                                    ,gin.compst-var
+                                    ,gin.fenv-var
+                                    ,gin.limit-var)
+                         (mv (expr-value ,uterm*
+                                         (expr-value->object
+                                          (exec-expr-pure ',pure.expr
+                                                          ,gin.compst-var)))
+                             ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
        (formula1 (atc-contextualize formula1
                                     gin.context
@@ -1192,23 +1199,36 @@
                                     nil
                                     wrld))
        (formula `(and ,formula1 ,formula2))
-       (hints `(("Goal" :in-theory '(compustatep-of-add-frame
-                                     compustatep-of-add-var
-                                     compustatep-of-enter-scope
-                                     compustatep-of-update-var
-                                     compustatep-of-update-object
-                                     compustatep-of-exit-scope
-                                     compustatep-of-if*-when-both-compustatep
-                                     exec-expr-call-or-pure-when-pure
-                                     (:e expr-kind)
-                                     not-zp-of-limit-variable
-                                     ,pure.thm-name
-                                     expr-valuep-of-expr-value
-                                     expr-value->value-of-expr-value
-                                     value-fix-when-valuep
-                                     ,valuep-when-type-pred
-                                     apconvert-expr-value-when-not-value-array
-                                     ,value-kind-when-type-pred))))
+       (hints
+        `(("Goal" :in-theory '(compustatep-of-add-frame
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-exit-scope
+                               compustatep-of-if*-when-both-compustatep
+                               exec-expr-when-pure
+                               (:e expr-purep)
+                               (:e expr-kind)
+                               (:e expr-binary->op)
+                               (:e binop-kind)
+                               not-zp-of-limit-variable
+                               ,pure.thm-name
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               ,valuep-when-type-pred
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred
+                               expr-value->object-of-expr-value
+                               (:e objdesign-option-fix)
+                               objdesign-optionp-of-objdesign-of-var
+                               objdesign-option-fix-when-objdesign-optionp
+                               return-type-of-objdesign-element
+                               objdesign-optionp-when-objdesignp
+                               objdesign-option-fix-when-objdesign-optionp
+                               return-type-of-objdesign-member
+                               objdesignp-of-value-pointer->designator))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -1383,20 +1403,25 @@
      and also a symbol table updated with the variable.")
    (xdoc::p
     "We generate a theorem about executing the initializer,
-     and a theorem about executing the block item."))
+     and a theorem about executing the block item.")
+   (xdoc::p
+    "The limit for the block item is 3 more than the expression,
+     because we need 1 to go from @(tsee exec-block-item)
+     to its @(':declon') case and to @(tsee exec-obj-declon),
+     1 to go from there to @(tsee exec-initer), and
+     1 to go from there to its @(':single') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
                             (make-ident :name (symbol-name var))
                             type))
        (initer (initer-single expr))
-       (initer-limit `(binary-+ '1 ,expr-limit))
        (declon (make-obj-declon :scspec (scspecseq-none)
                                 :tyspec tyspec
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(binary-+ '1 ,initer-limit))
+       (item-limit `(binary-+ '3 ,expr-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1407,50 +1432,14 @@
             gin.context
             gin.thm-index
             gin.names-to-avoid))
-       (initer-thm-name (pack gin.fn '-correct- gin.thm-index))
-       (thm-index (1+ gin.thm-index))
-       ((mv initer-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix initer-thm-name
-                                           nil
-                                           gin.names-to-avoid
-                                           wrld))
-       (initer-formula `(equal (exec-initer ',initer
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
-                               (mv (init-value-single ,expr-term)
-                                   ,gin.compst-var)))
-       (initer-formula
-        (atc-contextualize initer-formula
-                           gin.context
-                           gin.fn
-                           gin.fn-guard
-                           gin.compst-var
-                           gin.limit-var
-                           initer-limit
-                           t
-                           wrld))
-       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
-       (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
-                                            (:e initer-kind)
-                                            not-zp-of-limit-variable
-                                            (:e initer-single->get)
-                                            ,expr-thm
-                                            ,valuep-when-type-pred
-                                            mv-nth-of-cons
-                                            (:e zp)))))
-       ((mv initer-thm-event &) (evmac-generate-defthm initer-thm-name
-                                                       :formula initer-formula
-                                                       :hints initer-hints
-                                                       :enable nil))
        (new-compst
         `(add-var (ident ',(symbol-name var)) ,expr-term ,gin.compst-var))
-       (item-thm-name (pack gin.fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
+       (item-thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
        ((mv item-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix item-thm-name
                                            nil
-                                           names-to-avoid
+                                           gin.names-to-avoid
                                            wrld))
        (item-formula `(equal (exec-block-item ',item
                                               ,gin.compst-var
@@ -1467,14 +1456,22 @@
                                         item-limit
                                         t
                                         wrld))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm type gin.prec-tags))
        (type-of-value-when-type-pred
         (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
        (item-hints
         `(("Goal"
            :in-theory '(exec-block-item-when-declon
+                        exec-obj-declon-open
+                        exec-initer-when-single
                         (:e block-item-kind)
+                        (:e initer-kind)
+                        (:e initer-single->get)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         (:e block-item-declon->get)
                         (:e obj-declon-to-ident+scspec+tyname+init)
                         mv-nth-of-cons
@@ -1482,7 +1479,6 @@
                         (:e scspecseq-kind)
                         (:e tyname-to-type)
                         (:e type-kind)
-                        ,initer-thm-name
                         return-type-of-init-value-single
                         init-value-to-value-when-single
                         ,expr-thm
@@ -1507,7 +1503,12 @@
                         compustate-frames-number-of-add-frame-not-zero
                         compustate-frames-number-of-update-var
                         compustate-frames-number-of-update-object
-                        compustatep-of-add-var))))
+                        compustatep-of-add-var
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-when-type-pred))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
                                                      :hints item-hints
@@ -1529,8 +1530,7 @@
     (mv item
         item-limit
         (append expr-events
-                (list initer-thm-event
-                      item-thm-event)
+                (list item-thm-event)
                 new-inscope-events)
         item-thm-name
         new-inscope
@@ -1656,51 +1656,20 @@
    (xdoc::p
     "This lifts an assignment to a block item with the assignment.
      It also lifts the theorem about the assignment
-     to a theorem about the block item."))
+     to a theorem about the block item.")
+   (xdoc::p
+    "We increase the limit by 1,
+     because we need 1 to go from @(tsee exec-stmt)
+     to its @(':expr') case and to @(tsee exec-expr)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
-       (expr-thm-name (pack gin.fn '-correct- gin.thm-index))
-       ((mv expr-thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix
-         expr-thm-name nil gin.names-to-avoid wrld))
-       (thm-index (1+ gin.thm-index))
-       (expr-limit `(binary-+ '1 ,asg-limit))
-       (expr-formula `(equal (exec-expr-call-or-asg ',asg
-                                                    ,gin.compst-var
-                                                    ,gin.fenv-var
-                                                    ,gin.limit-var)
-                             ,new-compst))
-       (expr-formula (atc-contextualize expr-formula
-                                        gin.context
-                                        gin.fn
-                                        gin.fn-guard
-                                        gin.compst-var
-                                        gin.limit-var
-                                        expr-limit
-                                        t
-                                        wrld))
-       (expr-hints
-        `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
-                               (:e expr-kind)
-                               not-zp-of-limit-variable
-                               compustatep-of-add-frame
-                               compustatep-of-add-var
-                               compustatep-of-enter-scope
-                               compustatep-of-update-var
-                               compustatep-of-update-object
-                               compustatep-of-update-static-var
-                               ,asg-thm-name))))
-       ((mv expr-event &) (evmac-generate-defthm expr-thm-name
-                                                 :formula expr-formula
-                                                 :hints expr-hints
-                                                 :enable nil))
        (stmt (stmt-expr asg))
-       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       (stmt-thm-name (pack gin.fn '-correct- gin.thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
-         stmt-thm-name nil names-to-avoid wrld))
-       (thm-index (1+ thm-index))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
+         stmt-thm-name nil gin.names-to-avoid wrld))
+       (thm-index (1+ gin.thm-index))
+       (stmt-limit `(binary-+ '1 ,asg-limit))
        (stmt-formula `(equal (exec-stmt ',stmt
                                         ,gin.compst-var
                                         ,gin.fenv-var
@@ -1720,10 +1689,26 @@
                                (:e stmt-kind)
                                not-zp-of-limit-variable
                                (:e stmt-expr->get)
-                               ,expr-thm-name
+                               ,asg-thm-name
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-update-static-var))))
+                               compustatep-of-update-static-var
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               valuep-when-ucharp
+                               valuep-when-scharp
+                               valuep-when-ushortp
+                               valuep-when-sshortp
+                               valuep-when-uintp
+                               valuep-when-sintp
+                               valuep-when-ulongp
+                               valuep-when-slongp
+                               valuep-when-ullongp
+                               valuep-when-sllongp
+                               value-optionp-when-valuep
+                               expr-value-optionp-when-expr-valuep
+                               expr-valuep-of-expr-value))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -1731,8 +1716,7 @@
     (atc-gen-block-item-stmt stmt
                              stmt-limit
                              (append asg-events
-                                     (list expr-event
-                                           stmt-event))
+                                     (list stmt-event))
                              stmt-thm-name
                              nil
                              (type-void)
@@ -1767,20 +1751,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We increase the limit by one
-     for the theorem about @(tsee exec-expr-asg),
-     because that is what it takes, in @(tsee exec-expr-asg),
-     to go to @(tsee exec-expr-call-or-pure).")
+    "We increase the limit by 1
+     for the theorem about @(tsee exec-expr),
+     because that is what it takes, in @(tsee exec-expr),
+     to go to @(tsee exec-expr) for the right-hand side.")
    (xdoc::p
-    "We further increase the limit by one
-     for the theorem about @(tsee exec-expr-call-or-asg),
-     because that is what it takes, in  @(tsee exec-expr-call-or-asg),
-     to go to @(tsee exec-expr-asg).")
-   (xdoc::p
-    "We further increase the limit by one
+    "We further increase the limit by 1
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
-     to go to @(tsee exec-expr-call-or-asg)."))
+     to go to the @(':expr') case and to @(tsee exec-expr)."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1791,7 +1770,7 @@
        ((erp rhs.expr
              rhs.type
              rhs.term
-             & ; rhs.result
+             rhs.result
              & ; rhs.new-compst
              rhs.limit
              rhs.events
@@ -1829,8 +1808,7 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit `(binary-+ '1 ,rhs.limit))
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit `(binary-+ '1 ,rhs.limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (not rhs.thm-name))
@@ -1857,32 +1835,47 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil rhs.names-to-avoid wrld))
        (thm-index (1+ rhs.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv (expr-value ,rhs.result nil) ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer rhs.type gin.prec-tags))
+       (type-formula `(,pred ,rhs.result))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type (atc-type-to-valuep-thm rhs.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm rhs.type gin.prec-tags))
        (type-of-value-when-type
         (atc-type-to-type-of-value-thm rhs.type gin.prec-tags))
        (asg-hints
         `(("Goal"
-           :in-theory '(exec-expr-asg-ident-via-object
+           :in-theory '(exec-expr-when-asg-ident-via-object
                         (:e expr-kind)
                         (:e expr-binary->op)
                         (:e expr-binary->arg1)
                         (:e expr-binary->arg2)
                         (:e binop-kind)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         ,rhs.thm-name
                         mv-nth-of-cons
                         (:e zp)
@@ -1918,14 +1911,21 @@
                         write-static-var-okp-of-enter-scope
                         write-static-var-okp-of-add-frame
                         write-static-var-okp-when-valuep-of-read-static-var
-                        read-object-of-objdesign-static))))
+                        read-object-of-objdesign-static
+                        compustatep-of-update-var
+                        compustatep-of-update-static-var
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,value-kind-when-type-pred
+                        apconvert-expr-value-when-not-value-array))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
                                                 :enable nil))
        ((mv item item-limit item-events item-thm-name thm-index names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append rhs.events
                                         (list asg-event))
                                 asg-thm-name
@@ -2030,7 +2030,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg)."))
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2121,8 +2126,7 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
@@ -2182,22 +2186,35 @@
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
-       (exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
-        (pack 'exec-expr-asg-arrsub-when-
+       (uterm (untranslate$ elem.term nil state))
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv (expr-value ,uterm nil) ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer elem.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
+       (exec-expr-when-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+        (pack 'exec-expr-when-asg-arrsub-when-
               elem-fixtype
               '-arrayp-for-modular-proofs))
        (value-kind-when-sub-type-pred
@@ -2227,7 +2244,7 @@
        (asg-hints
         `(("Goal"
            :in-theory
-           '(,exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+           '(,exec-expr-when-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
              (:e expr-kind)
              (:e expr-binary->op)
              (:e expr-binary->arg1)
@@ -2237,6 +2254,7 @@
              (:e expr-ident->get)
              (:e binop-kind)
              not-zp-of-limit-variable
+             not-zp-of-limit-minus-const
              ,arr.thm-name
              expr-valuep-of-expr-value
              apconvert-expr-value-when-not-value-array
@@ -2287,7 +2305,12 @@
              ident-fix-when-identp
              identp-of-ident
              equal-of-ident-and-ident
-             (:e str-fix)))))
+             (:e str-fix)
+             compustatep-of-update-object
+             compustatep-of-update-static-var
+             expr-valuep-of-expr-value
+             expr-value->value-of-expr-value
+             value-fix-when-valuep))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2299,7 +2322,7 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append arr.events
                                         sub.events
                                         elem.events
@@ -2446,6 +2469,15 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a scalar member of a structure."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -2524,8 +2556,7 @@
                               :arg2 member.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -2559,21 +2590,34 @@
                                            member.names-to-avoid
                                            wrld))
        (thm-index (1+ member.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
-       (exec-expr-asg-thms
+       (uterm (untranslate$ member.term nil state))
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv (expr-value ,uterm nil) ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer member.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
+       (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (type-of-value-thms
         (atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags))
@@ -2586,7 +2630,7 @@
         (if pointerp
             `(("Goal"
                :in-theory
-               '(,@exec-expr-asg-thms
+               '(,@exec-expr-when-asg-thms
                  (:e expr-kind)
                  (:e expr-binary->op)
                  (:e expr-binary->arg1)
@@ -2600,6 +2644,7 @@
                  (:e ident->name)
                  (:e str-fix)
                  not-zp-of-limit-variable
+                 not-zp-of-limit-minus-const
                  read-var-to-read-object-of-objdesign-of-var
                  ,(atc-var-info->thm varinfo)
                  objdesign-of-var-of-const-identifier
@@ -2615,10 +2660,15 @@
                  write-object-okp-when-valuep-of-read-object-no-syntaxp
                  ,@valuep-thms
                  ,@type-of-value-thms
-                 ,@writer-return-thms)))
+                 ,@writer-return-thms
+                 compustatep-of-add-var
+                 compustatep-of-update-object
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep)))
           `(("Goal"
              :in-theory
-             '(,@exec-expr-asg-thms
+             '(,@exec-expr-when-asg-thms
                (:e expr-kind)
                (:e expr-binary->op)
                (:e expr-binary->arg1)
@@ -2632,6 +2682,7 @@
                (:e ident->name)
                (:e str-fix)
                not-zp-of-limit-variable
+               not-zp-of-limit-minus-const
                read-var-to-read-object-of-objdesign-of-var
                ,(atc-var-info->thm varinfo)
                objdesign-of-var-of-const-identifier
@@ -2652,7 +2703,12 @@
                identp-of-ident
                equal-of-ident-and-ident
                compustate-frames-number-of-update-var
-               write-var-okp-of-update-var)))))
+               write-var-okp-of-update-var
+               compustatep-of-add-var
+               compustatep-of-update-var
+               expr-valuep-of-expr-value
+               expr-value->value-of-expr-value
+               value-fix-when-valuep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2664,7 +2720,7 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append struct.events
                                         member.events
                                         (list asg-event))
@@ -2738,7 +2794,10 @@
               equal-of-ident-and-ident
               (:e str-fix)
               ident-fix-when-identp
-              identp-of-ident)
+              identp-of-ident
+              expr-valuep-of-expr-value
+              expr-value->value-of-expr-value
+              value-fix-when-valuep)
           `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
@@ -2750,7 +2809,10 @@
             equal-of-ident-and-ident
             (:e str-fix)
             ident-fix-when-identp
-            identp-of-ident)))
+            identp-of-ident
+            expr-valuep-of-expr-value
+            expr-value->value-of-expr-value
+            value-fix-when-valuep)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -2810,6 +2872,15 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to an element of an array member of a structure."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2912,8 +2983,7 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -2981,21 +3051,34 @@
         (fresh-logical-name-with-$s-suffix
          asg-thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
-       (exec-expr-asg-thms
+       (uterm (untranslate$ elem.term nil state))
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv (expr-value ,uterm nil) ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer elem.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
+       (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
        (valuep-when-elem-type-pred
         (atc-type-to-valuep-thm elem.type gin.prec-tags))
@@ -3016,7 +3099,7 @@
         (if pointerp
             `(("Goal"
                :in-theory
-               '(,@exec-expr-asg-thms
+               '(,@exec-expr-when-asg-thms
                  (:e expr-kind)
                  (:e expr-binary->op)
                  (:e expr-binary->arg1)
@@ -3032,6 +3115,7 @@
                  (:e ident->name)
                  (:e str-fix)
                  not-zp-of-limit-variable
+                 not-zp-of-limit-minus-const
                  read-var-to-read-object-of-objdesign-of-var
                  ,(atc-var-info->thm varinfo)
                  objdesign-of-var-of-const-identifier
@@ -3054,10 +3138,15 @@
                  write-object-okp-when-valuep-of-read-object-no-syntaxp
                  ,@valuep-thms
                  ,@type-of-value-thms
-                 ,@writer-return-thms)))
+                 ,@writer-return-thms
+                 compustatep-of-add-var
+                 compustatep-of-update-object
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep)))
           `(("Goal"
              :in-theory
-             '(,@exec-expr-asg-thms
+             '(,@exec-expr-when-asg-thms
                (:e expr-kind)
                (:e expr-binary->op)
                (:e expr-binary->arg1)
@@ -3073,6 +3162,7 @@
                (:e ident->name)
                (:e str-fix)
                not-zp-of-limit-variable
+               not-zp-of-limit-minus-const
                read-var-to-read-object-of-objdesign-of-var
                ,(atc-var-info->thm varinfo)
                objdesign-of-var-of-const-identifier
@@ -3099,7 +3189,12 @@
                identp-of-ident
                equal-of-ident-and-ident
                compustate-frames-number-of-update-var
-               write-var-okp-of-update-var)))))
+               write-var-okp-of-update-var
+               compustatep-of-add-var
+               compustatep-of-update-var
+               expr-valuep-of-expr-value
+               expr-value->value-of-expr-value
+               value-fix-when-valuep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3111,7 +3206,7 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append struct.events
                                         index.events
                                         elem.events
@@ -3187,7 +3282,10 @@
               equal-of-ident-and-ident
               (:e str-fix)
               ident-fix-when-identp
-              identp-of-ident)
+              identp-of-ident
+              expr-valuep-of-expr-value
+              expr-value->value-of-expr-value
+              value-fix-when-valuep)
           `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
@@ -3199,7 +3297,10 @@
             equal-of-ident-and-ident
             (:e str-fix)
             ident-fix-when-identp
-            identp-of-ident)))
+            identp-of-ident
+            expr-valuep-of-expr-value
+            expr-value->value-of-expr-value
+            value-fix-when-valuep)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -3252,6 +3353,15 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a pointed integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
+   (xdoc::p
+    "The limit is set to 3:
+     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr),
+     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -3317,8 +3427,7 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (asg-limit ''1)
-       (expr-limit `(binary-+ '1 ,asg-limit))
+       (expr-limit ''1)
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
@@ -3349,30 +3458,43 @@
                                            int.names-to-avoid
                                            wrld))
        (thm-index (1+ int.thm-index))
-       (asg-formula `(equal (exec-expr-asg ',asg
-                                           ,gin.compst-var
-                                           ,gin.fenv-var
-                                           ,gin.limit-var)
-                            ,new-compst))
-       (asg-formula (atc-contextualize asg-formula
-                                       gin.context
-                                       gin.fn
-                                       gin.fn-guard
-                                       gin.compst-var
-                                       gin.limit-var
-                                       asg-limit
-                                       t
-                                       wrld))
+       (uterm (untranslate$ int.term nil state))
+       (exec-formula `(equal (exec-expr ',asg
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv (expr-value ,uterm nil) ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (pred (atc-type-to-recognizer int.type gin.prec-tags))
+       (type-formula `(,pred ,uterm))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (asg-formula `(and ,exec-formula ,type-formula))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
-       (exec-expr-asg-thm
-        (pack 'exec-expr-asg-indir-when- type-pred '-for-modular-proofs))
+       (exec-expr-when-asg-thm
+        (pack 'exec-expr-when-asg-indir-when- type-pred '-for-modular-proofs))
        (value-kind-thm (atc-type-to-value-kind-thm type gin.prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (type-of-value-thm (atc-type-to-type-of-value-thm type gin.prec-tags))
        (type-pred-of-integer-write-fn (pack type-pred '-of- integer-write-fn))
        (asg-hints
         `(("Goal"
-           :in-theory '(,exec-expr-asg-thm
+           :in-theory '(,exec-expr-when-asg-thm
                         (:e expr-kind)
                         (:e expr-binary->op)
                         (:e expr-binary->arg1)
@@ -3382,6 +3504,7 @@
                         (:e expr-unary->arg)
                         (:e unop-kind)
                         not-zp-of-limit-variable
+                        not-zp-of-limit-minus-const
                         (:e expr-ident->get)
                         read-var-of-const-identifier
                         (:e identp)
@@ -3401,7 +3524,11 @@
                         write-object-okp-of-add-frame
                         write-object-okp-when-valuep-of-read-object-no-syntaxp
                         ,type-of-value-thm
-                        ,type-pred-of-integer-write-fn))))
+                        ,type-pred-of-integer-write-fn
+                        compustatep-of-update-object
+                        expr-valuep-of-expr-value
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3413,7 +3540,7 @@
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
-                                asg-limit
+                                expr-limit
                                 (append ptr.events
                                         int.events
                                         (list asg-event))
@@ -4172,7 +4299,7 @@
     "The limit for the @(tsee exec-stmt) theorem is set to
      1 more than the limit for the expression theorem,
      because we need 1 to go from @(tsee exec-stmt)
-     to the @(':return') case and @(tsee exec-expr-call-or-pure).
+     to the @(':return') case and @(tsee exec-expr).
      The limit for the @(tsee exec-block-item) theorem is set to
      1 more than the limit for the previous theorem,
      because we need 1 to go from @(tsee exec-block-item)
@@ -4245,6 +4372,8 @@
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
@@ -4290,7 +4419,12 @@
                                (:e zp)
                                ,valuep-when-type-pred
                                ,expr.thm-name
-                               ,@type-thms))))
+                               ,@type-thms
+                               expr-valuep-of-expr-value
+                               expr-value->value-of-expr-value
+                               value-fix-when-valuep
+                               apconvert-expr-value-when-not-value-array
+                               ,value-kind-when-type-pred))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -4730,7 +4864,7 @@
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
-                               exit-scope-of-enter-scope
+                               exit-scope-of-enter-scope-when-compustatep
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
                                compustate-frames-number-of-enter-scope-not-zero
@@ -4762,7 +4896,7 @@
                                       (list valuep-when-type-pred))
                                return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
-                               exit-scope-of-enter-scope
+                               exit-scope-of-enter-scope-when-compustatep
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
                                compustate-frames-number-of-enter-scope-not-zero
@@ -4887,7 +5021,7 @@
                                  ,value-kind-when-test-type-pred
                                  compustatep-of-add-var
                                  compustate-frames-number-of-add-var-not-zero
-                                 exit-scope-of-enter-scope
+                                 exit-scope-of-enter-scope-when-compustatep
                                  ,@if-stmt-type-thms
                                  uchar-array-length-of-uchar-array-write
                                  schar-array-length-of-schar-array-write
@@ -5041,12 +5175,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also generate a theorem about @(tsee exec-expr-call-or-asg)
+    "We also generate a theorem about @(tsee exec-expr)
      applied to the call expression.
-     The limit is 2 more than the function's limit:
-     it takes 1 to go from @(tsee exec-expr-call-or-asg)
-     to @(tsee exec-expr-call),
-     and another 1 to go from there to @(tsee exec-expr-pure-list).
+     The limit is 1 more than the function's limit:
+     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-pure-list).
      Since the limit term for the function is over the function's formal,
      we need to perform a substitution of the formals with the actuals."))
   (b* (((reterr) (irr-stmt-gout))
@@ -5109,7 +5241,7 @@
                 :term term
                 :context gin.context
                 :inscope gin.inscope
-                :limit `(binary-+ '5 ,limit)
+                :limit `(binary-+ '4 ,limit)
                 :events args.events
                 :thm-name nil
                 :thm-index args.thm-index
@@ -5149,18 +5281,19 @@
        ((unless (equal (len called-formals) (len args.terms)))
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
-       (call-limit `(binary-+ '2 ,limit))
-       ((mv & new-compst)
+       (call-limit `(binary-+ '1 ,limit))
+       ((mv result new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
                                           gin.inscope
                                           gin.compst-var
                                           uterm))
-       (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
-                                                    ,gin.compst-var
-                                                    ,gin.fenv-var
-                                                    ,gin.limit-var)
-                             ,new-compst))
+       (exec-formula `(equal (exec-expr ',call-expr
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv ,(and result `(expr-value ,result nil))
+                                 ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -5189,8 +5322,8 @@
        (call-hints
         `(("Goal"
            :in-theory
-           '(exec-expr-call-or-asg-when-call
-             exec-expr-call-open
+           '(exec-expr-when-call-value-open
+             exec-expr-when-call-novalue-open
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
@@ -5360,7 +5493,13 @@
                                ,call-thm-name
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-update-static-var))))
+                               compustatep-of-update-static-var
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               expr-value-optionp-when-expr-valuep
+                               expr-valuep-of-expr-value
+                               (:e expr-value-optionp)))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5630,14 +5769,13 @@
      for why we take the sum instead).
      The first block item is a declaration, an assignment, or a function call.
      If it is a declaration, we need 1 to go from @(tsee exec-block-item)
-     to the @(':declon') case and to @(tsee exec-expr-call-or-pure),
+     to the @(':declon') case and to @(tsee exec-expr),
      for which we get the limit.
      If it is an assignment, we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and to @(tsee exec-stmt),
      another 1 to go from there to the @(':expr') case
-     and to @(tsee exec-expr-call-or-asg),
-     another 1 to fo from there to @(tsee exec-expr-asg),
-     and another 1 to go from there to @(tsee exec-expr-call-or-pure),
+     and to @(tsee exec-expr),
+     and another 1 to go from there to @(tsee exec-expr),
      for which we recursively get the limit.
      For the remaining block items, we need to add another 1
      to go from @(tsee exec-block-item-list) to its recursive call.")
@@ -5698,8 +5836,7 @@
      so we need to add 1 to go from @(tsee exec-block-item-list)
      to the call of @(tsee exec-block-item),
      another 1 to go from there to the call of @(tsee exec-stmt),
-     another 1 to go from there to the call of @(tsee exec-expr-call-or-asg),
-     another 1 to go from there to the call of @(tsee exec-expr-call),
+     another 1 to go from there to the call of @(tsee exec-expr),
      and another 1 to go from there to the call of @(tsee exec-fun).")
    (xdoc::p
     "If the term does not have any of the forms above,
@@ -5711,7 +5848,7 @@
      to @(tsee exec-block-item),
      another 1 to go from there to the @(':stmt') case and @(tsee exec-stmt),
      another 1 to go from there to the @(':return') case
-     and @(tsee exec-expr-call-or-pure),
+     and @(tsee exec-expr),
      for which we use the recursively calculated limit."))
   (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))

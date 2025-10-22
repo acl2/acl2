@@ -16,16 +16,20 @@
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ validation-information
-  :parents (syntax-for-tools)
+  :parents (validation)
   :short "Information calculated and used by the validator."
   :long
   (xdoc::topstring
@@ -52,12 +56,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Due to the approximate representation of types and our lack of constant
-     expression evaluation,
+    "Due to the approximate representation of types
+     and our lack of constant expression evaluation,
      this recognizer is highly overappoximating.
-     It will recognize any pointer or integer type."))
-  (or (type-case type :pointer)
-      (type-integerp type))
+     It will recognize any unknown,
+     @('void')/unknown pointer,
+     or integer type."))
+  (type-case
+   type
+   :unknown t
+   :pointer (or (type-case type.to :void)
+                (type-case type.to :unknown))
+   :otherwise (type-integerp type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,6 +82,55 @@
     "See @(tsee expr-null-pointer-constp)."))
   (b* (((const-expr const-expr) const-expr))
     (expr-null-pointer-constp const-expr.expr type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod uid
+  :short "Fixtype of unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are numerical identifiers which are intended
+     to be unique to a given variable, function, type name, etc.
+     E.g., there may be many variables throughout a program
+     with the name @('x'), but all such distinct variables
+     will have distinct unique identifiers.")
+   (xdoc::p
+    "Unique identifiers are assigned during validation
+     to aid subsequent analysis.
+     By annotating identifiers with their unique alias,
+     disambiguation of variables becomes trivial."))
+  ((uid nat))
+  :pred uidp)
+
+(defirrelevant irr-uid
+  :short "An irrelevant unique identifier."
+  :type uidp
+  :body (uid 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption uid-option
+  uid
+  :short "Fixtype of optional unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unique identifiers are defined in @(tsee uid)."))
+  :pred uid-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uid-increment ((uid uidp))
+  :returns (new-uid uidp)
+  :short "Create a fresh unique identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This simply increments the numerical value of the unique identifier."))
+  (b* (((uid uid) uid))
+    (uid (1+ uid.uid)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,7 +241,9 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants names,
+     We also assign a "
+    (xdoc::seetopic "uid" "unique identifier")
+    ". For enumeration constants names,
      for now we only track that they are enumeration constants.
      For @('typedef') names, we track the type corresponding to its
      definition.")
@@ -190,7 +251,8 @@
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
-            (defstatus valid-defstatus)))
+            (defstatus valid-defstatus)
+            (uid uid)))
   (:enumconst ())
   (:typedef ((def type)))
   :pred valid-ord-infop)
@@ -264,14 +326,86 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod valid-ext-info
+  :short "Fixtype of validation information about identifiers with external
+          linkage."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We store the following information about identifiers
+     with external linkage for the purpose of validation
+     across unrelated scopes and across different translation units
+     (by ``unrelated,'' we mean neither scope is nested within the other).")
+   (xdoc::p
+    "Each declaration of a given identifier with external linkage
+     must agree on the type [C17:6.2.2/2] [C17:6.2.7/2].
+     Therefore, we store the type to check type compatibility
+     of any declaration after the first.")
+   (xdoc::p
+    "We also store the set of translation units
+     (represented by their @(see filepath)s)
+     in which the identifier has been declared.
+     This is used to ensure the same identifier has not been declared
+     with both internal and external linkage in the same translation unit
+     [C17:6.2.2/7].")
+   (xdoc::p
+     "Finally, we store a "
+     (xdoc::seetopic "uid" "unique identifier")
+     " for the object.
+      All identifiers of the same name with external linkage
+      refer to the same object and therefore possess
+      the same unique identifier.")
+   (xdoc::p
+    "Eventually, we may wish to store a boolean flag indicating
+     whether the identifier has been externally defined.
+     This would be used to ensure
+     that externally linked identifiers are defined at most once
+     (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
+     For now, we conservatively allow any number of definitions."))
+  ((type type)
+   (declared-in filepath-set)
+   (uid uid))
+  :pred valid-ext-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-ext-info-option
+  valid-ext-info
+  :short "Fixtype of optional validation information
+          about identifiers with external linkage."
+  :pred valid-ext-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap valid-externals
+  :short "Fixtype of validation information associated with identifiers with
+          external linkage."
+  :key-type ident
+  :val-type valid-ext-info
+  :pred valid-externalsp
+  ///
+
+  (defrule valid-ext-info-optionp-of-cdr-assoc-when-valid-externalsp
+    (implies (valid-externalsp externals)
+             (valid-ext-info-optionp (cdr (omap::assoc ident externals))))
+    :induct t
+    :enable (valid-externalsp omap::assoc valid-ext-info-optionp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod valid-table
   :short "Fixtype of validation tables."
   :long
   (xdoc::topstring
    (xdoc::p
+    "A validation table is a collection of validation information
+     for translation units and ensembles.")
+   (xdoc::p
+    "The @('filepath') field stores the name of the translation unit
+     which we are validating.")
+   (xdoc::p
     "Scopes are treated in a stack-like manner [C17:6.2.1].
-     Thus, we define a validation table as
-     containing a list (i.e. stack) of scopes.
+     Thus, a validation table contains a list (i.e. stack) of scopes.
      The stack grows from right to left:
      the leftmost scope is the top, and the rightmost scope is the bottom;
      in other words, in the nesting of scopes in the stack,
@@ -279,9 +413,19 @@
      and the rightmost scope is the outermost
      (i.e. the file scope [C17:6.2.1/4].)")
    (xdoc::p
-    "We wrap the list of scopes into a @(tsee fty::defprod)
-     for abstraction and extensibility."))
-  ((scopes valid-scope-list))
+    "We also track information about identifiers with external linkage,
+     which we use for cross-checking across disjoint scopes
+     and different translation units.
+     This information accumulates
+     as we validate each translation unit in the ensemble.")
+   (xdoc::p
+    "The @('next-uid') field stores the next unused "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((filepath filepath)
+   (scopes valid-scope-list)
+   (externals valid-externals)
+   (next-uid uidp))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -289,7 +433,14 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table nil))
+  :body (valid-table (irr-filepath) nil nil (irr-uid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-table-option
+  valid-table
+  :short "Fixtype of optional validation tables."
+  :pred valid-table-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,29 +459,6 @@
    (value nat))
   :pred iconst-infop)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-iconst-info
-  :short "An irrelevant validation information for integer constants."
-  :type iconst-infop
-  :body (make-iconst-info :type (irr-type)
-                          :value 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-iconst-info (x)
-  :returns (info iconst-infop)
-  :short "Coerce a valud to @(tsee iconst-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (iconst-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy ICONST-INFOP." x)
-            (irr-iconst-info))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var-info
@@ -342,9 +470,13 @@
      i.e. identifiers used as expressions,
      i.e. the @(':ident') case of @(tsee expr).
      The information for a variable consists of
-     the type and linkage of the object denoted by the variable."))
+     the type and linkage of the object denoted by the variable,
+     as well as the variable's"
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
   ((type type)
-   (linkage linkage))
+   (linkage linkage)
+   (uid uid))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -353,7 +485,8 @@
   :short "An irrelevant validation information for variables."
   :type var-infop
   :body (make-var-info :type (irr-type)
-                       :linkage (irr-linkage)))
+                       :linkage (irr-linkage)
+                       :uid (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,7 +505,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod unary-info
+(fty::defprod expr-unary-info
   :short "Fixtype of validation information for unary expressions."
   :long
   (xdoc::topstring
@@ -382,33 +515,11 @@
      i.e. the @(':unary') case of @(tsee expr).
      The information for a unary expression consists of its type."))
   ((type type))
-  :pred unary-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-unary-info
-  :short "An irrelevant validation information for unary expressions."
-  :type unary-infop
-  :body (make-unary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-unary-info (x)
-  :returns (info unary-infop)
-  :short "Coerce a value to @(tsee unary-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (unary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy UNARY-INFOP." x)
-            (irr-unary-info))))
+  :pred expr-unary-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod binary-info
+(fty::defprod expr-binary-info
   :short "Fixtype of validation information for binary expressions."
   :long
   (xdoc::topstring
@@ -418,29 +529,25 @@
      i.e. the @(':binary') case of @(tsee expr).
      The information for a binary expression consists of its type."))
   ((type type))
-  :pred binary-infop)
+  :pred expr-binary-infop)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-binary-info
-  :short "An irrelevant validation information for binary expressions."
-  :type binary-infop
-  :body (make-binary-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-binary-info (x)
-  :returns (info binary-infop)
-  :short "Coerce a value to @(tsee binary-info)."
+(fty::defprod param-declor-nonabstract-info
+  :short "Fixtype of validation information for
+          non-abstract parameter declarators."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (binary-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy BINARY-INFOP." x)
-            (irr-binary-info))))
+    "This is the type of the annotations that
+     the validator adds to non-abstract parameter declarators,
+     i.e. the @(tsee param-declor) fixtype with kind @(':nonabstract').
+     The information consists of the type of the declared identifier and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((type type)
+   (uid uid))
+  :pred param-declor-nonabstract-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -456,27 +563,51 @@
   ((type type))
   :pred tyname-infop)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-tyname-info
-  :short "An irrelevant validation information for type names."
-  :type tyname-infop
-  :body (make-tyname-info :type (irr-type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-tyname-info (x)
-  :returns (info tyname-infop)
-  :short "Coerce a value to @(tsee tyname-info)."
+(fty::defprod initdeclor-info
+  :short "Fixtype of validation information for initializer declarators."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (tyname-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TYNAME-INFOP." x)
-            (irr-tyname-info))))
+    "This is the type of the annotations that
+     the validator adds to initializer declarators,
+     i.e. the @(tsee initdeclor) fixtype.")
+   (xdoc::p
+    "The information for an initializer declarator consists of
+     the type of (or denoted by) the declared identifier,
+     a flag saying whether the identifier is a @('typdef') or not
+     (if the flag is @('t') the type is the one denoted by the identifier),
+     and an "
+    (xdoc::seetopic "uid-option" "optional unique identifier")
+    ". Currently, we only assign unique identifiers to
+     ordinary identifiers representing an object or function.
+     Therefore, only initializer declarators corresponding
+     to those such identifiers are annotated with unique identifiers.
+     Initializer declarators which correspond to @('typedef') declarations
+     are not annotated with a unique identifier."))
+  ((type type)
+   (typedefp bool)
+   (uid? uid-option))
+  :pred initdeclor-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod fundef-info
+  :short "Fixtype of validation information for function definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to function definitions.
+     The information consists of
+     the type of the function (not just the result; the function type),
+     and a "
+    (xdoc::seetopic "uid" "unique identifier")
+    "."))
+  ((type type)
+   (uid uid))
+  :pred fundef-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -488,32 +619,9 @@
     "This is the type of the annotations that
      the validator adds to translation units.
      The information consists of
-     the final validation table for the translation unit.
-     We wrap it into a product fixtype for easier future extensibility."))
-  ((table valid-table))
+     the final validation table for the translation unit."))
+  ((table-end valid-table))
   :pred transunit-infop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-transunit-info
-  :short "An irrelevant validation information for translation units."
-  :type transunit-infop
-  :body (make-transunit-info :table (irr-valid-table)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define coerce-transunit-info (x)
-  :returns (info transunit-infop)
-  :short "Coerce a value to @(tsee transunit-info)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This must be used when the value is expected to have that type.
-     We raise a hard error if that is not the case."))
-  (if (transunit-infop x)
-      x
-    (prog2$ (raise "Internal error: ~x0 does not satisfy TRANSUNIT-INFOP." x)
-            (irr-transunit-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,7 +670,8 @@
           extdecl-list
           transunit
           filepath-transunit-map
-          transunit-ensemble)
+          transunit-ensemble
+          code-ensemble)
   :result booleanp
   :default t
   :combine and
@@ -570,12 +679,12 @@
   ((iconst (iconst-infop (iconst->info iconst)))
    (expr :ident (var-infop expr.info))
    (expr :unary (and (expr-annop expr.arg)
-                     (unary-infop expr.info)))
+                     (expr-unary-infop expr.info)))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :binary (and (expr-annop expr.arg1)
                       (expr-annop expr.arg2)
-                      (binary-infop expr.info)))
+                      (expr-binary-infop expr.info)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -586,6 +695,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                    (type-spec-fix type-spec)))
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
@@ -596,8 +707,17 @@
    (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
                 (absdeclor-option-annop (tyname->declor? tyname))
                 (tyname-infop (tyname->info tyname))))
+   (param-declor :nonabstract (and (declor-annop
+                                    (param-declor-nonabstract->declor
+                                     param-declor))
+                                   (param-declor-nonabstract-infop
+                                    (param-declor-nonabstract->info
+                                     param-declor))))
    (attrib t)
    (attrib-spec t)
+   (initdeclor (and (declor-annop (initdeclor->declor initdeclor))
+                    (initer-option-annop (initdeclor->init? initdeclor))
+                    (initdeclor-infop (initdeclor->info initdeclor))))
    (asm-output t)
    (asm-input t)
    (asm-stmt t)
@@ -612,26 +732,262 @@
                                  amb-declor/absdeclor)))
    (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
                          (amb-decl/stmt-fix amb-decl/stmt)))
+   (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+                (declor-annop (fundef->declor fundef))
+                (decl-list-annop (fundef->decls fundef))
+                (comp-stmt-annop (fundef->body fundef))
+                (fundef-infop (fundef->info fundef))))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled filepath-transunit-map-annop-when-not-emptyp
-  (implies (and (filepath-transunit-mapp map)
-                (not (omap::emptyp map)))
-           (equal (filepath-transunit-map-annop map)
-                  (and (transunit-annop (omap::head-val map))
-                       (filepath-transunit-map-annop (omap::tail map)))))
-  :enable filepath-transunit-map-annop)
+(defsection abstract-syntax-anno-additional-theroems
+  :short "Additional theorems about the annotation predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are in addition to the ones
+     generated by @(tsee fty::deffold-reduce).
+     These are needed for actual proofs involving the annotation predicates.
+     In particular, @(tsee fty::deffold-reduce) does not generate theorems
+     for constructs in the @(':override') input;
+     so we must supply theorems for those cases."))
 
-(add-to-ruleset abstract-syntax-annop-rules
-                '(filepath-transunit-map-annop-when-not-emptyp))
+  ;; The following theorems are not auto-generated by FTY::DEFFOLD-REDUCE
+  ;; because the corresponding constructs are in the :OVERRIDE input.
+
+  ;; theorems about constructors:
+
+  (defruled iconst-annop-of-iconst
+    (equal (iconst-annop (iconst core suffix? info))
+           (iconst-infop info))
+    :enable (iconst-annop identity))
+
+  (defruled expr-annop-of-expr-ident
+    (equal (expr-annop (expr-ident ident info))
+           (var-infop info))
+    :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-unary
+    (equal (expr-annop (expr-unary op arg info))
+           (and (expr-annop arg)
+                (expr-unary-infop info)))
+    :expand (expr-annop (expr-unary op arg info))
+    :enable identity)
+
+  (defruled expr-annop-of-expr-binary
+    (equal (expr-annop (expr-binary op arg1 arg2 info))
+           (and (expr-annop arg1)
+                (expr-annop arg2)
+                (expr-binary-infop info)))
+    :expand (expr-annop (expr-binary op arg1 arg2 info))
+    :enable identity)
+
+  (defruled tyname-annop-of-tyname
+    (equal (tyname-annop (tyname specquals declor? info))
+           (and (spec/qual-list-annop specquals)
+                (absdeclor-option-annop declor?)
+                (tyname-infop info)))
+    :expand (tyname-annop (tyname specquals declor? info))
+    :enable identity)
+
+  (defruled param-declor-annop-of-param-declor-nonabstract
+    (equal (param-declor-annop (param-declor-nonabstract declor info))
+           (and (declor-annop declor)
+                (param-declor-nonabstract-infop info)))
+    :expand (param-declor-annop (param-declor-nonabstract declor info))
+    :enable identity)
+
+  (defruled initdeclor-annop-of-initdeclor
+    (equal (initdeclor-annop (initdeclor declor asm? attribs init? info))
+           (and (declor-annop declor)
+                (initer-option-annop init?)
+                (initdeclor-infop info)))
+    :expand (initdeclor-annop (initdeclor declor asm? attribs init? info))
+    :enable identity)
+
+  (defruled fundef-annop-of-fundef
+    (equal (fundef-annop
+            (fundef extension spec declor asm? attribs decls body info))
+           (and (decl-spec-list-annop spec)
+                (declor-annop declor)
+                (decl-list-annop decls)
+                (comp-stmt-annop body)
+                (fundef-infop info)))
+    :expand (fundef-annop
+             (fundef extension spec declor asm? attribs decls body info))
+    :enable identity)
+
+  (defruled transunit-annop-of-transunit
+    (equal (transunit-annop (transunit decls info))
+           (and (extdecl-list-annop decls)
+                (transunit-infop info)))
+    :expand (transunit-annop (transunit decls info))
+    :enable identity)
+
+  ;; theorems about accessors:
+
+  (defruled iconst-infop-of-iconst->info
+    (implies (iconst-annop iconst)
+             (iconst-infop (iconst->info iconst)))
+    :enable iconst-annop)
+
+  (defruled var-infop-of-expr-ident->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :ident))
+             (var-infop (expr-ident->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-unary->arg
+    (implies (and (expr-annop expr)
+                  (expr-case expr :unary))
+             (expr-annop (expr-unary->arg expr)))
+    :enable expr-annop)
+
+  (defruled expr-unary-infop-of-expr-unary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :unary))
+             (expr-unary-infop (expr-unary->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-binary->arg1
+    (implies (and (expr-annop expr)
+                  (expr-case expr :binary))
+             (expr-annop (expr-binary->arg1 expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-binary->arg2
+    (implies (and (expr-annop expr)
+                  (expr-case expr :binary))
+             (expr-annop (expr-binary->arg2 expr)))
+    :enable expr-annop)
+
+  (defruled expr-binary-infop-of-expr-binary->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :binary))
+             (expr-binary-infop (expr-binary->info expr)))
+    :enable expr-annop)
+
+  (defruled declor-annop-of-initdeclor->declor
+    (implies (initdeclor-annop initdeclor)
+             (declor-annop (initdeclor->declor initdeclor)))
+    :enable initdeclor-annop)
+
+  (defruled initer-option-annop-of-initdeclor->init?
+    (implies (initdeclor-annop initdeclor)
+             (initer-option-annop (initdeclor->init? initdeclor)))
+    :enable initdeclor-annop)
+
+  (defruled initdeclor-infop-of-initdeclor->info
+    (implies (initdeclor-annop initdeclor)
+             (initdeclor-infop (initdeclor->info initdeclor)))
+    :enable initdeclor-annop)
+
+  (defruled spec/qual-list-annop-of-tyname->specquals
+    (implies (tyname-annop tyname)
+             (spec/qual-list-annop (tyname->specquals tyname)))
+    :enable tyname-annop)
+
+  (defruled absdeclor-option-annop-of-tyname->declor?
+    (implies (tyname-annop tyname)
+             (absdeclor-option-annop (tyname->declor? tyname)))
+    :enable tyname-annop)
+
+  (defruled tyname-infop-of-tyname->info
+    (implies (tyname-annop tyname)
+             (tyname-infop (tyname->info tyname)))
+    :enable tyname-annop)
+
+  (defruled declor-annop-of-param-declor-nonabstract->declor
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :nonabstract))
+             (declor-annop (param-declor-nonabstract->declor param-declor)))
+    :enable param-declor-annop)
+
+  (defruled param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+    (implies (and (param-declor-annop param-declor)
+                  (param-declor-case param-declor :nonabstract))
+             (param-declor-nonabstract-infop
+              (param-declor-nonabstract->info param-declor)))
+    :enable param-declor-annop)
+
+  (defruled decl-spec-list-annop-of-fundef->spec
+    (implies (fundef-annop fundef)
+             (decl-spec-list-annop (fundef->spec fundef)))
+    :enable fundef-annop)
+
+  (defruled declor-annop-of-fundef->declor
+    (implies (fundef-annop fundef)
+             (declor-annop (fundef->declor fundef)))
+    :enable fundef-annop)
+
+  (defruled decl-list-annop-of-fundef->decls
+    (implies (fundef-annop fundef)
+             (decl-list-annop (fundef->decls fundef)))
+    :enable fundef-annop)
+
+  (defruled comp-stmt-annop-of-fundef->body
+    (implies (fundef-annop fundef)
+             (comp-stmt-annop (fundef->body fundef)))
+    :enable fundef-annop)
+
+  (defruled fundef-infop-of-fundef->info
+    (implies (fundef-annop fundef)
+             (fundef-infop (fundef->info fundef)))
+    :enable fundef-annop)
+
+  (defruled extdecl-list-annop-of-transunit->decls
+    (implies (transunit-annop transunit)
+             (extdecl-list-annop (transunit->decls transunit)))
+    :enable transunit-annop)
+
+  (defruled transunit-infop-of-transunit->info
+    (implies (transunit-annop transunit)
+             (transunit-infop (transunit->info transunit)))
+    :enable transunit-annop)
+
+  ;; Add the above theorems to the rule set.
+
+  (add-to-ruleset
+   abstract-syntax-annop-rules
+   '(iconst-annop-of-iconst
+     expr-annop-of-expr-ident
+     expr-annop-of-expr-unary
+     expr-annop-of-expr-binary
+     tyname-annop-of-tyname
+     param-declor-annop-of-param-declor-nonabstract
+     param-declor-nonabstract-infop-of-param-declor-nonabstract->info
+     initdeclor-annop-of-initdeclor
+     fundef-annop-of-fundef
+     transunit-annop-of-transunit
+     iconst-infop-of-iconst->info
+     var-infop-of-expr-ident->info
+     expr-annop-of-expr-unary->arg
+     expr-unary-infop-of-expr-unary->info
+     expr-annop-of-expr-binary->arg1
+     expr-annop-of-expr-binary->arg2
+     expr-binary-infop-of-expr-binary->info
+     declor-annop-of-initdeclor->declor
+     initer-option-annop-of-initdeclor->init?
+     initdeclor-infop-of-initdeclor->info
+     spec/qual-list-annop-of-tyname->specquals
+     absdeclor-option-annop-of-tyname->declor?
+     tyname-infop-of-tyname->info
+     declor-annop-of-param-declor-nonabstract->declor
+     decl-spec-list-annop-of-fundef->spec
+     declor-annop-of-fundef->declor
+     decl-list-annop-of-fundef->decls
+     comp-stmt-annop-of-fundef->body
+     fundef-infop-of-fundef->info
+     extdecl-list-annop-of-transunit->decls
+     transunit-infop-of-transunit->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-type ((expr exprp))
-  :guard (expr-unambp expr)
+  :guard (and (expr-unambp expr)
+              (expr-annop expr))
   :returns (type typep)
   :short "Type of an expression, from the validation information."
   :long
@@ -655,12 +1011,11 @@
      This is an approximation."))
   (expr-case
    expr
-   :ident (var-info->type (coerce-var-info expr.info))
+   :ident (var-info->type expr.info)
    :const (if (const-case expr.const :int)
               (iconst-info->type
-               (coerce-iconst-info
-                (iconst->info
-                 (const-int->unwrap expr.const))))
+               (iconst->info
+                (const-int->unwrap expr.const)))
             (type-unknown))
    :string (type-unknown)
    :paren (expr-type expr.inner)
@@ -670,11 +1025,12 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (unary-info->type (coerce-unary-info expr.info))
+   :unary (expr-unary-info->type expr.info)
+   :label-addr (type-pointer (type-void))
    :sizeof (type-unknown)
    :alignof (type-unknown)
-   :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
-   :binary (binary-info->type (coerce-binary-info expr.info))
+   :cast (tyname-info->type (tyname->info expr.type))
+   :binary (expr-binary-info->type expr.info)
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
               (then-type (expr-type expr.then))
@@ -690,105 +1046,185 @@
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stmt-type ((stmt stmtp))
-  :guard (stmt-unambp stmt)
-  :returns (type? type-optionp)
-  :short "Type of a statement, from the validation information."
+(define initer-type ((initer initerp))
+  :guard (and (initer-unambp initer)
+              (initer-annop initer))
+  :returns (type typep)
+  :short "Type of an initializer, from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We return an optional type:
-     @('nil') means that the statement's execution falls through,
-     while the @('void') type means that
-     the statement terminates execution with a @('return') without expression.")
-   (xdoc::p
-    "Similarly to @(tsee expr-type),
-     the type calculated by this function is an approximation.
-     We return the unknown type in cases that we do not handle yet.")
-   (xdoc::p
-    "If the statement is a return statement with an expression,
-     the type of the expression is returned;
-     if the return statement has no expression, @('void') is returned.
-     For the other kinds of statement, the unknown type is returned.")
-   (xdoc::p
-    "This is adequate for the current use of this function,
-     but it will need to be suitably extended.
-     In particular, a statement may have multiple types,
-     in the sense of returning values of possibly different types;
-     cf. @(tsee valid-stmt).")
-   (xdoc::p
-    "We relax the return theorem of this function to an optional type,
-     as a step towards generalizing this function
-     to actually return optional types."))
-  (stmt-case
-   stmt
-   :labeled (stmt-type stmt.stmt)
-   :compound (type-unknown)
-   :expr nil
-   :if (type-unknown)
-   :ifelse (type-unknown)
-   :switch (type-unknown)
-   :while (type-unknown)
-   :dowhile (type-unknown)
-   :for-expr (type-unknown)
-   :for-decl (type-unknown)
-   :for-ambig (prog2$ (impossible) (type-unknown))
-   :goto (type-unknown)
-   :continue (type-unknown)
-   :break (type-unknown)
-   :return (expr-option-case
-            stmt.expr?
-            :some (expr-type stmt.expr?.val)
-            :none (type-void))
-   :asm (type-unknown))
-  :measure (stmt-count stmt)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
+    "For now we only cover the case of a single initializer,
+     for which we return the type of the underlying expression.
+     We return the unknown type for a non-single initializer for now."))
+  (initer-case
+   initer
+   :single (expr-type initer.expr)
+   :list (type-unknown))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define block-item-type ((item block-itemp))
-  :guard (block-item-unambp item)
-  :returns (type? type-optionp)
-  :short "Type of a block item, from the validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return an optional type:
-     @('nil') means that the block item's execution falls through,
-     while the @('void') type means that
-     the block item terminates execution
-     with a @('return') without expression."))
-  (block-item-case
-   item
-   :decl nil
-   :stmt (stmt-type item.unwrap)
-   :ambig (prog2$ (impossible) (type-unknown)))
-  :hooks (:fix))
+(defines stmts-types
+  :short "Types of statements and related entities,
+          from the validation information."
+
+  (define stmt-types ((stmt stmtp))
+    :guard (and (stmt-unambp stmt)
+                (stmt-annop stmt))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a statement, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types:
+       a @('nil') means that the statement's may terminate
+       without a @('return') (e.g. an expression statement);
+       a @('void') means that the statement may terminate
+       with a @('return') without an expression;
+       and a non-@('void') type means that the statemetn may terminate
+       with a @('return') with an expression of that type.")
+     (xdoc::p
+      "Similarly to @(tsee expr-type),
+       the types calculated by this function are an approximation.
+       We return the empty set in cases that we do not handle yet.
+       This is adequate for the current use of this function,
+       but it will need to be suitably extended."))
+    (stmt-case
+     stmt
+     :labeled (stmt-types stmt.stmt)
+     :compound (comp-stmt-types stmt.stmt)
+     :expr (set::insert nil nil)
+     :if (set::insert nil (stmt-types stmt.then))
+     :ifelse (set::union (stmt-types stmt.then)
+                         (stmt-types stmt.else))
+     :switch nil
+     :while (set::insert nil (stmt-types stmt.body))
+     :dowhile (set::insert nil (stmt-types stmt.body))
+     :for-expr nil
+     :for-decl nil
+     :for-ambig (impossible)
+     :goto nil
+     :gotoe nil
+     :continue nil
+     :break nil
+     :return (expr-option-case
+              stmt.expr?
+              :some (set::insert (expr-type stmt.expr?.val) nil)
+              :none (set::insert (type-void) nil))
+     :asm nil)
+    :measure (stmt-count stmt))
+
+  (define comp-stmt-types ((cstmt comp-stmtp))
+    :guard (and (comp-stmt-unambp cstmt)
+                (comp-stmt-annop cstmt))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts/types)
+    :short "Types of a compound statement, from the validation information."
+    (block-item-list-types (comp-stmt->items cstmt))
+    :measure (comp-stmt-count cstmt))
+
+  (define block-item-types ((item block-itemp))
+    :guard (and (block-item-unambp item)
+                (block-item-annop item))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a block item, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types, as in @(tsee stmt-types):
+       see the documentation of that function for a rationale."))
+    (block-item-case
+     item
+     :decl (set::insert nil nil)
+     :stmt (stmt-types item.stmt)
+     :ambig (impossible))
+    :measure (block-item-count item))
+
+  (define block-item-list-types ((items block-item-listp))
+    :guard (and (block-item-list-unambp items)
+                (block-item-list-annop items))
+    :returns (types type-option-setp)
+    :parents (validation-information stmts-types)
+    :short "Types of a list of block items, from the validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return a set of optional types, as in @(tsee stmt-types):
+       see the documentation of that function for a rationale.")
+     (xdoc::p
+      "If the list is empty, we return the singleton set with @('nil').
+       If the list is not empty,
+       we take the union of the types of the first and remaining block items,
+       but first we remove @('nil') from the first set (if present).
+       The removal is because,
+       if the first block item terminates without @('return'),
+       the whole list of block items does not necessarily do so;
+       it happens only if the rest of the block items in the list does,
+       which is accounted for in the set of optional types
+       for the rest of the list."))
+    (b* (((when (endp items)) (set::insert nil nil))
+         (item-types (block-item-types (car items)))
+         (items-types (block-item-list-types (cdr items))))
+      (set::union (set::delete nil item-types) items-types))
+    :measure (block-item-list-count items))
+
+  :verify-guards :after-returns
+
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
+
+  ///
+
+  (fty::deffixequiv-mutual stmts-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define block-item-list-type ((items block-item-listp))
-  :guard (block-item-list-unambp items)
-  :returns (type? type-optionp)
-  :short "Type of a list of block items, from the validation information."
+(define fundef-types ((fundef fundefp))
+  :guard (and (fundef-unambp fundef)
+              (fundef-annop fundef))
+  :returns (types type-setp
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (enable
+                     type-setp-when-type-option-setp-and-nil-not-member))))
+  :short "Types of the values returned by a function,
+          from the validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An empty list returns nothing, so its type is @('nil').
-     For a non-empty list, we look at the types of
-     the first block items and the rest of the block items.
-     If the former is @('nil'), we return the latter.
-     If the former is not @('nil'), we return it."))
-  (b* (((when (endp items)) nil)
-       (item-type? (block-item-type (car items)))
-       (items-type? (block-item-list-type (cdr items))))
-    (if item-type?
-        item-type?
-      items-type?))
+    "The set of possible types returned by the function is
+     the set of possible types returned by the body,
+     roughly speaking.
+     More precisely, the latter is a set of optional types,
+     where @('nil') means that the body terminates without a @('return').
+     For a function, this is equivalent to a @('return') without expression.
+     Thus, we turn the @('nil') in the set of types, if any, into @('void') type,
+     obtaining the set of types (not optional types) of the function's result.
+     We use that in the theorem about the function,
+     which says that the result,
+     which is an optional value in our formal semantics,
+     has a type in the set;
+     we use @(tsee c::type-of-value-option) to map values to their types,
+     and @('nil') to @('void').")
+   (xdoc::p
+    "Although a function definition has one return type (possibly @('void')),
+     its body may return values of slightly different types,
+     possibly subject to conversions.
+     However, our formal semantics of C does not cover those conversions yet,
+     so we adopt the more general view here."))
+  (b* ((types (comp-stmt-types (fundef->body fundef)))
+       (types (if (set::in nil types)
+                  (set::insert (type-void) (set::delete nil types))
+                types)))
+    types)
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
   :hooks (:fix))

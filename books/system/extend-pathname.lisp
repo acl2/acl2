@@ -66,7 +66,7 @@
                                   (acl2::x x)
                                   (acl2::y 'string)))))))
 
-(in-theory (disable coerce-inverse-1))
+(local (in-theory (disable coerce-inverse-1)))
 
 (local (defthm len-revappend
          (equal (len (revappend x y))
@@ -109,9 +109,6 @@
 
 (verify-termination expand-tilde-to-user-home-dir)
 
-(verify-termination project-dir-lookup) ; and guards
-
 (verify-termination extend-pathname+) ; not guards
 
 (verify-termination extend-pathname) ; not guards
-

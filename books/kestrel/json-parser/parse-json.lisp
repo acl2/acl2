@@ -44,6 +44,7 @@
 (include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -812,34 +813,9 @@
    (not (o< fco1 fco1))
    :hints (("Goal" :in-theory (enable o<)))))
 
-(local
- (defthm not-<-self
-   (not (< fco1 fco1))))
-
-(local
- (defthm o<-of-make-ord-and-make-ord-same-fe-and-rst
-   (equal (o< (make-ord fe fco1 rst)
-              (make-ord fe fco2 rst))
-          (< fco1 fco2))
-   :hints (("Goal" :in-theory (enable o< make-ord)))))
-
-(local
- (defthm o<-of-make-ord-and-make-ord-same-fe
-  (equal (o< (make-ord fe fco1 rst1)
-             (make-ord fe fco2 rst2))
-         (if (equal fco1 fco2)
-             (o< rst1 rst2)
-           (< fco1 fco2)))
-  :hints (("Goal" :in-theory (enable o< make-ord)))))
-
-(local
- (defthm o-p-of-make-ord-suff
-   (implies (and (posp fco)
-                 (posp fe)
-                 (natp rst))
-            (o-p (make-ord fe fco rst)))
-   :hints (("Goal" :in-theory (enable make-ord o-p o<)))))
-
+;; (local
+;;  (defthm not-<-self
+;;    (not (< fco1 fco1))))
 
 (mutual-recursion
 

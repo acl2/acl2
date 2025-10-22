@@ -194,8 +194,7 @@
    (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
-    "We have added a tool, @(tsee c$::defpred),
-     to concisely define predicates over the abstract syntax.")
+    "We have added a disambiguator and a validator.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

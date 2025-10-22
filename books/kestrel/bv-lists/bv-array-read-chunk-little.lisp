@@ -37,6 +37,11 @@
            element-size
            (bv-array-read element-size array-len index array))))
 
+(defthm bv-array-read-chunk-little-of-1
+  (equal (bv-array-read-chunk-little 1 element-size array-len index array)
+         (bv-array-read element-size array-len index array))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
+
 ;; Discards irrelevant elements from the start of the array.
 (defthm bv-array-read-chunk-little-of-+-arg4-when-constants
   (implies (and (syntaxp (and (quotep k)
@@ -158,3 +163,11 @@
 ;;                                                        bv-array-read
 ;;                                                        ) ((:i len)
 ;;                                                           bv-array-read-chunk-little-unroll expt)))))
+
+;gen
+(defthm bvchop-of-bv-array-read-chunk-little-same
+  (implies (natp element-size)
+           (equal (bvchop element-size (bv-array-read-chunk-little element-count element-size array-len index array))
+                  (if (posp element-count)
+                      (bv-array-read element-size array-len index array)
+                    0))))

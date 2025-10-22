@@ -10,28 +10,22 @@
 
 (in-package "C$")
 
+(include-book "implementation-environments")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
-(include-book "code-ensembles")
-(include-book "unambiguity")
-(include-book "validation-information")
-(include-book "ascii-identifiers")
-(include-book "standard")
-(include-book "purity")
-(include-book "defpred")
-(include-book "defpred-doc")
-(include-book "preprocess-file")
-(include-book "parser")
+(include-book "preprocessing")
+(include-book "parsing")
+(include-book "disambiguation")
+(include-book "validation")
+(include-book "printing")
 (include-book "builtin")
-(include-book "disambiguator")
-(include-book "validator")
-(include-book "printer")
 (include-book "input-files")
 (include-book "input-files-doc")
 (include-book "output-files")
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
 (include-book "formalized")
+(include-book "compilation-db")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,13 +70,6 @@
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
      We plan to have ATC use this new tool-oriented abstract syntax.")
    (xdoc::p
-    "We provide a macro tool @(tsee defpred)
-     to concisely define predicates over the abstract syntax.
-     This should be fairly easy to generalize to
-     a more general tool for "
-    (xdoc::seetopic "fty::fty" "fixtypes")
-    ".")
-   (xdoc::p
     "Accompanying our abstract syntax,
      we provide a concrete syntax, based on an ABNF grammar.
      This is not a different syntax for C,
@@ -102,7 +89,7 @@
      and is not needed to run the tools described below
      (parser, printer, etc.).")
    (xdoc::p
-    "We provide a @(see parser) that produces abstract syntax,
+    "We provide a parser that produces abstract syntax,
      which covers all of the C constructs after preprocessing.
      The syntax of C is notoriously ambiguous,
      requiring some semantic analysis to disambiguate it.
@@ -196,22 +183,15 @@
      where the @('$') conveys the idea of `syntax'.
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
-  :order-subtopics (concrete-syntax
+  :order-subtopics (implementation-environments
+                    concrete-syntax
                     abstract-syntax
-                    code-ensembles
-                    defpred
-                    unambiguity
-                    validation-information
-                    ascii-identifiers
-                    standard
-                    purity
                     preprocessing
-                    parser
-                    disambiguator
-                    validator
-                    printer
+                    parsing
+                    disambiguation
+                    validation
+                    printing
                     input-files
                     output-files
                     mapping-to-language-definition
-                    formalized-subset
-                    implementation-environments))
+                    formalized-subset))

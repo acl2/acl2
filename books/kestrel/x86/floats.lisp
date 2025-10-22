@@ -298,6 +298,28 @@
                   (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
   :hints (("Goal" :in-theory (enable sse-cmp))))
 
+(defthm sse-cmp-of-bvcat-irrel-arg2
+  (implies (and (< (+ exp-width frac-width) lowsize)
+                (posp frac-width)
+                (natp exp-width)
+                (natp lowsize))
+           (equal (sse-cmp operation (bvcat highsize highval lowsize op1) op2 mxcsr exp-width frac-width)
+                  (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
+  :hints (("Goal" :use ((:instance sse-cmp-of-bvchop-arg2 (op1 (bvcat highsize highval lowsize op1)) (size lowsize))
+                        (:instance sse-cmp-of-bvchop-arg2 (op1 op1) (size lowsize)))
+           :in-theory (disable sse-cmp-of-bvchop-arg2))))
+
+(defthm sse-cmp-of-bvcat-irrel-arg3
+  (implies (and (< (+ exp-width frac-width) lowsize)
+                (posp frac-width)
+                (natp exp-width)
+                (natp lowsize))
+           (equal (sse-cmp operation op1 (bvcat highsize highval lowsize op2) mxcsr exp-width frac-width)
+                  (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
+  :hints (("Goal" :use ((:instance sse-cmp-of-bvchop-arg3 (op2 (bvcat highsize highval lowsize op2)) (size lowsize))
+                        (:instance sse-cmp-of-bvchop-arg3 (op2 op2) (size lowsize)))
+           :in-theory (disable sse-cmp-of-bvchop-arg3))))
+
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
@@ -719,3 +741,6 @@
 
 (defthm integerp-of-qnanize
   (integerp (rtl::qnanize x f)))
+
+(defthm integerp-of-indef
+  (integerp (rtl::indef x)))

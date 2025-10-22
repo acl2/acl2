@@ -654,3 +654,13 @@
 
 (in-theory (disable bvxor-commutative-2))
 (theory-invariant (incompatible (:rewrite bvxor-commutative-2) (:rewrite bvxor-commutative-2-alt)))
+
+(defthm bvxor-of-ifix-arg2
+  (equal (bvxor size (ifix x) y)
+         (bvxor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm bvxor-of-ifix-arg3
+  (equal (bvxor size x (ifix y))
+         (bvxor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))

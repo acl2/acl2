@@ -1,7 +1,7 @@
 ; Converting a boolean to a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,17 +11,29 @@
 
 (in-package "ACL2")
 
+;; See bool-to-bit-def.lisp for the definition of bool-to-bit.
+
 (include-book "bool-to-bit-def")
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "bitnot")
 
-(defthm equal-of-bool-to-bit-and-0
+(defthm equal-of-0-and-bool-to-bit
   (equal (equal 0 (bool-to-bit x))
          (not x))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
 
-(defthm equal-of-bool-to-bit-and-1
+(defthm equal-of-bool-to-bit-and-0
+  (equal (equal (bool-to-bit x) 0)
+         (not x))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+(defthm equal-of-1-and-bool-to-bit
   (equal (equal 1 (bool-to-bit x))
+         (bool-fix x))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+(defthm equal-of-bool-to-bit-and-1
+  (equal (equal (bool-to-bit x) 1)
          (bool-fix x))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
 
@@ -42,6 +54,11 @@
 
 (defthm unsigned-byte-p-1-of-bool-to-bit
   (unsigned-byte-p 1 (bool-to-bit x))
+  :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+(defthm unsigned-byte-p-of-bool-to-bit
+  (implies (posp size)
+           (unsigned-byte-p size (bool-to-bit bool)))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
 
 (defthm getbit-0-of-bool-to-bit

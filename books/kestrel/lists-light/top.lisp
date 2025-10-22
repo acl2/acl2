@@ -112,3 +112,5 @@
 (include-book "filter-non-members")
 (include-book "union-equal-alt")
 (include-book "every-nth")
+
+(include-book "contains-anyp-eq")

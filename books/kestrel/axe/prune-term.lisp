@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "rule-alists")
+(include-book "count-branches")
 (include-book "rewriter-basic") ;because we call simplify-term-basic
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -65,65 +66,6 @@
              (consp x))
     :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable quotep)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund lookup-with-default (key alist default)
-  (declare (xargs :guard (and (eqlablep key)
-                              (alistp alist))))
-  (let ((res (assoc key alist)))
-    (if (not res)
-        default
-      (cdr res))))
-
-(local
-  (defthm natp-of-lookup-with-default-type
-    (implies (and (nat-listp (strip-cdrs alist))
-                  (natp default))
-             (natp (lookup-with-default key alist default)))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable lookup-with-default assoc-equal strip-cdrs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund count-top-level-if-branches-in-rev-dag (rev-dag
-                                                alist ; maps nodenums to the number of if-leaves they each represent
-                                                )
-  (declare (xargs :guard (and (weak-dagp rev-dag)
-                              (alistp alist)
-                              (nat-listp (strip-cdrs alist)))
-                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr-of-dargs-when-dag-exprp-iff
-                                                           consp-of-dargs-when-dag-exprp-iff)))))
-  (if (not (mbt (consp rev-dag)))
-      (er hard? 'count-top-level-if-branches-in-rev-dag "Empty DAG.")
-    (let* ((entry (first rev-dag))
-           (expr (cdr entry))
-           (leaf-count (if (and (call-of 'if expr)
-                                (consp (cdr (cdr (dargs expr)))))
-                           (let ((then (darg2 expr))
-                                 (else (darg3 expr)))
-                             ;; only counting leaves in the then and else branches, not the test:
-                             (+ (if (consp then) ; check for quotep
-                                    1
-                                  (lookup-with-default then alist 1))
-                                (if (consp else) ; check for quotep
-                                    1
-                                  (lookup-with-default else alist 1))))
-                         1 ; level expr is not an IF
-                         )))
-      (if (endp (cdr rev-dag)) ; we've reached the top node
-          leaf-count
-        (count-top-level-if-branches-in-rev-dag (cdr rev-dag)
-                                                (if (< 1 leaf-count)
-                                                    ;; only store counts greater than 1:
-                                                    (acons (car entry) leaf-count alist)
-                                                  alist))))))
-
-;; Does not look for MYIF or BVIF or anything like that, only IF.
-;; TODO: Optimize by using a result array?
-(defund count-top-level-if-branches-in-dag (dag)
-  (declare (xargs :guard (pseudo-dagp dag)))
-  (count-top-level-if-branches-in-rev-dag (reverse-list dag) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,7 +184,7 @@
 ;; because the assumptions contradict, in which case the entire enclosing
 ;; IF/MYIF/BOOLIF/BVIF may be irrelevant.)
 ;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff.
-(defund try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+(defund try-to-resolve-test (test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
   (declare (xargs :guard (and (pseudo-termp test)
                               (pseudo-term-listp assumptions)
                               (pseudo-term-listp equality-assumptions)
@@ -250,6 +192,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (call-stp-optionp call-stp)
+                              (symbol-listp no-warn-ground-functions)
                               (print-levelp print))
                   :stobjs state))
   (b* ((- (and (print-level-at-least-verbosep print)
@@ -272,7 +215,7 @@
                              nil ; count-hits
                              nil ; print
                              monitored-rules
-                             nil ; no-warn-ground-functions
+                             no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp)
@@ -351,7 +294,7 @@
 
 (local
   (defthm w-of-mv-nth-2-of-try-to-resolve-test
-    (equal (w (mv-nth 2 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+    (equal (w (mv-nth 2 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
            (w state))
     :hints (("Goal" :in-theory (enable try-to-resolve-test)))))
 
@@ -363,7 +306,8 @@
  ;; tests (and any given assumptions).
  ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
  ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
- (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+  ;; TODO: Before recurring, don't bother if there is no function that can be pruned.
+ (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
                                (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
@@ -371,6 +315,7 @@
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
                                (call-stp-optionp call-stp)
+                               (symbol-listp no-warn-ground-functions)
                                (print-levelp print))
                    :stobjs state
                    :verify-guards nil ; done below
@@ -384,20 +329,20 @@
           (b* ((test (farg1 term))
                ;; First prune the test:
                ((mv erp test state)
-                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state))
                ;; Now try to resolve the pruned test:
                ((mv erp result ; :true, :false, or :unknown
                     state)
                 ;; TODO: Consider having try-to-resolve-test return the simplified test, for use below
-                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
                 ;; Throw away the else-branch:
-                (prune-term-aux (farg2 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state) ;we could add the condition as an assumption here
+                (prune-term-aux (farg2 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state) ;we could add the condition as an assumption here
               (if (eq :false result)
                   ;; Throw away the then-branch:
-                  (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state) ;we could add the negated condition as an assumption here
+                  (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state) ;we could add the negated condition as an assumption here
                 ;; Could not resolve the test:
                 (b* (;; Prune the then-branch, assuming the (pruned, but not simplified) test:
                      (then-branch (farg2 term))
@@ -409,9 +354,9 @@
                           (prune-term-aux then-branch
                                           (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
-                     ;; Print the else-branch, assuming the negation of the (pruned, but not simplified) test:
+                     ;; Prune the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      (else-branch (farg3 term))
                      ((mv erp else-branch state)
                       (if (quotep else-branch)
@@ -421,7 +366,7 @@
                           (prune-term-aux else-branch
                                           (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    then-branch ; special case when both branches are the same
@@ -434,18 +379,18 @@
                (else-branch (farg3 term))
                ;; First prune the test:
                ((mv erp test state)
-                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state))
                ;; Now try to resolve the pruned test:
                ((mv erp result ;:true, :false, or :unknown
                     state)
-                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
                 ;; Throw away the else-branch:
                 (mv-let (erp then-branch state)
                   ;; we could add the condition as an assumption here:
-                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
                   (if erp
                       (mv erp nil state)
                     (mv (erp-nil)
@@ -456,7 +401,7 @@
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
                     ;; we could add the negated condition as an assumption here:
-                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
                     (if erp
                         (mv erp nil state)
                       (mv (erp-nil)
@@ -472,7 +417,7 @@
                           (prune-term-aux then-branch
                                           (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
                      ;; Prune the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
@@ -483,7 +428,7 @@
                           (prune-term-aux else-branch
                                           (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    (make-bool-fix then-branch) ; special case when both branches are the same
@@ -497,18 +442,18 @@
                (else-branch (farg4 term))
                ;; First prune the test:
                ((mv erp test state)
-                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (prune-term-aux test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state))
                ;; Now try to resolve the pruned test:
                ((mv erp result ;:true, :false, or :unknown
                     state)
-                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                ((when erp) (mv erp nil state)))
             (if (eq :true result)
                 ;; Throw away the else-branch:
                 (mv-let (erp then-branch state)
                   ;; we could add the condition as an assumption here:
-                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+                  (prune-term-aux then-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
                   (if erp
                       (mv erp nil state)
                     (mv (erp-nil)
@@ -518,7 +463,7 @@
                   ;; Throw away the then-branch:
                   (mv-let (erp else-branch state)
                     ;; we could add the negated condition as an assumption here:
-                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+                    (prune-term-aux else-branch assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
                     (if erp
                         (mv erp nil state)
                       (mv (erp-nil)
@@ -533,7 +478,7 @@
                           (prune-term-aux then-branch
                                           (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
@@ -544,7 +489,7 @@
                           (prune-term-aux else-branch
                                           (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+                                          rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    (make-bvchop size then-branch) ; special case when both branches are the same
@@ -565,7 +510,7 @@
               (mv (erp-nil) *t* state)
             ;; Prune branches in arguments:
             (b* ((args (fargs term))
-                 ((mv erp new-args state) (prune-terms-aux args assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                 ((mv erp new-args state) (prune-terms-aux args assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
                  ((when erp) (mv erp nil state))
                  ;; Try to evaluate a ground term:
                  ((mv erp evaluatedp val) ; val only meaningful if evaluatedp
@@ -590,7 +535,7 @@
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
  ;; RESULT-TERMS are equal to their corresponding TERMS, given the ASSUMPTIONS
  ;; and EQUALITY-ASSUMPTIONS.
- (defund prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+ (defund prune-terms-aux (terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (pseudo-term-listp assumptions)
                                (pseudo-term-listp equality-assumptions)
@@ -598,13 +543,14 @@
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-rules)
                                (call-stp-optionp call-stp)
+                               (symbol-listp no-warn-ground-functions)
                                (print-levelp print))
                    :stobjs state))
    (if (endp terms)
        (mv (erp-nil) nil state)
-     (b* (((mv erp pruned-first state) (prune-term-aux (first terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+     (b* (((mv erp pruned-first state) (prune-term-aux (first terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
           ((when erp) (mv erp nil state))
-          ((mv erp pruned-rest state) (prune-terms-aux (rest terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))
+          ((mv erp pruned-rest state) (prune-terms-aux (rest terms) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))
           ((when erp) (mv erp nil state)))
        (mv (erp-nil) (cons pruned-first pruned-rest) state)))))
 
@@ -614,8 +560,8 @@
 (local
   (defthm-flag-prune-term-aux
     (defthm len-of-mv-nth-1-of-prune-terms-aux
-      (implies (not (mv-nth 0 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-               (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+      (implies (not (mv-nth 0 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
+               (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
                       (len terms)))
       :flag prune-terms-aux)
     :skip-others t
@@ -633,7 +579,7 @@
                     (interpreted-function-alistp interpreted-function-alist))
                (pseudo-termp (mv-nth 1 (prune-term-aux term assumptions equality-assumptions
                                                        rule-alist interpreted-function-alist
-                                                       monitored-rules call-stp print state))))
+                                                       monitored-rules call-stp no-warn-ground-functions print state))))
       :flag prune-term-aux)
     (defthm prune-terms-aux-return-type
       (implies (and (pseudo-term-listp terms)
@@ -645,7 +591,7 @@
                     )
                (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
                                                               rule-alist interpreted-function-alist
-                                                              monitored-rules call-stp print state))))
+                                                              monitored-rules call-stp no-warn-ground-functions print state))))
       :flag prune-terms-aux)
     :hints (("Goal" :in-theory (e/d (prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
                                     (;pseudo-term-listp quotep
@@ -656,11 +602,11 @@
 (local
   (defthm-flag-prune-term-aux
     (defthm w-of-mv-nth-2-of-prune-term-aux
-      (equal (w (mv-nth 2 (prune-term-aux term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+      (equal (w (mv-nth 2 (prune-term-aux term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
              (w state))
       :flag prune-term-aux)
     (defthm w-of-mv-nth-2-of-prune-terms-aux
-      (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+      (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
              (w state))
       :flag prune-terms-aux)
     :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)))))
@@ -670,13 +616,14 @@
 ;; Returns (mv erp changep result-term state).
 ;; TODO: Print some stats about the pruning process?
 ;; TODO: Allow rewriting to be suppressed (just call STP)?
-(defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
+(defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
                               (call-stp-optionp call-stp)
+                              (symbol-listp no-warn-ground-functions)
                               (print-levelp print))
                   :stobjs state))
   (b* ((- (and (print-level-at-least-tp print)
@@ -690,6 +637,7 @@
                         interpreted-function-alist
                         monitored-rules
                         call-stp
+                        no-warn-ground-functions
                         print
                         state))
        ((when erp) (mv erp nil nil state))
@@ -708,10 +656,10 @@
                 (interpreted-function-alistp interpreted-function-alist)
                 ;; (symbol-listp monitored-rules)
                 )
-           (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+           (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state))))
   :hints (("Goal" :in-theory (enable prune-term))))
 
 (defthm w-of-mv-nth-3-of-prune-term
-  (equal (w (mv-nth 3 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+  (equal (w (mv-nth 3 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
          (w state))
   :hints (("Goal" :in-theory (enable prune-term))))

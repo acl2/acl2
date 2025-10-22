@@ -25,10 +25,11 @@
 #     git control).  For example:
 #     ; cert-flags: ? t :useless-runes nil
 
-# (4) Run the following in that same (top-level ACL2) directory,
-#     using a full (absolute) pathname or directory-independent
-#     pathname (e.g., "acl2" if that is really ~/bin/acl2) for
-#     <your_acl2>), e.g., perhaps ./saved_acl2 rather than saved_acl2:
+# (4) Run the following in that same (top-level ACL2) directory, using
+#     a full (absolute) pathname or directory-independent pathname
+#     (e.g., "acl2" if that is really ~/bin/acl2) for <your_acl2>),
+#     e.g., perhaps /projects/acl2/acl2/saved_acl2 rather than
+#     saved_acl2:
 
 #     ./bin/new-useless-runes-files.sh <your_acl2> tmp
 

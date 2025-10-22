@@ -13,6 +13,7 @@
 
 ;; TODO: Should these be in a PE package?
 
+(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; todo: replace uses of this with proper error returns
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "std/util/bstar" :dir :system)
@@ -127,10 +128,17 @@
 (defund parsed-pe-p (pe)
   (declare (xargs :guard t))
   (and (symbol-alistp pe)
+       (member-eq (lookup-eq :executable-type pe) '(:pe-32 :pe-64 :pe-unknown))
        (pe-section-listp (lookup-eq :sections pe))
        (pe-symbol-tablep (lookup-eq :symbol-table pe))
        (symbol-alistp (lookup-eq :optional-header-standard-fields pe))
        (symbol-alistp (lookup-eq :coff-file-header pe))))
+
+(defthm parsed-pe-p-forward-to-symbol-alistp
+  (implies (parsed-pe-p parsed-executable)
+           (symbol-alistp parsed-executable))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-pe-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -19,7 +19,7 @@
 (include-book "register-readers-and-writers32") ; for esp
 (include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
 
-;; Tests whether the stack points is "above" OLD-ESP.  For now, we define
+;; Tests whether the stack pointer is "above" OLD-ESP.  For now, we define
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
 ;; larger ESP means a shorter stack.
 (defund esp-is-abovep (old-esp x86)
@@ -73,22 +73,21 @@
 (defpun run-until-esp-is-above-or-reach-pc (old-esp stop-pcs x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
   (if (or (esp-is-abovep old-esp x86)
-          (member-equal (rip x86) stop-pcs) ; use eip?
-          )
+          (member-equal (eip x86) stop-pcs))
       x86
     (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-esp-is-above-or-reach-pc-base
   (implies (or (esp-is-abovep old-esp x86)
-               (member-equal (rip x86) stop-pcs))
+               (member-equal (eip x86) stop-pcs))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   x86)))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-esp-is-above-or-reach-pc-opener
   (implies (not (or (esp-is-abovep old-esp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (member-equal (eip x86) stop-pcs)))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86)))))
 
@@ -101,9 +100,7 @@
 (defund-nx run-until-return-or-reach-pc4 (stop-pcs x86)
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-esp-is-above-or-reach-pc)
   (declare (xargs :stobjs x86))
-  (run-until-esp-is-above-or-reach-pc
-   (esp x86)
-   stop-pcs x86))
+  (run-until-esp-is-above-or-reach-pc (esp x86) stop-pcs x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

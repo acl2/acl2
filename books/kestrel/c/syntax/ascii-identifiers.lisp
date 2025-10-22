@@ -10,8 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-trees")
-(include-book "keywords")
+(include-book "code-ensembles")
 
 (include-book "../language/portable-ascii-identifiers")
 
@@ -25,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ascii-identifiers
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "ASCII identifiers in the C abstract syntax of tools."
   :long
   (xdoc::topstring
@@ -81,8 +80,8 @@
      to also exclude the GCC keywords."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x *keywords*))
-       (or (not gcc) (not (member-equal x *gcc-keywords*))))
+       (not (member-equal x c::*keywords-c17*))
+       (or (not gcc) (not (member-equal x c::*keywords-gcc-c17*))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,6 +110,7 @@
      to call @(tsee ascii-ident-stringp) on the unwrapped value."))
   :types (ident
           ident-list
+          ident-list-list
           ident-option
           const
           attrib-name
@@ -127,16 +127,17 @@
   :combine and
   :override ((ident (ascii-ident-stringp (ident->unwrap ident) gcc))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled filepath-transunit-map-aidentp-of-tail
-  (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-aidentp map gcc))
-           (filepath-transunit-map-aidentp (omap::tail map) gcc))
-  :enable filepath-transunit-map-aidentp)
-
-(defruled filepath-transunit-map-aidentp-of-transunit-ensemble->unwrap
-  (implies (transunit-ensemble-aidentp tunits gcc)
-           (filepath-transunit-map-aidentp
-            (transunit-ensemble->unwrap tunits) gcc))
-  :enable transunit-ensemble-aidentp)
+(define code-ensemble-aidentp ((code code-ensemblep))
+  :returns (yes/no booleanp)
+  :short "Check if a code ensemble only uses, in its translation unit ensemble,
+          ASCII identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The condition is checked w.r.t.
+     the GCC flag in the implementation environment."))
+  (transunit-ensemble-aidentp (code-ensemble->transunits code)
+                              (ienv->gcc (code-ensemble->ienv code)))
+  :hooks (:fix))

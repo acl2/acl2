@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 
 ;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
+;; helper function for list-to-bv-array
 (defund list-to-bv-array-aux (element-size elements-left total-length lst)
   (declare (xargs :guard (and (natp element-size)
                               (natp elements-left)
@@ -64,9 +65,11 @@
            (all-unsigned-byte-p width (list-to-bv-array-aux width elements-left total-len x)))
   :hints (("Goal" :in-theory (enable list-to-bv-array-aux))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;converts a list (e.g., a nest of conses) to an array (a nest of bv-array-write calls)
 ;often this will just be a no-op, but it helps us compare a spec expressed as a list with an implementation expressed as an array
-
+;; TODO: Add an MBE whose :exec just returns LST
 (defund list-to-bv-array (element-size lst)
   (declare (xargs :guard (and (natp element-size)
                               (true-listp lst))))
@@ -133,8 +136,7 @@
   :hints (("Goal" :in-theory (e/d (bv-array-to-list-aux
                                    nth) (;NTH-OF-CDR
                                          ))
-           :induct (ind size len i arr n)
-           :do-not '(generalize eliminate-destructors))))
+           :induct (ind size len i arr n))))
 
 (defthm integer-listp-of-bv-array-to-list-aux
   (integer-listp (bv-array-to-list-aux size len i arr))
@@ -173,7 +175,7 @@
                 (natp i))
            (equal (cdr (bv-array-to-list-aux size len i arr))
                   (bv-array-to-list-aux size (+ -1 len) i (cdr arr))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
 ;           :induct (bv-array-to-list-aux size len i arr)
            :in-theory (enable bv-array-to-list-aux))))
 
@@ -188,6 +190,8 @@
            (EQUAL (BV-ARRAY-TO-LIST-AUX WIDTH LEN I ARRAY)
                   (NTHCDR I (bvchop-list width ARRAY))))
   :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-TO-LIST-AUX bv-array-read cdr-of-nthcdr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;should we pass in the length too (can't really ask an array for its length)?
 (defund bv-array-to-list (size arr)
@@ -271,16 +275,17 @@
                 (natp width))
            (equal (bv-array-read width total-len n (list-to-bv-array-aux width elements-left total-len x))
                   (bv-array-read width total-len n x)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (list-to-bv-array-aux width elements-left total-len x)
            :in-theory (enable bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux))))
 
 (defthm bv-array-read-of-list-to-bv-array
-  (implies (and (natp n)
-                (natp width)
-                (< n (len x)))
-           (equal (bv-array-read width (len x) n (list-to-bv-array width x))
-                  (bv-array-read width (len x) n x)))
+  (implies (and (equal len (len x))
+                (< n len)
+                (natp n)
+                (natp width))
+           (equal (bv-array-read width len n (list-to-bv-array width x))
+                  (bv-array-read width len n x)))
   :hints (("Goal"
            :in-theory (e/d (list-to-bv-array) (list-to-bv-array-aux-unroll)))))
 

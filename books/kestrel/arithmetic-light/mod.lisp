@@ -131,11 +131,17 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+(defthm +-of-mod-and-*-of-floor-same
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
+  :hints (("Goal" :in-theory (enable mod))))
+
 ;; Trying to avoid name clash
 (defthm floor-mod-elim-rule
-  (implies (acl2-numberp i)
-           (equal (+ (mod i j) (* j (floor i j)))
-                  i))
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
   :rule-classes :elim
   :hints (("Goal" :in-theory (enable mod))))
 
@@ -897,3 +903,26 @@
                     (if (< y 0)
                         (not (integerp (/ x y)))
                       nil)))))
+
+;todo: gen to reduce the constant even if not down to 0
+(defthm mod-of-+-of-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep j)))
+                (equal 0 (mod k j))
+                (rationalp j)
+                (rationalp k)
+                (not (equal 0 j))
+                (integerp x))
+           (equal (mod (+ k x) j)
+                  (mod x j))))
+
+;drop or move hyps?
+;expensive?
+(defthmd mod-equal-impossible-value
+  (implies (and (<= j k) ; unusual
+                (natp i)
+                (natp j))
+           (equal (equal k (mod i j))
+                  (if (equal 0 j)
+                      (equal k i)
+                    nil))))

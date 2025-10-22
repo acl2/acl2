@@ -138,6 +138,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap ident-type-map
+  :short "Fixtype of maps from identifiers to types."
+  :key-type ident
+  :val-type type
+  :pred ident-type-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult type-result
   :short "Fixtype of errors and types."
   :ok type
@@ -659,7 +667,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the name of one of the nullary functions
-     introduced in @(see integer-formats).")
+     introduced in @(see integer-formats-definitions).")
    (xdoc::p
     "We take the name of the kind,
      remove the initial @('s') or @('u'),

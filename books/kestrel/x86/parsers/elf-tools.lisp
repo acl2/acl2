@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/x86/portcullis" :dir :system) ; for the package
 (include-book "parse-elf-file") ; overkill?  brings in get-elf-section-header.  really that book should include this one?
 (include-book "kestrel/utilities/file-existsp" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)

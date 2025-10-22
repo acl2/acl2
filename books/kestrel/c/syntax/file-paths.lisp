@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,6 +43,13 @@
      we could already use strings with slashes and such as file paths."))
   ((unwrap any))
   :pred filepathp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-filepath
+  :short "An irrelevant @(see filepath)."
+  :type filepathp
+  :body (filepath ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

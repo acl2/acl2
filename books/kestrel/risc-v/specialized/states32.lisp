@@ -13,13 +13,13 @@
 
 (include-book "states32i")
 
-(include-book "../library-extensions/logops-theorems")
-
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
+
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -62,7 +62,6 @@
     (if (= reg 0)
         0
       (nth (1- reg) (stat32i->xregs stat))))
-  :hooks (:fix)
 
   ///
 
@@ -82,8 +81,7 @@
     "The register index consists of 5 bits.
      We read an unsigned 32-bit integer from the register,
      and convert it to signed."))
-  (logext 32 (read32-xreg-unsigned reg stat))
-  :hooks (:fix))
+  (logext 32 (read32-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,8 +128,7 @@
    (xdoc::p
     "The result is an unsigned 32-bit integer,
      read directly from the register."))
-  (stat32i->pc stat)
-  :hooks (:fix))
+  (stat32i->pc stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,8 +168,7 @@
    (xdoc::p
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write32-pc) wraps around if needed [ISA:1.4]."))
-  (write32-pc (+ (read32-pc stat) 4) stat)
-  :hooks (:fix))
+  (write32-pc (+ (read32-pc stat) 4) stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,8 +217,7 @@
   (b* ((b0 (read32-mem-ubyte8 addr stat))
        (b1 (read32-mem-ubyte8 (1+ (ifix addr)) stat)))
     (+ b0
-       (ash b1 8)))
-  :hooks (:fix))
+       (ash b1 8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,8 +236,7 @@
     (+ b0
        (ash b1 8)
        (ash b2 16)
-       (ash b3 24)))
-  :hooks (:fix))
+       (ash b3 24))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,14 +249,14 @@
     "The address is any integer,
      which we turn into a 32-bit unsigned address."))
   (change-stat32i stat :memory (update-nth (loghead 32 addr)
-                                           (ubyte8-fix val)
+                                           (loghead 8 val)
                                            (stat32i->memory stat)))
   :guard-hints (("Goal" :in-theory (enable memory32ip)))
 
   ///
 
   (fty::deffixequiv write32-mem-ubyte8
-    :hints (("Goal" :in-theory (enable loghead)))))
+    :args ((addr integerp) (stat stat32ip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,14 +272,19 @@
      and we write the low one at the given address,
      and the high one at the address just after that,
      which could be 0 if the given address is the last one in the space."))
-  (b* ((val (ubyte16-fix val))
+  (b* ((val (loghead 16 val))
        (b0 (logand val #xff))
        (b1 (ash val -8))
        (stat (write32-mem-ubyte8 addr b0 stat))
        (stat (write32-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write32-mem-ubyte16-lendian
+    :args ((addr integerp) (stat stat32ip))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,7 +298,7 @@
    (xdoc::p
     "This is similar to @(tsee write32-mem-ubyte16-lendian),
      but with 4 bytes instead of 2."))
-  (b* ((val (ubyte32-fix val))
+  (b* ((val (loghead 32 val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
@@ -310,20 +309,23 @@
        (stat (write32-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv write32-mem-ubyte32-lendian
+    :args ((addr integerp) (stat stat32ip))
+    :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define error32p ((stat stat32ip))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
-  (stat32i->error stat)
-  :hooks (:fix))
+  (stat32i->error stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define error32 ((stat stat32ip))
   :returns (new-stat stat32ip)
   :short "Set the error flag in the state."
-  (change-stat32i stat :error t)
-  :hooks (:fix))
+  (change-stat32i stat :error t))

@@ -32,9 +32,9 @@
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 ;(local (include-book "../axe-rules-mixed")) ; drop?
-(local (include-book "../rules3")) ;drop
+(local (include-book "../rules3")) ;drop ; maybe for <-of-constant-and-bvchop-when-equal-of-getbit
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -53,6 +53,8 @@
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system))
+(local (include-book "kestrel/bv/sbvlt-rules" :dir :system))
 ;(local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 
 ;gen
@@ -111,6 +113,7 @@
 (defthm bvsx-when-bvlt
   (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
                 (natp old-size)
+                (integerp new-size)
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   (bvchop old-size x)))

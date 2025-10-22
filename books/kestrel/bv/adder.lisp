@@ -311,7 +311,6 @@
                             (;EQUAL-OF-SUM-OF-LOW-BITS
                              ;;full-adder-sum
                              ;full-adder-carry
-                             ;;BVCAT-OF-+-LOW
                              BVCAT-EQUAL-REWRITE-ALT
                              BVCAT-EQUAL-REWRITE
                              BVCAT-TIGHTEN-UPPER-SIZE
@@ -322,7 +321,6 @@
                              ;;GETBIT-0-OF-PLUS
                              BVPLUS-1-BECOMES-BITXOR
                              ;;BVCHOP-1-OF-PLUS
-                             ;;BVCAT-OF-+-HIGH
                              ;;for speed:
                              COMMUTATIVITY-2-OF-+
                              COMMUTATIVITY-OF-+
@@ -347,15 +345,12 @@
                              bvplus ;getbit-of-+
                              )
                             ((:definition ripple-carry-adder)
-                             ;;
-                             ;BVCAT-OF-+-LOW ;looped
                              ;;<-OF-BVCHOP-HACK ;looped
                              ;; GETBIT-OF-+-BVCHOP-EXPAND4
                              ;; GETBIT-OF-+-BVCHOP-EXPAND3
                              ;GETBIT-0-OF-PLUS
                              BVPLUS-1-BECOMES-BITXOR
                              ;BVCHOP-1-OF-PLUS
-                             ;BVCAT-OF-+-HIGH
                              ))
             :do-not '(generalize eliminate-destructors fertilize))))
 

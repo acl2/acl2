@@ -27,29 +27,13 @@
   (defruled exec-block-item-when-declon
     (implies (and (syntaxp (quotep item))
                   (equal (block-item-kind item) :declon)
-                  (not (zp limit))
                   (equal declon (block-item-declon->get item))
-                  (equal var+scspec+tyname+init
-                         (obj-declon-to-ident+scspec+tyname+init declon))
-                  (equal var (mv-nth 0 var+scspec+tyname+init))
-                  (equal scspec (mv-nth 1 var+scspec+tyname+init))
-                  (equal tyname (mv-nth 2 var+scspec+tyname+init))
-                  (equal init (mv-nth 3 var+scspec+tyname+init))
-                  (scspecseq-case scspec :none)
-                  init
-                  (equal type (tyname-to-type tyname))
-                  (not (type-case type :array))
-                  (equal ival+compst1
-                         (exec-initer init compst fenv (1- limit)))
-                  (equal ival (mv-nth 0 ival+compst1))
-                  (equal compst1 (mv-nth 1 ival+compst1))
-                  (init-valuep ival)
-                  (equal val (init-value-to-value type ival))
-                  (valuep val)
-                  (equal compst2 (create-var var val compst1))
-                  (compustatep compst2))
+                  (not (zp limit))
+                  (equal compst1
+                         (exec-obj-declon declon compst fenv (1- limit)))
+                  (compustatep compst1))
              (equal (exec-block-item item compst fenv limit)
-                    (mv (stmt-value-none) compst2)))
+                    (mv (stmt-value-none) compst1)))
     :enable exec-block-item)
 
   (defruled exec-block-item-when-stmt
@@ -69,8 +53,6 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+scspec+tyname+init)
-      (:e scspecseq-kind)
       return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

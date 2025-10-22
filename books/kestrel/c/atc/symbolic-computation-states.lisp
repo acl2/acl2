@@ -618,7 +618,7 @@
      No rule is needed for computation states that start with @(tsee update-var)
      because @(tsee update-var) is always pushed past @(tsee enter-scope)."))
 
-  (defruled exit-scope-of-enter-scope
+  (defruled exit-scope-of-enter-scope-when-compustatep
     (implies (and (compustatep compst)
                   (> (compustate-frames-number compst) 0))
              (equal (exit-scope (enter-scope compst))
@@ -642,7 +642,7 @@
     :enable if*)
 
   (defval *atc-exit-scope-rules*
-    '(exit-scope-of-enter-scope
+    '(exit-scope-of-enter-scope-when-compustatep
       exit-scope-of-add-var)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1723,7 +1723,7 @@
              push-frame
              read-object))
 
-  (defruled read-object-of-enter-scope
+  (defruled read-object-alloc-of-enter-scope
     (implies (equal (objdesign-kind objdes) :alloc)
              (equal (read-object objdes (enter-scope compst))
                     (read-object objdes compst)))
@@ -1782,7 +1782,7 @@
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
-      read-object-of-enter-scope
+      read-object-alloc-of-enter-scope
       read-object-of-add-var
       read-object-of-update-var
       read-object-of-update-object-same

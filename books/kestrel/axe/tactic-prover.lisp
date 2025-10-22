@@ -27,6 +27,7 @@
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
 ;(include-book "dag-size")
+(include-book "dagify") ; for dag-or-term-to-term
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
@@ -414,6 +415,7 @@
                     nil                ;no interpreted-fns (todo)
                     nil                ;no point in monitoring anything
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
@@ -460,6 +462,7 @@
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
+                    nil ; no-warn-ground-functions
                     print
                     state))
        ((when erp) (mv *error* nil state))
@@ -559,8 +562,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp)
-                              (ilks-plist-worldp (w state)))
+                              (booleanp print-cex-as-signedp))
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules
                                                          len-when-stp-resultp
                                                          true-listp-when-stp-resultp
@@ -570,7 +572,7 @@
                                                          myquotep-when-pseudo-dag-or-quotep-cheap
                                                          ;; pseudo-dagp-when-pseudo-dag-or-quotep-cheap
                                                          )
-                                                        (myquotep quotep ilks-plist-worldp))
+                                                        (myquotep quotep))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state))
   (b* ((dag-or-quotep (first problem))
@@ -960,7 +962,6 @@
                             simplify-assumptionsp
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
-                            ;; debug
                             max-conflicts ;a number of conflicts, or nil for no max
                             call-stp-when-pruning
                             counterexamplep

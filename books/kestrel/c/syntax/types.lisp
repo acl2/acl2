@@ -22,7 +22,21 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (:e tau-system))))
 (set-induction-depth-limit 0)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Library extensions.
+
+(defrulel sfix-when-not-setp-cheap
+  (implies (not (setp x))
+           (equal (sfix x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable sfix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,17 +98,17 @@
       This is an approximation,
       because there are different enumeration types.")
     (xdoc::li
-     "A collective type for all array types [C17:6.2.5/20].
+     "An array type [C17:6.2.5/20],
+      derived from the ``element type.''
       This is an approximation,
-      because there are different array types.")
+      because we do not track the size of the array type.")
     (xdoc::li
-     "A collective type for all pointer types [C17:6.2.5/20].
-      This is an approximation,
-      because there are different pointer types.")
+     "A pointer type [C17:6.2.5/20],
+      derived from the ``referenced type.''")
     (xdoc::li
-     "A collective type for all function types [C17:6.2.5/20].
+     "A function type [C17:6.2.5/20], which contains the return type.
       This is an approximation,
-      because there are different function types.")
+      because we do not store the types of the function parameters.")
     (xdoc::li
      "An ``unknown'' type that we need due to our current approximation.
       Our validator must not reject valid code.
@@ -115,7 +129,7 @@
      currently we do not capture atomic types [C17:6.2.5/20],
      which we approximate as the underlying (argument) type.
      We also do not capture @('typedef') names,
-     which we approximate as unknown types.
+     which are instead expanded to their normal form.
      Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
   (:void ())
   (:char ())
@@ -139,11 +153,12 @@
   (:struct ((tag? ident-optionp)))
   (:union ())
   (:enum ())
-  (:array ())
-  (:pointer ())
-  (:function ())
+  (:array ((of type)))
+  (:pointer ((to type)))
+  (:function ((ret type)))
   (:unknown ())
-  :pred typep)
+  :pred typep
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -191,6 +206,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset type-option-set
+  :short "Fixtype of sets of optional types."
+  :elt-type type-option
+  :elementp-of-nil t
+  :pred type-option-setp
+
+  ///
+
+  (defruled type-setp-when-type-option-setp-and-nil-not-member
+    (implies (and (type-option-setp types)
+                  (not (set::in nil types)))
+             (type-setp types))
+    :induct t
+    :enable (type-setp
+             type-option-setp
+             set::in
+             set::head
+             set::tail
+             set::emptyp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defalist type-option-type-alist
   :short "Fixtype of alists from optional types to types."
   :long
@@ -212,7 +249,17 @@
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-signed-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-signed-integerp type)
+                    (and (member-equal kind
+                                       '(:schar :sshort :sint :slong :sllong))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,7 +273,15 @@
      so the signed integer types coincide with
      the standard signed integer types."))
   (type-standard-signed-integerp type)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-signed-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-signed-integerp type)
+                    (type-standard-signed-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +290,18 @@
   :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-unsigned-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-unsigned-integerp type)
+                    (and (member-equal
+                           kind
+                           '(:bool :uchar :ushort :uint :ulong :ullong))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,7 +315,15 @@
      so the unsigned integer types coincide with
      the standard unsigned integer types."))
   (type-standard-unsigned-integerp type)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-unsigned-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-unsigned-integerp type)
+                    (type-standard-unsigned-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,7 +332,16 @@
   :short "Check if a type is a standard integer type [C17:6.2.5/7]."
   (or (type-standard-signed-integerp type)
       (type-standard-unsigned-integerp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-standard-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-integerp type)
+                    (or (type-standard-signed-integerp type)
+                        (type-standard-unsigned-integerp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,7 +350,16 @@
   :short "Check if a type is a real floating type [C17:6.2.5/10]."
   (and (member-eq (type-kind type) '(:float :double :ldouble))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-real-floatingp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-real-floatingp type)
+                    (and (member-equal kind '(:float :double :ldouble))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,7 +368,16 @@
   :short "Check if a type is a complex type [C17:6.2.5/11]."
   (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-complexp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-complexp type)
+                    (and (member-equal kind '(:floatc :doublec :ldoublec))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -285,7 +386,16 @@
   :short "Check if a type is a floating type [C17:6.2.5/11]."
   (or (type-real-floatingp type)
       (type-complexp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-floatingp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-floatingp type)
+                    (or (type-real-floatingp type)
+                        (type-complexp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +406,18 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-floatingp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-basicp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-basicp type)
+                    (or (equal kind :char)
+                        (type-signed-integerp type)
+                        (type-unsigned-integerp type)
+                        (type-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,7 +426,16 @@
   :short "Check if a type is a character type [C17:6.2.5/15]."
   (and (member-eq (type-kind type) '(:char :schar :uchar))
        t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-characterp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-characterp type)
+                    (and (member-equal kind '(:char :schar :uchar))
+                         t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +446,18 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-case type :enum))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-integerp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-integerp type)
+                    (or (equal kind :char)
+                        (type-signed-integerp type)
+                        (type-unsigned-integerp type)
+                        (type-case type :enum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,7 +466,16 @@
   :short "Check if a type is a real type [C17:6.2.5/17]."
   (or (type-integerp type)
       (type-real-floatingp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-realp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-realp type)
+                    (or (type-integerp type)
+                        (type-real-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,16 +488,16 @@
 
   ///
 
+  (defrule type-arithmeticp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-arithmeticp type)
+                    (or (type-integerp type)
+                        (type-floatingp type)))))
+
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
-             (type-arithmeticp type)))
-
-  (defrule type-arithmeticp-when-bool
-    (implies (type-case type :bool)
-             (type-arithmeticp type))
-    :enable (type-integerp
-             type-unsigned-integerp
-             type-standard-unsigned-integerp)))
+             (type-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,7 +506,16 @@
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
       (type-case type :pointer))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-scalarp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-scalarp type)
+                    (or (type-arithmeticp type)
+                        (type-case type :pointer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,13 +528,12 @@
 
   ///
 
-  (defrule type-aggregatep-when-array
-    (implies (type-case type :array)
-             (type-aggregatep type)))
-
-  (defrule type-aggregatep-when-struct
-    (implies (type-case type :struct)
-             (type-aggregatep type))))
+  (defrule type-aggregatep-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-aggregatep type)
+                    (or (type-case type :array)
+                        (type-case type :struct))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,7 +549,17 @@
      the integer ones with rank below @('int')."))
   (not (member-eq (type-kind type)
                   '(:bool :char :schar :uchar :sshort :ushort :enum)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-promotedp-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-promotedp type)
+                    (not (member-equal kind
+                                       '(:bool :char :schar :uchar :sshort
+                                         :ushort :enum)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -402,13 +570,11 @@
   (xdoc::topstring
    (xdoc::p
     "This performs the conversion in [C17:6.3.2.1/3].
-     It leaves non-array types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for arrays and one type for pointers."))
-  (if (type-case type :array)
-      (type-pointer)
-    (type-fix type))
+     It leaves non-array types unchanged."))
+  (type-case
+    type
+    :array (make-type-pointer :to type.of)
+    :otherwise (type-fix type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -420,12 +586,9 @@
   (xdoc::topstring
    (xdoc::p
     "This performs the conversion in [C17:6.3.2.1/4].
-     It leaves non-function types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for functions and one type for pointers."))
+     It leaves non-function types unchanged."))
   (if (type-case type :function)
-      (type-pointer)
+      (make-type-pointer :to (type-fix type))
     (type-fix type))
   :hooks (:fix))
 
@@ -705,7 +868,7 @@
    (xdoc::p
     "Type compatibility affects whether a redeclaration is permissible,
      whether one type may be used when another is expected,
-     and whether two declarations referring to the same object are
+     and whether two declarations referring to the same object or function are
      well-defined.
      This is a little weaker than type equality.
      For instance,
@@ -719,20 +882,39 @@
      Compatible types should always be recognized as such,
      but incompatible types may also be recognized.")
    (xdoc::p
-    "In particular:")
+    "Our approximate notion of type compatibility
+     is established by the following cases:")
    (xdoc::ul
     (xdoc::li
-     "All structure types are currently considered compatible,
-      due to their approximate representations.
-      The same applies to
-      union, enumeration, array, pointer, and function types.")
+     "If either type is unknown, the types are compatible.")
     (xdoc::li
-     "Type qualifiers are ignored.")
+     "Structure types are compatible if they share the same tag;
+      For now we do not consider members [C17:6.2.7/1].")
     (xdoc::li
-     "All types are compatible with the abstract @(':unknown') type.")
+     "Due to their approximate representations,
+      all union types are considered compatible [C17:6.2.7/1].
+      The same applies to enumeration types [C17:6.7.2.2/4].")
     (xdoc::li
-     "Enumeration types are compatible with
-      <i>all</i> integer types (not just one particular type)."))
+     "Pointer types are compatible if they are derived from compatible types;
+      we do not currently consider whether the types are qualified
+      [C17:6.7.6.1/2].")
+    (xdoc::li
+     "Array types are considered compatible
+      if their element types are compatible;
+      their size is not currently considered [C17:6.7.6.2/6].")
+    (xdoc::li
+     "Enumeration types are considered compatible
+      with <i>all</i> integer types.
+      This is an approximation because the standard says each enumeration type
+      must be compatible with <i>some</i> integer type.
+      However, the particular type is implementation-defined,
+      may vary for different enumeration types [C17:6.7.2.2/4].")
+    (xdoc::li
+     "Function types are considered compatible
+      if their return types are compatible.
+      The function type parameters are not yet considered [C17:6.7.6.3/15].")
+    (xdoc::li
+     "For any other case, the types are compatible only if they are equal."))
    (xdoc::p
     "Eventually, we shall refine the notion of compatibility,
      alongside our representation of types,
@@ -749,24 +931,90 @@
      @(':void') is compatible with @(':unknown'),
      as is @(':bool'),
      but @(':void') is <i>not</i> compatible with @(':bool')."))
-  (b* ((x (type-fix x))
-       (y (type-fix y)))
-    (or (equal x y)
-        (type-case x :unknown)
-        (type-case y :unknown)
-        (and (type-integerp x) (type-case y :enum))
-        (and (type-case x :enum) (type-integerp y))))
+  (or (type-case y :unknown)
+      (type-case
+        x
+        :unknown t
+        :array (type-case
+                 y
+                 :array (type-compatiblep x.of y.of)
+                 :otherwise nil)
+        :pointer (type-case
+                   y
+                   :pointer (type-compatiblep x.to y.to)
+                   :otherwise nil)
+        :function (type-case
+                    y
+                    :function (type-compatiblep x.ret y.ret)
+                    :otherwise nil)
+        :otherwise (or (equal (type-fix x) (type-fix y))
+                       (and (type-integerp x) (type-case y :enum))
+                       (and (type-case x :enum) (type-integerp y)))))
+  :measure (type-count x)
   :hooks (:fix)
 
   ///
 
   (defrule type-compatiblep-reflexive
     (type-compatiblep x x)
-    :enable type-compatiblep)
+    :induct t)
 
   (defrule type-compatiblep-symmetric
     (equal (type-compatiblep y x)
            (type-compatiblep x y))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-composite ((x typep) (y typep))
+  :guard (type-compatiblep x y)
+  :returns (composite typep)
+  :short "Construct a composite @(see type) [C17:6.2.7/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our current approximate type system, the composite type is
+     @('x') if @('y') is unknown,
+     @('y') if @('x') is unknown,
+     and an arbitrary choice between the two if neither are derived types.
+     For derived types, this is applied recursively."))
+  (type-case
+    x
+    :array (type-case
+             y
+             :array (make-type-array :of (type-composite x.of y.of))
+             :unknown (type-fix x)
+             :otherwise (prog2$ (impossible) (irr-type)))
+    :pointer (type-case
+               y
+               :pointer (make-type-pointer :to (type-composite x.to y.to))
+               :unknown (type-fix x)
+               :otherwise (prog2$ (impossible) (irr-type)))
+    :function (type-case
+                y
+                :function (make-type-function
+                            :ret (type-composite x.ret y.ret))
+                :unknown (type-fix x)
+                :otherwise (prog2$ (impossible) (irr-type)))
+    :unknown (type-fix y)
+    :otherwise (type-fix x))
+  :measure (type-count x)
+  :guard-hints (("Goal" :in-theory (enable type-compatiblep)))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-compatiblep-of-arg1-and-type-composite
+    (implies (type-compatiblep x y)
+             (type-compatiblep x (type-composite x y)))
+    :induct t
+    :enable type-compatiblep)
+
+  (defrule type-compatiblep-of-arg2-and-type-composite
+    (implies (type-compatiblep x y)
+             (type-compatiblep y (type-composite x y)))
+    :induct t
     :enable type-compatiblep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -776,6 +1024,29 @@
   :key-type ident
   :val-type type
   :pred ident-type-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-pointers-to ((pointers typequal/attribspec-list-listp)
+                          (type typep))
+  :returns (new-type typep)
+  :short "Derive a pointer type for each type qualifier and attribute specifier
+          list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This takes the list of lists of type qualifiers and attribute specifiers
+     from a declarator or abstract declarator,
+     and creates the corresponding (possibly pointer) type.")
+   (xdoc::p
+    "Since our approximate type system does not incorporate type qualifiers,
+     each cons of the @('pointers') list
+     is used only to derive a pointer from the type."))
+  (if (endp pointers)
+      (type-fix type)
+    (make-type-pointer :to (make-pointers-to (rest pointers) type)))
+  :verify-guards :after-returns
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,13 +1061,12 @@
      This consists of @('void'),
      plain @('char'),
      the standard integer types except @('_Bool'),
+     pointer types,
      and struct types with tags.")
    (xdoc::p
-    "The pointer and array types are not supported because
+    "The array types are not supported because
      they are too coarse compared to their @(tsee c::type) counterparts:
-     they currently include no information other than being pointer or array,
-     while the ones in @(tsee c::type) include information about
-     the referenced type and element type.
+     they do not include size information.
      Struct types without tag are not supported,
      because they always have a tag in @(tsee c::type).")
    (xdoc::p
@@ -810,16 +1080,57 @@
                         :ulong :slong
                         :ullong :sllong))
            t)
+      (and (type-case type :pointer)
+           (type-formalp (type-pointer->to type)))
       (and (type-case type :struct)
            (type-struct->tag? type)
            (ident-formalp (type-struct->tag? type))))
+  :measure (type-count type)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-option-formalp ((type? type-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional type is supported in our formal semantics of C."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case if the type is absent or supported."))
+  (type-option-case type?
+                    :some (type-formalp type?.val)
+                    :none t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-set-formalp ((types type-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the types in a set
+          are supported in our formal semantics of C."
+  (or (set::emptyp (type-set-fix types))
+      (and (type-formalp (set::head types))
+           (type-set-formalp (set::tail types))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-option-set-formalp ((type?s type-option-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the optional types in a set
+          are supported in our formal semantics of C."
+  (or (set::emptyp (type-option-set-fix type?s))
+      (and (type-option-formalp (set::head type?s))
+           (type-option-set-formalp (set::tail type?s))))
+  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-type ((type typep))
   :returns (mv erp (type1 c::typep))
-  :short "Map a type to a type in the language definition."
+  :short "Map a type in @(tsee type) to a type in the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -856,9 +1167,12 @@
      :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :array (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :pointer (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :pointer (b* (((erp refd-type) (ldm-type type.to)))
+                (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
+  :measure (type-count type)
+  :verify-guards :after-returns
   :hooks (:fix)
 
   ///
@@ -866,9 +1180,74 @@
   (defret ldm-type-when-type-formalp
     (not erp)
     :hyp (type-formalp type)
-    :hints (("Goal" :in-theory (enable type-formalp)))))
+    :hints (("Goal" :induct t
+                    :in-theory (enable type-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-option ((type? type-optionp))
+  :returns (mv erp (type?1 c::type-optionp))
+  :short "Map an optional type in @(tsee type-option)
+          to an optional type in the language definition."
+  (type-option-case type?
+                    :some (ldm-type type?.val)
+                    :none (mv nil nil))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-option-when-type-option-formalp
+    (not erp)
+    :hyp (type-option-formalp type?)
+    :hints (("Goal" :in-theory (enable type-option-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-set ((types type-setp))
+  :returns (mv erp (types1 c::type-setp))
+  :short "Map a set of types in @(tsee type-set)
+          to a set of types in the language definition."
+  (b* (((when (set::emptyp (type-set-fix types))) (mv nil nil))
+       ((mv erp type) (ldm-type (set::head types)))
+       ((when erp) (mv erp nil))
+       ((mv erp types) (ldm-type-set (set::tail types)))
+       ((when erp) (mv erp nil)))
+    (mv nil (set::insert type types)))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-set-when-type-set-formalp
+    (not erp)
+    :hyp (type-set-formalp types)
+    :hints (("Goal" :induct t :in-theory (enable type-set-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type-option-set ((type?s type-option-setp))
+  :returns (mv erp (type?s1 c::type-option-setp))
+  :short "Map a set of optional types in @(tsee type-option-set)
+          to a set of optional types in the language definition."
+  (b* (((when (set::emptyp (type-option-set-fix type?s))) (mv nil nil))
+       ((mv erp type?) (ldm-type-option (set::head type?s)))
+       ((when erp) (mv erp nil))
+       ((mv erp type?s) (ldm-type-option-set (set::tail type?s)))
+       ((when erp) (mv erp nil)))
+    (mv nil (set::insert type? type?s)))
+  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-option-set-when-type-option-set-formalp
+    (not erp)
+    :hyp (type-option-set-formalp type?s)
+    :hints (("Goal" :induct t :in-theory (enable type-option-set-formalp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-to-value-kind ((type typep))
   :returns (kind keywordp
@@ -885,4 +1264,38 @@
       (type-kind type)
     (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
             :irrelevant))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-type ((ctype c::typep))
+  :returns (type typep)
+  :short "Map a type in the language formalization to a type in @(tsee type)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee ldm-type),
+     hence the @('i') for `inverse'.")
+   (xdoc::p
+    "Since our current type system is approximate (see @(tsee type)),
+     this mapping abstracts away information in some cases."))
+  (c::type-case
+   ctype
+   :void (type-void)
+   :char (type-char)
+   :schar (type-schar)
+   :uchar (type-uchar)
+   :sshort (type-sshort)
+   :ushort (type-ushort)
+   :sint (type-sint)
+   :uint (type-uint)
+   :slong (type-slong)
+   :ulong (type-ulong)
+   :sllong (type-sllong)
+   :ullong (type-ullong)
+   :struct (type-struct (ident (c::ident->name ctype.tag)))
+   :pointer (make-type-pointer :to (ildm-type ctype.to))
+   :array (make-type-array :of (ildm-type ctype.of)))
+  :measure (c::type-count ctype)
+  :verify-guards :after-returns
   :hooks (:fix))

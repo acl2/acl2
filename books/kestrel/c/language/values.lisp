@@ -371,6 +371,30 @@
              (not (errorp x)))
     :enable (expr-valuep errorp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expr-value-option
+  expr-value
+  :short "Fixtype of optional expression values."
+  :pred expr-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-value-option "optional expression values"
+  :enable (errorp
+           expr-value-optionp
+           expr-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection expr-value-option-result-theorems
+  :extension expr-value-option
+
+  (defruled not-errorp-when-expr-value-optionp
+    (implies (expr-value-optionp x)
+             (not (errorp x)))
+    :enable expr-value-optionp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum init-value
@@ -388,6 +412,22 @@
   (:single ((get value)))
   (:list ((get value-list)))
   :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult init-value "initialization values"
+  :enable (errorp init-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection init-value-result-theorems
+  :extension init-value-result
+
+  (defruled not-errorp-when-init-valuep
+    (implies (init-valuep x)
+             (not (errorp x)))
+    :enable (init-valuep
+             errorp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,18 +883,19 @@
                    :list (init-type-list (type-list-of-value-list ival.get)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult init-value "initialization values"
-  :enable (errorp init-valuep))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defsection init-value-result-theorems
-  :extension init-value-result
-
-  (defruled not-errorp-when-init-valuep
-    (implies (init-valuep x)
-             (not (errorp x)))
-    :enable (init-valuep
-             errorp)))
+(define type-option-of-stmt-value ((sval stmt-valuep))
+  :returns (type? type-optionp)
+  :short "Optional type of a statement value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return @('nil') if the statement value is @(':none').
+     Otherwise, we map the optional value to a type,
+     which is @('void') if the value is absent."))
+  (stmt-value-case
+   sval
+   :none nil
+   :return (type-of-value-option sval.value?))
+  :hooks (:fix))

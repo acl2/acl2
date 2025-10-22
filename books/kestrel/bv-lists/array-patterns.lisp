@@ -1,6 +1,6 @@
 ; A book about discarding irrelevant array values
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/lists-light/every-nth" :dir :system)
 (local (include-book "kestrel/bv/logapp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -32,6 +33,8 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+
+(local (in-theory (disable take)))
 
 ;; (defun keep-vals-with-congruent-indices (index vals residue modulus)
 ;;   (declare (xargs :measure (len vals)))
@@ -92,10 +95,12 @@
                               (quotep k)
                               (quotep index-width)
                               (quotep len)))
+                ;; todo: should these use bvlt?
                 (< index (/ (expt 2 index-width) k)) ; the bvmult doesn't do any real chopping ; gen in the power-of-2 case?
-                (< index (/ len k))  ; the access is in bounds
-                (< 1 k)
-                (equal len (len data)) ; drop? (natp len)
+                (< index (/ len k)) ; (bvlt index-width index (/ len k))  ; the access is in bounds
+                (< 1 k) ; prevents loops
+                (<= len (len data)) ; drop?
+                (integerp len)
                 (natp index)
                 (natp index-width)
                 (integerp k))
@@ -103,7 +108,7 @@
                   ;; The call to every-nth gets evaluated:
                   (let ((data (every-nth k data)))
                     (bv-array-read element-size (len data) index data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvmult unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvmult unsigned-byte-p bvlt bvchop-identity))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,6 +136,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Discards array values at the front that cannot be accessed
 (defthm bv-array-read-of-+-of-constant-shorten
   (implies (and (syntaxp (and (quotep k)
                               (quotep vals)))
@@ -181,3 +187,48 @@
                   ;; The nthcdr here gets computed to give a smaller array:
                   (bv-array-read element-size (- len k) index (nthcdr k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus unsigned-byte-p))))
+
+;yuck?
+;needed for the below
+;disable?
+(defthm equal-of-bv-array-read-and-bv-array-read-lens-differ
+  (implies (and (< index len1)
+                (< index len2)
+                (natp len1)
+                (natp len2)
+                (natp index)
+                )
+           (equal (equal (bv-array-read width len1 index data) (bv-array-read width len2 index data))
+                  t))
+  :hints (("Goal" :cases ((< len1 len2))
+           :in-theory (enable bv-array-read-opener))))
+
+(defthmd bv-array-read-shorten-when-bvlt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt isize index k) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep isize)))
+                (< k len) ; avoid loops
+                (< k (expt 2 isize)) ; so the chop on k goes away
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len (bvchop isize index) data)
+                  (bv-array-read element-size k (bvchop isize index) (take k data))))
+  :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
+
+(defthmd bv-array-read-shorten-when-not-bvlt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (not (bvlt isize k index)) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep isize)))
+                (< (+ 1 k) len) ; avoid loops
+                (< (+ 1 k) (expt 2 isize)) ; so the chop on k goes away
+                (natp index)
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len (bvchop isize index) data)
+                  (bv-array-read element-size (+ 1 k) (bvchop isize index) (take (+ 1 k) data))))
+  :hints (("Goal" :in-theory (e/d (bvlt <=-of-bvchop-same-linear)
+                                  (bv-array-read-of-cons-both)))))

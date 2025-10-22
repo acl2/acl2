@@ -1,7 +1,7 @@
 ; Logical negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -215,3 +215,14 @@
            (equal (bvchop n (lognot (+ -1 (expt 2 n))))
                   0))
   :hints (("Goal" :in-theory (enable lognot))))
+
+(defthm bvnot-when-not-integerp
+  (implies (not (integerp x))
+           (equal (bvnot size x)
+                  (bvnot size 0)))
+  :hints (("Goal" :in-theory (enable bvnot))))
+
+(defthm bvnot-of-ifix
+  (equal (bvnot size (ifix x))
+         (bvnot size x))
+  :hints (("Goal" :in-theory (enable ifix))))

@@ -23,13 +23,15 @@
 
 (defpkg "C2C" (append
                (set-difference-eq *std-pkg-symbols*
-                                  '())
+                                  '(block))
                c$::*abstract-syntax-symbols*
                '(bool
                  constant-symbolp
                  constant-value
                  defirrelevant
+                 defund-sk
                  defxdoc+
+                 enable*
                  er-soft+
                  erp
                  impossible

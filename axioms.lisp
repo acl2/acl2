@@ -14561,7 +14561,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-rw-cache-state! set-induction-depth-limit!
     attach-stobj set-override-hints-macro
     deftheory pstk verify-guards defchoose
-    set-default-backchain-limit set-state-ok
+    set-default-backchain-limit set-state-ok set-subgoal-loop-limits
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
     set-compile-fns add-include-book-dir add-include-book-dir!
     clear-pstk add-custom-keyword-hint
@@ -17717,6 +17717,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (alistp val))
   ((eq key :in-theory-redundant-okp)
    (booleanp val))
+  ((eq key :subgoal-loop-limits)
+; See waterfall-loop-detector and its call in waterfall-step.
+   (and (consp val)
+        (or (null (car val))
+            (natp (car val)))
+        (or (null (cdr val))
+            (and (natp (cdr val))
+                 (< 0 (cdr val))))))
   (t nil))
  :coda (and (member-eq key '(:check-invariant-risk
                              :register-invariant-risk))
@@ -24122,7 +24130,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `((:DEFUN-MODE . :LOGIC)
     (:INCLUDE-BOOK-DIR-ALIST . NIL)
     (:CASE-SPLIT-LIMITATIONS . (500 100))
-    (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)))) ; (2.b)
+    (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)) ; (2.b)
+    (:SUBGOAL-LOOP-LIMITS . (1000 . 2))))
 
 (defun untrans-table (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -24466,6 +24475,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro set-tau-auto-mode (toggle)
   (declare (ignore toggle))
+  nil)
+
+(defun subgoal-loop-limits (wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :subgoal-loop-limits
+                 (table-alist 'acl2-defaults-table wrld))))
+
+#+acl2-loop-only
+(defmacro set-subgoal-loop-limits (val)
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :subgoal-loop-limits
+                   (let ((val ,val))
+                     (cond ((eq val nil) '(nil . nil))
+                           ((eq val t)   '(nil . 2))
+                           ((natp val)   (cons val 2))
+                           ((eq val :default) '(1000 . 2))
+                           (t
+; If val is not a consp whose car is nil or a nat and whose cdr is a nil or a
+; positive nat then the table guard for :subgoal-loop-limits will complain.
+
+                            val))))
+            (table acl2-defaults-table :subgoal-loop-limits))))
+
+#-acl2-loop-only
+(defmacro set-subgoal-loop-limits (val)
+  (declare (ignore val))
   nil)
 
 (defun get-in-theory-redundant-okp (state)
@@ -28119,7 +28157,7 @@ Lisp definition."
 
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
-               ACL2 developers if you would like to help add such support.")
+               ACL2 developers if you would like to help add such support.~&")
     nil))
 
 #+acl2-loop-only

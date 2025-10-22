@@ -71,7 +71,7 @@
            "A flag indicating whether modular proof generation
             should continue or not.
             This will be eliminated when modular proof generation
-            will cover all of the ATC-generated code."))
+            covers all of the ATC-generated code."))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -83,13 +83,13 @@
    (type type
          "The type returned by the expression. Never @('void').")
    (term pseudo-termp
-         "The term from which the expression is generated.
-          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+         "The term from which the expression is generated,
+          transformed by replacing @(tsee if) with @(tsee if*)
+          and a few other changes.")
    (events pseudo-event-form-list
            "All the events generated for the expression.")
    (thm-name symbol
-             "The name of the theorem about @(tsee exec-expr-pure)
-              applied to the expression.
+             "The name of the correctness theorem of the expression.
               This theorem is one of the events in @('events').
               It is @('nil') if no theorem was generated,
               which happens exactly when
@@ -127,7 +127,8 @@
      Its information is looked up in the symbol table.")
    (xdoc::p
     "If the variable has pointer or array type and is not an external object,
-     its correctness theorem equates it to the @('-ptr') variable."))
+     its correctness theorem equates it to the @('-ptr') variable,
+     because the variable itself contains the pointed object or array."))
   (b* (((expr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -203,15 +204,6 @@
    (xdoc::p
     "The C integer constant is actually calculated by the caller,
      and passed as input here.")
-   (xdoc::p
-    "The theorem says that the execution yields the term.
-     It also says that the term satisfies
-     the applicable shallowly embedded type predicate.")
-   (xdoc::p
-    "This theorem holds unconditionally;
-     it does not actually depend on the computation state.
-     We do not need to contextualize the theorem,
-     i.e. we ignore the @(tsee atc-context).")
    (xdoc::p
     "The hints cover all possible integer constants,
      but we could make them more nuanced to the specifics of the constant."))

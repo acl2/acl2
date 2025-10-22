@@ -661,6 +661,7 @@
                        (make-expr-unary :op expr.op :arg arg :info nil))
                      value?
                      env))
+        :label-addr (mv (expr-fix  expr) nil env)
         :sizeof (b* (((mv type env)
                       (const-prop-tyname expr.type env)))
                   (mv (expr-sizeof type)
@@ -776,12 +777,16 @@
                                     (expr-fix expr))
                             nil
                             env)
+        :cast/logand-ambig (mv (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                                       (expr-fix expr))
+                               nil
+                               env)
         :stmt (b* (((mv items env)
-                    (const-prop-block-item-list expr.items (push-scope-env env))))
+                    (const-prop-comp-stmt expr.stmt env)))
                 (mv (expr-stmt items)
                     ;; TODO
                     nil
-                    (pop-scope-env env)))
+                    env))
         :tycompat (b* (((mv type1 env)
                         (const-prop-tyname expr.type1 env))
                        ((mv type2 env)
@@ -964,10 +969,14 @@
                      (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
         :enum (b* (((mv spec env)
-                    (const-prop-enumspec tyspec.spec env)))
+                    (const-prop-enum-spec tyspec.spec env)))
                 (mv (type-spec-enum spec) env))
         :typedef (mv (type-spec-fix tyspec) env)
         :int128 (mv (type-spec-fix tyspec) env)
+        :locase-float80 (mv (type-spec-fix tyspec) env)
+        :locase-float128 (mv (type-spec-fix tyspec) env)
+        :float16 (mv (type-spec-fix tyspec) env)
+        :float16x (mv (type-spec-fix tyspec) env)
         :float32 (mv (type-spec-fix tyspec) env)
         :float32x (mv (type-spec-fix tyspec) env)
         :float64 (mv (type-spec-fix tyspec) env)
@@ -1169,8 +1178,10 @@
       (designor-case
         designor
         :sub (b* (((mv index env)
-                   (const-prop-const-expr designor.index env)))
-               (mv (designor-sub index) env))
+                   (const-prop-const-expr designor.index env))
+                  ((mv range? env)
+                   (const-prop-const-expr-option designor.range? env)))
+               (mv (make-designor-sub :index index :range? range?) env))
         :dot (mv (designor-fix designor) env)))
     :measure (designor-count designor))
 
@@ -1402,7 +1413,8 @@
           (const-prop-param-declor paramdecl.declor env)))
       (mv (make-param-declon
             :specs spec
-            :declor decl)
+            :declor decl
+            :attribs paramdecl.attribs)
           env))
     :measure (param-declon-count paramdecl))
 
@@ -1434,7 +1446,10 @@
         paramdeclor
         :nonabstract (b* (((mv declor env)
                            (const-prop-declor paramdeclor.declor env)))
-                       (mv (param-declor-nonabstract declor) env))
+                       (mv (c$::make-param-declor-nonabstract
+                             :declor declor
+                             :info paramdeclor.info)
+                           env))
         :abstract (b* (((mv unwrap env)
                         (const-prop-absdeclor paramdeclor.declor env)))
                     (mv (param-declor-abstract unwrap) env))
@@ -1473,107 +1488,108 @@
     (b* ((env (env-fix env))
          ((struni-spec struni-spec) struni-spec)
          ((mv members env)
-          (const-prop-structdecl-list struni-spec.members env)))
+          (const-prop-struct-declon-list struni-spec.members env)))
       (mv (make-struni-spec
+            :attribs struni-spec.attribs
             :name? struni-spec.name?
             :members members)
           env))
     :measure (struni-spec-count struni-spec))
 
-  (define const-prop-structdecl
-    ((structdecl structdeclp)
+  (define const-prop-struct-declon
+    ((struct-declon struct-declonp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdecl)."
-    :returns (mv (new-structdecl structdeclp)
+    :short "Propagate a constant through a @(see c$::struct-declon)."
+    :returns (mv (new-struct-declon struct-declonp)
                  (new-env envp))
     (b* ((env (env-fix env)))
-      (structdecl-case
-        structdecl
-        :member (b* (((mv specqual env)
-                      (const-prop-spec/qual-list structdecl.specqual env))
-                     ((mv declor env)
-                      (const-prop-structdeclor-list structdecl.declor env)))
-                  (mv (make-structdecl-member
-                        :extension structdecl.extension
-                        :specqual specqual
-                        :declor declor
-                        :attrib structdecl.attrib)
+      (struct-declon-case
+        struct-declon
+        :member (b* (((mv specquals env)
+                      (const-prop-spec/qual-list struct-declon.specquals env))
+                     ((mv declors env)
+                      (const-prop-struct-declor-list struct-declon.declors env)))
+                  (mv (make-struct-declon-member
+                        :extension struct-declon.extension
+                        :specquals specquals
+                        :declors declors
+                        :attribs struct-declon.attribs)
                       env))
         :statassert (b* (((mv unwrap env)
-                          (const-prop-statassert structdecl.unwrap env)))
-                      (mv (structdecl-statassert unwrap)
+                          (const-prop-statassert struct-declon.unwrap env)))
+                      (mv (struct-declon-statassert unwrap)
                           env))
-        :empty (mv (structdecl-empty) env)))
-    :measure (structdecl-count structdecl))
+        :empty (mv (struct-declon-empty) env)))
+    :measure (struct-declon-count struct-declon))
 
-  (define const-prop-structdecl-list
-    ((structdecls structdecl-listp)
+  (define const-prop-struct-declon-list
+    ((struct-declons struct-declon-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdecl-list)."
-    :returns (mv (new-structdecls structdecl-listp)
+    :short "Propagate a constant through a @(see c$::struct-declon-list)."
+    :returns (mv (new-struct-declons struct-declon-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((when (endp structdecls))
+         ((when (endp struct-declons))
           (mv nil env))
          ((mv first env)
-          (const-prop-structdecl (first structdecls) env))
+          (const-prop-struct-declon (first struct-declons) env))
          ((mv rest env)
-          (const-prop-structdecl-list (rest structdecls) env)))
+          (const-prop-struct-declon-list (rest struct-declons) env)))
       (mv (cons first rest)
           env))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count struct-declons))
 
-  (define const-prop-structdeclor
-    ((structdeclor structdeclorp)
+  (define const-prop-struct-declor
+    ((structdeclor struct-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdeclor)."
-    :returns (mv (new-structdeclor structdeclorp)
+    :short "Propagate a constant through a @(see c$::struct-declor)."
+    :returns (mv (new-structdeclor struct-declorp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((structdeclor structdeclor)
+         ((struct-declor structdeclor)
           structdeclor)
          ((mv declor? env)
           (const-prop-declor-option structdeclor.declor? env))
          ((mv expr? env)
           (const-prop-const-expr-option structdeclor.expr? env)))
-      (mv (make-structdeclor
+      (mv (make-struct-declor
             :declor? declor?
             :expr? expr?)
           env))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define const-prop-structdeclor-list
-    ((structdeclors structdeclor-listp)
+  (define const-prop-struct-declor-list
+    ((structdeclors struct-declor-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::structdeclor-list)."
-    :returns (mv (new-structdeclors structdeclor-listp)
+    :short "Propagate a constant through a @(see c$::struct-declor-list)."
+    :returns (mv (new-structdeclors struct-declor-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
          ((when (endp structdeclors))
           (mv nil env))
          ((mv first env)
-          (const-prop-structdeclor (first structdeclors) env))
+          (const-prop-struct-declor (first structdeclors) env))
          ((mv rest env)
-          (const-prop-structdeclor-list (rest structdeclors) env)))
+          (const-prop-struct-declor-list (rest structdeclors) env)))
       (mv (cons first rest)
           env))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
-  (define const-prop-enumspec
-    ((enumspec enumspecp)
+  (define const-prop-enum-spec
+    ((enumspec enum-specp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::enumspec)."
-    :returns (mv (new-enumspec enumspecp)
+    :short "Propagate a constant through a @(see c$::enum-spec)."
+    :returns (mv (new-enumspec enum-specp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((enumspec enumspec) enumspec)
+         ((enum-spec enumspec) enumspec)
          ((mv list env)
           (const-prop-enumer-list enumspec.list env)))
-      (mv (make-enumspec :name enumspec.name
-                         :list list
-                         :final-comma enumspec.final-comma)
+      (mv (make-enum-spec :name enumspec.name
+                          :list list
+                          :final-comma enumspec.final-comma)
           env))
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define const-prop-enumer
     ((enumer enumerp)
@@ -1751,19 +1767,22 @@
                    (mv (make-stmt-labeled :label label
                                           :stmt stmt)
                        env))
-        :compound (b* (((mv items env)
-                        (const-prop-block-item-list stmt.items env)))
-                    (mv (stmt-compound items) env))
+        :compound (b* (((mv cstmt env)
+                        (const-prop-comp-stmt stmt.stmt env)))
+                    (mv (stmt-compound cstmt) env))
         :expr (b* (((mv expr? - env)
                     (const-prop-expr-option stmt.expr? env)))
-                (mv (stmt-expr expr?) env))
+                (mv (make-stmt-expr :expr? expr?
+                                    :info stmt.info)
+                    env))
         :if (b* (((mv test value? env)
                   (const-prop-expr stmt.test env))
                  ((mv then then-env)
                   (const-prop-stmt stmt.then (push-scope-env env)))
                  ((when value?)
                   (if (zero-valuep value?)
-                      (mv (stmt-expr (value-to-expr value?))
+                      (mv (make-stmt-expr :expr? (value-to-expr value?)
+                                          :info nil)
                           env)
                     (mv then
                         (pop-scope-env then-env)))))
@@ -1843,11 +1862,14 @@
         :for-ambig (prog2$ (raise "Misusage error: ~x0." (stmt-fix stmt))
                            (mv (stmt-fix stmt) env))
         :goto (mv (stmt-fix stmt) nil)
+        :gotoe (b* (((mv label - env)
+                     (const-prop-expr stmt.label env)))
+                 (mv (stmt-gotoe label) env))
         :continue (mv (stmt-fix stmt) env)
         :break (mv (stmt-fix stmt) nil)
         :return (b* (((mv expr? - env)
                       (const-prop-expr-option stmt.expr? env)))
-                  (mv (stmt-return expr?) env))
+                  (mv (make-stmt-return :expr? expr? :info stmt.info) env))
         :asm (mv (stmt-fix stmt) nil)))
     :measure (stmt-count stmt))
 
@@ -1860,12 +1882,12 @@
     (b* ((env (env-fix env)))
       (block-item-case
         item
-        :decl (b* (((mv unwrap env)
-                    (const-prop-decl item.unwrap env)))
-                (mv (block-item-decl unwrap) env))
-        :stmt (b* (((mv unwrap env)
-                    (const-prop-stmt item.unwrap env)))
-                (mv (block-item-stmt unwrap) env))
+        :decl (b* (((mv decl env)
+                    (const-prop-decl item.decl env)))
+                (mv (make-block-item-decl :decl decl :info item.info) env))
+        :stmt (b* (((mv stmt env)
+                    (const-prop-stmt item.stmt env)))
+                (mv (make-block-item-stmt :stmt stmt :info item.info) env))
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (block-item-fix item))
                        (mv (block-item-fix item) env))))
@@ -1888,6 +1910,18 @@
           env))
     :measure (block-item-list-count items))
 
+  (define const-prop-comp-stmt
+    ((cstmt comp-stmtp)
+     (env envp))
+    :short "Propagate a constant through a @(see c$::comp-stmt)."
+    :returns (mv (new-cstmt comp-stmtp)
+                 (new-env envp))
+    (b* ((env (push-scope-env env))
+         ((mv items env) (const-prop-block-item-list (comp-stmt->items cstmt) env))
+         (env (pop-scope-env env)))
+      (mv (make-comp-stmt :labels (comp-stmt->labels cstmt) :items items) env))
+    :measure (comp-stmt-count cstmt))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
@@ -1905,13 +1939,14 @@
        ((mv decls -)
         (const-prop-decl-list fundef.decls env))
        ((mv body -)
-        (const-prop-stmt fundef.body (push-scope-env env))))
+        (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
                  :spec spec
                  :declor declor
                  :asm? fundef.asm?
                  :decls decls
-                 :body body)))
+                 :body body
+                 :info fundef.info)))
 
 (define const-prop-extdecl
   ((extdecl extdeclp)

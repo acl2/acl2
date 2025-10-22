@@ -113,6 +113,7 @@
                      (expr-subst-free (c$::expr-unary->arg expr)
                                       subst bound-vars)
                      (c$::expr-unary->info expr))
+     :label-addr (expr-fix expr)
      :sizeof
      (expr-sizeof
        (tyname-subst-free (c$::expr-sizeof->type expr)
@@ -191,12 +192,18 @@
        (c$::expr-cast/and-ambig->inc/dec expr)
        (expr-subst-free (c$::expr-cast/and-ambig->arg/arg2 expr)
                         subst bound-vars))
+     :cast/logand-ambig
+     (c$::expr-cast/logand-ambig
+       (amb-expr/tyname-subst-free
+         (c$::expr-cast/logand-ambig->type/arg1 expr)
+         subst bound-vars)
+       (c$::expr-cast/logand-ambig->inc/dec expr)
+       (c$::expr-cast/logand-ambig->arg/arg2 expr))
      ;; Interesting case
      :stmt
-     (b* (((mv items -)
-           (block-item-list-subst-free (c$::expr-stmt->items expr)
-                                       subst bound-vars)))
-       (expr-stmt items))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (c$::expr-stmt->stmt expr) subst bound-vars)))
+       (expr-stmt cstmt))
      :tycompat
      (c$::expr-tycompat
        (tyname-subst-free (c$::expr-tycompat->type1 expr)
@@ -351,10 +358,14 @@
                                subst bound-vars))
      :enum
      (type-spec-enum
-       (enumspec-subst-free (c$::type-spec-enum->spec type-spec)
+       (enum-spec-subst-free (c$::type-spec-enum->spec type-spec)
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
+     :locase-float80 (type-spec-fix type-spec)
+     :locase-float128 (type-spec-fix type-spec)
+     :float16 (type-spec-fix type-spec)
+     :float16x (type-spec-fix type-spec)
      :float32 (type-spec-fix type-spec)
      :float32x (type-spec-fix type-spec)
      :float64 (type-spec-fix type-spec)
@@ -580,9 +591,11 @@
     (designor-case
      designor
      :sub
-     (designor-sub
-       (const-expr-subst-free (c$::designor-sub->index designor)
-                              subst bound-vars))
+     (make-designor-sub
+      :index (const-expr-subst-free (c$::designor-sub->index designor)
+                                    subst bound-vars)
+      :range? (const-expr-option-subst-free (c$::designor-sub->range? designor)
+                                            subst bound-vars))
      :dot (designor-fix designor))
     :measure (designor-count designor))
 
@@ -846,7 +859,7 @@
           (param-declor-subst-free
             (c$::param-declon->declor param-declon)
             subst bound-vars)))
-      (mv (param-declon specs declor)
+      (mv (param-declon specs declor (c$::param-declon->attribs param-declon))
           (ident-set-fix bound-vars)))
     :measure (param-declon-count param-declon))
 
@@ -876,9 +889,10 @@
      :nonabstract
      (b* (((mv declor bound-vars -)
            (declor-subst-free
-             (c$::param-declor-nonabstract->declor param-declor)
+             (param-declor-nonabstract->declor param-declor)
              subst bound-vars)))
-       (mv (param-declor-nonabstract declor)
+       (mv (make-param-declor-nonabstract :declor declor
+                                          :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
      (mv (param-declor-abstract
@@ -912,102 +926,103 @@
                                  (bound-vars ident-setp))
     :returns (result struni-specp)
     (b* (((mv members -)
-          (structdecl-list-subst-free
+          (struct-declon-list-subst-free
             (c$::struni-spec->members struni-spec)
             subst bound-vars)))
-      (struni-spec (c$::struni-spec->name? struni-spec)
-                  members))
+      (struni-spec (c$::struni-spec->attribs struni-spec)
+                   (c$::struni-spec->name? struni-spec)
+                   members))
     :measure (struni-spec-count struni-spec))
 
-  (define structdecl-subst-free ((structdecl structdeclp)
-                                 (subst ident-expr-mapp)
-                                 (bound-vars ident-setp))
-    :returns (mv (result structdeclp)
+  (define struct-declon-subst-free ((struct-declon struct-declonp)
+                                    (subst ident-expr-mapp)
+                                    (bound-vars ident-setp))
+    :returns (mv (result struct-declonp)
                  (bound-vars ident-setp))
-    (structdecl-case
-     structdecl
+    (struct-declon-case
+     struct-declon
      :member
-     (b* ((specqual (spec/qual-list-subst-free
-                      (c$::structdecl-member->specqual structdecl)
+     (b* ((specquals (spec/qual-list-subst-free
+                      (c$::struct-declon-member->specquals struct-declon)
                       subst bound-vars))
-          ((mv declor bound-vars)
-           (structdeclor-list-subst-free
-             (c$::structdecl-member->declor structdecl)
-             subst bound-vars)))
-       (mv (c$::structdecl-member
-             (c$::structdecl-member->extension structdecl)
-             specqual
-             declor
-             (attrib-spec-list-subst-free
-               (c$::structdecl-member->attrib structdecl)
-               subst bound-vars))
+          ((mv declors bound-vars)
+           (struct-declor-list-subst-free
+            (c$::struct-declon-member->declors struct-declon)
+            subst bound-vars)))
+       (mv (c$::struct-declon-member
+            (c$::struct-declon-member->extension struct-declon)
+            specquals
+            declors
+            (attrib-spec-list-subst-free
+             (c$::struct-declon-member->attribs struct-declon)
+             subst bound-vars))
            (ident-set-fix bound-vars)))
      :statassert
-     (mv (structdecl-statassert
-           (statassert-subst-free
-             (c$::structdecl-statassert->unwrap structdecl)
-             subst bound-vars))
+     (mv (struct-declon-statassert
+          (statassert-subst-free
+           (c$::struct-declon-statassert->unwrap struct-declon)
+           subst bound-vars))
          (ident-set-fix bound-vars))
-     :empty (mv (structdecl-fix structdecl) (ident-set-fix bound-vars)))
-    :measure (structdecl-count structdecl))
+     :empty (mv (struct-declon-fix struct-declon) (ident-set-fix bound-vars)))
+    :measure (struct-declon-count struct-declon))
 
-  (define structdecl-list-subst-free
-    ((structdecl-list structdecl-listp)
+  (define struct-declon-list-subst-free
+    ((struct-declon-list struct-declon-listp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (mv (result structdecl-listp)
+    :returns (mv (result struct-declon-listp)
                  (bound-vars ident-setp))
-    (b* (((when (endp structdecl-list))
+    (b* (((when (endp struct-declon-list))
           (mv nil (ident-set-fix bound-vars)))
          ((mv first bound-vars)
-          (structdecl-subst-free (first structdecl-list) subst bound-vars))
+          (struct-declon-subst-free (first struct-declon-list) subst bound-vars))
          ((mv rest bound-vars)
-          (structdecl-list-subst-free (rest structdecl-list) subst bound-vars)))
+          (struct-declon-list-subst-free (rest struct-declon-list) subst bound-vars)))
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
-    :measure (structdecl-list-count structdecl-list))
+    :measure (struct-declon-list-count struct-declon-list))
 
-  (define structdeclor-subst-free ((structdeclor structdeclorp)
-                                   (subst ident-expr-mapp)
-                                   (bound-vars ident-setp))
-    :returns (mv (result structdeclorp)
+  (define struct-declor-subst-free ((structdeclor struct-declorp)
+                                    (subst ident-expr-mapp)
+                                    (bound-vars ident-setp))
+    :returns (mv (result struct-declorp)
                  (bound-vars ident-setp))
     (b* ((expr? (const-expr-option-subst-free
-                    (c$::structdeclor->expr? structdeclor)
-                    subst bound-vars))
+                 (c$::struct-declor->expr? structdeclor)
+                 subst bound-vars))
          ((mv declor? bound-vars)
           (declor-option-subst-free
-                    (c$::structdeclor->declor? structdeclor)
-                    subst bound-vars)))
-      (mv (structdeclor declor? expr?)
+           (c$::struct-declor->declor? structdeclor)
+           subst bound-vars)))
+      (mv (struct-declor declor? expr?)
           (ident-set-fix bound-vars)))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define structdeclor-list-subst-free
-    ((structdeclor-list structdeclor-listp)
+  (define struct-declor-list-subst-free
+    ((struct-declor-list struct-declor-listp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (mv (result structdeclor-listp)
+    :returns (mv (result struct-declor-listp)
                  (bound-vars ident-setp))
-    (b* (((when (endp structdeclor-list))
+    (b* (((when (endp struct-declor-list))
           (mv nil (ident-set-fix bound-vars)))
          ((mv first bound-vars)
-          (structdeclor-subst-free (first structdeclor-list) subst bound-vars))
+          (struct-declor-subst-free (first struct-declor-list) subst bound-vars))
          ((mv rest bound-vars)
-          (structdeclor-list-subst-free (rest structdeclor-list) subst bound-vars)))
+          (struct-declor-list-subst-free (rest struct-declor-list) subst bound-vars)))
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
-    :measure (structdeclor-list-count structdeclor-list))
+    :measure (struct-declor-list-count struct-declor-list))
 
-  (define enumspec-subst-free ((enumspec enumspecp)
-                               (subst ident-expr-mapp)
-                               (bound-vars ident-setp))
-    :returns (result enumspecp)
-    (enumspec (c$::enumspec->name enumspec)
-              (enumer-list-subst-free (c$::enumspec->list enumspec)
-                                      subst bound-vars)
-              (c$::enumspec->final-comma enumspec))
-    :measure (enumspec-count enumspec))
+  (define enum-spec-subst-free ((enumspec enum-specp)
+                                (subst ident-expr-mapp)
+                                (bound-vars ident-setp))
+    :returns (result enum-specp)
+    (enum-spec (c$::enum-spec->name enumspec)
+               (enumer-list-subst-free (c$::enum-spec->list enumspec)
+                                       subst bound-vars)
+               (c$::enum-spec->final-comma enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define enumer-subst-free ((enumer enumerp)
                              (subst ident-expr-mapp)
@@ -1107,7 +1122,8 @@
       (mv (initdeclor declor
                       (c$::initdeclor->asm? initdeclor)
                       attribs
-                      init?)
+                      init?
+                      (c$::initdeclor->info initdeclor))
           (ident-set-fix bound-vars)))
     :measure (initdeclor-count initdeclor))
 
@@ -1263,14 +1279,14 @@
                         subst bound-vars))
      ;; Interesting case
      :compound
-     (b* (((mv items -)
-           (block-item-list-subst-free (stmt-compound->items stmt)
-                                       subst bound-vars)))
-       (stmt-compound items))
+     (b* (((mv cstmt -)
+           (comp-stmt-subst-free (stmt-compound->stmt stmt) subst bound-vars)))
+       (stmt-compound cstmt))
      :expr
-     (stmt-expr
-       (expr-option-subst-free (c$::stmt-expr->expr? stmt)
-                               subst bound-vars))
+     (make-stmt-expr
+      :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
+                                     subst bound-vars)
+      :info stmt.info)
      :if (c$::stmt-if (expr-subst-free (c$::stmt-if->test stmt)
                                        subst bound-vars)
                       (stmt-subst-free (c$::stmt-if->then stmt)
@@ -1332,12 +1348,15 @@
        (stmt-subst-free (c$::stmt-for-ambig->body stmt)
                         subst bound-vars))
      :goto (stmt-fix stmt)
+     :gotoe (stmt-gotoe (expr-subst-free stmt.label subst bound-vars))
      :continue (stmt-fix stmt)
      :break (stmt-fix stmt)
      :return
-     (stmt-return
+     (make-stmt-return
+      :expr?
        (expr-option-subst-free (c$::stmt-return->expr? stmt)
-                               subst bound-vars))
+                               subst bound-vars)
+       :info stmt.info)
      :asm (c$::stmt-asm
             (asm-stmt-subst-free (c$::stmt-asm->unwrap stmt)
                                  subst bound-vars)))
@@ -1351,15 +1370,16 @@
     (block-item-case
      block-item
      :decl
-     (b* (((mv unwrap bound-vars)
-           (decl-subst-free (c$::block-item-decl->unwrap block-item)
+     (b* (((mv decl bound-vars)
+           (decl-subst-free (c$::block-item-decl->decl block-item)
                             subst bound-vars)))
-       (mv (block-item-decl unwrap)
+       (mv (make-block-item-decl :decl decl :info block-item.info)
            (ident-set-fix bound-vars)))
      :stmt
-     (mv (block-item-stmt
-           (stmt-subst-free (c$::block-item-stmt->unwrap block-item)
-                            subst bound-vars))
+     (mv (make-block-item-stmt
+          :stmt (stmt-subst-free (c$::block-item-stmt->stmt block-item)
+                                 subst bound-vars)
+          :info block-item.info)
          (ident-set-fix bound-vars))
      :ambig
      (mv (c$::block-item-ambig (amb-decl/stmt-subst-free
@@ -1383,6 +1403,17 @@
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
     :measure (block-item-list-count block-item-list))
+
+  (define comp-stmt-subst-free
+    ((cstmt comp-stmtp)
+     (subst ident-expr-mapp)
+     (bound-vars ident-setp))
+    :returns (mv (result comp-stmtp)
+                 (bound-vars ident-setp))
+    (b* (((mv items bound-vars)
+          (block-item-list-subst-free (comp-stmt->items cstmt) subst bound-vars)))
+      (mv (make-comp-stmt :labels (comp-stmt->labels cstmt) :items items) bound-vars))
+    :measure (comp-stmt-count cstmt))
 
   (define amb-expr/tyname-subst-free
     ((amb-expr/tyname c$::amb-expr/tyname-p)
@@ -1448,7 +1479,7 @@
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv decls body-bound-vars)
         (decl-list-subst-free fundef.decls subst body-bound-vars))
-       (body (stmt-subst-free fundef.body subst body-bound-vars)))
+       ((mv body &) (comp-stmt-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
           :spec spec
@@ -1456,5 +1487,6 @@
           :asm? fundef.asm?
           :attribs attribs
           :decls decls
-          :body body)
+          :body body
+          :info fundef.info)
         bound-vars)))

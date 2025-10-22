@@ -33,6 +33,17 @@
 
 (in-theory (disable xw logext))
 
+;; for speed:
+(local (in-theory (disable acl2::unsigned-byte-p-from-bounds
+                           acl2::bvchop-identity
+                           acl2::bvchop-upper-bound-linear-strong
+                           acl2::bvchop-upper-bound-linear
+                           acl2::<=-of-bvchop-same-linear
+                           acl2::unsigned-byte-p-of-bvchop-when-already
+                           acl2::slice-too-high-is-0
+                           acl2::logext-when-top-bit-0
+                           acl2::logext-bounds)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Register readers.
@@ -733,6 +744,11 @@
                   (xw fld index val (set-r10 r10 x86))))
   :hints (("Goal" :in-theory (enable set-r10
                                      ))))
+(defthm set-r11-of-xw (implies (not (equal fld :rgf)) (equal (set-r11 r11 (xw fld index val x86)) (xw fld index val (set-r11 r11 x86)))):hints (("Goal" :in-theory (enable set-r11))))
+(defthm set-r12-of-xw (implies (not (equal fld :rgf)) (equal (set-r12 r12 (xw fld index val x86)) (xw fld index val (set-r12 r12 x86)))):hints (("Goal" :in-theory (enable set-r12))))
+(defthm set-r13-of-xw (implies (not (equal fld :rgf)) (equal (set-r13 r13 (xw fld index val x86)) (xw fld index val (set-r13 r13 x86)))):hints (("Goal" :in-theory (enable set-r13))))
+(defthm set-r14-of-xw (implies (not (equal fld :rgf)) (equal (set-r14 r14 (xw fld index val x86)) (xw fld index val (set-r14 r14 x86)))):hints (("Goal" :in-theory (enable set-r14))))
+(defthm set-r15-of-xw (implies (not (equal fld :rgf)) (equal (set-r15 r15 (xw fld index val x86)) (xw fld index val (set-r15 r15 x86)))):hints (("Goal" :in-theory (enable set-r15))))
 
 (defthm set-rsp-of-xw
   (implies (or (not (equal fld :rgf))
@@ -1106,7 +1122,8 @@
                     (if normalp
                         (bvchop 8 val)
                       (slice 15 8 val)))))
-  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15
+                                     unsigned-byte-p))))
 
 ;; Goes directly to RAX, etc. and directly to BVCHOP.
 (defthmd rr16-to-normal-form64

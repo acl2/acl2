@@ -67,7 +67,7 @@
                                           dag-parent-array dag-constant-alist dag-variable-alist
                                           (aset1 'renaming-array renaming-array nodenum new-nodenum))))
         (let ((fn (ffn-symb expr)))
-          (if (eq 'quote fn) ; note that the constant will be inlined when we handle the parents (no duplicate nodes should arise, be we call a proper dag-builder function on the parents)x
+          (if (eq 'quote fn) ; note that the constant will be inlined when we handle the parents (no duplicate nodes should arise, be we call a proper dag-builder function on the parents)
               (merge-nodes-into-dag-array (rest rev-dag-lst)
                                           dag-array dag-len
                                           dag-parent-array dag-constant-alist dag-variable-alist

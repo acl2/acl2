@@ -14,6 +14,7 @@
 (include-book "assumptions")
 (include-book "support32")
 (include-book "parsers/parsed-executable-tools")
+(include-book "../axe/lifter-common") ; for lifter-targetp ; todo
 
 ;; TODO: Add assumptions about segments
 (defun standard-state-assumption-32 (x86)
@@ -87,7 +88,7 @@
 (defun gen-standard-assumptions-pe-32 (target
                                        parsed-pe
                                        stack-slots)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (natp stack-slots))
                   :verify-guards nil ;todo
                   ))
@@ -131,7 +132,7 @@
 (defun gen-standard-assumptions-mach-o-32 (target
                                            parsed-macho
                                            stack-slots)
-  (declare (xargs :guard (and (lifter-targetp target)
+  (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (natp stack-slots))
                   :verify-guards nil ;todo
                   )

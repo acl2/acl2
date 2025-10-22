@@ -1727,7 +1727,11 @@
                                ,@extobj-recognizers
                                ,@correct-thms
                                ,@measure-thms
-                               ,fn-fun-env-thm))
+                               ,fn-fun-env-thm
+                               return-type-of-stmt-value-none
+                               expr-value-optionp-when-expr-valuep
+                               (:e c::expr-value-optionp)
+                               expr-valuep-of-expr-value))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
                                  ,@(alist-to-doublets instantiation))
@@ -1758,7 +1762,11 @@
                           ,@extobj-recognizers
                           ,@correct-thms
                           ,@measure-thms
-                          ,fn-fun-env-thm))))))
+                          ,fn-fun-env-thm
+                          return-type-of-stmt-value-none
+                          expr-value-optionp-when-expr-valuep
+                          (:e c::expr-value-optionp)
+                          expr-valuep-of-expr-value))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -2847,7 +2855,7 @@
            '(pop-frame-of-if*
              update-var-of-enter-scope
              update-var-of-add-var
-             exit-scope-of-enter-scope
+             exit-scope-of-enter-scope-when-compustatep
              exit-scope-of-add-var
              compustate-frames-number-of-add-var-not-zero
              compustate-frames-number-of-enter-scope-not-zero
@@ -4252,7 +4260,8 @@
                                ,@extobj-recognizers
                                ,@result-thms
                                ,@correct-thms
-                               ,@measure-thms))
+                               ,@measure-thms
+                               expr-value-optionp-when-expr-valuep))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))

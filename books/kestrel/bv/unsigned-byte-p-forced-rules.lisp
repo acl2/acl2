@@ -1,6 +1,6 @@
 ; BV Library: rules about unsigned-byte-p-forced
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "bool-to-bit-def")
 (include-book "defs")
 (local (include-book "bvshr"))
+(local (include-book "bvashr"))
 (local (include-book "bvshl"))
 (local (include-book "bvchop"))
 (local (include-book "bvand"))
@@ -30,6 +31,7 @@
 (include-book "leftrotate32") ; pull out the def?
 (include-book "rightrotate32") ; pull out the def?
 (local (include-book "bvsx"))
+(local (include-book "repeatbit"))
 (local (include-book "unsigned-byte-p"))
 
 (local (in-theory (disable unsigned-byte-p)))
@@ -175,6 +177,11 @@
 (defthm unsigned-byte-p-forced-of-bvshr
   (implies (natp size)
            (unsigned-byte-p-forced size (bvshr size x amt)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthm unsigned-byte-p-forced-of-bvashr
+  (implies (natp size)
+           (unsigned-byte-p-forced size (bvashr size x amt)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthm unsigned-byte-p-forced-of-bvshl

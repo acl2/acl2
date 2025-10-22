@@ -1,7 +1,7 @@
 ; BV Library: bitxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -416,3 +416,17 @@
          (bitxor x y))
   :hints (("Goal" ;:cases ()
            :in-theory (e/d (bitxor bvxor getbit) (BVXOR-1-BECOMES-BITXOR logxor)))))
+
+(defthmd equal-of-bitxor-and-1
+  (equal (equal (bitxor x y) 1)
+         (or (and (equal (getbit 0 x) 1)
+                  (equal (getbit 0 y) 0))
+             (and (equal (getbit 0 x) 0)
+                  (equal (getbit 0 y) 1)))))
+
+(defthmd equal-of-bitxor-and-0
+  (equal (equal (bitxor x y) 0)
+         (or (and (equal (getbit 0 x) 0)
+                  (equal (getbit 0 y) 0))
+             (and (equal (getbit 0 x) 1)
+                  (equal (getbit 0 y) 1)))))

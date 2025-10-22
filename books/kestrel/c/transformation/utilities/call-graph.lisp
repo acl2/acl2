@@ -512,7 +512,7 @@
     (stmt-case
      stmt
      :labeled (call-graph-stmt stmt.stmt fn-name filepath valid-table call-graph)
-     :compound (call-graph-block-item-list stmt.items fn-name filepath valid-table call-graph)
+     :compound (call-graph-comp-stmt stmt.stmt fn-name filepath valid-table call-graph)
      :expr (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
      :if (call-graph-stmt
            stmt.then
@@ -606,8 +606,8 @@
     :returns (call-graph$ call-graphp)
     (block-item-case
      item
-     :decl (call-graph-decl item.unwrap fn-name filepath valid-table call-graph)
-     :stmt (call-graph-stmt item.unwrap fn-name filepath valid-table call-graph)
+     :decl (call-graph-decl item.decl fn-name filepath valid-table call-graph)
+     :stmt (call-graph-stmt item.stmt fn-name filepath valid-table call-graph)
      ;; TODO: error on ambiguous constructs
      :ambig (call-graph-fix call-graph))
     :measure (block-item-count item))
@@ -629,6 +629,17 @@
         (call-graph-block-item (first items) fn-name filepath valid-table call-graph)))
     :measure (block-item-list-count items))
 
+  (define call-graph-comp-stmt
+    ((cstmt comp-stmtp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
+    (call-graph-block-item-list
+     (comp-stmt->items cstmt) fn-name filepath valid-table call-graph)
+    :measure (comp-stmt-count cstmt))
+
    :hints (("Goal" :in-theory (enable o< o-finp)))
    :verify-guards :after-returns)
 
@@ -648,7 +659,7 @@
                               (c$::dirdeclor->ident fundef.declor.direct.declor))
                             (qualified-fn-name
                               (qualify-ident filepath valid-table fn-name)))
-                         (call-graph-stmt
+                         (call-graph-comp-stmt
                            fundef.body
                            qualified-fn-name
                            filepath
@@ -658,7 +669,7 @@
                              (c$::dirdeclor->ident fundef.declor.direct.declor))
                            (qualified-fn-name
                              (qualify-ident filepath valid-table fn-name)))
-                        (call-graph-stmt
+                        (call-graph-comp-stmt
                           fundef.body
                           qualified-fn-name
                           filepath
@@ -706,7 +717,7 @@
   :short "Build a call graph corresponding to a translation unit."
   (b* (((transunit transunit) transunit)
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
-       (valid-table (c$::transunit-info->table info)))
+       (valid-table (c$::transunit-info->table-end info)))
     (call-graph-extdecl-list transunit.decls filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 

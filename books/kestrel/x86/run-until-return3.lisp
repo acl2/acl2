@@ -18,7 +18,7 @@
 (include-book "misc/defpun" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 
-;; Tests whether the stack points is "above" OLD-RSP.  For now, we define
+;; Tests whether the stack pointer is "above" OLD-RSP.  For now, we define
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
 ;; larger RSP means a shorter stack.
 (defund rsp-is-abovep (old-rsp x86)

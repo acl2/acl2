@@ -1,17 +1,15 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ETHEREUM")
 
-; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the ETHEREUM topic below:
 (include-book "basics")
 (include-book "crypto")
 (include-book "rlp/top")
@@ -22,7 +20,6 @@
 (include-book "addresses")
 (include-book "evm/evm-rules") ; includes evm/evm.lisp
 
-; Merge-io-pairs call added by Matt K. at the request of Alessandro C.:
 (acl2::merge-io-pairs
  dm::primep
  (include-book "semaphore/top"))
@@ -36,7 +33,7 @@
   (xdoc::topstring
    (xdoc::p
     "Currently this library contains a formal model of some aspects of the "
-    (xdoc::a :href "https://ethereum.org" "Ethereum")
+    (xdoc::ahref "https://ethereum.org" "Ethereum")
     " ``world computer''.
      It is expected that this library will be extended with more
      Ethereum-related formalizations and tools.")
@@ -44,9 +41,16 @@
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
-     "The "
-     (xdoc::a :href "https://github.com/ethereum/wiki/wiki" "Ethereum Wiki")
-     ", referenced as `[Wiki]' in the documentation of this library.")
+     "The documentation on the "
+     (xdoc::ahref "https://ethereum.org" "Ethereum web site")
+     ", referenced as `[Doc]' in the documentation of this ACL2 library.")
+    (xdoc::li
+     "The Ethereum Wiki,
+      referenced as `[Wiki]' in the documentation of this library.
+      This Ethereum Wiki can no longer be found at the URL it had at the time,
+      but presumably its contents have been migrated (and likely updated)
+      to the aforementioned [Doc].
+      We plan to update the [Wiki] references to [Doc] references.")
     (xdoc::li
      "The BYZANTIUM VERSION 3e36772 of the "
      (xdoc::a :href "https://github.com/ethereum/yellowpaper"
@@ -67,4 +71,11 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics t)
+  :order-subtopics (basics
+                    cryptography
+                    rlp
+                    database
+                    hex-prefix
+                    mmp-trees
+                    transactions
+                    addresses))

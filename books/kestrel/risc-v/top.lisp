@@ -30,25 +30,23 @@
      RISC-V is modular, with base instruction sets and optional extensions.")
    (xdoc::p
     "This ACL2 library includes
-     a preliminary formalization of part of the the RISC-V ISA:
+     a formalization of part of the the RISC-V ISA:
      unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      fully readable and writable address space,
-     and no alignment checks.
-     We plan to extend and improve this library.")
+     and no alignment checks for data in memory
+     (but there are alignment checks for instructions).")
    (xdoc::p
     "We provide a generic model of RISC-V,
      parameterized over a growing set of features,
      and we also provide two specialized models tailored to RV32IM and RV64IM.
-     We plan to extend the general model to cover more features,
-     and we plan to re-obtain the specialized models via
+     We are working on re-obtaining the specialized models via
      transformation and specialization of the general model.")
    (xdoc::p
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
-     "The "
      (xdoc::ahref "https://riscv.org/technical/specifications/"
                   "The RISC-V Insruction Set Manual Volume 1,
                    Unprivileged Architecture Version 20250508")
@@ -58,7 +56,6 @@
       e.g.
       `[ISA:2.2]' references Section 2.2 of [ISA].")
     (xdoc::li
-     "The "
      (xdoc::ahref "https://riscv.org/technical/specifications/"
                   "The RISC-V Insruction Set Manual Volume 2,
                    Privileged Architecture Version 20250508")

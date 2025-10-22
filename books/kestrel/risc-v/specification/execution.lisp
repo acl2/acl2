@@ -49,13 +49,12 @@
      we set the error flag instead."))
   (b* (((when (errorp stat feat)) (stat-fix stat))
        (pc (read-pc stat feat))
-       (enc? (read-instruction pc stat feat))
+       (enc? (read-instr pc stat feat))
        ((unless enc?) (error stat feat))
        (instr? (decode enc? feat))
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
   :guard-hints (("Goal" :in-theory (enable decode-iff-encoding-validp)))
-  :hooks (:fix)
 
   ///
 

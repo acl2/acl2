@@ -76,6 +76,24 @@
                     t ; the region covers the whole address space
                   (bvlt ,num-address-bits (bvminus ,num-address-bits ad start-ad) len))))
 
+         ;; How to prevent this from backchaining to in-regionp about values that are not addresses?
+         ;; todo: alt version?
+         (defthmd ,(acl2::pack-in-package pkg 'bvlt-when- in-regionp-name)
+           (implies (and (,in-regionp-name y len (bvuminus ,num-address-bits x))
+                         (< len (expt 2 ,num-address-bits))
+                         ;; (natp len)
+                         )
+                    (bvlt ,num-address-bits (bvplus ,num-address-bits x y) len))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         ;; How to prevent this from backchaining to in-regionp about values that are not addresses?
+         ;; todo: alt version?
+         (defthmd ,(acl2::pack-in-package pkg 'not-bvlt-when-not- in-regionp-name)
+           (implies (and (not (,in-regionp-name y len (bvuminus ,num-address-bits x)))
+                         (natp len))
+                    (not (bvlt ,num-address-bits (bvplus ,num-address-bits x y) len)))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
          ;; Nothing is in a region of size 0
          (defthm ,(acl2::pack-in-package pkg 'not- in-regionp-name '-of-0-arg2)
            (not (,in-regionp-name ad 0 start-ad))
@@ -554,6 +572,34 @@
                          (integerp size))
                     (equal (,disjoint-regionsp-name len1 ad1 len2 (bvchop size ad2))
                            (,disjoint-regionsp-name len1 ad1 len2 ad2)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-logext-arg2)
+           (implies (and (<= ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 (logext size ad1) len2 ad2)
+                           (,disjoint-regionsp-name len1 ad1 len2 ad2)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-logext-arg4)
+           (implies (and (<= ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 ad1 len2 (logext size ad2))
+                           (,disjoint-regionsp-name len1 ad1 len2 ad2)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-bvplus-tighten-arg2)
+           (implies (and (< ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 (bvplus size ad1 ad2) len2 ad3)
+                           (,disjoint-regionsp-name len1 (bvplus ,num-address-bits ad1 ad2) len2 ad3)))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg disjoint-regionsp-name '-of-bvplus-tighten-arg4)
+           (implies (and (< ,num-address-bits size)
+                         (integerp size))
+                    (equal (,disjoint-regionsp-name len1 ad1 len2 (bvplus size ad2 ad3))
+                           (,disjoint-regionsp-name len1 ad1 len2 (bvplus ,num-address-bits ad2 ad3))))
            :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
 
          ;; Higher level spec of disjoint-regionsp: Two regions are disjoint if there is

@@ -18,6 +18,12 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "../read-and-write")
 
+;; We don't evaluate or open calls to feature-flag, so we don't want to be warned when
+;; ground calls of it appear
+(defconst *no-warn-ground-functions* '(feature-flag))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; An "output-indicator" indicates the desired result of lifting, either :all
 ;; or some component of the state.  There is no recognizer for an
 ;; output-indicator, such as 'output-indicatorp'.  Instead we call
@@ -101,10 +107,10 @@
                     (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
           (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
-                                (posp (farg2 output-indicator)) ; number of bytes to read
+                                (posp (farg2 output-indicator)) ; number of bytes to read ; todo: reoder!
                                 )
-                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ',(farg2 output-indicator)
+                           `(acl2::list-to-byte-array (read-bytes ',(farg2 output-indicator)
+                                                                  ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
                                                                   ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
@@ -188,16 +194,3 @@
   (member-eq type *executable-types*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns a symbol-list.
-(defund maybe-add-debug-rules (debug-rules monitor)
-  (declare (xargs :guard (and (or (eq :debug monitor)
-                                  (symbol-listp monitor))
-                              (symbol-listp debug-rules))))
-  (if (eq :debug monitor)
-      debug-rules
-    (if (member-eq :debug monitor)
-        ;; replace :debug in the list with all the debug-rules:
-        (union-eq debug-rules (remove-eq :debug monitor))
-      ;; no special treatment:
-      monitor)))

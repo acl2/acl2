@@ -35,32 +35,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-get-ident
-  ((structdecl structdeclp))
+(define struct-declon-get-ident
+  ((struct-declon struct-declonp))
   :returns (ident? ident-optionp)
-  (structdecl-case
-   structdecl
+  (struct-declon-case
+   struct-declon
    ;; TODO: properly handle struct declarations with multiple declarators
    ;;   instead of returning error.
    :member (b* (((mv erp ident)
-                 (structdeclor-list-get-ident structdecl.declor)))
+                 (struct-declor-list-get-ident struct-declon.declors)))
              (if erp
                  nil
                ident))
    :statassert nil
    :empty nil))
 
-;; TODO: needs to ensure that structdecls doesn't contain static asserts or empty
-(define structdecls-find-first-field-name
-  ((structdecls structdecl-listp))
+;; TODO: needs to ensure that struct-declons doesn't contain static asserts or empty
+(define struct-declons-find-first-field-name
+  ((struct-declons struct-declon-listp))
   :returns (ident? ident-optionp)
-  (b* (((when (or (endp structdecls)
-                  (endp (rest structdecls))))
+  (b* (((when (or (endp struct-declons)
+                  (endp (rest struct-declons))))
         nil)
-       (structdecl (structdecl-fix (first structdecls)))
-       (ident? (structdecl-get-ident structdecl)))
+       (struct-declon (struct-declon-fix (first struct-declons)))
+       (ident? (struct-declon-get-ident struct-declon)))
     (or ident?
-        (structdecls-find-first-field-name (rest structdecls)))))
+        (struct-declons-find-first-field-name (rest struct-declons)))))
 
 (define decl-find-first-field-name
   ((decl declp)
@@ -76,7 +76,7 @@
        type-spec?
        :struct (b* (((struni-spec struni-spec) type-spec?.spec))
                  (if (equal struni-spec.name? struct-tag)
-                     (structdecls-find-first-field-name struni-spec.members)
+                     (struct-declons-find-first-field-name struni-spec.members)
                    nil))
        :otherwise nil))
    :statassert nil))
@@ -236,7 +236,7 @@
           ((mv erp linkage tag?)
            (get-gso-linkage-from-valid-table
              gso
-             (c$::transunit-info->table (c$::transunit->info tunit))))
+             (c$::transunit-info->table-end (c$::transunit->info tunit))))
           ((when erp)
            (transunit-find-gso-candidate0 tunit
                                           (insert gso blacklist)
@@ -338,23 +338,21 @@
 (define transunit-ensemble-split-all-gso
   ((tunits transunit-ensemblep)
    (blacklist ident-setp)
-   (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
-  (transunit-ensemble-split-all-gso0 tunits
-                                     blacklist
-                                     gcc
-                                     ienv
-                                     (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+  (transunit-ensemble-split-all-gso0
+   tunits
+   blacklist
+   ienv
+   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
 
   :prepwork
   ((define transunit-ensemble-split-all-gso0
      ((tunits transunit-ensemblep)
       (blacklist ident-setp)
-      (gcc booleanp)
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
@@ -377,15 +375,14 @@
           ;; TODO: prove that splitgso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ gcc))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))
           ((erp tunits$)
-           (c$::valid-transunit-ensemble tunits$ ienv))
+           (c$::valid-transunit-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
            (retmsg$ "Invalid translation unit ensemble.")))
        (transunit-ensemble-split-all-gso0 tunits$
                                           blacklist
-                                          gcc
                                           ienv
                                           (- steps 1)))
      :measure (nfix steps)
@@ -404,7 +401,6 @@
        ((erp blacklist tunits)
         (transunit-ensemble-split-all-gso code.transunits
                                           blacklist
-                                          (c$::ienv->gcc code.ienv)
                                           code.ienv)))
     (retok blacklist (change-code-ensemble code :transunits tunits))))
 
@@ -470,14 +466,10 @@
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp code
-             const-new)
-        (split-all-gso-process-inputs const-old
-                                      const-new
-                                      wrld))
+       ((erp code const-new)
+        (split-all-gso-process-inputs const-old const-new wrld))
        ((erp event)
-        (split-all-gso-gen-everything code
-                                      const-new)))
+        (split-all-gso-gen-everything code const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

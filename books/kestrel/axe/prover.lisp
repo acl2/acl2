@@ -39,7 +39,8 @@
 (include-book "rule-alists")
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
-(include-book "dagify") ;for merge-trees-into-dag-array? introduces skip-proofs
+;(include-book "dagify") ;for merge-trees-into-dag-array? introduces skip-proofs
+(include-book "dagify0")
 (include-book "instantiate-hyp-basic")
 (include-book "axe-syntaxp-evaluator-basic")
 (include-book "axe-bind-free-evaluator-basic")

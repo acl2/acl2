@@ -132,7 +132,8 @@
    for the guard of @('fn')."
 
   "@('typed-formals') is an alist
-   from the formal parameters of one of the functions in @('t1'), ..., @('tp')
+   from the formal parameters of
+   the function in @('t1'), ..., @('tp') for which code is being generated,
    to their C types.
    The keys are unique and in the same order as the formal parameters."
 
@@ -150,7 +151,7 @@
 
   "@('affect') is a list of symbols consisting of
    the variables of array or structure type affected by
-   one of the functions in @('t1'), ..., @('tp').
+   one the function in @('t1'), ..., @('tp') for which code is being generated.
    This @('affect') is denoted as @('vars') in the user documentation."
 
   "@('context') is the context in which theorems are generated

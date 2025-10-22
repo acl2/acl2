@@ -43,7 +43,7 @@
   (implies (all-natp vals)
            (all-unsigned-byte-p (width-of-widest-int vals)
                                  vals))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (enable all-natp all-unsigned-byte-p width-of-widest-int unsigned-byte-p-of-integer-length-gen))))
 
 ;rename
@@ -53,4 +53,4 @@
                 (all-natp vals)
                 (< index (len vals)))
            (unsigned-byte-p (width-of-widest-int vals) (nth index vals)))
-  :hints (("Goal" :in-theory (e/d (width-of-widest-int nth) ()))))
+  :hints (("Goal" :in-theory (enable width-of-widest-int nth))))

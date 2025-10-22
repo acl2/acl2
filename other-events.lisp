@@ -3806,6 +3806,7 @@
     set-rewrite-stack-limit
     set-ruler-extenders
     set-state-ok
+    set-subgoal-loop-limits
     set-tau-auto-mode
     set-verify-guards-eagerness
     set-well-founded-relation))
@@ -20871,302 +20872,549 @@
 
 ; Essay on the Correctness of Abstract Stobjs
 
-; In this Essay we provide a semantic foundation for abstract stobjs that shows
+; This Essay is in three parts, as follows.
+
+; Part 1: Introduction
+; Part 2: Evaluation and Correspondence
+; Part 3: The Evaluation Invariant
+
+; After setting the stage in Part 1, we define evaluation and present our main
+; result in Part 2.  Finally, the result of Part 2 is applied to an important
+; state invariant in Part 3.
+
+; -- Part 1: Introduction --
+
+; This Essay provides a semantic foundation for abstract stobjs that explains
 ; the critical role of :CORRESPONDENCE, :PRESERVED, and :GUARD-THM lemmas.  Our
 ; goal is to explain why the logical definitions of abstract stobj primitives
 ; are reflected correctly by Lisp evaluation.  It may be helpful to read the
-; :doc topic for defabsstobj before reading this Essay.  It may also be helpful
+; :DOC topic for defabsstobj before reading this Essay.  It may also be helpful
 ; to look at examples involving defabsstobj; community book
 ; books/demos/defabsstobj-example-1.lisp is particularly simple and may be
 ; sufficient.
 
-; This Essay argues that we have a sound foundation for abstract stobjs, based
-; on a model of computation.  It does not consider local stobjs, which we
-; believe would not present any surprises.  An interesting future project could
-; be to formalize this argument in ACL2 (or any proof assistant), even
-; extending to local stobjs.
-
-; Our motivation is to understand why non-erroneous evaluation in the ACL2 loop
-; produces results that "correspond" to what is expected logically.  To that
-; end, we introduce below a general notion of E*-correspondence that reduces to
-; equality for ordinary objects but is suitable for stobjs as well.  In
-; particular, we expect that when an input term evaluates to an abstract stobj,
-; s, then the evaluation result "corresponds" (in the E*-correspondence
-; relation) to the value provably equal to the input term with respect to the
+; Our sound foundation for abstract stobjs is based on models of computation
+; that explain a correspondence between evaluation in the ACL2 loop and logical
+; evaluation.  To that end, we introduce below a general notion of
+; E*-correspondence that reduces to equality for ordinary objects but is
+; suitable for stobjs as well.  In particular, we expect that when an input
+; term evaluates using :EXEC functions of abstract stobjs, then the evaluation
+; result "corresponds" (in the E*-correspondence relation) to the logical value
+; (hence, using :LOGIC functions) of the input term, with respect to the
 ; current logical state.  In summary: evaluation uses foundational stobjs and
 ; :EXEC primitives for abstract stobjs, and this Essay formalizes this notion
-; of evaluation and shows how it corresponds to purely logical computation
-; using :LOGIC functions for each abstract stobj.
+; of evaluation and shows how it corresponds to a purely logical notion of
+; evaluation, where :LOGIC primitives are used for abstract stobjs.
 
 ; Below, we may designate a function symbol f as a "stobj primitive (for s)"
 ; (or, "s-primitive") when f is introduced by a defstobj or (more often)
 ; defabsstobj event (for stobj s).  In the case of defabsstobj, we may write
-; f_E and f_L for the function symbols associated with f (perhaps by default)
-; by the :EXEC and :LOGIC keywords, respectively; these may be called the :EXEC
-; (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive other than the
-; recognizer or creator may be called a "stobj export".
+; f_E and f_L for the function symbols associated with f (whether explicitly or
+; by default) by the :EXEC and :LOGIC keywords, respectively; these may be
+; called the :EXEC (s-)primitive and :LOGIC (s-)primitive.  A stobj primitive
+; other than the recognizer or creator may be called a "stobj export".
 
 ; This Essay models evaluation using live stobjs, as performed in the top-level
-; loop.  (We do not consider here evaluation without live stobjs, as is carried
-; out on ground terms during proofs, as :LOGIC primitives are used there for
-; evaluation.)  But the replacement of ACL2 objects by live stobjs in raw Lisp
-; is not what's new for abstract stobjs, so we avoid that implementation level.
+; loop.  But the replacement of ACL2 objects by live stobjs in raw Lisp is not
+; what's new for abstract stobjs, so we avoid that implementation level.
 ; Rather, we deal in this Essay only with ACL2 objects.  That is: our modeling
 ; of evaluation uses ACL2 objects, even when modeling evaluation that takes
-; place in raw Lisp using live stobjs.
+; place in raw Lisp using live stobjs.  Put differently, we are really looking
+; at values of terms when considering abstract stobj primitives to be defined
+; either using their :EXEC or their :LOGIC definitions.
 
 ; (That said, there are clearly issues to address to ensure that raw Lisp
 ; evaluation involving live stobjs is truly modeled by our evaluator.  The
 ; anti-aliasing restriction implemented in
 ; no-duplicate-indices-checks-for-stobj-let-actuals is an example of how we
-; avoid a non-applicative child stobj modification that would not be modeled by
-; our purely functional object-level evaluator.)
+; avoid a non-applicative child stobj modification that is not modeled by our
+; purely functional object-level evaluator.  But such considerations of raw
+; Lisp evaluation are beyond the scope of this Essay.)
 
 ; We introduce two kinds of evaluation: the :EXEC evaluator models how ACL2
 ; actually does evaluation (again, avoiding consideration of live stobjs),
 ; while the :LOGIC evaluator models evaluation in the logic.  The only
 ; difference between the :EXEC and :LOGIC evaluators is how they define each
 ; abstract stobj primitive: to call its :EXEC or :LOGIC primitive,
-; respectively.  We take it as self-evident that :LOGIC evaluation soundly
-; represents logical definitions and :EXEC evaluation represents actual ACL2
-; evaluation in its read-eval-print loop.  We will show below how these two
-; evaluators run in lock-step with respect to corresponding alists with a
-; common domain.  Each alist binds variables to values, where for each abstract
-; stobj name in the common domain: its values in the :EXEC and :LOGIC evaluator
-; alists satisfy the correspondence predicate for that abstract stobj.  All
+; respectively.  While :LOGIC evaluation soundly represents evaluation with
+; logical definitions, :EXEC evaluation represents actual ACL2 evaluation in
+; its read-eval-print loop.  We will show below how these two evaluators run in
+; lockstep with respect to corresponding alists with a common domain.  Each
+; alist binds variables to values, where for each abstract stobj name in the
+; common domain: each pair of values produced by the :EXEC and :LOGIC evaluator
+; alists satisfies the correspondence predicate for that abstract stobj.  All
 ; evaluations enforce guards on stobj primitives.  (The ACL2 implementation
-; does so as well, even when guard-checking is nil or :none.)
+; does so as well, even when guard-checking is nil or :none.)  We consider not
+; only evaluations that produce a result, but also evaluations that are
+; incomplete (typically due to resource limitations or user aborts), so that we
+; can claim a correspondence between the stobjs resulting from the :EXEC and
+; :LOGIC evaluations.
 
 ; This Essay lays out how and why these two evaluations correspond.  We
 ; implicitly rely below on the single-threadedness checks done by ACL2.  We
 ; ignore stobj hash-table and array primitives (such as array resizing) that we
 ; see as not causing complications.  (Throughout this Essay, by "hash-table
-; fields" we mean to include stobj-table fields.)  We also ignore errors other
-; than guard violations; see the Essay on Illegal-states, in
-; *inside-absstobj-update* for how incomplete abstract stobj updates are
-; handled by the implementation.
+; fields" we mean to include stobj-table fields.)  We also ignore errors that
+; occur while evaluating calls of abstract stobj primitives; see the Essay on
+; Illegal-states, in *inside-absstobj-update* for how incomplete updates by
+; abstract stobj primitives are handled by the implementation.  We ignore
+; congruent stobjs and swap-stobjs, which would complicate the exposition but
+; are unlikely (in our view) to cause fundamental problems.  And finally, we
+; also ignore the fact that the ACL2 state includes the user-stobj-alist, which
+; supports the use of with-global-stobj; such consideration seems unlikely to
+; present problems other than complicating the arguments below.
 
-; Remark.  The careful reader might have noticed that a variable v is bound to
-; a stobj if v is the name of a stobj, even in a context where v was not
-; declared to be a stobj.  (Think: (defstobj st fld), (defun foo (st) st).)  We
-; gloss over this sort of unimportant detail here, as this issue can be
-; resolved by suitable renaming.
+; Remark.  ACL2 allows a stobj name s in contexts where s does not represent a
+; stobj.  (Think: (defstobj st fld), (defun foo (st) st).)  We gloss over this
+; sort of unimportant detail here, as this issue can be resolved by suitable
+; renaming.  End of Remark.
 
-; We do not use the ACL2 function EV directly in this essay, but our notions of
-; evaluation are related to it.  (See the Essay on EV for background on EV.)
-; :LOGIC evaluation closely follows EV.  In particular, EV traffics in
-; so-called "latches", which are alists that represent stobj values.  For our
-; abstract modeling of evaluation, we ignore EV's latches and state, while for
-; convenience, we treat every stobj name as representing a stobj (as though
-; there were latches that include every stobj name that is free in the given
-; term).  Imagine that at the end of each top-level evaluation, each stobj
-; returned is latched into the (implicit) global state, much as trans-eval
-; updates the user-stobj-alist of the state.  Thus, when we show that the
-; results of :EXEC and :LOGIC evaluation correspond, we are implicitly showing
-; that the updated :EXEC and :LOGIC states also correspond -- a crucial
-; invariant, since the implicit state supplies stobj values for the next
-; top-level evaluation.
+; We think of our evaluators as being logic-mode functions that are defined in
+; ACL2.  Note that we do not use the ACL2 function EV in this essay, even
+; though our notions of evaluation are related to it.  (See the Essay on EV for
+; background on EV.)  That said, :LOGIC evaluation closely follows EV.  EV
+; traffics in so-called "latches", which are alists that represent stobj
+; values, which inspires our notion of updating state.  The idea is that at the
+; end of each top-level evaluation, each stobj returned is latched into the
+; (implicit) global state, much as trans-eval updates the user-stobj-alist of
+; the state.  When we show that the results of :EXEC and :LOGIC evaluation
+; correspond, we are implicitly showing that the updated :EXEC and :LOGIC
+; states also correspond, by virtue of updating values of stobjs returned by
+; the evaluation -- a crucial invariant, since that result state supplies stobj
+; values for the next top-level evaluation.  We return to that idea in Part 3
+; of this Essay.
 
-; Definitions.  Let al be an alist mapping variables to values.  We say that a1
-; is A-proper if for every pair <s,x> in al such that s is a stobj name, x
-; satisfies the :EXEC recognizer for s if s is in A, else x satisfies the
-; recognizer for s (equivalently, x satisfies the :LOGIC recognizer for s).
-; Note that when we discuss notions like "satisfies" we are of course
-; referencing logic, not evaluation).  When A is the empty set, {}, we may call
-; an A-proper alist "L-proper" ("L" for "logic").  When A is the set of all
-; abstract stobj names in the (implicit) current ACL2 world, we may call an
-; A-proper alist "E-proper" ("E" for "exec").
+; -- Part 2: Evaluation and Correspondence --
 
-; We view the :LOGIC and :EXEC evaluators as special cases of a class of
-; evaluators that we now introduce.  Fix an ACL2 world and let A be a set of
-; abstract stobj names; :EXEC evaluation is the case that A is the set of all
-; abstract stobj names, while :LOGIC evaluation is the case where A is the
-; empty set.  A-evaluation is modeled by a function we call ev+ with the
-; following signature, where "+" suggests the extra argument A, below.
+; The definitions and proofs in this Part are generally presented in an
+; informal style.  However, except when otherwise indicated, they should be
+; considered as definitions and proofs formalized in ACL2, for a given (but
+; implicit) logical world, which we may refer to as the "given world".  This
+; point will be noted from time to time below.
 
-;   (ev+ term alist A)
+; For example, suppose we say that "the correspondence predicate for abstract
+; stobj s0 holds for x and y".  First, we may assume that every abstract stobj
+; in the world does indeed define a correspondence predicate; see the
+; discussion of "canonical correspondence function" in Part 3.  Now imagine a
+; big case expression as follows, where st0, ... stk enumerates the abstract
+; stobjs in the given world and ci is the correspondence predicate for sti.
+
+;   (case s
+;     (st0 (c0 x y))
+;     (st1 (c1 x y))
+;     ...
+;     (stk (ck x y)))
+
+; This is the formalization of "the correspondence predicate for abstract stobj
+; s holds for x and y".  Informally, we might simply say that we let corr0 be
+; the correspondence predicate for s and then talk about corr0 holding for x
+; and y.  Similarly we may say (informally) that x satisfies the :EXEC
+; recognizer for s, where the formalization would be a case expression like the
+; one above, where ei is the :EXEC recognizer for sti.
+
+;   (case s
+;     (st0 (e0 x))
+;     (st1 (e1 x))
+;     ...
+;     (stk (ek x)))
+
+; We may also write expressions like term/alist when the term is one of a
+; finite set of explicit terms (such as the application of a stobj primitive it
+; its formals, or the guard of a defined function).  For example, suppose we
+; are discussing the guard g of a defined function symbol, f, and we write
+; g/a0.  Imagine a case statement such as the ones above for g, and consider a
+; specific case, say g is [the translation of] (and (natp x) (natp y) (< x y)).
+; Then the corresponding case for g/a would be (and (natp (cdr (assoc 'x a0)))
+; (natp (cdr (assoc 'y a0))) (< (assoc 'x a0) (assoc 'y a0))).
+
+; With such conventions, we see that the following definitions of A-proper,
+; E-proper, and L-proper, while presented informally, are to be considered as
+; formal definitions in ACL2.
+
+; Definitions.  Fix a set A of abstract stobj names (of an implicit world).
+; Let al be an alist mapping variables to values.  We say that a1 is A-proper
+; if for every pair <s,x> in al such that s is a stobj name: if s is in A then
+; x satisfies the :EXEC recognizer for s, else x satisfies the recognizer for
+; s.  (The latter case is equivalent to saying that x satisfies the :LOGIC
+; recognizer for s.)  When A lists all abstract stobj names (in the given ACL2
+; world), we may call an A-proper alist "E-proper" ("E" for "exec").  When A is
+; nil, we may call an A-proper alist "L-proper" ("L" for "logic"). -|
+
+; Before we define the evaluator ev+, we provide some informal motivation.
+
+; The :LOGIC and :EXEC evaluators are special cases of a class of evaluators
+; that we now introduce.  For A a set of abstract stobj names, A-evaluation is
+; modeled by a function ev+, formalized for a given ACL2 world.  The "+" in
+; "ev+" suggests arguments A and clock that are not arguments of ev or ev-w.
+; Ev+ has the following signature.
+
+;   (ev+ term alist A clock)
 ;   =
-;   (mv erp r)
+;   (mv erp r clock')
 
-; Here is a brief informal description of ev+.  The inputs are term, a term; A,
-; a set of abstract stobj names; and alist, an A-proper alist mapping variables
-; to values whose domain includes the free variables of term.  (This last part
-; isn't necessary; we could treat missing free variables as being mapped to
-; nil.  We'll feel free to be a bit careless about this domain requirement.)
-; The outputs erp and r represent what we call an "error indicator" and a
-; "return value", respectively, as follows.  Erp is nil when no guard violation
-; has been encountered, in which case r is the return value, which is a list in
-; the multiple-value case.  (Indeed, ev+ treats mv the same as list; more
-; precisely, ev+ operates on terms for which macros, including mv and list,
-; have been expanded away.)  Otherwise erp is t and r is an alist associating
-; the names of stobjs bound in al with their post-evaluation values, that is,
-; from the input alist at the time of the guard violation.  In particular, if
-; no stobj is changed and erp is t, then r is the restriction of the input
-; alist to the set of stobj names.
+; :EXEC evaluation is the case that A lists all abstract stobj names of the
+; current world, while :LOGIC evaluation is the case that A is nil.  There
+; should really be other arguments, in particular safe-mode and gc-off, but we
+; ignore these, simplifying the exposition by assuming that guards are always
+; checked (which, as noted above, they are for stobj primitives).  We can view
+; gc-off as a special case in which all guards are viewed as T.
 
-; Note that we are not obligated to consider aborts, since we consider all bets
-; to be off in that case.  Of course, as a practical matter we prefer that
-; aborts avoid the creation of bad states.  We believe that we could extend our
-; argument by modeling aborts through adding an oracle argument to ev+, where
-; erp is t when an abort is indicated by the oracle.  However, we don't take
-; that step in this Essay.
+; Consider the non-error case, where (ev+ term alist A clock) = (mv nil r
+; clock').  The idea is to evaluate term with respect to alist for clock
+; "steps".  When A is empty and term is in :logic mode, then term/alist is
+; provably equal to the result, r (see Lemma 1 below.)  But when A is the set
+; of all abstract stobj names (in the implicit world), then ev+ represents
+; evaluation in the ACL2 loop, i.e., using :EXEC primitives of abstract stobjs.
 
-; We omit a detailed definition of ev+, which would contain no big surprises;
-; but we discuss key cases.
+; Here is a more complete (but still informal) summary of (ev+ term alist A
+; clock), one that includes the error case.  The inputs (not in this order) are
+; intended to be as follows.  (For other inputs the value of ev+ is
+; irrelevant.)
 
-; - CASE (ev+ v a0 A), where v is a variable
+; - Term is a term that is the translation of some form for execution.  It
+;   seems clear that the notion "is the translation of" can be defined in logic
+;   mode, using defun-sk to avoid constructively finding the form and to avoid
+;   dealing with termination of macroexpansion.
 
-;   Return (mv nil val), where val is the value of v in a0.
+; - A is a list of abstract stobj names.
 
-; - CASE (ev+ (quote x) a0 A)
+; - Alist is an A-proper alist mapping variables to values whose domain
+;   includes the free variables of term.  (But the domain requirement on alist
+;   isn't necessary; we could treat missing free variables as being mapped to
+;   nil.  We'll feel free to be a bit careless about this domain requirement.)
 
-;   Return (mv nil x).
+;- Clock is a natural number.
 
-; - CASE (ev+ (f t1 ... tk) a0 A), where f is a function symbol or lambda, but
-;   f is not a stobj primitive for a stobj in A
+; The components of output (mv erp r clock') are what we may call an "error
+; indicator", a "return value", and a "remaining clock", respectively,
+; described as follows.  Erp is nil to indicate normal return, hence, with no
+; guard violation encountered and clock sufficiently large to complete the
+; computation.  In that case, r is the return value, which is a list in the
+; multiple-value case.  (Indeed, ev+ treats mv the same as list; after all, ev+
+; operates on translated terms for which macros, including mv and list, have
+; been expanded away.)  Clock' is a natural number (which is provably less than
+; a given non-zero clock; see the Clock Lemma below) obtained by subtracting
+; the number of computation "steps" from clock; intuitively, clock' is the
+; clock to use for the next call of ev+.  Otherwise erp is t, in which case r
+; is an alist associating the names of stobjs bound in al with their
+; post-evaluation values, that is, from the input alist at the point the
+; computation ends.  In particular, if no stobj is changed and erp is t, then r
+; is the restriction of the input alist to the set of stobj names.
 
-;   First compute each (ev+ ti a0 A) = (mv ei xi) from 1 to k, returning (mv ei
-;   xi) if and when we encounter ei = t.  If each ei is nil then for formals
-;   (v1 ... vk), guard g, and body b of f, bind each vi to xi to create alist
-;   a1; then compute (ev+ g a1 A) = (mv eg xg) for i from 1 to k.  If some eg
-;   is t or xg is nil then return (mv t a0') where a0' is the restriction of a0
-;   to stobjs.  Otherwise (i.e., each eg = nil and each xg is non-nil), compute
-;   (ev+ b a1 A) = (mv e x).  If e is nil then return (mv nil x).  Otherwise,
-;   -- with the following exceptions for errors (i.e., guard errors) -- return
-;   (mv t a0'), where a0' is produced by updating the stobj entries of a0 with
-;   corresponding stobj results from the alist, x.  In the following
-;   exceptional cases a0' is just the restriction of a0 to stobj names.
+; Remarks.
 
-;   - EXCEPTION 1: stobj-let update of a child stobj
+; (1) Ev+ comprehends aborts (including those caused by user interrupts or
+; resource limitations), by considering calls of ev+ for which the input clock
+; is such that the abort occurs when the clock has decreased to 0.
 
-;     The term (f t1 ... tk) is the translation of a stobj-let form when at
-;     least one ti is a stobj accessor for a field of stobj type, and therefore
-;     f is a lambda.  Then if there is an error during evaluation of the
-;     lambda, we throw away the child stobj binding rather than updating it in
-;     the alist, a0.  In the actual implementation we would actually expect to
-;     get an error in this case.  See the use of with-inside-absstobj-update in
-;     stobj-let-fn-raw (which takes advantage of special variable
-;     *inside-absstobj-update* much as we use it for non-atomic exports of
-;     abstract stobjs).
+; (2) Ev+ is defined as a :logic-mode function, as it handles calls of
+; functions, whether program-mode or logic-mode, by extracting their
+; definitions from the given world.
 
-;   - EXCEPTION 2: with-local-stobj
+; (3) We will arrange that abstract stobj primitives are treated atomically by
+; ev+, regardless of the argument A, in the sense that ev+ will use up at most
+; one tick of the clock for each of their calls.  We will see how this avoids
+; dependence on A of the number of clock steps, which is important for our main
+; theorem on correspondence of logical evaluation with evaluation in the ACL2
+; loop.
 
-;     Translation of a with-local-stobj form creates a lambda application with
-;     a stobj creator as an argument.  If an error occurs during evaluation of
-;     the body of a lambda with a stobj creator argument, we define a0' to
-;     avoid updating the binding (if any) for that stobj.
+; End of Remarks.
 
-;   - EXCEPTION 3: f is a stobj primitive for a stobj not in A
+; Our final definition, before providing details for ev+, will be used when
+; updating global stobjs based on an evaluation result.
 
-;     In this case, after successfully checking the guard for f, we avoid guard
-;     checking while evaluating the corresponding call of the :LOGIC primitive
-;     f_L for f, as though (with-guard-checking :none ...) were wrapped around
-;     that call.  We should model this separately, say, with a variant of ev+
-;     that treats all guards as t, uses logical axioms for evaluation (e.g.,
-;     (car 3) is nil), and isn't concerned about whether the input alist is
-;     A-proper.  But for simplicity we'll keep that implicit; all properties of
-;     ev+ carry over of course since we are not changing the structure of its
-;     definition (only changing the guards, ignoring stobjs, and "completing"
-;     the axioms).  Note that since we never get a guard violation during such
-;     evaluation, the stobjs-out are irrelevant if A is empty.
+; Definition.  For an alist a, S(a) denotes the restriction of a to the set of
+; stobj names (in the given world).  For alists a1 and a2, X(a1,a2) (where "X"
+; is for "extend") denotes the extension of S(a1) by S(a2), i.e.,
+; (put-assoc-eq-alist S(a1) S(a2)): this updates S(a1) with each pair in
+; S(a2). -|
 
-; - CASE (ev+ (f t1 ... tk) a0 A), where f is a stobj primitive for a stobj s0
-;   in A (hence s0 is an abstract stobj)
+; Definition.  Ev+ is defined as follows.  Here we focus on key aspects of the
+; definition of ev+, omitting details that would contain no big surprises.
 
-;   The only difference from the case above is that the body, b, of f is
-;   considered to be (f_E v1 ... vk).
+; - CASE (ev+ v a0 A 0):
 
-; As suggested above, we may refer to (ev+ ... {}) as :LOGIC evaluation, and we
-; may refer to (ev+ ... A) as :EXEC evaluation when A is the set of all
-; abstract stobj names (in the current world).  The use of :LOGIC and :EXEC
-; primitives in respective logical and raw Lisp definitions of the abstract
+;   Return (mv t S(a0) 0).
+
+; Otherwise assume clock is a positive natural number.
+
+; - CASE (ev+ v a0 A clock), where v is a variable:
+
+;   Return (mv nil val (1- clock)), where val is the value of v in a0.
+
+; - CASE (ev+ (quote x) a0 A clock):
+
+;   Return (mv nil x (1- clock)).
+
+; - CASE (ev+ (f t1 ... tk) a0 A clock), where f is a function symbol or
+;   lambda:
+
+;   Let c0 = clock.  For each i from 1 to k, let j = i-1 and let (mv ei xi ci)
+;   = (ev+ ti a0 A cj), except that (mv ei xi ci) is returned for the first
+;   non-nil ei, if any.  So suppose each ei is nil.  If ck = 0 then return (mv
+;   t S(a0) 0).  Otherwise, for formals (v1 ... vk) of f and guard g of f: bind
+;   each vi to xi to create alist a1, and let (mv eg xg cg) = (ev+ g a1 A (1-
+;   ck)).  If eg is non-nil or xg is nil then return (mv t S(a0) cg).
+
+;   It remains to handle the case that eg is nil and xg is non-nil.  First
+;   suppose that f is not a primitive for an abstract stobj.  Let b be the
+;   (unnormalized) body of f and let (mv e x c) = (ev+ b a1 A cg).  If e
+;   is nil then return (mv nil x c).  Otherwise return (mv t X(a0,x) c). (See
+;   below however for exceptions for some lambda cases.)
+
+;   Otherwise f is a primitive for some abstract stobj, st.  (The following
+;   argument can be formalized as a case expression based on st and f, as
+;   indicated earlier.)  First suppose A is nil.  If cg = 0 then return (mv t
+;   S(a0) 0); otherwise cg > 0, let r be the application of f to the list of
+;   values of its formals in a1, and return (mv nil r (1- cg)).  Otherwise
+;   (i.e., when A is non-nil) let (mv e x c') = (ev+ (f_E v1 ... vk) a1 A cg)
+;   if st is in A, else let (mv e x c') = (ev+ (f_L v1 ... vk) a1 A cg).  If e
+;   is non-nil then return (mv t S(a0) cg) and otherwise return (mv nil x (1-
+;   cg)).
+
+;   Remark.  This atomic handling of abstract stobj primitives admittedly
+;   doesn't model changes to stobjs that occur from a primitive call that is
+;   aborted before completion.  But incomplete stobj updates in the middle of a
+;   primitive call are handled by the implementation; see the Essay on
+;   Illegal-states.  On the other hand, it's because arbitrary functions can,
+;   upon an abort, affect only some of the intended stobj updates, that we
+;   model evaluation even of logic-mode functions by diving into their bodies
+;   and using a clock for termination.  Of course, for program-mode functions
+;   we have no choice, as diving into their bodies is the only way for ev+ to
+;   be a logic-mode function.  End of Remark.
+
+;   - Exception 1: translation of let-binding of a stobj or mv-let binding of
+;                  at least one stobj
+
+;     We consider here only the let-binding case, since the case of an mv-let
+;     binding is similar, just notationally more complex to write out.  The
+;     term (f t1 ... tk) is the translation of some form, (let ((st
+;     <update-st>)) <form>), where <update-st> returns the stobj st; say,
+;     <update-st> translates to u1 and <form> translates to u2.  Let (mv e1 x1
+;     c1) = (ev+ u1 a0 A clock).  If e1 is non-nil then return (mv t x1 c1).
+;     Otherwise let a1 be the result of replacing the value of st in a0 with x1
+;     and return (ev+ u2 a1 A c1).
+
+;   - Exception 2: translation of a stobj-let form
+
+;     We illustrate this case of ev+ with the following example, which should
+;     explain how this case is handled in general.
+
+;     (defstobj child1 cfld1)
+;     (defstobj child2 cfld2)
+;     (defstobj parent
+;       (pfld1 :type child1)
+;       (pfld2 :type child2)
+;       pfld3)
+;     (defun foo (parent)
+;       (declare (xargs :stobjs parent))
+;       (stobj-let
+;        ((child1 (pfld1 parent))
+;         (child2 (pfld2 parent)))  ; bindings
+;        (child1 child2)            ; producer variable(s)
+;        (let* ((child1 (update-cfld1 3 child1))
+;               (child2 (update-cfld2 4 child2)))
+;          (mv child1 child2))      ; producer
+;        (update-pfld3 'a parent)))
+;     (defun-nx bar (parent)
+;       (let ((child1 (pfld1 parent))
+;             (child2 (pfld2 parent)))
+;         (mv-let (child1 child2)
+;           (let* ((child1 (update-cfld1 3 child1))
+;                  (child2 (update-cfld2 4 child2)))
+;             (mv child1 child2))
+;           (let* ((parent (update-pfld1 child1 parent))
+;                  (parent (update-pfld2 child2 parent)))
+;             (update-pfld3 'a parent)))))
+
+;     Then the translated bodies of foo and bar are the same, except for a
+;     return-last wrapper for bar that comes from defun-nx.  The common form
+;     looks as follows, where <body> is the translation of the mv-let form
+;     above.
+
+;     ((LAMBDA (CHILD1 CHILD2 PARENT) <body>)
+;      (PFLD1 PARENT)
+;      (PFLD2 PARENT)
+;      PARENT)
+
+;     The idea is to evaluate <body> in a suitable environment, but if there is
+;     an error, be sure to update the parent with the new child values, even if
+;     the call of update-pfld3 above has not been made.  That way we reflect
+;     what happens in the implementation, where stobj updates are destructive.
+
+;     Now consider the above lambda application (f t1 t2 t3) and consider (ev+
+;     (f t1 t2 t3) a0 A clock).  This is equal to (mv t a0 0) if clock <= 5
+;     (one clock for argument and guard for each of t1 and t2 and one clock for
+;     t3, i.e., PARENT); so assume otherwise.  That call then naturally leads
+;     to the call C0 = (ev+ <body> X(a0,a1) A (- clock 5)), where a1 binds
+;     child1 and child2 to the corresponding fields in the binding of parent in
+;     a0.  There are now two cases.  If the result of this ev+ call is (mv nil
+;     r c) for some r and c, then that is the result of the original ev+ call.
+;     So suppose the result of C0 is (mv erp a2 c) where erp is non-nil, and
+;     suppose that (child1 . x1) and (child2 . x2) are the bindings of child1
+;     and child2 in a2.  Let a3 be the result of removing those bindings from
+;     a2 and then replacing the binding (parent . x3) in a2 by the result of
+;     updating the child1 and child2 fields of x3 with x1 and x2, respectively.
+;     Return (mv erp a3 c).
+
+;     (Implementation Note.  In the case that the parent stobj is an abstract
+;     stobj and the child updates are incomplete, the implementation should
+;     cause an error.  See the use of with-inside-absstobj-update in
+;     stobj-let-fn-raw.)
+
+;   - Exception 3: translation of a with-local-stobj form
+
+;     Let st be the stobj bound by the with-local-stobj form whose translation
+;     is the input term.  Let (mv erp r c) be the result returned by replacing
+;     the call of ev+ where the first argument is the body of the
+;     with-local-stobj form, the clock is decremented by 1, and the alist is
+;     modified by binding the local stobj to its initial value.  If erp is nil
+;     then return (mv nil r c).  Otherwise r is an alist, in which case return
+;     (mv erp X(r,(list (cons st x))) c) where x is the value of st in the
+;     input alist, a0, if any; otherwise return (mv erp r' c) where r' is the
+;     result of removing the binding of st from r. -|
+
+; As suggested above, we may refer to (ev+ term alist A clock) as :EXEC
+; evaluation when A lists all abstract stobj names (in the given world), and to
+; (ev+ term alist () clock) as :LOGIC evaluation.  The use of :EXEC and :LOGIC
+; primitives in respective raw Lisp and logical definitions of the abstract
 ; stobj primitives (see defabsstobj-raw-def and defabsstobj-axiomatic-defs,
-; resp.) is key to the observation that :LOGIC evaluation represents evaluation
-; in the logic and :EXEC evaluation represents evaluation actually carried out
-; by ACL2.  For convenience we introduce abbreviations ev_E and ev_L as
+; resp.) is key to the observation that :EXEC evaluation represents evaluation
+; actually carried out by ACL2 and :LOGIC evaluation represents evaluation in
+; the logic.  For convenience we introduce abbreviations ev_E and ev_L as
 ; follows, for an implicit ACL2 world, w.
 
 ;   :EXEC evaluation:
-;   (ev_E term alist) = (ev+ term alist A)
-;      where A is the set of all abstract stobj names in w
+;   (ev_E term alist clock) = (ev+ term alist A clock)
+;      where A lists all abstract stobj names in w
 
 ;   :LOGIC evaluation:
-;   (ev_L term alist) = (ev+ term alist {})
+;   (ev_L term alist clock) = (ev+ term alist nil clock)
 
 ; Remark.  Ev+ is defined without allowing the use of attachments.  However, we
 ; consider the use of attachments in a world w to be nothing more than
-; evaluation in a world whose theory is the evaluation theory of w.  (See the
-; Evaluation History Theorem in the Essay on Defattach.)  Thus, we could define
-; ev+ to allow attachments simply by considering ev+ to take place in that
-; world, w.  Thus attachments do not present any additional issues, and we
-; ignore them for the rest of this Essay.  -|
+; evaluation in an attachment-free world whose theory is the evaluation theory
+; of w, by appealing to the Evaluation History Theorem in the Essay on
+; Defattach.  Thus attachments do not present any additional issues for our
+; theorems below on evaluation preserving correspondence.  The only issue with
+; attachments pertains to preserving a state invariant, and we deal with that
+; issue in Part 3 of this Essay.  End of Remark.
 
 ; We next put forward definitions and lemmas that support the statement and
-; proof of the theorem below.  We omit the lemmas' proofs by computational
-; induction, which we believe are straightforward.  Note that we have long
-; relied heavily on some of these lemmas; ACL2 could be badly broken if they
-; failed to hold.
+; proof of the theorem below.  We omit proof (by induction) when they are
+; straightforward.  We'll feel free to use the first two implicitly.
 
-; Definition.  For an alist a, let Q(a), the "quotation of" a, be the result of
-; replacing each pair <var,val> in a by <var,(quote val)>.  -|
+; Clock Lemma. If (ev+ u al A c) = (mv erp val c') where c > 0, then c' < c. -|
 
-; Our first lemma connects :LOGIC evaluation to what is logically valid.
+; Clock Shift Lemma.  Suppose that (ev_L u al c1) = (mv erp val c2) and c3 <=
+; c2.  Then (ev_L u al A (- c1 c3)) = (mv erp val (- c2 c3)). -|
+
+; Error Lemma. If (ev+ u al A c) = (mv erp val c') then erp is Boolean. -|
+
+; The next lemma connects :LOGIC evaluation to what is logically valid.
 ; Although it only applies to logic-mode terms, our main theorem does not have
 ; that restriction; this works out because Lemma 1 is applied to abstract stobj
 ; primitives and their guards, which are always guard-verified logic-mode
-; functions.
+; functions.  Reminder: Unless otherwise indicated, these results should all be
+; considered as assertions that their formal statements are theorems of the
+; current ACL2 world.
 
-; Lemma 1.  Let term be a logic-mode term and let al be an L-proper alist, and
-; assume that (ev_L term al) = (mv nil r).  Then it is a theorem (of the
-; current world) that term/Q(al) = (quote r).  -|
+; Lemma 1.  Let term be a logic-mode term.  If al is an L-proper alist and
+; (ev_L term al c) = (mv nil r c'), then term/al = r. -|
 
-; We note a sort of converse that follows trivially: if (ev_L term a) = (mv nil
-; r) and it is a theorem that term/Q(a) = (quote r'), then r = r'.
+; Lemma 2.  If a1 and a2 agree on all the free variables of the term u, then
+; (ev+ u a1 A c) = (ev+ u a2 A c) for every A.  In particular, (ev_L u a1 c) =
+; (ev_L u a2 c) and (ev_E u a1 c) = (ev_E u a2 c). -|
 
-; The next two lemmas give sufficient conditions for the error indicator to be
-; nil when dealing with guard-verified functions.
+; Lemma 3.  Let u be a term produced by translating a form for execution whose
+; function symbols are all introduced before abstract stobj s0 is introduced.
+; Let A be a list of stobj names that includes s0 and let A0 be the result of
+; removing s0 from A.  Then (ev+ u alist A c) = (ev+ u alist A0 c).
 
-; Lemma 2.  Let al be an L-proper alist.  If f is a guard-verified function
-; with guard g, then (ev_L g al) = (mv nil r) for some r.  -|
+; Proof. We induct on c.  Thanks to the Clock Lemma, the only case that isn't
+; completely trivial is when u is a call of a primitive, f, for an abstract
+; stobj, s1.  By hypothesis f is introduced before s0 is introduced, so s1 is
+; in A if and only if s1 is in A0.  The conclusion follows immediately from the
+; induction hypothesis except in the special case that A0 is nil.  In that case
+; s1 is not in A.  The definition of (ev+ u alist A c) leads us to consider the
+; case that f has formals v1, ..., vk, with a1 binding each vi to a value xi,
+; and where the guard has already been evaluated in a1 to return (mv nil xg cg)
+; for some cg < c and non-nil xg.  If cg = 0 then (ev+ u alist A0 c) = (mv t
+; S(a0) 0), which is clearly the value of (ev+ u alist A c) as well.  Otherwise
+; cg > 0.  Then (ev+ u alist A0 c) = (mv nil r (1- cg)) where r is the
+; application of f to the xi.  On the other hand, since A is non-empty then
+; (ev+ u alist A c) = (mv nil x (1- cg)) where (ev+ (f_L v1 ... vk) a1 A (1-
+; cg)) = (mv nil x c') for some c'.  By the inductive hypothesis, (ev+ (f_L v1
+; ... vk) a1 A (1- cg)) = (ev+ (f_L v1 ... vk) a1 A0 (1- cg)), which by Lemma 1
+; is (mv nil r' (1- cg)) where r' is the application of f_L to the xi.  So x =
+; r'.  But r' = r because f is logically defined to be f_L; so x = r, hence
+; (ev+ u alist A c) = (ev+ u alist A0 c), which concludes the proof. -|
 
-; Lemma 3.  Let al be an L-proper alist.  Let f be a guard-verified function
-; with formals (v1 ... vk) and suppose that al binds each vi.  Let g be the
-; guard of f, and assume that (ev_L g al) = (mv nil r_g) where r_g is non-nil.
-; Then (ev_L (f v1 ... vk) al) = (mv nil r) for some r.  -|
+; Lemma 4. Let A be a list of abstract stobj names.  Let a1 be an A-proper
+; alist, let u1 be a term produced by translating a form for execution, let c
+; be a natural number, let s1 be a variable, let s2 be a variable not occurring
+; free in u, let x = (assoc s1 a1), let a2 = (acons s2 x a1), and let u2 be the
+; result of substituting s2 for s1 in u1.  Then (ev+ u2 a2 A c) = (ev+ u1 a1 A
+; c). -|
 
-; Note that by Lemma 1, the value r computed in Lemma 3 for a call of f is such
-; that the equality (f v1 ... vk)/Q(al) = (quote r) is a theorem of the current
-; world.
+; There are complications when an abstract stobj's foundation can itself be an
+; abstract stobj. There are also complications when a stobj can have a child
+; stobj that is an abstract stobj (or is an array or hash table that contains
+; abstract stobjs).  We ignore these complications for now by starting with a
+; limited case of the main theorem.  The limited case is based on a limited
+; version of E*-correspondence, namely, E-correspondence.  After proving the
+; limited version of the theorem, we will consider the general version.
 
-; Lemma 4.  Assume that world w2 is a initial segment of world w1, u is a term
-; of w2, and al is an alist whose domain includes the set of variables of u,
-; which is assumed E-proper or L-proper with respect to w1 for (a) or (b)
-; below, respectively.  Then:
-;
-; (a) The value of (ev_E u al) is the same when computed with respect to w2 as
-;     when computed with respect to w1, assuming that all abstract stobj
-;     variables of u are in w2.
+; The definition below of E-correspondence formalizes a notion of
+; correspondence between two objects or two alists, x and y.  It is motivated
+; by evaluations (ev_E u a_E c) = (mv erp x c_E) and (ev_L u a_L c) = (mv erp y
+; c_L) for corresponding alists a_E and a_L.  When abstract stobjs are not
+; involved, this notion of correspondence reduces to x = y.  But if u returns
+; an abstract stobj, s, then we may require the correspondence predicate for s
+; to hold for the pair <x,y>.  The multiple-values case is similar: in
+; particular, if u has stobjs-out (s1 ... sk) where k > 1, x = (x1 ... xk), and
+; y = (y1 ... yk), then <xi,yi> may satisfy the correspondence predicate for si
+; if si is an abstract stobj name, and otherwise xi should equal yi.  (We can
+; assume that there is always a correspondence predicate for an abstract stobj,
+; as that predicate can be made non-local, using renaming to avoid name
+; conflicts.  Another approach to seeing that there is always a correspondence
+; function, namely by producing a "canonical" correspondence function, is shown
+; in Part 3 below.)  As is the case throughout this Essay, we imagine that all
+; definitions are formalized in ACL2 as logic-mode definitions.
 
-; (b) The value of (ev_L u al) is the same when computed with respect to w2 as
-;     when computed with respect to w1.  -|
+; Definition (E-correspondence).  Let A be a list of abstract stobj names.  Let
+; s be a stobj name (abstract or concrete) or nil, and let x and y be arbitrary
+; objects.  (Note: Often s is implicit from the context.)  Then x E-corresponds
+; to y with respect to A and s when the following conditions are all met.
 
-; Lemma 5.  If a1 and a2 agree on all the free variables of the term u, then
-; (ev+ u a1 A) = (ev+ u a2 A) for every A.  In particular, (ev_L u a1) = (ev_L
-; u a2) and (ev_E u a1) = (ev_E u a2).  -|
+; - If s is not in A, then x = y.
 
-; We may use Lemma 5 implicitly, for example by being able to assume
-; implicitly, when considering (ev+ u al A), that the domain of al is the set
-; of free variables of u.
+; - If s is in A, then the pair <x,y> satisfies the correspondence predicate
+;   for s.
 
-; Our final lemma is trivial by definition of ev+ (the final equation holds
-; because both sides equal (ev+ bf a2 A) where bf is the body of f).
+; - If s is in A, then x satisfies the :EXEC recognizer for s, that is, the
+;   recognizer for the foundational stobj for s.
 
-; Lemma 6.  Let al be an alist, let f be a function symbol or lambda with
-; formals (v1 ... vk), let (t1 ... tk) be a list of terms, and let g be the
-; guard for f (considered as t for a lambda).  Assume that (ev+ ti al A) = (mv
-; nil xi) for each i, and let a2 be the alist ((v1 . x1) ... (vk . xk)).
-; Assume that (ev+ g a2 A) = (mv nil val_g) where val_g is non-nil.  Then (ev+
-; (f t1 ... tk) al A) = (ev+ (f v1 ... vk) a2 A).  -|
+; - If s is a stobj name, then y satisfies the recognizer for s (which is the
+;   :LOGIC recognizer for s when s is an abstract stobj name).
+
+; More generally, for a list s-out (for "stobjs-out") whose length L equals the
+; common length of lists x and y, then x E-corresponds to y with respect to A
+; and s-out if for all i < L, (nth i x) E-corresponds to (nth i y) with respect
+; to A and (nth i s-out).
+
+; The notion above naturally extends to the notion of E-correspondence of
+; alists with respect to A, as follows.  Alist a1 E-corresponds to alist a2
+; with respect to A if a1 and a2 have the same domain and for all s in that
+; domain associated with x and y respectively in a1 and a2, then x
+; E-corresponds to y with respect to A and s.  A clearly equivalent condition
+; is that a1 and a2 have the same domain where a1 is E-proper, a2 is L-proper,
+; and for all x and y associated with s in a1 and a2 respectively: if s is not
+; in A then x = y, and otherwise the correspondence predicate for s holds for
+; the pair <x,y>.
+
+; When A is the list of all abstract stobj names, we may leave A implicit when
+; discussing E-correspondence. -|
 
 ; Remark.  A reason we need the invariant that stobjs satisfy their :LOGIC
 ; recognizers is to satisfy the hypotheses of the CORRESPONDENCE, PRESERVED,
@@ -21174,249 +21422,284 @@
 ; care because we want evaluation in raw Lisp to complete without guard
 ; violations.  As noted at the outset of this Essay, we are not trying to prove
 ; correctness of raw Lisp evaluation; still, guaranteeing that guards are met
-; is something minimal that we are happy to do.  -|
+; is something minimal that we are happy to do.  For the aforementioned
+; limitation based on E-correspondence, we simply assume that ACL2's stobj
+; tracking guarantees that :EXEC recognizers hold for all stobjs in A.  End of
+; Remark.
 
-; There are complications when an abstract stobj's foundation can itself be an
-; abstract stobj. There are also complications when a stobj can have a child
-; stobj that is an abstract stobj (or is an array or hash table that contains
-; abstract stobjs).  We ignore these complications for now, in particular for
-; the "narrow version" of the main theorem, which depends on a correspondingly
-; narrower version of E*-correspondence, namely, E-correspondence.  After
-; proving the theorem we will return to the general version.
+; We are ready for our main theorem about evaluation.  As usual, we are
+; claiming that this informal statement is a theorem of the implicit given
+; world.  Let us first consider the theorem's significance.  We want to view
+; evaluation in the loop as somehow implementing a straightforward notion of
+; logical evaluation.  What's more, when evaluation aborts we want to be left
+; in a state that suitably corresponds to a corresponding logical state.  This
+; theorem formalizes these ideas, specifically that evaluation in the loop
+; produces a result that corresponds to some corresponding logical evaluation.
+; In particular, an abort can be modeled as an evaluation with a clock that
+; runs down to 0 at the point of aborting.
 
-; The following definition formalizes a notion of correspondence between two
-; objects or two alists, x and y.  It is motivated by evaluations (ev_E u a_E)
-; = (mv nil x) and (ev_L u a_L) = (mv nil y) for corresponding alists a_E and
-; a_L.  When abstract stobjs are not involved, this notion of correspondence
-; reduces to x = y.  But if u returns an abstract stobj, s, then we require the
-; correspondence predicate for s to hold for the pair <x,y>.  The
-; multiple-values case is similar: in particular, if u has stobjs-out (s1
-; ... sk) where k > 1, x = (x1 ... xk), and y = (y1 ... yk), and si is an
-; abstract stobj name, then <xi,yi> should satisfy the correspondence predicate
-; for si.
+; Theorem (Evaluation Preserves E-Correspondence).  Let A be a list of abstract
+; stobj names.  Assume that the alist a_E E-corresponds to the alist a_L with
+; respect to A, let u be a term produced by translating a form for execution
+; with stobjs-out s-out, let c be a natural number, and suppose (ev+ u a_E A c)
+; = (mv erp r_E c').
 
-; Definition (E-correspondence).  Let s be a stobj name (abstract or concrete)
-; or nil, and let x and y be arbitrary objects.  (Note: Often s is implicit
-; from the context.)  Then x E-corresponds to y with respect to s when the
-; following conditions are all met.
+; (a) If erp = nil then for some value r_L such that r_E E-corresponds to r_L
+; with respect to A and s-out, (ev_L u a_L c) = (mv nil r_L c').
 
-; - If s is nil or a concrete stobj name, then x = y.
+; (b) If erp = t then for some alist r_L such that the alist r_E E-corresponds
+; to r_L with respect to A, (ev_L u a_L (- c c')) = (mv t r_L 0).
 
-; - If s is an abstract stobj name, the pair <x,y> satisfies the correspondence
-;   predicate for s.
+; It follows immediately that there are c2, c3, and r_L such that (ev_L u a_L
+; c2) = (mv erp r_L c3) where r_E E-corresponds to r_L with respect to A and
+; s-out.
 
-; - If s is an abstract stobj name, then x satisfies the :EXEC recognizer for
-;   s, that is, the recognizer for the foundational stobj for s.
+; Remark.  Here is some intuition for (b).  The hypothesis says that when we
+; run ev+ for c steps, the result is an error with c' steps remaining.  But
+; suppose that the error occurs because for some call of an abstract stobj
+; primitive f, there are not enough steps to complete the ensuing evaluation of
+; the body of its :EXEC function.  On the ev_L side the evaluation of f takes
+; only one step, so we might not get an error within c steps.  The fix is for
+; (b) to specify that we run ev_L for only (- c c') steps.  That way, ev_L will
+; run out of steps, thus returning an error, at the point corresponding to
+; where the error occurs with ev+.  End of Remark.
 
-; - If s is a stobj name, then y satisfies the :LOGIC recognizer for s
-;   (equivalently, the recognizer for s).
+; Proof.  We first prove (a) by induction on the lexicographic order of the
+; length of A and the clock, c.  (After completing that proof, we'll prove
+; (b).)  Assume that A is non-nil, since otherwise r_E and r_L agree on all
+; their inputs, and (a) follows by Lemma 2.  We skip the "Exception" cases in
+; the definition of ev+, as they present no surprises.
 
-; The notion of E-correspondence naturally extends to two alists a1 and a2 by
-; requiring that they have the same domain and for all <s,x> and <s,y> in a1
-; and a2 respectively, x E-corresponds to y with respect to s.  A clearly
-; equivalent condition is that a1 is E-proper, a2 is L-proper, and for all
-; <s,x> and <s,y> in a1 and a2 respectively: if s is not an abstract stobj name
-; then x = y, and otherwise the correspondence predicate for s holds for the
-; pair <x,y>.  -|
+; Clearly (a) holds if u is a variable or a quoted constant.  So suppose that u
+; is (f t1 ... tk), and let (v1 ... vk) be the formals of f.  By definition of
+; ev+ and the Clock Lemma, both (ev+ u a_E A c) and (ev_L u a_L c) first
+; evaluate each ti with respect to successively smaller clock arguments.  By
+; the inductive hypothesis, these evaluations yield values (mv nil xi ci) and
+; (mv nil yi ci) for the same ci and for xi and yi that E-correspond with
+; respect to A and the (nth ith s-out).  Note that these error indicators are
+; nil, and also ck > 0, by the assumption of (a) that erp = nil.  Now form
+; alists b_E and b_L that bind each formal vi of f to xi and yi, respectively;
+; these alists are E-corresponding with respect to A since xi and yi are
+; E-corresponding with respect to A and (nth i s-out).  Let g be the guard of
+; f.  By the inductive hypothesis then since ck <= c by the Clock Lemma, we
+; have (ev+ g b_E A (1- ck)) = (ev_L g b_L (1- ck)).  (We are using the fact
+; that E-correspondence reduces to equality for non-stobj values, and guards
+; have stobjs-out = (nil).)  As above, since erp = nil then this common value
+; has a nil error indicator.  So we may assume the following for some val_g and
+; cg.
 
-; We are ready for our main theorem about evaluation.
+; (1)     (ev+ g b_E A (1- ck)) = (ev_L g b_L (1- ck)) = (mv nil val_g cg)
+;         where val_g is non-nil and cg < c
 
-; Theorem: Evaluation Preserves Correspondence (narrow version).  Fix an ACL2
-; world w.  Assume that the alist a_E E-corresponds to the alist a_L, let u be
-; a term of w, and let error indicators and return values be defined as
-; follows.
+; If f is not an abstract stobj primitive, then the ev+ and ev_L calls in (1)
+; reduce to corresponding calls of the body of f with clock cg < c, so we are
+; done by the inductive hypothesis.  So suppose f is an abstract stobj
+; primitive.  Let s0 be the most-recently introduced abstract stobj in A.  If f
+; is a primitive for other than s0, then by replacing A with the removal of s0
+; from A, we are done by Lemma 3 and the inductive hypothesis.
 
-;   (mv erp_E r_E) = (ev_E u a_E)
-;   (mv erp_L r_L) = (ev_L u a_L).
+; We are left with the case that f is an abstract stobj primitive for s0, which
+; is the most recently introduced abstract stobj name in A.  Assume that some
+; formal vi of f is s0; otherwise the argument is similar but a bit simpler.
+; So we may represent the formals of f as (v1 ... s0 ... vk), indicating that
+; vi is s0.  For notational simplicity we consider only the case that the
+; stobjs-out of f is the one-element list (s0); the general case presents no
+; new difficulties, in particular by considering each specific position's
+; result.  Let s0$c be the foundation for s0.
 
-; Then erp_E = erp_L and r_E E-corresponds to r_L.
+; The next observation is justified by the following excerpt taken from :DOC
+; defabsstobj: "The formals of f are obtained by taking the formals of f$c and
+; replacing st$c by st."
 
-; Proof.  We induct on the number of abstract stobjs in w.  The base case,
-; where there are no abstract stobjs, is essentially trivial by computational
-; induction, since if there are no abstract stobjs then E-correspondence of a_E
-; and a_L implies their equality, and the evaluators ev_L and ev_E are the
-; same.  The only thing to check, for E-correspondence of the identical
-; results, is that stobj recognizers all hold on stobjs in the result.  We take
-; this as obvious due to the single-threadedness restrictions imposed by ACL2.
+; (2)     The variable s0$c is not a formal of f.
 
-; So assume that w defines at least one abstract stobj, and let s0 be the
-; abstract stobj introduced last in w.  Let w2 be the initial segment of w
-; consisting of all events preceding the introduction of s0; so by the
-; inductive hypothesis, the theorem holds for w2.
+; Let
 
-; We now proceed by computational (sub-)induction on (ev_L u a_L).  The result
-; is obvious if u is a variable or a quoted constant.  Suppose then that u is
-; (f t1 ... tk). Let (v1 ... vk) be the formals of f.  By definition of ev+,
-; both (ev_E u a_E) and (ev_L u a_L) first evaluate each ti, which by the
-; computational inductive hypothesis yield respectively the pairs (mv ei xi)
-; and (mv ei yi) for the same ei and E-corresponding xi and yi.  If any ei is
-; t, then (ev_E u a_E) = (mv t xi) and (ev_L u a_L) = (mv t yi) and we are done
-; by the (computational) inductive hypothesis; so assume that each ei is nil.
-; Now form alists b_E and b_L that bind each formal vi of f to xi and yi,
-; respectively; these alists are E-corresponding since (as noted above) xi and
-; yi are E-corresponding.  Let g be the guard of f.  By the computational
-; inductive hypothesis, (ev_E g b_E) = (ev_L g b_L).  If this common value has
-; a non-nil error indicator, or if it is (mv nil nil), then (ev_E u a_E) = (mv
-; t a_E') and (ev_L u a_L) = (mv t a_L'), where a_E' and a_L' are the
-; respective restrictions of a_E and a_L to stobj names.  Now a_E' and a_L'
-; E-correspond because a_E and a_L E-correspond (by hypothesis), which
-; concludes the proof in the case of a guard violation.  So we may assume the
-; following for some value, val_g.
+;         r_L = (f v1 ... vk) / b_L.
 
-; (1)     (ev_L g b_L) = (ev_E g b_E) = (mv nil val_g) and val_g is non-nil
+; Let f_E be the :EXEC function for f.  By the definitions of ev+ and ev_L and
+; using (1) we have the following, for some cg' and r_E.
 
-; If f is not a stobj primitive, then the desired conclusion is immediate from
-; the computational inductive hypothesis applied to corresponding evaluations
-; of the body of f.  If f is a concrete stobj primitive then we treat it
-; specially (see Exception 3 above) since using the body would violate guards
-; (in particular when recurring with nth on the cdr of the stobj to access a
-; field).  But we are assuming here that child fields are never abstract
-; stobjs; thus E-correspondence reduces to equality, and the conclusion is
-; immediate.
+; (3E)    (ev+ u a_E A c) = (mv nil r_E (1- cg))
+;               where (ev+ (f_E v1 ... vk) b_E A cg) = (mv nil r_E cg')
 
-; So assume that f is an s-primitive where s is an abstract stobj.  First
-; suppose that s is not s0.  The following equations hold by (1), Lemma 6, and
-; the definition of ev+.
+; (3L)    (ev_L u a_L c)  = (mv nil r_L (1- cg))
 
-;         (ev_E u a_E) = (ev_E (f v1 ... vk) b_E)
-;         (ev_L u a_L) = (ev_L (f v1 ... vk) b_L)
+; Recalling that (ev+ u a_E A c) = (mv erp r_E c') by hypothesis, we can state
+; our goal as follows.
 
-; Since we are in the case that s is not s0, therefore s0 is not among the
-; formals of f since f is defined in w2, before s0 is introduced.  The
-; conclusion follows immediately from Lemma 4 and the (top-level) inductive
-; hypothesis applied to w2.
+; (*)     r_E E-corresponds to r_L with respect to A and and s0.
 
-; We are left with the case that s is s0.  Assume that some formal vi of f is
-; s0; otherwise the argument is similar but a bit simpler.  So we represent the
-; formals of f as (v1 ... s0 ... vk).  For notational simplicity we consider
-; only the case that f returns a single value; the general case differs only by
-; considering each specific position's result.
+; Let s0$c be the foundational stobj name for s0 and make the following
+; definitions.
 
-; Let f_E be the :EXEC version of f and let s0$c be the foundational stobj for
-; s0.  Also let Corr0 be the correspondence predicate for s0, let s0_E =
-; b_E(s0), and let s0_L = b_L(s0).  Thus Corr0 holds of <s0_E,s0_L> since, as
-; noted above, b_E and b_L are E-corresponding (and thus s0_E E-corresponds to
-; s0_L with respect to s0).
+;         r0  = (f_E v1 ... s0 ... vk) / b_L
+;         s0_L = (assoc s0 b_L)
+;         s0_E = (assoc s0 b_E)
+;         b_L' = (acons s0$c s0_L b_L)
+;         b_E' = (acons s0$c s0_E b_E)
 
-; By (1) and Lemma 1, the following is a theorem.
+; By (2) we obtain the following from the definition of r_L.
 
-; (1')     g/Q(b_L) = (quote val_g).
+;         r_L = (f v1 ... s0 ... vk) / b_L'
 
-; Let g_E be the guard of f_E.  Let b_L' be the result of adding the pair
-; <s0$c,s0_E> to b_L; thus it is a theorem that g/Q(b_L') = (quote val_g) by
-; Lemma 5, since s$c does not occur free in g, because s$c is not a formal of
-; f.  (This observation is justified by the following excerpt taken from :doc
-; defabsstobj, which uses the name "f$c" where we use "f_E" in this Essay: "The
-; formals of f are obtained by taking the formals of f$c and replacing st$c by
-; st.")  By the GUARD-THM for s0, it is a theorem that (implies g g_E); by
-; instantiating this formula with Q(b_L'), then since Corr0 holds of
-; <b_L'(s0$c),b_L'(s0)> (because this is <s0_E,s0_L>), it is a theorem that
-; g_E/Q(b_L') != nil.  So by Lemma 1 (actually the converse noted after it) and
-; Lemma 2 (since f_E is guard-verified),
+; By (2) and the definition of r0, and since (assoc s0$c b_L') = (assoc s0
+; b_L),
 
-;         (ev_L g_E b_L') = (mv nil val_g_E) for some non-nil val_g_E.
+; (4)     r0 = (f_E v1 ... s0$c ... vk) / b_L'.
 
-; By this equation, (1), and Lemma 3, we have the following, for some val_f_E
-; and val_f.
+; Since s0 satisfies its abstract stobj recognizer (because b_L is A-proper),
+; then by the theorem f{CORRESPONDENCE} we conclude:
 
-; (2_E)   (ev_L (f_E v1 ... s0$c ... vk) b_L')  = (mv nil val_f_E)
-; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+;         r0 E-corresponds to r_L with respect to A and s0.
 
-; These equations and Lemma 1 together imply that the following are theorems,
-; where for (3_L) we first replace b_L by b_L' in (2_L), which is justified by
-; Lemma 5 since as observed above, s0$c is not a formal of f.
+; It remains then to show that r0 = r_E, since then (*) follows.
 
-; (3_E)   (f_E v1 ... s0$c ... vk)/Q(b_L') = val_f_E
-; (3_L)   (f   v1 ... s0   ... vk)/Q(b_L') = val_f
+; By Lemma 4 and (3E) we have
 
-; The following key fact then follows by instantiating the CORRESPONDENCE
-; theorem with Q(b_L'), where the hypotheses of that implication hold by the
-; fact that Corr0 holds of <b_L'(s0$c),b_L'(s0)> (as noted above) together with
-; (1'), and because b_L'(s0) satisfies the recognizer for s0 (since the
-; theorem's E-correspondence hypothesis implies that b_L is L-proper).
+;         (mv nil r_E cg') = (ev+ (f_E v1 ... s0$c ... vk) b_E' A cg)
 
-; (4)     The pair <val_f_E,val_f> satisfies Corr0 if f returns s0 (as per the
-;         stobjs-out of f), else val_f_E = val_f.
+; which by Lemma 3 implies the following, where A' is the result of removing s0
+; from A.
 
-; Let b_L'' be the result of removing the pair <s0,s0_L> from b_L' (but keeping
-; the pair <s0$c,s0_E>).  Thus we may modify equation (2_E) by substituting
-; b_L'' for b_L', justified by Lemma 5 since s0 is not a formal of f_E.
+; (5)     (mv nil r_E cg') = (ev+ (f_E v1 ... s0$c ... vk) b_E' A' cg).
 
-; (2_E')  (ev_L (f_E v1 ... s0$c ... vk) b_L'') = (mv nil val_f_E)
+; Now s0 is not in A', so E-correspondence with respect to A' and s0 is just
+; equality.  So by the inductive hypothesis and (5) we have
 
-; Note that this equation holds not only for the given world, w, but also for
-; w2, by Lemma 4.  Let b_E$c be the result of replacing <s0,s0_E> in b_E with
-; <s0$c,s0_E>.  Then since b_E E-corresponds to b_L, and since b_E$c and b_L''
-; modify these respectively by eliminating s0 from the domain and adding the
-; pair <s0$c,s0_E>, therefore b_E$c E-corresponds to b_L''.  (Note that the
-; common value of s0_E for s0$c in the two alists is appropriate for
-; E-correspondence because s0$c is a concrete stobj, as we are not yet handling
-; the general case where the foundational stobj may be an abstract stobj.
-; E-correspondence also requires that s0_E satisfy the recognizer for s0$c; but
-; that follows since as already noted, b_E E-corresponds to b_L, which by
-; definition of E-correspondence that implies that b_E is E-proper, which
-; implies that b_E(s0) satisfies the :EXEC recognizer for s0, i.e., that s0$c
-; satisfies the recognizer for s0$c.)
+;         (mv nil r_E cg') = (ev_L (f_E v1 ... s0$c ... vk) b_L' A' cg).
 
-; We next use the above deduction that b_E$c and b_L'' E-correspond, by
-; applying the top-level inductive hypothesis to w2.  That and equation (2_E')
-; together yield the following, for some val_f_E$c and val_f_E.
+; which by Lemma 1 implies
 
-; (5)     (ev_E (f_E v1 ... s0$c ... vk) b_E$c) = (mv nil val_f_E$c)
+;         r_E = (f_E v1 ... s0$c ... vk) / b_L'.
+
+; By (4) this yields r0 = r_E, which as noted above gives us (*).  This
+; concludes the proof of (a).
+
+; We now turn to the proof of (b) by induction on c, following cases in the
+; definition of (ev+ u a_E A c).  The intuition is that by (a), ev+ and ev_L
+; remain in lockstep as long as no error is encountered, and by the Clock Shift
+; Lemma, the clock for ev_L can be shifted.  So when finally ev+ encounters an
+; error, the clock-shifted call of ev_L will be made with a clock of 0 and thus
+; return an error as well.  Now we realize that intuition with a more detailed
+; proof.
+
+; If c = 0 then consider the two calls from the theorem statement, for ev+ and
+; ev_L.  These reduce, respectively to (mv t S(a_E) 0) and (mv t S(a_L) 0), and
+; the result follows immediately.  So suppose c > 0.  If u is a variable or
+; quoted constant then erp is nil, a contradiction.  So assume that u is (f t1
+; ... tk).
+
+; Let c0 = c0' = clock; and for each i from 1 to k, let j = i-1 and let
+
+; (6E)    (mv ei xi ci)    = (ev+ ti a_E A cj)
 ;         and
-;         val_f_E$c E-corresponds to val_f_E with respect to the stobj returned
-;         by f_E (or nil if f_E does not return a stobj).
+; (6L)    (mv ei' xi' ci') = (ev_L ti a_L cj').
 
-; This equation is equivalent to the following, since the two left-hand sides
-; both reduce to the call of ev_E on the body of f_E in an alist binding each
-; formal to its value in b_E -- in particular, binding the formal s0$c to s_E
-; in both cases (as s0 is in the s0$c position in (6)).
+; Moreover, if ei is nil for each i from 1 through k and ck > 0, then for
+; formals (v1 ... vk) of f and guard g of f: bind each vi to xi to create alist
+; a1, bind each vi to xi' to create alist a1', let P = k+1, and let
 
-; (6)     (ev_E (f_E v1 ... s0   ... vk) b_E)   = (mv nil val_f_E$c)
+; (7E)    (mv eP xP cP) = (ev+ g a1 A (1- ck))
+;         and
+; (7L)    (mv eP' xP' cP') = (ev_L g a1' (1- ck')).
 
-; Recall the following equation.
+; Let N be the least i <= k+1 such that ei is non-nil if there is such i;
+; otherwise let N = k+1, i.e., N = P.  Then the following holds by the Clock
+; Lemma, (a), (6E), (6L), (7E), and (7L).
 
-; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+; (8)     ci' = ci and ei' = ei for all i < N,
+;         and also for i = k+1 (= P) if each ei is nil for i <= k+1;
+;         and,
+;         each of the clock sequences ci and ci' (i <= N) strictly decreases.
 
-; The proof concludes by (2_L) and (6) if we show that val_f_E$c E-corresponds
-; to val_f with respect to the stobjs-out returned by f.  More precisely, let s
-; be the car of the stobjs-out of f (which for simplicity we have assumed to be
-; a one-element list); think of s as the "type" of f.  We show that val_f_E$c
-; E-corresponds to val_f with respect to s.  To see this we will split into
-; three cases.  But first we present two Claims.
+; We next consider some calls of ev_L.  By applying the Clock Shift Lemma to
+; (6L) and using (8), we establish the following.
 
-; Claim 1: Assume that s is a stobj name; then val_f satisfies the :LOGIC
-; recognizer for s.  To prove this we consider two cases.  For the case that s
-; is s0 this follows from (2_L) and the PRESERVATION theorem (with the use of
-; Lemma 1 to trade theoremhood with evaluation, as usual).  So suppose that s
-; is not s0.  By (4), val_f_E = val_f.  So by (5), val_f_E$c E-corresponds to
-; val_f with respect to s.  By definition of E-corresponds, val_f satisfies the
-; :LOGIC recognizer for s.
+; (9)     For all positive i < N with j = i-1, and all natural numbers d <= cN,
+;         (ev_L ti a_L (- cj d)) = (mv nil xi' (- ci d));
 
-; Claim 2. Assume that s is an abstract stobj name; then val_f_E$c satisfies
-; the :EXEC recognizer for s.  This is clear from (5).
+; We now break into various cases according to the definition of ev+.
 
-; We return to showing that val_f_E$c E-corresponds to val_f with respect to s.
-; First suppose that s is s0, i.e., f returns s0.  Then f_E returns s0$c, which
-; is not an abstract stobj, and thus val_f_E$c = val_f_E by (5): val_f_E$c was
-; chosen to E-correspond to val_f_E with respect to the stobj returned by f_E,
-; which is the concrete stobj, s0$c.  Now <val_f_E,val_f> satisfies Corr0 by
-; (4), so substituting equals for equals we see that <val_f_E$c,val_f>
-; satisfies Corr0.  This implies that val_f_E$c E-corresponds to val_f by
-; Claims 1 and 2.
+; First suppose that some ei is non-nil for i from 1 through k; thus eN = t (by
+; the Error Lemma).  Let M = N-1.  We next consider some calls of ev+.  By
+; definition of ev+ and (6E) and since ei = nil for all i < N and eN = t, we
+; have that xN = r_E and
 
-; Next suppose that s is an abstract stobj other than s0.  Then val_f_E = val_f
-; by (4), and val_f_E$c E-corresponds to val_f_E by (5).  Therefore val_f_E$c
-; E-corresponds to val_f.
+; (10)    (ev+ u a_E A c) = (ev+ tN a_E A cM) = (mv t r_E cN).
 
-; The final case is that s is not an abstract stobj.  Then val_f_E = val_f by
-; (4) and val_f_E$c = val_f_E by (5), so val_f_E$c E-corresponds to val_f with
-; respect to s by Claims 1 and 2.  -|
+; By (10) and applying the inductive hypothesis to cM (evaluating tN), there
+; exists r_L such that
 
-; We now address the general case, in which the foundational stobj may itself
+; (11)    (ev_L tN a_L (- cM cN)) = (mv t r_L 0) 
+;         where r_E E-corresponds to r_L with respect to A.
+
+; By (9) and (11) and the definition of ev_L (and ev+), we have that r_L is
+; xN' and
+
+; (12)    (ev_L u a_L (- c cN)) = (ev_L tN a_L (- cM cN)) = (mv t r_L 0)
+;         where r_E E-corresponds to r_L with respect to A.
+
+; The result follows from (10) and (12), and this completes the proof in the
+; case that some ei for i <= k is non-nil.
+
+; So assume ei is nil for each i from 1 through k.  Thus N = P = k+1.  We
+; continue according to cases in the definition of ev+.
+
+; First suppose ck = 0.  Then by (8), ck' = 0.  So (ev+ u a_E A c) = (mv t
+; S(a_E) 0) and (ev_L u a_L c) = (mv t S(a_L) 0), and the result follows.
+
+; So assume ck > 0.  Let g be the guard of f.  First consider the case that eP
+; = t.  By (7E) and the inductive hypothesis, (ev_L g a1' (- (1- ck) cP)) = (mv
+; t xg' 0) for some xg'.  Trivially, then, (ev_L g a1' (1- (- ck cP))) = (mv t
+; xg' 0).  So by definition of ev_L (and ev+), (9), and the Clock Lemma (which
+; tells us that cP < cN), (ev_L u a_L (- c cP)) = (mv t S(a_L) 0), and the
+; result follows.
+
+; Next consider the case that xP = nil.  Then (ev+ u a_E A c) = (mv t S(a_E)
+; 0).  By (a) we have eP' = nil, xP' = xP, and cP' = cP, so (ev_L u a_L c) =
+; (mv t S(a_L) 0), and the result follows.
+
+; At this point we have eP = nil and xP is not nil.  Note that ck' = ck by (6E)
+; (6L), and (a), and thus cP' = cP by (7E), (7L) and (a).  So we have
+
+; (13)    (ev_L g a1' ck) = (mv nil xP cP).
+
+; First suppose that f is not a primitive for an abstract stobj.  Let b be
+; the (unnormalized) body of f.  Let
+
+;         (mv e_E x_E c_E) = (ev+ b a1 A cP)
+;         and
+;         (mv e_L x_L c_L) = (ev+ b a1' (- cP c_E))
+
+; Then e_E = t (by definition of ev+, since erp = t) so by the inductive
+; hypothesis, e_L = t, x_E E-corresponds to x_L with respect to A, and c_L = 0.
+; It follows by the definitions of ev+ and ev_L, and applying the Clock Shift
+; Lemma as above, that
+
+;         (ev+ u a_E A c) = (mv t X(a_E,x_E) c_E)
+;         and
+;         (ev_L u a_L (- c c_E)) = (mv t X(a_L,x_L) 0)
+
+; and since a_E E-corresponds to a_L (by hypothesis) and x_E E-corresponds to
+; x_L, the result follows.
+
+; Finally assume that f is a primitive for some abstract stobj, s0.  By
+; continuing to follow the definition of ev+ (and ev_L), we see that
+
+; (14)    (ev+ u a_E A c) = (mv t S(a_E) cP).
+
+; By (13) and the Clock Shift Lemma we have
+
+;         (ev_L g a1' (- (1- ck) cP)) = (mv nil xP (- cP cP));
+
+; and this equation and (9) unwind the definition of (ev_L u a_L (- c cP)) down
+; to (mv t S(a_L) 0), which with (14) concludes the proof. -|
+
+; We now consider the general case, in which the foundational stobj may itself
 ; be an abstract stobj, and both abstract and concrete stobjs may have stobj
 ; fields (scalar or not), which may themselves be abstract or concrete.  The
-; key is to update the notion of E-correspondence to a notion of
+; key is to generalize the notion of E-correspondence to a notion of
 ; E*-correspondence, so that every logical object is in inverse
 ; E*-correspondence with the stobj object that is actually used by ACL2
 ; evaluation.  Informally: The stobj object used by evaluation is obtained from
@@ -21495,9 +21778,7 @@
 
 ; - If s is a concrete stobj, then its :EXEC* recognizer is obtained by
 ;   modifying the definition of its :EXEC recognizer to use the :EXEC*
-;   recognizer for each child stobj field (scalar, array, or hash-table).
-
-; -|
+;   recognizer for each child stobj field (scalar, array, or hash-table). -|
 
 ; Notice that if s is a concrete stobj that has no abstract stobj child, no
 ; abstract stobj child of a stobj child, etc. -- that is, if no chain of
@@ -21543,149 +21824,139 @@
 ; recursively have that property as well (i.e., child stobjs are all concrete,
 ; their child stobjs are all concrete, etc.).
 
-; Finally, we adapt the narrow version of the Evaluation Preserves
-; Correspondence theorem and its proof, this time removing the restrictions
-; that abstract stobjs have concrete foundational stobjs and child stobjs are
-; concrete stobjs.  Thus, we will replace the notion of E-correspondence by the
-; notion of E*-correspondence.  Uses of "as before" below are references to the
-; proof of the narrow version.
+; Finally, we remove the restrictions that abstract stobjs have concrete
+; foundational stobjs and child stobjs are concrete stobjs.  Thus, we will
+; replace the notion of E-correspondence by the notion of E*-correspondence.
+; Uses of "as before" below are references to the proof of the limited version
+; (i.e., the version for E-correspondence).
 
-; Theorem: Evaluation Preserves Correspondence (general version).  Fix an ACL2
-; world w.  Assume that the alist a_E E*-corresponds to the alist a_L, let u be
-; a term of w, and let error indicators and return values be defined as
-; follows.
+; Theorem (Evaluation Preserves E*-Correspondence).  Fix an ACL2 world w.
+; Assume that the alist a_E E*-corresponds to the alist a_L, let u be a term of
+; w, and let error indicators and return values be defined as follows.
 
 ;   (mv erp_E r_E) = (ev_E u a_E)
 ;   (mv erp_L r_L) = (ev_L u a_L).
 
 ; Then erp_E = erp_L and r_E E*-corresponds to r_L.
 
-; Proof.  As before, we induct on the number of abstract stobjs in w.  The
-; proof for the base case (no abstract stobjs) carries over directly from
-; before.
+; Proof Remark.  We believe that a proof can be given here that naturally
+; extends the proof of the limited version, i.e., of the theorem that
+; Evaluation Preserves E-Correspondence.  We may work out the proof for
+; E*-correspondence and present it here in the future. -|
 
-; Also as before: Let s0 be the abstract stobj introduced last in w, let w2 be
-; the initial segment of w consisting of all events preceding the introduction
-; of s0, assume the inductive hypothesis so that the theorem holds for w2.
+; -- Part 3: The Evaluation Invariant --
 
-; We continue as before by computational (sub-)induction, reducing to the
-; following case: u is (f t1 ... tk); for each i, (ev_E ti a_E) = (mv nil xi)
-; and (ev_L ti a_L) = (mv nil yi) for E*-corresponding xi and yi; b_E and b_L
-; are the E*-corresponding alists that bind each formal vi of f to xi or yi,
-; respectively, and for some val_g the following holds where g is the guard of
-; f.
+; We conclude this Essay by introducing a notion of global E*-correspondence
+; and showing that it is a state invariant, even in the presence of
+; attachments.
 
-; (1)     (ev_L g b_L) = (ev_E g b_E) = (mv nil val_g) and val_g is non-nil
+; The Evaluation Preserves E*-Correspondence Theorem tells us that evaluation
+; preserves a suitable correspondence, E*-correspondence, which connects the
+; :EXEC and :LOGIC versions of abstract stobjs.  So it may seem obvious that we
+; can apply this theorem repeatedly so conclude that E*-correspondence can be
+; viewed as an invariant on ACL2 states.
 
-; We conclude as before if f is not a stobj primitive, applying the
-; computational inductive hypothesis to the body.
+; However, this invariant can be destroyed by the use of defattach events
+; between successive evaluations.  See the community book,
+; system/tests/stobj-attach-unsoundness.lisp, for several examples that
+; illustrate this problem by providing proofs of nil in ACL2 Version_8.6.
 
-; If f is a concrete stobj primitive then the conclusion follows from the
-; definition of E*-correspondence.  For example, suppose f is an updater for
-; concrete stobj st; say, the input term is (update-fld t1 st), where (ev_E t1
-; a_E) = (mv nil x1) and (ev_L t1 a_L) = (mv nil y1) for E*-corresponding x1
-; and y1.  Let s_E and s_L be the values of s in a_E and a_L, respectively.
-; Let s_E' and s_L' be the results of respectively updating the given field
-; (fld) of s_E and s_L with x1 and y1.  Then (ev_E u a_E) = (mv nil s_E') and
-; (ev_L u a_L) = (mv nil s_L').  Since x1 and y1 E*-correspond, then by
-; definitions of E*-correspondence and :EXEC* recognizer and the
-; E*-correspondence of s_E and s_L (by E*-correspondence of a_E and a_L), s_E'
-; E*-corresponds to S_L'.
+; In this final Part of the Essay, we first introduce global alists that are
+; intended to satisfy the E*-correspondence invariant.  Then we explain how
+; certain restrictions on defabsstobj, introduced after Version_8.6, ensure
+; that this invariant is preserved.
 
-; The case that f is an abstract stobj primitive for a stobj s other than s0 is
-; handled just as before.  So as before we consider the case that f is an
-; s0-primitive returning a single value, with formals (v1 ... s0 ... vk), with
-; :EXEC version f_E and where s0$c is the foundational stobj for s0.
+; We thank Sol Swords for providing examples of the unsoundness mentioned
+; above, together with corresponding code to fix such unsoundness as well as
+; key ideas for the arguments below.
 
-; As before, let s0_E = b_E(s0) and let s0_L = b_L(s0).  Since b_E
-; E*-corresponds to b_L, then s0_E E*-corresponds to s0_L.  So by definition of
-; E*-correspondence, there exists z such that the pair <z,s0_L> satisfies the
-; correspondence predicate Corr0 for s0 and s0_E E*-corresponds to z with
-; respect to s0$c.
+; Definition.  We define alists E_global and L_global for an ACL2 state.  The
+; common domain of these alists is the ordered list of stobj names of that
+; state.  Both alists map each concrete stobj name to its value, but they
+; differ on their mapping of each abstract stobj name: to its :EXEC value for
+; E_global (as an ACL2 value, not an array, as always in this Essay) and to its
+; :LOGIC value for L_global. -|
 
-; The following is a theorem, by (1) and Lemma 1 as before.
+; Definition.  A function symbol or term is "strictly attachment-free" if
+; attachments are disallowed for each of its ancestors, including itself.  A
+; defabsstobj event or abstract stobj name is "strictly attachment-free" if the
+; :LOGIC and :EXEC functions of its primitives all attachment-free. -|
 
-; (1')     g/Q(b_L) = (quote val_g).
+; The next definition makes precise the notion that a pair of :EXEC and :LOGIC
+; values for an abstract stobj are in correspondence, by virtue of starting
+; with its initial :EXEC and :LOGIC stobjs and then making corresponding :EXEC
+; and :LOGIC updates to arrive at the given pair of values.
 
-; Let g_E be the guard of f_E.  Let b_L' be the result of adding the pair
-; <s0$c,z> to b_L; thus (as before) it is a theorem that g/Q(b_L') = (quote
-; val_g) by Lemma 5, since s$c does not occur free in g.  By the GUARD-THM for
-; s0, it is a theorem that (implies g g_E); by instantiating this formula with
-; Q(b_L'), then since Corr0 holds of <b_L'(s0$c),b_L'(s0)> (because this is
-; <z,s0_L>), it is a theorem that g_E/Q(b_L') != nil.  Then as before, the
-; following hold for some val_f_E.
+; Definition.  For an abstract stobj st, the "canonical correspondence function
+; for st", corr(x1,x2), is defined (using defun-sk) to assert that there are
+; finite sequences s1 and s2 of common length L>0 with the following
+; properties.
 
-; (2_E)   (ev_L (f_E v1 ... s0$c ... vk) b_L')  = (mv nil val_f_E)
-; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
+; (a) s1(0) and s2(0) are the results of applying the :EXEC and :LOGIC creators
+;     of st, respectively.
 
-; So as before, the following are theorems.
+; (b) s1(L-1) = x1 and s2(L-1) = x2.
 
-; (3_E)   (f_E v1 ... s0$c ... vk)/Q(b_L') = val_f_E
-; (3_L)   (f   v1 ... s0   ... vk)/Q(b_L') = val_f
+; (c) For all i < L, the :LOGIC recognizer of st holds of s2(i).
 
-; The following key fact then follows by instantiating the CORRESPONDENCE
-; theorem with Q(b_L') as before.
+; (d) For all 0<i<L there is an export f of st with :EXEC function f1 and
+;     :LOGIC function f2, where f returns st and f takes st in argument
+;     position j, such that s1(i) and s2(i) are respectively well-guarded
+;     applications of f1 and f2 to common arguments except at position j, where
+;     f1 is applied to s1(i-1) and f2 is applied to s2(i-1). -|
 
-; (4)     The pair <val_f_E,val_f> satisfies Corr0 if f returns s0 (as per the
-;         stobjs-out of f), else val_f_E = val_f.
+; Definition. Given a world w, let C(w) be the result of replacing every
+; strictly attachment-free defabsstobj event E by preceding it with the
+; definition of its canonical correspondence function, corr (defined using only
+; function symbols that are new names with respect to w) and then modifying E
+; by replacing its :CORR-FN argument by corr. -|
 
-; Let b_L'' be the result of removing the pair <s0,s0_L> from b_L' (but keeping
-; the pair <s0$c,z>).  As before, we have the following.
+; Proposition.  For an abstract stobj st in a world w, the canonical
+; correspondence function for st can serve as its :CORR-FN argument in C(w).
+; Thus C(w) is also a world.
 
-; (2_E')  (ev_L (f_E v1 ... s0$c ... vk) b_L'') = (mv nil val_f_E)
+; Proof.  Let st$ap be the :LOGIC recognizer for st.  It's easy to see by
+; induction on L, and by applying the correspondence and preserved lemmas for
+; functions f as in (d) above and when C is the value of :CORR-FN in the
+; defabsstobj event for st, that the formulas (implies (corr x1 x2) (st$ap x2))
+; and (implies (corr x1 x2) (C x1 x2)) are provable in C(w).  It then follows
+; that the correspondence and guard-thm lemmas for corr are provable in
+; C(w). -|
 
-; As before, Lemma 4 tells us that this equation holds for w2.  Let b_E$c be
-; (as before) the result of replacing <s0,s0_E> in b_E with <s0$c,s0_E>.  We
-; claim that b_E$c E*-corresponds to b_L''.  Since we have already assumed that
-; b_E E*-corresponds to b_L, and since the alists b_E$c and b_L'' are derived
-; respectively from b_E and b_L by mapping s0$c, in place of s0, to s0_E and z
-; respectively, then this claim follows from our choice of z, that s0_E
-; E*-corresponds to z with respect to s0$c.
+; Proposition.  Suppose that an abstract stobj st is strictly attachment-free.
+; Then the canonical correspondence function for st is strictly
+; attachment-free.
 
-; By the claim just above that b_E$c and b_L'' E*-correspond, together with
-; the top-level inductive hypothesis applied to w2 and the choice of val_f_E in
-; (2_E'), we obtain the following for some val_f_E$c.
+; Proof.  This is clear since the canonical correspondence function for st is
+; defined using only the :LOGIC and :EXEC functions of primitives of st. -|
 
-; (5)     (ev_E (f_E v1 ... s0$c ... vk) b_E$c) = (mv nil val_f_E$c)
-;         and
-;         val_f_E$c E*-corresponds to val_f_E with respect to the stobj
-;         returned by f_E (or nil if f_E does not return a stobj).
+; Proposition. For every world w and every defabsstobj event E of C(w), the
+; :CORR-FN of E is strictly attachment-free.
 
-; As before, (5) implies the following (essentially because we are doing a
-; simple renaming here).
+; Proof.  This is guaranteed by the implementation as follows, for a proposed
+; defabsstobj event E0 and corresponding event E of C(w).  We consider two
+; cases.  If E0 is strictly attachment-free, then the preceding proposition
+; guarantees that the :CORR-FN of C(w) is strictly attachment-free.  Otherwise
+; the implementation insists that the :CORR-FN of E0, which is the :CORR-FN of
+; E in C(w), is a strictly attachment-free function. -|
 
-; (6)     (ev_E (f_E v1 ... s0   ... vk) b_E)   = (mv nil val_f_E$c)
-
-; Recall the following equation.
-
-; (2_L)   (ev_L (f   v1 ... s0   ... vk) b_L)   = (mv nil val_f)
-
-; As before, the proof concludes by (2_L) and (6) if we show that val_f_E$c
-; E*-corresponds to val_f with respect to s, where: s is the stobj returned by
-; f if any, else nil.  We first state and prove two Claims, as before.
-
-; Claim 1: For s a stobj name, val_f satisfies the :LOGIC recognizer for s.
-; This claim holds just as before, by applying (2_L).
-
-; Claim 2. For s a stobj name, val_f_E$c satisfies the :EXEC* recognizer for s.
-; This is clear from (5).
-
-; To complete the proof that val_f_E$c E*-corresponds to val_f with respect to
-; s, first suppose that s is s0, i.e., f returns s0.  Then f_E returns s0$c, so
-; val_f_E$c E*-corresponds to val_f_E with respect to s0$c by (5).  Also,
-; <val_f_E,val_f> satisfies Corr0 by (4).  Thus val_f_E$c E*-corresponds to
-; val_f, by Claims 1 and 2 and the definition of E*-corresponds (val_f_E serves
-; as the required value, z).
-
-; Next suppose that s is an abstract stobj other than s0.  Then val_f_E = val_f
-; by (4), and since f_E returns s, val_f_E$c E*-corresponds to val_f_E with
-; respect to s by (5).  Therefore val_f_E$c E*-corresponds to val_f with
-; respect to s.
-
-; The final case is that s is not an abstract stobj.  Then val_f_E = val_f by
-; (4) and since f_E returns s (i.e., not a stobj if s is nil), then val_f_E$c
-; E*-corresponds to val_f_E with respect to s by (5).  So val_f_E$c
-; E*-corresponds to val_f.  -|
+; Our state invariant is that E_global E*-corresponds to L_global, where
+; E*-correspondence is with respect to the :CORR-FN functions of C(w), where w
+; is the current world.  So consider an arbitrary evaluation, to show that it
+; preserves this invariant.  This evaluation can be viewed as taking place in
+; the evaluation theory of w, or alternatively, in the theory of a world A(w)
+; produced by applying the Evaluation History Theorem in the Essay on
+; Defattach.  Any evaluation in A(w) is an evaluation in C(A(w)) with the same
+; result, since changing correspondence functions doesn't change the
+; evaluation.  Now evaluation updates the alists E_global and L_global
+; according to the results of evaluating with respect to using those alists as
+; a_E and a_L, respectively, in the Evaluation Preserves E*-Correspondence
+; theorem.  By that theorem, E*-correspondence holds in C(A(w)) for those
+; updated E_global and L_global alists.  But :CORR-FN functions in C(w) are
+; strictly attachment-free, so the sub-world w' generated by those functions is
+; the same in C(w) as in C(A(w)).  So by conservativity, E*-correspondence
+; holds in w'.  But w' is contained in C(w), so by conservativity,
+; E*-correspondence holds is C(w).
 
 ; End of Essay on the Correctness of Abstract Stobjs
 
@@ -22336,11 +22607,12 @@
          (keyword-lst (cdr field)))
     (cond
      ((not (and (symbolp name)
-                (keyword-value-listp keyword-lst)))
+                (keyword-value-listp keyword-lst)
+                (symbol-listp (odds keyword-lst))))
       (er-cmp ctx
               "Each field of a DEFABSSTOBJ event must be a symbol or a list ~
-               of the form (symbol :KWD1 val1 :KWD2 val2 ...), but the field ~
-               ~x0 is not of this form.  ~@1"
+               of the form (symbol :KWD1 val1 :KWD2 val2 ...) where each vali ~
+               is a symbol, but the field ~x0 is not of this form.  ~@1"
               field0 see-doc))
      (t
       (mv-let
@@ -22390,8 +22662,7 @@
                 (er-cmp ctx
                         "Duplicate keyword~#0~[~/s~] ~&0 found in field ~x1.~|~@2"
                         (duplicates (evens keyword-lst)) field0 see-doc))
-               ((not (and (symbolp exec)
-                          (function-symbolp exec wrld)))
+               ((not (function-symbolp exec wrld))
                 (er-cmp ctx
                         "The :EXEC field ~x0, specified~#1~[~/ (implicitly)~] ~
                          for ~#2~[defabsstobj :RECOGNIZER~/defabsstobj ~
@@ -22489,8 +22760,7 @@
                                          ":EXEC field is required"))
                                   type
                                   see-doc))
-                         ((not (and (symbolp logic)
-                                    (function-symbolp logic wrld)))
+                         ((not (function-symbolp logic wrld))
                           (er-cmp ctx
                                   "The :LOGIC field ~x0, specified~#1~[~/ ~
                                    (implicitly)~] for ~#2~[defabsstobj ~
@@ -22736,7 +23006,7 @@
 
 (defun one-way-unify-p (pat term)
 
-; Returns true when term2 is an instance of term1.
+; Returns true when term is an instance of pat.
 
   (or (equal pat term) ; optimization
       (mv-let (ans unify-subst)

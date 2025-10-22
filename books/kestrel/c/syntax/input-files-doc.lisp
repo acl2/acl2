@@ -53,12 +53,14 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; required"
+     "(input-files :files             ...  ; required, no default"
      "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
-     "             :const             ...  ; required"
+     "             :const             ...  ; required, no default"
+     "             :keep-going        ...  ; default nil"
+     "             :std               ...  ; default 17"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -72,14 +74,15 @@
    (xdoc::evmac-section-inputs
 
     (xdoc::desc
-     "@(':files')"
+     "@(':files') &mdash; required, no default"
      (xdoc::p
-      "List of one or more file paths that specify the files to be read.")
+      "Term evaluating to a list of one or more file paths
+       that specify the files to be read.")
+     (xdoc::p
+      "Each file path must be a string.")
      (xdoc::p
       "These paths are relative to
-       the path specified by the @(':path') input.")
-     (xdoc::p
-      "This input to this macro is not evaluated."))
+       the path specified by the @(':path') input."))
 
     (xdoc::desc
      "@(':path') &mdash; default @('\".\"')"
@@ -122,8 +125,8 @@
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "This must be either absent or a list of zero or more strings,
-       each of which is an argument to pass, e.g. @('-I').")
+      "If this is not absent, it must evaluate to a list of strings
+       or to an omap from strings to lists of strings.")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
        the @(':preprocess-args') input must be absent.")
@@ -135,8 +138,22 @@
      (xdoc::p
       "If @(':preprocess') is not @('nil'),
        and @(':preprocess-args') input is present,
-       the argument @('-E') is passed to the preprocessor,
-       followed by the arguments in the list, in that order.")
+       the behavior depends on whether
+       it evaluates to a string list or to an omap.
+       For each file, the argument @('-E') is passed to the preprocessor.
+       If @(':preprocess-args') is a string list,
+       this list of arguments is also passed to the preprocessor,
+       following the @('-E') argument.
+       If @(':preprocess-args') is an omap,
+       then we provide the list of arguments associated with the file name
+       (again, after the @('-E') argument).
+       If the file name is not in the key set,
+       only the @('-E') argument is provided.
+       If @(':preprocess-args') is @('nil'),
+       it is technically both a string list and
+       an omap from strings to string lists;
+       the behavior is the same under either interpretation:
+       only the argument @('-E') is provided for each file.")
      (xdoc::p
       "See the preprocessor documentation for information about
        the arguments mentioned above."))
@@ -188,33 +205,36 @@
        either the original or the preprocessed files."))
 
     (xdoc::desc
-     "@(':const')"
+     "@(':const') &mdash; required, no default"
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
        the result of processing (and possibly preprocessing)
        the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       whose translation unit is the result of the parser,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the parser,
        paired with the implementation environment
        determined by the inputs described below.
        Since the parser captures ambiguous constructs without resolving them,
        this representation may include ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':disambiguate'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       containing the result of the disambiguator,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the disambiguator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':validate'),
-       the value of the constant named by @(':const') is
-       a code ensemble (i.e. a value of type @(tsee code-ensemble)),
-       containing the result of the validator,
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the validator,
        paired with the implementation environment
        determined by the inputs described below.
        This representation has no ambiguous constructs
@@ -226,6 +246,29 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
+
+    (xdoc::desc
+     "@(':keep-going') &mdash; default @('nil')"
+     (xdoc::p
+      "Boolean flag saying whether to keep going after failing to input a file.
+       When @('t'), files which fail parsing, disambiguation, or validation
+       are dropped and the relevant error is printed.
+       Furthermore, at the end of each stage, if any file has failed,
+       then the fraction of successful files is also printed.")
+     (xdoc::p
+      "This flag is provided primarily for debugging purposes.
+       Successful validation of later files following the first failure
+       may be erroneous due to the inability to perform certain cross-checks
+       against the dropped files."))
+
+    (xdoc::desc
+     "@(':std') &mdash; default 17"
+     (xdoc::p
+      "Either 17 or 23 saying which C standard should be used,
+       namely C17 or C23.")
+     (xdoc::p
+      "Currently support for C23 is very limited,
+       but it is being extended."))
 
     (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
@@ -276,6 +319,7 @@
 
     (xdoc::p
      "Together, the inputs
+      @(':std'),
       @(':gcc'),
       @(':short-bytes'),
       @(':int-bytes'),
@@ -300,4 +344,9 @@
        the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")))))
+       (if @(':preprocess') is not @('nil')).")
+     (xdoc::p
+      "This constant can be passed to @(tsee output-files)
+       or to some "
+      (xdoc::seetopic "c2c::transformation-tools" "transformation")
+      ".")))))

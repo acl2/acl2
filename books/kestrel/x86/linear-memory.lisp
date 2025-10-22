@@ -32,7 +32,7 @@
   (implies (not (equal :mem fld))
            (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d (rb-1) ()))))
+  :hints (("Goal" :in-theory (enable rb-1))))
 
 (defthm mv-nth-1-of-rb-1-of-xw
   (implies (not (equal :mem fld))

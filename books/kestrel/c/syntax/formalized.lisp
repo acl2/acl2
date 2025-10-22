@@ -11,6 +11,9 @@
 (in-package "C$")
 
 (include-book "unambiguity")
+(include-book "purity")
+
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -338,7 +341,10 @@
            :predec nil
            :postinc nil
            :postdec nil
-           :sizeof nil)
+           :sizeof nil
+           :real nil
+           :imag nil)
+   :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
@@ -361,6 +367,7 @@
    :cast/add-ambig (impossible)
    :cast/sub-ambig (impossible)
    :cast/and-ambig (impossible)
+   :cast/logand-ambig (impossible)
    :stmt nil
    :tycompat nil
    :offsetof nil
@@ -392,7 +399,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-call).
+    "These are the call expressions supported by @(tsee c::exec-expr).
      The expression must be a function call,
      the function sub-expression must be an identifier,
      and the arguments must be supported pure expressions."))
@@ -412,7 +419,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the expressions supported by @(tsee c::exec-expr-asg).
+    "These are the assignment expressions supported by @(tsee c::exec-expr).
      The expression must be a simple assignment expression.
      The sub-expressions must have formal dynamic semantics.
      The left expression must be pure.
@@ -424,9 +431,121 @@
        (if (expr-case (expr-binary->arg1 expr) :ident)
            (and (ident-formalp (expr-ident->ident (expr-binary->arg1 expr)))
                 (or (expr-pure-formalp (expr-binary->arg2 expr))
-                    (expr-call-formalp (expr-binary->arg2 expr))))
+                    (expr-call-formalp (expr-binary->arg2 expr))
+                    (expr-asg-formalp (expr-binary->arg2 expr))))
          (and (expr-pure-formalp (expr-binary->arg1 expr))
               (expr-pure-formalp (expr-binary->arg2 expr)))))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-formalp ((expr exprp))
+  :guard (expr-unambp expr)
+  :returns (yes/no booleanp)
+  :short "Check if an expression has a formal dynamic semantics."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expressions not supported by @(tsee ldm-expr)
+     are not supported here either.
+     The remaining expressions are supported or not
+     according to @(tsee c::exec-expr)
+     and the specialized functions it calls (e.g. @(tsee c::exec-arrsub))."))
+  (expr-case
+   expr
+   :ident (ident-formalp expr.ident)
+   :const (const-formalp expr.const)
+   :string nil
+   :paren (expr-formalp expr.inner)
+   :gensel nil
+   :arrsub (and (expr-formalp expr.arg1)
+                (expr-formalp expr.arg2)
+                (expr-purep expr.arg1)
+                (expr-purep expr.arg2))
+   :funcall (and (expr-case expr.fun :ident)
+                 (ident-formalp (expr-ident->ident expr.fun))
+                 (expr-list-pure-formalp expr.args))
+   :member (and (expr-formalp expr.arg)
+                (expr-purep expr.arg)
+                (ident-formalp expr.name))
+   :memberp (and (expr-formalp expr.arg)
+                 (expr-purep expr.arg)
+                 (ident-formalp expr.name))
+   :complit nil
+   :unary (unop-case
+           expr.op
+           :address (and (expr-formalp expr.arg)
+                         (expr-purep expr.arg))
+           :indir (and (expr-pure-formalp expr.arg)
+                       (expr-purep expr.arg))
+           :plus (and (expr-formalp expr.arg)
+                      (expr-purep expr.arg))
+           :minus (and (expr-formalp expr.arg)
+                       (expr-purep expr.arg))
+           :bitnot (and (expr-formalp expr.arg)
+                        (expr-purep expr.arg))
+           :lognot (and (expr-formalp expr.arg)
+                        (expr-purep expr.arg))
+           :preinc nil
+           :predec nil
+           :postinc nil
+           :postdec nil
+           :sizeof nil
+           :real nil
+           :imag nil)
+   :label-addr nil
+   :sizeof nil
+   :sizeof-ambig (impossible)
+   :alignof nil
+   :cast (and (tyname-formalp expr.type)
+              (expr-formalp expr.arg)
+              (expr-purep expr.arg))
+   :binary (cond
+            ((member-eq (binop-kind expr.op)
+                        '(:mul :div :rem :add :sub :shl :shr
+                          :lt :gt :le :ge :eq :ne
+                          :bitand :bitxor :bitior :logand :logor))
+             (and (expr-formalp expr.arg1)
+                  (expr-formalp expr.arg2)
+                  (expr-purep expr.arg1)
+                  (expr-purep expr.arg2)))
+            ((eq (binop-kind expr.op) :asg)
+             (and (expr-formalp expr.arg1)
+                  (expr-formalp expr.arg2)
+                  (or (and (expr-case expr.arg1 :ident)
+                           (or (expr-case expr.arg2 :funcall)
+                               (and (expr-case expr.arg2 :binary)
+                                    (binop-case (expr-binary->op expr.arg2)
+                                                :asg))))
+                      (and (expr-purep expr.arg1)
+                           (expr-purep expr.arg2)))))
+            (t nil))
+   :cond (and (expr-formalp expr.test)
+              (expr-option-case expr.then
+                                :some (expr-formalp expr.then.val)
+                                :none nil)
+              (expr-formalp expr.else)
+              (expr-purep expr.test)
+              (expr-option-case expr.then
+                                :some (expr-purep expr.then.val)
+                                :none nil)
+              (expr-purep expr.else))
+   :comma nil
+   :cast/call-ambig (impossible)
+   :cast/mul-ambig (impossible)
+   :cast/add-ambig (impossible)
+   :cast/sub-ambig (impossible)
+   :cast/and-ambig (impossible)
+   :cast/logand-ambig (impossible)
+   :stmt nil
+   :tycompat nil
+   :offsetof nil
+   :va-arg nil
+   :extension nil)
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -599,13 +718,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines stmts/blocks-formalp
-  :short "Chek if statements and blocks have formal dynamic semantics."
+(defines stmts-formalp
+  :short "Check if statements and related entities
+          have formal dynamic semantics."
 
   (define stmt-formalp ((stmt stmtp))
     :guard (stmt-unambp stmt)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a statement has formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -619,8 +739,9 @@
     (stmt-case
      stmt
      :labeled nil
-     :compound (block-item-list-formalp stmt.items)
+     :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
+               (expr-pure-formalp stmt.expr?)
                (expr-call-formalp stmt.expr?)
                (expr-asg-formalp stmt.expr?))
      :if (and (expr-pure-formalp stmt.test)
@@ -631,11 +752,13 @@
      :switch nil
      :while (and (expr-pure-formalp stmt.test)
                  (stmt-formalp stmt.body))
-     :dowhile nil
+     :dowhile (and (stmt-formalp stmt.body)
+                   (expr-pure-formalp stmt.test))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)
      :goto nil
+     :gotoe nil
      :continue nil
      :break nil
      :return (or (not stmt.expr?)
@@ -644,26 +767,36 @@
      :asm nil)
     :measure (stmt-count stmt))
 
+  (define comp-stmt-formalp ((cstmt comp-stmtp))
+    :guard (comp-stmt-unambp cstmt)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset stmts-formalp)
+    :short "Check if a compound statement has formal dynamic semantics."
+    (b* (((comp-stmt cstmt) cstmt))
+      (and (not cstmt.labels)
+           (block-item-list-formalp cstmt.items)))
+    :measure (comp-stmt-count cstmt))
+
   (define block-item-formalp ((item block-itemp))
     :guard (block-item-unambp item)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a block item has formal dynamic semantics."
     :long
     (xdoc::topstring
      (xdoc::p
-      "TODO"))
+      "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
-     :decl (decl-block-formalp item.unwrap)
-     :stmt (stmt-formalp item.unwrap)
+     :decl (decl-block-formalp item.decl)
+     :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
 
   (define block-item-list-formalp ((items block-item-listp))
     :guard (block-item-list-unambp items)
     :returns (yes/no booleanp)
-    :parents (formalized-subset stmts/blocks-formalp)
+    :parents (formalized-subset stmts-formalp)
     :short "Check if a list of block items have formal dynamic semantics."
     :long
     (xdoc::topstring
@@ -678,7 +811,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual stmts/blocks-formalp))
+  (fty::deffixequiv-mutual stmts-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -789,8 +922,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdeclor-formalp ((structdeclor structdeclorp))
-  :guard (structdeclor-unambp structdeclor)
+(define struct-declor-formalp ((structdeclor struct-declorp))
+  :guard (struct-declor-unambp structdeclor)
   :returns (yes/no booleanp)
   :short "Check if a structure declarator has formal dynamic semantics."
   :long
@@ -798,7 +931,7 @@
    (xdoc::p
     "The declarator must be present and supported.
      The optional expression must be absent."))
-  (b* (((structdeclor structdeclor) structdeclor))
+  (b* (((struct-declor structdeclor) structdeclor))
     (and structdeclor.declor?
          (declor-obj-formalp structdeclor.declor?)
          (not structdeclor.expr?)))
@@ -806,8 +939,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-formalp ((structdecl structdeclp))
-  :guard (structdecl-unambp structdecl)
+(define struct-declon-formalp ((structdeclon struct-declonp))
+  :guard (struct-declon-unambp structdeclon)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -818,31 +951,32 @@
      There must be only type specifiers, not type qualifiers,
      and they must form a supported type.
      There must be a single supported structure declarator."))
-  (structdecl-case
-   structdecl
-   :member (and (not structdecl.extension)
+  (struct-declon-case
+   structdeclon
+   :member (and (not structdeclon.extension)
                 (b* (((mv okp tyspecs)
-                      (check-spec/qual-list-all-typespec structdecl.specqual)))
+                      (check-spec/qual-list-all-typespec
+                       structdeclon.specquals)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp structdecl.declor)
-                (endp (cdr structdecl.declor))
-                (structdeclor-formalp (car structdecl.declor))
-                (endp structdecl.attrib))
+                (consp structdeclon.declors)
+                (endp (cdr structdeclon.declors))
+                (struct-declor-formalp (car structdeclon.declors))
+                (endp structdeclon.attribs))
    :statassert nil
    :empty nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-list-formalp ((structdecls structdecl-listp))
-  :guard (structdecl-list-unambp structdecls)
+(define struct-declon-list-formalp ((structdeclons struct-declon-listp))
+  :guard (struct-declon-list-unambp structdeclons)
   :returns (yes/no booleanp)
   :short "Check if all the structure declarations in a list
           have formal dynamic semantics."
-  (or (endp structdecls)
-      (and (structdecl-formalp (car structdecls))
-           (structdecl-list-formalp (cdr structdecls))))
+  (or (endp structdeclons)
+      (and (struct-declon-formalp (car structdeclons))
+           (struct-declon-list-formalp (cdr structdeclons))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -857,9 +991,10 @@
     "The name must be present,
      and each structure declaration must be supported."))
   (b* (((struni-spec struni-spec) struni-spec))
-    (and struni-spec.name?
+    (and (endp struni-spec.attribs)
+         struni-spec.name?
          (ident-formalp struni-spec.name?)
-         (structdecl-list-formalp struni-spec.members)))
+         (struct-declon-list-formalp struni-spec.members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -922,12 +1057,14 @@
    (xdoc::p
     "The declaration specifiers must be all type specifiers,
      and must form a supported type.
-     The parameter declarator must be a supported one."))
+     The parameter declarator must be a supported one.
+     There must be no ending attribute specifiers."))
   (b* (((param-declon param) param)
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (param-declor-formalp param.declor)))
+         (param-declor-formalp param.declor)
+         (endp param.attribs)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1059,8 +1196,7 @@
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.decls)
-         (stmt-case fundef.body :compound)
-         (block-item-list-formalp (stmt-compound->items fundef.body))))
+         (comp-stmt-formalp fundef.body)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

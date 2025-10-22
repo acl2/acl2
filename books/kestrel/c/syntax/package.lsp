@@ -20,7 +20,8 @@
 
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
-                                 '(position
+                                 '(block
+                                   position
                                    read-char
                                    read-files
                                    schar
@@ -36,6 +37,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                character-list
                 defirrelevant
                 defmacro+
                 defxdoc+
@@ -56,6 +58,7 @@
                 nats=>string
                 packn-pos
                 pos
+                pos-fix
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
@@ -76,36 +79,4 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp
-                c::*keywords*
-                c::ienv
-                c::ienvp
-                c::ienv->gcc
-                c::ienv->uchar-max
-                c::ienv->schar-max
-                c::ienv->schar-min
-                c::ienv->char-max
-                c::ienv->char-min
-                c::ienv->ushort-max
-                c::ienv->sshort-max
-                c::ienv->sshort-min
-                c::ienv->uint-max
-                c::ienv->sint-max
-                c::ienv->sint-min
-                c::ienv->ulong-max
-                c::ienv->slong-max
-                c::ienv->slong-min
-                c::ienv->ullong-max
-                c::ienv->sllong-max
-                c::ienv->sllong-min
-                c::ienv-uchar-rangep
-                c::ienv-schar-rangep
-                c::ienv-char-rangep
-                c::ienv-ushort-rangep
-                c::ienv-sshort-rangep
-                c::ienv-uint-rangep
-                c::ienv-sint-rangep
-                c::ienv-ulong-rangep
-                c::ienv-slong-rangep
-                c::ienv-ullong-rangep
-                c::ienv-sllong-rangep)))
+                str::oct-digit-char-listp)))

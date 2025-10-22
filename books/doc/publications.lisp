@@ -371,7 +371,7 @@
  href='@(`(:raw (docpath \"cs313k.pdf\"))`)'>CS313K Notes</a></i>, J Strother Moore, University of Texas at Austin, 2024</li>
 
  <li><a
- href='http://www.cs.utexas.edu/users/sandip/publications/clauseprocessors/main.html'>
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/jal09.pdf'>
  Integrating External Deduction Tools with ACL2</a>, Matt Kaufmann, J S. Moore,
  Sandip Ray, and Erik Reeber.
  <i>Journal of Applied Logic</i> (Special Issue: Empirically Successful
@@ -401,11 +401,11 @@
  Digital Library</a>.  Copyright ACL2 Steering Committee.</li>
 
  <li>Integrating CCG analysis into ACL2, Matt Kaufmann, Panagiotis Manolios, J Moore, and
- Daron Vroon).  <i>Proceedings of <a href='http://www.easychair.org/FLoC-06/WST.html'>The Eighth International Workshop on
+ Daron Vroon).  <i>Proceedings of <a href='https://resources.illc.uva.nl/LogicList/newsitem.php?id=1416'>The Eighth International Workshop on
  Termination (WST 2006)</a></i>,
  August, 2006.</li>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/tail/main.html'>Quantification
+ <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/acl206.pdf'>Quantification
  in Tail-recursive Function Definitions</a>, Sandip Ray.  In P. Manolios and M. Wilding
  (eds.), <a href='http://www.lulu.com/content/380599'>Proceedings</a> of the <a
  href='http://www.ccs.neu.edu/home/pete/acl206/'>6th International Workshop on
@@ -496,7 +496,7 @@
  Digital Library</a>.  Copyright ACL2 Steering Committee.</li>
 
  <li><a href='@(`(:raw (docpath \"non-linear.ps\"))`)'>Linear and Nonlinear Arithmetic in ACL2</a>, Warren A. Hunt Jr.,
- Robert Bellarmine Krug, and J Moore.  In <a href='http://www.di.univaq.it/charme2003/'>CHARME 2003</a>,
+ Robert Bellarmine Krug, and J Moore.  In <a href='https://link.springer.com/conference/charme'>CHARME 2003</a>,
  D. Geist (ed.), Springer Verlag LNCS 2860, pp. 319-333, 2003.
  This paper describes the mechanization of linear and nonlinear
  arithmetic in ACL2.</li>
@@ -524,7 +524,7 @@
   :long "
  <ul>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/defpun-exec/main.html'>
+ <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/acl204.pdf'>
  Attaching Efficient Executability to Partial Functions in ACL2</a>,
  Sandip Ray.
  In M. Kaufmann and J S. Moore (eds.), <a
@@ -604,7 +604,7 @@
   :long "
  <ul>
 
- <li><a href='http://www.cs.utexas.edu/users/jared/osets/Web/'>Finite set theory based on fully ordered lists</a>, by Jared Davis,
+ <li><a href='https://www.cs.utexas.edu/~moore/acl2/workshop-2004/contrib/davis/set-theory.pdf'>Finite set theory based on fully ordered lists</a>, by Jared Davis,
  describes the set theory implementation in <tt>books/finite-set-theory/osets/</tt>.  In this
  library, set equality is just ACL2's 'equal' and the typical set
  operations (union, intersection, difference, cardinality) are
@@ -650,7 +650,7 @@
  details of the results described in the article along with solutions to all
  the exercises in the article.</li>
 
- <li><a href='http://www.lim.com/~ruben/research/papers/powerlists.html'>
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=3c78488a4c039fd4da2d2dfb8e6dcbfc33a7623a'>
  Defthms About Zip and Tie: Reasoning About Powerlists in ACL2</a>, Ruben
  Gamboa, University of Texas Computer Sciences Technical Report No. TR97-02,
  February, 1998.  This work is based on Jay Misra's &ldquo;powerlist&rdquo; device, a
@@ -660,7 +660,7 @@
  (including bitonic and Batcher), a grey-code sequence generator, and a
  carry-lookahead adder.  ACL2 event lists are linked to the URL above.</li>
 
- <li><a href='http://www.lim.com/~ruben/research/papers/fft.html'> Mechanically
+ <li><a href='https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=321954c2c5213f9306c3b64d57bead18a9f3b985'> Mechanically
  Verifying the Correctness of the Fast Fourier Transform in ACL2</a>, Ruben
  Gamboa, in Third International Workshop on Formal Methods for Parallel
  Programming: Theory and Applications (FMPPTA), 1998.  This paper is based on
@@ -709,7 +709,7 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/users/ckcuong/Publications/A%20Hierarchical%20Approach%20to%20Self-Timed%20Circuit%20Verification.pdf'>A
+ href='https://ieeexplore.ieee.org/document/8850663'>A
  Hierarchical Approach to Self-Timed Circuit Verification</a>.
  C. Chau, W. A. Hunt Jr., M. Kaufmann, M. Roncken, and I. Sutherland. In Proceedings of
  the 25th IEEE International Symposium on Asynchronous Circuits and Systems (<a
@@ -723,7 +723,7 @@
  Verification</a>.
  C. Chau, W. A. Hunt Jr., M. Kaufmann, M. Roncken, and I. Sutherland. In Proceedings of
  the 24th IEEE International Symposium on Asynchronous Circuits and Systems (<a
- href='http://asyncsymposium.org/async2018/'>ASYNC 2018</a>),
+ href='https://ieeexplore.ieee.org/xpl/conhome/8588203/proceeding'>ASYNC 2018</a>),
  Vienna, Austria, May 2018, pages 51-58. <a
  href='http://www.ieee.org'>IEEE</a>.</li>
 
@@ -779,7 +779,7 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/~sandip/publications/isqed-10/main.html'>Modeling
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/cav04.pdf'>Modeling
  and Verification of Industrial Flash Memories</a>.  S. Ray, J. Bhadra,
  T. Portlock, and R. Syzdek.  In P. Chatterjee and K. Gadepally,
  editors, Proceedings of the <a href='http://www.isqed.org'>11th
@@ -789,7 +789,7 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/~sandip/publications/date-10/main.html'>Optimizing
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/date10.pdf'>Optimizing
  Equivalence Checking for Behavioral Synthesis</a>.  K. Hao, F. Xie,
  S. Ray, and J. Yang.  In <a
  href='http://www.date-conference.org'>Design, Automation &amp; Test in
@@ -797,12 +797,12 @@
  href='http://www.ieee.org'>IEEE</a>. </li>
 
  <li>
- <a href='http://www.cs.utexas.edu/~sandip/publications/fmcad-09/main.html'>Connecting
+ <a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/fmcad09.pdf'>Connecting
  Pre-silicon and Post-silicon Verification</a>.
  S. Ray and W. A. Hunt, Jr.
  In <a
  href='http://fmv.jku.at/biere'>A. Biere</a> and <a
- href='http://research.synopsys.com/cgi-bin/bios.cgi?bid=19'>C.
+ href='https://ieeexplore.ieee.org/author/37295705700'>C.
  Pixley</a>, editors, Proceedings of the <a
  href='http://fmv.jku.at/fmcad09'>9th International Conference on
  Formal Methods in Computer-aided Design (FMCAD 2009)</a>, Austin, TX,
@@ -812,12 +812,12 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/~sandip/publications/atva-09/main.html'>Formal
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/atva09.pdf'>Formal
  Verification for High-Assurance Behavioral Synthesis</a>.
  S. Ray, K. Hao, Y. Chen, F. Xie, and J. Yang.
  In <a
  href='http://www.iist.unu.edu/~lzm'>Z. Liu</a> and <a
- href='http://www.cs.aau.dk/~apr'>A. P. Ravn</a>, editors, Proceedings
+ href='https://scholar.google.com/citations?user=oz475ioAAAAJ&amp;hl=en'>A. P. Ravn</a>, editors, Proceedings
  of the <a href='http://www.iist.unu.edu/atva09'>7th International
  Symposium on Automated Technology for Verification and Analysis (ATVA
  2009)</a>, Macao SAR, China, October 2009, volume 5799 of <a
@@ -826,16 +826,16 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/~sandip/publications/flash-nvm-08/main.html'>Abstracting
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/nvmts08.pdf'>Abstracting
  and Verifying Flash Memories</a>, Sandip Ray and Jayanta Bhadra.  In K. Campbell, editor,
- Proceedings of the <a href='http://www.nvmts.org'>9th Non-Volatile
+ Proceedings of the <a href='https://ieeexplore.ieee.org/xpl/conhome/4731179/proceeding'>9th Non-Volatile
  Memory Technology Symposium (NVMTS 2008)</a>, Pacific Grove, CA,
  November 2008, pages 100-104.  <a
  href='http://www.ieee.org'>IEEE</a>.</li>
 
  <li>
  <a
- href='http://www.cs.utexas.edu/users/sandip/publications/flash-07/main.html'>A
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/fmcad07.pdf'>A
  Mechanized Refinement Framework for Analysis of Custom Memories</a>,
  Sandip Ray and Jayanta Bhadra.
  In J. Baumgartner and <a
@@ -848,12 +848,12 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/users/sandip/publications/voting-07/main.html'>Mechanized
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/mtv07.pdf'>Mechanized
  Certification of Secure Hardware Designs</a>, Sandip Ray and Warren
  A. Hunt, Jr.  In <a
  href='http://www.cerc.utexas.edu/~jay'>J. Bhadra</a>, <a
  href='http://mtv.ece.ucsb.edu/licwang/'>L. Wang</a>, and M. S. Abadir,
- editors, Proceedings of the <a href='http://mtv.ece.ucsb.edu/MTV/'>8th
+ editors, Proceedings of the <a href='https://dblp.org/db/conf/mtv/mtv2007.html'>8th
  International Workshop on Microprocessor Test and Verification, Common
  Challenges and Solutions (MTV 2007)</a>, Austin, TX, December 2007.
  <a href='http://www.computer.org/portal/site/ieeecs'>IEEE Computer
@@ -864,7 +864,7 @@
  Congress: Scientific Computation, Applied Mathematics and Simulation.  July,
  2005.</li>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/pipelines/main.html'>
+ <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/cav04.pdf'>
  Deductive Verification of Pipelined Machines Using First-order
  Quantification</a>, Sandip Ray and Warren A. Hunt Jr.
  In R. Alur and D. A. Peled, editors, Proceedings of the
@@ -992,7 +992,7 @@
 
  <li>
  <a
- href='http://www.cs.utexas.edu/~sandip/publications/information-flow-08/main.html'>Mechanized
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/fmcad08.pdf'>Mechanized
  Information Flow Analysis through Inductive Assertions</a>, Warren A. Hunt, Jr., Robert Bellarmine Krug, Sandip Ray, and William
  D. Young.  In <a
  href='http://es.fbk.edu/people/cimatti'>A. Cimatti</a> and <a
@@ -1004,7 +1004,7 @@
  Society</a>.</li>
 
  <li>
- <a href='http://groups.csail.mit.edu/pag/pubs/pittsfield-usenix2006-abstract.html'>Evaluating SFI for a CISC Architecture</a> by Stephen McCamant and Greg
+ <a href='https://www.usenix.org/legacy/event/sec06/tech/mccamant/mccamant.pdf'>Evaluating SFI for a CISC Architecture</a> by Stephen McCamant and Greg
  Morrisett. In 15th USENIX Security Symposium, (Vancouver, BC, Canada),
  August 2-4, 2006, pp. 209-224.  See also the <a
  href='http://people.csail.mit.edu/smcc/projects/pittsfield/'>project page</a>.</li>
@@ -1036,7 +1036,7 @@
  Automated Reasoning</a>. volume 40(4), May 2008, pages 245-269.  <a
  href='http://www.springer.com'>Springer</a>.</li>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/symbolic-lpar/main.html'>
+ <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/lpar06.pdf'>
  Verification Condition Generation via Theorem Proving</a>, John Matthews, J
  S. Moore, Sandip Ray, and Daron Vroon.  In M. Hermann and
  A. Voronkov, editors, Proceedings of the 13th International Conference on Logic
@@ -1046,7 +1046,7 @@
 
  <li><a href='http://www.ccs.neu.edu/home/pete/acl206/papers/pike.pdf'>A Verifying Core for a Cryptographic Language Compiler</a>, Lee Pike,
  Mark Shields, and John Matthews.  In P. Manolios and M. Wilding
- (eds.), <a href='http://www.lulu.com/content/380599'>Proceedings</a> of the <a
+ (eds.), <a href='https://dl.acm.org/doi/proceedings/10.1145/1217975'>Proceedings</a> of the <a
  href='http://www.ccs.neu.edu/home/pete/acl206/'>6th International
  Workshop on the ACL2 Theorem Prover and Its Applications (ACL2 2006)</a>,
  Seattle, WA, August 2006, pages 95-98.  Proceeding have also been <a
@@ -1200,7 +1200,7 @@
  floating point division.  The paper underwent extensive revision during the
  reviewing process.</li>
 
- <li><a href='http://www.onr.com/user/russ/david/k7-div-sqrt.html'> A
+ <li><a href='https://www.cambridge.org/core/journals/lms-journal-of-computation-and-mathematics/article/mechanically-checked-proof-of-ieee-compliance-of-the-floating-point-multiplication-division-and-square-root-algorithms-of-the-amdk7-processor/5C4FBB3FE20712D8FD5070AFEC096ED9'> A
  Mechanically Checked Proof of IEEE Compliance of a Register-Transfer-Level
  Specification of the AMD K7 Floating Point Multiplication, Division and
  Square Root Instructions</a>, David Russinoff, Advanced Micro Devices, Inc.,
@@ -1220,7 +1220,7 @@
  logic, and every step in the proof has been mechanically checked with the
  ACL2 prover.</li>
 
- <li><a href='http://www.onr.com/user/russ/david/fsqrt.html'>A Mechanically
+ <li><a href='https://www.russinoff.com/papers/fsqrt.html'>A Mechanically
  Checked Proof of IEEE Compliance of the AMD K5 Floating-Point Square Root
  Microcode</a>, David Russinoff, <i>Formal Methods in System Design</i>
  Special Issue on Arithmetic Circuits, 1997.  The paper presents a rigorous
@@ -1244,7 +1244,7 @@
  <ul>
 
  <li><a
- href='http://www.cs.uwyo.edu/~ruben/research/pdf/nsa.pdf'>Non-Standard
+ href='https://www.cs.uwyo.edu/~ruben/static/pdf/nsa.pdf'>Non-Standard
  Analysis in ACL2</a>, Ruben A. Gamboa and Matt Kaufmann, <i>Journal of Automated
  Reasoning</i> 27(4), 323-351, 2001.
  This paper describes
@@ -1295,14 +1295,14 @@
  eventually be sound and behave much as it does in the Version  2.5 release,
  but have not yet checked every detail of the integration.  For the
  foundations of ACL2(r), see Gamboa's Ph.D. dissertation <a
- href='http://www.lim.com/~ruben/research/thesis'> Mechanically Verifying
+ href='https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=1f6651d04c8c6c99040b53527622d73de0990666'> Mechanically Verifying
  Real-Valued Algorithms in ACL2</a> (UT, May, 1999).  The dissertation
  includes ACL2(r)-checked proofs of many fundamental properties of the real
  numbers, including such results as the continuity of <tt>e^x</tt>,
  Euler's identity, the basic identities of trigonometry, the intermediate
  value theorem, and others.</li>
 
- <li><a href='http://www.lim.com/~ruben/research/papers/sqrt.html'>Square
+ <li><a href='https://www.cs.utexas.edu/ftp/techreports/tr96-34.pdf'>Square
  Roots in ACL2: A Study in Sonata Form</a>, Ruben Gamboa, UTCS Tech Report
  TR96-34, November, 1996.  This paper describes a proof in ACL2 that <tt>(*
  x x)</tt> is never 2.  This was the beginning of Gamboa's journey into
@@ -1351,20 +1351,20 @@
  <ul>
 
  <li><a
- href='http://www.cs.utexas.edu/~sandip/publications/jar-09/main.html'>The
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/jar11.pdf'>The
  Right Tools for the Job: Correctness of Cone of Influence Reduction
  Proved Using ACL2 and
  HOL4</a>,
  <a href='http://www.cl.cam.ac.uk/~mjcg'>M. J. C. Gordon</a>,
  <a href='http://www.cs.utexas.edu/~kaufmann'>M. Kaufmann</a>,
- and <a href='http://www.cs.utexas.edu/~sandip'>S. Ray</a>.
+ and <a href='https://sandip.ece.ufl.edu/'>S. Ray</a>.
  <a href='http://www.springerlink.com/content/100280/'>Journal
  of Automated Reasoning</a>, volume 47(1), June 2011, pages
  1-16.  <a href='http://www.springer.com'>Springer</a>.</li>
 
  <li>
  <a
- href='http://www.cs.utexas.edu/users/sandip/publications/combination/main.html'>Combining
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/ieeedt07.pdf'>Combining
  Theorem Proving with Model Checking through Predicate Abstraction</a>,
  Sandip Ray and Rob Sumners.
  <a href='http://www.computer.org/dt'>IEEE Design &amp; Test of
@@ -1372,7 +1372,7 @@
  Advances in Functional Validation through Hybrid Techniques), pages
  132-139.</li>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/invariants/main.html'>
+ <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/acl204b.pdf'>
  Reducing Invariant Proofs to Finite Search via Rewriting</a>,
  Rob Sumners and Sandip Ray.
  In M. Kaufmann
@@ -1382,7 +1382,7 @@
  2004)</a>, Austin, TX, November 2004.</li>
 
  <li><a
- href='http://www.cs.utexas.edu/users/sandip/publications/ltl-reductions/main.html'>
+ href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/acl203.pdf'>
  Certifying Compositional Model Checking Algorithms in ACL2</a>,
  Sandip Ray, John Matthews, and Mark Tuttle.
  In W. A. Hunt, Jr, M. Kaufmann, and J S. Moore, editors, <a
@@ -1442,7 +1442,7 @@
      argument based on well-founded multiset extensions.</li>
 
  <li>
- <a href='http://www.springerlink.com/content/ydygr1el79p2pg75/fulltext.html'>
+ <a href='https://www.researchgate.net/publication/220896163_A_formal_proof_of_Dickson%27s_Lemma_in_ACL2'>
      A Formal Proof of Dickson's Lemma in ACL2</a>,
      F.J. Martin-Mateos, J.A. Alonso, M.J. Hidalgo and J.L. Ruiz-Reina.
      <i>LPAR 2003 - LNAI 2850</i>, pp. 49-58, 2003.
@@ -1451,7 +1451,7 @@
      polynomials. In this paper a formal proof of this result is presented,
      using a termination argument based on well-founded multiset extensions.</li>
 
- <li><a href='http://www.glc.us.es/fmartin/files/publicaciones/2004-JAR.pdf'>
+ <li><a href='https://link.springer.com/article/10.1007/BF03177742'>
      Formal verification of a generic framework to synthesize SAT-provers</a>,
      F.J. Martin-Mateos, J.A. Alonso, M.J. Hidalgo and J.L. Ruiz-Reina.
      <i>Journal of Automated Reasoning (32):4</i>, pp. 287-313, 2004.
@@ -1459,7 +1459,7 @@
      verified and executable SAT solvers can be obtained instantiating this
      generic framefork.</li>
 
- <li><a href='http://www.glc.us.es/fmartin/files/publicaciones/2003-als.pdf'>
+ <li><a href='https://www.cs.us.es/~jalonso/publicaciones/2003-ALS.pdf'>
      Termination in ACL2 Using Multiset Relations</a>,
      J.L. Ruiz-Reina, J.A. Alonso, M.J. Hidalgo and F.J. Martin-Mateos.
      <i>Thirty Five Years of Automating Mathematics</i>, pp. 217-245. 2003.
@@ -1467,7 +1467,7 @@
      well-founded relations and a tool for generating automatically such
      multiset relations.</li>
 
- <li><a href='http://www.springerlink.com/content/q56uw2rbetj83le9/'>
+ <li><a href='https://link.springer.com/chapter/10.1007/3-540-44755-5_21'>
  A certified polynomial-based decision procedure for  propositional logic </a>,
  I. Medina Bulo, F. Palomo Lozano and J. A. Alonso Jimenez, <i> 4th
  International Conference on Theorem Proving in Higher Order Logics </i>, LNCS
@@ -1588,7 +1588,7 @@
  here snippets of real verified code, discuss the formalization details
  in depth, and present quantitative data about the proof effort.</li>
 
- <li><a href='http://www.springerlink.com/content/036fq6l8fqqjaxq4/fulltext.html'>
+ <li><a href='https://link.springer.com/chapter/10.1007/978-3-540-25945-9_34'>
      Formal Verification of Molecular Computational Models in ACL2:
      A Case Study</a>,
      F.J. Martin-Mateos, J.A. Alonso, M.J. Hidalgo and J.L. Ruiz-Reina.
@@ -1607,7 +1607,7 @@
  This work is carried out in the ACL2 system and shows how verified Computer
  Algebra can be achieved in an executable logic.</li>
 
- <li><a href='http://www.cs.utexas.edu/users/sandip/publications/stobj-qsort/main.html'>
+ <li><a href='https://www.cs.utexas.edu/~moore/acl2/workshop-2002/contrib/ray-sumners/qs.pdf'>
  Verification of an In-place Quicksort in ACL2</a>, Sandip Ray and Rob Sumners.
  In D. Borrione, M. Kaufmann,
  and J S. Moore, editors, Proceedings of the <a

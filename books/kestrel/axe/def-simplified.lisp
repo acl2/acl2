@@ -37,6 +37,7 @@
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for BVPLUS-COMMUTATIVE-AXE, etc
 (include-book "convert-to-bv-rules-axe")
+(include-book "trim-intro-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
@@ -90,8 +91,6 @@
 
 (ensure-rules-known (def-simplified-rules))
 
-(local (in-theory (disable ilks-plist-worldp)))
-
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; TODO: Compare to the generated ,def-simplified-name.
 ;; Returns an error triple, (mv erp event state).
@@ -128,8 +127,7 @@
                               (booleanp normalize-xors)
                               (print-levelp print)
                               (consp whole-form)
-                              (symbolp (car whole-form))
-                              (ilks-plist-worldp (w state)))))
+                              (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
        ;; Choose which set of rules to use:

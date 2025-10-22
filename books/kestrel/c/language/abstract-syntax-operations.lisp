@@ -118,6 +118,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-purep ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is pure."
+  (expr-case
+   expr
+   :ident t
+   :const t
+   :arrsub (and (expr-purep expr.arr)
+                (expr-purep expr.sub))
+   :call nil
+   :member (expr-purep expr.target)
+   :memberp (expr-purep expr.target)
+   :postinc nil
+   :postdec nil
+   :preinc nil
+   :predec nil
+   :unary (expr-purep expr.arg)
+   :cast (expr-purep expr.arg)
+   :binary (and (binop-purep expr.op)
+                (expr-purep expr.arg1)
+                (expr-purep expr.arg2))
+   :cond (and (expr-purep expr.test)
+              (expr-purep expr.then)
+              (expr-purep expr.else)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-purep (x)
+  :guard (expr-listp x)
+  :short "Check if all the expressions in a list are pure."
+  (expr-purep x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define obj-declor-to-ident+adeclor ((declor obj-declorp))
   :returns (mv (id identp) (adeclor obj-adeclorp))
   :short "Decompose an object declarator into

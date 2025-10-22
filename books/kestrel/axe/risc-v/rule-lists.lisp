@@ -1,0 +1,554 @@
+; Rule lists for use by the RISC-V Axe tools
+;
+; Copyright (C) 2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "R")
+
+(include-book "portcullis")
+(include-book "../rule-lists")
+
+(defun symbolic-execution-rules ()
+  (declare (xargs :guard t))
+  '(run-until-return
+    run-until-return-aux-opener
+    run-until-return-aux-base
+    run-until-return-aux-of-if-arg2
+    run-subroutine
+    ;; sp-is-abovep
+    ;; run-until-sp-is-above-opener
+    ;; run-until-sp-is-above-base
+    ;; run-until-sp-is-above-of-if-arg2
+    update-call-stack-height
+    update-call-stack-height-aux-base
+    update-call-stack-height-aux-of-if-arg1
+    riscv::instr-option-some->val$inline
+    riscv::instr-fix$inline
+    step32-opener
+    step32-of-if
+    pc-of-if
+    read-of-if-arg2
+    read-of-if-arg3))
+
+(defun debug-rules ()
+  (declare (xargs :guard t))
+  '(step32-opener
+    run-until-return-aux-opener
+    ;;run-until-sp-is-above-opener
+    read-when-equal-of-read-bytes-and-subregion32p
+    read-when-equal-of-read-bytes-and-subregion32p-alt
+    read-when-equal-of-read-bytes
+    read-when-equal-of-read-bytes-alt
+    ))
+
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
+(defun lifter-rules ()
+  (declare (xargs :guard t))
+  (append
+   (shadowed-write-rules)
+   (acl2::base-rules) ; gets us if-same-branches, for example
+   (acl2::core-rules-bv)
+   (acl2::unsigned-byte-p-forced-rules)
+   (acl2::type-rules) ; rename
+   (acl2::bvchop-of-bv-rules)
+   (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2::boolean-rules-safe)
+   (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
+   '(;acl2::list-to-bv-array-constant-opener
+     ;acl2::list-to-bv-array-aux-constant-opener ; slow?!
+     acl2::bv-list-read-chunk-little-constant-opener
+     acl2::packbv-little-constant-opener
+     )
+   '(len-of-read-bytes nth-of-read-bytes) ; for output-indicator handling
+   '(error32p-of-set-reg
+     error32p-of-write
+     error32p-of-set-pc
+
+     ;; Rules about read:
+     integerp-of-read
+     natp-of-read
+     unsigned-byte-p-of-read
+     read-of-bvchop-32 ; todo: say which arg
+     read-of-+
+     bvchop-of-read
+     <-of-read ; for an array pattern rule
+     not-equal-of-read-and-constant
+     not-equal-of-constant-and-read
+
+     ;; Rules to introduce READ:
+     read-byte-becomes-read ; we use READ as the normal form, even when writing just one byte
+     read32-mem-ubyte32-lendian-becomes-read
+     read32-mem-ubyte8-becomes-read-byte ; todo: go directly to read
+
+     ;; Rules about write:
+     write-of-bvchop-32-arg2
+     write-of-bvchop-arg3
+     write-of-logext-arg3
+     write32-mem-ubyte8-becomes-write-byte ; todo: go directly to write
+     write32-mem-ubyte32-lendian-becomes-write
+     write-of-+
+
+     write-of-write-same
+
+     ;; Rules about reading and writing:
+     read-of-write-same
+     read-of-write-1-within
+     read-1-of-write-within
+     read-of-write-when-disjoint-regions32p
+     read-of-write-when-disjoint-regions32p-gen
+     read-of-write-when-disjoint-regions32p-gen-alt
+
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
+     disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
+
+     read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
+     ;read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
+     read-when-equal-of-read-bytes ; note rule priority
+     read-when-equal-of-read-bytes-alt
+     acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest
+
+     subregion32p-of-1-arg1     ;; trying
+     disjoint-regions32p-of-1-and-1 ; trying
+
+     acl2::equal-of-bvplus-constant-and-constant-alt
+     acl2::equal-of-bvplus-constant-and-constant
+     acl2::equal-of-bvplus-and-bvplus-reduce-constants
+     disjoint-regions32p-byte-special
+     acl2::bv-array-read-chunk-little-of-1
+     acl2::bv-array-read-chunk-little-unroll
+     acl2::bv-array-read-of-bvplus-of-constant-no-wrap
+
+     acl2::bv-list-read-chunk-little-of-cons-irrel
+     acl2::bv-list-read-chunk-little-of-bvplus-of-constant
+     acl2::bv-list-read-chunk-little-opener
+     acl2::nth-of-cons-constant-version ; for handling (equal (read-bytes ..) <cons-nest>)
+     acl2::unsigned-byte-listp-of-cons
+     acl2::unsigned-byte-listp-constant-opener
+
+     ;;bv-array-read-shorten-8
+     acl2::bv-array-read-of-bvplus-of-constant-no-wrap
+     acl2::not-equal-of-constant-and-bv-term-axe
+     acl2::not-equal-of-constant-and-bv-term-alt-axe
+     acl2::equal-of-bvchop-and-bvplus-of-same
+     acl2::equal-of-bvchop-and-bvplus-of-same-alt
+     acl2::logext-identity-when-usb-smaller-axe
+     acl2::bvxor-of-logext-arg3
+     acl2::bvxor-of-logext-arg2
+
+     not-bvlt-when-not-in-region32p ; backchains from bvlt to in-region32p
+
+     not-in-region32p-when-disjoint-regions32p-special
+     ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
+     ;; not-in-region32p-when-disjoint-regions32p-two
+     acl2::bvlt-of-1
+     ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
+     bvlt-of-read-and-constant
+
+     in-region32p-cancel-constants-1-1+
+    in-region32p-cancel-constants-1+-1
+    in-region32p-cancel-constants-1+-1+
+    in-region32p-cancel-1-1+
+    in-region32p-cancel-1+-1
+    in-region32p-cancel-1+-1+
+    in-region32p-cancel-1-2
+    in-region32p-cancel-2-1
+    in-region32p-cancel-1+-2
+    in-region32p-cancel-2-1+
+    in-region32p-cancel-2+-1
+    in-region32p-cancel-1-3
+    in-region32p-cancel-3-1
+    in-region32p-cancel-2-2
+    in-region32p-when-non-negative-and-negative-range
+    ;in-region32p-of-0-arg3 ; introduces bvlt
+    in-region32p-of-bvchop-arg1
+    in-region32p-of-bvchop-arg3
+    in-region32p-of-bvsx-arg1
+    in-region32p-of-bvsx-arg3
+    in-region32p-same
+
+
+     in-region32p-byte-special ; have the memory machinery generate this?
+
+     write-byte-becomes-write
+     read-normalize-constant-arg2
+     write-normalize-constant-arg2
+     write-normalize-constant-arg3
+
+     disjoint-regions32p-cancel-1-1+
+     disjoint-regions32p-cancel-1+-1
+     disjoint-regions32p-cancel-1+-1+
+     disjoint-regions32p-cancel-1-2
+     disjoint-regions32p-cancel-2-1
+     disjoint-regions32p-cancel-1+-2
+     disjoint-regions32p-cancel-2-1+
+     disjoint-regions32p-cancel-2-2
+     disjoint-regions32p-cancel-2+-2
+     disjoint-regions32p-of-bvplus-of-constant-and-constant
+
+     subregion32p-cancel-1-1
+     subregion32p-cancel-1+-1
+     subregion32p-cancel-1-1+
+     subregion32p-cancel-2-1
+     subregion32p-cancel-2-1+
+     subregion32p-cancel-1-2
+     subregion32p-cancel-1+-2
+     subregion32p-cancel-2-2
+     subregion32p-cancel-constants-1+-1
+     subregion32p-cancel-constants-1+-1+
+
+     set-pc-convert-arg1-to-bv-axe
+     set-reg-convert-arg2-to-bv-axe
+
+     acl2::bvplus-convert-arg2-to-bv-axe
+     acl2::bvplus-convert-arg3-to-bv-axe
+     acl2::bvplus-of-logext-arg2
+     acl2::bvplus-of-logext-arg3
+     acl2::bvchop-of-logext
+
+     acl2::bvplus-associative
+
+     ;; add some of these to core-rules?:
+     acl2::boolif-of-nil-and-t
+     acl2::not-of-not
+
+     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but nore for giant nests of crypto ops.  so limit the size of the nests?
+     acl2::bvplus-commute-constant2
+
+     acl2::equal-of-bvif-safe ; add to core-rules-bv
+     acl2::equal-of-bvif-safe-alt
+     acl2::equal-of-bvif-constants
+     acl2::equal-of-bvif-constants2
+     acl2::bvchop-of-if-becomes-bvif
+     acl2::<-becomes-bvlt-axe-bind-free-arg1 ; or use stronger rules?
+     acl2::<-becomes-bvlt-axe-bind-free-arg2
+
+     read32-pc-becomes-pc ; introduces PC, our normal form
+     write32-pc-becomes-set-pc ; introduces SET-PC, our normal form
+     read32-xreg-unsigned-becomes-reg ; introduces REG, our normal form
+     write32-xreg-becomes-set-reg ; introduces SET-REG, our normal form
+
+     read32-xreg-signed ; open to the unsigned one
+
+     integerp-of-reg
+     unsigned-byte-p-of-reg
+     reg-of-set-reg
+     set-reg-of-set-reg-same
+     set-reg-of-set-reg-diff
+     reg-of-write
+     ;; reg-of-write-byte
+     reg-of-set-pc
+     reg-of-if
+
+     set-reg-of-bvchop
+     set-reg-does-nothing
+     set-reg-of-0 ; setting register 0 has no effect!
+
+     pc-of-set-pc
+     set-pc-of-set-pc
+     pc-of-set-reg
+     pc-of-write
+     write-of-set-reg
+
+     read-of-set-pc
+     read-of-set-reg
+
+     ;; normalizing nests of writes:
+     set-reg-of-set-pc
+     write-of-set-pc
+
+     stat32ip-of-set-reg
+     stat32ip-of-write
+     ;; stat32ip-of-set-pc ; uncomment?
+
+     ;; regiseter names (we expand these to REG):
+     x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
+     ;; register aliases:
+     ;; zero
+     ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
+
+     acl2::subregion32p-constant-opener
+     acl2::in-region32p-constant-opener
+     acl2::disjoint-regions32p-constant-opener
+
+     acl2::bv-array-write-of-if-arg4 ; introduces bvif
+
+     acl2::bv-array-read-chunk-little-constant-opener
+
+     riscv::feat
+     riscv::feat->base$inline
+     riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
+
+
+     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
+
+     riscv::feat-endian-little
+     riscv::feat-endian-fix$inline
+     riscv::feat-endian-kind$inline
+
+     riscv::feat-base-rv32i
+
+     riscv::feat-base-fix$inline
+     riscv::feat-base-kind$inline
+     riscv::feat-mp
+     riscv::feat-embedp
+
+     riscv::branch-funct-fix$inline
+     riscv::branch-funct-kind$inline
+
+     riscv::op-imms-funct-fix$inline
+     riscv::op-imms-funct-kind$inline
+
+     ;; riscv::decodex-constant-opener ; not needed since the evaluator knows about this function
+     acl2::ubyte32-fix-constant-opener
+     acl2::ubyte32p-constant-opener
+     riscv::get-fields-itype-constant-opener
+     riscv::get-fields-jtype-constant-opener
+     riscv::get-rd-constant-opener
+     riscv::get-rs1-constant-opener
+     riscv::get-rs2-constant-opener
+     riscv::get-funct3-constant-opener
+     riscv::get-funct7-constant-opener
+
+     riscv::get-opcode-constant-opener
+     riscv::get-imm-btype-constant-opener
+     riscv::get-imm-itype-constant-opener
+     riscv::get-imm-jtype-constant-opener
+     riscv::get-imm-stype-constant-opener
+     riscv::get-imm-utype-constant-opener
+     bitops::part-select-low-high$inline-constant-opener
+     bitops::part-select-width-low$inline-constant-opener
+     riscv::feat-64p-constant-opener
+     riscv::get-fields-btype-constant-opener
+     riscv::get-fields-rtype-constant-opener
+     riscv::get-fields-utype-constant-opener
+     riscv::get-fields-stype-constant-opener
+
+     riscv::instr-op-imm-constant-opener
+
+     acl2::logtail$inline-constant-opener
+     acl2::expt2$inline-constant-opener
+;     acl2::binary-logand-constant-opener ; todo: led to stack overflow -- need to make a safe opener?  and eval zip and evenp
+     acl2::ifloor$inline-constant-opener
+     acl2::logapp-constant-opener
+     common-lisp::ash-constant-opener ; todo: use acl2 package
+     acl2::ash-becomes-logtail ; do better?
+     acl2::bvchop-of-ash
+     acl2::logtail-of-logext
+     ;acl2::logtail-of-bvcat
+     acl2::logtail-becomes-slice-bind-free-axe
+     acl2::bvcat-of-logext-arg2
+     acl2::bvcat-of-logext-arg4
+
+     ;acl2::bvcat-of-if-arg2
+     ;acl2::bvcat-of-if-arg4
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
+
+     acl2::loghead-becomes-bvchop
+
+     ubyte5-fix
+     acl2::ubyte12-fix
+     acl2::ubyte20-fix
+     acl2::ubyte32-fix
+
+     ubyte5p
+     acl2::ubyte12p
+     acl2::ubyte20p
+     acl2::ubyte32p
+
+     riscv::op-imm-funct-fix$inline
+     riscv::instr-kind$inline
+
+     riscv::instr-op-constant-opener
+
+     riscv::store-funct-fix$inline
+     riscv::store-funct-kind$inline
+
+     riscv::load-funct-fix$inline
+     riscv::load-funct-kind$inline
+
+     riscv::op-funct-fix$inline
+     riscv::op-funct-kind$inline
+
+     riscv::instr-op-imm->imm$inline
+     riscv::instr-op-imm->rs1$inline
+     riscv::instr-op-imm->funct$inline
+     riscv::instr-op-imm->rd$inline
+
+     riscv::instr-op-imms32->funct$inline
+     riscv::instr-op-imms32->rd$inline
+     riscv::instr-op-imms32->rs1$inline
+     riscv::instr-op-imms32->imm$inline
+
+     riscv::instr-load->funct$inline
+     riscv::instr-load->rs1$inline
+     riscv::instr-load->rd$inline
+     riscv::instr-load->imm$inline
+
+     riscv::instr-store->funct$inline
+     riscv::instr-store->rs1$inline
+     riscv::instr-store->rs2$inline
+     riscv::instr-store->imm$inline
+
+     riscv::instr-op->funct$inline
+     riscv::instr-op->rd$inline
+     riscv::instr-op->rs1$inline
+     riscv::instr-op->rs2$inline
+
+     riscv::instr-jalr->rd$inline
+     riscv::instr-jalr->rs1$inline
+     riscv::instr-jalr->imm$inline
+
+     riscv::instr-jal->imm$inline
+     riscv::instr-jal->rd$inline
+
+     riscv::instr-branch->funct$inline
+     riscv::instr-branch->rs1$inline
+     riscv::instr-branch->rs2$inline
+     riscv::instr-branch->imm$inline
+
+     riscv::instr-auipc->rd$inline
+     riscv::instr-auipc->imm$inline
+
+     riscv::instr-lui->rd$inline
+     riscv::instr-lui->imm$inline
+
+     exec32-instr-base ; requires the instr to be constant
+
+     exec32-add
+     exec32-addi
+     exec32-and
+     exec32-andi
+     exec32-auipc
+     exec32-beq
+     exec32-bge
+     exec32-bgeu
+     exec32-blt
+     exec32-bltu
+     exec32-bne
+     exec32-branch
+     exec32-div
+     exec32-divu
+     exec32-jal
+     exec32-jalr
+     exec32-lb
+     exec32-lbu
+     exec32-lh
+     exec32-lhu
+     exec32-load
+     exec32-lui
+     exec32-lw
+     exec32-mul
+     exec32-mulh
+     exec32-mulhsu
+     exec32-mulhu
+     exec32-op
+     ;; exec32-op-imm
+     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+     exec32-op-imms ;; todo: restrict
+     exec32-or
+     exec32-ori
+     exec32-rem
+     exec32-remu
+     exec32-sb
+     exec32-sh
+     exec32-sll
+     exec32-slli
+     exec32-slt
+     exec32-slti
+     exec32-sltiu
+     exec32-sltu
+     exec32-sra
+     exec32-srai
+     exec32-srl
+     exec32-srli
+     exec32-store
+     exec32-sub
+     exec32-sw
+     exec32-xor
+     exec32-xori
+
+     ;; these should be 0-ary and thus safe to open:
+     riscv::op-imm-funct-addi
+     riscv::op-imm-funct-kind$inline-constant-opener
+     riscv::store-funct-sw
+     riscv::store-funct-sb
+     riscv::load-funct-lw
+     riscv::load-funct-lb
+     riscv::load-funct-lbu
+     riscv::instr-store-constant-opener
+     riscv::instr-load-constant-opener
+
+     riscv::op-funct-add
+     riscv::op-funct-xor
+     riscv::op-funct-sub
+     riscv::op-funct-or
+     riscv::op-funct-sltu
+
+     riscv::instr-op-imms32
+     riscv::op-imms-funct-srli
+     riscv::op-imms-funct-slli
+     riscv::op-imms-funct-srai
+     riscv::op-imm-funct-andi
+     riscv::op-imm-funct-sltiu
+     riscv::branch-funct-bne
+     riscv::branch-funct-beq
+     riscv::branch-funct-blt
+     riscv::branch-funct-bge
+     riscv::branch-funct-bltu
+
+     riscv::instr-jalr
+     riscv::instr-jal
+     riscv::instr-branch
+     riscv::instr-auipc
+     riscv::instr-lui
+
+     riscv::branch-funct-bgeu
+
+     inc32-pc ; increments by 4
+
+     acl2::bvchop-of-+-becomes-bvplus
+     acl2::bvminus-of-bvplus-and-bvplus-same
+     acl2::bvminus-of-bvplus-same
+     acl2::bvminus-of-bvplus-same-arg2
+     acl2::bvminus-of-bvplus-of-constant-and-bvplus-of-constant
+     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
+
+     eff32-addr
+
+     acl2::integerp-of-+-when-integerp-1
+     acl2::integerp-of-+-when-integerp-2
+     acl2::fix-when-integerp
+     acl2::integerp-of-bvplus
+     acl2::integerp-of-logext
+
+     riscv::stat32i-fix-when-stat32ip
+
+     acl2::ifix-when-integerp
+     acl2::mod-becomes-bvchop-when-power-of-2p
+
+     )))
+
+
+
+;; try late
+(acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)
+
+;; try after the one for constant bytes:
+(acl2::set-axe-rule-priority read-when-equal-of-read-bytes 1)
+
+;; split before trying to open if the state is an IF:
+(acl2::set-axe-rule-priority run-until-return-aux-of-if-arg2 -1)

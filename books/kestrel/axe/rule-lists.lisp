@@ -116,9 +116,10 @@
     boolif-of-t-and-nil
     boolif-of-nil-and-t
     boolif-when-quotep-arg1 ; for when the test can be resolved
-    boolif-of-not-same-arg2-alt
-    boolif-of-not-same-arg3-alt
+    boolif-of-not-same-arg2-alt ; harmless
+    boolif-of-not-same-arg3-alt ; harmless
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
+    boolif-of-equal-and-t-and-not-equal-diff-constants
     boolif-when-quotep-and-not-booleanp-arg2
     boolif-when-quotep-and-not-booleanp-arg3
     ;; Rules about equal:
@@ -137,7 +138,7 @@
   (append
    (boolean-rules-safe)
    `(;; Rules about boolor:
-     boolor-of-not-of-boolor-of-not-same ; do we need this?
+     boolor-of-not-of-boolor-of-not-same ; do we need this? move to boolean-rules-safe
 
      ;; Rules about boolif:
      ;; todo: think about these: sometimes we prefer boolif:
@@ -385,12 +386,13 @@
     unsigned-byte-p-of-leftrotate32
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
-    unsigned-byte-p-of-bv-array-read-gen ;todo name
+    unsigned-byte-p-of-bool-to-bit
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
-    unsigned-byte-p-of-0-arg1
-    ))
+    unsigned-byte-p-of-bv-array-read-gen ;todo name
+
+    unsigned-byte-p-of-0-arg1))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
 (defund unsigned-byte-p-forced-rules ()
@@ -417,15 +419,15 @@
     unsigned-byte-p-forced-of-sbvrem
     unsigned-byte-p-forced-of-sbvdiv
     unsigned-byte-p-forced-of-bvsx
-    unsigned-byte-p-forced-of-leftrotate
-    unsigned-byte-p-forced-of-rightrotate
-    unsigned-byte-p-forced-of-leftrotate32
-    unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
+    unsigned-byte-p-forced-of-leftrotate
+    unsigned-byte-p-forced-of-leftrotate32
+    unsigned-byte-p-forced-of-rightrotate
+    unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-bool-to-bit
     unsigned-byte-p-forced-of-bvshl
     unsigned-byte-p-forced-of-bvshr
-    ;;todo bvashr
+    unsigned-byte-p-forced-of-bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
@@ -484,7 +486,7 @@
     bvplus-convert-arg3-to-bv-axe-restricted
     bvmult-convert-arg2-to-bv-axe
     bvmult-convert-arg3-to-bv-axe
-    ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
+    ;; bvminus-convert-arg2-to-bv-axe ; todo: these seemed to cause loops, with (memoized applications of bvplus-of-constant-and-esp-when-overflow and/or bvchop-of-+-of-esp-becomes-+-of-esp
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
     bvnot-convert-arg2-to-bv-axe
@@ -527,11 +529,18 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
-    ;; todo: replace these with a more general scheme:
+
+    ;; uncomment these if we use trim to convert these functions:
+    ;; trim-of-logtail-becomes-slice
+    trim-of-logext-becomes-bvsx
+    trim-of-if-becomes-bvif
+
+    ;; todo: replace these with the more general trim scheme:
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
+    ;; These just unconditionally replace non-bv operators with bv operators:
     bool->bit-becomes-bool-to-bit
     bit->bool-becomes-bit-to-bool
     acl2::logbitp-to-getbit-equal-1 ;rename
@@ -683,6 +692,7 @@
   (trim-rules))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
+;; TODO: Consider removing myif rules from this, since not all Axe variants need myif.
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
@@ -737,6 +747,8 @@
      equal-of-constant-and-leftrotate32
      slice-of-leftrotate32-high
 
+;     sbvlt-of-ifix-arg2 ; todo: uncomment these 2, but one of them caused a problem in isAscending
+;     sbvlt-of-ifix-arg3
      not-sbvlt-when-sbvlt-rev-cheap-2
      equal-of-constant-when-sbvlt ; rename
      equal-constant-when-not-sbvlt ; rename
@@ -766,17 +778,28 @@
      bvminus-of-bvplus-of-constant-and-constant
      bvminus-cancel-3-2 ; todo: more!
      bvminus-of-bvplus-and-bvplus-same-2-2
+     bvminus-of-ifix-arg2
+     bvminus-of-ifix-arg3
 
      bvplus-of-0-arg2
+     ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
+     bvand-of-ifix-arg2
+     bvand-of-ifix-arg3
+
      bvor-of-0-arg2
      bvor-of-0-arg3 ; could drop if commuting constants forward
+     bvor-of-ifix-arg2
+     bvor-of-ifix-arg3
+
      bvxor-of-0-arg2
      bvxor-of-0-arg3 ; could drop if commuting constants forward
+     bvxor-of-ifix-arg2
+     bvxor-of-ifix-arg3
 
      bitand-of-0-arg1
      bitand-of-0-arg2 ; could drop if commuting constants forward
@@ -805,7 +828,10 @@
      bitxor-same-2
 
      bvnot-of-bvnot
+     bvnot-of-ifix
+
      bitnot-of-bitnot
+     bitnot-of-ifix
 
      bvand-of-myif-arg1
      bvand-of-myif-arg2
@@ -921,6 +947,12 @@
      getbit-of-bvmult-of-expt-constant-version
 
 ;slice-of-bvplus-cases-no-split-case-no-carry-constant-version ;new
+     bitand-of-ifix-arg1
+     bitand-of-ifix-arg2
+
+     bitor-of-ifix-arg1
+     bitor-of-ifix-arg2
+
      bitxor-of-ifix-arg1
      bitxor-of-ifix-arg2
 
@@ -952,6 +984,8 @@
      bvif-of-getbit-arg4
 
      not-bvlt-self
+     bvlt-of-ifix-arg2
+     bvlt-of-ifix-arg3
      bvlt-of-bvmod-false
      bvlt-transitive-1-a
      bvlt-transitive-1-b
@@ -973,7 +1007,7 @@
 
      not-equal-max-int-when-<=      ;new, rename
 
-     repeatbit-of-1     ;new
+     repeatbit-of-1-arg1     ;new
      lg                 ;new
      getbit-of-repeatbit ;new - what else do we need about repeatbit?
 
@@ -987,7 +1021,6 @@
      equal-of-bvif-constants2
      bvif-of-not
 
-
 ;    bvlt-of-0-arg2 ;fixme use polarity?
      bvlt-of-0-arg3
 
@@ -995,7 +1028,6 @@
      bvmult-of-1-arg2
      bvmult-of-ifix-arg2
      bvmult-of-ifix-arg3
-
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -1193,6 +1225,8 @@
      sbvdiv-same
 
      bvchop-of-ifix ; more like this?
+     slice-of-ifix
+     getbit-of-ifix
      slice-tighten-top-axe
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
@@ -1716,6 +1750,7 @@
     bvchop-list-does-nothing-rewrite ;rename
     bvchop-list-of-bvchop-list))
 
+;; are these all for when the logext is too big?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -1746,10 +1781,11 @@
     bvif-of-logext-arg3
     bvif-of-logext-arg4
 
-;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
 
-    bvcat-of-logext-high
+    bvcat-of-logext-arg2
+    bvcat-of-logext-arg4
+
     bvchop-of-logext
 
     getbit-of-logext
@@ -2363,12 +2399,16 @@
      sbvdivdown-rewrite-gen
 
 ;    unsigned-byte-p-tighten ;;removed tue jan 12 06:27:23 2010
-     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
-     equal-of-bool-to-bit-and-0
-     equal-of-bool-to-bit-and-1
-     ;;fixme what about backchain-limit? <- for which rule??
 
-     equal-of-bvchop-impossible
+     bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
+     bvif-0-1-becomes-bvnot-of-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
+     equal-of-0-and-bool-to-bit ; alt form needed?
+     equal-of-1-and-bool-to-bit ; alt form needed?
+     getbit-0-of-bool-to-bit
+     equal-of-bool-to-bit-split ; remove?
+     unsigned-byte-p-of-bool-to-bit
+
+     equal-of-bvchop-impossible ;; todo: backchain-limit?
      ;;equal-of-bvchop-impossible-alt
 
 ;bvlt-transitive-free2
@@ -2379,7 +2419,7 @@
      bvif-t-bitxor-1-x-and-x
      ;;    bitxor-associative ;caused problems removing 1/12/09
      equal-of-bvuminus-and-constant ; move
-     getbit-0-of-bool-to-bit
+
      logext-when-top-bit-0 ;move?
      <-becomes-bvlt-dag
      sbvdiv-when-both-positive
@@ -2423,7 +2463,6 @@
      boolor-of-booland-same
      boolor-of-booland-same-alt
      bv-array-clear-of-bv-array-write-same
-     bvif-0-1
      getbit-of-bvuminus
      bvlt-tighten-gen2
      ;;bvplus-of-1-tighten
@@ -2709,14 +2748,13 @@
      equal-of-bvplus-cancel-arg2 ;drop?
 
      equal-of-0-and-bitxor ; tried moving this to core-rules-bv, but that caused problems.  we need bitxor cancellation rules.  (why doesn't the same thing happen for bvxor?)
-     equal-of-bool-to-bit-split
+
      iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
 ;                               bvlt-of-bvplus-of-bvuminus-alt ;tue feb 23 00:54:24 2010
      bvlt-of-bvplus-same
      equal-of-bitxor-same
      equal-of-bitxor-same-alt
-     unsigned-byte-p-1-of-bool-to-bit ;gen
 ;bvlt-when-bvlt-reverse ;seems expensive mon feb  1 20:26:19 2010
      bvlt-of-bvplus-and-bvplus-cancel
 
@@ -3197,8 +3235,8 @@
              my-non-integerp-<-integerp
              booland-combine-adjacent-bvles
              booland-combine-adjacent-bvles-alt
-             boolif-of-not-same-arg2 ;moved from axe-prover-rules
-             boolif-of-not-same-arg3 ;moved from axe-prover-rules
+             boolif-of-not-same-arg2 ;moved from axe-prover-rules ; introduces booland
+             boolif-of-not-same-arg3 ;moved from axe-prover-rules ; introduces boolor
 
              sbvlt-of-bvplus-of-constant-and-constant
              nth-when-equal-of-take-hack
@@ -3240,7 +3278,7 @@
              prefixp-of-add-to-end
              prefixp-of-nil-arg2
              prefixp-of-nil-arg1
-             equal-of-+-of-minus-same
+             ;equal-of-+-of-minus-same
              equal-of-fix-same ;reorder?
              <-of-256
 
@@ -3698,7 +3736,7 @@
 ;                                    UNSIGNED-BYTE-P-OF-BITLIST-TO-BV2
              nthcdr-of-ungroup
              bvplus-of-bvuminus-of-bvcat-of-0
-;bool-to-bit ;was expensive
+             ;;bool-to-bit ;was expensive
              bvcat-of-slice-onto-constant
              getbit-when-not-bvlt-constant
 
@@ -4111,6 +4149,7 @@
 
 ;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
 ;; TODO: Use these whenever we translate to STP, not just in the tactic prover.
+;; However, consider that these may not have been applied when we use STP to relieve a hyp during rewriting.
 (defund pre-stp-rules ()
   (declare (xargs :guard t))
   (append
@@ -4345,8 +4384,7 @@
 
 ;todo: use this more?
 (defun phased-bv-axe-rule-sets (state) ;bozo redo the state stuff here
-  (declare (xargs :stobjs state
-                  :guard (ilks-plist-worldp (w state))))
+  (declare (xargs :stobjs state))
 ;always do this sequence? merge the trim phases into this sequence?
   (list (make-axe-rules! (amazing-rules-bv) (w state))
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))

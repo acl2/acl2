@@ -1,5 +1,4 @@
 ; C Library
-
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -59,13 +58,13 @@
    item
    ;; TODO: this should probably recurse down through statement.
    :stmt (stmt-case
-           item.unwrap
-           :expr (and item.unwrap.expr?
+           item.stmt
+           :expr (and item.stmt.expr?
                       (expr-case
-                        item.unwrap.expr?
+                        item.stmt.expr?
                         :funcall (expr-case
-                                   item.unwrap.expr?.fun
-                                   :ident (in item.unwrap.expr?.fun.ident
+                                   item.stmt.expr?.fun
+                                   :ident (in item.stmt.expr?.fun.ident
                                               triggers)
                                    :otherwise nil)
                         :otherwise nil))
@@ -119,29 +118,25 @@
   (b* (((reterr) (c$::irr-fundef) nil)
        (fundef (fundef-fix fundef))
        ((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (b* ((position?
-             (block-item-list-try-split-fn-when fundef.body.items triggers))
-           ((unless position?)
-            (retok fundef nil))
-           ((erp fun-name)
-            (b* (((reterr) nil))
-              (dirdeclor-case
-                fundef.declor.direct
-                :function-params
-                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
-                :function-names
-                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
-                :otherwise (retmsg$ "Malformed syntax.")))))
-        (split-fn-fundef
-          fun-name
-          (transunit-ensemble-fresh-ident fun-name transunits)
-          fundef
-          position?))
-      :otherwise (retmsg$ "Malformed syntax."))))
+       ((declor fundef.declor) fundef.declor)
+       (position?
+        (block-item-list-try-split-fn-when (comp-stmt->items fundef.body) triggers))
+       ((unless position?)
+        (retok fundef nil))
+       ((erp fun-name)
+        (b* (((reterr) nil))
+          (dirdeclor-case
+           fundef.declor.direct
+           :function-params
+           (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+           :function-names
+           (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+           :otherwise (retmsg$ "Malformed syntax.")))))
+    (split-fn-fundef
+     fun-name
+     (transunit-ensemble-fresh-ident fun-name transunits)
+     fundef
+     position?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

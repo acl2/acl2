@@ -457,7 +457,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;disabled during library proofs
@@ -1026,3 +1026,13 @@
 :hints (("Goal" :use (:instance bvchop-tighten-when-not-bvlt-of-constant-helper
                                 (x (bvchop size x)))
          :in-theory (disable bvchop-tighten-when-not-bvlt-of-constant-helper))))
+
+(defthm bvlt-of-ifix-arg2
+  (equal (bvlt size (ifix x) y)
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-of-ifix-arg3
+  (equal (bvlt size x (ifix y))
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))

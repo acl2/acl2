@@ -982,9 +982,9 @@
 
 (thm (equal (not (bool-fix x)) (not x)))
 
-(thm (equal (boolif (bool-fix test) x y) (boolif test x y)))
-(thm (equal (boolif test (bool-fix x) y) (boolif test x y)))
-(thm (equal (boolif test x (bool-fix y)) (boolif test x y)))
+(thm (equal (boolif (bool-fix test) x y) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
+(thm (equal (boolif test (bool-fix x) y) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
+(thm (equal (boolif test x (bool-fix y)) (boolif test x y)) :hints (("Goal" :in-theory (enable boolif))))
 
 ;; Determines the type (if any) for NODENUM induced by PARENT-EXPR. For
 ;; example, (bvplus '32 100 200) induces a BV type of width 32 for node 100 and
@@ -1646,10 +1646,19 @@
 (local
   (defthm node-given-empty-type-type
     (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  )
+             (or (null (node-given-empty-type known-nodenum-type-alist))
+                 (and (integerp (node-given-empty-type known-nodenum-type-alist))
+                      (<= 0 (node-given-empty-type known-nodenum-type-alist)))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+
+(local
+  (defthm node-given-empty-type-return-type-rewrite
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
                   (node-given-empty-type known-nodenum-type-alist))
              (and (integerp (node-given-empty-type known-nodenum-type-alist))
-                  (<= 0 (node-given-empty-type known-nodenum-type-alist))))
-    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+                  (<= 0 (node-given-empty-type known-nodenum-type-alist))))))
 
 (local
   (defthm <-of-node-given-empty-type
@@ -2180,6 +2189,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+  (defthm helper
+    (implies (<= 0 x)
+             (not (< x -1)))))
+
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
@@ -2389,7 +2403,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (bounded-stp-resultp (mv-nth 0 (prove-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
                                 dag-len))
-  :hints (("Goal" :in-theory (e/d (prove-implication-with-stp) ()))))
+  :hints (("Goal" :in-theory (enable prove-implication-with-stp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

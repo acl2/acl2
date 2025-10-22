@@ -17,6 +17,8 @@
 
 ;; STATUS: COMPLETE
 
+;; cert_param: (uses-stp)
+
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/x86/loop-lifter" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
@@ -45,14 +47,13 @@
 
 ;; Below, we simplify this (e.g., by projecting out just the state component we care about).
 (lift-subroutine factorial
-                 "_fact"
-                 "factorial.macho64"
-                 3
-                 60 ;number of bytes in factorial
-                 ((20 . ;offset to loop header
-                      (20 24 30 33 37 40 43 46 49) ;loop pc offsets
-                      ))
-                 :measures ((20 (bvchop 32 var20))))
+                 :target "_fact"
+                 :executable "factorial.macho64"
+                 :loops ((20 . ;offset to loop header
+                             (20 24 30 33 37 40 43 46 49) ;loop pc offsets
+                             ))
+                 :measures ((20 (bvchop 32 var20)))
+                 :stack-slots 3)
 
 ;; Test the lifted code:
 (acl2::assert-equal (factorial 6 0) 720)
@@ -73,7 +74,7 @@
 (def factorial-loop-1.2
   (simplify factorial-loop-1.2-pre))
 
-;; Drop all the extra params that do no support the output we care about:
+;; Drop all the extra params that do not support the output we care about:
 (def factorial-loop-1.3
   (drop-irrelevant-params factorial-loop-1.2 (rax flag-af flag-cf flag-of flag-pf flag-sf flag-zf undef)))
 

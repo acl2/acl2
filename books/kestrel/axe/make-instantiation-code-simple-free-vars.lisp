@@ -160,7 +160,8 @@
                    (all-myquotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :skip-others t
-        :hints (("Goal" :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name) (myquotep)))))
+        :hints (("Goal" :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name myquotep-when-axe-treep)
+                                        (myquotep)))))
 
        (verify-guards ,instantiate-hyp-name :hints (("Goal" :in-theory (enable pseudo-termp))))
 

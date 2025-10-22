@@ -135,7 +135,8 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-no-free-vars-name
                                            ,instantiate-hyp-no-free-vars-lst-name
-                                           assoc-equal-iff-member-equal-of-strip-cars))))
+                                           assoc-equal-iff-member-equal-of-strip-cars
+                                           myquotep-when-axe-treep))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-no-free-vars-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
@@ -163,7 +164,8 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :skip-others t
         :hints (("Goal" :expand (,instantiate-hyp-no-free-vars-lst-name terms alist interpreted-function-alist)
-                 :in-theory (e/d (,instantiate-hyp-no-free-vars-name ,instantiate-hyp-no-free-vars-lst-name) (myquotep)))))
+                 :in-theory (e/d (,instantiate-hyp-no-free-vars-name ,instantiate-hyp-no-free-vars-lst-name myquotep-when-axe-treep)
+                                 (myquotep)))))
 
        (verify-guards ,instantiate-hyp-no-free-vars-name :hints (("Goal" :expand (free-vars-in-term term)
                                                      :in-theory (enable pseudo-termp)

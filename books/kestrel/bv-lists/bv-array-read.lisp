@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,11 +20,11 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-;; Readd the element at position INDEX of the array DATA, which should be a
+;; Read the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
 ;; ELEMENT-SIZE.  The INDEX should be less than LEN.  This function chops the
 ;; index, to follow the convention that BV functions chop their arguments. This
-;; function now returns 0 if the trimmed index is too long.  Don't change that
+;; function now returns 0 if the chopped index is too long.  Don't change that
 ;; behavior without also changing how calls to bv-array-read are translated to
 ;; STP.
 (defund bv-array-read (element-size len index data)
@@ -161,6 +161,7 @@
          0)
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; If the index fits in ISIZE bits, we only need 2^ISIZE elements.
 (defthmd bv-array-read-shorten-core
   (implies (and (unsigned-byte-p isize index)
                 (< (expt 2 isize) len)
@@ -258,7 +259,7 @@
 (defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
   (implies (and (natp len)
                 (natp index))
-           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
+           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len))) data)
                   (bv-array-read element-width len index data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
@@ -285,7 +286,7 @@
   (implies (not (integerp arg3))
            (equal (bv-array-read arg1 arg2 arg3 arg4)
                   (bv-array-read arg1 arg2 0 arg4)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthmd bv-array-read-shorten-when-<
   (implies (and (syntaxp (quotep data))
@@ -300,12 +301,13 @@
                   (bv-array-read element-size k index (take k data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; Discards array values at the end that cannot be accessed
 (defthmd bv-array-read-shorten-when-<=
   (implies (and (syntaxp (quotep data))
                 (<= index k) ; k is a free var
                 (syntaxp (and (quotep k)
                               (quotep len)))
-                (< (+ 1 k) len) ; avoid loops
+                (< (+ 1 k) len) ; avoids loops
                 (natp index)
                 (natp k)
                 (natp len))

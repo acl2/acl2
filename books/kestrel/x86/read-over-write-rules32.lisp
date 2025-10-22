@@ -917,11 +917,11 @@
 (defthm stack-segment-assumptions32-of-write-to-segment
   (equal (stack-segment-assumptions32 stack-slots-needed (write-to-segment n eff-addr seg-reg val x86))
          (stack-segment-assumptions32 stack-slots-needed x86))
-  :hints (("Goal" :in-theory (e/d () (;; x86isa::rgfi-is-i64p
+  :hints (("Goal" :in-theory (disable ;; x86isa::rgfi-is-i64p
                                       ;; x86isa::seg-hidden-basei-is-n64p
                                       ;; x86isa::seg-hidden-limiti-is-n32p
                                       ;; x86isa::seg-hidden-attri-is-n16p
-                                      ))))) ;bad forcing
+                                      )))) ;bad forcing
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1511,7 +1511,7 @@
             sbvlt-of-myif-arg2-safe
             sbvlt-of-myif-arg3-safe
             integerp-when-unsigned-byte-p-free ;needed for update-nth reasoning for object arrays (but we may change that)
-            <-of-constant-when-usb ;needed for update-nth reasoning for object arrays (but we may change that)a
+            <-of-constant-when-usb ;needed for update-nth reasoning for object arrays (but we may change that)
             max                    ;used in object array reasoning
             SBVLT-OF-+-ARG2        ;used in object array reasoning
             ;;SBVLT-OF-+-ARG3
@@ -1610,8 +1610,7 @@
 ;; ;todo: compare to phased-bv-axe-rule-sets
 ;; note that this builds in the "smart" symbolic execution rules.
 (defun phased-rule-alists-for-symbolic-execution (state)
-  (declare (xargs :stobjs state
-                  :guard (ilks-plist-worldp (w state))))
+  (declare (xargs :stobjs state))
   (list (make-rule-alist! (phase-1-rules)
                           (w state))
         ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
