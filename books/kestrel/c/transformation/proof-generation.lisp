@@ -3456,8 +3456,6 @@
                    :thm-name thm-name
                    :vartys vartys-after-fundef)))
 
-  :guard-debug t ; <<<<<<<<<<<<<<
-
   :prepwork
   ((local (in-theory (disable (:e tau-system)))) ; for speed
    (define xeq-fundef-loop ((thms symbol-listp) (fun stringp))
