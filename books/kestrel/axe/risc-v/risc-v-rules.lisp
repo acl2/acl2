@@ -81,7 +81,12 @@
                  0
                (loghead 32 val))
            ;; different registers:
-           (read32-xreg-unsigned reg1 stat))))
+           (read32-xreg-unsigned reg1 stat)))
+  :hints (("Goal" :in-theory (enable read32-xreg-unsigned
+                                     write32-xreg
+                                     xregs32i-fix
+                                     xregs32ip
+                                     ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
