@@ -471,7 +471,10 @@
                       5 instr.rs1
                       5 instr.rs2
                       7 imm-11-5))))
-  :guard-hints (("Goal" :in-theory (enable fix ifix instr-validp))))
+  :guard-hints (("Goal" :in-theory (enable fix
+                                           ifix
+                                           instr-validp
+                                           (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

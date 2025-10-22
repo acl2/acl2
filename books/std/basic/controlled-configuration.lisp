@@ -34,6 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun controlled-configuration-fn (induction-depth
+                                    tau
                                     no-function
                                     hooks
                                     state)
@@ -43,6 +44,8 @@
      (local (acl2::disable-most-builtin-logic-defuns))
      (local (acl2::disable-builtin-rewrite-rules-for-defaults))
      (set-induction-depth-limit ,induction-depth)
+     ,@(and (not tau)
+            '((local (in-theory (disable (:e tau-system))))))
      ,@(and (not (eq (getpropc 'std::make-define-config
                                'macro-args
                                :absent
@@ -52,9 +55,11 @@
                                        :hooks ,hooks)))))
 
 (defmacro controlled-configuration (&key (induction-depth '0)
+                                         (tau 'nil)
                                          (no-function 't)
                                          (hooks '(:fix)))
   `(make-event (controlled-configuration-fn ,induction-depth
+                                            ,tau
                                             ,no-function
                                             ',hooks
                                             state)))
