@@ -62,7 +62,6 @@
     (if (= reg 0)
         0
       (nth (1- reg) (stat32i->xregs stat))))
-  :hooks (:fix)
 
   ///
 
@@ -82,8 +81,7 @@
     "The register index consists of 5 bits.
      We read an unsigned 32-bit integer from the register,
      and convert it to signed."))
-  (logext 32 (read32-xreg-unsigned reg stat))
-  :hooks (:fix))
+  (logext 32 (read32-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,8 +128,7 @@
    (xdoc::p
     "The result is an unsigned 32-bit integer,
      read directly from the register."))
-  (stat32i->pc stat)
-  :hooks (:fix))
+  (stat32i->pc stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,8 +168,7 @@
    (xdoc::p
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write32-pc) wraps around if needed [ISA:1.4]."))
-  (write32-pc (+ (read32-pc stat) 4) stat)
-  :hooks (:fix))
+  (write32-pc (+ (read32-pc stat) 4) stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,8 +217,7 @@
   (b* ((b0 (read32-mem-ubyte8 addr stat))
        (b1 (read32-mem-ubyte8 (1+ (ifix addr)) stat)))
     (+ b0
-       (ash b1 8)))
-  :hooks (:fix))
+       (ash b1 8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,8 +236,7 @@
     (+ b0
        (ash b1 8)
        (ash b2 16)
-       (ash b3 24)))
-  :hooks (:fix))
+       (ash b3 24))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,13 +321,11 @@
 (define error32p ((stat stat32ip))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
-  (stat32i->error stat)
-  :hooks (:fix))
+  (stat32i->error stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define error32 ((stat stat32ip))
   :returns (new-stat stat32ip)
   :short "Set the error flag in the state."
-  (change-stat32i stat :error t)
-  :hooks (:fix))
+  (change-stat32i stat :error t))

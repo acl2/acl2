@@ -148,7 +148,6 @@
     (if (= reg 0)
         0
       (nth (1- reg) (state64->xregfile stat))))
-  :hooks (:fix)
 
   ///
 
@@ -168,8 +167,7 @@
     "The register index consists of 5 bits.
      We read an unsigned 64-bit integer from the register,
      and convert it to signed."))
-  (logext 64 (read64-xreg-unsigned reg stat))
-  :hooks (:fix))
+  (logext 64 (read64-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,8 +181,7 @@
     "The register index consists of 5 bits.
      We read an unsigned 64-bit integer from the register,
      and we keep the low 32 bits, stil unsigned."))
-  (loghead 32 (read64-xreg-unsigned reg stat))
-  :hooks (:fix))
+  (loghead 32 (read64-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,8 +195,7 @@
     "The register index consists of 5 bits.
      We read a signed 64-bit integer fromt he register,
      and we keep the low 32 bits, stil signed."))
-  (logext 32 (read64-xreg-signed reg stat))
-  :hooks (:fix))
+  (logext 32 (read64-xreg-signed reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,8 +266,7 @@
    (xdoc::p
     "The result is an unsigned 64-bit integer,
      read directly from the register."))
-  (state64->pc stat)
-  :hooks (:fix))
+  (state64->pc stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,8 +306,7 @@
    (xdoc::p
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write64-pc) wraps around if needed [ISA:1.4]."))
-  (write64-pc (+ (read64-pc stat) 4) stat)
-  :hooks (:fix))
+  (write64-pc (+ (read64-pc stat) 4) stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,8 +355,7 @@
   (b* ((b0 (read64-mem-ubyte8 addr stat))
        (b1 (read64-mem-ubyte8 (1+ (ifix addr)) stat)))
     (+ b0
-       (ash b1 8)))
-  :hooks (:fix))
+       (ash b1 8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,8 +374,7 @@
     (+ b0
        (ash b1 8)
        (ash b2 16)
-       (ash b3 24)))
-  :hooks (:fix))
+       (ash b3 24))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,8 +402,7 @@
        (ash b4 32)
        (ash b5 40)
        (ash b6 48)
-       (ash b7 56)))
-  :hooks (:fix))
+       (ash b7 56))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,13 +526,11 @@
 (define error64p ((stat state64p))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
-  (state64->error stat)
-  :hooks (:fix))
+  (state64->error stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define error64 ((stat state64p))
   :returns (new-stat state64p)
   :short "Set the error flag in the state."
-  (change-state64 stat :error t)
-  :hooks (:fix))
+  (change-state64 stat :error t))

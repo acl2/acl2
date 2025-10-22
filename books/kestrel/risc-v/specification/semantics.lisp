@@ -86,7 +86,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -126,7 +125,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -166,7 +164,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -208,7 +205,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -250,7 +246,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -292,7 +287,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -323,7 +317,6 @@
                      :andi (exec-andi rd rs1 imm stat feat)
                      :ori (exec-ori rd rs1 imm stat feat)
                      :xori (exec-xori rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -360,7 +353,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -398,7 +390,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -437,7 +428,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -476,7 +466,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -515,7 +504,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -554,7 +542,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -583,7 +570,6 @@
                       :slli (exec-slli32 rd rs1 imm stat feat)
                       :srli (exec-srli32 rd rs1 imm stat feat)
                       :srai (exec-srai32 rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -611,7 +597,6 @@
                       :slli (exec-slli64 rd rs1 imm stat feat)
                       :srli (exec-srli64 rd rs1 imm stat feat)
                       :srai (exec-srai64 rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -651,7 +636,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -682,7 +666,6 @@
     "These are only valid in 64-bit mode."))
   (op-imm-32-funct-case funct
                         :addiw (exec-addiw rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -721,7 +704,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -762,7 +744,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -803,7 +784,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -836,7 +816,6 @@
                          :slliw (exec-slliw rd rs1 imm stat feat)
                          :srliw (exec-srliw rd rs1 imm stat feat)
                          :sraiw (exec-sraiw rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -872,7 +851,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -916,7 +894,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -954,7 +931,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -992,7 +968,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1031,7 +1006,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1070,7 +1044,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1109,7 +1082,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1148,7 +1120,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1187,7 +1158,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1233,7 +1203,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1279,7 +1248,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1326,7 +1294,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1363,7 +1330,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1403,7 +1369,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1443,7 +1408,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1484,7 +1448,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1526,7 +1489,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1568,7 +1530,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1611,7 +1572,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1654,7 +1614,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1702,7 +1661,6 @@
                  :divu (exec-divu rd rs1 rs2 stat feat)
                  :rem (exec-rem rd rs1 rs2 stat feat)
                  :remu (exec-remu rd rs1 rs2 stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -1741,7 +1699,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1778,7 +1735,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1819,7 +1775,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1861,7 +1816,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1903,7 +1857,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1942,7 +1895,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1985,7 +1937,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2028,7 +1979,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2072,7 +2022,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2116,7 +2065,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2157,7 +2105,6 @@
                     :divuw (exec-divuw rd rs1 rs2 stat feat)
                     :remw (exec-remw rd rs1 rs2 stat feat)
                     :remuw (exec-remuw rd rs1 rs2 stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2205,7 +2152,6 @@
        (stat (write-pc target-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2254,7 +2200,6 @@
        (stat (write-pc target-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2309,7 +2254,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2362,7 +2306,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2415,7 +2358,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2468,7 +2410,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2521,7 +2462,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2574,7 +2514,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2604,7 +2543,6 @@
                      :bltu (exec-bltu rs1 rs2 imm pc stat feat)
                      :bge (exec-bge rs1 rs2 imm pc stat feat)
                      :bgeu (exec-bgeu rs1 rs2 imm pc stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2630,8 +2568,7 @@
   (b* ((base (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (offset (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm)))))
     (+ base offset))
-  :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2660,7 +2597,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2696,7 +2632,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2733,7 +2668,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2769,7 +2703,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2804,7 +2737,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2843,7 +2775,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2881,7 +2812,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2916,7 +2846,6 @@
                    :lw (exec-lw rd rs1 imm stat feat)
                    :lwu (exec-lwu rd rs1 imm stat feat)
                    :ld (exec-ld rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2950,7 +2879,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2983,7 +2911,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3022,7 +2949,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3058,7 +2984,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3087,7 +3012,6 @@
                     :sh (exec-sh rs1 rs2 imm stat feat)
                     :sw (exec-sw rs1 rs2 imm stat feat)
                     :sd (exec-sd rs1 rs2 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -3190,7 +3114,6 @@
   :guard-hints (("Goal"
                  :in-theory (enable instr-validp)
                  :cases ((feat-embedp feat))))
-  :hooks (:fix)
 
   :prepwork
   ((defrulel lemma

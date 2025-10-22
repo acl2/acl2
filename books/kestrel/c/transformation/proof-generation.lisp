@@ -621,7 +621,7 @@
        (vars-post (gen-var-assertions vartys 'old-compst))
        ((mv & old-stmt) (ldm-stmt old)) ; ERP is NIL because FORMALP
        ((mv & new-stmt) (ldm-stmt new)) ; ERP is NIL because FORMALP
-       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (formula
         `(b* ((old-stmt ',old-stmt)
               (new-stmt ',new-stmt)
