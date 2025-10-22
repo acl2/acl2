@@ -579,6 +579,7 @@
              nil))
          (instr-jal rd imm)))
       (t nil)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :hooks (:fix)
 
   ///
