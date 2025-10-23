@@ -172,7 +172,12 @@
            the time elapsed (from @(tsee time$))
            and the number of instructions (i.e. steps) executed (from the function).
            Dividing the latter by the former yields
-           the average number of executed instructions per second.</p>"))
+           the average number of executed instructions per second.</p>
+
+           <p>The function above runs the model until we enter privilege level 3,
+           which corresponds to user mode.
+           Thus, the function executes Linux until
+           it drops into user mode to run @('init').</p>"))
 
 (defxdoc building-linux
          :parents (running-linux)
