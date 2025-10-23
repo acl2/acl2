@@ -28,8 +28,7 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
