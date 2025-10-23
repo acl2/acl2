@@ -222,7 +222,8 @@
 ;;    can derive the function call.  However, these should be considered lower
 ;;    priority and we need to take care that we don't get confused by loops --
 ;;    e.g. elimination rules (below) will go in the opposite direction and
-;;    should be considered higher priority.
+;;    should be considered higher priority. This can be turned off for a function
+;;    symbol using (ctrex-no-implicit fn).
 
 ;;
 ;;  - Elimination rules.  These are basically destructor elimination rules, of the form
@@ -852,7 +853,11 @@
               :g-cons (mv 'cons (list x.car x.cdr))
               :g-apply (mv x.fn x.args)
               :otherwise (mv nil nil)))
-           ((unless fnsym)
+           ((unless (and fnsym
+                         (not (cdr (hons-get fnsym
+                                             (cdr (hons-assoc-equal
+                                                   'ctrex-no-implicit
+                                                   (table-alist 'fgl-ctrex-rules wrld))))))))
             (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
            (arg-vars (make-argvars "ARG" (len args) nil))
            (success-vars (make-argvars "ARG-SUCCESS" (len args) nil))
@@ -2307,15 +2312,23 @@
                                            (:fixup *ctrex-order-last*)
                                            (otherwise *ctrex-order-mid*)))
                               :ruletype keys.ruletype)))
-    `(table fgl-ctrex-rules nil (ctrex-rule-matches-to-ruletable
-                                 ',match ',rule
-                                 (make-fast-alist
-                                  (table-alist 'fgl-ctrex-rules world)))
-            :clear)))
+    `(table fgl-ctrex-rules 'ctrex-rules
+            (ctrex-rule-matches-to-ruletable
+             ',match ',rule
+             (make-fast-alist
+              (cdr (assoc-eq 'ctrex-rules (table-alist 'fgl-ctrex-rules world))))))))
 
 (defmacro def-ctrex-rule (name &rest args)
   `(make-event
     (def-ctrex-rule-fn ',name ',args (w state))))
+
+
+(defmacro ctrex-no-implicit (name)
+  `(table fgl-ctrex-rules
+          'ctrex-no-implicit
+          (hons-acons ',name t (make-fast-alist
+                                (cdr (assoc-eq 'ctrex-no-implicit
+                                               (table-alist 'fgl-ctrex-rules world)))))))
 
 (defxdoc def-ctrex-rule
   :parents (fgl-counterexamples)
@@ -2571,7 +2584,10 @@ compute a value for @('x').</p>
                 (env$ (interp-st->ctrex-env interp-st)))
                (errmsg cgraph memo cgraph-index env$ assigns)
                (b* ((env$ (bfr-env$-fix env$ (logicman->bfrstate)))
-                    (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
+                    (ruletable (make-fast-alist
+                                (cdr (hons-assoc-equal
+                                      'ctrex-rules
+                                      (table-alist 'fgl-ctrex-rules (w state))))))
                     ((unless (and (ctrex-ruletable-p ruletable)
                                   (ctrex-ruletable-bfr-free ruletable)))
                      (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$ nil))
