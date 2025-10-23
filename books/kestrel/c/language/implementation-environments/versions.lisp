@@ -10,14 +10,12 @@
 
 (in-package "C")
 
-(include-book "centaur/fty/top" :dir :system)
-
 (include-book "../../portcullis")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "centaur/fty/top" :dir :system)
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,8 +67,7 @@
     "That is, check whether the C version is C17,
      with or without GCC extensions."))
   (or (version-case version :c17)
-      (version-case version :c17+gcc))
-  :hooks (:fix))
+      (version-case version :c17+gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -83,8 +80,7 @@
     "That is, check whether the C version is C23,
      with or without GCC extensions."))
   (or (version-case version :c23)
-      (version-case version :c23+gcc))
-  :hooks (:fix))
+      (version-case version :c23+gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,5 +88,4 @@
   :returns (yes/no booleanp)
   :short "Check if this C version includes GCC extensions or not."
   (or (version-case version :c17+gcc)
-      (version-case version :c23+gcc))
-  :hooks (:fix))
+      (version-case version :c23+gcc)))

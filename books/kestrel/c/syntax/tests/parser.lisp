@@ -1213,3 +1213,12 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-translation-unit
  ""
  :gcc t)
+
+(test-parse
+ parse-translation-unit
+ "int foo(x)
+  int x;
+{
+  return x;
+}
+")
