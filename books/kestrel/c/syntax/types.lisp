@@ -20,8 +20,8 @@
 
 (include-book "std/util/defirrelevant" :dir :system)
 
-(local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
