@@ -340,7 +340,7 @@ galloping.</p>"
                (t
                 (fast-subset X (cdr Y))))))
 
-  (defun subset (X Y)
+  (defun-inline subset (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
     (mbe :logic
@@ -397,7 +397,7 @@ galloping.</p>"
              :hints(("Goal" :in-theory (enable (:ruleset order-rules))
                      :induct (fast-subset X Y)))))
 
-    (verify-guards subset)))
+    (verify-guards subset$inline)))
 
 
 
@@ -613,7 +613,7 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
 
   (defthm pick-a-point-subset-strategy
     (implies (and (syntaxp (rewriting-goal-lit mfc state))
-                  (syntaxp (rewriting-conc-lit `(subset ,X ,Y) mfc state)))
+                  (syntaxp (rewriting-conc-lit `(subset$inline ,X ,Y) mfc state)))
              (equal (subset X Y)
                     (subset-trigger X Y))))
 
