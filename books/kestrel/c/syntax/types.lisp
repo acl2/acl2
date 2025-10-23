@@ -1205,21 +1205,14 @@
              (type-list-compatiblep x y ienv))
       :flag type-list-compatiblep)))
 
-(encapsulate ()
-  (local
-    (defun double-list-induct (x y)
-      (if (and (consp x)
-               (consp y))
-          (double-list-induct (cdr x) (cdr y))
-        nil)))
-
-  (defruled len-when-type-list-compatiblep
-    (implies (type-list-compatiblep x y ienv)
-             (equal (len y)
-                    (len x)))
-    :induct (double-list-induct x y)
-    :enable (type-list-compatiblep
-             len)))
+(defruled len-when-type-list-compatiblep
+  (implies (type-list-compatiblep x y ienv)
+           (equal (len y)
+                  (len x)))
+  :induct (acl2::cdr-cdr-induct x y)
+  :enable (type-list-compatiblep
+           len)
+  :prep-books ((include-book "std/basic/inductions" :dir :system)))
 
 (defruled consp-when-type-list-compatiblep
   (implies (type-list-compatiblep x y ienv)
