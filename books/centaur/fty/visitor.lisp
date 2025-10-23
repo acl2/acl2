@@ -1053,6 +1053,13 @@
     :short
     :long))
 
+(define visitor-remove-types-from-alist (al typenames)
+  (if (atom al)
+      nil
+    (if (member (caar al) typenames)
+        (visitor-remove-types-from-alist (cdr al) typenames)
+      (cons (car al) (visitor-remove-types-from-alist (cdr al) typenames)))))
+
 (define process-defvisitor (name kwd-alist wrld)
   ;; returns (mv local-template store-template types)
   (b* ((template (cdr (assoc :template kwd-alist)))
@@ -1097,24 +1104,33 @@
        (x1-with-renaming (change-visitorspec x1 :fnname-template fnname-template
                                              :renames renames))
        (unbound-types (visitor-omit-bound-types types x1.type-fns))
-       (new-type-fns (append (visitor-add-type-fns unbound-types x1-with-renaming)
+       ;; these are the types for which functions will be generated:
+       (added-type-fns (visitor-add-type-fns unbound-types x1-with-renaming))
+       (new-type-fns (append added-type-fns
                              x1.type-fns))
 
        ;; this will be the visitorspec that we store in the table afterward; we
        ;; assume the renamings are temporary.
-       (store-template (change-visitorspec x1 :type-fns new-type-fns
+       (store-template1 (change-visitorspec x1 :type-fns new-type-fns
                                            :field-fns x1.field-fns
                                            :prod-fns x1.prod-fns))
 
        (local-template
-        (change-visitorspec store-template
+        (change-visitorspec store-template1
                             :wrld wrld
                             :fnname-template fnname-template
                             :renames renames
                             :defines-args (std::getarg :defines-args x1.defines-args kwd-alist)
                             :define-args (std::getarg :define-args x1.define-args kwd-alist)
                             :measure (cdr (assoc :measure kwd-alist))
-                            :order (cdr (assoc :order kwd-alist)))))
+                            :order (cdr (assoc :order kwd-alist))))
+       
+       ;; We remove types for which we're defining functions from the renames;
+       ;; they'll now be stored in type-fns.  This is needed because
+       ;; defvisitors keeps track of what is already defined by what is in
+       ;; type-fns and not renames.
+       (store-renames (visitor-remove-types-from-alist x1.renames (flextypelist-names types)))
+       (store-template (change-visitorspec store-template1 :renames store-renames)))
     (mv local-template store-template types)))
 
 
@@ -1423,6 +1439,9 @@
          (visitor-type-make-type-graph (car types) x wrld type-graph leaf-types)))
      (visitor-types-make-type-graph (cdr types) x wrld type-graph leaf-types))))
 
+(define visitor-types-make-type-graph-top (types x wrld)
+  (visitor-types-make-type-graph types x wrld nil nil))
+
 (define visitor-reverse-graph-putlist (froms to revgraph)
   (b* (((when (atom froms))
         revgraph)
@@ -1567,7 +1586,7 @@
 
        ;; Step 1.
        ((mv type-graph leaf-types)
-        (visitor-types-make-type-graph types x1 wrld nil nil))
+        (visitor-types-make-type-graph-top types x1 wrld))
 
        ;; 2.
        (rev-graph (visitor-reverse-graph type-graph))
