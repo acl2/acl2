@@ -39,6 +39,11 @@
 
 (define abort-current-rewrite (&key (interp-st 'interp-st))
   :returns new-interp-st
+  :parents (fgl-rewrite-rules)
+  :short "Sets an error flag in the FGL interpreter state so that it will abort the current rewrite rule application attempt."
+  :long "<p>Can be run by @(see fancy-ev), e.g. inside FGL's @(see
+ syntax-interp) or @(see syntax-bind) as well as in @('syntaxp') and @('bind-free')
+ hypotheses in FGL rewrite rules.</p>"
   (if (interp-st->errmsg interp-st)
       interp-st
     (update-interp-st->errmsg :abort-rewrite interp-st))

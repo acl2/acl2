@@ -308,7 +308,7 @@
 (def-trace-output fgl-trace-entry-output ()
   :key :on-entry
   :description "trace entry term"
-  :default (msg "~x0 ~x1~%" rune bindings)
+  :default  (msg "~x0 ~x1~%" rune bindings)
   :direction :entry)
 
 
@@ -555,7 +555,7 @@ the arguments are optional keyword/value pairs among the following:</p>
 applications where @('cond-expr') evaluates to true.  The expression may use the standard
 trace variables (see below).</li>
 
-<li>@(':entry entry-expr'): If provided, @('entry-expr') is evaluated when
+<li>@(':on-entry entry-expr'): If provided, @('entry-expr') is evaluated when
 starting an attempt to apply the rule. The expression may use the standard
 trace variables. The resulting object should either be @('nil'), in which case
 nothing is printed, @(':default'), in which case the default entry message is
@@ -663,6 +663,8 @@ none, available in @(':on-failure') and @(':on-eval-failure') cases.</li>
 <li>@('rhs'): the computed RHS term returned by a metafunction, available in
 the @(':on-eval-success') and metafunctions' @(':on-success') and
 @(':on-failure') cases.</li>
+
+</ul>
 
 
 <h3>Tracing rules during FGL processing</h3>

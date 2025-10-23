@@ -1266,7 +1266,7 @@ the target term's ELSE branch, by negating the IF test.</li>
 
 <li>Rewrite rules on IF: If no branch merge rule succeeds, FGL also applies
 regular rewrite rules that have IF terms as left-hand sides. This allows rules
-to target IFs that don't have function calls for either branch.</p>
+to target IFs that don't have function calls for either branch.</li>
 
 <li>Recursive merging of function arguments: If both branches are calls of the
 same function (or can be viewed as calls of the same function -- e.g. one is a
@@ -1369,7 +1369,7 @@ including checks for equality.</li>
 
 </ul>
 
-<p>The @(see def-fgl-fty-sum-splitter) utility defines a representation and
+<p>The @(see fty::def-fgl-fty-sum-splitter) utility defines a representation and
 suitable rules for an FTY sum-of-products type, so as to be able to
 symbolically represent an object of that type which may be any of several kinds
 of products.</p>
