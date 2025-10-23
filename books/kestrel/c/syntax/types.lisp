@@ -20,11 +20,8 @@
 
 (include-book "std/util/defirrelevant" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration))
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -300,7 +297,6 @@
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
        t)
-  :hooks (:fix)
 
   ///
 
@@ -324,7 +320,6 @@
      so the signed integer types coincide with
      the standard signed integer types."))
   (type-standard-signed-integerp type)
-  :hooks (:fix)
 
   ///
 
@@ -341,7 +336,6 @@
   :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
        t)
-  :hooks (:fix)
 
   ///
 
@@ -366,7 +360,6 @@
      so the unsigned integer types coincide with
      the standard unsigned integer types."))
   (type-standard-unsigned-integerp type)
-  :hooks (:fix)
 
   ///
 
@@ -383,7 +376,6 @@
   :short "Check if a type is a standard integer type [C17:6.2.5/7]."
   (or (type-standard-signed-integerp type)
       (type-standard-unsigned-integerp type))
-  :hooks (:fix)
 
   ///
 
@@ -401,7 +393,6 @@
   :short "Check if a type is a real floating type [C17:6.2.5/10]."
   (and (member-eq (type-kind type) '(:float :double :ldouble))
        t)
-  :hooks (:fix)
 
   ///
 
@@ -419,7 +410,6 @@
   :short "Check if a type is a complex type [C17:6.2.5/11]."
   (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
        t)
-  :hooks (:fix)
 
   ///
 
@@ -437,7 +427,6 @@
   :short "Check if a type is a floating type [C17:6.2.5/11]."
   (or (type-real-floatingp type)
       (type-complexp type))
-  :hooks (:fix)
 
   ///
 
@@ -457,7 +446,6 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-floatingp type))
-  :hooks (:fix)
 
   ///
 
@@ -477,7 +465,6 @@
   :short "Check if a type is a character type [C17:6.2.5/15]."
   (and (member-eq (type-kind type) '(:char :schar :uchar))
        t)
-  :hooks (:fix)
 
   ///
 
@@ -497,7 +484,6 @@
       (type-signed-integerp type)
       (type-unsigned-integerp type)
       (type-case type :enum))
-  :hooks (:fix)
 
   ///
 
@@ -517,7 +503,6 @@
   :short "Check if a type is a real type [C17:6.2.5/17]."
   (or (type-integerp type)
       (type-real-floatingp type))
-  :hooks (:fix)
 
   ///
 
@@ -535,7 +520,6 @@
   :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
   (or (type-integerp type)
       (type-floatingp type))
-  :hooks (:fix)
 
   ///
 
@@ -557,7 +541,6 @@
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
       (type-case type :pointer))
-  :hooks (:fix)
 
   ///
 
@@ -575,7 +558,6 @@
   :short "Check if a type is an aggregate type [C17:6.2.5/21]."
   (or (type-case type :array)
       (type-case type :struct))
-  :hooks (:fix)
 
   ///
 
@@ -600,7 +582,6 @@
      the integer ones with rank below @('int')."))
   (not (member-eq (type-kind type)
                   '(:bool :char :schar :uchar :sshort :ushort :enum)))
-  :hooks (:fix)
 
   ///
 
@@ -626,7 +607,6 @@
      integer types with rank below @('int')."))
   (not (member-eq (type-kind type)
                   '(:bool :char :schar :uchar :sshort :ushort :enum :float)))
-  :hooks (:fix)
 
   ///
 
@@ -651,8 +631,7 @@
   (type-case
     type
     :array (make-type-pointer :to type.of)
-    :otherwise (type-fix type))
-  :hooks (:fix))
+    :otherwise (type-fix type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,8 +645,7 @@
      It leaves non-function types unchanged."))
   (if (type-case type :function)
       (make-type-pointer :to (type-fix type))
-    (type-fix type))
-  :hooks (:fix))
+    (type-fix type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -713,7 +691,6 @@
              (type-uint))
    :enum (type-unknown)
    :otherwise (type-fix type))
-  :hooks (:fix)
 
   ///
 
@@ -750,8 +727,7 @@
     (type-slong))
    (t (type-sint)))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp)))
-  :hooks (:fix))
+                                           type-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -777,8 +753,7 @@
     (type-ulong))
    (t (type-uint)))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp)))
-  :hooks (:fix))
+                                           type-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -845,8 +820,7 @@
                                            type-unsigned-integerp
                                            type-signed-integerp
                                            type-standard-unsigned-integerp
-                                           type-standard-signed-integerp)))
-  :hooks (:fix))
+                                           type-standard-signed-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -937,8 +911,7 @@
                                   type-floatingp
                                   type-real-floatingp
                                   type-complexp)
-                                 ((:e tau-system)))))
-  :hooks (:fix))
+                                 ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -951,7 +924,6 @@
    :otherwise (if (type-arithmeticp type)
                   (type-integer-promote type ienv)
                 (type-fix type)))
-  :hooks (:fix)
 
   ///
 
@@ -978,7 +950,6 @@
       nil
     (cons (type-da-promote (first types) ienv)
           (type-list-da-promote (rest types) ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -1429,8 +1400,7 @@
   (if (endp pointers)
       (type-fix type)
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1469,8 +1439,7 @@
       (and (type-case type :struct)
            (type-struct->tag? type)
            (ident-formalp (type-struct->tag? type))))
-  :measure (type-count type)
-  :hooks (:fix))
+  :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1483,8 +1452,7 @@
     "This is the case if the type is absent or supported."))
   (type-option-case type?
                     :some (type-formalp type?.val)
-                    :none t)
-  :hooks (:fix))
+                    :none t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1495,8 +1463,7 @@
   (or (set::emptyp (type-set-fix types))
       (and (type-formalp (set::head types))
            (type-set-formalp (set::tail types))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
-  :hooks (:fix))
+  :prepwork ((local (in-theory (enable emptyp-of-type-set-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1507,8 +1474,7 @@
   (or (set::emptyp (type-option-set-fix type?s))
       (and (type-option-formalp (set::head type?s))
            (type-option-set-formalp (set::tail type?s))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
-  :hooks (:fix))
+  :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1557,7 +1523,6 @@
      :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
   :measure (type-count type)
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -1576,7 +1541,6 @@
   (type-option-case type?
                     :some (ldm-type type?.val)
                     :none (mv nil nil))
-  :hooks (:fix)
 
   ///
 
@@ -1599,7 +1563,6 @@
     (mv nil (set::insert type types)))
   :prepwork ((local (in-theory (enable emptyp-of-type-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -1622,7 +1585,6 @@
     (mv nil (set::insert type? type?s)))
   :prepwork ((local (in-theory (enable emptyp-of-type-option-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix)
 
   ///
 
@@ -1648,7 +1610,7 @@
       (type-kind type)
     (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
             :irrelevant))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1681,5 +1643,4 @@
    :pointer (make-type-pointer :to (ildm-type ctype.to))
    :array (make-type-array :of (ildm-type ctype.of)))
   :measure (c::type-count ctype)
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
