@@ -7,7 +7,8 @@
 0 ;total_count_book_runes
 5 ;failure_count_single_rune
 14 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test.lisp")
  (ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
   (:GOAL
    (IMPLIES
