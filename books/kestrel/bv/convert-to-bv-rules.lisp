@@ -109,3 +109,21 @@
            (equal (bvlt size x y)
                   (bvlt size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvmult-convert-arg2-to-bv
+  (implies (syntaxp (and (consp x)
+                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+           (equal (bvmult size x y)
+                  (bvmult size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvmult-convert-arg3-to-bv
+  (implies (syntaxp (and (consp y)
+                         (member-eq (ffn-symb y) *functions-convertible-to-bv*)))
+           (equal (bvmult size x y)
+                  (bvmult size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
