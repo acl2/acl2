@@ -19,10 +19,7 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +78,6 @@
          (<= signed-short-min signed-char-min)
          (<= signed-char-max signed-short-max)
          (<= unsigned-char-max unsigned-short-max)))
-  :hooks (:fix)
 
   ///
 
@@ -132,7 +128,6 @@
          (<= signed-int-min signed-short-min)
          (<= signed-short-max signed-int-max)
          (<= unsigned-short-max unsigned-int-max)))
-  :hooks (:fix)
 
   ///
 
@@ -184,7 +179,6 @@
          (<= signed-long-min signed-int-min)
          (<= signed-int-max signed-long-max)
          (<= unsigned-int-max unsigned-long-max)))
-  :hooks (:fix)
 
   ///
 
@@ -237,7 +231,6 @@
          (<= signed-llong-min signed-long-min)
          (<= signed-long-max signed-llong-max)
          (<= unsigned-long-max unsigned-llong-max)))
-  :hooks (:fix)
 
   ///
 
@@ -656,7 +649,6 @@
          (integer-format-long-wfp format.long format.uchar format.int)
          (integer-format-llong-wfp format.llong format.uchar format.long)
          (bool-format-wfp format.bool format.uchar)))
-  :hooks (:fix)
 
   ///
 
