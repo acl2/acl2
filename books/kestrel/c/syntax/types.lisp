@@ -1077,36 +1077,41 @@
     :long
     (xdoc::topstring
      (xdoc::p
-       "This is the second part of the compatibility check on function types.
-        In addition to the earlier check
-        that the return types must be compatible,
-        the following conditions must also hold."
-       (xdoc::ol
-        (xdoc::li
-         "When both function types correspond to function prototypes,
-          both must have the same number of parameters
-          and each parameter must have compatible type.
-          Furthermore, both must agree on the ellipsis terminator.")
-        (xdoc::li
-         "When one type corresponds to a function prototype
-          and the other is part of an ``old-style'' function definition,
-          each type in the parameter type list of the prototype
-          must be compatible with the corresponding of the old-style function
-          after the latter has gone through default argument promotion.
-          Furthermore, the prototype must not feature an ellipsis terminator.")
-        (xdoc::li
-         "When one type corresponds to a function prototype
-          and the other has an empty identifier list
-          and is not derived from a function definition,
-          the type of each parameter in the function prototype
-          must be compatible with itself after default argument promotion.
-          Furthermore, the prototype must not feature
-          an ellipsis terminator."))
-       "In the above mention of parameter types,
-        we mean the type after adjustment [C17:6.7.6.3/7-8].
-        This requires no special consideration here,
-        since we always represent function types post-adjustment
-        (see @(see type))."))
+      "This is the second part of the compatibility check on function types.
+       In addition to the earlier check
+       that the return types must be compatible,
+       the following conditions must also hold."
+      (xdoc::ol
+       (xdoc::li
+        "When both function types correspond to function prototypes,
+         both must have the same number of parameters
+         and each parameter must have compatible type.
+         Furthermore, both must agree on the ellipsis terminator.")
+       (xdoc::li
+        "When one type corresponds to a function prototype
+         and the other is part of an ``old-style'' function definition,
+         each type in the parameter type list of the prototype
+         must be compatible with the corresponding of the old-style function
+         after the latter has gone through default argument promotion.
+         Furthermore, the prototype must not feature an ellipsis terminator.")
+       (xdoc::li
+        "When one type corresponds to a function prototype
+         and the other has an empty identifier list
+         and is not derived from a function definition,
+         the type of each parameter in the function prototype
+         must be compatible with itself after default argument promotion.
+         Furthermore, the prototype must not feature
+         an ellipsis terminator."))
+      "Note that no checks are required
+       when neither function type includes a function prototype;
+       it is sufficient that the two function types
+       have the compatible return types.")
+     (xdoc::p
+      "In the above mention of parameter types,
+       we mean the type after adjustment [C17:6.7.6.3/7-8].
+       This requires no special consideration here,
+       since we always represent function types post-adjustment
+       (see @(see type))."))
     (type-params-case
       x
       :prototype
