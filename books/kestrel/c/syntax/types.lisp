@@ -595,14 +595,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-da-promotedp ((type typep))
+(define type-default-arg-promotedp ((type typep))
   :guard (type-arithmeticp type)
   :returns (yes/no booleanp)
   :short "Check if type is a default argument promoted type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check if it is a possible result of @(tsee type-da-promote).
+    "That is, check if it is a possible result of
+     @(tsee type-default-arg-promote).
      This holds for all types except @('float') and
      integer types with rank below @('int')."))
   (not (member-eq (type-kind type)
@@ -610,10 +611,10 @@
 
   ///
 
-  (defrule type-da-promotedp-when-type-kind-syntaxp
+  (defrule type-default-arg-promotedp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-da-promotedp type)
+             (equal (type-default-arg-promotedp type)
                     (not (member-equal kind
                                        '(:bool :char :schar :uchar :sshort
                                          :ushort :enum :float)))))))
@@ -915,7 +916,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-da-promote ((type typep) (ienv ienvp))
+(define type-default-arg-promote ((type typep) (ienv ienvp))
   :returns (new-type typep)
   :short "Perform default argument promotion on a type [C17:6.5.2.2/6]."
   (type-case
@@ -928,39 +929,40 @@
   ///
 
   (more-returns
-   (new-type type-da-promotedp
-             :hints (("Goal" :in-theory (enable type-da-promotedp
+   (new-type type-default-arg-promotedp
+             :hints (("Goal" :in-theory (enable type-default-arg-promotedp
                                                 type-integer-promote)))))
 
-  (defrule type-count-of-type-da-promote
-    (equal (type-count (type-da-promote type ienv))
+  (defrule type-count-of-type-default-arg-promote
+    (equal (type-count (type-default-arg-promote type ienv))
            (type-count type))
     :enable type-count))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-list-da-promote ((types type-listp) (ienv ienvp))
+(define type-list-default-arg-promote ((types type-listp) (ienv ienvp))
   :returns (new-types type-listp)
   :short "Perform default argument promotion on each type in a list."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a map of the @(tsee type-da-promote) function over a list."))
+    "This is a map of the @(tsee type-default-arg-promote) function
+     over a list."))
   (if (endp types)
       nil
-    (cons (type-da-promote (first types) ienv)
-          (type-list-da-promote (rest types) ienv)))
+    (cons (type-default-arg-promote (first types) ienv)
+          (type-list-default-arg-promote (rest types) ienv)))
 
   ///
 
-  (defrule len-of-type-list-da-promote
-    (equal (len (type-list-da-promote types ienv))
+  (defrule len-of-type-list-default-arg-promote
+    (equal (len (type-list-default-arg-promote types ienv))
            (len (type-list-fix types)))
     :induct t
     :enable len)
 
-  (defrule type-list-count-of-type-list-da-promote
-    (equal (type-list-count (type-list-da-promote types ienv))
+  (defrule type-list-count-of-type-list-default-arg-promote
+    (equal (type-list-count (type-list-default-arg-promote types ienv))
            (type-list-count types))
     :induct t
     :enable type-list-count))
@@ -1115,19 +1117,19 @@
         :old-style (and (not x.ellipsis)
                         (type-list-compatiblep
                           x.params
-                          (type-list-da-promote y.params ienv)
+                          (type-list-default-arg-promote y.params ienv)
                           ienv))
         :unspecified (and (not x.ellipsis)
                           (type-list-compatiblep
                             x.params
-                            (type-list-da-promote x.params ienv)
+                            (type-list-default-arg-promote x.params ienv)
                             ienv)))
       :old-style
       (type-params-case
         y
         :prototype (and (not y.ellipsis)
                         (type-list-compatiblep
-                          (type-list-da-promote x.params ienv)
+                          (type-list-default-arg-promote x.params ienv)
                           y.params
                           ienv))
         :otherwise t)
@@ -1137,7 +1139,7 @@
         :prototype (and (not y.ellipsis)
                         (type-list-compatiblep
                           y.params
-                          (type-list-da-promote y.params ienv)
+                          (type-list-default-arg-promote y.params ienv)
                           ienv))
         :otherwise t))
     :measure (max (type-params-count x) (type-params-count y)))
