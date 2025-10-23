@@ -15,10 +15,7 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,8 +78,7 @@
      which could not be part of the @(tsee bool-format) fixtype."))
   (< (bool-format->value-index bool-format)
      (* (bool-format->byte-size bool-format)
-        (uchar-format->size uchar-format)))
-  :hooks (:fix))
+        (uchar-format->size uchar-format))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

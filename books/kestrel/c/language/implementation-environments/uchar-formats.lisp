@@ -11,16 +11,15 @@
 
 (in-package "C")
 
-(include-book "centaur/fty/top" :dir :system)
-
 (include-book "../../portcullis")
 
-(local (include-book "arithmetic-3/top" :dir :system))
+(include-book "centaur/fty/top" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,7 +57,7 @@
   ((size nat :reqfix (if (>= size 8) size 8)))
   :require (>= size 8)
   :pred uchar-formatp
-  :prepwork ((local (in-theory (enable nfix))))
+  :prepwork ((local (in-theory (enable (:e tau-system)))))
   ///
 
   (defret uchar-format->size-type-prescription
@@ -88,7 +87,7 @@
    (xdoc::p
     "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
   (1- (expt 2 (uchar-format->size format)))
-  :hooks (:fix)
+
   ///
 
   (defret uchar-format->-max-type-prescription

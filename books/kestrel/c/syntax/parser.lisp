@@ -8227,9 +8227,10 @@
           (reterr :impossible))
          ((erp token & parstate) (read-token parstate)))
       (cond
-       ;; If token is an open curly brace, we stop.
+       ;; If token is an open curly brace, we put it back and we stop.
        ((token-punctuatorp token "{")  ; decl {
-        (retok (list decl) span parstate))
+        (b* ((parstate (unread-token parstate))) ; decl
+          (retok (list decl) span parstate)))
        ;; If token is anything else, we parse more declarations.
        (t ; decl other
         (b* ((parstate (if token (unread-token parstate) parstate)) ; decl
