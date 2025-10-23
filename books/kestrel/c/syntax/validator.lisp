@@ -28,11 +28,8 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,16 +115,14 @@
   (make-valid-table :filepath filepath
                     :scopes (list (valid-empty-scope))
                     :externals externals
-                    :next-uid next-uid)
-  :hooks (:fix))
+                    :next-uid next-uid))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-table-num-scopes ((table valid-tablep))
   :returns (num natp)
   :short "Number of scopes in a validation table."
-  (len (valid-table->scopes table))
-  :hooks (:fix))
+  (len (valid-table->scopes table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,7 +136,6 @@
   (b* ((scopes (valid-table->scopes table))
        (new-scopes (cons (valid-empty-scope) scopes)))
     (change-valid-table table :scopes new-scopes))
-  :hooks (:fix)
   ///
 
   (defret valid-table-num-scopes-of-valid-push-scope
@@ -164,7 +158,7 @@
         (valid-table-fix table))
        (new-scopes (cdr table.scopes)))
     (change-valid-table table :scopes new-scopes))
-  :hooks (:fix)
+  :no-function nil
   ///
 
   (defret valid-table-num-scopes-of-valid-pop-scope
@@ -194,7 +188,6 @@
      The flag is irrelevant if the first result is @('nil'),
      but in this case the returned flag is @('nil') too."))
   (valid-lookup-ord-loop ident (valid-table->scopes table) t)
-  :hooks (:fix)
 
   :prepwork
   ((define valid-lookup-ord-loop ((ident identp)
@@ -207,8 +200,7 @@
           (ord-scope (valid-scope->ord scope))
           (ident+info (assoc-equal (ident-fix ident) ord-scope))
           ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
-       (valid-lookup-ord-loop ident (cdr scopes) nil))
-     :hooks (:fix))))
+       (valid-lookup-ord-loop ident (cdr scopes) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -229,7 +221,7 @@
                                 (valid-scope->ord scope)))
        ((when ident+info) (cdr ident+info)))
     nil)
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,8 +237,7 @@
      which has been declared in any scope or translation unit.
      See @(see valid-table)."))
   (b* (((valid-table table) table))
-    (cdr (omap::assoc (ident-fix ident) table.externals)))
-  :hooks (:fix))
+    (cdr (omap::assoc (ident-fix ident) table.externals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,7 +268,6 @@
                     (change-valid-table
                      table
                      :next-uid (uid-increment table.next-uid)))))
-  :hooks (:fix)
 
   ///
 
@@ -320,8 +310,7 @@
                 :uid uid)))
        (new-externals
         (omap::update (ident-fix ident) new-info table.externals)))
-    (change-valid-table table :externals new-externals))
-  :hooks (:fix))
+    (change-valid-table table :externals new-externals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +338,7 @@
      that characterizes the acceptable overwriting.")
    (xdoc::p
     "If @('info') indicates external linkage, we update the @('externals') map.
-     See (tsee valid-update-ext)."))
+     See @(tsee valid-update-ext)."))
   (b* (((valid-table table) table)
        ((unless (> (valid-table-num-scopes table) 0))
         (raise "Internal error: no scopes in validation table.")
@@ -373,7 +362,7 @@
           :otherwise table)))
     table)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +404,7 @@
           :otherwise table)))
     table)
   :guard-hints (("Goal" :in-theory (enable acons)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -446,8 +435,7 @@
                                 :linkage linkage
                                 :defstatus defstatus
                                 :uid uid)
-                               table)))
-  :hooks (:fix))
+                               table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -475,8 +463,7 @@
                    info?.linkage
                    :internal t
                    :otherwise nil)
-          :otherwise nil)))
-  :hooks (:fix))
+          :otherwise nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -506,8 +493,7 @@
    const
    :dec const.value
    :oct const.value
-   :hex (str::hex-digit-chars-value const.digits))
-  :hooks (:fix))
+   :hex (str::hex-digit-chars-value const.digits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,8 +587,7 @@
            (t (prog2$ (impossible) (retmsg$ ""))))))
        (info (make-iconst-info :type type :value value))
        (new-iconst (change-iconst iconst :info info)))
-    (retok new-iconst type))
-  :hooks (:fix))
+    (retok new-iconst type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -631,8 +616,7 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (type-unknown))))
-  :hooks (:fix))
+          (t (type-unknown)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -685,8 +669,7 @@
        ((when (> code (nfix max)))
         (retmsg$ "The universal character name ~x0 has a code ~x1 above ~x2."
                  (univ-char-name-fix ucn) code (nfix max))))
-    (retok code))
-  :hooks (:fix))
+    (retok code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -714,8 +697,7 @@
    :r 13
    :t 9
    :v 11
-   :percent (char-code #\%))
-  :hooks (:fix))
+   :percent (char-code #\%)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -753,8 +735,7 @@
                 required in the context of where this octal escape occurs."
                (oct-escape-fix esc)
                code
-               (nfix max))))
-  :hooks (:fix))
+               (nfix max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,8 +771,7 @@
                        (escape-fix esc)
                        code
                        (nfix max))))
-     :univ (valid-univ-char-name esc.escape max)))
-  :hooks (:fix))
+     :univ (valid-univ-char-name esc.escape max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -847,8 +827,7 @@
                             a character constant with prefix ~x2."
                            cchar.code max (cprefix-option-fix prefix?)))
                  (t (retok cchar.code)))
-     :escape (valid-escape cchar.escape max)))
-  :hooks (:fix))
+     :escape (valid-escape cchar.escape max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,8 +840,7 @@
        ((when (endp cchars)) (retok nil))
        ((erp code) (valid-c-char (car cchars) prefix? ienv))
        ((erp codes) (valid-c-char-list (cdr cchars) prefix? ienv)))
-    (retok (cons code codes)))
-  :hooks (:fix))
+    (retok (cons code codes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -895,8 +873,7 @@
        ((erp &) (valid-c-char-list cconst.cchars cconst.prefix? ienv)))
     (if cconst.prefix?
         (retok (type-unknown))
-      (retok (type-sint))))
-  :hooks (:fix))
+      (retok (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -924,8 +901,7 @@
                   is in scope, but it is not an enumeration constant: ~
                   its information is ~x1."
                  (ident-fix econst) info)))
-    (retok (type-sint)))
-  :hooks (:fix))
+    (retok (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -946,8 +922,7 @@
      :enum (b* (((erp type) (valid-enum-const const.unwrap table)))
              (retok (const-fix const) type))
      :char (b* (((erp type) (valid-cconst const.unwrap ienv)))
-             (retok (const-fix const) type))))
-  :hooks (:fix))
+             (retok (const-fix const) type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -985,8 +960,7 @@
                             a character constant with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
-     :escape (valid-escape schar.escape max)))
-  :hooks (:fix))
+     :escape (valid-escape schar.escape max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,8 +973,7 @@
        ((when (endp cchars)) (retok nil))
        ((erp code) (valid-s-char (car cchars) prefix? ienv))
        ((erp codes) (valid-s-char-list (cdr cchars) prefix? ienv)))
-    (retok (cons code codes)))
-  :hooks (:fix))
+    (retok (cons code codes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1029,8 +1002,7 @@
             :of (if (or (not strlit.prefix?)
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
-                  (type-unknown)))))
-  :hooks (:fix))
+                  (type-unknown))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1088,7 +1060,6 @@
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
                     (type-unknown)
                   (type-char)))))
-  :hooks (:fix)
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -1106,8 +1077,7 @@
                          (and first-prefix?
                               rest-prefix?
                               (not (equal first-prefix? rest-prefix?))))))
-       (retok prefix? conflictp))
-     :hooks (:fix))))
+       (retok prefix? conflictp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1139,8 +1109,7 @@
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
            (valid-ord-info-objfun->linkage info)
-           (valid-ord-info-objfun->uid info)))
-  :hooks (:fix))
+           (valid-ord-info-objfun->uid info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1158,8 +1127,7 @@
      We will perform them later, when we refine our validator.
      We return the unknown type."))
   (declare (ignore expr type type-alist))
-  (retok (type-unknown))
-  :hooks (:fix))
+  (retok (type-unknown)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1201,8 +1169,7 @@
               and the second sub-expression has type ~x2."
              (expr-fix expr)
              (type-fix type-arg1)
-             (type-fix type-arg2)))
-  :hooks (:fix))
+             (type-fix type-arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1303,7 +1270,7 @@
      to a function type which includes a prototype,
      we validate the arguments
      against the prototype parameter list [C17:6.5.2.2/2]
-     (see (tsee valid-prototype-args)).
+     (see @(tsee valid-prototype-args)).
      We return the function return type."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-fun :unknown))
@@ -1336,8 +1303,7 @@
                                            ienv)
           :otherwise (retok))
         :iferr (msg$ "Error in function call ~x0:~%~@1" (expr-fix expr) erp)))
-    (retok (type-function->ret to-type)))
-  :hooks (:fix))
+    (retok (type-function->ret to-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1363,8 +1329,7 @@
         (retmsg$ "In the member expression ~x0, ~
                   the sub-expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
-    (retok (type-unknown)))
-  :hooks (:fix))
+    (retok (type-unknown))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1403,8 +1368,7 @@
         (retmsg$ "In the member pointer expression ~x0, ~
                   the sub-expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
-    (retok (type-unknown)))
-  :hooks (:fix))
+    (retok (type-unknown))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1525,8 +1489,7 @@
                         :ldoublec (retok (type-ldouble))
                         :unknown (retok (type-unknown))
                         :otherwise (reterr msg)))
-      (t (prog2$ (impossible) (retmsg$ "")))))
-  :hooks (:fix))
+      (t (prog2$ (impossible) (retmsg$ ""))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1840,9 +1803,7 @@
                           (type-integerp type-arg2)))
              (reterr msg)))
          (retok (type-fix type-arg1))))
-      (t (prog2$ (impossible) (retmsg$ "")))))
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system))))
-  :hooks (:fix))
+      (t (prog2$ (impossible) (retmsg$ ""))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1876,8 +1837,7 @@
                    (t (impossible)))
                  (expr-fix expr)
                  (type-fix type))))
-    (retok (type-unknown)))
-  :hooks (:fix))
+    (retok (type-unknown))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1910,8 +1870,7 @@
         (retmsg$ "In the cast expression ~x0, ~
                   the argument expression has type ~x1."
                  (expr-fix expr) (type-fix type-arg))))
-    (retok (type-fix type-cast)))
-  :hooks (:fix))
+    (retok (type-fix type-cast))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1994,8 +1953,7 @@
     (retmsg$ "In the conditional expression ~x0, ~
               the second operand has type ~x1 ~
               and the third operand has type ~x2."
-             (expr-fix expr) (type-fix type-then) (type-fix type-else)))
-  :hooks (:fix))
+             (expr-fix expr) (type-fix type-then) (type-fix type-else))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2144,8 +2102,7 @@
      ((type-spec-list-unsigned-int128-p tyspecs)
       (retok (type-unknown)))
      (t (retmsg$ "The type specifier sequence ~x0 is invalid."
-                 (type-spec-list-fix tyspecs)))))
-  :hooks (:fix))
+                 (type-spec-list-fix tyspecs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2412,7 +2369,6 @@
           (retok nil (linkage-external) (lifetime-static)))))
      (t (retmsg$ "The storage class specifier sequence ~x0 is invalid."
                  (stor-spec-list-fix storspecs)))))
-  :hooks (:fix)
 
   ///
 
@@ -2820,6 +2776,7 @@
       :fn valid-expr-list
       :hints (("Goal" :induct (induct-valid-expr-list exprs table ienv)
                       :in-theory (enable (:i induct-valid-expr-list)
+                                         len
                                          fix)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5676,6 +5633,7 @@
                               :info anno-info)
              (set::union types more-types)
              table))
+    :no-function nil
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6739,7 +6697,6 @@
                         :body new-body
                         :info info)
            table))
-  :hooks (:fix)
 
   ///
 
@@ -6777,7 +6734,6 @@
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
-  :hooks (:fix)
 
   ///
 
@@ -6805,7 +6761,6 @@
        ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
        ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
     (retok (cons new-edecl new-edecls) table))
-  :hooks (:fix)
 
   ///
 
@@ -6882,7 +6837,6 @@
        (info (make-transunit-info :table-end table)))
     (retok (make-transunit :decls new-edecls :info info)
            table))
-  :hooks (:fix)
 
   ///
 
@@ -6961,6 +6915,7 @@
                                                         keep-going)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
+     :hooks ()
 
      ///
 
@@ -6974,8 +6929,6 @@
        :hyp (and (filepath-transunit-mapp map)
                  (filepath-transunit-map-unambp map))
        :hints (("Goal" :induct t)))))
-
-  :hooks (:fix)
 
   ///
 
