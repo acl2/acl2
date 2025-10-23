@@ -150,7 +150,7 @@
            transfering files into and out of the Linux system running in the
            model. You can mount it like any other drive on a Linux system.</p>
 
-           <p>To measure the performance of running Linux on the @('x86isa') model
+           <p>To measure the performance of booting Linux on the @('x86isa') model
            (running on your specific machine), add a function of the form</p>
 
            <code>
