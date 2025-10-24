@@ -7,7 +7,8 @@
 1 ;total_count_book_runes
 1 ;failure_count_single_rune
 6 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test6.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test6.lisp")
  (FOO
     (:GOAL (IMPLIES (INTEGERP X)
                     (< (MOD X '8) '8)))

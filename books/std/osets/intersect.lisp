@@ -213,7 +213,7 @@ you whether the sets have any overlap.  It's potentially faster if you don't
 care about constructing the set, because it doesn't have to do any
 consing.</p>"
 
-  (defun intersect (X Y)
+  (defun-inline intersect (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
     (mbe :logic (cond ((emptyp X) (sfix X))
@@ -309,7 +309,7 @@ consing.</p>"
          :hints(("Goal" :in-theory (enable fast-intersect-set
                                            fast-intersect-membership)))))
 
-(verify-guards intersect)
+(verify-guards intersect$inline)
 
 
 (defsection intersectp
@@ -323,7 +323,7 @@ members."
 <p>In the execution, we use a faster function that checks for any common
 members and doesn't build any new sets.</p>"
 
-  (defun intersectp (X Y)
+  (defun-inline intersectp (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :guard-hints(("Goal" :in-theory (enable fast-intersectp-correct)))))
     (mbe :logic (not (emptyp (intersect X Y)))
