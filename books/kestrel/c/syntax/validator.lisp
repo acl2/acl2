@@ -1189,7 +1189,7 @@
    (xdoc::ol
     (xdoc::li
      "The number of arguments must be the same as the number of parameter types,
-      or greater than equal when an ellipsis is present.")
+      or greater than or equal when an ellipsis is present.")
     (xdoc::li
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
@@ -4300,7 +4300,7 @@
        as the parameters of a function being defined [C17:6.7.6.3/3]
        Thus, we raise an error when the list is nonempty
        and @('fundef-params-p') is @('nil')
-       (i.e. we are validating the parameters of a defined function).
+       (i.e. we are not validating the parameters of a defined function).
        Otherwise, we ensure that the names have no duplicates,
        and we push a new scope for the parameters and the function body,
        but we do not add the parameters to the new scope,
