@@ -313,6 +313,7 @@
     :prepwork
     :post-pred-events
     :post-fix-events
+    :post-acc-events
     :post-events
     :inline
     :enable-rules

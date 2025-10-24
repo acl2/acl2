@@ -31,6 +31,7 @@
 
 (in-package "STD")
 (include-book "defines")
+(include-book "centaur/fty/fixtype" :dir :system)
 
 (set-state-ok t)
 (program)
@@ -105,7 +106,11 @@ binding the return values but outside of both the hyps and conclusions.</li>
 <li>@('(:each-formal <io-var-test> :var var :action action)'), where each
 action is an @(':add-hyp'), @(':push-hyp') or @(':add-concl') form, adds the
 given hyp or conclusion for each formal matching the io-var-test criteria, with
-@('var') in these actions replaced by the name of the formal.</li>
+@('var') in these actions replaced by the name of the formal. Some special
+symbols and substrings of symbols are replaced: @('<TYPE>') is replaced by the
+FTY type name, if applicable, @('<PRED>') by the type predicate, @('<FN>') by
+the function name (macro-alias if applicable), and @('<FN!>') by the core
+function name (not macro-alias).</li>
 
 <li>@('(:each-return <io-var-test> :var var :action action)'),
 similar to @('each-formal') but acts on return values instead of formals.</li>
@@ -502,12 +507,25 @@ defretgen-rules).</p>
 ;;     (or (dmgen-check-formal/return-action (car actions))
 ;;         (dmgen-check-formal/return-actions (cdr actions)))))
 
-(defun dmgen-formal/return-action (replace-var formalname action form)
+(defun dmgen-formal/return-action (replace-var name guard action form guts wrld)
   (b* (((when (eq (car action) :pop-hyp))
         (dmgen-pop-hyp form))
-       (new-term (if replace-var
-                     (subst formalname replace-var (cadr action))
-                   (cadr action))))
+       (pred (case-match guard
+                  ((pred !name) pred)
+                  (& (and (symbolp guard) guard))))
+       (fixtype (and pred (fty::find-fixtype-for-pred pred (fty::get-fixtypes-alist wrld))))
+       (type (and fixtype (fty::fixtype->name fixtype)))
+       ((defguts guts))
+       (subst (append (and replace-var `((,replace-var . ,name)))
+                      (and pred `((<pred> . ,pred)))
+                      (and type `((<type> . ,type)))
+                      `((<fn> . ,guts.name)
+                        (<fn!> . ,guts.name-fn))))
+       (strsubst (append (and pred `(("<PRED>" . ,(symbol-name pred))))
+                         (and type `(("<TYPE>" . ,(symbol-name type))))
+                         `(("<FN>" . ,(symbol-name guts.name))
+                           ("<FN!>" . ,(symbol-name guts.name-fn)))))
+       (new-term (returnspec-sublis subst strsubst (cadr action))))
     (case (car action)
       (:add-hyp
        (dmgen-add-hyp new-term form))
@@ -525,23 +543,28 @@ defretgen-rules).</p>
 ;;      (dmgen-formal/return-action
 ;;       replace-var formalname (car actions) form))))
 
-(defun dmgen-each-formal-action (test replace-var action form formals)
+(defun dmgen-each-formal-action (test replace-var action form formals guts wrld)
   (if (atom formals)
       form
     (let ((form
            (if (dmgen-eval-formal-test test (car formals))
-               (dmgen-formal/return-action replace-var (formal->name (car formals)) action form)
+               (dmgen-formal/return-action replace-var (formal->name (car formals))
+                                           (formal->guard (car formals))
+                                           action form guts wrld)
              form)))
-      (dmgen-each-formal-action test replace-var action form (cdr formals)))))
+      (dmgen-each-formal-action test replace-var action form (cdr formals) guts wrld))))
 
-(defun dmgen-each-returnspec-action (test replace-var action form returnspecs)
+(defun dmgen-each-returnspec-action (test replace-var action form returnspecs guts wrld)
   (if (atom returnspecs)
       form
     (let ((form
            (if (dmgen-eval-returnspec-test test (car returnspecs))
-               (dmgen-formal/return-action replace-var (returnspec->name (car returnspecs)) action form)
+               (dmgen-formal/return-action replace-var
+                                           (returnspec->name (car returnspecs))
+                                           (returnspec->return-type (car returnspecs))
+                                           action form  guts wrld)
              form)))
-      (dmgen-each-returnspec-action test replace-var action form (cdr returnspecs)))))
+      (dmgen-each-returnspec-action test replace-var action form (cdr returnspecs) guts wrld))))
 
 (defun dmgen-check-each-formal/return-action (action)
   (b* (((mv test rest) (dmgen-split-io-var-test (cdr action))))
@@ -590,7 +613,7 @@ defretgen-rules).</p>
     (or (dmgen-check-rule (car rules))
         (dmgen-check-rules (cdr rules)))))
 
-(defun dmgen-action (action guts form)
+(defun dmgen-action (action guts form wrld)
   (b* (((dmgen-defret-form form)))
     (case (car action)
       (:add-hyp             (dmgen-add-hyp (cadr action) form))
@@ -603,26 +626,29 @@ defretgen-rules).</p>
                        test
                        (cadr (assoc-keyword :var kwds))
                        (cadr (assoc-keyword :action kwds))
-                       form (defguts->formals guts))))
+                       form (defguts->formals guts)
+                       guts wrld)))
       (:each-return (b* (((mv test kwds) (dmgen-split-io-var-test (cdr action))))
                       (dmgen-each-returnspec-action
                        test
                        (cadr (assoc-keyword :var kwds))
                        (cadr (assoc-keyword :action kwds))
-                       form (defguts->returnspecs guts))))
+                       form (defguts->returnspecs guts)
+                       guts wrld)))
       (:add-keyword (change-dmgen-defret-form form :keywords (append (cdr action) form.keywords)))
       (:set-thmname (change-dmgen-defret-form form :thmname (cadr action))))))
 
-(defun dmgen-actions (actions guts form)
+(defun dmgen-actions (actions guts form wrld)
   (if (atom actions)
       form
     (dmgen-actions (cdr actions)
                    guts
-                   (dmgen-action (car actions) guts form))))
+                   (dmgen-action (car actions) guts form wrld)
+                   wrld)))
 
 (defun dmgen-apply-rule (rule guts form wrld)
   (if (dmgen-eval-condition (car rule) guts wrld)
-      (dmgen-actions (cdr rule) guts form)
+      (dmgen-actions (cdr rule) guts form wrld)
     form))
 
 (defun dmgen-apply-rules (rules guts form wrld)

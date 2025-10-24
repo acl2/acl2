@@ -319,6 +319,14 @@ rule.</p>")
 @(':g-ite') object instead of doing the usual merging process."
   (if x y z))
 
+
+(define unconditional (x)
+  :parents (fgl-rewrite-rule)
+  :short "Identity function; when wrapped around an IF branch indicates that the
+test of the IF should not be included in the path condition while rewriting the
+ branch."
+  x)
+
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 
 ;; (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))

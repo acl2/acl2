@@ -95,3 +95,31 @@
                                      subsetp-bfrlist-of-bvar-db-bfrlist))
              :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
                     (m (get-term->bvar$c obj bvar-db))))))))
+
+
+
+(define bvar-db-bfrs-ok-aux ((n natp) bvar-db
+                             &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  :measure (nfix (- (nfix n) (base-bvar bvar-db)))
+  :guard (and (<= (base-bvar bvar-db) n)
+              (<= n (next-bvar bvar-db)))
+  (if (zp (- (lnfix n) (base-bvar bvar-db)))
+      t
+    (and (fgl-object-bfrs-ok (get-bvar->term (1- (lnfix n)) bvar-db))
+         (bvar-db-bfrs-ok-aux (1- (lnfix n)) bvar-db)))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (bvar-db-bfrlist-aux n bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
+
+(define bvar-db-bfrs-ok (bvar-db
+                         &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (bvar-db-bfrs-ok-aux (next-bvar bvar-db) bvar-db)
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (bvar-db-bfrlist bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-db-bfrlist)))))
