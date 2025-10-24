@@ -40,15 +40,13 @@
 ;; See also ../axe/convert-to-bv-rules-axe.lisp
 
 (defthmd bvplus-convert-arg2-to-bv
-  (implies (syntaxp (and (consp x)
-                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp x))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvplus-convert-arg3-to-bv
-  (implies (syntaxp (and (consp y)
-                         (member-eq (ffn-symb y) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp y))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -56,8 +54,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvshr-convert-arg2-to-bv
-  (implies (syntaxp (and (consp x)
-                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp x))
            (equal (bvshr size x shift-amount)
                   (bvshr size (trim size x) shift-amount)))
   :hints (("Goal" :in-theory (enable trim))))
@@ -65,15 +62,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvcat-convert-arg2-to-bv
-  (implies (syntaxp (and (consp high)
-                         (member-eq (ffn-symb high) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp high))
            (equal (bvcat highsize high lowsize low)
                   (bvcat highsize (trim highsize high) lowsize low)))
   :hints (("Goal" :in-theory (enable trim bvcat))))
 
 (defthmd bvcat-convert-arg4-to-bv
-  (implies (and (syntaxp (and (consp low)
-                              (member-eq (ffn-symb low) *functions-convertible-to-bv*)))
+  (implies (and (syntaxp (convertible-to-bvp low))
                 (integerp lowsize))
            (equal (bvcat highsize high lowsize low)
                   (bvcat highsize high lowsize (trim lowsize low))))
@@ -82,8 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd slice-convert-arg3-to-bv
-  (implies (and (syntaxp (and (consp x)
-                              (member-eq (ffn-symb x) *functions-convertible-to-bv*)
+  (implies (and (syntaxp (and (convertible-to-bvp x)
                               (quotep high)
                               (quotep low)))
                 (natp high)
@@ -97,15 +91,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvlt-convert-arg2-to-bv
-  (implies (syntaxp (and (consp x)
-                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp x))
            (equal (bvlt size x y)
                   (bvlt size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvlt-convert-arg3-to-bv
-  (implies (syntaxp (and (consp y)
-                         (member-eq (ffn-symb y) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp y))
            (equal (bvlt size x y)
                   (bvlt size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -113,15 +105,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvmult-convert-arg2-to-bv
-  (implies (syntaxp (and (consp x)
-                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp x))
            (equal (bvmult size x y)
                   (bvmult size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvmult-convert-arg3-to-bv
-  (implies (syntaxp (and (consp y)
-                         (member-eq (ffn-symb y) *functions-convertible-to-bv*)))
+  (implies (syntaxp (convertible-to-bvp y))
            (equal (bvmult size x y)
                   (bvmult size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))

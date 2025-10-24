@@ -198,3 +198,8 @@
     binary-+
     unary--
     binary-*))
+
+(defun convertible-to-bvp (term)
+  (declare (xargs :guard t)) ; could require pseudo-termp but that might take time to check
+  (and (consp term)
+       (member-eq (ffn-symb term) *functions-convertible-to-bv*)))
