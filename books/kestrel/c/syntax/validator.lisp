@@ -1189,7 +1189,17 @@
    (xdoc::ol
     (xdoc::li
      "The number of arguments must be the same as the number of parameter types,
-      or greater than or equal when an ellipsis is present.")
+      or greater than or equal when an ellipsis is present.
+      The `greater than' part does not seem to be explicitly stated in [C17],
+      which just says that the number of arguments
+      must agree with the number of parameters [C17:6.5.2.2/2];
+      one could interpret `number of parameters' loosely as
+      the ellipsis implying an unspecified number of additional parameters.
+      Indeed, [C17:6.7.6.3/9] say that
+      the ellipsis conveys no information about the additional parameters,
+      suggesting that additional arguments are allowed.
+      Simple experiments with GCC confirm the ability to pass
+      more arguments than declared parameters when there is an ellipsis.")
     (xdoc::li
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
