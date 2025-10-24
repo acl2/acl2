@@ -1241,6 +1241,8 @@
                (and (natp key)
                     (integerp key)
                     (rationalp key)
+                    #+:non-standard-analysis
+                    (realp key)
                     (<= 0 key)
                     key))))
 
