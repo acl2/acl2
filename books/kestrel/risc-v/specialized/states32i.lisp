@@ -137,6 +137,8 @@
    (error bool))
   :pred stat32ip
 
+  :prepwork ((local (in-theory (enable (:e tau-system)))))
+
   ///
 
   (defrule len-of-stat32i->xregs

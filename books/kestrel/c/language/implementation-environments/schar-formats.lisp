@@ -16,10 +16,7 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +96,7 @@
      but we include the @('signed char') format as input for uniformity."))
   (declare (ignore schar-format))
   (1- (expt 2 (1- (uchar-format->size uchar-format))))
-  :hooks (:fix)
+
   ///
 
   (defret schar-format->max-type-prescription
@@ -149,7 +146,7 @@
            (not (schar-format->trap schar-format)))
       (- (expt 2 (1- (uchar-format->size uchar-format))))
     (- (1- (expt 2 (1- (uchar-format->size uchar-format))))))
-  :hooks (:fix)
+
   ///
 
   (defret schar-format->min-type-prescription

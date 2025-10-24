@@ -22,10 +22,7 @@
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +117,6 @@
         ((sinteger-bit-role-case (car roles) :sign)
          (1+ (sinteger-bit-roles-sign-count (cdr roles))))
         (t (sinteger-bit-roles-sign-count (cdr roles))))
-  :hooks (:fix)
 
   ///
 
@@ -147,7 +143,6 @@
         (uinteger-bit-roles-exponents (cdr roles))))
     (cons (uinteger-bit-role-value->exp role)
           (uinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix)
 
   ///
 
@@ -174,7 +169,6 @@
         (sinteger-bit-roles-exponents (cdr roles))))
     (cons (sinteger-bit-role-value->exp role)
           (sinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix)
 
   ///
 
@@ -201,7 +195,6 @@
         ((uinteger-bit-role-case (car roles) :value)
          (1+ (uinteger-bit-roles-value-count (cdr roles))))
         (t (uinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix)
 
   ///
 
@@ -240,7 +233,6 @@
         ((sinteger-bit-role-case (car roles) :value)
          (1+ (sinteger-bit-roles-value-count (cdr roles))))
         (t (sinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix)
 
   ///
 
@@ -296,7 +288,6 @@
                        (integers-from-to 0 (1- n))))
         nil))
     t)
-  :hooks (:fix)
 
   ///
 
@@ -345,7 +336,6 @@
         nil)
        ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
     t)
-  :hooks (:fix)
 
   ///
 
@@ -400,7 +390,6 @@
                             (sinteger-bit-role-value->exp srole))))
         nil))
     (uinteger-sinteger-bit-roles-wfp (cdr uroles) (cdr sroles)))
-  :hooks (:fix)
 
   ///
 
@@ -443,7 +432,6 @@
        (roles (uinteger-bit-roles-inc-n (1- n))))
     (append roles (list role)))
   :prepwork ((local (in-theory (enable nfix))))
-  :hooks (:fix)
 
   ///
 
@@ -496,7 +484,6 @@
        (roles (sinteger-bit-roles-inc-n (1- n))))
     (append roles (list role)))
   :prepwork ((local (in-theory (enable nfix))))
-  :hooks (:fix)
 
   ///
 
@@ -546,7 +533,6 @@
     "The list of bit roles is well-formed, if @('n') is not 0."))
   (append (sinteger-bit-roles-inc-n n)
           (list (sinteger-bit-role-sign)))
-  :hooks (:fix)
 
   ///
 
@@ -676,7 +662,7 @@
 (define uinteger-format->max ((format uinteger-formatp))
   :returns (max posp
                 :rule-classes (:rewrite :type-prescription)
-                :hints (("Goal" :in-theory (enable posp))))
+                :hints (("Goal" :in-theory (enable posp (:e tau-system)))))
   :short "The ACL2 integer value of
           the maximum value representable in an unsigned integer format."
   :long
@@ -689,7 +675,6 @@
      the maximum value cannot be above @('2^T - 1')."))
   (1- (expt 2 (uinteger-bit-roles-value-count
                (uinteger-format->bits format))))
-  :hooks (:fix)
 
   ///
 
@@ -705,7 +690,7 @@
 (define sinteger-format->max ((format sinteger-formatp))
   :returns (max posp
                 :rule-classes (:rewrite :type-prescription)
-                :hints (("Goal" :in-theory (enable posp))))
+                :hints (("Goal" :in-theory (enable posp (:e tau-system)))))
   :short "The ACL2 integer value of
           the maximum value representable in a signed integer format."
   :long
@@ -719,7 +704,6 @@
      the maximum value cannot be above @('2^(T-1) - 1')."))
   (1- (expt 2 (sinteger-bit-roles-value-count
                (sinteger-format->bits format))))
-  :hooks (:fix)
 
   ///
 
@@ -784,14 +768,14 @@
                   (sinteger-format->bits format))))
     (- (1- (expt 2 (sinteger-bit-roles-value-count
                     (sinteger-format->bits format))))))
-  :hooks (:fix)
 
   ///
 
   (defret sinteger-format->min-type-prescription
     (and (integerp min)
          (< min 0))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable (:e tau-system)))))
 
   (defret sinteger-format->min-lower-bound
     (>= min
@@ -833,7 +817,7 @@
   (make-uinteger-format
    :bits (uinteger-bit-roles-inc-n (pos-fix n))
    :traps nil)
-  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -842,7 +826,8 @@
            (1- (expt 2 (pos-fix n))))
     :enable (uinteger-format->max
              pos-fix
-             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n)))
+             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n
+             (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -862,7 +847,7 @@
    :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
    :signed (signed-format-twos-complement)
    :traps nil)
-  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -871,14 +856,16 @@
            (1- (expt 2 (pos-fix n))))
     :enable
     (sinteger-format->max
-     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign))
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+     (:e tau-system)))
 
   (defruled sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
     (equal (sinteger-format->min (sinteger-format-inc-sign-tcnpnt n))
            (- (expt 2 (pos-fix n))))
     :enable
     (sinteger-format->min
-     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign)))
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+     (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -956,7 +943,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format->bit-size ((format integer-formatp))
-  :returns (size posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (size posp
+                 :hints (("Goal" :in-theory (enable posp (:e tau-system)))))
   :short "Number of bits of an integer format."
   :long
   (xdoc::topstring
@@ -967,7 +955,6 @@
   (len (uinteger-format->bits
         (uinteger+sinteger-format->unsigned
          (integer-format->pair format))))
-  :hooks (:fix)
 
   ///
 
@@ -989,7 +976,8 @@
          (> size 1))
     :hyp (integer-formatp format)
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def)
+    :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def
+                                     (:e tau-system))
                                     (integer-format->bit-size))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1001,7 +989,6 @@
   (uinteger-format->max
    (uinteger+sinteger-format->unsigned
     (integer-format->pair format)))
-  :hooks (:fix)
 
   ///
 
@@ -1020,7 +1007,6 @@
   (sinteger-format->max
    (uinteger+sinteger-format->signed
     (integer-format->pair format)))
-  :hooks (:fix)
 
   ///
 
@@ -1039,7 +1025,6 @@
   (sinteger-format->min
    (uinteger+sinteger-format->signed
     (integer-format->pair format)))
-  :hooks (:fix)
 
   ///
 
@@ -1070,7 +1055,6 @@
           :unsigned (uinteger-format-inc-npnt size)
           :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
   :verify-guards nil ; done below
-  :hooks (:fix)
 
   ///
 
@@ -1086,7 +1070,8 @@
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
-             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign))
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+             (:e tau-system)))
 
   (verify-guards integer-format-inc-sign-tcnpnt
     :hints
@@ -1106,7 +1091,8 @@
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
-             posp))
+             posp
+             (:e tau-system)))
 
   (defruled integer-format->unsigned-max-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)

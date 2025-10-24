@@ -311,13 +311,13 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
        ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
        ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (vars-pre (gen-var-assertions vartys 'compst))
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
@@ -331,11 +331,10 @@
                          (equal old-value new-value)
                          (equal (c::type-of-value old-value) ',ctype)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
-       (thm-event
-        `(defrule ,thm-name
-           ,formula
-           :rule-classes nil
-           :hints ,hints)))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
   (fty::deffixequiv gen-expr-pure-thm
@@ -425,6 +424,76 @@
     (mv thm-event thm-name thm-index))
   ///
   (fty::deffixequiv gen-expr-pure-thm
+    :args ((old exprp) (new exprp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define gen-expr-thm ((old exprp)
+                      (new exprp)
+                      (vartys c::ident-type-mapp)
+                      (const-new symbolp)
+                      (thm-index posp)
+                      (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-annop old)
+              (expr-unambp new)
+              (expr-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of an expression."
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (expr-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (expr-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (equal (expr-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
+       ((unless (type-formalp type))
+        (raise "Internal error: expression ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (vars-pre (gen-var-assertions vartys 'compst))
+       (vars-post (gen-var-assertions vartys 'old-compst))
+       (formula
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
+              ((mv old-result old-compst)
+               (c::exec-expr old-expr compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-expr new-expr compst new-fenv limit))
+              (old-value (c::expr-value->value old-result))
+              (new-value (c::expr-value->value new-result)))
+           (implies (and ,@vars-pre
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (iff old-result new-result)
+                         (equal old-value new-value)
+                         (equal old-compst new-compst)
+                         ,@(if (c::type-case ctype :void)
+                               '((not old-result))
+                             `(old-result
+                               (equal (c::type-of-value old-value) ',ctype)))
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv gen-expr-thm
     :args ((old exprp) (new exprp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3386,8 +3455,6 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys vartys-after-fundef)))
-
-  :guard-debug t ; <<<<<<<<<<<<<<
 
   :prepwork
   ((local (in-theory (disable (:e tau-system)))) ; for speed
