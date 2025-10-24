@@ -1,6 +1,6 @@
 ; Tests of defstobj+
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -962,3 +962,17 @@
 
 (defstobj+ hash-table-test-2
   (hash-table2 :type (hash-table equal 100 integer) :initially 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This allocates 4GB of memory for the stobj, but that only takes a few seconds.
+;; We could perhaps uncomment this.
+;; (defstobj+ large-array
+;;   (memory :type (array (unsigned-byte 8) (4294967296)) ; 2^32 bytes
+;;           :initially 0))
+
+;; The :non-executable t here should prevent much memory from being allocated:
+(defstobj+ large-array
+  (memory :type (array (unsigned-byte 8) (4294967296)) ; 2^32 bytes
+          :initially 0)
+  :non-executable t)
