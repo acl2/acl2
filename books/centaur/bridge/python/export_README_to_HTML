@@ -1,0 +1,2 @@
+#!/bin/sh
+emacs --batch --eval "(require 'org)" README --funcall org-html-export-to-html
