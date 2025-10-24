@@ -556,9 +556,8 @@ endif
 # systems), and that we want to work around for the moment:
 BROKEN_BOOKS :=
 
-# The models/y86-old books are a special case.  We prefer to include them
-# only with the "all" target, not the "regression" target, since they
-# have large memory requirements -- and then, only for certain host
+# The models/y86-old books are a special case.  We prefer, since they
+# have large memory requirements, to build them only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
 # did not get the benefit of the cert.pl dependency analysis; for
