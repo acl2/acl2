@@ -100,6 +100,7 @@
                     :sizeof
                     :sizeof-ambig
                     :alignof
+                    :alignof-ambig
                     :stmt
                     :tycompat
                     :offsetof
@@ -191,6 +192,8 @@
      straightforwardly according to the grammar.")
    (xdoc::p
     "An ambiguous @('sizeof') has the same priority as an unambiguous one.
+     An ambiguous @('_Alignof') (and keyword variants)
+     has the same priority as an unambiguous one.
      An ambiguous cast/call expression is given
      the higher priority of the two possibilities,
      i.e. the priority of a postfix expression.
@@ -214,6 +217,7 @@
    :sizeof (expr-priority-unary)
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
+   :alignof-ambig (expr-priority-unary)
    :cast (expr-priority-cast)
    :binary (binop->priority expr.op)
    :cond (expr-priority-cond)

@@ -226,8 +226,6 @@ void f() {
 }
 ")
 
-
-
 (test-valid
  "int x;
   void f() {

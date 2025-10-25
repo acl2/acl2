@@ -944,7 +944,8 @@
        ;; TODO: factor out member expr matching
        :unary
        (if (and (or (equal expr.op (c$::unop-address))
-                    (equal expr.op (c$::unop-sizeof)))
+                    (equal expr.op (c$::unop-sizeof))
+                    (equal (c$::unop-kind expr.op) :alignof))
                 (expr-case
                   expr.arg
                   :member (expr-case

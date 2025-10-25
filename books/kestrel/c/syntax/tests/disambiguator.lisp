@@ -75,6 +75,22 @@
 
 (test-dimb
  "int x;
+  void f() {
+  int y = _Alignof(x);
+  }
+"
+ :gcc t)
+
+(test-dimb
+ "typedef char x;
+  void f() {
+  int y = _Alignof(x);
+  }
+"
+ :gcc t)
+
+(test-dimb
+ "int x;
   void f(x) {}
 ")
 

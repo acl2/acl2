@@ -1488,6 +1488,9 @@
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
                  (retok (type-unknown))))
+      (:alignof (b* (((when (type-case type-arg :function))
+                      (reterr msg)))
+                  (retok (type-unknown))))
       (:real (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
