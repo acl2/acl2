@@ -94,6 +94,16 @@
 
 (local (in-theory (disable w)))
 
+(define redundant-alist-fix (x)
+  :enabled t
+  (mbe :logic (acl2::alist-fix x)
+       :exec (if (alistp x) x (acl2::alist-fix x))))
+
+(define redundant-list-fix (x)
+  :enabled t
+  (mbe :logic (list-fix x)
+       :exec (if (true-listp x) x (list-fix x))))
+
 (define initialize-interp-st ((config fgl-config-p)
                               (interp-st)
                               state)
@@ -102,9 +112,10 @@
   (b* ((interp-st (interp-st-init interp-st))
        ((fgl-config config))
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
+       (interp-st (update-interp-st->stacklimit config.stacklimit interp-st))
+       (interp-st (update-interp-st->steplimit config.steplimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
-       (interp-st (update-interp-st->user-scratch nil interp-st))
        (constraint-tab (table-alist 'fgl::fgl-bool-constraints (w state)))
        (constraint-tab-ok (and (constraint-table-p constraint-tab)
                                (not (constraint-table-bfrlist constraint-tab))))
@@ -124,7 +135,19 @@
                    (!interp-flags->make-ites
                     config.make-ites
                     (!interp-flags->trace-rewrites config.trace-rewrites flags))
-                   interp-st)))
+                   interp-st))
+       (trace-alist (and config.trace-rewrites
+                         (boundp-global :fgl-trace-rule-alist state)
+                         (@ :fgl-trace-rule-alist)))
+       (trace-alist (if (trace-alist-p trace-alist)
+                        trace-alist
+                      (raise "State global ~x0 must contain an FGL trace alist, satisfying ~x1"
+                               '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
+       (interp-st (update-interp-st->trace-alist trace-alist interp-st))
+       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix (table-alist 'fgl-rewrite-rules (w state))) interp-st))
+       (interp-st (update-interp-st->binder-rules (redundant-alist-fix (table-alist 'fgl-binder-rules (w state))) interp-st))
+       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix (table-alist 'fgl-branch-merge-rules (w state))) interp-st))
+       (interp-st (update-interp-st->congruence-rules (redundant-list-fix (fgl-congruence-runes (w state))) interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman)
                (update-logicman->mode (bfrmode :aignet) logicman)
@@ -620,8 +643,18 @@
        ((mv ans-interp interp-st state)
         (time$ (fgl-interp-test goal interp-st state)
                :msg "FGL interpreter completed: ~st sec, ~sa bytes~%"))
+       (- (cw "FGL interpreter step count: ~x0~%" (- (fgl-config->steplimit config)
+                                                     (interp-st->steplimit interp-st))))
        (- ;; Clear memoization tables that depend on e.g. the current world
-        (clear-memoize-table 'fgl-equivp))
+        (clear-memoize-table 'fgl-equivp)
+        (clear-memoize-table 'fgl-function-binder-rules)
+        (clear-memoize-table 'fgl-function-binder-rules-from-lookup)
+        (clear-memoize-table 'fgl-function-rules)
+        (clear-memoize-table 'fgl-function-rules-from-lookup)
+        (clear-memoize-table 'fgl-branch-merge-rules)
+        (clear-memoize-table 'fgl-branch-merge-rules-from-lookup)
+        (clear-memoize-table 'fgl-congruence-rules)
+        (clear-memoize-table 'map-rewrite-rules-memo))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)
@@ -635,8 +668,9 @@
         (acl2::hintcontext :interp-early
                            (mv nil interp-st state)))
        ((unless (eq (fgl-config->toplevel-sat-check config) t))
-        (mv (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check.")
-            interp-st state))
+        (b* ((msg (msg "FGL interpreter result was not syntactically T and skipping toplevel SAT check."))
+             (interp-st (fgl-interp-store-debug-info msg nil interp-st)))
+          (mv msg interp-st state)))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (fgl-config->sat-config config)))
        ((mv ans interp-st state)
@@ -652,9 +686,12 @@
         (acl2::hintcontext :interp-test
                            (mv nil interp-st state)))
        ((unless (eq ans :sat))
-        (mv (msg "Final SAT check failed!") interp-st state))
+        (b* ((msg (msg "Final SAT check failed!"))
+             (interp-st
+              (fgl-interp-store-debug-info msg nil interp-st)))
+          (mv msg interp-st state)))
        ((mv ctrex-err interp-st)
-        (interp-st-run-ctrex sat-config interp-st state))
+        (interp-st-run-ctrex-with-errmsg sat-config interp-st state))
        ((when ctrex-err)
         (mv ctrex-err interp-st state)))
     (mv "Counterexample." interp-st state))
@@ -842,7 +879,6 @@
 
        ((mv err interp-st state)
         (fgl-clause-proc-core disj config interp-st state))
-
        (state (save-interp-st-info-into-state interp-st state)))
     (mv err nil interp-st state))
   ///

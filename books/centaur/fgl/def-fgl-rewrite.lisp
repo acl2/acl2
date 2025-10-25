@@ -183,22 +183,22 @@
 (defun branch-merge-alist-add-rune-entries (fns rune alist)
   (b* (((when (atom fns)) alist)
        (alist (hons-acons (car fns)
-                          (add-to-set-equal rune (fgl-branch-merge-rules-lookup (car fns) alist))
+                          (add-to-set-equal rune (fgl-branch-merge-runes-lookup (car fns) alist))
                           alist)))
     (branch-merge-alist-add-rune-entries (cdr fns) rune alist)))
 
 (defun binder-alist-add-rune-entries (fns rune alist)
   (b* (((when (atom fns)) alist)
        (alist (hons-acons (car fns)
-                          (add-to-set-equal rune (fgl-binder-rules-lookup (car fns) alist))
+                          (add-to-set-equal rune (fgl-binder-runes-lookup (car fns) alist))
                           alist)))
     (binder-alist-add-rune-entries (cdr fns) rune alist)))
 
-;; Need a separate version of this because we want to use fgl-rewrite-rules-lookup.
+;; Need a separate version of this because we want to use fgl-rewrite-runes-lookup.
 (defun rewrite-alist-add-rune-entries (fns rune alist world)
   (b* (((when (atom fns)) alist)
        (alist (hons-acons (car fns)
-                          (add-to-set-equal rune (fgl-rewrite-rules-lookup (car fns) alist world))
+                          (add-to-set-equal rune (fgl-rewrite-runes-lookup (car fns) alist world))
                           alist)))
     (rewrite-alist-add-rune-entries (cdr fns) rune alist world)))
 

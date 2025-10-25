@@ -140,6 +140,16 @@
                                      (x (- x))))
              :in-theory (disable rational-exponent)))))
 
+(defthmd rational-exponent-correct-abs
+  (implies (and (rationalp x)
+                (not (equal 0 x)))
+           (and (<= (expt 2 (rational-exponent x)) (abs x))
+                (< (abs x) (* 2 (expt 2 (rational-exponent x))))))
+  :hints (("goal" :use ((:instance rational-exponent-correct-positive
+                         (x (abs x))))
+           :in-theory (disable rational-exponent-correct-positive)))
+  :rule-classes :linear)
+
 (define rational-significand ((x rationalp))
   ;; :guard (not (eql x 0))
   :returns (scand)

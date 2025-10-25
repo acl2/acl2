@@ -226,8 +226,6 @@ void f() {
 }
 ")
 
-
-
 (test-valid
  "int x;
   void f() {
@@ -1087,3 +1085,61 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
  "_Float128 x;
 "
  :gcc t)
+
+(test-valid
+ "void (*f(float x, double y))(int z) {
+  return (void (*)(int))0;
+}
+
+void * g() {
+  f(0.0, 0.0)(0);
+}
+")
+
+(test-valid-fail
+ "void (*f(float x, double y))(int z) {
+  return (void (*)(int))0;
+}
+
+void * g() {
+  f(0)(0.0, 0.0);
+}
+")
+
+(test-valid-fail
+ "int foo(int x, int y)
+{
+  return x+y;
+}
+
+int bar(void) {
+  // Type error
+  return foo(1, 2, 3);
+}
+")
+
+(test-valid
+ "int foo(int x, int y, ...)
+{
+  return x+y;
+}
+
+int bar(void) {
+  return foo(1, 2, 3);
+}
+")
+
+(test-valid
+ "int foo(x, y)
+  int x;
+  int y;
+{
+  return x+y;
+}
+
+int bar(void) {
+  // This call results in undefined behavior (too many arguments),
+  // but it does not violate any constraints under the standard.
+  return foo(1, 2, 3);
+}
+")

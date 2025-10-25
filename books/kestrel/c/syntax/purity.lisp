@@ -95,6 +95,8 @@
    (expr :funcall nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."

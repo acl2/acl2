@@ -287,13 +287,68 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   x)
 
 
+(define int->bools-aux ((idx natp) (x integerp) (acc true-listp))
+  (b* (((when (zp idx)) (mbe :logic (true-list-fix acc)
+                             :exec acc))
+       (acc (cons (logbitp (1- idx) x) acc)))
+    (int->bools-aux (1- idx) x acc)))
+
 (define int->bools ((x integerp))
   :measure (integer-length x)
-  (b* ((x (lifix x))
-       ((when (eql x 0)) '(nil))
-       ((when (eql x -1)) '(t)))
-    (cons (intcar x)
-          (int->bools (intcdr x)))))
+  :verify-guards nil
+  (mbe :logic (b* ((x (lifix x))
+                   ((when (eql x 0)) '(nil))
+                   ((when (eql x -1)) '(t)))
+                (cons (intcar x)
+                      (int->bools (intcdr x))))
+       :exec (int->bools-aux (+ 1 (integer-length x)) x nil))
+  ///
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (defthmd take-idx-of-int->bools-lemma
+           (implies (and (<= idx (integer-length x))
+                         (natp idx))
+                    (equal (take (+ 1 idx) (int->bools x))
+                           (append (take idx (int->bools x))
+                                   (list (logbitp idx x)))))
+           :hints (("goal" :induct (logbitp idx x)
+                    :in-theory (enable* bitops::ihsext-inductions)
+                    :expand ((logbitp idx x)
+                             (integer-length x)
+                             (:free (x) (take (+ 1 idx) x))
+                             (int->bools x))))))
+
+  (local (defthmd take-idx-of-int->bools
+           (implies (and (<= idx (+ 1 (integer-length x)))
+                         (posp idx))
+                    (equal (take idx (int->bools x))
+                           (append (take (1- idx) (int->bools x))
+                                   (list (logbitp (1- idx) x)))))
+           :hints (("goal" :use ((:instance take-idx-of-int->bools-lemma
+                                  (idx (1- idx))))))))
+
+  (local (defthm len-of-int->bools
+           (equal (len (int->bools x))
+                  (+ 1 (integer-length x)))
+           :hints(("Goal" :induct (int->bools x)
+                   :expand ((integer-length x))))))
+
+  (local (defthm int->bools-aux-removal
+           (implies (<= (nfix idx) (+ 1 (integer-length x)))
+                    (equal (int->bools-aux idx x acc)
+                           (append (take idx (int->bools x)) (true-list-fix acc))))
+           :hints(("Goal" :in-theory (enable int->bools-aux
+                                             take-idx-of-int->bools)
+                   :induct (int->bools-aux idx x acc)))))
+
+    (local (defthm take-identity-of-int->bools-lemma
+             (equal (take (+ 1 (integer-length x)) (int->bools x))
+                    (int->bools x))
+           :hints(("Goal" :induct (int->bools x)
+                   :expand ((integer-length x))))))
+             
+  (verify-guards int->bools))
+
+  
 
       
 

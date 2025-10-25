@@ -1614,6 +1614,11 @@
    :postinc (print-astring "++" pstate)
    :postdec (print-astring "--" pstate)
    :sizeof (print-astring "sizeof" pstate)
+   :alignof (keyword-uscores-case
+             op.uscores
+             :none (print-astring "_Alignof" pstate)
+             :start (print-astring "__alignof" pstate)
+             :both (print-astring "__alignof__" pstate))
    :real (print-astring "__real__" pstate)
    :imag (print-astring "__imag__" pstate))
   :hooks (:fix)
@@ -2209,9 +2214,9 @@
                  pstate)
              (b* ((pstate (print-unop expr.op pstate))
                   ;; We add a space:
-                  ;; - After sizeof unless the argument is
+                  ;; - After sizeof/alignof unless the argument is
                   ;;   a parenthesized expression,
-                  ;;   in which case we print sizeof(expr).
+                  ;;   in which case we print sizeof/alignof(expr).
                   ;;   This is a bit more than needed
                   ;;   just to avoid ambiguity in the printed code:
                   ;;   we could avoid the space in other cases,
@@ -2222,7 +2227,8 @@
                   ;;   otherwise +++ would be lexed as ++ +.
                   ;; - After - if the argument is --...,
                   ;;   otherwise --- would be lexed as -- -.
-                  (spacep (or (and (unop-case expr.op :sizeof)
+                  (spacep (or (and (or (unop-case expr.op :sizeof)
+                                       (unop-case expr.op :alignof))
                                    (not (expr-case expr.arg :paren)))
                               (and (unop-case expr.op :plus)
                                    (expr-case expr.arg :unary)
@@ -2237,7 +2243,8 @@
                             pstate))
                   (arg-priority (if (or (unop-case expr.op :preinc)
                                         (unop-case expr.op :predec)
-                                        (unop-case expr.op :sizeof))
+                                        (unop-case expr.op :sizeof)
+                                        (unop-case expr.op :alignof))
                                     (expr-priority-unary)
                                   (expr-priority-cast)))
                   (pstate (print-expr expr.arg arg-priority pstate)))
@@ -2261,6 +2268,7 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :alignof-ambig (prog2$ (impossible) (pristate-fix pstate))
            :cast
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-tyname expr.type pstate))
