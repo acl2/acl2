@@ -139,8 +139,9 @@
                   considered illegal.")
        (xdoc::li "A member access of the global struct object cannot occur in
                   certain contexts. In particular, you cannot take the address
-                  of the member access expression or the @('sizeof') the member
-                  access; such expressions are illegal.")))
+                  of the member access expression or the @('sizeof') or
+                  @('_Alignof') of the member access;
+                  such expressions are illegal.")))
    (xdoc::section
      "Current Limitations"
      (xdoc::p

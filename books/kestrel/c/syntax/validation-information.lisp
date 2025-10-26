@@ -682,6 +682,8 @@
                      (expr-unary-infop expr.info)))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :binary (and (expr-annop expr.arg1)
                       (expr-annop expr.arg2)
                       (expr-binary-infop expr.info)))
