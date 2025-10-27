@@ -599,13 +599,19 @@
     (b* ((section-header (first section-header-table))
          (name (lookup-eq-safe :name section-header))
          (offset (lookup-eq-safe :offset section-header))
+         (type (lookup-eq-safe :type section-header))
          ((when (not (natp offset))) ; impossible?
           (mv :bad-size nil))
          (size (lookup-eq-safe :size section-header))
          ((when (not (natp size))) ; impossible?
           (mv :bad-size nil))
-         ((mv erp bytes &) (parse-n-bytes size (nthcdr offset all-bytes)))
-         ((when erp) (mv erp nil)))
+         ((mv erp bytes &)
+          (if (eq type :sht-nobits)
+              (mv nil nil nil) ; no bits ; todo: think about what happens downstream
+            (parse-n-bytes size (nthcdr offset all-bytes))))
+         ((when erp)
+          (cw "ERROR: Not enough bytes for ~x0 section (type: ~x1)." name type)
+          (mv erp nil)))
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
@@ -894,6 +900,7 @@
        ((when erp) (mv erp nil))
        (result (acons :symbol-table symbol-table result))
 
+       ;; Note that sections of type :sht-nobits, such as .bss, will be mapped to the empty list of bytes:
        ((mv erp sections) (extract-elf-sections section-header-table all-bytes nil))
        ((when erp) (mv erp nil))
        (result (acons :sections sections result))
