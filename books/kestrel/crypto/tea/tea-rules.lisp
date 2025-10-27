@@ -14,12 +14,19 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 
 (defopeners tea-encrypt-loop)
+(defopeners tea-decrypt-loop)
 (in-theory (disable tea-encrypt-loop-unroll))
 
 (defun tea-spec-rules ()
   '(tea-encrypt-loop-unroll
     tea-encrypt-loop-base
     tea-encrypt
+    tea-encrypt-loop-body
+    tea-step
+    tea-decrypt-loop-unroll
+    tea-decrypt-loop-base
+    tea-decrypt
+    tea-decrypt-loop-body
     pack-tea-key
     pack-tea-input
     unpack-tea-output
