@@ -96,7 +96,7 @@
 (defund bv-array-to-list-aux (size len i arr)
   (declare (xargs :measure (+ 1 (nfix (- (nfix len) i)))
                   :guard (and (natp i)
-                              (natp len)
+                              (equal len (len arr))
                               (natp size)
                               (bv-arrayp size (len arr) arr))))
   (if (or (not (natp i))
