@@ -1376,9 +1376,9 @@
      but we just generate a new expression
      that is identical to the old one,
      with an equality theorem about them;
-     but, importantly, the theorem includes an assertion
-     about the type of the variable
-     (see @(tsee gen-expr-pure-thm)).")
+     but, importantly, the theorem includes assertions
+     about the type of the variable and the preservation of variables
+     (see @(tsee gen-expr-thm)).")
    (xdoc::p
     "We generate a theorem
      if the constant is an integer one,
@@ -1421,21 +1421,27 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr gout-no-thm))
-       (hints `(("Goal" :in-theory '(c::exec-expr-pure
-                                     (:e c::expr-const)
-                                     (:e c::expr-fix)
-                                     (:e c::expr-kind)
-                                     (:e c::expr-const->get)
-                                     (:e c::exec-const)
-                                     (:e c::expr-value->value)
-                                     (:e c::type-of-value)))))
+       (hints
+        `(("Goal"
+           :in-theory
+           '(c::exec-expr
+             c::exec-expr-pure
+             (:e c::expr-const)
+             (:e c::expr-fix)
+             (:e c::expr-kind)
+             (:e c::expr-const->get)
+             (:e c::exec-const)
+             (:e c::expr-value->value)
+             (:e c::type-of-value)
+             c::errorp-of-error
+             c::compustate-has-var-with-type-p-of-compustate-fix-compst))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
     (mv expr
         (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
