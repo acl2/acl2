@@ -200,23 +200,23 @@
     (ungroup 4 (map-unpackbv-little 4 8 state))))
 
 (defthm len-of-chacha20-block
-  (implies  (and (unsigned-byte-listp 8 key)
-                 (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
-                 (unsigned-byte-p 32 counter)
-                 (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
-                 (= 12 (len nonce))
-                 (unsigned-byte-p 32 carry))
+  (implies (and (unsigned-byte-listp 8 key)
+                (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
+                (unsigned-byte-p 32 counter)
+                (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
+                (= 12 (len nonce))
+                (unsigned-byte-p 32 carry))
             (equal (len (chacha20-block key counter nonce carry))
                    64))
   :hints (("Goal" :in-theory (enable chacha20-block))))
 
 (defthm unsigned-byte-listp-8-of-chacha20-block
-  (implies  (and (unsigned-byte-listp 8 key)
-                 (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
-                 (unsigned-byte-p 32 counter)
-                 (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
-                 (= 12 (len nonce))
-                 (unsigned-byte-p 32 carry))
+  (implies (and (unsigned-byte-listp 8 key)
+                (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
+                (unsigned-byte-p 32 counter)
+                (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
+                (= 12 (len nonce))
+                (unsigned-byte-p 32 carry))
             (unsigned-byte-listp 8 (chacha20-block key counter nonce carry)))
   :hints (("Goal" :in-theory (enable chacha20-block acl2::unsigned-byte-listp-rewrite))))
 

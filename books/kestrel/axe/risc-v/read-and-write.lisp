@@ -210,9 +210,9 @@
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
 (defthm bvchop-of-+-of-bvimunus-arg3
-  (implies  (and (integerp x)
-                 (integerp y)
-                 (integerp z))
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
             (equal (bvchop 32 (+ x y (bvuminus 32 z)))
                    (bvchop 32 (+ x y (- z)))))
   :hints (("Goal" :in-theory (enable bvuminus))))
