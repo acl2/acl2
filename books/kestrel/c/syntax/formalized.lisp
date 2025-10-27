@@ -342,12 +342,14 @@
            :postinc nil
            :postdec nil
            :sizeof nil
+           :alignof nil
            :real nil
            :imag nil)
    :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
+   :alignof-ambig (impossible)
    :cast (and (tyname-formalp expr.type)
               (expr-pure-formalp expr.arg))
    :binary (and (member-eq (binop-kind expr.op)
@@ -493,12 +495,14 @@
            :postinc nil
            :postdec nil
            :sizeof nil
+           :alignof nil
            :real nil
            :imag nil)
    :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
+   :alignof-ambig (impossible)
    :cast (and (tyname-formalp expr.type)
               (expr-formalp expr.arg)
               (expr-purep expr.arg))

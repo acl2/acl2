@@ -96,6 +96,7 @@
                     (free-vars-tyname expr.type bound-vars))
      :extension (free-vars-expr expr.expr bound-vars)
      :sizeof-ambig (raise "Unexpected ambiguous expression")
+     :alignof-ambig (raise "Unexpected ambiguous expression")
      :cast/call-ambig (raise "Unexpected ambiguous expression")
      :cast/mul-ambig (raise "Unexpected ambiguous expression")
      :cast/add-ambig (raise "Unexpected ambiguous expression")
