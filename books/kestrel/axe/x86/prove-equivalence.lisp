@@ -53,7 +53,8 @@
        )
     `(progn
        ;; Lift the first function:
-       (def-unrolled ,name1 ,executable1 ; no replacement of register with fresh vars (for now), so that the functions each just take a single param, x86
+       (def-unrolled ,name1
+         :executable ,executable1 ; no replacement of register with fresh vars (for now), so that the functions each just take a single param, x86
          :target ,target1
          :inputs ,inputs1
          :output ,output1
@@ -63,7 +64,8 @@
          ,@(if (eq :auto count-hits) nil `(:count-hits ,count-hits))
          ,@(if (eq :auto print) nil `(:print ,print)))
        ;; Lift the second function:
-       (def-unrolled ,name2 ,executable2
+       (def-unrolled ,name2
+         :executable ,executable2
          :target ,target2
          :inputs ,inputs2
          :output ,output2
