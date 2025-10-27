@@ -1330,17 +1330,21 @@
        ((unless (omap::assoc cvar gin.vartys)) (mv expr gout-no-thm))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-ident)
-                              (:e c::type-fix))
-                 :use (:instance expr-ident-compustate-vars
-                                 (var ',cvar)
-                                 (type ',ctype)))))
+                              (:e c::type-fix)
+                              expr-compustate-vars)
+                 :use ((:instance expr-ident-compustate-vars
+                                  (var ',cvar)
+                                  (type ',ctype))
+                       (:instance expr-ident-congruence
+                                  (var ',cvar)
+                                  (type ',ctype))))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
     (mv expr
         (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
