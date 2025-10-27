@@ -1836,7 +1836,8 @@
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
            ((mv lifted-thm-name thm-index events)
-            (if (expr-purep arg2)
+            (if (and (expr-purep arg2)
+                     (not (expr-case arg2 :const)))
                 (b* (((mv thm-event thm-name thm-index)
                       (lift-expr-pure-thm arg2
                                           arg2-new
@@ -2143,7 +2144,8 @@
         (mv stmt-new (gout-no-thm gin)))
        ((mv lifted-thm-name thm-index events)
         (if (and expr?
-                 (expr-purep expr?))
+                 (expr-purep expr?)
+                 (not (expr-case expr? :const)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new
