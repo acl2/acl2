@@ -288,6 +288,8 @@
                   (bv-array-read arg1 arg2 0 arg4)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; When the index is < k, we discard all but the first k array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<
   (implies (and (syntaxp (quotep data))
                 (< index k) ; k is a free var
@@ -301,7 +303,8 @@
                   (bv-array-read element-size k index (take k data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-;; Discards array values at the end that cannot be accessed
+;; When the index is <= k, we discard all but the first k+1 array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<=
   (implies (and (syntaxp (quotep data))
                 (<= index k) ; k is a free var
