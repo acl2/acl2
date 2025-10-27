@@ -27,6 +27,7 @@
 (include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
 (include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
 (include-book "kestrel/x86/floats" :dir :system)
+(include-book "kestrel/x86/read-and-write2" :dir :system)
 (include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
@@ -1012,7 +1013,71 @@
            (equal (read n1 addr1 (write n2 addr2 val x86))
                   (read n1 addr1 x86)))
   :hints (("Goal" :use (:instance read-of-write-irrel-gen)
-           :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+                  :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+
+;; Good for subregions of corresponding, larger disjoint regions.
+(defthm read-of-write-when-disjoint-regions48p-gen-smt
+  (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+;; Alt version of the rule just above (disjoint-regions48p hyp commuted)
+(defthm read-of-write-when-disjoint-regions48p-gen-smt-alt
+  (implies (and (disjoint-regions48p len2 start2 len1 start1) ; todo: rename vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+
 
 ;; ;; drop?
 ;; (defthmd canonical-address-p-when-bvlt-of-bvplus-axe-smt
