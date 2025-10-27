@@ -338,7 +338,7 @@
     read-of-set-mxcsr
 
     ;; read-when-program-at ; trying just this one
-    ;; since read-when-program-at can introduce bv-array-read-chunk-little
+    ;; since read-when-program-at / read-when-equal-of-read-bytes-and-subregion48p can introduce bv-array-read-chunk-little
     ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
@@ -6421,6 +6421,8 @@
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
+(set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
+(set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)
 
 ;; Try these as a last resort:
 ;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
