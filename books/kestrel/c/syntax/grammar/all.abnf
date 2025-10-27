@@ -846,6 +846,10 @@ lexeme = token
 ; if there are parentheses, they below to the expression,
 ; which is therefore a parenthesized expression.
 
+; As a GCC extension, we allow '_Alignof' (and variant keywords)
+; to form unary expressions in the same way as 'sizeof'
+; (https://gcc.gnu.org/onlinedocs/gcc/Alignment.html).
+
 ; As a GCC extension, we include '__real__' and '__imag__'
 ; (see https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
 ; as addtitional unary operators.
@@ -915,6 +919,7 @@ unary-expression = postfix-expression
                  / unary-operator cast-expression
                  / %s"sizeof" unary-expression
                  / %s"sizeof" "(" type-name ")"
+                 / alignof-keyword unary-expression ; GCC extension
                  / alignof-keyword "(" type-name ")"
                  / %s"__real__" cast-expression ; GCC extension
                  / %s"__imag__" cast-expression ; GCC extension

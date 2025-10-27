@@ -127,6 +127,11 @@
        (tyname-subst-free (c$::expr-alignof->type expr)
                           subst bound-vars)
        (c$::expr-alignof->uscores expr))
+     :alignof-ambig
+     (c$::expr-alignof-ambig (amb-expr/tyname-subst-free
+                              (c$::expr-alignof-ambig->expr/tyname expr)
+                              subst bound-vars)
+                             (c$::expr-alignof-ambig->uscores expr))
      :cast (c$::expr-cast
              (tyname-subst-free (c$::expr-cast->type expr)
                                 subst bound-vars)

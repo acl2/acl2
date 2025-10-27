@@ -679,24 +679,39 @@
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-binder-rules-p)))))
 
 
-(define fgl-binder-rules-lookup ((fn pseudo-fnsym-p) (alist))
+(define fgl-binder-runes-lookup ((fn pseudo-fnsym-p) (alist))
   (cdr (hons-get (pseudo-fnsym-fix fn) alist)))
 
-(define fgl-function-binder-rules ((fn pseudo-fnsym-p) (world plist-worldp))
+(define fgl-function-binder-rules-from-lookup ((fn pseudo-fnsym-p)
+                                               (runes)
+                                               (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-binder-rulelist-p))
-  (b* ((table (make-fast-alist (table-alist 'fgl-binder-rules world)))
-       (fn (pseudo-fnsym-fix fn))
-       (runes (fgl-binder-rules-lookup fn table))
-       ((unless (fgl-binder-runelist-p runes))
+  (b* (((unless (fgl-binder-runelist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 fn 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
             nil))
-       (lemmas (fgetprop fn 'acl2::lemmas nil world))
+       (lemmas (fgetprop (pseudo-fnsym-fix fn) 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))
        ((mv err rules1)
         (fgl-binder-rules-from-runes runes map world)))
     (mv err (fgl-binder-rules-filter-leading-fnsym fn rules1)))
+  ///
+  (defret rules-ev-good-fgl-binder-rules-p-of-<fn>
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (equal world (w state)))
+             (rules-ev-good-fgl-binder-rules-p rules)))
+
+  (memoize 'fgl-function-binder-rules-from-lookup))
+
+
+(define fgl-function-binder-rules ((fn pseudo-fnsym-p)
+                                   (table)
+                                   (world plist-worldp))
+  :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
+               (rules fgl-binder-rulelist-p))
+  (fgl-function-binder-rules-from-lookup
+   fn (fgl-binder-runes-lookup fn (make-fast-alist table)) world)
   ///
   (defret rules-ev-good-fgl-binder-rules-p-of-<fn>
     (implies (and (rules-ev-meta-extract-global-facts)

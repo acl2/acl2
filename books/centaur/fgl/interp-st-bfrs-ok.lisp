@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "interp-st")
+(include-book "stack-bfrs-ok")
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -103,6 +104,16 @@
                  (let* ((lit (car (last clause))))
                    `(:expand (,lit)))))))
 
+(define logicman-ipasirs-assumption-free-exec (logicman)
+  :enabled t
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable logicman-ipasirs-assumption-free))))
+  (mbe :logic (ec-call (logicman-ipasirs-assumption-free logicman))
+       :exec (or (logicman-ipasirs-undef (logicman->ipasir-length logicman) logicman)
+                 (prog2$ (cw "Need to release all ipasir solvers to ensure that invariant holds -- please run ~x0~%"
+                             '(fgl::interp-st-release-ipasirs))
+                         (ec-call (logicman-ipasirs-assumption-free logicman))))))
+
 
 (define interp-st-bfrs-ok (interp-st)
   (b* ((constraint-db (interp-st->constraint-db interp-st))
@@ -114,22 +125,16 @@
                 (constraint-pathcond (interp-st->constraint interp-st)))
                (ok)
                (b* ((bfrstate (logicman->bfrstate)))
-                 (and (bfr-listp (major-stack-bfrlist (stack-extract stack)))
-                      (bfr-listp (constraint-db-bfrlist constraint-db))
-                      (bfr-listp (cgraph-bfrlist cgraph))
-                      (ec-call (bfr-pathcond-p-fn pathcond (logicman->bfrstate)))
-                      (ec-call (bfr-pathcond-p-fn constraint-pathcond (logicman->bfrstate)))
-                      (bfr-listp (bvar-db-bfrlist bvar-db))
-                      (ec-call (bvar-db-boundedp bvar-db logicman))
+                 (and (stack-bfrs-ok stack)
+                      (constraint-db-bfrs-ok constraint-db)
+                      (cgraph-bfrs-ok cgraph)
+                      (bfr-pathcond-p pathcond)
+                      (bfr-pathcond-p constraint-pathcond)
+                      (bvar-db-bfrs-ok bvar-db)
+                      (bvar-db-boundedp-exec bvar-db logicman)
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
                       (logicman-invar logicman)
-                      (bfr-listp (bvar-db-bfrlist bvar-db))
-                      (ec-call (logicman-ipasirs-assumption-free logicman))
-                      ;; (stobj-let ((ipasir (logicman->ipasir logicman)))
-                      ;;            (ok)
-                      ;;            (equal (ipasir-get-assumption ipasir) nil)
-                      ;;            ok)
-                      ))
+                      (logicman-ipasirs-assumption-free-exec logicman)))
                ok))
   ///
   (defthm interp-st-bfrs-ok-implies
@@ -142,7 +147,7 @@
                     (logicman-pathcond-p (interp-st->pathcond interp-st))
                     (logicman-pathcond-p (interp-st->constraint interp-st))
                     (bfr-listp (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
-                    (bvar-db-boundedp (interp-st->bvar-db interp-st) logicman)
+                    ;; (bvar-db-boundedp (interp-st->bvar-db interp-st) logicman)
                     (interp-st-nvars-ok interp-st)
                     (equal (next-bvar$c (interp-st->bvar-db interp-st))
                            (bfr-nvars (interp-st->logicman interp-st)))
@@ -235,5 +240,20 @@
     (implies (and (interp-st-bfrs-ok interp-st)
                   (interp-st-bfr-listp (fgl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar-unique x interp-st state))))
-    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique)))))
+    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique))))
+
+  (defthm interp-st-bfrs-ok-of-create-interp-st
+    (interp-st-bfrs-ok (create-interp-st))
+    :hints(("Goal" :in-theory (e/d* (interp-st-defs
+                                     bfr-pathcond-p
+                                     aignet::bounded-pathcond-p
+                                     logicman-ipasirs-assumption-free
+                                     bfr-nvars
+                                     logicman-invar
+                                     logicman-pathcond-p
+                                     aignet::nbalist-boundp
+                                     bvar-db-bfrlist
+                                     bvar-db-bfrlist-aux)
+                                    (interp-st-bfrs-ok-implies))))))
+
 

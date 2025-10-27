@@ -679,6 +679,10 @@
                        ;; TODO
                        nil
                        env))
+        :alignof-ambig (mv (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
+                                   (expr-fix expr))
+                           nil
+                           env)
         :cast (b* (((mv arg - env)
                     (const-prop-expr expr.arg env))
                    ((mv type env)
