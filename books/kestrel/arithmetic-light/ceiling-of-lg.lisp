@@ -136,3 +136,19 @@
                 (integerp y))
            (< x (expt 2 (ceiling-of-lg y))))
   :hints (("Goal" :in-theory (enable ceiling-of-lg expt))))
+
+;; monotonicity
+(defthm <=-of-ceiling-of-lg-and-ceiling-of-lg
+  (implies (and (<= x y)
+                (natp x) ; gen?
+                (integerp y))
+           (<= (ceiling-of-lg x) (ceiling-of-lg y)))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg)
+           :cases ((equal 0 x)))))
+
+(defthm <=-of-ceiling-of-lg-and-ceiling-of-lg-linear
+  (implies (and (<= x y)
+                (natp x) ; gen?
+                (integerp y))
+           (<= (ceiling-of-lg x) (ceiling-of-lg y)))
+  :rule-classes :linear)
