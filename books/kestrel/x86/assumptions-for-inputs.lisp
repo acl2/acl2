@@ -223,7 +223,7 @@
                               (booleanp type-assumptions-for-array-varsp))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
-        (prog2$ (er hard? 'assumptions-and-vars-for-input "Bad input type: ~x0." type)
+        (prog2$ (er hard? 'assumptions-and-vars-for-input "Error parsing input type ~x0." input-type)
                 (mv nil nil))
       (if (atom type) ; scalar (e.g., "U32")
           ;; just put in the var name for the state component:

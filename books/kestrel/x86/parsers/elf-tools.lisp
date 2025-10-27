@@ -293,6 +293,7 @@
           (mv :bad-program-header-table-entry-value nil))
          (last-byte-num (+ -1 offset filesz))
          ((when (not (< last-byte-num all-bytes-len)))
+          (cw ": Not enough bytes for region.  last-byte-num: ~x0.  all-bytes-len: ~x1." last-byte-num all-bytes-len)
           (mv :not-enough-bytes nil))
          ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
          (numzeros (- memsz filesz))
