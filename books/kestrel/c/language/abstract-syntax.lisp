@@ -16,9 +16,7 @@
 ; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,7 +360,8 @@
   (:pointer ((decl obj-declor)))
   (:array ((decl obj-declor)
            (size iconst-option)))
-  :pred obj-declorp)
+  :pred obj-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,7 +394,8 @@
   (:pointer ((decl obj-adeclor)))
   (:array ((decl obj-adeclor)
            (size iconst-option)))
-  :pred obj-adeclorp)
+  :pred obj-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,11 +630,7 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :pred expr-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -762,7 +758,8 @@
   (:base ((name ident)
           (params param-declon-list)))
   (:pointer ((decl fun-declor)))
-  :pred fun-declorp)
+  :pred fun-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,7 +774,8 @@
      a function declarator without the name."))
   (:base ((params param-declon-list)))
   (:pointer ((decl fun-adeclor)))
-  :pred fun-adeclorp)
+  :pred fun-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
