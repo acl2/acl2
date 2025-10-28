@@ -1202,12 +1202,16 @@
         (mv nil '(value-triple :redundant) state))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Check inputs:
+       ((when (eq :none executable))
+        (er hard? 'def-unrolled-fn "No :executable supplied.  This should usually be a string (file name/path).") ; todo: mention the parsed-executable option?
+        (mv (erp-t) nil state))
        ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
             (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable: ; todo: can we deprecate this case?  could be de-obfuscated
+          ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
@@ -1363,9 +1367,9 @@
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
 (defmacrodoc def-unrolled (&whole whole-form
                                   lifted-name
-                                  executable
                                   &key
                                   (target ':entry-point)
+                                  (executable ':none)
                                   (inputs ':skip)
                                   (output ':all)
                                   (extra-assumptions 'nil)
@@ -1439,7 +1443,7 @@
   :parents (acl2::axe-x86 acl2::axe-lifters)
   :short "A tool to lift x86 binary code into logic, unrolling loops as needed."
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
-         (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
+         (executable "The x86 binary executable that contains the target function.  Usually this is a string representing the file name/path of the executable.  However, it can instead be a parsed executable (satisfying @('parsed-executablep')).") ; todo: mention defconst-x86?
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
          (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")

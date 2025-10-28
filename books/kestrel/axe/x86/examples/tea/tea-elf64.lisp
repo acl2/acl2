@@ -47,7 +47,7 @@
 ;; Lift the x86 code for the encrypt function into logic:
 ;; Produces the DAG *tea*, with the same variables as *tea-encrypt-spec*.
 (def-unrolled tea
-  "tea.elf64"
+  :executable "tea.elf64"
   :target "encrypt"
   :stack-slots 9
   :inputs ((v u32[2]) (k u32[4]))
