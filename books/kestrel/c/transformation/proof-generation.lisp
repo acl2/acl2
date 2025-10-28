@@ -1308,9 +1308,9 @@
      but we just generate a new expression
      that is identical to the old one,
      with an equality theorem about them;
-     but, importantly, the theorem includes an assertion
-     about the type of the variable
-     (see @(tsee gen-expr-pure-thm)).")
+     but, importantly, the theorem includes assertions
+     about the type of the variable and the preservation of variables
+     (see @(tsee gen-expr-thm)).")
    (xdoc::p
     "We generate a theorem
      if the variable has a type supported in our C formalization,
