@@ -46,7 +46,7 @@
 ;; Lift the subroutine into logic:
 ;; Produces the DAG *tea*.
 (def-unrolled tea
-  "tea.macho64"
+  :executable "tea.macho64"
   :target "_encrypt"
   :stack-slots 8
   :inputs ((v u32[2]) (k u32[4]))

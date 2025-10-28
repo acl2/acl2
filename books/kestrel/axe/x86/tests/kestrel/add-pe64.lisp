@@ -18,7 +18,7 @@
 
 ;; (depends-on "add.pe64")
 ;; Lift the add function into logic by unrolling:
-(def-unrolled add "add.pe64" :target "add"
+(def-unrolled add :executable "add.pe64" :target "add"
   :output :rax ; return only the sum
   )
 
