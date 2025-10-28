@@ -241,6 +241,10 @@
   :hints (("Goal" :in-theory (enable hap hp-cons hpp hol-valuep hol-type-eval)))))
 
 (defthm sum_polys-type-properties-lemma-1
+
+; This follows from the rewrite rule hpp-hap.  It might be worth investigating
+; why the present lemma is necessary.
+
   (implies (and (hpp fn hta)
                 (equal (cdr fn)
                        *sum_polys-type*)
@@ -253,13 +257,12 @@
                 (force (hol::eval-poly$prop)))
            (hpp (hap* fn x y) hta)))
 
-(defthm hol::sum_polys$type-2-alt
-  (implies (force (hol::eval-poly$prop))
-           (equal (cdr (hol::sum_polys *sum_polys-type*))
-                  *sum_polys-type*))
-  :hints (("Goal" :use hol::sum_polys$type)))
-
 (defthm funp-apply-sum_polys
+
+; It seems possible that this lemma could be dropped by having suitable
+; general-purpose lemmas about domains based on the types of functions that
+; return lists.
+
   (implies (and (alist-subsetp (hol::eval-poly$hta) hta)
                 (hpp x hta)
                 (equal (cdr x)
@@ -276,6 +279,11 @@
                        ((hta hta) (rest '((:hash :num :num)))))))))
 
 (defthm natp-domain-apply-sum_polys
+
+; It seems possible that this lemma could be dropped by having suitable
+; general-purpose lemmas about domains based on the types of functions that
+; return lists.
+
   (implies (and (alist-subsetp (hol::eval-poly$hta) hta)
                 (hpp x hta)
                 (equal (cdr x)

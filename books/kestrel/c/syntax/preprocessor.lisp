@@ -2275,4 +2275,132 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plex-character-constant ((cprefix? cprefix-optionp)
+                                 (first-pos positionp)
+                                 (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a character constant during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-character-constant),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate))
+       (span (make-span :start first-pos :end closing-squote-pos))
+       ((unless cchars)
+        (reterr-msg :where (position-to-msg closing-squote-pos)
+                    :expected "one or more characters and escape sequences"
+                    :found "none")))
+    (retok (plexeme-char (cconst cprefix? cchars)) span ppstate))
+
+  ///
+
+  (defret ppstate->size-of-plex-character-constant-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-character-constant-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-string-literal ((eprefix? eprefix-optionp)
+                             (first-pos positionp)
+                             (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a string literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-string-literal),
+     but it operates on preprocessor states instead of parser states."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp schars closing-dquote-pos ppstate) (plex-*-s-char ppstate))
+       (span (make-span :start first-pos :end closing-dquote-pos)))
+    (retok (plexeme-string (stringlit eprefix? schars)) span ppstate))
+
+  ///
+
+  (defret ppstate->size-of-plex-string-literal-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-string-literal-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-header-name ((ppstate ppstatep))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a header name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-header-name),
+     but it operates on preprocessor states instead of parser states,
+     and it returns a lexeme instead of a header name."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp char first-pos ppstate) (pread-char ppstate)))
+    (cond
+     ((not char)
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))
+     ((utf8-= char (char-code #\<)) ; <
+      (b* (((erp hchars closing-angle-pos ppstate) (plex-*-h-char ppstate))
+           (span (make-span :start first-pos :end closing-angle-pos))
+           ((unless hchars)
+            (reterr-msg :where (position-to-msg closing-angle-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (plexeme-header (header-name-angles hchars)) span ppstate)))
+     ((utf8-= char (char-code #\")) ; "
+      (b* (((erp qchars closing-dquote-pos ppstate) (plex-*-q-char ppstate))
+           (span (make-span :start first-pos :end closing-dquote-pos))
+           ((unless qchars)
+            (reterr-msg :where (position-to-msg closing-dquote-pos)
+                        :expected "one or more characters"
+                        :found "none")))
+        (retok (plexeme-header (header-name-quotes qchars)) span ppstate)))
+     (t ; other
+      (reterr-msg :where (position-to-msg first-pos)
+                  :expected "a greater-than ~
+                             or a double quote"
+                  :found (char-to-msg char)))))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+  ///
+
+  (defret ppstate->size-of-plex-header-name-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-header-name-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: continue
