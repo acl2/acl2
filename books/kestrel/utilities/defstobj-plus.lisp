@@ -659,13 +659,19 @@
                               ;; Prevents making huge lists of copies of the default value:
                               make-list-ac
                               (:executable-counterpart make-list-ac)
-
                               len nth)))
 
            ;; Disable all names introduced by defstobj:
-           (in-theory (disable ,top-recognizer ,creator ,@names-for-fields))
+           (in-theory (disable ,top-recognizer ,creator ,@names-for-fields
+                               (:e ,creator) ; can prevent creation of a potentially large array
+                               ))
 
            ,@theorems-for-fields
+
+           (local (defthm len-of-cons-for-defstobj+
+                    (equal (len (cons x y))
+                           (+ 1 (len y)))
+                    :hints (("Goal" :in-theory '(len cdr-cons)))))
 
            ;; Has to come after the theorems-for-fields, since this needs rules about MAKE-LIST-AC.
            ;; The stobj creation function returns a well-formed stobj:
@@ -674,19 +680,14 @@
              :hints (("Goal" :in-theory '(,top-recognizer
                                           ,creator
                                           ,@helper-theorem-names
-                                          (:DEFINITION LEN)
-                                          (:DEFINITION LENGTH)
-                                          (:e make-list-ac)
-                                          (:e nth)
-                                          (:EXECUTABLE-COUNTERPART BINARY-+)
-                                          (:EXECUTABLE-COUNTERPART EQUAL)
-                                          (:EXECUTABLE-COUNTERPART LEN)
-                                          (:EXECUTABLE-COUNTERPART NFIX)
-                                          ;(:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-                                          (:REWRITE CDR-CONS)
-                                          (:REWRITE LEN-OF-MAKE-LIST-AC)
-                                          (:REWRITE NTH-0-CONS)
-                                          )))))))))
+                                          len-of-cons-for-defstobj+
+                                          (:definition length)
+                                          (:rewrite len-of-make-list-ac)
+                                          (:rewrite nth-of-cons-constant-version)
+                                          ;(:rewrite nth-0-cons) ; built in
+                                          (:executable-counterpart nfix)
+                                          (:executable-counterpart zp)
+                                          (:executable-counterpart len))))))))))
 
 ;; A replacement for defstobj (except for certain unhandled features -- see
 ;; todos above) that disables most stobj-related functions and proves various

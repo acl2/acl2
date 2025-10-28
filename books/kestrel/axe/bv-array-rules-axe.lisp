@@ -38,6 +38,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/bv-lists/array-patterns" :dir :system)) ; reduce?
 
 (add-known-boolean bv-arrayp)
 
@@ -471,3 +472,16 @@
                   val))
   :hints (("Goal" :use bv-array-read-when-all-same
            :in-theory (disable bv-array-read-when-all-same))))
+
+;; Here we guess that the index may be < ~half the array size.  if so, we can
+;; discard the latter ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-first-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (ceiling len 2)))
+                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-first-half)))
