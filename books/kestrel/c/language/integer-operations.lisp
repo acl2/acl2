@@ -283,6 +283,9 @@
     (implies (type-unsigned-integerp type)
              (valuep (convert-integer-value val type))))
 
+  (local (in-theory (disable (:e integer-type-max)
+                             (:e integer-type-min))))
+
   (defruled valuep-of-convert-integer-value-from-schar-to-sint
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-sint))))
