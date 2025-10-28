@@ -33,6 +33,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
 
 (local (in-theory (disable take)))
 
@@ -203,6 +204,58 @@
   :hints (("Goal" :cases ((< len1 len2))
            :in-theory (enable bv-array-read-opener))))
 
+(local
+  (defthmd bv-array-read-shorten-when-bvlt-gen-helper
+    (implies (and (unsigned-byte-p (ceiling-of-lg len) index) ; for the helper
+                  (syntaxp (and (quotep data)
+                                (quotep len)))
+                  (bvlt size2 index k) ; index < k, k is a free var
+                  (equal size2 (ceiling-of-lg len)) ; gen?
+                  (syntaxp (quotep k))
+                  (< k len) ; avoid loops (gets evaluated)
+                  (natp k)
+                  (natp len))
+             (equal (bv-array-read element-size len index data)
+                    (bv-array-read element-size k index (take k data))))
+    :hints (("Goal" :cases ((equal (bvchop (ceiling-of-lg k) index)
+                                   (bvchop (ceiling-of-lg len) index)))
+             :in-theory (e/d (bvlt bv-array-read)
+                             (equal-of-bvchop-and-bvchop-same))))))
+
+;; When the index is < k, we discard all but the first k array elements,
+;; because later elements cannot be accessed.
+;; todo: make a <= (bvle) version
+(defthmd bv-array-read-shorten-when-bvlt-gen
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt size2 index k) ; index < k, k is a free var
+                (equal size2 (ceiling-of-lg len)) ; gen?
+                (syntaxp (quotep k))
+                (< k len) ; avoid loops (gets evaluated)
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size k index (take k data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-when-bvlt-gen-helper
+                                  (index (bvchop (ceiling-of-lg len) index))))))
+
+;; here we guess that the index may be < ~half the array size.  if so, we can
+;; discard the latter ~half of the values.
+(defthmd bv-array-read-shorten-when-in-first-half
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt (ceiling-of-lg len) index (ceiling len 2))
+                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-when-bvlt-gen
+                                  (size2 (ceiling-of-lg len))
+                                  (k (ceiling len 2))))))
+
+;; When the index is < k, we discard all but the first k array elements,
+;; because later elements cannot be accessed.
+; compare to the gen one above
 (defthmd bv-array-read-shorten-when-bvlt
   (implies (and (syntaxp (and (quotep data)
                               (quotep len)))
@@ -217,7 +270,9 @@
                   (bv-array-read element-size k (bvchop isize index) (take k data))))
   :hints (("Goal" :in-theory (enable bvlt <=-of-bvchop-same-linear))))
 
-(defthmd bv-array-read-shorten-when-not-bvlt
+;; When the index is <= k, we discard all but the first k+1 array elements,
+;; because later elements cannot be accessed.
+(defthmd bv-array-read-shorten-when-not-bvlt ; could rename to say -when-bvle
   (implies (and (syntaxp (and (quotep data)
                               (quotep len)))
                 (not (bvlt isize k index)) ; k is a free var
