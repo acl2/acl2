@@ -439,7 +439,7 @@
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
-  (fty::deffixequiv gen-expr-pure-thm
+  (fty::deffixequiv lift-expr-pure-thm
     :args ((old exprp) (new exprp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
