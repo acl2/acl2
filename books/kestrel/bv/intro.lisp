@@ -75,6 +75,13 @@
                       1
                     0))))
 
+;; There are several ways to convert logops (like logxor) to bv ops (like bvxor):
+;; 1. If there is a surrounding operator that chops its argument (see convert-to-bv-rules.lisp).
+;; 2. If we can tell syntactically what the BV size of an operand is.
+;; 3. If we have an unsigned-byte-p hyp about an operand.
+;; 4. If we just guess that the operand(s) have size 32 or 64 or whatever and can prove that.
+;; Functions with multiple operands may require both to have the given size.
+
 (defthmd bvchop-of-logand-becomes-bvand
   (equal (bvchop size (logand x y))
          (bvand size x y))
@@ -115,35 +122,41 @@
   :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x))
            :in-theory (disable logand-becomes-bvand))))
 
-(defthmd logand-of-bvchop-becomes-bvand
-  (equal (logand y (bvchop width x))
-         (bvand width y x))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-           :in-theory (disable logand-becomes-bvand))))
+;; ;; subsumed?
+;; (defthmd logand-of-bvchop-becomes-bvand
+;;   (equal (logand y (bvchop width x))
+;;          (bvand width y x))
+;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
+;;            :in-theory (disable logand-becomes-bvand))))
 
-(defthmd logand-of-bvchop-becomes-bvand-alt
-  (equal (logand (bvchop width x) y)
-         (bvand width y x))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-           :in-theory (disable logand-becomes-bvand))))
+;; ;; subsumed?
+;; (defthmd logand-of-bvchop-becomes-bvand-alt
+;;   (equal (logand (bvchop width x) y)
+;;          (bvand width y x))
+;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
+;;            :in-theory (disable logand-becomes-bvand))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
-  (implies (and (unsigned-byte-p size x) ;free var
-                (unsigned-byte-p size y)
+  (implies (and (unsigned-byte-p size x) ;size is a free var
+                ;(unsigned-byte-p size y)
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+  :hints (("Goal" :use logand-becomes-bvand
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logand-becomes-bvand)))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
-  (implies (and (unsigned-byte-p size y) ;free var
-                (unsigned-byte-p size x)
+  (implies (and (unsigned-byte-p size y) ;size is a free var
+                ;(unsigned-byte-p size x)
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+  :hints (("Goal" :use logand-becomes-bvand-alt
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logand-becomes-bvand-alt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
