@@ -49,6 +49,13 @@
      neither does the execution of the new construct,
      and the two return the same results.")
    (xdoc::p
+    "The rule for identifier expressions is a bit different from the others,
+     because identifier expressions have no sub-expressions.
+     However, the form is fairly similar, given that difference.
+     This rule has an additional hypothesis about
+     the variable being in the computation state with a certain type,
+     which serves to establish the assertion about the type.")
+   (xdoc::p
     "The theorems make use of @(tsee b*) bindings
      to keep them more readable.
      The theorems include additional hypotheses, in some cases,
@@ -100,6 +107,26 @@
      for the old vs. new constructs.
      We always use the same initial computation state
      for old and new constructs."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-ident-congruence
+    (b* ((expr (c::expr-ident var))
+         ((mv old-eval old-compst) (c::exec-expr expr compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr expr compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval)))
+      (implies (and (not (c::errorp old-eval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    old-eval
+                    (equal (c::type-of-value old-val) (c::type-fix type)))))
+    :enable (c::exec-expr
+             c::exec-ident
+             c::compustate-has-var-with-type-p))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
