@@ -729,6 +729,7 @@
   :elementp-of-nil nil
   :pred param-declon-listp
   :prepwork ((local (in-theory (enable nfix))))
+
   ///
 
   (defruled cdr-of-param-declon-list-fix

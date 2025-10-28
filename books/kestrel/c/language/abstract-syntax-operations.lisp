@@ -190,6 +190,7 @@
   :measure (obj-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
+
   ///
 
   (defrule ident+adeclor-to-obj-declor-of-obj-declor-to-ident+adeclor
@@ -245,6 +246,7 @@
   :measure (fun-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
+
   ///
 
   (defrule ident+adeclor-to-fun-declor-of-fun-declor-to-ident+adeclor
@@ -328,6 +330,7 @@
     "This is the inverse of @(tsee tyspec+declor-to-ident+tyname)."))
   (b* (((tyname tyname) tyname))
     (mv tyname.tyspec (ident+adeclor-to-obj-declor id tyname.declor)))
+
   ///
 
   (defrule ident+tyname-to-tyspec+declor-of-tyspec+declor-to-ident+tyname
@@ -401,6 +404,7 @@
        ((mv ids tynames) (param-declon-list-to-ident+tyname-lists
                           (cdr declons))))
     (mv (cons id ids) (cons tyname tynames)))
+
   ///
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.ids
@@ -464,7 +468,9 @@
   :returns (names ident-listp)
   :short "Lift @(tsee fundef->name) to lists."
   (fundef->name x)
+
   ///
+
   (fty::deffixequiv fundef-list->name-list
     :args ((x fundef-listp))))
 
@@ -535,6 +541,7 @@
   (expr-constp x)
   :true-listp nil
   :elementp-of-nil nil
+
   ///
 
   (fty::deffixequiv expr-list-constp
@@ -563,7 +570,9 @@
   :returns (declons fun-declon-listp)
   :short "Lift @(tsee fundef-to-fun-declon) to lists."
   (fundef-to-fun-declon x)
+
   ///
+
   (fty::deffixequiv fundef-list-to-fun-declon-list
     :args ((x fundef-listp))))
 
@@ -602,7 +611,9 @@
   :short "Check if a list of expressions does not contain any function calls."
   (expr-nocallsp x)
   :elementp-of-nil t
+
   ///
+
   (fty::deffixequiv expr-list-nocallsp
     :args ((x expr-listp))))
 
