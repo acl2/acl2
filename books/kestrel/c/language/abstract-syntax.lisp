@@ -13,6 +13,7 @@
 
 (include-book "identifiers")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 ; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
@@ -144,8 +145,7 @@
    (unsignedp bool)
    (length iconst-length))
   :tag :iconst
-  :pred iconstp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,8 +299,7 @@
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspecseq-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyspecseq-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,8 +418,7 @@
   :elt-type tyname
   :true-listp t
   :elementp-of-nil nil
-  :pred tyname-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyname-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,8 +458,7 @@
   :elt-type unop
   :true-listp t
   :elementp-of-nil nil
-  :pred unop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred unop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,8 +525,7 @@
   :elt-type binop
   :true-listp t
   :elementp-of-nil nil
-  :pred binop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred binop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,8 +664,7 @@
   :elt-type struct-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred struct-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred struct-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,7 +723,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-declon-listp
-  :prepwork ((local (in-theory (enable nfix))))
 
   ///
 
@@ -800,8 +794,7 @@
   :elt-type fun-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred fun-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fun-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -958,7 +951,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable acl2-count nfix)))))
+  :prepwork ((local (in-theory (enable acl2-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1010,8 +1003,7 @@
   :elt-type fundef
   :true-listp t
   :elementp-of-nil nil
-  :pred fundef-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fundef-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1038,8 +1030,7 @@
   :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
