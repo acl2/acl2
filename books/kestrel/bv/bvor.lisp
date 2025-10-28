@@ -305,8 +305,7 @@
   (("Goal" :cases ((and (integerp x) (integerp y))
                    (and (integerp x) (not (integerp y)))
                    (and (not (integerp x)) (integerp y)))
-    :in-theory (e/d (getbit)
-                    ()))))
+    :in-theory (enable getbit))))
 
 ;this one does not push the getbit through
 (defthm getbit-0-of-bvor
@@ -414,7 +413,7 @@
                 (integerp z))
            (equal (bvor size (bvor size2 x y) z)
                   (bvor size (bvor size x y) z)))
-  :hints (("Goal" :in-theory (e/d (bvor) ()))))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 ;use trim?
 (defthm bvor-of-bvor-tighten-2
@@ -426,7 +425,7 @@
                 (integerp z))
            (equal (bvor size z (bvor size2 x y))
                   (bvor size z (bvor size x y))))
-  :hints (("Goal" :in-theory (e/d (bvor) ()))))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthm bitp-of-bvor-of-1
   (bitp (bvor 1 x y))
