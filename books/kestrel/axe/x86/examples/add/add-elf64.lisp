@@ -22,7 +22,7 @@
 
 ;; Lift the subroutine into logic:
 (def-unrolled add-elf64
-  "add.elf64"
+  :executable "add.elf64"
   :target "add"
   :stack-slots 2)
 
