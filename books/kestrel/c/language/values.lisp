@@ -19,6 +19,7 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -718,7 +719,7 @@
                                       :size (len val.elements))
               :struct (type-struct val.tag))
   :guard-hints (("Goal" :in-theory (enable pos-optionp posp)))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
+
   ///
 
   (defrule type-kind-of-type-of-value
@@ -820,7 +821,9 @@
   :returns (types type-listp)
   :short "Lift @(tsee type-of-value) to lists."
   (type-of-value x)
+
   ///
+
   (fty::deffixequiv type-list-of-value-list
     :args ((x value-listp))))
 
@@ -862,7 +865,9 @@
   :returns (memtypes member-type-listp)
   :short "Lift @(tsee member-type-of-member-value) to lists."
   (member-type-of-member-value x)
+
   ///
+
   (fty::deffixequiv member-types-of-member-values
     :args ((x member-value-listp))))
 
