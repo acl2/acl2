@@ -1425,20 +1425,19 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr gout-no-thm))
+       ((mv & cconst) (c$::ldm-const const)) ; ERP must be NIL
        (hints
         `(("Goal"
-           :in-theory
-           '(c::exec-expr
-             c::exec-expr-pure
-             (:e c::expr-const)
-             (:e c::expr-fix)
-             (:e c::expr-kind)
-             (:e c::expr-const->get)
-             (:e c::exec-const)
-             (:e c::expr-value->value)
-             (:e c::type-of-value)
-             c::errorp-of-error
-             c::compustate-has-var-with-type-p-of-compustate-fix-compst))))
+           :in-theory '((:e c::expr-const)
+                        (:e c::const-kind)
+                        (:e c::const-int->get)
+                        (:e c::check-iconst)
+                        (:e c::typep)
+                        expr-compustate-vars)
+           :use ((:instance expr-const-congruence-pure
+                            (const ',cconst))
+                 (:instance expr-const-congruence
+                            (const ',cconst))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr
