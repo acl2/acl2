@@ -12,7 +12,6 @@
 (in-package "RISCV")
 
 (include-book "features")
-(include-book "states")
 (include-book "rv32im-le/top")
 (include-book "rv64im-le/top")
 
@@ -34,6 +33,5 @@
     " transformation, applied to the general model,
      to automate the generation of these specializations."))
   :order-subtopics (specialized-features
-                    specialized-states
                     rv32im
                     rv64im))
