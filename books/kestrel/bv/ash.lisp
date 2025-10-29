@@ -56,15 +56,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvchop-of-ash
+;; or we could go to bvmult or bvshl
+(defthm bvchop-of-ash-left-shift
   (implies (and (natp c) ; left shift
                 (natp size))
            (equal (bvchop size (ash i c))
                   (bvcat (- size c) i c 0)))
   :hints (("Goal" :in-theory (enable ash slice logtail))))
 
+;; or we could go to bvshr
 (defthm bvchop-of-ash-right-shift
-  (implies (and (< n 0)
+  (implies (and (< n 0) ; right shift
                 (natp size)
                 (integerp n))
            (equal (bvchop size (ash x n))
