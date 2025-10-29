@@ -35,7 +35,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ semantics32
+(defxdoc+ rv32im-le-semantics
   :parents (specialized-rv32im-le)
   :short "Semantics of instructions for RV32IM."
   :long

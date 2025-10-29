@@ -36,5 +36,5 @@
      that do not depend on features."))
   :order-subtopics (rv64im-le-features
                     rv64im-le-states
-                    semantics64
+                    rv64im-le-semantics
                     execution64))
