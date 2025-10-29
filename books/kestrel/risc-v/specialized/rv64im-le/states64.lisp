@@ -11,6 +11,10 @@
 
 (in-package "RISCV")
 
+(include-book "features")
+
+(include-book "../../specification/states")
+
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
@@ -31,7 +35,6 @@
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte64-ihs-theorems" :dir :system))
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -42,10 +45,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We define a recognizer for the valid states for the RV64I base.
+     It remains to introduce the isomorphism between this recognizer
+     and our model of specialized states.")
+   (xdoc::p
     "Along with the model of states,
      we define some operations on the states."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64i-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of states with base RV64I."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These only depend on the base,
+     not on the M extension or the endianness."))
+  (and (statp x)
+       (stat-validp x (feat-rv64im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
