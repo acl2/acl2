@@ -1158,3 +1158,30 @@
 (defthm integerp-of-!rflagsbits->res1 (integerp (!rflagsbits->res1 res1 rflags)))
 (defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
 (defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))
+
+(defthm unsigned-canonical-address-p-smt
+  (implies (axe-smt (bvlt 64 (bvminus 64 ad *base-of-canonical*) *len-of-canonical*)) ; just the def
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+
+(defthm read-when-equal-of-read-bytes-and-subregion48p-smt
+  (implies (and (equal bytes (read-bytes n2 ad2 x86))
+
+                ;; expanded version of (subregion48p n1 ad1 n2 ad2):
+                (not (zp n1))
+                (axe-smt (bvlt 48 (bvminus 48 ad1 ad2) n2)) ; (in-region48p ad1 n2 ad2)
+                (bvle 48 n1 n2)
+                (axe-smt (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)))
+
+
+                (natp n1)
+                (< n1 (expt 2 48))
+                (unsigned-byte-p 48 n2)
+                (integerp ad1)
+                (integerp ad2))
+           (equal (read n1 ad1 x86)
+                  (bv-array-read-chunk-little n1 8 (len bytes)
+                                              (bvminus 48 ad1 ad2)
+                                              bytes)))
+  :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion48p
+                  :in-theory (e/d (subregion48p in-region48p) (read-when-equal-of-read-bytes-and-subregion48p)))))
