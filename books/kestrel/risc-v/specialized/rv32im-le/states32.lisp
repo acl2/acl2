@@ -27,9 +27,7 @@
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (disable ash ifix)))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,7 +46,7 @@
 
 (define read32-xreg-unsigned ((reg ubyte5p) (stat stat32ip))
   :returns (val ubyte32p
-                :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p))))
+                :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p nfix))))
   :short "Read an unsigned 32-bit integer from an @('x') register."
   :long
   (xdoc::topstring
@@ -62,13 +60,15 @@
     (if (= reg 0)
         0
       (nth (1- reg) (stat32i->xregs stat))))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
   (more-returns
    (val natp
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (disable read32-xreg-unsigned))))))
+        :hints (("Goal" :in-theory (e/d ((:e tau-system))
+                                        (read32-xreg-unsigned)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,7 +113,9 @@
   :guard-hints (("Goal" :in-theory (enable xregs32ip
                                            stat32ip
                                            stat32i->xregs
-                                           ubyte5p)))
+                                           ubyte5p
+                                           nfix
+                                           max)))
   ///
   (fty::deffixequiv write32-xreg
     :hints (("Goal" :in-theory (enable loghead)))))
@@ -173,7 +175,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read32-mem-ubyte8 ((addr integerp) (stat stat32ip))
-  :returns (val ubyte8p)
+  :returns (val ubyte8p :hints (("Goal" :in-theory (enable nfix))))
   :short "Read an unsigned 8-bit integer from memory."
   :long
   (xdoc::topstring
@@ -182,6 +184,7 @@
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 32 addr)))
     (nth addr (stat32i->memory stat)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -205,7 +208,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read32-mem-ubyte16-lendian ((addr integerp) (stat stat32ip))
-  :returns (val ubyte16p :hints (("Goal" :in-theory (enable ubyte16p))))
+  :returns (val ubyte16p
+                :hints (("Goal" :in-theory (enable ubyte16p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
   :short "Read an unsigned 16-bit little endian integer from memory."
   :long
   (xdoc::topstring
@@ -222,7 +228,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read32-mem-ubyte32-lendian ((addr integerp) (stat stat32ip))
-  :returns (val ubyte32p :hints (("Goal" :in-theory (enable ubyte32p))))
+  :returns (val ubyte32p
+                :hints (("Goal" :in-theory (enable ubyte32p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
   :short "Read an unsigned 32-bit little endian integer from memory."
   :long
   (xdoc::topstring
@@ -251,7 +260,8 @@
   (change-stat32i stat :memory (update-nth (loghead 32 addr)
                                            (loghead 8 val)
                                            (stat32i->memory stat)))
-  :guard-hints (("Goal" :in-theory (enable memory32ip)))
+  :guard-hints (("Goal" :in-theory (enable memory32ip nfix max (:e tau-system))))
+  :hooks nil ; does not fix val
 
   ///
 
@@ -263,7 +273,8 @@
 (define write32-mem-ubyte16-lendian ((addr integerp)
                                      (val ubyte16p)
                                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+  :returns (new-stat stat32ip
+                     :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 16-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -278,7 +289,11 @@
        (stat (write32-mem-ubyte8 addr b0 stat))
        (stat (write32-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           ubyte16p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks nil ; does not fix val
 
   ///
 
@@ -291,7 +306,8 @@
 (define write32-mem-ubyte32-lendian ((addr integerp)
                                      (val ubyte32p)
                                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+  :returns (new-stat stat32ip
+                     :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 32-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -308,7 +324,11 @@
        (stat (write32-mem-ubyte8 (+ 2 (ifix addr)) b2 stat))
        (stat (write32-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           ubyte32p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks nil ; does not fix val
 
   ///
 
