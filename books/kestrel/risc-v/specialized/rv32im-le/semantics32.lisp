@@ -24,6 +24,8 @@
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 
+(acl2::controlled-configuration)
+
 ; cert_param: (non-acl2r)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,7 +33,10 @@
 (defrulel dab-digit-list-of-256-when-ubyte8-listp
   (implies (ubyte8-listp x)
            (acl2::dab-digit-listp 256 x))
-  :enable (ubyte8-listp ubyte8p acl2::dab-digitp))
+  :induct t
+  :enable (ubyte8-listp ubyte8p
+                        acl2::dab-digitp
+                        unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
