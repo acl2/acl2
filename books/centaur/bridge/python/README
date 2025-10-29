@@ -26,7 +26,8 @@
 
 ** Basics
 This demo is a minimal ACL2 REPL using Python bindings for the ACL2 bridge.  It
-will only accept one line of input and does no syntax checking.  ACL2 errors are
+will only accept a single S-expression on one line of input and does no syntax
+checking.  In particular, keyword commands are unsupported.  ACL2 errors are
 displayed without disrupting the REPL.
 
 - ~acl2_bridge.Client~ :: Synchronous bindings

@@ -50,18 +50,18 @@ def repl():
             message = client.receive()
             assert message.type == "READY", f"Received {message} instead of READY"
             try:
-                command = Command("LISP", input(f"{current_package}> "))
+                command = Command("LISP", input(f"\n{current_package}> "))
             except EOFError:
                 client.send(Command("LISP", "(bridge::stop)"))
                 client.disconnect()
                 exit()
             client.send(command)
         elif message.type == "RETURN":
-            print(message.payload)
+            print(message.payload, end="")
         elif message.type == "STDOUT":
-            print(message.payload)
+            print(message.payload, end="")
         elif message.type == "ERROR":
-            print("ERROR:", message.payload)
+            print("ERROR:", message.payload, end="")
         else:
             raise Exception(f"Received message {message}")
 
