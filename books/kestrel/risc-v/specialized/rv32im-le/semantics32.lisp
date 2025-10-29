@@ -36,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics32
-  :parents (rv32im)
+  :parents (specialized-rv32im-le)
   :short "Semantics of instructions for RV32IM."
   :long
   (xdoc::topstring

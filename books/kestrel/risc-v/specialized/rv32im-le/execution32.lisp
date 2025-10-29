@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution32
-  :parents (rv32im)
+  :parents (specialized-rv32im-le)
   :short "Model of execution for RV32IM."
   :long
   (xdoc::topstring

@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution64
-  :parents (rv64im)
+  :parents (specialized-rv64im-le)
   :short "Model of execution for RV64IM."
   :long
   (xdoc::topstring

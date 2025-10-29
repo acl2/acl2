@@ -19,9 +19,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ rv64im
+(defxdoc+ specialized-rv64im-le
   :parents (specialized)
-  :short "Specialized model for RV64IM."
+  :short "Specialization of the model to RV64IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p

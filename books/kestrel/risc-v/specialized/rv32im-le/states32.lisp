@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states32
-  :parents (rv32im)
+  :parents (specialized-rv32im-le)
   :short "Model of states for RV32IM."
   :long
   (xdoc::topstring

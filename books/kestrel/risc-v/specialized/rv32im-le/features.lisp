@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ rv32im-le-features
-  :parents (rv32im)
+  :parents (specialized-rv32im-le)
   :short "Specialization of the @(see features) to RV32IM little endian."
   :order-subtopics t
   :default-parent t)

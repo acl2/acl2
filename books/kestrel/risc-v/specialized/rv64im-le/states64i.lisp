@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states64i
-  :parents (rv64im)
+  :parents (specialized-rv64im-le)
   :short "Specialized states for features with the RV64I base."
   :long
   (xdoc::topstring

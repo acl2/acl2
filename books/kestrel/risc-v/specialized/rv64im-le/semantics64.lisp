@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics64
-  :parents (rv64im)
+  :parents (specialized-rv64im-le)
   :short "Semantics of instructions for RV64IM."
   :long
   (xdoc::topstring

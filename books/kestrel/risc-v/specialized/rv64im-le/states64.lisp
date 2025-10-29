@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states64
-  :parents (rv64im)
+  :parents (specialized-rv64im-le)
   :short "Model of states for RV64IM."
   :long
   (xdoc::topstring

@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ rv64im-le-features
-  :parents (rv64im)
+  :parents (specialized-rv64im-le)
   :short "Specialization of the @(see features) to RV64IM little endian."
   :order-subtopics t
   :default-parent t)
