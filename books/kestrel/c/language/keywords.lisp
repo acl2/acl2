@@ -16,6 +16,8 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ keywords
@@ -293,7 +295,6 @@
    :c17+gcc (append *keywords-c17* *keywords-gcc-c17*)
    :c23 *keywords-c23*
    :c23+gcc (append *keywords-c23* *keywords-gcc-c23*))
-  :hooks (:fix)
 
   ///
 

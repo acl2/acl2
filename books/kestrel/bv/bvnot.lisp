@@ -89,8 +89,7 @@
 (defthm bvchop-lognot-bvchop
   (equal (bvchop n (lognot (bvchop n x)))
          (bvchop n (lognot x)))
-  :hints (("Goal" :in-theory (e/d (lognot)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable lognot))))
 
 (defthm bvnot-of-bvnot
   (equal (bvnot size (bvnot size x))
