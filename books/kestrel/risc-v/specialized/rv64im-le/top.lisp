@@ -28,6 +28,7 @@
      We plan to re-obtain this specialized model via
      transformation and specialization of the general one at some point,
      but until then we keep it around."))
-  :order-subtopics (states64
+  :order-subtopics (states64i
+                    states64
                     semantics64
                     execution64))

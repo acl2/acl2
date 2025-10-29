@@ -36,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states32i
-  :parents (specialized-states)
+  :parents (rv32im)
   :short "Specialized states for features with the RV32I base."
   :long
   (xdoc::topstring
