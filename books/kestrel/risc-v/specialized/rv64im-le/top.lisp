@@ -11,6 +11,8 @@
 
 (in-package "RISCV")
 
+(include-book "features")
+(include-book "states64i")
 (include-book "states64")
 (include-book "semantics64")
 (include-book "execution64")

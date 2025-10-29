@@ -11,6 +11,8 @@
 
 (in-package "RISCV")
 
+(include-book "features")
+(include-book "states32i")
 (include-book "states32")
 (include-book "semantics32")
 (include-book "execution32")
