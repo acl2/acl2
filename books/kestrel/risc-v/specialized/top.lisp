@@ -25,12 +25,14 @@
   (xdoc::topstring
    (xdoc::p
     "RISC-V is a family of ISAs, parameterized over the @(see features).
-     We provide some specializations of the ISA,
-     currently one for RV32IM and one for RV64IM.
-     Those are currently both hand-written,
-     but we plan to re-obtain them, and possibly others, via "
+     We provide some specializations of the ISA.")
+   (xdoc::p
+    "This is work in progresss.
+     Currently most of these specializations are handwritten,
+     but we have started to use "
     (xdoc::seetopic "apt::apt" "APT")
-    " transformation applied to the general model."))
+    " transformation, applied to the general model,
+     to automate the generation of these specializations."))
   :order-subtopics (specialized-features
                     specialized-states
                     rv32im
