@@ -13,8 +13,6 @@
 
 (include-book "rv32im-le/states32i")
 (include-book "rv64im-le/states64i")
-(include-book "states32e")
-(include-book "states64e")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,7 +25,5 @@
     "All the RISC-V variants covered by our model of @(see features)
      have states of four possible kinds, one kind for each base.."))
   :order-subtopics (states32i
-                    states64i
-                    states32e
-                    states64e)
+                    states64i)
   :default-parent t)
