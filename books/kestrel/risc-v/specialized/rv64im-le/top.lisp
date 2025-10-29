@@ -35,6 +35,6 @@
      along with specialized types and operations
      that do not depend on features."))
   :order-subtopics (rv64im-le-features
-                    states64
+                    rv64im-le-states
                     semantics64
                     execution64))

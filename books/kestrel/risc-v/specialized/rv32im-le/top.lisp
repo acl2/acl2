@@ -35,6 +35,6 @@
      along with specialized types and operations
      that do not depend on features."))
   :order-subtopics (rv32im-le-features
-                    states32
+                    rv32im-le-states
                     semantics32
                     execution32))

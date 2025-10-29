@@ -40,13 +40,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ states32
+(defxdoc+ rv32im-le-states
   :parents (specialized-rv32im-le)
-  :short "Model of states for RV32IM."
+  :short "Specialization of (@see states) to RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a recognizer for the valid states for the RV32I base.
+    "We define a recognizer for the valid states for the RV32I base;
+     in our current model, the states do not depend
+     on (the presence of absence of) the M extension
+     or on the endianness.
      We introduce a fixtype that is isomorphic to that recognizer.
      We specialize the operations on states to operate on that fixtype.
      This is work in progress.")

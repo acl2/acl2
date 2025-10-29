@@ -39,13 +39,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ states64
+(defxdoc+ rv64im-le-states
   :parents (specialized-rv64im-le)
-  :short "Model of states for RV64IM."
+  :short "Specialization of (@see states) to RV64IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a recognizer for the valid states for the RV64I base.
+    "We define a recognizer for the valid states for the RV64I base;
+     in our current model, the states do not depend
+     on (the presence of absence of) the M extension
+     or on the endianness.
      It remains to introduce the isomorphism between this recognizer
      and our model of specialized states.")
    (xdoc::p
