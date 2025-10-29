@@ -148,6 +148,15 @@
                                   (y (* x z))
                                   (z (/ x))))))
 
+(defthm equal-of-*-and-*-cancel-arg2-arg2+
+  (equal (equal (* y x) (* z x w))
+         (or (equal (fix x) 0)
+             (equal (fix y) (fix (* z w)))))
+  :hints (("Goal" :use (:instance *-both-sides
+                                  (x (* x y))
+                                  (y (* x z w))
+                                  (z (/ x))))))
+
 (defthm <-of-*-and-0
   (implies (and (rationalp x)
                 (rationalp y))

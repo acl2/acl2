@@ -2247,7 +2247,7 @@
     acl2::ash-of-0-arg1
     acl2::ash-of-0-arg2
     acl2::open-ash-positive-constants
-    acl2::bvchop-of-ash
+    acl2::bvchop-of-ash-left-shift
     acl2::integerp-of-ash))
 
 
@@ -6427,6 +6427,7 @@
 ;; Try these as a last resort:
 ;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
 (set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p-axe-smt 1)
+(set-axe-rule-priority unsigned-canonical-address-p-smt 1)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)

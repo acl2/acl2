@@ -20,6 +20,7 @@
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system) ; these rules complement the rules in this book
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system) ; todo: just get the def?
 ;(local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
@@ -394,3 +395,14 @@
            (equal (bvmod size x y)
                   (bvmod size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim bvmod))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: also do one for write
+(defthmd bv-array-read-convert-arg3-to-bv-axe
+  (implies (and (syntaxp (quotep len))
+                (axe-syntaxp (term-should-be-converted-to-bvp index nil dag-array))
+                (equal len (len data)))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size len (trim (ceiling-of-lg len) index) data)))
+  :hints (("Goal" :in-theory (enable trim))))

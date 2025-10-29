@@ -197,7 +197,8 @@
     ;; logtail ; todo: uncomment?
     binary-+
     unary--
-    binary-*))
+    binary-*
+    ash))
 
 (defun convertible-to-bvp (term)
   (declare (xargs :guard t)) ; could require pseudo-termp but that might take time to check

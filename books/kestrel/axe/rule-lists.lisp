@@ -529,6 +529,8 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    trim-of-ash-left-shift-becomes-bvcat
+    trim-of-ash-right-shift-becomes-slice
 
     ;; uncomment these if we use trim to convert these functions:
     ;; trim-of-logtail-becomes-slice
@@ -4209,6 +4211,8 @@
 ;; Want these to fire before commutativity:
 (set-axe-rule-priority booland-of-constant-arg1 -1)
 (set-axe-rule-priority booland-of-constant-arg2 -1)
+
+(set-axe-rule-priority read-when-equal-of-read-bytes-and-subregion48p-smt 1)
 
 ;try this before bv-array-read-of-bv-array-write-both-better-work-hard, since this one has only a single work-hard
 ;would like a way to NOT try the both version if this one fails
