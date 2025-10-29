@@ -13,7 +13,9 @@
 
 (include-book "semantics64")
 
-(include-book "../executable/decoding-executable")
+(include-book "../features")
+
+(include-book "../../executable/decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

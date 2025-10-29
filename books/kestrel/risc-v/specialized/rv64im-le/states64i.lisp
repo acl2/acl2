@@ -11,9 +11,9 @@
 
 (in-package "RISCV")
 
-(include-book "features")
+(include-book "../features")
 
-(include-book "../specification/states")
+(include-book "../../specification/states")
 
 (acl2::controlled-configuration)
 

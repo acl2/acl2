@@ -12,7 +12,7 @@
 (in-package "RISCV")
 
 (include-book "rv32im-le/states32i")
-(include-book "states64i")
+(include-book "rv64im-le/states64i")
 (include-book "states32e")
 (include-book "states64e")
 

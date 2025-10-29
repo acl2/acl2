@@ -14,7 +14,7 @@
 (include-book "features")
 (include-book "states")
 (include-book "rv32im-le/top")
-(include-book "rv64im")
+(include-book "rv64im-le/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
