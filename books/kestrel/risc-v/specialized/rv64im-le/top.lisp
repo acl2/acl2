@@ -37,4 +37,4 @@
   :order-subtopics (rv64im-le-features
                     rv64im-le-states
                     rv64im-le-semantics
-                    execution64))
+                    rv64im-le-execution))

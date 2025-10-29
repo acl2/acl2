@@ -37,4 +37,4 @@
   :order-subtopics (rv32im-le-features
                     rv32im-le-states
                     rv32im-le-semantics
-                    execution32))
+                    rv32im-le-execution))

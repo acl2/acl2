@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ execution32
+(defxdoc+ rv32im-le-execution
   :parents (specialized-rv32im-le)
   :short "Model of execution for RV32IM."
   :long

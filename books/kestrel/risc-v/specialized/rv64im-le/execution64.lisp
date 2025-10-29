@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ execution64
+(defxdoc+ rv64im-le-execution
   :parents (specialized-rv64im-le)
   :short "Model of execution for RV64IM."
   :long
