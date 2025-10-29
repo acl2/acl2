@@ -25,11 +25,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of a model of states and instruction execution for RV32IM.
-     This was developed before the more general model with @(see features).
-     We plan to re-obtain this specialized model via
-     transformation and specialization of the general one at some point,
-     but until then we keep it around."))
+    "This is characterized by
+     the choice of the RV32I base,
+     the presence of the M extension,
+     and little endian data access to memory.")
+   (xdoc::p
+    "In our current general model of RISC-V,
+     this completely pins down the @(see features).
+     We introduce a nullary function corresponding to those features,
+     along with specialized types and operations
+     that do not depend on features."))
   :order-subtopics (rv32im-le-features
                     states32i
                     states32
