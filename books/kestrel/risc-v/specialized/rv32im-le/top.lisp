@@ -28,7 +28,8 @@
      We plan to re-obtain this specialized model via
      transformation and specialization of the general one at some point,
      but until then we keep it around."))
-  :order-subtopics (states32i
+  :order-subtopics (rv32im-le-features
+                    states32i
                     states32
                     semantics32
                     execution32))

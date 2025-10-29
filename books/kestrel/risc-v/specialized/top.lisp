@@ -11,7 +11,6 @@
 
 (in-package "RISCV")
 
-(include-book "features")
 (include-book "rv32im-le/top")
 (include-book "rv64im-le/top")
 
@@ -32,6 +31,5 @@
     (xdoc::seetopic "apt::apt" "APT")
     " transformation, applied to the general model,
      to automate the generation of these specializations."))
-  :order-subtopics (specialized-features
-                    rv32im
+  :order-subtopics (rv32im
                     rv64im))

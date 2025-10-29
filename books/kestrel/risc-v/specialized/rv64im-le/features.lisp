@@ -11,33 +11,25 @@
 
 (in-package "RISCV")
 
-(include-book "features")
-
-(include-book "../../specification/states")
+(include-book "../../specification/features")
 
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ states64i
+(defxdoc+ rv64im-le-features
   :parents (rv64im)
-  :short "Specialized states for features with the RV64I base."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We define a recognizer for the valid states for the RV64I base."))
+  :short "Specialization of the @(see features) to RV64IM little endian."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat-rv64i-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of states with base RV64I."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv64im-le))))
+(define feat-rv64im-le ()
+  :returns (feat featp)
+  :short "Features for RV64IM little endian."
+  (make-feat :base (feat-base-rv64i)
+             :endian (feat-endian-little)
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv64im-le))))
