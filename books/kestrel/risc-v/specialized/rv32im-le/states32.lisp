@@ -19,7 +19,7 @@
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))

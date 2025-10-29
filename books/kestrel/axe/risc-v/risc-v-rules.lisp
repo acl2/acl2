@@ -11,7 +11,7 @@
 (in-package "R")
 
 (include-book "portcullis")
-(include-book "kestrel/risc-v/specialized/execution32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/execution32" :dir :system)
 (local (include-book "kestrel/lists-light/repeat" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))

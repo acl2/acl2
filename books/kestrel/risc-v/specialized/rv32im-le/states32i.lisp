@@ -14,9 +14,9 @@
 ; Matt K. addition to avoid ACL2(p) error:
 (set-waterfall-parallelism nil)
 
-(include-book "features")
+(include-book "../features")
 
-(include-book "../specification/states")
+(include-book "../../specification/states")
 
 (include-book "kestrel/apt/isodata" :dir :system)
 (include-book "kestrel/apt/parteval" :dir :system)

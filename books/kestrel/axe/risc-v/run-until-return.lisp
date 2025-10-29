@@ -10,7 +10,7 @@
 
 (in-package "R")
 
-(include-book "kestrel/risc-v/specialized/execution32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/execution32" :dir :system)
 (include-book "registers") ; for SP
 (include-book "pc")
 (include-book "read-and-write")

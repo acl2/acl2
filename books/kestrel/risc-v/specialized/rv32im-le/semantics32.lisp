@@ -13,12 +13,12 @@
 
 (include-book "states32")
 
-(include-book "../specification/instructions")
+(include-book "../../specification/instructions")
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))

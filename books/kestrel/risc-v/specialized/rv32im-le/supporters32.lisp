@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "../portcullis")
+(include-book "../../portcullis")
 (include-book "centaur/fty/portcullis" :dir :system)
 
 (include-book "tools/with-supporters" :dir :system)

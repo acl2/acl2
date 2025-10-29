@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "states32i")
+(include-book "rv32im-le/states32i")
 (include-book "states64i")
 (include-book "states32e")
 (include-book "states64e")

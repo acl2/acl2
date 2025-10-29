@@ -11,10 +11,11 @@
 
 (in-package "RISCV")
 
-(include-book "features")
 (include-book "semantics32")
 
-(include-book "../executable/decoding-executable")
+(include-book "../features")
+
+(include-book "../../executable/decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -17,7 +17,7 @@
 
 (include-book "portcullis")
 (include-book "risc-v-rules")
-(include-book "kestrel/risc-v/specialized/states32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/states32" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
