@@ -12,7 +12,6 @@
 (in-package "RISCV")
 
 (include-book "features")
-(include-book "states32i")
 (include-book "states32")
 (include-book "semantics32")
 (include-book "execution32")
@@ -36,7 +35,6 @@
      along with specialized types and operations
      that do not depend on features."))
   :order-subtopics (rv32im-le-features
-                    states32i
                     states32
                     semantics32
                     execution32))
