@@ -59,40 +59,16 @@
     "These only depend on the base,
      not on the M extension or the endianness."))
   (and (statp x)
-       (stat-validp x (feat-rv32i-le)))
+       (stat-validp x (feat-rv32im-le)))
 
   ///
 
-  (defruled stat-rv32i-p-alt-def-be
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32i-be))))
-    :enable (stat-validp
-             (:e feat-rv32i-le)
-             (:e feat-rv32i-be)))
-
-  (defruled stat-rv32i-p-alt-def-m-le
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32im-le))))
-    :enable (stat-validp
-             (:e feat-rv32i-le)
-             (:e feat-rv32im-le)))
-
-  (defruled stat-rv32i-p-alt-def-m-be
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32im-be))))
-    :enable (stat-validp
-             (:e feat-rv32i-le)
-             (:e feat-rv32im-be)))
-
   (defruled unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
-    (implies (and (stat-validp stat (feat-rv32i-le))
+    (implies (and (stat-validp stat (feat-rv32im-le))
                   (natp reg)
                   (< reg 32))
              (unsigned-byte-p 32 (nth (1- reg) (stat->xregs stat))))
-    :enable (stat-validp nfix (:e feat-rv32i-le))))
+    :enable (stat-validp nfix (:e feat-rv32im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,7 +142,7 @@
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
                        memory32ip
                        ubyte32p
-                       (:e feat-rv32i-le)))))
+                       (:e feat-rv32im-le)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +155,7 @@
                            stat-validp
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
                            acl2::unsigned-byte-p-rewrite-ubyte32p
-                           (:e feat-rv32i-le)))))
+                           (:e feat-rv32im-le)))))
   :short "Convert from @(tsee stat32i) to @(tsee stat-rv32i-p)."
   (make-stat :xregs (stat32i->xregs stat32i)
              :pc (stat32i->pc stat32i)
@@ -210,7 +186,7 @@
                                                        stat-rv32i-p
                                                        xregs32ip
                                                        memory32ip
-                                                       (:e feat-rv32i-le))))
+                                                       (:e feat-rv32im-le))))
             :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32i
                                                        stat32i-from-stat))))))
 
@@ -222,11 +198,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pick @(tsee feat-rv32i-le),
+    "We pick @(tsee feat-rv32im-le),
      but we could have picked any of the variants for RV32I."))
 
   (apt::parteval read-xreg-unsigned
-                 ((feat (feat-rv32i-le)))
+                 ((feat (feat-rv32im-le)))
                  :new-name read32i-xreg-unsigned{0}
                  :thm-enable nil))
 
@@ -245,7 +221,7 @@
     :assumptions :guard
     :thm-enable nil
     :enable (unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
-             (:e feat-rv32i-le))
+             (:e feat-rv32im-le))
     :disable (lnfix
               unsigned-byte-fix)))
 
@@ -260,7 +236,7 @@
                 :undefined 0
                 :new-name read32i-xreg-unsigned{2}
                 :hints (("Goal" :in-theory (enable stat-rv32i-p
-                                                   (:e feat-rv32i-le))))))
+                                                   (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +278,7 @@
   :short "Rewriting of @(tsee read-xreg-unsigned)
           to @(tsee read32i-xreg-unsigned)."
   (implies (and (statp stat)
-                (equal feat (feat-rv32i-le))
+                (equal feat (feat-rv32im-le))
                 (stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
@@ -312,7 +288,7 @@
            read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
            read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
            read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned
-           (:e feat-rv32i-le)
+           (:e feat-rv32im-le)
            stat-rv32i-p
            stat-from-stat32i-of-stat32i-from-stat))
 
@@ -324,11 +300,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pick @(tsee feat-rv32i-le),
+    "We pick @(tsee feat-rv32im-le),
      but we could have picked any of the variants for RV32I."))
 
   (apt::parteval read-xreg-signed
-                 ((feat (feat-rv32i-le)))
+                 ((feat (feat-rv32im-le)))
                  :new-name read32i-xreg-signed{0}
                  :thm-enable nil))
 
@@ -346,7 +322,7 @@
     :simplify-guard t
     :assumptions :guard
     :thm-enable nil
-    :enable ((:e feat-rv32i-le))
+    :enable ((:e feat-rv32im-le))
     :disable (logext)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -360,7 +336,7 @@
                 :undefined 0
                 :new-name read32i-xreg-signed{2}
                 :hints (("Goal" :in-theory (enable stat-rv32i-p
-                                                   (:e feat-rv32i-le))))))
+                                                   (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -380,7 +356,7 @@
     :thm-enable nil
     :enable (read-xreg-unsigned-to-read32i-xreg-unsigned
              stat32i-from-stat-of-stat-from-stat32i
-             (:e feat-rv32i-le))
+             (:e feat-rv32im-le))
     :disable (logext)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
