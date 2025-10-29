@@ -345,7 +345,7 @@
      acl2::logapp-constant-opener
      common-lisp::ash-constant-opener ; todo: use acl2 package
      acl2::ash-becomes-logtail ; do better?
-     acl2::bvchop-of-ash
+     acl2::bvchop-of-ash-left-shift ; move
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
