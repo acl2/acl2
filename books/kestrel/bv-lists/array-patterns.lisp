@@ -189,6 +189,54 @@
                   (bv-array-read element-size (- len k) index (nthcdr k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus unsigned-byte-p))))
 
+(local
+ (defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv-helper
+   (implies (and (syntaxp (and (quotep k)
+                               (quotep data)
+                               (quotep index-width)
+                               (quotep len)))
+                 (equal index-width (ceiling-of-lg len))
+                 (bvlt index-width index (bvplus index-width index k)) ; no wrap around
+                 ;;(bvlt (+ 1 index-width) (bvplus (+ 1 index-width) index k) len) ; in bounds (uses index-width+1 bit because len might be a power of 2)
+                 (or (power-of-2p len)
+                     (bvlt index-width (bvplus index-width index k) len))
+                 (unsigned-byte-p index-width index) ; todo
+                 (unsigned-byte-p index-width k)     ; todo
+                 (natp index-width)
+                 (natp k)
+                 (natp len)
+                 (natp index))
+            (equal (bv-array-read element-size len (bvplus index-width k index) data)
+                   ;; The nthcdr here gets computed to give a smaller array:
+                   (bv-array-read element-size (bvminus index-width len k) index (nthcdr k data))))
+   :hints (("Goal" :use (:instance bv-array-read-of-bvplus-of-constant-no-wrap
+                                   (index-width (ceiling-of-lg len))
+                                   )
+                   :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases bvminus)
+                                   (bv-array-read-of-bvplus-of-constant-no-wrap))))))
+
+(defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep data)
+                              (quotep index-width)
+                              (quotep len)))
+                (equal index-width (ceiling-of-lg len))               ; gen?
+                (bvlt index-width index (bvplus index-width index k)) ; no wrap around
+                (or (power-of-2p len)
+                    (bvlt index-width (bvplus index-width index k) len)) ; in bounds
+                ;; (natp index-width)
+                ;; (natp k)
+                (natp len)
+                ;; (natp index)
+                )
+           (equal (bv-array-read element-size len (bvplus index-width k index) data)
+                  ;; The nthcdr here gets computed to give a smaller array:
+                  (bv-array-read element-size (bvminus index-width len k) (bvchop index-width index) (nthcdr (bvchop index-width k) data))))
+  :hints (("Goal" :use (:instance bv-array-read-of-bvplus-of-constant-no-wrap-bv-helper
+                                  (index (bvchop index-width index))
+                                  (k (bvchop index-width k))))))
+
+
 ;yuck?
 ;needed for the below
 ;disable?
