@@ -59,14 +59,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat-rv64i-p (x)
+(define stat-rv64im-le-p (x)
   :returns (yes/no booleanp)
-  :short "Recognizer of states with base RV64I."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
+  :short "Recognizer of states for RV64IM little endian."
   (and (statp x)
        (stat-validp x (feat-rv64im-le))))
 
