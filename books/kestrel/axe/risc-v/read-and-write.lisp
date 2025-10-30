@@ -16,7 +16,7 @@
 ;; Axe for x86 reasoning (except for the memory size).
 
 (include-book "portcullis")
-(include-book "kestrel/risc-v/specialized/rv32im-le/states32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/states" :dir :system)
 (include-book "kestrel/memory/memory32" :dir :system)
 (include-book "risc-v-rules")
 (include-book "support") ; for write32-mem-ubyte32-lendian-alt-def

@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "states32")
+(include-book "states")
 
 (include-book "../../specification/instructions")
 

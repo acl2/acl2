@@ -12,7 +12,7 @@
 (in-package "RISCV")
 
 (include-book "features")
-(include-book "states32")
+(include-book "states")
 (include-book "semantics32")
 (include-book "execution32")
 
