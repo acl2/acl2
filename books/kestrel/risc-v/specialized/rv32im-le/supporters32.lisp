@@ -19,5 +19,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::with-supporters
- (local (include-book "execution32"))
+ (local (include-book "execution"))
  :names (step32n))
