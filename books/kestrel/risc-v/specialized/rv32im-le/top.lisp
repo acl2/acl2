@@ -13,7 +13,7 @@
 
 (include-book "features")
 (include-book "states")
-(include-book "semantics32")
+(include-book "semantics")
 (include-book "execution32")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
