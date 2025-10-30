@@ -251,7 +251,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned
+(defsection read32i-xreg-unsigned{3}
   :short "Simplify @(tsee read32i-xreg-unsigned{2})
           after the isomorphic state transformation."
   :long
@@ -267,7 +267,7 @@
      so we use the name @('read32i-xreg-unsigned') without numeric index."))
 
   (apt::simplify read32i-xreg-unsigned{2}
-    :new-name read32i-xreg-unsigned
+    :new-name read32i-xreg-unsigned{3}
     :assumptions :guard
     :simplify-guard t
     :thm-enable nil
@@ -277,15 +277,15 @@
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p))
 
-  (defrule ubyte32p-of-read32i-xreg-unsigned
+  (defrule ubyte32p-of-read32i-xreg-unsigned{3}
     (implies (and (natp reg)
                   (< reg 32))
-             (ubyte32p (read32i-xreg-unsigned reg stat)))
-    :enable (read32i-xreg-unsigned nfix)))
+             (ubyte32p (read32i-xreg-unsigned{3} reg stat)))
+    :enable (read32i-xreg-unsigned{3} nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled read-xreg-unsigned-to-read32i-xreg-unsigned
+(defruled read-xreg-unsigned-to-read32i-xreg-unsigned{3}
   :short "Rewriting of @(tsee read-xreg-unsigned)
           to @(tsee read32i-xreg-unsigned)."
   (implies (and (statp stat)
@@ -294,11 +294,11 @@
                 (natp reg)
                 (< reg 32))
            (equal (read-xreg-unsigned reg stat feat)
-                  (read32i-xreg-unsigned reg (stat32i-from-stat stat))))
+                  (read32i-xreg-unsigned{3} reg (stat32i-from-stat stat))))
   :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
            read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
            read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
-           read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned
+           read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned{3}
            (:e feat-rv32im-le)
            stat-rv32im-le-p
            stat-from-stat32i-of-stat32i-from-stat
@@ -366,14 +366,14 @@
     :new-name read32i-xreg-signed{3}
     :assumptions :guard
     :thm-enable nil
-    :enable (read-xreg-unsigned-to-read32i-xreg-unsigned
+    :enable (read-xreg-unsigned-to-read32i-xreg-unsigned{3}
              stat32i-from-stat-of-stat-from-stat32i
              (:e feat-rv32im-le))
     :disable (logext)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed
+(defsection read32i-xreg-signed{4}
   :short "Simplify the guard of @(tsee read32i-xreg-signed{3})
           to eliminate the isomorphic conversion."
   :long
@@ -383,7 +383,7 @@
      because the rules needed to do the rewritings interfere."))
 
   (apt::simplify read32i-xreg-signed{3}
-    :new-name read32i-xreg-signed
+    :new-name read32i-xreg-signed{4}
     :assumptions :guard
     :simplify-guard t
     :simplify-body nil
