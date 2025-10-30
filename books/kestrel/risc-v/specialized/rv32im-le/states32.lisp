@@ -54,7 +54,7 @@
      We specialize the operations on states to operate on that fixtype.
      This is work in progress.")
    (xdoc::p
-    "Along with the model of states, which we take from @(see states32i),
+    "Along with the model of states,
      we define some operations on the states."))
   :order-subtopics t
   :default-parent t)
