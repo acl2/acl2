@@ -61,20 +61,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat-rv32i-p (x)
+(define stat-rv32im-le-p (x)
   :returns (yes/no booleanp)
-  :short "Recognizer of states with base RV32I."
+  :short "Recognizer of states for RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These only depend on the base,
+    "These actually only depend on the base,
      not on the M extension or the endianness."))
   (and (statp x)
        (stat-validp x (feat-rv32im-le)))
 
   ///
 
-  (defruled unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+  (defruled unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
     (implies (and (stat-validp stat (feat-rv32im-le))
                   (natp reg)
                   (< reg 32))
@@ -138,16 +138,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat32i-from-stat ((stat stat-rv32i-p))
+(define stat32i-from-stat ((stat stat-rv32im-le-p))
   :returns (stat32i stat32ip)
-  :short "Convert from @(tsee stat-rv32i-p) to @(tsee stat32i)."
+  :short "Convert from @(tsee stat-rv32im-le-p) to @(tsee stat32i)."
   (make-stat32i :xregs (stat->xregs stat)
                 :pc (stat->pc stat)
                 :memory (stat->memory stat)
                 :error (stat->error stat))
   :guard-hints
   (("Goal"
-    :in-theory (enable stat-rv32i-p
+    :in-theory (enable stat-rv32im-le-p
                        stat-validp
                        xregs32ip
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
@@ -158,16 +158,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stat-from-stat32i ((stat32i stat32ip))
-  :returns (stat stat-rv32i-p
+  :returns (stat stat-rv32im-le-p
                  :hints
                  (("Goal"
                    :in-theory
-                   (enable stat-rv32i-p
+                   (enable stat-rv32im-le-p
                            stat-validp
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
                            acl2::unsigned-byte-p-rewrite-ubyte32p
                            (:e feat-rv32im-le)))))
-  :short "Convert from @(tsee stat32i) to @(tsee stat-rv32i-p)."
+  :short "Convert from @(tsee stat32i) to @(tsee stat-rv32im-le-p)."
   (make-stat :xregs (stat32i->xregs stat32i)
              :pc (stat32i->pc stat32i)
              :memory (stat32i->memory stat32i)
@@ -176,7 +176,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection stat32i-iso
-  :short "Isomorphism between @(tsee stat-rv32i-p) and @(tsee stat32i)."
+  :short "Isomorphism between @(tsee stat-rv32im-le-p) and @(tsee stat32i)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -184,7 +184,7 @@
      are the isomorphic conversions."))
 
   (acl2::defiso stat32i-iso
-    stat-rv32i-p
+    stat-rv32im-le-p
     stat32ip
     stat32i-from-stat
     stat-from-stat32i
@@ -194,7 +194,7 @@
                 :beta-injective stat-from-stat32i-injective)
     :hints (:beta-of-alpha (("Goal" :in-theory (enable stat-from-stat32i
                                                        stat32i-from-stat
-                                                       stat-rv32i-p
+                                                       stat-rv32im-le-p
                                                        xregs32ip
                                                        memory32ip
                                                        (:e feat-rv32im-le))))
@@ -231,7 +231,7 @@
     :simplify-guard t
     :assumptions :guard
     :thm-enable nil
-    :enable (unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+    :enable (unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
              (:e feat-rv32im-le))
     :disable (lnfix
               unsigned-byte-fix)))
@@ -246,7 +246,7 @@
                 ((stat stat32i-iso))
                 :undefined 0
                 :new-name read32i-xreg-unsigned{2}
-                :hints (("Goal" :in-theory (enable stat-rv32i-p
+                :hints (("Goal" :in-theory (enable stat-rv32im-le-p
                                                    (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,7 +273,7 @@
     :thm-enable nil
     :enable (stat-from-stat32i
              stat-validp
-             unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+             unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p))
 
@@ -300,7 +300,7 @@
            read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
            read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned
            (:e feat-rv32im-le)
-           stat-rv32i-p
+           stat-rv32im-le-p
            stat-from-stat32i-of-stat32i-from-stat
            nfix))
 
@@ -347,7 +347,7 @@
                 ((stat stat32i-iso))
                 :undefined 0
                 :new-name read32i-xreg-signed{2}
-                :hints (("Goal" :in-theory (enable stat-rv32i-p
+                :hints (("Goal" :in-theory (enable stat-rv32im-le-p
                                                    (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
