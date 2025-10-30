@@ -53,10 +53,7 @@
 ; ACL2 eval-poly and sum-polys, to reduce the main goal to the one already
 ; proved for ACL2.
 
-(defconst *eval_poly-type*
-  (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                :NUM :NUM)))
-
+; We start with a convenient abbreviation:
 (defconst *sum_polys-type*
   (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
                 (:LIST (:HASH :NUM :NUM))
@@ -184,7 +181,9 @@
                 (force (equal (hp-type v) (typ :num)))
                 (force (hol::eval-poly$prop))
                 (equal xa (h2a x)))
-           (equal (hap* (hol::eval_poly *eval_poly-type*) x v)
+           (equal (hap* (hol::eval_poly (typ (:arrow* (:list (:hash :num :num))
+                                                      :num :num)))
+                        x v)
                   (make-hp (eval-poly xa (hp-value v))
                            :num)))
   :hints
@@ -348,38 +347,38 @@
                     Y V)))
     (HP-TRUE))))
 
-(defthm hol::HOL{EVAL_SUM_POLY_DISTRIB}
-  (IMPLIES
-   (AND (ALIST-SUBSETP (hol::EVAL-POLY$HTA) HTA)
-        (HPP X HTA)
-        (EQUAL (HP-TYPE X)
-               (TYP (:LIST (:HASH :NUM :NUM))))
-        (HPP Y HTA)
-        (EQUAL (HP-TYPE Y)
-               (TYP (:LIST (:HASH :NUM :NUM))))
-        (HPP V HTA)
-        (EQUAL (HP-TYPE V) (TYP :NUM))
-        (FORCE (hol::EVAL-POLY$PROP)))
-   (EQUAL
-    (HP-IMPLIES
-     (HP-AND (HAP* (hol::POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                             :BOOL)))
-                   X)
-             (HAP* (hol::POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                             :BOOL)))
-                   Y))
-     (HP= (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                              :NUM :NUM)))
-                (HAP* (hol::SUM_POLYS (TYP (:ARROW*
-                                            (:LIST (:HASH :NUM :NUM))
-                                            (:LIST (:HASH :NUM :NUM))
-                                            (:LIST (:HASH :NUM :NUM)))))
-                      X Y)
-                V)
-          (HP+ (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                                   :NUM :NUM)))
-                     X V)
-               (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                                   :NUM :NUM)))
-                     Y V))))
-    (HP-TRUE))))
+#!hol
+(DEFTHM HOL{EVAL_SUM_POLY_DISTRIB}
+ (IMPLIES
+  (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
+       (HPP X HTA)
+       (EQUAL (HP-TYPE X)
+              (TYP (:LIST (:HASH :NUM :NUM))))
+       (HPP Y HTA)
+       (EQUAL (HP-TYPE Y)
+              (TYP (:LIST (:HASH :NUM :NUM))))
+       (HPP V HTA)
+       (EQUAL (HP-TYPE V) (TYP :NUM))
+       (FORCE (EVAL-POLY$PROP)))
+  (EQUAL
+   (HP-IMPLIES
+       (HP-AND (HAP* (POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                          :BOOL)))
+                     X)
+               (HAP* (POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                          :BOOL)))
+                     Y))
+       (HP= (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                           :NUM :NUM)))
+                  (HAP* (SUM_POLYS (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                 (:LIST (:HASH :NUM :NUM))
+                                                 (:LIST (:HASH :NUM :NUM)))))
+                        X Y)
+                  V)
+            (HP+ (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                :NUM :NUM)))
+                       X V)
+                 (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                :NUM :NUM)))
+                       Y V))))
+   (HP-TRUE))))
