@@ -49,7 +49,7 @@
   (xdoc::topstring
    (xdoc::p
     "We define state-transforming functions that model
-     the effect of each instruction on the RV64I state.")
+     the effect of each instruction on the state.")
    (xdoc::p
     "For now we only support little endian access to memory,
      in load and store instructions.
@@ -1810,8 +1810,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the error flag for the RV32I shift instructions,
-     because here we are in RV64I mode."))
+    "We set the error flag for the 32-bit shift instructions,
+     because here we are in 64-bit mode."))
   (instr-case instr
               :op-imm (exec64-op-imm instr.funct
                                      instr.rd

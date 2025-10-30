@@ -45,7 +45,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a recognizer for the valid states for the RV64I base;
+    "We define a recognizer for the valid states for RV64IM little endian;
      in our current model, the states do not depend
      on (the presence of absence of) the M extension
      or on the endianness.

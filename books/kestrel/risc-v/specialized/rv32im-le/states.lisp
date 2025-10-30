@@ -198,26 +198,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned{0}
+(defsection read32-xreg-unsigned{0}
   :short "Partially evaluate @(tsee read-xreg-unsigned)
           for RV32IM little endian."
 
   (apt::parteval read-xreg-unsigned
                  ((feat (feat-rv32im-le)))
-                 :new-name read32i-xreg-unsigned{0}
+                 :new-name read32-xreg-unsigned{0}
                  :thm-enable nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned{1}
-  :short "Simplify @(tsee read32i-xreg-unsigned{0}) after partial evaluation."
+(defsection read32-xreg-unsigned{1}
+  :short "Simplify @(tsee read32-xreg-unsigned{0}) after partial evaluation."
   :long
   (xdoc::topstring
    (xdoc::p
     "We assume the guard so that we can eliminate the fixers."))
 
-  (apt::simplify read32i-xreg-unsigned{0}
-    :new-name read32i-xreg-unsigned{1}
+  (apt::simplify read32-xreg-unsigned{0}
+    :new-name read32-xreg-unsigned{1}
     :simplify-guard t
     :assumptions :guard
     :thm-enable nil
@@ -228,21 +228,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned{2}
-  :short "Refine @(tsee read32i-xreg-unsigned{1})
+(defsection read32-xreg-unsigned{2}
+  :short "Refine @(tsee read32-xreg-unsigned{1})
           to use the isomorphic states @(tsee stat32)."
 
-  (apt::isodata read32i-xreg-unsigned{1}
+  (apt::isodata read32-xreg-unsigned{1}
                 ((stat stat32-iso))
                 :undefined 0
-                :new-name read32i-xreg-unsigned{2}
+                :new-name read32-xreg-unsigned{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
                                                    (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned{3}
-  :short "Simplify @(tsee read32i-xreg-unsigned{2})
+(defsection read32-xreg-unsigned{3}
+  :short "Simplify @(tsee read32-xreg-unsigned{2})
           after the isomorphic state transformation."
   :long
   (xdoc::topstring
@@ -254,10 +254,10 @@
      which is implied by @(tsee stat32p).")
    (xdoc::p
     "This is the final refinement for this function,
-     so we use the name @('read32i-xreg-unsigned') without numeric index."))
+     so we use the name @('read32-xreg-unsigned') without numeric index."))
 
-  (apt::simplify read32i-xreg-unsigned{2}
-    :new-name read32i-xreg-unsigned{3}
+  (apt::simplify read32-xreg-unsigned{2}
+    :new-name read32-xreg-unsigned{3}
     :assumptions :guard
     :simplify-guard t
     :thm-enable nil
@@ -267,28 +267,28 @@
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p))
 
-  (defrule ubyte32p-of-read32i-xreg-unsigned{3}
+  (defrule ubyte32p-of-read32-xreg-unsigned{3}
     (implies (and (natp reg)
                   (< reg 32))
-             (ubyte32p (read32i-xreg-unsigned{3} reg stat)))
-    :enable (read32i-xreg-unsigned{3} nfix)))
+             (ubyte32p (read32-xreg-unsigned{3} reg stat)))
+    :enable (read32-xreg-unsigned{3} nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled read-xreg-unsigned-to-read32i-xreg-unsigned{3}
+(defruled read-xreg-unsigned-to-read32-xreg-unsigned{3}
   :short "Rewriting of @(tsee read-xreg-unsigned)
-          to @(tsee read32i-xreg-unsigned{3})."
+          to @(tsee read32-xreg-unsigned{3})."
   (implies (and (statp stat)
                 (equal feat (feat-rv32im-le))
                 (stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
            (equal (read-xreg-unsigned reg stat feat)
-                  (read32i-xreg-unsigned{3} reg (stat32-from-stat stat))))
-  :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
-           read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
-           read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
-           read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned{3}
+                  (read32-xreg-unsigned{3} reg (stat32-from-stat stat))))
+  :enable (read-xreg-unsigned-becomes-read32-xreg-unsigned{0}
+           read32-xreg-unsigned{0}-becomes-read32-xreg-unsigned{1}
+           read32-xreg-unsigned{1}-to-read32-xreg-unsigned{2}
+           read32-xreg-unsigned{2}-becomes-read32-xreg-unsigned{3}
            (:e feat-rv32im-le)
            stat-rv32im-le-p
            stat-from-stat32-of-stat32-from-stat
@@ -296,26 +296,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed{0}
+(defsection read32-xreg-signed{0}
   :short "Partially evaluate @(tsee read-xreg-unsigned)
           for RV32IM little endian."
 
   (apt::parteval read-xreg-signed
                  ((feat (feat-rv32im-le)))
-                 :new-name read32i-xreg-signed{0}
+                 :new-name read32-xreg-signed{0}
                  :thm-enable nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed{1}
-  :short "Simplify @(tsee read32i-xreg-signed{0}) after partial evaluation."
+(defsection read32-xreg-signed{1}
+  :short "Simplify @(tsee read32-xreg-signed{0}) after partial evaluation."
   :long
   (xdoc::topstring
    (xdoc::p
     "We assume the guard so that we can replace @('XLEN') with 32."))
 
-  (apt::simplify read32i-xreg-signed{0}
-    :new-name read32i-xreg-signed{1}
+  (apt::simplify read32-xreg-signed{0}
+    :new-name read32-xreg-signed{1}
     :simplify-guard t
     :assumptions :guard
     :thm-enable nil
@@ -324,42 +324,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed{2}
-  :short "Refine @(tsee read32i-xreg-signed{1})
+(defsection read32-xreg-signed{2}
+  :short "Refine @(tsee read32-xreg-signed{1})
           to use the isomorphic states @(tsee stat32)."
 
-  (apt::isodata read32i-xreg-signed{1}
+  (apt::isodata read32-xreg-signed{1}
                 ((stat stat32-iso))
                 :undefined 0
-                :new-name read32i-xreg-signed{2}
+                :new-name read32-xreg-signed{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
                                                    (:e feat-rv32im-le))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed{3}
-  :short "Simplify the body of @(tsee read32i-xreg-signed{2})
-          to call @(tsee read32i-xreg-unsigned{3})."
+(defsection read32-xreg-signed{3}
+  :short "Simplify the body of @(tsee read32-xreg-signed{2})
+          to call @(tsee read32-xreg-unsigned{3})."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee read-xreg-unsigned-to-read32i-xreg-unsigned)
+    "We use @(tsee read-xreg-unsigned-to-read32-xreg-unsigned)
      to accomplish that rewriting.
      Note that this eliminates the isomorphic conversion."))
 
-  (apt::simplify read32i-xreg-signed{2}
-    :new-name read32i-xreg-signed{3}
+  (apt::simplify read32-xreg-signed{2}
+    :new-name read32-xreg-signed{3}
     :assumptions :guard
     :thm-enable nil
-    :enable (read-xreg-unsigned-to-read32i-xreg-unsigned{3}
+    :enable (read-xreg-unsigned-to-read32-xreg-unsigned{3}
              stat32-from-stat-of-stat-from-stat32
              (:e feat-rv32im-le))
     :disable (logext)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-signed{4}
-  :short "Simplify the guard of @(tsee read32i-xreg-signed{3})
+(defsection read32-xreg-signed{4}
+  :short "Simplify the guard of @(tsee read32-xreg-signed{3})
           to eliminate the isomorphic conversion."
   :long
   (xdoc::topstring
@@ -367,8 +367,8 @@
     "We had to do this simplication separately from the previous one
      because the rules needed to do the rewritings interfere."))
 
-  (apt::simplify read32i-xreg-signed{3}
-    :new-name read32i-xreg-signed{4}
+  (apt::simplify read32-xreg-signed{3}
+    :new-name read32-xreg-signed{4}
     :assumptions :guard
     :simplify-guard t
     :simplify-body nil
