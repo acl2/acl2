@@ -343,7 +343,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee read-xreg-unsigned-to-read32-xreg-unsigned)
+    "We use @(tsee read-xreg-unsigned-to-read32-xreg-unsigned{3})
      to accomplish that rewriting.
      Note that this eliminates the isomorphic conversion."))
 
