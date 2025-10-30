@@ -46,7 +46,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a recognizer for the valid states for the RV32I base;
+    "We define a recognizer for the valid states for RV32IM little endian;
      in our current model, the states do not depend
      on (the presence of absence of) the M extension
      or on the endianness.
@@ -64,11 +64,6 @@
 (define stat-rv32im-le-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of states for RV32IM little endian."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These actually only depend on the base,
-     not on the M extension or the endianness."))
   (and (statp x)
        (stat-validp x (feat-rv32im-le)))
 
@@ -83,8 +78,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist-of-len xregs32i
-  :short "Fixtype of the @('x') registers for the RV32I base."
+(fty::deflist-of-len xregs32
+  :short "Fixtype of the @('x') registers for RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -93,12 +88,12 @@
      Recall that @('x0') is always 0 and thus not explicitly modeled."))
   :list-type ubyte32-list
   :length 31
-  :pred xregs32ip)
+  :pred xregs32p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist-of-len memory32i
-  :short "Fixtype of memories for the RV32I base."
+(fty::deflist-of-len memory32
+  :short "Fixtype of memories fo RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -107,41 +102,41 @@
      Recall that we do not model restrictions on the address space yet."))
   :list-type ubyte8-list
   :length 4294967296 ; (expt 2 32)
-  :pred memory32ip)
+  :pred memory32p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod stat32i
-  :short "Fixtype of states for the RV32I base."
+(fty::defprod stat32
+  :short "Fixtype of states for RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a specialization of @(tsee stat)
      according to @(tsee stat-validp)."))
-  ((xregs xregs32i)
+  ((xregs xregs32)
    (pc ubyte32)
-   (memory memory32i)
+   (memory memory32)
    (error bool))
-  :pred stat32ip
+  :pred stat32p
 
   :prepwork ((local (in-theory (enable (:e tau-system)))))
 
   ///
 
-  (defrule len-of-stat32i->xregs
-    (equal (len (stat32i->xregs stat))
+  (defrule len-of-stat32->xregs
+    (equal (len (stat32->xregs stat))
            31))
 
-  (defrule len-of-stat32i->memory
-    (equal (len (stat32i->memory stat))
+  (defrule len-of-stat32->memory
+    (equal (len (stat32->memory stat))
            4294967296)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat32i-from-stat ((stat stat-rv32im-le-p))
-  :returns (stat32i stat32ip)
-  :short "Convert from @(tsee stat-rv32im-le-p) to @(tsee stat32i)."
-  (make-stat32i :xregs (stat->xregs stat)
+(define stat32-from-stat ((stat stat-rv32im-le-p))
+  :returns (stat32 stat32p)
+  :short "Convert from @(tsee stat-rv32im-le-p) to @(tsee stat32)."
+  (make-stat32 :xregs (stat->xregs stat)
                 :pc (stat->pc stat)
                 :memory (stat->memory stat)
                 :error (stat->error stat))
@@ -149,15 +144,15 @@
   (("Goal"
     :in-theory (enable stat-rv32im-le-p
                        stat-validp
-                       xregs32ip
+                       xregs32p
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
-                       memory32ip
+                       memory32p
                        ubyte32p
                        (:e feat-rv32im-le)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat-from-stat32i ((stat32i stat32ip))
+(define stat-from-stat32 ((stat32 stat32p))
   :returns (stat stat-rv32im-le-p
                  :hints
                  (("Goal"
@@ -167,50 +162,45 @@
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
                            acl2::unsigned-byte-p-rewrite-ubyte32p
                            (:e feat-rv32im-le)))))
-  :short "Convert from @(tsee stat32i) to @(tsee stat-rv32im-le-p)."
-  (make-stat :xregs (stat32i->xregs stat32i)
-             :pc (stat32i->pc stat32i)
-             :memory (stat32i->memory stat32i)
-             :error (stat32i->error stat32i)))
+  :short "Convert from @(tsee stat32) to @(tsee stat-rv32im-le-p)."
+  (make-stat :xregs (stat32->xregs stat32)
+             :pc (stat32->pc stat32)
+             :memory (stat32->memory stat32)
+             :error (stat32->error stat32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection stat32i-iso
-  :short "Isomorphism between @(tsee stat-rv32im-le-p) and @(tsee stat32i)."
+(defsection stat32-iso
+  :short "Isomorphism between @(tsee stat-rv32im-le-p) and @(tsee stat32)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(tsee stat32i-from-stat) and @(tsee stat-from-stat32i) functions
+    "The @(tsee stat32-from-stat) and @(tsee stat-from-stat32) functions
      are the isomorphic conversions."))
 
-  (acl2::defiso stat32i-iso
+  (acl2::defiso stat32-iso
     stat-rv32im-le-p
-    stat32ip
-    stat32i-from-stat
-    stat-from-stat32i
-    :thm-names (:beta-of-alpha stat-from-stat32i-of-stat32i-from-stat
-                :alpha-of-beta stat32i-from-stat-of-stat-from-stat32i
-                :alpha-injective stat32i-from-stat-injective
-                :beta-injective stat-from-stat32i-injective)
-    :hints (:beta-of-alpha (("Goal" :in-theory (enable stat-from-stat32i
-                                                       stat32i-from-stat
+    stat32p
+    stat32-from-stat
+    stat-from-stat32
+    :thm-names (:beta-of-alpha stat-from-stat32-of-stat32-from-stat
+                :alpha-of-beta stat32-from-stat-of-stat-from-stat32
+                :alpha-injective stat32-from-stat-injective
+                :beta-injective stat-from-stat32-injective)
+    :hints (:beta-of-alpha (("Goal" :in-theory (enable stat-from-stat32
+                                                       stat32-from-stat
                                                        stat-rv32im-le-p
-                                                       xregs32ip
-                                                       memory32ip
+                                                       xregs32p
+                                                       memory32p
                                                        (:e feat-rv32im-le))))
-            :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32i
-                                                       stat32i-from-stat))))))
+            :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32
+                                                       stat32-from-stat))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32i-xreg-unsigned{0}
   :short "Partially evaluate @(tsee read-xreg-unsigned)
-          for the RV32I base."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We pick @(tsee feat-rv32im-le),
-     but we could have picked any of the variants for RV32I."))
+          for RV32IM little endian."
 
   (apt::parteval read-xreg-unsigned
                  ((feat (feat-rv32im-le)))
@@ -240,10 +230,10 @@
 
 (defsection read32i-xreg-unsigned{2}
   :short "Refine @(tsee read32i-xreg-unsigned{1})
-          to use the isomorphic states @(tsee stat32i)."
+          to use the isomorphic states @(tsee stat32)."
 
   (apt::isodata read32i-xreg-unsigned{1}
-                ((stat stat32i-iso))
+                ((stat stat32-iso))
                 :undefined 0
                 :new-name read32i-xreg-unsigned{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
@@ -261,7 +251,7 @@
      the outer @(tsee if) with @(tsee mbt) added by @(tsee apt::isodata).")
    (xdoc::p
     "We simplify the guard to eliminate @(tsee stat-validp) from it,
-     which is implied by @(tsee stat32ip).")
+     which is implied by @(tsee stat32p).")
    (xdoc::p
     "This is the final refinement for this function,
      so we use the name @('read32i-xreg-unsigned') without numeric index."))
@@ -271,7 +261,7 @@
     :assumptions :guard
     :simplify-guard t
     :thm-enable nil
-    :enable (stat-from-stat32i
+    :enable (stat-from-stat32
              stat-validp
              unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
@@ -287,33 +277,28 @@
 
 (defruled read-xreg-unsigned-to-read32i-xreg-unsigned{3}
   :short "Rewriting of @(tsee read-xreg-unsigned)
-          to @(tsee read32i-xreg-unsigned)."
+          to @(tsee read32i-xreg-unsigned{3})."
   (implies (and (statp stat)
                 (equal feat (feat-rv32im-le))
                 (stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
            (equal (read-xreg-unsigned reg stat feat)
-                  (read32i-xreg-unsigned{3} reg (stat32i-from-stat stat))))
+                  (read32i-xreg-unsigned{3} reg (stat32-from-stat stat))))
   :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
            read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
            read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
            read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned{3}
            (:e feat-rv32im-le)
            stat-rv32im-le-p
-           stat-from-stat32i-of-stat32i-from-stat
+           stat-from-stat32-of-stat32-from-stat
            nfix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32i-xreg-signed{0}
   :short "Partially evaluate @(tsee read-xreg-unsigned)
-          for the RV32I base."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We pick @(tsee feat-rv32im-le),
-     but we could have picked any of the variants for RV32I."))
+          for RV32IM little endian."
 
   (apt::parteval read-xreg-signed
                  ((feat (feat-rv32im-le)))
@@ -341,10 +326,10 @@
 
 (defsection read32i-xreg-signed{2}
   :short "Refine @(tsee read32i-xreg-signed{1})
-          to use the isomorphic states @(tsee stat32i)."
+          to use the isomorphic states @(tsee stat32)."
 
   (apt::isodata read32i-xreg-signed{1}
-                ((stat stat32i-iso))
+                ((stat stat32-iso))
                 :undefined 0
                 :new-name read32i-xreg-signed{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
@@ -354,7 +339,7 @@
 
 (defsection read32i-xreg-signed{3}
   :short "Simplify the body of @(tsee read32i-xreg-signed{2})
-          to call @(tsee read32i-xreg-unsigned)."
+          to call @(tsee read32i-xreg-unsigned{3})."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -367,7 +352,7 @@
     :assumptions :guard
     :thm-enable nil
     :enable (read-xreg-unsigned-to-read32i-xreg-unsigned{3}
-             stat32i-from-stat-of-stat-from-stat32i
+             stat32-from-stat-of-stat-from-stat32
              (:e feat-rv32im-le))
     :disable (logext)))
 
@@ -388,14 +373,14 @@
     :simplify-guard t
     :simplify-body nil
     :thm-enable nil
-    :enable (stat-from-stat32i
+    :enable (stat-from-stat32
              stat-validp
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-xreg-unsigned ((reg ubyte5p) (stat stat32ip))
+(define read32-xreg-unsigned ((reg ubyte5p) (stat stat32p))
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p nfix))))
   :short "Read an unsigned 32-bit integer from an @('x') register."
@@ -410,7 +395,7 @@
   (b* ((reg (ubyte5-fix reg)))
     (if (= reg 0)
         0
-      (nth (1- reg) (stat32i->xregs stat))))
+      (nth (1- reg) (stat32->xregs stat))))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
@@ -423,7 +408,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-xreg-signed ((reg ubyte5p) (stat stat32ip))
+(define read32-xreg-signed ((reg ubyte5p) (stat stat32p))
   :returns (val sbyte32p)
   :short "Read a signed 32-bit integer from an @('x') register."
   :long
@@ -436,8 +421,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-xreg ((reg ubyte5p) (val integerp) (stat stat32ip))
-  :returns (new-stat stat32ip)
+(define write32-xreg ((reg ubyte5p) (val integerp) (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Write a 32-bit integer to an @('x') register."
   :long
   (xdoc::topstring
@@ -457,13 +442,13 @@
      and let this writer function convert the integer for the register."))
   (b* ((reg (ubyte5-fix reg)))
     (if (= reg 0)
-        (stat32i-fix stat)
-      (change-stat32i stat :xregs (update-nth (1-  reg)
+        (stat32-fix stat)
+      (change-stat32 stat :xregs (update-nth (1-  reg)
                                               (loghead 32 val)
-                                              (stat32i->xregs stat)))))
-  :guard-hints (("Goal" :in-theory (enable xregs32ip
-                                           stat32ip
-                                           stat32i->xregs
+                                              (stat32->xregs stat)))))
+  :guard-hints (("Goal" :in-theory (enable xregs32p
+                                           stat32p
+                                           stat32->xregs
                                            ubyte5p
                                            nfix
                                            max)))
@@ -473,7 +458,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-pc ((stat stat32ip))
+(define read32-pc ((stat stat32p))
   :returns (pc ubyte32p)
   :short "Read the program counter."
   :long
@@ -481,12 +466,12 @@
    (xdoc::p
     "The result is an unsigned 32-bit integer,
      read directly from the register."))
-  (stat32i->pc stat))
+  (stat32->pc stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-pc ((pc integerp) (stat stat32ip))
-  :returns (new-stat stat32ip)
+(define write32-pc ((pc integerp) (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Write the program counter."
   :long
   (xdoc::topstring
@@ -500,15 +485,15 @@
      and let this writer function convert the integer for the register.
      [ISA:1.4] says that address computations wrap round ignoring overflow,
      i.e. the last address in the address space is adjacent to address 0."))
-  (change-stat32i stat :pc (loghead 32 pc))
+  (change-stat32 stat :pc (loghead 32 pc))
   ///
   (fty::deffixequiv write32-pc
     :hints (("Goal" :in-theory (enable loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define inc32-pc ((stat stat32ip))
-  :returns (new-stat stat32ip)
+(define inc32-pc ((stat stat32p))
+  :returns (new-stat stat32p)
   :short "Increment the program counter."
   :long
   (xdoc::topstring
@@ -525,7 +510,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte8 ((addr integerp) (stat stat32ip))
+(define read32-mem-ubyte8 ((addr integerp) (stat stat32p))
   :returns (val ubyte8p :hints (("Goal" :in-theory (enable nfix))))
   :short "Read an unsigned 8-bit integer from memory."
   :long
@@ -534,7 +519,7 @@
     "The address is any integer, which we turn into a 32-bit unsigned address.
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 32 addr)))
-    (nth addr (stat32i->memory stat)))
+    (nth addr (stat32->memory stat)))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
@@ -558,7 +543,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte16-lendian ((addr integerp) (stat stat32ip))
+(define read32-mem-ubyte16-lendian ((addr integerp) (stat stat32p))
   :returns (val ubyte16p
                 :hints (("Goal" :in-theory (enable ubyte16p
                                                    unsigned-byte-p
@@ -578,7 +563,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte32-lendian ((addr integerp) (stat stat32ip))
+(define read32-mem-ubyte32-lendian ((addr integerp) (stat stat32p))
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
@@ -600,31 +585,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-mem-ubyte8 ((addr integerp) (val ubyte8p) (stat stat32ip))
-  :returns (new-stat stat32ip)
+(define write32-mem-ubyte8 ((addr integerp) (val ubyte8p) (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Write an unsigned 8-bit integer to memory."
   :long
   (xdoc::topstring
    (xdoc::p
     "The address is any integer,
      which we turn into a 32-bit unsigned address."))
-  (change-stat32i stat :memory (update-nth (loghead 32 addr)
+  (change-stat32 stat :memory (update-nth (loghead 32 addr)
                                            (loghead 8 val)
-                                           (stat32i->memory stat)))
-  :guard-hints (("Goal" :in-theory (enable memory32ip nfix max (:e tau-system))))
+                                           (stat32->memory stat)))
+  :guard-hints (("Goal" :in-theory (enable memory32p nfix max (:e tau-system))))
   :hooks nil ; does not fix val
 
   ///
 
   (fty::deffixequiv write32-mem-ubyte8
-    :args ((addr integerp) (stat stat32ip))))
+    :args ((addr integerp) (stat stat32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write32-mem-ubyte16-lendian ((addr integerp)
                                      (val ubyte16p)
-                                     (stat stat32ip))
-  :returns (new-stat stat32ip
+                                     (stat stat32p))
+  :returns (new-stat stat32p
                      :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 16-bit little endian integer to memory."
   :long
@@ -649,15 +634,15 @@
   ///
 
   (fty::deffixequiv write32-mem-ubyte16-lendian
-    :args ((addr integerp) (stat stat32ip))
+    :args ((addr integerp) (stat stat32p))
     :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write32-mem-ubyte32-lendian ((addr integerp)
                                      (val ubyte32p)
-                                     (stat stat32ip))
-  :returns (new-stat stat32ip
+                                     (stat stat32p))
+  :returns (new-stat stat32p
                      :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 32-bit little endian integer to memory."
   :long
@@ -684,19 +669,19 @@
   ///
 
   (fty::deffixequiv write32-mem-ubyte32-lendian
-    :args ((addr integerp) (stat stat32ip))
+    :args ((addr integerp) (stat stat32p))
     :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error32p ((stat stat32ip))
+(define error32p ((stat stat32p))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
-  (stat32i->error stat))
+  (stat32->error stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error32 ((stat stat32ip))
-  :returns (new-stat stat32ip)
+(define error32 ((stat stat32p))
+  :returns (new-stat stat32p)
   :short "Set the error flag in the state."
-  (change-stat32i stat :error t))
+  (change-stat32 stat :error t))

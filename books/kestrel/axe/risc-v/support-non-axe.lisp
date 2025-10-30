@@ -48,7 +48,7 @@
                  write32-xreg-when-equal-of-read32-xreg-unsigned
                  (:e riscv::feat-rv32im-le) ; needed for code proofs
                  )
-                (equal-of-stat32i)))
+                (equal-of-stat32)))
 
 ;; Introduce new normal forms:
 (in-theory (enable read32-xreg-unsigned-becomes-reg

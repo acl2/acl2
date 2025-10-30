@@ -20,8 +20,8 @@
 ;; packages into this package.
 
 (defconst *risc-v-symbols*
-  '(riscv::memory32i-fix
-    riscv::memory32ip
+  '(riscv::memory32-fix
+    riscv::memory32p
 
     riscv::ubyte5p
     riscv::ubyte5-fix
@@ -36,12 +36,12 @@
     riscv::step32n-base-2
     riscv::step32n-unroll
 
-    riscv::stat32ip
-    riscv::stat32i-fix
-    riscv::stat32i->xregs
+    riscv::stat32p
+    riscv::stat32-fix
+    riscv::stat32->xregs
 
-    riscv::xregs32i-fix
-    riscv::xregs32ip
+    riscv::xregs32-fix
+    riscv::xregs32p
 
     riscv::read32-mem-ubyte8
     riscv::write32-mem-ubyte8
@@ -115,10 +115,10 @@
     riscv::inc32-pc
 
     riscv::eff32-addr
-    riscv::equal-of-stat32i
+    riscv::equal-of-stat32
 
-    riscv::change-stat32i
-    riscv::stat32i->memory
+    riscv::change-stat32
+    riscv::stat32->memory
 
     ;; var names:
     riscv::stat

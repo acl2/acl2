@@ -269,9 +269,9 @@
      set-reg-of-set-pc
      write-of-set-pc
 
-     stat32ip-of-set-reg
-     stat32ip-of-write
-     ;; stat32ip-of-set-pc ; uncomment?
+     stat32p-of-set-reg
+     stat32p-of-write
+     ;; stat32p-of-set-pc ; uncomment?
 
      ;; regiseter names (we expand these to REG):
      x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
@@ -535,7 +535,7 @@
      acl2::integerp-of-bvplus
      acl2::integerp-of-logext
 
-     riscv::stat32i-fix-when-stat32ip
+     riscv::stat32-fix-when-stat32p
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p

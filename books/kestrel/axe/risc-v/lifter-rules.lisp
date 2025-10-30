@@ -20,7 +20,7 @@
 (add-known-boolean subregion32p)
 (add-known-boolean disjoint-regions32p)
 
-(add-known-boolean stat32ip)
+(add-known-boolean stat32p)
 
 (def-constant-opener in-region32p)
 (def-constant-opener subregion32p)
