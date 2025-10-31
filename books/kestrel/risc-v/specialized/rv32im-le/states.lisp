@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV32IM-LE")
 
 (include-book "features")
 
@@ -42,7 +42,10 @@
 
 (defxdoc+ rv32im-le-states
   :parents (specialized-rv32im-le)
-  :short "Specialization of (@see states) to RV32IM little endian."
+  :short (xdoc::topstring
+          "Specialization of "
+          (xdoc::seetopic "riscv::states" "states")
+          " to RV32IM little endian.")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -64,17 +67,17 @@
 (define stat-rv32im-le-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of states for RV32IM little endian."
-  (and (statp x)
-       (stat-validp x (feat-rv32im-le)))
+  (and (riscv::statp x)
+       (riscv::stat-validp x (feat-rv32im-le)))
 
   ///
 
   (defruled unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
-    (implies (and (stat-validp stat (feat-rv32im-le))
+    (implies (and (riscv::stat-validp stat (feat-rv32im-le))
                   (natp reg)
                   (< reg 32))
-             (unsigned-byte-p 32 (nth (1- reg) (stat->xregs stat))))
-    :enable (stat-validp nfix (:e feat-rv32im-le))))
+             (unsigned-byte-p 32 (nth (1- reg) (riscv::stat->xregs stat))))
+    :enable (riscv::stat-validp nfix (:e feat-rv32im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,7 +87,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a list of 31 unsigned 32-bit integers,
-     according to @(tsee stat) and @(tsee stat-validp).
+     according to @(tsee riscv::stat) and @(tsee riscv::stat-validp).
      Recall that @('x0') is always 0 and thus not explicitly modeled."))
   :list-type ubyte32-list
   :length 31
@@ -98,7 +101,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a list of @($2^{32}$) unsigned 8-bit integers,
-     according to @(tsee stat) and @(tsee stat-validp).
+     according to @(tsee riscv::stat) and @(tsee riscv::stat-validp).
      Recall that we do not model restrictions on the address space yet."))
   :list-type ubyte8-list
   :length 4294967296 ; (expt 2 32)
@@ -111,8 +114,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a specialization of @(tsee stat)
-     according to @(tsee stat-validp)."))
+    "This is a specialization of @(tsee riscv::stat)
+     according to @(tsee riscv::stat-validp)."))
   ((xregs xregs32)
    (pc ubyte32)
    (memory memory32)
@@ -136,14 +139,14 @@
 (define stat32-from-stat ((stat stat-rv32im-le-p))
   :returns (stat32 stat32p)
   :short "Convert from @(tsee stat-rv32im-le-p) to @(tsee stat32)."
-  (make-stat32 :xregs (stat->xregs stat)
-                :pc (stat->pc stat)
-                :memory (stat->memory stat)
-                :error (stat->error stat))
+  (make-stat32 :xregs (riscv::stat->xregs stat)
+                :pc (riscv::stat->pc stat)
+                :memory (riscv::stat->memory stat)
+                :error (riscv::stat->error stat))
   :guard-hints
   (("Goal"
     :in-theory (enable stat-rv32im-le-p
-                       stat-validp
+                       riscv::stat-validp
                        xregs32p
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
                        memory32p
@@ -158,15 +161,15 @@
                  (("Goal"
                    :in-theory
                    (enable stat-rv32im-le-p
-                           stat-validp
+                           riscv::stat-validp
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
                            acl2::unsigned-byte-p-rewrite-ubyte32p
                            (:e feat-rv32im-le)))))
   :short "Convert from @(tsee stat32) to @(tsee stat-rv32im-le-p)."
-  (make-stat :xregs (stat32->xregs stat32)
-             :pc (stat32->pc stat32)
-             :memory (stat32->memory stat32)
-             :error (stat32->error stat32)))
+  (riscv::make-stat :xregs (stat32->xregs stat32)
+                    :pc (stat32->pc stat32)
+                    :memory (stat32->memory stat32)
+                    :error (stat32->error stat32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -202,8 +205,8 @@
   :short "Partially evaluate @(tsee read-xreg-unsigned)
           for RV32IM little endian."
 
-  (apt::parteval read-xreg-unsigned
-                 ((feat (feat-rv32im-le)))
+  (apt::parteval riscv::read-xreg-unsigned
+                 ((riscv::feat (feat-rv32im-le)))
                  :new-name read32-xreg-unsigned{0}
                  :thm-enable nil))
 
@@ -233,7 +236,7 @@
           to use the isomorphic states @(tsee stat32)."
 
   (apt::isodata read32-xreg-unsigned{1}
-                ((stat stat32-iso))
+                ((riscv::stat stat32-iso))
                 :undefined 0
                 :new-name read32-xreg-unsigned{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
@@ -250,7 +253,7 @@
     "We assume the guard so that we eliminate
      the outer @(tsee if) with @(tsee mbt) added by @(tsee apt::isodata).")
    (xdoc::p
-    "We simplify the guard to eliminate @(tsee stat-validp) from it,
+    "We simplify the guard to eliminate @(tsee riscv::stat-validp) from it,
      which is implied by @(tsee stat32p).")
    (xdoc::p
     "This is the final refinement for this function,
@@ -262,7 +265,7 @@
     :simplify-guard t
     :thm-enable nil
     :enable (stat-from-stat32
-             stat-validp
+             riscv::stat-validp
              unsigned-byte-p-32-of-nth-of-stat-rv32im-le->xregs
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p))
@@ -278,12 +281,12 @@
 (defruled read-xreg-unsigned-to-read32-xreg-unsigned{3}
   :short "Rewriting of @(tsee read-xreg-unsigned)
           to @(tsee read32-xreg-unsigned{3})."
-  (implies (and (statp stat)
+  (implies (and (riscv::statp stat)
                 (equal feat (feat-rv32im-le))
-                (stat-validp stat feat)
+                (riscv::stat-validp stat feat)
                 (natp reg)
                 (< reg 32))
-           (equal (read-xreg-unsigned reg stat feat)
+           (equal (riscv::read-xreg-unsigned reg stat feat)
                   (read32-xreg-unsigned{3} reg (stat32-from-stat stat))))
   :enable (read-xreg-unsigned-becomes-read32-xreg-unsigned{0}
            read32-xreg-unsigned{0}-becomes-read32-xreg-unsigned{1}
@@ -300,8 +303,8 @@
   :short "Partially evaluate @(tsee read-xreg-unsigned)
           for RV32IM little endian."
 
-  (apt::parteval read-xreg-signed
-                 ((feat (feat-rv32im-le)))
+  (apt::parteval riscv::read-xreg-signed
+                 ((riscv::feat (feat-rv32im-le)))
                  :new-name read32-xreg-signed{0}
                  :thm-enable nil))
 
@@ -329,7 +332,7 @@
           to use the isomorphic states @(tsee stat32)."
 
   (apt::isodata read32-xreg-signed{1}
-                ((stat stat32-iso))
+                ((riscv::stat stat32-iso))
                 :undefined 0
                 :new-name read32-xreg-signed{2}
                 :hints (("Goal" :in-theory (enable stat-rv32im-le-p
@@ -374,7 +377,7 @@
     :simplify-body nil
     :thm-enable nil
     :enable (stat-from-stat32
-             stat-validp
+             riscv::stat-validp
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p)))
 

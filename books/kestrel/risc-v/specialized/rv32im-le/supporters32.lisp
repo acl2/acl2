@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV32IM-LE")
 
 (include-book "../../portcullis")
 (include-book "centaur/fty/portcullis" :dir :system)

@@ -78,7 +78,7 @@
 (def-constant-opener unsigned-byte-listp)
 
 ;todo: more
-(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv::funct))))
+(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv32im-le::funct))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

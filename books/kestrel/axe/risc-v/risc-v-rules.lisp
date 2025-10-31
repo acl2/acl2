@@ -37,10 +37,10 @@
   :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p))))
 
 (defthm read32-xreg-unsigned-upper-bound-linear
-  (<= (read32-xreg-unsigned riscv::reg stat) 4294967295)
+  (<= (read32-xreg-unsigned riscv32im-le::reg stat) 4294967295)
   :rule-classes :linear
-  :hints (("Goal" :use (:instance riscv::ubyte32p-of-read32-xreg-unsigned)
-           :in-theory (e/d (ubyte32p) (riscv::ubyte32p-of-read32-xreg-unsigned)))))
+  :hints (("Goal" :use (:instance riscv32im-le::ubyte32p-of-read32-xreg-unsigned)
+           :in-theory (e/d (ubyte32p) (riscv32im-le::ubyte32p-of-read32-xreg-unsigned)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -285,8 +285,8 @@
            (equal (step32 stat)
                   (b* ((pc (read32-pc stat))
                        (riscv::enc (read32-mem-ubyte32-lendian pc stat))
-                       (riscv::instr? (riscv::decodex riscv::enc (riscv::feat-rv32im-le)))
+                       (riscv::instr? (riscv32im-le::decodex riscv::enc (riscv32im-le::feat-rv32im-le)))
                        ((common-lisp::unless riscv::instr?)
-                        (riscv::error32 stat)))
+                        (riscv32im-le::error32 stat)))
                     (exec32-instr riscv::instr? pc stat))))
   :hints (("Goal" :in-theory (enable step32))))

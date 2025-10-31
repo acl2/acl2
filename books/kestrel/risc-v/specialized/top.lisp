@@ -31,5 +31,5 @@
     (xdoc::seetopic "apt::apt" "APT")
     " transformation, applied to the general model,
      to automate the generation of these specializations."))
-  :order-subtopics (specialized-rv32im-le
+  :order-subtopics (riscv32im-le::specialized-rv32im-le
                     specialized-rv64im-le))

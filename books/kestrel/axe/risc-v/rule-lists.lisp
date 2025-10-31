@@ -292,7 +292,7 @@
      riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
 
 
-     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
+     riscv32im-le::feat-rv32im-le ; todo: use constant-openers more for these?
 
      riscv::feat-endian-little
      riscv::feat-endian-fix$inline
@@ -457,7 +457,7 @@
      exec32-mulhu
      exec32-op
      ;; exec32-op-imm
-     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+     riscv32im-le::exec32-op-imm-base ; allows dispatch when it can be resolved
      exec32-op-imms ;; todo: restrict
      exec32-or
      exec32-ori
@@ -535,7 +535,7 @@
      acl2::integerp-of-bvplus
      acl2::integerp-of-logext
 
-     riscv::stat32-fix-when-stat32p
+     riscv32im-le::stat32-fix-when-stat32p
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p

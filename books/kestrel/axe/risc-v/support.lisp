@@ -74,7 +74,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defopeners exec32-instr :hyps ((syntaxp (quotep riscv::instr))))
+(defopeners exec32-instr :hyps ((syntaxp (quotep riscv32im-le::instr))))
 
 (local (in-theory (disable update-nth)))
 
