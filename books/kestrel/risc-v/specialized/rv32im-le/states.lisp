@@ -202,7 +202,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32-xreg-unsigned{0}
-  :short "Partially evaluate @(tsee read-xreg-unsigned)
+  :short "Partially evaluate @(tsee riscv::read-xreg-unsigned)
           for RV32IM little endian."
 
   (apt::parteval riscv::read-xreg-unsigned
@@ -279,7 +279,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled read-xreg-unsigned-to-read32-xreg-unsigned{3}
-  :short "Rewriting of @(tsee read-xreg-unsigned)
+  :short "Rewriting of @(tsee riscv::read-xreg-unsigned)
           to @(tsee read32-xreg-unsigned{3})."
   (implies (and (riscv::statp stat)
                 (equal feat (feat-rv32im-le))
@@ -300,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32-xreg-signed{0}
-  :short "Partially evaluate @(tsee read-xreg-unsigned)
+  :short "Partially evaluate @(tsee riscv::read-xreg-unsigned)
           for RV32IM little endian."
 
   (apt::parteval riscv::read-xreg-signed

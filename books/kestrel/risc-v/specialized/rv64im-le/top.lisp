@@ -30,8 +30,9 @@
      and little endian data access to memory.")
    (xdoc::p
     "In our current general model of RISC-V,
-     this completely pins down the @(see features).
-     We introduce a nullary function corresponding to those features,
+     this completely pins down the "
+    (xdoc::seetopic "riscv::features" "features")
+    ". We introduce a nullary function corresponding to those features,
      along with specialized types and operations
      that do not depend on features."))
   :order-subtopics (rv64im-le-features
