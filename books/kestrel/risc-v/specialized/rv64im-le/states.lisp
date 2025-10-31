@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
 
 (include-book "features")
 
@@ -41,7 +41,10 @@
 
 (defxdoc+ rv64im-le-states
   :parents (specialized-rv64im-le)
-  :short "Specialization of (@see states) to RV64IM little endian."
+  :short (xdoc::topstring
+          "Specialization of "
+          (xdoc::seetopic "riscv::states" "states")
+          " to RV64IM little endian.")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -62,8 +65,8 @@
 (define stat-rv64im-le-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of states for RV64IM little endian."
-  (and (statp x)
-       (stat-validp x (feat-rv64im-le))))
+  (and (riscv::statp x)
+       (riscv::stat-validp x (feat-rv64im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

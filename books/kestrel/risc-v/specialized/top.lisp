@@ -32,4 +32,4 @@
     " transformation, applied to the general model,
      to automate the generation of these specializations."))
   :order-subtopics (riscv32im-le::specialized-rv32im-le
-                    specialized-rv64im-le))
+                    riscv64im-le::specialized-rv64im-le))
