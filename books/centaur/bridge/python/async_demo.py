@@ -54,6 +54,7 @@ async def repl():
             try:
                 command = Command("LISP", input(f"\n{current_package}> "))
             except EOFError:
+                print()
                 await client.send(Command("LISP", "(bridge::stop)"))
                 await client.disconnect()
                 exit()
