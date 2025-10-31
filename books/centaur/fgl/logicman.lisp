@@ -2714,7 +2714,7 @@ registers are not used.</p>"
     symbolp
     binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj trigger-constraints
     fgl-time-fn fgl-hide
-    
+    #+:non-standard-analysis acl2::floor1
 
     equal not if iff int bool
     concrete match-assums return-last synp cons car cdr
