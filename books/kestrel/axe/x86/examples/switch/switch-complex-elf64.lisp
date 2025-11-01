@@ -87,6 +87,32 @@
   :hints (("Goal" :in-theory (enable ;bvplus acl2::bvchop-of-sum-cases
                               acl2::slice-of-bvplus-cases))))
 
+;; Variant for 8-byte chunks (needed for the jump table with 336 bytes)
+(defthm bv-array-read-chunk-little-when-multiple-8-336
+  (implies (and (equal 0 (bvchop 3 index)) ; index is a multiple of 8
+                (equal 0 (bvchop 3 len))   ; len is a multiple of 8
+                (equal len 336)
+                (equal len (len array))
+                (natp index))
+           (equal (bv-array-read-chunk-little 8 8 len index array)
+                  (bv-array-read 64
+                                 (/ len 8)
+                                 (slice (- (ceiling-of-lg len) 1)
+                                        3
+                                        index)
+                                 (acl2::packbvs-little 8 8 array))))
+  :otf-flg t
+  :hints (("Goal" :expand ((bvchop 3 index))
+                  :in-theory (e/d (bv-array-read
+                                   acl2::packbv-little
+                                   acl2::packbv-opener
+                                   acl2::bvchop-of-sum-cases
+                                   bvplus
+                                   nfix)
+                                  (acl2::bvcat-of-nth-arg4
+                                   acl2::bvcat-of-nth-arg2
+                                   acl2::equal-of-constant-and-getbit-extend)))))
+
 (defund map-bvsx (high low lst)
   (if (endp lst)
       nil
@@ -248,9 +274,59 @@
              (set-rip (bvchop size tp) x86)
            (set-rip (bvchop size ep) x86))))
 
- ;; Lift the subroutine into logic:
-;; NOTE: Currently fails due to lack of jump table support (indirect jump via jmpq)
+;;; EM: this is similar to slice-of-sum-cases but for bvplus
+(defthmd slice-of-bvplus-cases
+  (implies (and (natp low)
+                (natp high)
+                (natp size)
+                (< high size))
+           (equal (slice high low (bvplus size x y))
+                  (if (< high low)
+                      0
+                    (if (<= (expt 2 low)
+                            (+ (bvchop low x)
+                               (bvchop low y)))
+                        ;;if carry
+                        (bvchop (+ 1 high (- low))
+                                (+ 1
+                                   (slice high low x)
+                                   (slice high low y)))
+                      ;;no carry:
+                      (bvchop (+ 1 high (- low))
+                              (+ (slice high low x)
+                                 (slice high low y)))))))
+  :hints (("Goal" :in-theory (e/d (bvplus acl2::slice-of-sum-cases)
+                                  ()))))
+
 #|
+;; EM: This failed, don't know why yet.  Might not be needed.
+(defthm slice-of-bvplus
+  (implies (and (natp high)
+                (natp low)
+                (<= low high)
+                (natp size)
+                (< high size))
+           (equal (slice high low (bvplus size x y))
+                  (bvchop (+ 1 high (- low))
+                          (+ (slice high low x)
+                             (slice high low y)))))
+  :hints (("Goal" :in-theory (e/d (slice
+                                   bvplus
+                                   bvchop
+                                   acl2::logtail-of-bvchop)
+                                  ()))))
+|#
+
+#|
+;; EM: Note, this def-unrolled form is accepted now, but it lifts to
+;; (DEFUN PROCESS-COMMAND (CMD)
+;;    (BVIF 32 (BVLT 32 9 CMD) 4294967295 0))
+;; when it should lift to something like
+;; (BVIF 32 (BVLT 32 9 CMD)
+;;        (bvuminus 32 1)  ; default case
+;;        (bvmult 32 global-counter-val (bvplus 32 2 cmd)))  ; cases 0-9
+
+;; Lift the subroutine into logic:
 (def-unrolled process-command
     :executable "switch-complex.elf64"
     :target "process_command"
@@ -261,11 +337,13 @@
                    acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
                    bv-array-read-chunk-little-when-multiple
+                   bv-array-read-chunk-little-when-multiple-8-336
                    acl2::packbvs-little-constant-opener
                    acl2::packbv-little-constant-opener
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
                    acl2::bvplus-trim-arg3-axe-all
+                   slice-of-bvplus-cases ; EM, defined above temporarily
                    acl2::slice-of-bvplus-of-bvcat-special
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
