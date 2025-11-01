@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "bv-syntax")
+(include-book "bv-syntax") ; for convertible-to-bvp
 (include-book "trim")
 (include-book "bvand")
 (include-book "bvor")
@@ -31,13 +31,19 @@
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))
 
-;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
-;; its own version of such rules, since they use complex syntaxp hyps.  See
-;; ../axe/bv-rules-axe.lisp.)
+;; The rules in this book convert certain arguments of BV functions to be calls
+;; of BV operators.  The approach has 2 steps:
 
-;; Step 2 is done by the rules in trim-elim-rules-non-bv.lisp
+;; Step 1: The rules in this book begin the conversion by inserting calls of
+;; TRIM.
 
-;; See also ../axe/convert-to-bv-rules-axe.lisp
+;; Step 2 The rules in trim-elim-rules-non-bv.lisp use the inserted calls of
+;; TRIM to convert their arguments to bvops.
+
+;; Note: Axe has its own version of such rules, since they use complex
+;; syntaxp hyps.  See ../axe/convert-to-bv-rules-axe.lisp.
+
+;; TODO: Add more of these, based on axe/convert-to-bv-rules-axe.lisp.
 
 (defthmd bvplus-convert-arg2-to-bv
   (implies (syntaxp (convertible-to-bvp x))
@@ -49,6 +55,34 @@
   (implies (syntaxp (convertible-to-bvp y))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvminus-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvminus size x y)
+                  (bvminus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvminus-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvminus size x y)
+                  (bvminus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvmult-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvmult size x y)
+                  (bvmult size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvmult-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvmult size x y)
+                  (bvmult size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,8 +120,6 @@
                   (slice high low (trim (+ 1 high) x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-;; TODO: Add more of these, baseed on axe/bv-rules-axe.lisp.
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvlt-convert-arg2-to-bv
@@ -100,20 +132,6 @@
   (implies (syntaxp (convertible-to-bvp y))
            (equal (bvlt size x y)
                   (bvlt size x (trim size y))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthmd bvmult-convert-arg2-to-bv
-  (implies (syntaxp (convertible-to-bvp x))
-           (equal (bvmult size x y)
-                  (bvmult size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthmd bvmult-convert-arg3-to-bv
-  (implies (syntaxp (convertible-to-bvp y))
-           (equal (bvmult size x y)
-                  (bvmult size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
