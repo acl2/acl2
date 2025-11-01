@@ -166,7 +166,7 @@ correctness property is given by @('difference-in').</p>
 <p>The execution uses a better, O(n) algorithm to remove the elements by
 exploiting the set order.</p>"
 
-  (defun difference (X Y)
+  (defun-inline difference (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
     (mbe :logic (cond ((emptyp X) (sfix X))
@@ -215,7 +215,7 @@ exploiting the set order.</p>"
              :hints(("Goal" :in-theory (enable fast-difference
                                                (:ruleset low-level-rules))))))
 
-    (verify-guards difference
+    (verify-guards difference$inline
       :hints(("Goal" :in-theory (enable fast-difference-set
                                         fast-difference-membership)))))
 
