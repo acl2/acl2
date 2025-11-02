@@ -342,6 +342,9 @@
   :elementp-of-nil nil
   ///
 
+  (fty::deffixequiv abnf-tree-list-with-root-p
+    :args ((rulename stringp)))
+
   (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
     (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
              (abnf::tree-listp trees))
