@@ -14,6 +14,7 @@
 (include-book "grammar")
 
 (local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 (acl2::controlled-configuration)
@@ -211,8 +212,7 @@
               abnf::tree-nonleaf->rulename?
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
-              acl2::equal-len-const
-              nfix))))
+              acl2::equal-len-const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,8 +258,7 @@
               abnf::tree-nonleaf->rulename?
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
-              acl2::equal-len-const
-              nfix))))
+              acl2::equal-len-const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
