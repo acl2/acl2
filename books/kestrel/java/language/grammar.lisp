@@ -16,6 +16,8 @@
 (include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 
+(local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
+
 ; (depends-on "lexical-grammar.abnf")
 ; (depends-on "syntactic-grammar.abnf")
 
@@ -204,10 +206,7 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+    :disable ((:e acl2::integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,10 +280,7 @@
   (defruledl in-of-integers-from-0-to-ffff-rewrite-to-unicodep
     (equal (in x (integers-from-to 0 #xffff))
            (unicodep x))
-    :enable unicodep
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))))
+    :enable unicodep)
 
   (defruledl list-of-integers-from-0-to-ffff-rewrite-to-unicode-listp
     (implies (true-listp x)
