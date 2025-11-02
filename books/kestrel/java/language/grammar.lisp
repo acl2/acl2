@@ -18,6 +18,9 @@
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
 ; (depends-on "lexical-grammar.abnf")
 ; (depends-on "syntactic-grammar.abnf")
 
@@ -280,13 +283,20 @@
   (defruledl in-of-integers-from-0-to-ffff-rewrite-to-unicodep
     (equal (in x (integers-from-to 0 #xffff))
            (unicodep x))
-    :enable unicodep)
+    :enable (unicodep
+             ifix
+             unsigned-byte-p
+             integer-range-p
+             not
+             (:e tau-system)))
 
   (defruledl list-of-integers-from-0-to-ffff-rewrite-to-unicode-listp
     (implies (true-listp x)
              (iff (list-in x (integers-from-to 0 #xffff))
                   (unicode-listp x)))
-    :enable (in-of-integers-from-0-to-ffff-rewrite-to-unicodep))
+    :induct t
+    :enable (in-of-integers-from-0-to-ffff-rewrite-to-unicodep
+             true-listp))
 
   (defruledl abnf-string-parsablep-when-tree-with-root-p
     (implies (abnf-tree-with-root-p tree rulename)
@@ -335,8 +345,10 @@
 
   (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
     (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
-             (abnf::tree-listp trees)))
+             (abnf::tree-listp trees))
+    :induct t)
 
   (defrule unicode-listp-of-string-of-abnf-tree-list-with-root
     (implies (abnf-tree-list-with-root-p trees rulename)
-             (unicode-listp (abnf::tree-list->string trees)))))
+             (unicode-listp (abnf::tree-list->string trees)))
+    :induct t))
