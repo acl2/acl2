@@ -267,8 +267,7 @@
                                (abnf::element-rulename
                                 (abnf::rulename rulename))
                                *grammar*))
-  :no-function t
-  :hooks (:fix)
+
   ///
 
   (defrule abnf-treep-when-abnf-tree-with-root-p
