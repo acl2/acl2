@@ -13,6 +13,9 @@
 (include-book "keywords")
 (include-book "grammar")
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,10 +212,7 @@
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
               acl2::equal-len-const
-              nfix)
-     :prep-books
-     ((include-book "kestrel/utilities/lists/len-const-theorems" :dir :system)
-      (include-book "std/lists/top" :dir :system)))))
+              nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,10 +259,7 @@
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
               acl2::equal-len-const
-              nfix)
-     :prep-books
-     ((include-book "kestrel/utilities/lists/len-const-theorems" :dir :system)
-      (include-book "std/lists/top" :dir :system)))))
+              nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
