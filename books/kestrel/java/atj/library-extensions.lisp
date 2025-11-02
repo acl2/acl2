@@ -402,7 +402,7 @@
      It is expected that (perhaps an extension of) that formalization
      will replace this function here,
      but for now this function is adequate to ATJ's needs."))
-  (and (not (member-equal string *jkeywords*))
+  (and (not (member-equal string *reserved-keywords*))
        (not (member-equal string *boolean-literals*))
        (not (equal string *null-literal*))
        (b* ((chars (explode string)))

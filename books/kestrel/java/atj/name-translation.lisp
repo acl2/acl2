@@ -338,7 +338,7 @@
      It also includes the uppercase names of the @('t') and @('nil') symbols,
      because those are generated as static final fields,
      which would therefore conflict with homonymous variables."))
-  (append *jkeywords*
+  (append *reserved-keywords*
           *boolean-literals*
           (list *null-literal*)
           (list "")
@@ -380,7 +380,7 @@
      because ACL2 package names are never empty
      and the mapping in @(tsee atj-pkg-to-class)
      never produces empty strings."))
-  (append *jkeywords*
+  (append *reserved-keywords*
           *boolean-literals*
           (list *null-literal*)
           *aij-class-names*
@@ -495,7 +495,7 @@
      a Java keyword, boolean or null literal, or empty.")
    (xdoc::p
     "This constant collects these disallowed names."))
-  (append *jkeywords*
+  (append *reserved-keywords*
           *boolean-literals*
           (list *null-literal*)
           (list ""))
