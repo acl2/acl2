@@ -316,7 +316,7 @@
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor
                               ifix
-                              logand-of-bvchop-becomes-bvand-alt))))
+                              ))))
 
 ;; Introduces the BV function
 (defthm rotate-left-becomes-leftrotate
@@ -333,7 +333,7 @@
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor
                               ifix
-                              logand-of-bvchop-becomes-bvand-alt))))
+                              ))))
 
 ;; ;; todo: handle more specialized variants of rotate-left.  also handle the variants of rotate-right.
 ;; ;; or just open these to expose the non-specialized rotate ops!

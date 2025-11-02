@@ -17,10 +17,7 @@
 
 (local (include-book "std/lists/len" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,8 +37,7 @@
    (xdoc::p
     "These are unary plus, unary minus, and bitwise/logical negation/complement.
      The other two, address and indirection, involve pointers."))
-  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
-  :hooks (:fix))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,8 +77,7 @@
                         :asg-and
                         :asg-xor
                         :asg-ior))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,8 +108,7 @@
                         :bitior
                         :logand
                         :logor))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,8 +137,7 @@
               (expr-purep expr.then)
               (expr-purep expr.else)))
   :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,8 +167,7 @@
             (mv id (make-obj-adeclor-array :decl sub :size declor.size))))
   :measure (obj-declor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,7 +190,7 @@
   :measure (obj-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
-  :hooks (:fix)
+
   ///
 
   (defrule ident+adeclor-to-obj-declor-of-obj-declor-to-ident+adeclor
@@ -234,8 +226,7 @@
               (mv id (fun-adeclor-pointer sub))))
   :measure (fun-declor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,7 +246,7 @@
   :measure (fun-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
-  :hooks (:fix)
+
   ///
 
   (defrule ident+adeclor-to-fun-declor-of-fun-declor-to-ident+adeclor
@@ -296,8 +287,7 @@
               (mv params (make-obj-adeclor-pointer :decl sub))))
   :measure (fun-adeclor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,8 +309,7 @@
     "In essence, we turn (the constituents of) an object declaration
      into its name and type, which are somewhat mixed in the C syntax."))
   (b* (((mv id adeclor) (obj-declor-to-ident+adeclor declor)))
-    (mv id (make-tyname :tyspec tyspec :declor adeclor)))
-  :hooks (:fix))
+    (mv id (make-tyname :tyspec tyspec :declor adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +330,7 @@
     "This is the inverse of @(tsee tyspec+declor-to-ident+tyname)."))
   (b* (((tyname tyname) tyname))
     (mv tyname.tyspec (ident+adeclor-to-obj-declor id tyname.declor)))
-  :hooks (:fix)
+
   ///
 
   (defrule ident+tyname-to-tyspec+declor-of-tyspec+declor-to-ident+tyname
@@ -386,8 +375,7 @@
      but we do not need the inverse for now."))
   (b* (((mv id fun-adeclor) (fun-declor-to-ident+adeclor declor))
        ((mv params obj-adeclor) (fun-adeclor-to-params+declor fun-adeclor)))
-    (mv id params (make-tyname :tyspec tyspec :declor obj-adeclor)))
-  :hooks (:fix))
+    (mv id params (make-tyname :tyspec tyspec :declor obj-adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,8 +383,7 @@
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a structure declaration into an identifier and a type name."
   (b* (((struct-declon declon) declon))
-    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor))
-  :hooks (:fix))
+    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,8 +391,7 @@
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a parameter declaration into an identifier and a type name."
   (b* (((param-declon declon) declon))
-    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor))
-  :hooks (:fix))
+    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -418,7 +404,7 @@
        ((mv ids tynames) (param-declon-list-to-ident+tyname-lists
                           (cdr declons))))
     (mv (cons id ids) (cons tyname tynames)))
-  :hooks (:fix)
+
   ///
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.ids
@@ -446,8 +432,7 @@
   (b* (((obj-declon declon) declon)
        ((mv id tyname) (tyspec+declor-to-ident+tyname declon.tyspec
                                                       declon.declor)))
-    (mv id declon.scspec tyname declon.init?))
-  :hooks (:fix))
+    (mv id declon.scspec tyname declon.init?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -466,8 +451,7 @@
                                    (ext-declon-list->fundef-list (cdr exts)))
                      :fun-declon (ext-declon-list->fundef-list (cdr exts))
                      :obj-declon (ext-declon-list->fundef-list (cdr exts))
-                     :tag-declon (ext-declon-list->fundef-list (cdr exts))))
-  :hooks (:fix))
+                     :tag-declon (ext-declon-list->fundef-list (cdr exts)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -475,8 +459,7 @@
   :returns (name identp)
   :short "Name of a function in a definition."
   (b* (((mv name &) (fun-declor-to-ident+adeclor (fundef->declor fundef))))
-    name)
-  :hooks (:fix))
+    name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,7 +468,9 @@
   :returns (names ident-listp)
   :short "Lift @(tsee fundef->name) to lists."
   (fundef->name x)
+
   ///
+
   (fty::deffixequiv fundef-list->name-list
     :args ((x fundef-listp))))
 
@@ -546,8 +531,7 @@
               (expr-constp e.then)
               (expr-constp e.else)))
   :measure (expr-count e)
-  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable o< o-finp o-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -557,6 +541,7 @@
   (expr-constp x)
   :true-listp nil
   :elementp-of-nil nil
+
   ///
 
   (fty::deffixequiv expr-list-constp
@@ -576,8 +561,7 @@
      for the technical reasons explained there.
      But this ACL2 function explicates that mapping."))
   (make-fun-declon :tyspec (fundef->tyspec fundef)
-                   :declor (fundef->declor fundef))
-  :hooks (:fix))
+                   :declor (fundef->declor fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -586,7 +570,9 @@
   :returns (declons fun-declon-listp)
   :short "Lift @(tsee fundef-to-fun-declon) to lists."
   (fundef-to-fun-declon x)
+
   ///
+
   (fty::deffixequiv fundef-list-to-fun-declon-list
     :args ((x fundef-listp))))
 
@@ -616,8 +602,7 @@
               (expr-nocallsp expr.then)
               (expr-nocallsp expr.else)))
   :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -626,7 +611,9 @@
   :short "Check if a list of expressions does not contain any function calls."
   (expr-nocallsp x)
   :elementp-of-nil t
+
   ///
+
   (fty::deffixequiv expr-list-nocallsp
     :args ((x expr-listp))))
 
@@ -638,8 +625,7 @@
   (expr-option-case
    expr?
    :some (expr-nocallsp expr?.val)
-   :none t)
-  :hooks (:fix))
+   :none t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,8 +635,7 @@
   (initer-case
    initer
    :single (expr-nocallsp initer.get)
-   :list (expr-list-nocallsp initer.get))
-  :hooks (:fix))
+   :list (expr-list-nocallsp initer.get)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -660,16 +645,14 @@
   (initer-option-case
    initer?
    :some (initer-nocallsp initer?.val)
-   :none t)
-  :hooks (:fix))
+   :none t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define obj-declon-nocallsp ((declon obj-declonp))
   :returns (yes/no booleanp)
   :short "Check if an object declaration does not contain any function calls."
-  (initer-option-nocallsp (obj-declon->init? declon))
-  :hooks (:fix))
+  (initer-option-nocallsp (obj-declon->init? declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -680,8 +663,7 @@
    label
    :name t
    :cas (expr-nocallsp label.get)
-   :default t)
-  :hooks (:fix))
+   :default t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -38,6 +38,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/bv-lists/array-patterns" :dir :system)) ; reduce?
 
 (add-known-boolean bv-arrayp)
 
@@ -471,3 +472,36 @@
                   val))
   :hints (("Goal" :use bv-array-read-when-all-same
            :in-theory (disable bv-array-read-when-all-same))))
+
+;; Here we guess that the index may be < ~half the array size.  if so, we can
+;; discard the latter ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-first-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (ceiling len 2)))
+                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-first-half)))
+
+(defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep data)
+                              (quotep index-width)
+                              (quotep len)))
+                (equal index-width (ceiling-of-lg len)) ; gen?
+                (axe-smt (bvlt index-width index (bvplus index-width index k))) ; no wrap around
+                (axe-smt (or (power-of-2p len)
+                             (bvlt index-width (bvplus index-width index k) len))) ; in bounds
+                ;; (natp index-width)
+                ;;  (natp k)
+                (natp len)
+                ;; (natp index)
+                )
+           (equal (bv-array-read element-size len (bvplus index-width k index) data)
+                  ;; The nthcdr here gets computed to give a smaller array:
+                  (bv-array-read element-size (bvminus index-width len k) (bvchop index-width index) (nthcdr (bvchop index-width k) data))))
+  :hints (("Goal" :use bv-array-read-of-bvplus-of-constant-no-wrap-bv
+                  :in-theory (disable bv-array-read-of-bvplus-of-constant-no-wrap-bv))))

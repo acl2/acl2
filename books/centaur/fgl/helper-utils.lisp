@@ -86,6 +86,8 @@
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
 
+(fancy-ev-add-primitive acl2::time-tracker-fn t)
+
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (define interp-st-print-aignet-stats ((name stringp) interp-st)
@@ -241,7 +243,22 @@
    ;; remove the one that references new-state
    (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
 
+  (defret <fn>-errmsg-not-unreachable
+    (not (equal errmsg :unreachable)))
+
+  (local (in-theory (disable interp-st-run-ctrex)))
   (fancy-ev-add-primitive interp-st-run-ctrex t))
+
+(encapsulate nil
+  (local (std::set-define-current-function interp-st-run-ctrex-with-errmsg))
+  (local (in-theory (enable interp-st-run-ctrex-with-errmsg)))
+
+  (make-event
+   ;; remove the one that references new-state
+   (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
+
+  (local (in-theory (disable interp-st-run-ctrex-with-errmsg)))
+  (fancy-ev-add-primitive interp-st-run-ctrex-with-errmsg t))
 
 
 
@@ -660,7 +677,8 @@ keyword argument. Examples of usage:</p>
         (syntax-interp (cw
                         "Failed to find satisfying assignment for path condition: ~x0~%" error)))
        (obj-val (cdr (assoc 'obj bindings)))
-       (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
+       ;; (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val)))
+       )
     obj-val))
     
 (defmacro break-on-fgl-error ()
@@ -710,3 +728,9 @@ keyword argument. Examples of usage:</p>
                       "Stopping on error due to ~x0" 'stop-on-fgl-error))))
 
 
+
+(define interp-st-release-ipasirs (interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (logicman)
+             (logicman-release-ipasirs 0 logicman)
+             interp-st))

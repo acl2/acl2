@@ -17,6 +17,8 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
@@ -98,6 +100,7 @@
                     :sizeof
                     :sizeof-ambig
                     :alignof
+                    :alignof-ambig
                     :stmt
                     :tycompat
                     :offsetof
@@ -189,6 +192,8 @@
      straightforwardly according to the grammar.")
    (xdoc::p
     "An ambiguous @('sizeof') has the same priority as an unambiguous one.
+     An ambiguous @('_Alignof') (and keyword variants)
+     has the same priority as an unambiguous one.
      An ambiguous cast/call expression is given
      the higher priority of the two possibilities,
      i.e. the priority of a postfix expression.
@@ -212,6 +217,7 @@
    :sizeof (expr-priority-unary)
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
+   :alignof-ambig (expr-priority-unary)
    :cast (expr-priority-cast)
    :binary (binop->priority expr.op)
    :cond (expr-priority-cond)
@@ -386,7 +392,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines declor->ident
+(defines declor/dirdeclor->ident
   :short "Identifier of a declarator."
   :long
   (xdoc::topstring
@@ -415,7 +421,8 @@
      :function-names (dirdeclor->ident dirdeclor.declor))
     :measure (dirdeclor-count dirdeclor))
 
-  :hints (("Goal" :in-theory (enable o< o-finp))))
+  ///
+  (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,6 +432,34 @@
   :returns (ident? identp)
   (b* (((initdeclor initdeclor) initdeclor))
     (declor->ident initdeclor.declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-has-paramsp
+  (define declor-has-paramsp ((declor declorp))
+    :returns (yes/no booleanp)
+    :short "Check if a declarator contains function parameters/names."
+    (b* (((declor declor) declor))
+      (dirdeclor-has-paramsp declor.direct))
+    :measure (declor-count declor))
+
+  (define dirdeclor-has-paramsp ((dirdeclor dirdeclorp))
+    :returns (yes/no booleanp)
+    :short "Check if a direct declarator contains function parameters/names."
+    (dirdeclor-case
+      dirdeclor
+      :ident nil
+      :paren (declor-has-paramsp dirdeclor.inner)
+      :array (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-static1 (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-static2 (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-star (dirdeclor-has-paramsp dirdeclor.declor)
+      :function-params t
+      :function-names t)
+    :measure (dirdeclor-count dirdeclor))
+
+  ///
+  (fty::deffixequiv-mutual declor/dirdeclor-has-paramsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,7 +842,6 @@
               (expr-to-asg-expr-list (expr-comma->next expr)))
     (list (expr-fix expr)))
   :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

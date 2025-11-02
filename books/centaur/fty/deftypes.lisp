@@ -244,6 +244,7 @@
     :prepwork
     :post-pred-events
     :post-fix-events
+    :post-acc-events
     :post-events
     :enable-rules
     :verbosep))
@@ -948,6 +949,8 @@
 
              (local (in-theory (disable . ,(flextypes-fns x.types))))
 
+             ,@(flextype-collect-events :post-acc-events x.kwd-alist x.types)
+             
              ,@(flextypes-count x)
 
              (local (in-theory (enable deftypes-orig-theory)))

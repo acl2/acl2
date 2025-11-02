@@ -17,11 +17,12 @@
 ;; but my current rules may target integer-length?
 
 (local (include-book "floor")) ; reduce?
-;(local (include-book "mod")) ; floor-mod-elim-rule was used in integer-length-of-+-of--1-when-not-power-of-2
 (local (include-book "expt"))
 ;(local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
+(local (include-book "divide"))
+(local (include-book "mod")) ; floor-mod-elim-rule was used in integer-length-of-+-of--1-when-not-power-of-2
 (local (include-book "numerator")) ; since floor calls numerator
 (local (include-book "denominator"))
 (local (include-book "nonnegative-integer-quotient"))
@@ -185,7 +186,7 @@
 
 ;; conflicts with expanding integer-length?
 (defthm integer-length-of-*-of-1/2
-  (implies (and (evenp x)
+  (implies (and (evenp x) ; or else x/2 is not an integer
                 (rationalp x))
            (equal (integer-length (* 1/2 x))
                   (if (equal x 0)
@@ -194,6 +195,45 @@
   :hints (("Goal" :expand (integer-length x)
            :in-theory (e/d (integer-length floor)
                            (integer-length-of-floor-by-2)))))
+
+(defthm integer-length-of-*-of-expt-of--
+  (implies (and (<= 0 i) ; gen?
+                (equal 0 (mod x (expt 2 i))) ; or else x/2^i is not an integer
+                (< 0 x)
+                (integerp x)
+                (integerp i))
+           (equal (integer-length (* x (expt 2 (- i))))
+                  (- (integer-length x) i)))
+  :hints (("Goal" ; :expand (integer-length x)
+;           :induct (add1-floor-by-2-induct-2 i x)
+;           :induct (and (expt 2 i) (integer-length x))
+           :in-theory (e/d ((:i expt)
+                            zip
+                            integer-length
+                            expt-of-+)
+                           (integer-length-of-floor-by-2
+                            floor)))))
+
+(defthm integer-length-of-*-of-/-of-expt
+  (implies (and (<= 0 i) ; gen?
+                (equal 0 (mod x (expt 2 i))) ; or else x/2^i is not an integer
+                (< 0 x)
+                (integerp x)
+                (integerp i))
+           (equal (integer-length (* x (/ (expt 2 i))))
+                  (- (integer-length x) i)))
+)
+
+(defthm integer-length-of-*-of-expt-when-negative
+  (implies (and (<= i 0) ; gen?
+                (equal 0 (mod x (expt 2 (- i)))) ; or else x*2^i is not an integer
+                (< 0 x)
+                (integerp x)
+                (integerp i))
+           (equal (integer-length (* x (expt 2 i)))
+                  (+ (integer-length x) i)))
+  :hints (("Goal" :use (:instance integer-length-of-*-of-expt-of-- (i (- i)))
+                  :in-theory (disable integer-length-of-*-of-expt-of--))))
 
 (local
  (defun sub1-floor-by-2-induct (n j)
@@ -280,13 +320,24 @@
             :induct (integer-length i)
             :in-theory (e/d (integer-length mod) (integer-length-of-floor-by-2))))))
 
+(local
+ (defthmd integer-length-of-+-of--1-helper
+   (implies (natp i)
+            (equal (integer-length (+ -1 i))
+                   (if (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                       (+ -1 (integer-length i))
+                     (integer-length i))))
+   :hints (("Goal" :cases ((not (equal i (expt 2 (+ -1 (integer-length i))))))))))
+
 (defthmd integer-length-of-+-of--1
-  (implies (natp i)
+  (implies (<= 0 i)
            (equal (integer-length (+ -1 i))
-                  (if (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
-                      (+ -1 (integer-length i))
-                    (integer-length i))))
-  :hints (("Goal" :cases ((not (equal i (expt 2 (+ -1 (integer-length i)))))))))
+                  (if (integerp i)
+                      (if (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                          (+ -1 (integer-length i))
+                        (integer-length i))
+                    0)))
+  :hints (("Goal" :cases ((acl2-numberp i)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

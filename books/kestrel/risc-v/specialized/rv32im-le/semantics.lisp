@@ -9,20 +9,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV32IM-LE")
 
-(include-book "states32")
+(include-book "states")
 
-(include-book "../specification/instructions")
+(include-book "../../specification/instructions")
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
+
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -31,18 +33,21 @@
 (defrulel dab-digit-list-of-256-when-ubyte8-listp
   (implies (ubyte8-listp x)
            (acl2::dab-digit-listp 256 x))
-  :enable (ubyte8-listp ubyte8p acl2::dab-digitp))
+  :induct t
+  :enable (ubyte8-listp ubyte8p
+                        acl2::dab-digitp
+                        unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ semantics32
-  :parents (rv32im)
+(defxdoc+ rv32im-le-semantics
+  :parents (specialized-rv32im-le)
   :short "Semantics of instructions for RV32IM."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define state-transforming functions that model
-     the effect of each instruction on the RV32I state.")
+     the effect of each instruction on the state.")
    (xdoc::p
     "For now we only support little endian access to memory,
      in load and store instructions.
@@ -55,8 +60,8 @@
 (define exec32-addi ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('ADDI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -72,16 +77,15 @@
        (result (+ rs1-operand imm-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-slti ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SLTI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -99,16 +103,15 @@
        (result (if (< rs1-operand imm-operand) 1 0))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sltiu ((rd ubyte5p)
                       (rs1 ubyte5p)
                       (imm ubyte12p)
-                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+                      (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SLTIU') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -126,16 +129,15 @@
        (result (if (< rs1-operand imm-operand) 1 0))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-andi ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('ANDI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -151,16 +153,15 @@
        (result (logand rs1-operand imm-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-ori ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte12p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('ORI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -176,16 +177,15 @@
        (result (logior rs1-operand imm-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-xori ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('XORI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -201,8 +201,7 @@
        (result (logxor rs1-operand imm-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,8 +209,8 @@
                        (rd ubyte5p)
                        (rs1 ubyte5p)
                        (imm ubyte12p)
-                       (stat stat32ip))
-  :returns (new-stat stat32ip)
+                       (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the non-shift instructions with the @('OP-IMM') opcode
           [ISA:2.4.1]."
   (op-imm-funct-case funct
@@ -220,16 +219,15 @@
                      :sltiu (exec32-sltiu rd rs1 imm stat)
                      :andi (exec32-andi rd rs1 imm stat)
                      :ori (exec32-ori rd rs1 imm stat)
-                     :xori (exec32-xori rd rs1 imm stat))
-  :hooks (:fix))
+                     :xori (exec32-xori rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-slli ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the SLLI instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -244,16 +242,15 @@
        (result (ash rs1-operand shift-amount))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-srli ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the SRLI instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -269,16 +266,15 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-srai ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the SRAI instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -294,8 +290,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -303,22 +298,21 @@
                         (rd ubyte5p)
                         (rs1 ubyte5p)
                         (imm ubyte5p)
-                        (stat stat32ip))
-  :returns (new-stat stat32ip)
+                        (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the shift instructions with the @('OP-IMM') opcode
           [ISA:2.4.1]."
   (op-imms-funct-case funct
                       :slli (exec32-slli rd rs1 imm stat)
                       :srli (exec32-srli rd rs1 imm stat)
-                      :srai (exec32-srai rd rs1 imm stat))
-  :hooks (:fix))
+                      :srai (exec32-srai rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lui ((rd ubyte5p)
                     (imm ubyte20p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LUI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -331,16 +325,15 @@
   (b* ((result (ash (ubyte20-fix imm) 12))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-auipc ((rd ubyte5p)
                       (imm ubyte20p)
                       (pc ubyte32p)
-                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+                      (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('AUIPC') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
@@ -356,16 +349,15 @@
        (result (+ (ubyte32-fix pc) offset))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-add ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('ADD') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -378,16 +370,15 @@
        (result (+ rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sub ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SUB') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -400,16 +391,15 @@
        (result (- rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-slt ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SLT') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -425,16 +415,15 @@
        (result (if (< rs1-operand rs2-operand) 1 0))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sltu ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (rs2 ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SLTU') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -450,16 +439,15 @@
        (result (if (< rs1-operand rs2-operand) 1 0))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-and ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('AND') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -473,16 +461,15 @@
        (result (logand rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-or ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('OR') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -496,16 +483,15 @@
        (result (logior rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-xor ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('XOR') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -519,16 +505,15 @@
        (result (logxor rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sll ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SLL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -544,16 +529,15 @@
        (result (ash rs1-operand shift-amount))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-srl ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SRL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -570,16 +554,15 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sra ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SRA') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
@@ -597,16 +580,15 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-mul ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('MUL') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
@@ -619,16 +601,15 @@
        (result (* rs1-operand rs2-operand))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-mulh ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (rs2 ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
@@ -644,16 +625,15 @@
        (result (ash product 32))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-mulhu ((rd ubyte5p)
                       (rs1 ubyte5p)
                       (rs2 ubyte5p)
-                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+                      (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('MULHU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
@@ -669,16 +649,15 @@
        (result (ash product 32))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-mulhsu ((rd ubyte5p)
                        (rs1 ubyte5p)
                        (rs2 ubyte5p)
-                       (stat stat32ip))
-  :returns (new-stat stat32ip)
+                       (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
@@ -695,16 +674,15 @@
        (result (ash product 32))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-div ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
@@ -722,16 +700,15 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-divu ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (rs2 ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('DIVU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
@@ -749,16 +726,15 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-rem ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
@@ -777,16 +753,15 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-remu ((rd ubyte5p)
                      (rs1 ubyte5p)
                      (rs2 ubyte5p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
@@ -805,8 +780,7 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -814,8 +788,8 @@
                    (rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the instructions with the @('OP') opcode
           [ISA:2.4.2] [ISA:12.1] [ISA:12.2]."
   (op-funct-case funct
@@ -836,16 +810,15 @@
                  :div (exec32-div rd rs1 rs2 stat)
                  :divu (exec32-divu rd rs1 rs2 stat)
                  :rem (exec32-rem rd rs1 rs2 stat)
-                 :remu (exec32-remu rd rs1 rs2 stat))
-  :hooks (:fix))
+                 :remu (exec32-remu rd rs1 rs2 stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-jal ((rd ubyte5p)
                     (imm ubyte20p)
                     (pc ubyte32p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('JAL') instruction [ISA:2.5.1]."
   :long
   (xdoc::topstring
@@ -868,8 +841,7 @@
        (next-pc (+ pc 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -877,8 +849,8 @@
                      (rs1 ubyte5p)
                      (imm ubyte12p)
                      (pc ubyte32p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('JALR') instruction [ISA:2.5.1]."
   :long
   (xdoc::topstring
@@ -901,8 +873,7 @@
        (next-pc (+ (ubyte32-fix pc) 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -910,8 +881,8 @@
                     (rs2 ubyte5p)
                     (imm ubyte12p)
                     (pc ubyte32p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BEQ') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -936,8 +907,7 @@
        (stat (if (= rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -945,8 +915,8 @@
                     (rs2 ubyte5p)
                     (imm ubyte12p)
                     (pc ubyte32p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BNE') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -971,8 +941,7 @@
        (stat (if (/= rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -980,8 +949,8 @@
                     (rs2 ubyte5p)
                     (imm ubyte12p)
                     (pc ubyte32p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BLT') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -1006,8 +975,7 @@
        (stat (if (< rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1015,8 +983,8 @@
                      (rs2 ubyte5p)
                      (imm ubyte12p)
                      (pc ubyte32p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BLTU') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -1041,8 +1009,7 @@
        (stat (if (< rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1050,8 +1017,8 @@
                     (rs2 ubyte5p)
                     (imm ubyte12p)
                     (pc ubyte32p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BGE') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -1076,8 +1043,7 @@
        (stat (if (>= rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1085,8 +1051,8 @@
                      (rs2 ubyte5p)
                      (imm ubyte12p)
                      (pc ubyte32p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('BGEU') instruction [ISA:2.5.2]."
   :long
   (xdoc::topstring
@@ -1111,8 +1077,7 @@
        (stat (if (>= rs1-operand rs2-operand)
                  (write32-pc target-pc stat)
                (inc32-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1121,8 +1086,8 @@
                        (rs2 ubyte5p)
                        (imm ubyte12p)
                        (pc ubyte32p)
-                       (stat stat32ip))
-  :returns (new-stat stat32ip)
+                       (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the instructions with the @('BRANCH') opcode
           [ISA:2.5.2]."
   (branch-funct-case funct
@@ -1131,12 +1096,11 @@
                      :blt (exec32-blt rs1 rs2 imm pc stat)
                      :bltu (exec32-bltu rs1 rs2 imm pc stat)
                      :bge (exec32-bge rs1 rs2 imm pc stat)
-                     :bgeu (exec32-bgeu rs1 rs2 imm pc stat))
-  :hooks (:fix))
+                     :bgeu (exec32-bgeu rs1 rs2 imm pc stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eff32-addr ((rs1 ubyte5p) (imm ubyte12p) (stat stat32ip))
+(define eff32-addr ((rs1 ubyte5p) (imm ubyte12p) (stat stat32p))
   :returns (addr integerp)
   :short "Effective address for a load or store instruction [ISA:2.6]."
   :long
@@ -1149,16 +1113,15 @@
      use the low 32 bits of this integer."))
   (b* ((base (read32-xreg-unsigned rs1 stat))
        (offset (loghead 32 (logext 12 (ubyte12-fix imm)))))
-    (+ base offset))
-  :hooks (:fix))
+    (+ base offset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lb ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LB') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1172,16 +1135,15 @@
        (result (loghead 32 (logext 8 (read32-mem-ubyte8 addr stat))))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lbu ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte12p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LBU') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1195,16 +1157,15 @@
        (result (read32-mem-ubyte8 addr stat))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lh ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LH') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1220,16 +1181,15 @@
        (result (loghead 32 (logext 16 (read32-mem-ubyte16-lendian addr stat))))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lhu ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte12p)
-                    (stat stat32ip))
-  :returns (new-stat stat32ip)
+                    (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LHU') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1245,16 +1205,15 @@
        (result (read32-mem-ubyte16-lendian addr stat))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-lw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('LW') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1269,8 +1228,7 @@
        (result (read32-mem-ubyte32-lendian addr stat))
        (stat (write32-xreg rd result stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1278,8 +1236,8 @@
                      (rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat stat32ip))
-  :returns (new-stat stat32ip)
+                     (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the instructions with the @('LOAD') opcode [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1293,16 +1251,15 @@
                    :lhu (exec32-lhu rd rs1 imm stat)
                    :lw (exec32-lw rd rs1 imm stat)
                    :lwu (error32 stat)
-                   :ld (error32 stat))
-  :hooks (:fix))
+                   :ld (error32 stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sb ((rs1 ubyte5p)
                    (rs2 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SB') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1315,16 +1272,15 @@
        (val (loghead 8 (read32-xreg-unsigned rs2 stat)))
        (stat (write32-mem-ubyte8 addr val stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sh ((rs1 ubyte5p)
                    (rs2 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SH') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1339,16 +1295,15 @@
        (val (loghead 16 (read32-xreg-unsigned rs2 stat)))
        (stat (write32-mem-ubyte16-lendian addr val stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-sw ((rs1 ubyte5p)
                    (rs2 ubyte5p)
                    (imm ubyte12p)
-                   (stat stat32ip))
-  :returns (new-stat stat32ip)
+                   (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the @('SW') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1363,8 +1318,7 @@
        (val (read32-xreg-unsigned rs2 stat))
        (stat (write32-mem-ubyte32-lendian addr val stat))
        (stat (inc32-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1372,8 +1326,8 @@
                       (rs1 ubyte5p)
                       (rs2 ubyte5p)
                       (imm ubyte12p)
-                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+                      (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of the instructions with the @('STORE') opcode [ISA:2.6]."
   :long
   (xdoc::topstring
@@ -1383,21 +1337,20 @@
                     :sb (exec32-sb rs1 rs2 imm stat)
                     :sh (exec32-sh rs1 rs2 imm stat)
                     :sw (exec32-sw rs1 rs2 imm stat)
-                    :sd (error32 stat))
-  :hooks (:fix))
+                    :sd (error32 stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec32-instr ((instr instrp)
                       (pc ubyte32p)
-                      (stat stat32ip))
-  :returns (new-stat stat32ip)
+                      (stat stat32p))
+  :returns (new-stat stat32p)
   :short "Semantics of instructions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the error flag for the RV64I instructions
-     because here we are in RV32I mode."))
+    "We set the error flag for the 64-bit instructions
+     because here we are in 32-bit mode mode."))
   (instr-case instr
               :op-imm (exec32-op-imm instr.funct
                                      instr.rd
@@ -1449,5 +1402,4 @@
                                    instr.rs1
                                    instr.rs2
                                    instr.imm
-                                   stat))
-  :hooks (:fix))
+                                   stat)))

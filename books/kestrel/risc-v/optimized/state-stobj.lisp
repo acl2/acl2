@@ -184,8 +184,8 @@
               (stat->pc stat)
               (stat->memory stat)
               (stat->error stat))
-  :guard-hints (("Goal" :in-theory (enable stat1-memory-p-to-ubyte8-listp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable stat1-memory-p-to-ubyte8-listp
+                                           (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

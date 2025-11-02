@@ -229,6 +229,19 @@
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
 
+(defthm bvlt-of-bvcat-arg2-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size (bvcat highsize x lowsize y) k)
+                  ;;redid conc
+                  (boolor (bvlt highsize x (slice (+ -1 size) lowsize k))
+                          (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
+                                   (bvlt lowsize y k))))))
+
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
                 (NATP HIGHSIZE)
@@ -334,6 +347,19 @@
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
+
+(defthm bvlt-of-bvcat-arg3-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size k (bvcat highsize x lowsize y))
+                  ;redid conc
+                  (boolor (bvlt highsize (slice (+ -1 size) lowsize k) x)
+                          (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
+                                   (bvlt lowsize k y))))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen

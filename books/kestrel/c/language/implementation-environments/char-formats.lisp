@@ -14,10 +14,7 @@
 (include-book "uchar-formats")
 (include-book "schar-formats")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,7 +58,7 @@
   (if (char-format->signedp char-format)
       (schar-format->max schar-format uchar-format)
     (uchar-format->max uchar-format))
-  :hooks (:fix)
+
   ///
 
   (defret char-format->max-type-prescription
@@ -88,7 +85,7 @@
   (if (char-format->signedp char-format)
       (schar-format->min schar-format uchar-format)
     0)
-  :hooks (:fix)
+
   ///
 
   (defret char-format->min-type-prescription

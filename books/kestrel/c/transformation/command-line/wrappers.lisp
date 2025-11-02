@@ -98,7 +98,7 @@
        ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
-       (c$::input-files :files ,files
+       (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
@@ -128,14 +128,14 @@
        ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
-       (c$::input-files :files ,files
+       (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ;; :preprocess-args ; todo
                         :gcc ,gcc)
-       (c2c::simpadd0 *old-const*
-                      *new-const*
+       (c2c::simpadd0 :const-old *old-const*
+                      :const-new *new-const*
                       ;; Pass through all other args (currently, none):
                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
@@ -158,7 +158,7 @@
        ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
-       (c$::input-files :files ,files
+       (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess

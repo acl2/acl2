@@ -31,13 +31,12 @@
                   (not (zp limit))
                   (compustatep compst)
                   (equal eval (exec-expr-pure e compst))
-                  (expr-valuep eval)
-                  (equal eval1 (apconvert-expr-value eval))
-                  (expr-valuep eval1))
+                  (expr-valuep eval))
              (equal (exec-expr e compst fenv limit)
-                    (mv eval1 compst)))
+                    (mv eval compst)))
     :expand (exec-expr e compst fenv limit)
     :enable (expr-purep
+             exec-expr-pure
              binop-purep))
 
   (defval *atc-exec-expr-when-pure-rules*

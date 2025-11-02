@@ -9,22 +9,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
 
-(include-book "features")
-(include-book "states64")
+(include-book "states")
 
-(include-book "../specification/instructions")
+(include-book "../../specification/instructions")
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
+
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -33,18 +34,22 @@
 (defrulel dab-digit-list-of-256-when-ubyte8-listp
   (implies (ubyte8-listp x)
            (acl2::dab-digit-listp 256 x))
-  :enable (ubyte8-listp ubyte8p acl2::dab-digitp))
+  :induct t
+  :enable (ubyte8-listp
+           ubyte8p
+           acl2::dab-digitp
+           unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ semantics64
-  :parents (rv64im)
+(defxdoc+ rv64im-le-semantics
+  :parents (specialized-rv64im-le)
   :short "Semantics of instructions for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define state-transforming functions that model
-     the effect of each instruction on the RV64I state.")
+     the effect of each instruction on the state.")
    (xdoc::p
     "For now we only support little endian access to memory,
      in load and store instructions.
@@ -74,8 +79,7 @@
        (result (+ rs1-operand imm-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,8 +105,7 @@
        (result (if (< rs1-operand imm-operand) 1 0))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,8 +131,7 @@
        (result (if (< rs1-operand imm-operand) 1 0))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,8 +155,7 @@
        (result (logand rs1-operand imm-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,8 +179,7 @@
        (result (logior rs1-operand imm-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,8 +203,7 @@
        (result (logxor rs1-operand imm-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,8 +221,7 @@
                      :sltiu (exec64-sltiu rd rs1 imm stat)
                      :andi (exec64-andi rd rs1 imm stat)
                      :ori (exec64-ori rd rs1 imm stat)
-                     :xori (exec64-xori rd rs1 imm stat))
-  :hooks (:fix))
+                     :xori (exec64-xori rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,8 +245,7 @@
        (result (+ rs1-operand imm-operand))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,8 +258,7 @@
   :short "Semantics of the non-shift instructions with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
   (op-imm-32-funct-case funct
-                        :addiw (exec64-addiw rd rs1 imm stat))
-  :hooks (:fix))
+                        :addiw (exec64-addiw rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -285,8 +281,7 @@
        (result (ash rs1-operand shift-amount))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,8 +305,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,8 +329,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -351,8 +344,7 @@
   (op-imms-funct-case funct
                       :slli (exec64-slli rd rs1 imm stat)
                       :srli (exec64-srli rd rs1 imm stat)
-                      :srai (exec64-srai rd rs1 imm stat))
-  :hooks (:fix))
+                      :srai (exec64-srai rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,8 +367,7 @@
        (result (ash rs1-operand shift-amount))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,8 +391,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,8 +415,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,8 +430,7 @@
   (op-imms-32-funct-case funct
                          :slliw (exec64-slliw rd rs1 imm stat)
                          :srliw (exec64-srliw rd rs1 imm stat)
-                         :sraiw (exec64-sraiw rd rs1 imm stat))
-  :hooks (:fix))
+                         :sraiw (exec64-sraiw rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,8 +450,7 @@
   (b* ((result (ash (ubyte20-fix imm) 12))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,8 +476,7 @@
        (result (+ (ubyte64-fix pc) offset))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,8 +497,7 @@
        (result (+ rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,8 +518,7 @@
        (result (- rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -558,8 +542,7 @@
        (result (if (< rs1-operand rs2-operand) 1 0))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -583,8 +566,7 @@
        (result (if (< rs1-operand rs2-operand) 1 0))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,8 +588,7 @@
        (result (logand rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,8 +610,7 @@
        (result (logior rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -652,8 +632,7 @@
        (result (logxor rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -677,8 +656,7 @@
        (result (ash rs1-operand shift-amount))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -703,8 +681,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -730,8 +707,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -752,8 +728,7 @@
        (result (* rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,8 +752,7 @@
        (result (ash product 64))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -802,8 +776,7 @@
        (result (ash product 64))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -828,8 +801,7 @@
        (result (ash product 64))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -855,8 +827,7 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,8 +853,7 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -910,8 +880,7 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -938,8 +907,7 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -969,8 +937,7 @@
                  :div (exec64-div rd rs1 rs2 stat)
                  :divu (exec64-divu rd rs1 rs2 stat)
                  :rem (exec64-rem rd rs1 rs2 stat)
-                 :remu (exec64-remu rd rs1 rs2 stat))
-  :hooks (:fix))
+                 :remu (exec64-remu rd rs1 rs2 stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,8 +959,7 @@
        (result (+ rs1-operand rs2-operand))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1014,8 +980,7 @@
        (result (- rs1-operand rs2-operand))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1040,8 +1005,7 @@
        (result (ash rs1-operand shift-amount))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1067,8 +1031,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1094,8 +1057,7 @@
        (result (ash rs1-operand (- shift-amount)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1117,8 +1079,7 @@
        (result (* rs1-operand rs2-operand))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1144,8 +1105,7 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1171,8 +1131,7 @@
                  (truncate rs1-operand rs2-operand)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1199,8 +1158,7 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1227,8 +1185,7 @@
                  (rem rs1-operand rs2-operand)))
        (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1250,8 +1207,7 @@
                     :divw (exec64-divw rd rs1 rs2 stat)
                     :divuw (exec64-divuw rd rs1 rs2 stat)
                     :remw (exec64-remw rd rs1 rs2 stat)
-                    :remuw (exec64-remuw rd rs1 rs2 stat))
-  :hooks (:fix))
+                    :remuw (exec64-remuw rd rs1 rs2 stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1282,8 +1238,7 @@
        (next-pc (+ pc 4))
        (stat (write64-xreg rd next-pc stat))
        (stat (write64-pc target-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1315,8 +1270,7 @@
        (next-pc (+ (ubyte64-fix pc) 4))
        (stat (write64-xreg rd next-pc stat))
        (stat (write64-pc target-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1350,8 +1304,7 @@
        (stat (if (= rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1385,8 +1338,7 @@
        (stat (if (/= rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1420,8 +1372,7 @@
        (stat (if (< rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1455,8 +1406,7 @@
        (stat (if (< rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1490,8 +1440,7 @@
        (stat (if (>= rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1525,8 +1474,7 @@
        (stat (if (>= rs1-operand rs2-operand)
                  (write64-pc target-pc stat)
                (inc64-pc stat))))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1545,8 +1493,7 @@
                      :blt (exec64-blt rs1 rs2 imm pc stat)
                      :bltu (exec64-bltu rs1 rs2 imm pc stat)
                      :bge (exec64-bge rs1 rs2 imm pc stat)
-                     :bgeu (exec64-bgeu rs1 rs2 imm pc stat))
-  :hooks (:fix))
+                     :bgeu (exec64-bgeu rs1 rs2 imm pc stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1563,8 +1510,7 @@
      use the low 64 bits of this integer."))
   (b* ((base (read64-xreg-unsigned rs1 stat))
        (offset (loghead 64 (logext 12 (ubyte12-fix imm)))))
-    (+ base offset))
-  :hooks (:fix))
+    (+ base offset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1586,8 +1532,7 @@
        (result (loghead 64 (logext 8 (read64-mem-ubyte8 addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1609,8 +1554,7 @@
        (result (read64-mem-ubyte8 addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1634,8 +1578,7 @@
        (result (loghead 64 (logext 16 (read64-mem-ubyte16-lendian addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1659,8 +1602,7 @@
        (result (read64-mem-ubyte16-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1684,8 +1626,7 @@
        (result (loghead 64 (logext 32 (read64-mem-ubyte32-lendian addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1709,8 +1650,7 @@
        (result (read64-mem-ubyte32-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1733,8 +1673,7 @@
        (result (read64-mem-ubyte64-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1753,8 +1692,7 @@
                    :lhu (exec64-lhu rd rs1 imm stat)
                    :lw (exec64-lw rd rs1 imm stat)
                    :lwu (exec64-lwu rd rs1 imm stat)
-                   :ld (exec64-ld rd rs1 imm stat))
-  :hooks (:fix))
+                   :ld (exec64-ld rd rs1 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1775,8 +1713,7 @@
        (val (loghead 8 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte8 addr val stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1799,8 +1736,7 @@
        (val (loghead 16 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte16-lendian addr val stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1823,8 +1759,7 @@
        (val (loghead 32 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte32-lendian addr val stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1847,8 +1782,7 @@
        (val (read64-xreg-unsigned rs2 stat))
        (stat (write64-mem-ubyte64-lendian addr val stat))
        (stat (inc64-pc stat)))
-    stat)
-  :hooks (:fix))
+    stat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1864,8 +1798,7 @@
                     :sb (exec64-sb rs1 rs2 imm stat)
                     :sh (exec64-sh rs1 rs2 imm stat)
                     :sw (exec64-sw rs1 rs2 imm stat)
-                    :sd (exec64-sd rs1 rs2 imm stat))
-  :hooks (:fix))
+                    :sd (exec64-sd rs1 rs2 imm stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1877,8 +1810,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the error flag for the RV32I shift instructions,
-     because here we are in RV64I mode."))
+    "We set the error flag for the 32-bit shift instructions,
+     because here we are in 64-bit mode."))
   (instr-case instr
               :op-imm (exec64-op-imm instr.funct
                                      instr.rd
@@ -1942,5 +1875,4 @@
                                    instr.rs1
                                    instr.rs2
                                    instr.imm
-                                   stat))
-  :hooks (:fix))
+                                   stat)))

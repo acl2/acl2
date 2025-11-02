@@ -183,6 +183,67 @@
 
 (test-parse-fail
  parse-unary-expression
+ "_Alignof y")
+
+(test-parse
+ parse-unary-expression
+ "_Alignof y"
+ :gcc t
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof(int)"
+ :cond (expr-case ast :alignof))
+
+(test-parse-fail
+ parse-unary-expression
+ "__alignof(int)")
+
+(test-parse-fail
+ parse-unary-expression
+ "__alignof__(int)")
+
+(test-parse
+ parse-unary-expression
+ "_Alignof (x+y)"
+ :gcc t
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "__alignof__ (_Atomic(int))"
+ :gcc t
+ :cond (expr-case ast :alignof))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof (var_or_tydef)"
+ :gcc t
+ :cond (expr-case ast :alignof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "__alignof(also(ambig))"
+ :gcc t
+ :cond (expr-case ast :alignof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "__alignof__(x).m"
+ :gcc t
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :member)))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof(x)->m"
+ :gcc t
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :memberp)))
+
+(test-parse-fail
+ parse-unary-expression
  "&&label")
 
 (test-parse
@@ -1212,4 +1273,21 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-translation-unit
  ""
+ :gcc t)
+
+(test-parse
+ parse-translation-unit
+ "int foo(x)
+  int x;
+{
+  return x;
+}
+")
+
+(test-parse
+ parse-translation-unit
+ "void f(int x) {
+ __alignof__ x;
+}
+"
  :gcc t)

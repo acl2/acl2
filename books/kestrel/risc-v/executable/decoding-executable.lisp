@@ -25,7 +25,7 @@
 (local (include-book "kestrel/fty/ubyte5-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte6-ihs-theorems" :dir :system))
 
-(acl2::controlled-configuration)
+(acl2::controlled-configuration :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,6 +579,7 @@
              nil))
          (instr-jal rd imm)))
       (t nil)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :hooks (:fix)
 
   ///

@@ -19,8 +19,9 @@
 (local (include-book "integer-length"))
 (local (include-book "expt"))
 (local (include-book "times"))
+(local (include-book "mod"))
 
-;; See also lg.lisp.
+;; See also integer-length.lisp and lg.lisp.
 
 (defthm integerp-of-ceiling-of-lg
   (integerp (ceiling-of-lg x)))
@@ -118,6 +119,35 @@
   :hints (("Goal"
            :in-theory (enable integer-length-of-+-of--1 ceiling-of-lg expt-of-+))))
 
+;move
+(local
+ (defthm integerp-of-*-of-/-when-equal-of-0-and-mod
+   (implies (and  (equal 0 (mod x y))
+                  (integerp x)
+                  (posp y))
+            (integerp (* x (/ y))))))
+
+(defthm ceiling-of-lg-of-*-of-expt-of--
+  (implies (and (<= 0 i)                     ; gen?
+                (equal 0 (mod x (expt 2 i))) ; or else x/2^i is not an integer
+                (< 0 x)
+                (integerp x)
+                (integerp i))
+           (equal (ceiling-of-lg (* x (expt 2 (- i))))
+                  (- (ceiling-of-lg x) i)))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg integer-length-of-+-of--1 expt-of-+))))
+
+(defthm ceiling-of-lg-of-*-of-expt-when-negative
+  (implies (and (<= i 0) ; gen?
+                (equal 0 (mod x (expt 2 (- i)))) ; or else x*2^i is not an integer
+                (< 0 x)
+                (integerp x)
+                (integerp i))
+           (equal (ceiling-of-lg (* x (expt 2 i)))
+                  (+ (ceiling-of-lg x) i)))
+  :hints (("Goal" :use (:instance ceiling-of-lg-of-*-of-expt-of-- (i (- i)))
+                  :in-theory (disable ceiling-of-lg-of-*-of-expt-of--))))
+
 (defthm <-of-expt-2-of-ceiling-of-lg-same
   (implies (posp x)
            (equal (< x (expt 2 (ceiling-of-lg x)))
@@ -136,3 +166,39 @@
                 (integerp y))
            (< x (expt 2 (ceiling-of-lg y))))
   :hints (("Goal" :in-theory (enable ceiling-of-lg expt))))
+
+;; monotonicity
+(defthm <=-of-ceiling-of-lg-and-ceiling-of-lg
+  (implies (and (<= x y)
+                (natp x) ; gen?
+                (integerp y))
+           (<= (ceiling-of-lg x) (ceiling-of-lg y)))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg)
+           :cases ((equal 0 x)))))
+
+(defthm <=-of-ceiling-of-lg-and-ceiling-of-lg-linear
+  (implies (and (<= x y)
+                (natp x) ; gen?
+                (integerp y))
+           (<= (ceiling-of-lg x) (ceiling-of-lg y)))
+  :rule-classes :linear)
+
+(defthm expt-of-ceiling-of-lg-when-power-of-2p
+  (implies (power-of-2p x)
+           (equal (expt 2 (ceiling-of-lg x))
+                  x))
+  :hints (("Goal" :in-theory (enable power-of-2p
+                              ceiling-of-lg))))
+
+;; if x is a power of 2 we need the 1 extra bit
+(defthm unsigned-byte-p-of-+-of-1-and-ceiling-of-lg-same
+  (implies (natp x)
+           (unsigned-byte-p (+ 1 (ceiling-of-lg x)) x))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg
+                                     expt-of-+))))
+
+(defthm unsigned-byte-p-of-ceiling-of-lg-same
+  (implies (natp x)
+           (equal (unsigned-byte-p (ceiling-of-lg x) x)
+                  (not (power-of-2p x))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))

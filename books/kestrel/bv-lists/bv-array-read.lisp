@@ -13,12 +13,14 @@
 
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "unsigned-byte-listp-def")
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "unsigned-byte-listp"))
 
 ;; Read the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
@@ -29,9 +31,11 @@
 ;; STP.
 (defund bv-array-read (element-size len index data)
   (declare (xargs :guard (and (natp element-size)
-                              (natp len)
-                              (integerp index) ;todo: consider natp
-                              (true-listp data))
+                              (equal len (len data))
+                              (natp index)
+                              ;; (< index (len data)) ; todo uncomment but consider using the chopped index
+                              (unsigned-byte-listp element-size data) ; (true-listp data)
+                              )
                   :type-prescription (natp (bv-array-read element-size len index data))))
   (let* ((len (nfix len))
          (numbits (ceiling-of-lg len)) ;number of index bits needed
@@ -288,6 +292,8 @@
                   (bv-array-read arg1 arg2 0 arg4)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; When the index is < k, we discard all but the first k array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<
   (implies (and (syntaxp (quotep data))
                 (< index k) ; k is a free var
@@ -301,7 +307,8 @@
                   (bv-array-read element-size k index (take k data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-;; Discards array values at the end that cannot be accessed
+;; When the index is <= k, we discard all but the first k+1 array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<=
   (implies (and (syntaxp (quotep data))
                 (<= index k) ; k is a free var

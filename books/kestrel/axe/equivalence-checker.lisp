@@ -6699,7 +6699,7 @@
 
 ;; (local
 ;;   (defthm make-fns-array-for-nodes-return-type
-;;     (implies  (and (natp n)
+;;     (implies (and (natp n)
 ;;                    (natp max-nodenum)
 ;;                    (pseudo-dag-arrayp dag-array-name dag-array (+ 1 max-nodenum))
 ;;                    (fns-arrayp 'fns-array fns-array)

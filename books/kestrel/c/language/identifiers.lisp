@@ -65,13 +65,15 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred ident-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset ident-set
-  :short "Fixtype of sets of identifiers."
-  :elt-type ident
-  :elementp-of-nil nil
-  :pred ident-setp)
+(encapsulate
+  ()
+  (local (in-theory (enable (:e tau-system))))
+  (fty::defset ident-set
+    :short "Fixtype of sets of identifiers."
+    :elt-type ident
+    :elementp-of-nil nil
+    :pred ident-setp))

@@ -15,7 +15,7 @@
 
 (include-book "portcullis")
 (include-book "risc-v-rules")
-(include-book "kestrel/risc-v/specialized/states32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/states" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
@@ -28,7 +28,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund pc (stat)
-  (declare (xargs :guard (stat32ip stat)))
+  (declare (xargs :guard (stat32p stat)))
   (read32-pc stat))
 
 (defthmd read32-pc-becomes-pc
@@ -39,7 +39,7 @@
 (theory-invariant (incompatible (:rewrite read32-pc-becomes-pc) (:definition pc)))
 
 (defthm unsigned-byte-p-32-of-pc
-  (implies (stat32ip stat)
+  (implies (stat32p stat)
            (unsigned-byte-p 32 (pc stat)))
   :hints (("Goal" :in-theory (enable pc acl2::unsigned-byte-p-rewrite-ubyte32p))))
 
@@ -51,7 +51,7 @@
 
 (defund set-pc (pc stat)
   (declare (xargs :guard (and (integerp pc) ; tighten?
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (write32-pc pc stat))
 
 (defthmd write32-pc-becomes-set-pc

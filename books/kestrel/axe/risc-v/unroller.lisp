@@ -643,7 +643,7 @@
                               ;; Not position-independent, so the target is a concrete address:
                               (acl2::enquote target-offset)))
        (assumptions (append  `((equal (pc stat) ,target-address-term)
-                               (stat32ip stat)
+                               (stat32p stat)
                                )
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))

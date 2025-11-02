@@ -451,10 +451,9 @@
            (equal (logand x (bvchop m y))
                   (logand x y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
+           :in-theory (enable bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
                                    mod-expt-split FLOOR-WHEN-INTEGERP-OF-QUOTIENT
                                    )
-                           ())
            :expand ((LOGAND X (MOD Y (EXPT 2 M)))
                     (LOGAND X Y)
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))

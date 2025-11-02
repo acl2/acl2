@@ -49,6 +49,14 @@
      neither does the execution of the new construct,
      and the two return the same results.")
    (xdoc::p
+    "The theorems for identifier expressions (i.e. variables) and constants
+     are a bit different from the others,
+     because those expressions have no sub-expressions.
+     However, the form is fairly similar, given that difference.
+     The theorem for variables has an additional hypothesis about
+     the variable being in the computation state with a certain type,
+     which serves to establish the assertion about the type.")
+   (xdoc::p
     "The theorems make use of @(tsee b*) bindings
      to keep them more readable.
      The theorems include additional hypotheses, in some cases,
@@ -100,6 +108,75 @@
      for the old vs. new constructs.
      We always use the same initial computation state
      for old and new constructs."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-ident-congruence
+    (b* ((expr (c::expr-ident var))
+         ((mv old-eval old-compst) (c::exec-expr expr compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr expr compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval)))
+      (implies (and (not (c::errorp old-eval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    old-eval
+                    (equal (c::type-of-value old-val) (c::type-fix type)))))
+    :enable (c::exec-expr
+             c::exec-ident
+             c::compustate-has-var-with-type-p))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-const-congruence
+    (b* ((expr (c::expr-const const))
+         ((mv old-eval old-compst) (c::exec-expr expr compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr expr compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (iconst (c::const-int->get const))
+         (type (c::check-iconst iconst)))
+      (implies (and (equal (c::const-kind const) :int)
+                    (c::typep type)
+                    (not (c::errorp old-eval)))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    old-eval
+                    (equal (c::type-of-value old-val) type))))
+    :enable (c::exec-expr
+             c::exec-const
+             c::eval-const
+             c::eval-iconst
+             c::check-iconst
+             c::type-of-value)
+    :disable ((:e tau-system))) ; for speed
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-const-congruence-pure
+    (b* ((expr (c::expr-const const))
+         (eval (c::exec-expr-pure expr compst))
+         (val (c::expr-value->value eval))
+         (iconst (c::const-int->get const))
+         (type (c::check-iconst iconst)))
+      (implies (and (equal (c::const-kind const) :int)
+                    (c::typep type)
+                    (not (c::errorp eval)))
+               (and eval
+                    (equal (c::type-of-value val) type))))
+    :enable (c::exec-expr-pure
+             c::exec-const
+             c::eval-const
+             c::eval-iconst
+             c::check-iconst
+             c::type-of-value)
+    :disable ((:e tau-system))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,6 +579,7 @@
           (:instance c::not-asg-when-exec-expr-pure-not-error
                      (expr expr) (compst compst)))
     :enable (c::exec-expr
+             c::exec-expr-pure
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::expr-valuep-when-expr-value-resultp-and-not-errorp))
@@ -532,8 +610,12 @@
                     (equal (c::init-type-of-init-value old-result)
                            (c::init-type-single type)))))
     :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
-             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
+             (c::exec-initer (c::initer-single new-expr) compst new-fenv limit)
+             (c::exec-expr old-expr compst old-fenv (+ -1 limit))
+             (c::exec-expr new-expr compst new-fenv (+ -1 limit)))
     :enable (c::exec-expr
+             c::exec-expr-pure
+             c::expr-purep
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
@@ -608,8 +690,12 @@
                     (set::in (c::type-option-of-stmt-value old-result)
                              (set::insert type nil)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
-             (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
+             (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit)
+             (c::exec-expr old-expr compst old-fenv (+ -1 limit))
+             (c::exec-expr new-expr compst new-fenv (+ -1 limit)))
     :enable (c::exec-expr
+             c::exec-expr-pure
+             c::expr-purep
              c::type-of-value
              c::apconvert-expr-value-when-not-array
              c::type-nonchar-integerp
@@ -1126,8 +1212,11 @@
              (c::errorp
               (mv-nth 0 (c::exec-initer
                          (c::initer-single expr) compst fenv limit))))
-    :expand (c::exec-initer (c::initer-single expr) compst fenv limit)
-    :enable c::exec-expr)
+    :expand ((c::exec-initer (c::initer-single expr) compst fenv limit)
+             (c::exec-expr expr compst fenv (+ -1 limit)))
+    :enable (c::exec-expr
+             c::exec-expr-pure
+             c::expr-purep))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1150,8 +1239,11 @@
                                       compst
                                       fenv
                                       limit))))
-    :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable c::exec-expr)
+    :expand ((c::exec-stmt (c::stmt-return expr) compst fenv limit)
+             (c::exec-expr expr compst fenv (+ -1 limit)))
+    :enable (c::exec-expr
+             c::exec-expr-pure
+             c::expr-purep))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -24,9 +24,7 @@
 (local (include-book "std/lists/last" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +78,8 @@
   (:pointer ((to type)))
   (:array ((of type)
            (size pos-option)))
-  :pred typep)
+  :pred typep
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,16 +88,18 @@
   :elt-type type
   :true-listp t
   :elementp-of-nil nil
-  :pred type-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset type-set
-  :short "Fixtype of sets of types."
-  :elt-type type
-  :elementp-of-nil nil
-  :pred type-setp)
+(encapsulate
+  ()
+  (local (in-theory (enable sfix)))
+  (fty::defset type-set
+    :short "Fixtype of sets of types."
+    :elt-type type
+    :elementp-of-nil nil
+    :pred type-setp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,16 +115,18 @@
   :elt-type type-option
   :true-listp t
   :elementp-of-nil t
-  :pred type-option-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred type-option-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset type-option-set
-  :short "Fixtype of sets of optional types."
-  :elt-type type-option
-  :elementp-of-nil t
-  :pred type-option-setp)
+(encapsulate
+  ()
+  (local (in-theory (enable sfix)))
+  (fty::defset type-option-set
+    :short "Fixtype of sets of optional types."
+    :elt-type type-option
+    :elementp-of-nil t
+    :pred type-option-setp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +137,8 @@
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil
-  :pred symbol-type-alistp)
+  :pred symbol-type-alistp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,8 +191,7 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred member-type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -197,7 +200,9 @@
   :returns (names ident-listp)
   :short "Lift @(tsee member-type->name) to lists."
   (member-type->name x)
+
   ///
+
   (fty::deffixequiv member-type-list->name-list
     :args ((x member-type-listp))))
 
@@ -233,8 +238,7 @@
        ((when (equal (ident-fix name)
                      (member-type->name (car members))))
         (member-type->type (car members))))
-    (member-type-lookup name (cdr members)))
-  :hooks (:fix))
+    (member-type-lookup name (cdr members))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,8 +256,7 @@
        ((when found) (member-type-list-option-none)))
     (member-type-list-option-some
      (cons (make-member-type :name name :type type)
-           members)))
-  :hooks (:fix))
+           members))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,11 +274,8 @@
        ((when found) (member-type-list-option-none)))
     (member-type-list-option-some
      (rcons (make-member-type :name name :type type)
-            members)))
-  :guard-hints (("Goal" :in-theory (enable rcons)))
-  ///
-  (fty::deffixequiv member-type-add-last
-    :hints (("Goal" :in-theory (enable rcons)))))
+            (member-type-list-fix members))))
+  :guard-hints (("Goal" :in-theory (enable rcons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,8 +310,7 @@
   :short "Check if a type is a signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type)
                   '(:schar :sshort :sint :slong :sllong))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,8 +319,7 @@
   :short "Check if a type is an unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type)
                   '(:uchar :ushort :uint :ulong :ullong))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,8 +328,7 @@
   :short "Check if a type is an integer type [C17:6.2.5/17]."
   (or (type-case type :char)
       (type-signed-integerp type)
-      (type-unsigned-integerp type))
-  :hooks (:fix))
+      (type-unsigned-integerp type)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -339,7 +336,9 @@
   :guard (type-listp x)
   :short "Check if a list of types consists of all integer types."
   (type-integerp x)
+
   ///
+
   (fty::deffixequiv type-integer-listp
     :args ((x type-listp))))
 
@@ -348,16 +347,14 @@
 (define type-realp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is a real type [C17:6.2.5/18]."
-  (type-integerp type)
-  :hooks (:fix))
+  (type-integerp type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-arithmeticp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
-  (type-realp type)
-  :hooks (:fix))
+  (type-realp type))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -365,7 +362,9 @@
   :guard (type-listp x)
   :short "Check if a list of types consists of all arithmetic types."
   (type-arithmeticp x)
+
   ///
+
   (fty::deffixequiv type-arithmetic-listp
     :args ((x type-listp))))
 
@@ -375,8 +374,7 @@
   :returns (yes/no booleanp)
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
-      (type-case type :pointer))
-  :hooks (:fix))
+      (type-case type :pointer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -397,8 +395,7 @@
        (not (type-case type :schar))
        (not (type-case type :uchar))
        (not (type-case type :sshort))
-       (not (type-case type :ushort)))
-  :hooks (:fix))
+       (not (type-case type :ushort))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -416,7 +413,7 @@
       (type-case type :slong)
       (type-case type :ullong)
       (type-case type :sllong))
-  :hooks (:fix)
+
   ///
 
   (defrule type-integerp-when-type-nonchar-integerp
@@ -433,7 +430,9 @@
   :short "Check if a list of types consists of
           all integer types except the plain @('char') type."
   (type-nonchar-integerp x)
+
   ///
+
   (fty::deffixequiv type-nonchar-integer-listp
     :args ((x type-listp))))
 
@@ -474,8 +473,7 @@
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
                                            type-signed-integerp
-                                           member-equal)))
-  :hooks (:fix))
+                                           member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,7 +531,7 @@
                                     typedef ~x0 not supported yet."
                                    tyspec.name)
                             (ec-call (type-fix :irrelevant))))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,7 +561,6 @@
      at some point in the future."))
   (tyname-to-type-aux (tyname->tyspec tyname)
                       (tyname->declor tyname))
-  :hooks (:fix)
 
   :prepwork
   ((define tyname-to-type-aux ((tyspec tyspecseqp) (declor obj-adeclorp))
@@ -587,8 +584,7 @@
                                 :size nil)))
      :measure (obj-adeclor-count declor)
      :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-     :verify-guards :after-returns
-     :hooks (:fix))))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +592,9 @@
   :result-type type-listp
   :short "Lift @(tsee tyname-to-type) to lists."
   (tyname-to-type x)
+
   ///
+
   (fty::deffixequiv type-name-list-to-type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,6 +611,7 @@
         (type-ulong)
         (type-sllong)
         (type-ullong))
+
   ///
 
   (defruled member-nonchar-integer-types-as-pred
@@ -647,8 +646,7 @@
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
                                            type-signed-integerp
-                                           member-equal)))
-  :hooks (:fix))
+                                           member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -678,8 +676,7 @@
           (str::implode (cdr (str::explode (symbol-name (type-kind type))))))))
     (pack char/short/int/long/llong '-bits))
   :prepwork
-  ((local (include-book "std/typed-lists/character-listp" :dir :system)))
-  :hooks (:fix))
+  ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -697,8 +694,7 @@
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
                                            type-signed-integerp
-                                           member-equal)))
-  :hooks (:fix))
+                                           member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -716,5 +712,4 @@
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
                                            type-signed-integerp
-                                           member-equal)))
-  :hooks (:fix))
+                                           member-equal))))

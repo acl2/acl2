@@ -32,7 +32,7 @@
     bvchop
     slice
     bvcat
-    ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - ffixme maybe we do want to trim reads of constant arrays?
+    ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - finally, trimming the read without trimming the array elements can cause the read to become ill-guarded ; todo: however, maybe we do want to trim reads of constant arrays (but that might lead to different-sized copies of the same array being generated)
     bvsx ;trying
     repeatbit))
 
@@ -197,4 +197,10 @@
     ;; logtail ; todo: uncomment?
     binary-+
     unary--
-    binary-*))
+    binary-*
+    ash))
+
+(defun convertible-to-bvp (term)
+  (declare (xargs :guard t)) ; could require pseudo-termp but that might take time to check
+  (and (consp term)
+       (member-eq (ffn-symb term) *functions-convertible-to-bv*)))

@@ -9,6 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "kestrel/risc-v/portcullis" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/portcullis" :dir :system)
 (include-book "kestrel/x86/portcullis" :dir :system)
 
 ;; Users of the RISC-V variant of Axe can use this "R" package for their books
@@ -20,8 +21,8 @@
 ;; packages into this package.
 
 (defconst *risc-v-symbols*
-  '(riscv::memory32i-fix
-    riscv::memory32ip
+  '(riscv32im-le::memory32-fix
+    riscv32im-le::memory32p
 
     riscv::ubyte5p
     riscv::ubyte5-fix
@@ -30,105 +31,105 @@
     riscv::ubyte32p
     riscv::ubyte32-fix
 
-    riscv::step32
-    riscv::step32n
-    riscv::step32n-base-1
-    riscv::step32n-base-2
-    riscv::step32n-unroll
+    riscv32im-le::step32
+    riscv32im-le::step32n
+    riscv32im-le::step32n-base-1
+    riscv32im-le::step32n-base-2
+    riscv32im-le::step32n-unroll
 
-    riscv::stat32ip
-    riscv::stat32i-fix
-    riscv::stat32i->xregs
+    riscv32im-le::stat32p
+    riscv32im-le::stat32-fix
+    riscv32im-le::stat32->xregs
 
-    riscv::xregs32i-fix
-    riscv::xregs32ip
+    riscv32im-le::xregs32-fix
+    riscv32im-le::xregs32p
 
-    riscv::read32-mem-ubyte8
-    riscv::write32-mem-ubyte8
-    riscv::read32-mem-ubyte32-lendian
-    riscv::write32-mem-ubyte32-lendian
+    riscv32im-le::read32-mem-ubyte8
+    riscv32im-le::write32-mem-ubyte8
+    riscv32im-le::read32-mem-ubyte32-lendian
+    riscv32im-le::write32-mem-ubyte32-lendian
 
-    riscv::read32-xreg-unsigned
-    riscv::read32-xreg-signed
-    riscv::write32-xreg
-    riscv::error32
-    riscv::error32p
-    riscv::read32-pc
-    riscv::write32-pc
+    riscv32im-le::read32-xreg-unsigned
+    riscv32im-le::read32-xreg-signed
+    riscv32im-le::write32-xreg
+    riscv32im-le::error32
+    riscv32im-le::error32p
+    riscv32im-le::read32-pc
+    riscv32im-le::write32-pc
 
-    riscv::exec32-instr
-    riscv::exec32-instr-base ; bad name
+    riscv32im-le::exec32-instr
+    riscv32im-le::exec32-instr-base ; bad name
 
-    riscv::exec32-add
-    riscv::exec32-addi
-    riscv::exec32-and
-    riscv::exec32-andi
-    riscv::exec32-auipc
-    riscv::exec32-beq
-    riscv::exec32-bge
-    riscv::exec32-bgeu
-    riscv::exec32-blt
-    riscv::exec32-bltu
-    riscv::exec32-bne
-    riscv::exec32-branch
-    riscv::exec32-div
-    riscv::exec32-divu
-    riscv::exec32-instr
-    riscv::exec32-jal
-    riscv::exec32-jalr
-    riscv::exec32-lb
-    riscv::exec32-lbu
-    riscv::exec32-lh
-    riscv::exec32-lhu
-    riscv::exec32-load
-    riscv::exec32-lui
-    riscv::exec32-lw
-    riscv::exec32-mul
-    riscv::exec32-mulh
-    riscv::exec32-mulhsu
-    riscv::exec32-mulhu
-    riscv::exec32-op
-    riscv::exec32-op-imm
-    riscv::exec32-op-imms
-    riscv::exec32-or
-    riscv::exec32-ori
-    riscv::exec32-rem
-    riscv::exec32-remu
-    riscv::exec32-sb
-    riscv::exec32-sh
-    riscv::exec32-sll
-    riscv::exec32-slli
-    riscv::exec32-slt
-    riscv::exec32-slti
-    riscv::exec32-sltiu
-    riscv::exec32-sltu
-    riscv::exec32-sra
-    riscv::exec32-srai
-    riscv::exec32-srl
-    riscv::exec32-srli
-    riscv::exec32-store
-    riscv::exec32-sub
-    riscv::exec32-sw
-    riscv::exec32-xor
-    riscv::exec32-xori
+    riscv32im-le::exec32-add
+    riscv32im-le::exec32-addi
+    riscv32im-le::exec32-and
+    riscv32im-le::exec32-andi
+    riscv32im-le::exec32-auipc
+    riscv32im-le::exec32-beq
+    riscv32im-le::exec32-bge
+    riscv32im-le::exec32-bgeu
+    riscv32im-le::exec32-blt
+    riscv32im-le::exec32-bltu
+    riscv32im-le::exec32-bne
+    riscv32im-le::exec32-branch
+    riscv32im-le::exec32-div
+    riscv32im-le::exec32-divu
+    riscv32im-le::exec32-instr
+    riscv32im-le::exec32-jal
+    riscv32im-le::exec32-jalr
+    riscv32im-le::exec32-lb
+    riscv32im-le::exec32-lbu
+    riscv32im-le::exec32-lh
+    riscv32im-le::exec32-lhu
+    riscv32im-le::exec32-load
+    riscv32im-le::exec32-lui
+    riscv32im-le::exec32-lw
+    riscv32im-le::exec32-mul
+    riscv32im-le::exec32-mulh
+    riscv32im-le::exec32-mulhsu
+    riscv32im-le::exec32-mulhu
+    riscv32im-le::exec32-op
+    riscv32im-le::exec32-op-imm
+    riscv32im-le::exec32-op-imms
+    riscv32im-le::exec32-or
+    riscv32im-le::exec32-ori
+    riscv32im-le::exec32-rem
+    riscv32im-le::exec32-remu
+    riscv32im-le::exec32-sb
+    riscv32im-le::exec32-sh
+    riscv32im-le::exec32-sll
+    riscv32im-le::exec32-slli
+    riscv32im-le::exec32-slt
+    riscv32im-le::exec32-slti
+    riscv32im-le::exec32-sltiu
+    riscv32im-le::exec32-sltu
+    riscv32im-le::exec32-sra
+    riscv32im-le::exec32-srai
+    riscv32im-le::exec32-srl
+    riscv32im-le::exec32-srli
+    riscv32im-le::exec32-store
+    riscv32im-le::exec32-sub
+    riscv32im-le::exec32-sw
+    riscv32im-le::exec32-xor
+    riscv32im-le::exec32-xori
 
-    riscv::inc32-pc
+    riscv32im-le::inc32-pc
 
-    riscv::eff32-addr
-    riscv::equal-of-stat32i
+    riscv32im-le::eff32-addr
+    riscv32im-le::equal-of-stat32
 
-    riscv::change-stat32i
-    riscv::stat32i->memory
+    riscv32im-le::change-stat32
+    riscv32im-le::stat32->memory
 
     ;; var names:
-    riscv::stat
-    riscv::instr
-    riscv::instr.kind
-    riscv::instr.funct
-    riscv::instr.rd
-    riscv::instr.rs1
-    riscv::instr.rs2
-    riscv::instr.imm
+    riscv32im-le::stat
+    riscv32im-le::instr
+    riscv32im-le::instr.kind
+    riscv32im-le::instr.funct
+    riscv32im-le::instr.rd
+    riscv32im-le::instr.rs1
+    riscv32im-le::instr.rs2
+    riscv32im-le::instr.imm
     ))
 
 (defconst *risc-v-symbols-in-acl2-package*

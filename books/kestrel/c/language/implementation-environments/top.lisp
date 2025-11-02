@@ -24,10 +24,7 @@
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,7 +114,7 @@
   (uchar-format->size
    (char+short+int+long+llong+bool-format->uchar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->char-size-type-prescription
@@ -141,7 +138,7 @@
   (uchar-format->max
    (char+short+int+long+llong+bool-format->uchar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->uchar-max-type-prescription
@@ -167,7 +164,7 @@
     (ienv->char+short+int+long+llong+bool-format ienv))
    (char+short+int+long+llong+bool-format->uchar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->schar-max-type-prescription
@@ -193,7 +190,7 @@
     (ienv->char+short+int+long+llong+bool-format ienv))
    (char+short+int+long+llong+bool-format->uchar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->schar-min-type-prescription
@@ -221,7 +218,7 @@
     (ienv->char+short+int+long+llong+bool-format ienv))
    (char+short+int+long+llong+bool-format->schar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->char-max-type-prescription
@@ -249,7 +246,7 @@
     (ienv->char+short+int+long+llong+bool-format ienv))
    (char+short+int+long+llong+bool-format->schar
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
+
   ///
 
   (defret ienv->char-min-type-prescription
@@ -269,7 +266,6 @@
   (integer-format->bit-size
    (char+short+int+long+llong+bool-format->short
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -299,7 +295,6 @@
   :short "Number of bytes of unsigned and signed @('short') objects."
   (/ (ienv->short-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix)
 
   ///
 
@@ -316,7 +311,6 @@
   (integer-format->bit-size
    (char+short+int+long+llong+bool-format->int
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -346,7 +340,6 @@
   :short "Number of bytes of unsigned and signed @('int') objects."
   (/ (ienv->int-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix)
 
   ///
 
@@ -363,7 +356,6 @@
   (integer-format->bit-size
    (char+short+int+long+llong+bool-format->long
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -393,7 +385,6 @@
   :short "Number of bytes of unsigned and signed @('long') objects."
   (/ (ienv->long-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix)
 
   ///
 
@@ -410,7 +401,6 @@
   (integer-format->bit-size
    (char+short+int+long+llong+bool-format->llong
     (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -440,7 +430,6 @@
   :short "Number of bytes of unsigned and signed @('long long') objects."
   (/ (ienv->llong-bit-size ienv)
      (ienv->char-size ienv))
-  :hooks (:fix)
 
   ///
 
@@ -459,8 +448,7 @@
        (ienv->char+short+int+long+llong+bool-format ienv)))
      (uchar-format->size
       (char+short+int+long+llong+bool-format->uchar
-       (ienv->char+short+int+long+llong+bool-format ienv))))
-  :hooks (:fix))
+       (ienv->char+short+int+long+llong+bool-format ienv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -469,8 +457,7 @@
   :short "Number of bytes of @('_Bool') objects."
   (bool-format->byte-size
    (char+short+int+long+llong+bool-format->bool
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -479,8 +466,7 @@
   :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
   (integer-format->unsigned-max
    (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,8 +475,7 @@
   :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
   (integer-format->signed-max
    (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -499,8 +484,7 @@
   :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
   (integer-format->signed-min
    (char+short+int+long+llong+bool-format->short
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -509,8 +493,7 @@
   :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
   (integer-format->unsigned-max
    (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,8 +502,7 @@
   :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
   (integer-format->signed-max
    (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,8 +511,7 @@
   :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
   (integer-format->signed-min
    (char+short+int+long+llong+bool-format->int
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -539,8 +520,7 @@
   :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
   (integer-format->unsigned-max
    (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -549,8 +529,7 @@
   :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
   (integer-format->signed-max
    (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,8 +538,7 @@
   :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
   (integer-format->signed-min
    (char+short+int+long+llong+bool-format->long
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,8 +547,7 @@
   :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
   (integer-format->unsigned-max
    (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,8 +556,7 @@
   :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
   (integer-format->signed-max
    (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -589,8 +565,7 @@
   :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
   (integer-format->signed-min
    (char+short+int+long+llong+bool-format->llong
-    (ienv->char+short+int+long+llong+bool-format ienv)))
-  :hooks (:fix))
+    (ienv->char+short+int+long+llong+bool-format ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,8 +574,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->uchar-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->uchar-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,8 +583,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (ifix val))
-       (<= (ifix val) (ienv->schar-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->schar-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -619,8 +592,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (ifix val))
-       (<= (ifix val) (ienv->char-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->char-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,8 +601,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ushort-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->ushort-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -639,8 +610,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sshort-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->sshort-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -649,8 +619,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->uint-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->uint-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -659,8 +628,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sint-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->sint-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,8 +637,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ulong-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->ulong-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -679,8 +646,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (ifix val))
-       (<= (ifix val) (ienv->slong-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->slong-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -689,8 +655,7 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ullong-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->ullong-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -699,5 +664,4 @@
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sllong-max ienv)))
-  :hooks (:fix))
+       (<= (ifix val) (ienv->sllong-max ienv))))

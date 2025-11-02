@@ -417,5 +417,4 @@
                                               :sd (feat-64p feat))
                             (implies (feat-embedp feat)
                                      (and (ubyte4p instr.rs1)
-                                          (ubyte4p instr.rs2))))))
-  :hooks (:fix))
+                                          (ubyte4p instr.rs2)))))))
