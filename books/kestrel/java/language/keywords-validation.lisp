@@ -13,6 +13,8 @@
 (include-book "keywords")
 (include-book "grammar")
 
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ keywords-grammar-validation
@@ -85,7 +87,6 @@
     (abnf::tree-nonleaf (abnf::rulename "reserved-keyword")
                         (list (list (abnf::tree-leafterm keyword)))))
   :guard-hints (("Goal" :in-theory (enable reserved-keywordp)))
-  :hooks (:fix)
 
   ///
 
@@ -117,7 +118,6 @@
     (abnf::tree-nonleaf (abnf::rulename "contextual-keyword")
                         (list (list (abnf::tree-leafterm keyword)))))
   :guard-hints (("Goal" :in-theory (enable contextual-keywordp)))
-  :hooks (:fix)
 
   ///
 
@@ -208,7 +208,8 @@
               abnf::tree-nonleaf->rulename?
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
-              acl2::equal-len-const)
+              acl2::equal-len-const
+              nfix)
      :prep-books
      ((include-book "kestrel/utilities/lists/len-const-theorems" :dir :system)
       (include-book "std/lists/top" :dir :system)))))
@@ -257,7 +258,8 @@
               abnf::tree-nonleaf->rulename?
               abnf::tree-nonleaf->branches
               abnf::tree-leafterm->get
-              acl2::equal-len-const)
+              acl2::equal-len-const
+              nfix)
      :prep-books
      ((include-book "kestrel/utilities/lists/len-const-theorems" :dir :system)
       (include-book "std/lists/top" :dir :system)))))
