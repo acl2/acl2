@@ -3921,8 +3921,9 @@
 (defun normalized-evaluator-cl-set (ev wrld)
   (normalize-alleged-evaluator-clause-set
    (shallow-clausify
-    (mv-let (sym x)
+    (mv-let (sym x origins)
             (constraint-info ev wrld)
+            (declare (ignore origins)) ; Picasso!
             (assert$ (not (unknown-constraints-p x))
                      (cond
                       (sym (conjoin x))
@@ -4637,32 +4638,93 @@
                     (t (cons fn ans))))
             ign))))
 
-(defun constraints-list (fns wrld acc seen)
-  (cond ((endp fns) acc)
+(defun constraint-lst-etc-union1 (data1 origins1 data2 origins2)
+  (declare (xargs :guard (and (true-listp data1)
+                              (true-listp origins1)
+                              (true-listp data2))))
+  (cond ((endp data1) (mv data2 origins2))
+        ((member-equal (car data1) data2)
+         (constraint-lst-etc-union1 (cdr data1) (cdr origins1)
+                                    data2 origins2))
+        (t (mv-let (new-data2 new-origins2)
+             (constraint-lst-etc-union1 (cdr data1) (cdr origins1)
+                                        data2 origins2)
+             (mv (cons (car data1) new-data2)
+                 (cons (car origins1) new-origins2))))))
+
+(defun constraint-lst-etc-union (pair1 pair2)
+
+; Each pair is an ordinary constraint-lst-etc pair.  We union the cars and
+; preserve the origins of each constraint.  (When a constraint from pair1 is
+; found in pair2, we use the pair2 origin.)
+
+  (declare (xargs :guard (and (consp pair1)
+                              (consp pair2)
+                              (true-listp (car pair1))
+                              (true-listp (cdr pair1))
+                              (true-listp (car pair2)))))
+  (mv-let (data origins)
+    (constraint-lst-etc-union1 (car pair1) (cdr pair1) (car pair2) (cdr pair2))
+    (cons data origins)))
+
+(defun constraints-list (fns wrld constraint-lst-etc-pair seen)
+
+; Fns is a list of function names (quite possibly from a mutual-recursion event
+; but also just subversives from an encapsulate).  We gather up all the
+; constraints for all those functions and accumulate them into the
+; constraint-lst-etc pair constraint-lst-etc-pair.  We return the final pair.
+
+  (cond ((endp fns) constraint-lst-etc-pair)
         (t (mv-let
-            (name x)
-            (constraint-info (car fns) wrld)
-            (cond ((unknown-constraints-p x)
-                   x)
-                  (name (cond ((member-eq name seen)
-                               (constraints-list (cdr fns) wrld acc seen))
-                              (t (constraints-list (cdr fns)
-                                                   wrld
-                                                   (union-equal x acc)
-                                                   (cons name seen)))))
-                  (t (constraints-list (cdr fns) wrld (cons x acc) seen)))))))
+             (name x origins)
+             (constraint-info (car fns) wrld)
+             (cond ((unknown-constraints-p x)
+; If x indicates we don't know all the constraints, we ignore
+; constraint-lst-etc-pair and return a constraint-lst-etc pair that indicates
+; the unknown constraints.
+                    (cons x nil))
+                   (name
+                    (cond ((member-eq name seen)
+                           (constraints-list (cdr fns)
+                                             wrld
+                                             constraint-lst-etc-pair seen))
+                          (t (constraints-list (cdr fns)
+                                               wrld
+                                               (constraint-lst-etc-union
+                                                (cons x origins) ; make a pair
+                                                constraint-lst-etc-pair)
+                                               (cons name seen)))))
+                   (t
+
+; In this case, x is a single term (not a list of terms) and origins is a
+; single token (not a list of tokens).
+
+                    (constraints-list
+                     (cdr fns) wrld
+                     (if (member-equal x (car constraint-lst-etc-pair))
+                         constraint-lst-etc-pair
+                       (cons (cons x (car constraint-lst-etc-pair))
+                             (cons origins (cdr constraint-lst-etc-pair))))
+                     seen)))))))
 
 (defun constraint-info+ (fn wrld)
 
-; This function normally agrees with constraint-info, but
-; extends that function's result in the case that fn is defined by
-; mutual-recursion.  In that case, we return (mv t lst) where lst is the list
-; of constraints of the siblings of fn.
+; This function normally agrees with constraint-info, but extends that
+; function's result in the case that fn is defined by mutual-recursion.  In
+; that case, we return (mv t x origins), with the same meanings for x and
+; origins as in constraint-info but now including constraints of the siblings
+; of fn.
 
   (let ((fns (getpropc fn 'recursivep nil wrld)))
     (cond ((and (consp fns)
                 (consp (cdr fns)))
-           (mv t (constraints-list fns wrld nil nil)))
+           (let ((constraint-lst-etc-pair
+                  (constraints-list fns wrld
+                                    (cons nil nil) ; constraint-lst-etc-pair
+                                    nil)))
+             (mv t
+                 (car constraint-lst-etc-pair)
+                 (cdr constraint-lst-etc-pair))))
           (t (constraint-info fn wrld)))))
 
 (defun immediate-canonical-ancestors (fn wrld rlp)
@@ -4675,8 +4737,9 @@
 
   (let ((guard-anc
          (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn rlp)))
-    (mv-let (name x) ; name could be t
+    (mv-let (name x origins) ; name could be t
             (constraint-info+ fn wrld)
+            (declare (ignore origins)) ; Picasso!
             (cond
              ((unknown-constraints-p x)
               (collect-canonical-siblings (unknown-constraints-supporters x)
@@ -4761,8 +4824,9 @@
    (t
     (let ((guard-anc
            (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn t)))
-      (mv-let (name x) ; name could be t
+      (mv-let (name x origins) ; name could be t
         (constraint-info+ fn wrld)
+        (declare (ignore origins)) ; Picasso!
         (cond
          ((unknown-constraints-p x)
           (collect-canonical-siblings (unknown-constraints-supporters x)
@@ -4941,9 +5005,9 @@
          (value nil)))
        (otherwise (value nil))))
    (mv-let
-     (fn constraint)
+     (fn constraint origins)
      (constraint-info ev wrld)
-     (declare (ignore fn))
+     (declare (ignore fn origins)) ; Picasso! on origins but not fn!
      (cond
       ((unknown-constraints-p constraint)
        (er soft ctx ; see comment in defaxiom-supporters

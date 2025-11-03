@@ -341,7 +341,10 @@
         (let* ((formula
                 (if non-trivial-encapsulate-p
                     (mv-let (name2 x)
-                      (constraint-info name wrld)
+                      ; Old Code:
+                      ; (constraint-info name wrld)
+                      ; New Code:
+                      (pre-v8-7-constraint-info name wrld)
                       (cond
                        ((unknown-constraints-p x) *t*) ; incomplete!
                        (name2 (conjoin x))
@@ -403,7 +406,10 @@
    (t
     (let ((constraint-lst
            (and (symbolp (car lst))
-                (getpropc (car lst) 'constraint-lst nil wrld))))
+                ; Old Code:
+                ; (getpropc (car lst) 'constraint-lst nil wrld)
+                ; New Code:
+                (pre-v8-7-getpropc-constraint-lst-nil (car lst) wrld))))
       (cond
        ((and constraint-lst
              (symbolp constraint-lst))

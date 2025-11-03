@@ -3260,9 +3260,9 @@
          (not (and (consp fns)
                    (or (not ntep) ; don't puff non-trivial encapsulates
                        (mv-let
-                         (name x)
+                         (name x origins)
                          (constraint-info (car fns) installed-wrld)
-                         (declare (ignore name))
+                         (declare (ignore name origins)) ; Picasso!
                          (unknown-constraints-p x))))))))
 
 (defun puffable-command-blockp (wrld cmd-form ntep installed-wrld)

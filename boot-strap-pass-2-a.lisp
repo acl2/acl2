@@ -1201,6 +1201,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination-boot-strap formals) ; and guards
+(verify-termination-boot-strap constraint-lst-etc-p) ; and guards
+(verify-termination-boot-strap make-origin) ; and guards
 (verify-termination-boot-strap constraint-info) ; and guards
 (verify-termination-boot-strap unknown-constraints-p) ; and guards
 
@@ -1222,8 +1224,9 @@
   (let ((wrld (w state)))
     (or (getpropc name 'theorem nil wrld)
         (cond ((logicp name wrld)
-               (mv-let (flg prop)
+               (mv-let (flg prop origins)
                  (constraint-info name wrld)
+                 (declare (ignore origins)) ; Picasso!
                  (cond ((unknown-constraints-p prop)
                         *t*)
                        (flg (ec-call (conjoin prop)))

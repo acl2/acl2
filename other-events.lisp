@@ -5099,21 +5099,49 @@
             (cons term (classes-theorems (cdr classes)))
           (classes-theorems (cdr classes)))))))
 
-(defun constraints-introduced1 (thms fns ans)
+(defun constraint-lst-etc-introduced2 (thms origins fns ans-constraint-lst-etc)
   (cond
-   ((endp thms) ans)
+   ((endp thms) ans-constraint-lst-etc)
    ((ffnnamesp fns (car thms))
 
-; By using union-equal below, we handle the case that an inner encapsulate may
-; have both an 'unnormalized-body and 'constraint-lst property, so that if
-; 'unnormalized-body has already been put into ans, then we don't include that
-; constraint when we see it here.
+; By constraint-lst-etc-union below, we handle the case that an inner
+; encapsulate may have both an 'unnormalized-body and 'constraint-lst-etc
+; property, so that if 'unnormalized-body has already been put into
+; ans-constraint-lst-etc, then we don't include that constraint when we see it
+; here.
 
-    (constraints-introduced1 (cdr thms)
-                             fns
-                             (union-equal (flatten-ands-in-lit (car thms))
-                                          ans)))
-   (t (constraints-introduced1 (cdr thms) fns ans))))
+    (constraint-lst-etc-introduced2
+     (cdr thms)
+     (cdr origins)
+     fns
+     (let ((conjuncts (flatten-ands-in-lit (car thms))))
+       (constraint-lst-etc-union
+        (cons conjuncts
+              (make-list (length conjuncts)
+                         :initial-element (car origins)))
+        ans-constraint-lst-etc))))
+   (t (constraint-lst-etc-introduced2
+       (cdr thms)
+       (cdr origins)
+       fns ans-constraint-lst-etc))))
+
+; Note: Until v8-7, this function was called constraints-introduced1.  It
+; returned a list of terms (constraints).  But it has now been renamed as below
+; and returns a constraint-lst-etc.
+
+(defun constraint-lst-etc-introduced1 (constraint-lst-etc
+                                       fns
+                                       ans-constraint-lst-etc)
+
+; constraint-lst-etc and ans-constraint-lst-etc are both ordinary
+; constraint-lst-etcs.  For each theorem in constraint-lst-etc that mentions a
+; function in fns we add its conjuncts to our answer, ans-constraint-lst-etc,
+; assigning to the conjunct the same origin as the theorem.
+
+  (constraint-lst-etc-introduced2
+   (car constraint-lst-etc)
+   (cdr constraint-lst-etc)
+   fns ans-constraint-lst-etc))
 
 (defun new-trips-rec (wrld3 proto-wrld3 seen acc)
 
@@ -5202,31 +5230,37 @@
 
   (new-trips-rec wrld3 proto-wrld3 nil nil))
 
-(defun constraints-introduced (new-trips fns ans)
+; Note: Until v8-7, this function was called constraints-introduced.  It
+; returned a list of terms (constraints).  But it has now been renamed as below
+; and returns a constraint-lst-etc.
+
+(defun constraint-lst-etc-introduced (new-trips fns ans-constraint-lst-etc)
 
 ; New-trips is a list of triples from a property list world, none of them with
-; cddr *acl2-property-unbound*.  We return the list of all formulas represented
-; in new-trips that mention any function symbol in the list fns (each of which
-; is in :logic mode), excluding definitional (defuns, defchoose) axioms.  We
-; may skip properties such as 'congruences and 'lemmas that can only be there
-; if some other property has introduced a formula for which the given
-; property's implicit formula is a consequence.  A good way to look at this is
-; that the only events that can introduce axioms are defuns, defthm,
-; encapsulate, defaxiom, and include-book, and we have ruled out the last two.
-; Encapsulate is covered by the 'constraint-lst property.
+; cddr *acl2-property-unbound*.  We accumulate into the ordinary
+; constraint-lst-etc ans-constraint-lst-etc all formulas represented in
+; new-trips that mention any function symbol in the list fns (each of which is
+; in :logic mode), excluding definitional (defuns, defchoose) axioms.  We also
+; accumulate the origin of each such formula.  We may skip properties such as
+; 'congruences and 'lemmas that can only be there if some other property has
+; introduced a formula for which the given property's implicit formula is a
+; consequence.  A good way to look at this is that the only events that can
+; introduce axioms are defuns, defthm, encapsulate, defaxiom, and include-book,
+; and we have ruled out the last two.  Encapsulate is covered by the
+; 'constraint-lst-etc property.
 
   (cond
-   ((endp new-trips) ans)
-   (t (constraints-introduced
+   ((endp new-trips) ans-constraint-lst-etc)
+   (t (constraint-lst-etc-introduced
        (cdr new-trips)
        fns
        (let ((trip (car new-trips)))
          (case (cadr trip)
-           (constraint-lst
+           (constraint-lst-etc
 
 ; As promised in a comment in encapsulate-constraint, here we explain why the
-; 'constraint-lst properties must be considered as we collect up formulas for
-; an encapsulate event.  That is, we explain why after virtually moving
+; 'constraint-lst-etc properties must be considered as we collect up formulas
+; for an encapsulate event.  That is, we explain why after virtually moving
 ; functions in front of an encapsulate where possible, then any
 ; sub-encapsulate's constraint is a formula that must be collected.  The
 ; following example illustrates, starting with the following event.
@@ -5279,74 +5313,99 @@
 ; The moral of the story is that our treatment of encapsulates for which some
 ; signature function is ancestral must be analogous to our treatment of
 ; subversive defuns: their constraints must be considered.  An easy way to
-; provide this treatment is for the following call of constraints-introduced to
-; collect up constraints.  One might think this unnecessary, since every defthm
-; contributing to a constraint has a 'theorem property that will be collected.
-; However, an "infected" defun can contribute to a constraint (because neither
-; [Front] nor [Back] applies to it within its surrounding encapsulate event),
-; and we are deliberately not collecting defun formulas.  Moreover, we prefer
-; not to rely on the presence of 'theorem properties for constraints.
+; provide this treatment is for the following call of
+; constraint-lst-etc-introduced to collect up constraints.  One might think
+; this unnecessary, since every defthm contributing to a constraint has a
+; 'theorem property that will be collected.  However, an "infected" defun can
+; contribute to a constraint (because neither [Front] nor [Back] applies to it
+; within its surrounding encapsulate event), and we are deliberately not
+; collecting defun formulas.  Moreover, we prefer not to rely on the presence
+; of 'theorem properties for constraints.
 
-            (let ((constraint-lst (cddr trip)))
-              (cond ((unknown-constraints-p constraint-lst)
+            (let ((constraint-lst-etc (cddr trip)))
+              (cond ((unknown-constraints-p (car constraint-lst-etc))
 
 ; This case should not happen.  The only symbols with unknown-constraints are
 ; those introduced in a non-trivial encapsulate (one with non-empty signature
 ; list).  But we are in such an encapsulate already, for which we cannot yet
-; have computed the constraints as unknown-constraints.  So the 'constraint-lst
-; property in question is on a function symbol that was introduced in an inner
-; encapsulate, which should have been illegal since that function symbol is in
-; the scope of two (nested) non-trivial encapsulates, where the inner one
-; designates a dependent clause-processor, and such non-unique promised
-; encapsulates are illegal.
+; have computed the constraints as unknown-constraints.  So the
+; 'constraint-lst-etc property in question is on a function symbol that was
+; introduced in an inner encapsulate, which should have been illegal since that
+; function symbol is in the scope of two (nested) non-trivial encapsulates,
+; where the inner one designates a dependent clause-processor, and such
+; non-unique promised encapsulates are illegal.
 
-                     (er hard 'constraints-introduced
-                         "Implementation error in constraints-introduced: ~
+                     (er hard 'constraint-lst-etc-introduced
+                         "Implementation error in constraint-lst-etc-introduced: ~
                           Please contact the ACL2 developers."))
-                    ((symbolp constraint-lst)
+                    ((symbolp (car constraint-lst-etc))
 
-; Then the constraint list for (car trip) is held in the 'constraint-lst
-; property of (cddr trip).  We know that this kind of "pointing" is within the
-; current encapsulate, so it is safe to ignore this property, secure in the
-; knowledge that we see the real constraint list at some point.
+; Referring back to the Essay on constraint-lst-etcs, it would appear there are
+; three possibilities, namely, that (car constraint-lst-etc) is t, nil, or a
+; function symbol gn.  It can't be t because the only time we see that is when
+; we access the property with getpropc with a default of '(t . nil) and we
+; didn't do that here; we're looking at an actual world triple.  It could be
+; nil, which means there are no constraints.  Or else it could be a function
+; symbol gn.  In both cases we can ignore this property, secure in the
+; knowledge that we see the real constraint list (or none at all) at some
+; point.
 
-                     ans)
-                    (t (constraints-introduced1 (cddr trip) fns ans)))))
+                     ans-constraint-lst-etc)
+                    (t 
+; constraint-lst-etc is an ordinary constraint-lst-etc pair.
+                       (constraint-lst-etc-introduced1
+                        constraint-lst-etc
+                        fns
+                        ans-constraint-lst-etc)))))
            (theorem
             (cond
              ((ffnnamesp fns (cddr trip))
-              (union-equal (flatten-ands-in-lit (cddr trip)) ans))
-             (t ans)))
+              (let ((conjuncts (flatten-ands-in-lit (cddr trip))))
+                (constraint-lst-etc-union
+                 (cons conjuncts
+                       (make-list (length conjuncts)
+                                  :initial-element
+                                  (make-origin 'theorem (car trip))))
+                 ans-constraint-lst-etc)))
+             (t ans-constraint-lst-etc)))
            (classes
-            (constraints-introduced1
-             (classes-theorems (cddr trip)) fns ans))
-           (otherwise ans)))))))
+            (constraint-lst-etc-introduced1
+             (let ((thms (classes-theorems (cddr trip))))
+               (cons thms
+                     (make-list (length thms)
+                                :initial-element
+                                (make-origin 'corollary (car trip)))))
+             fns ans-constraint-lst-etc))
+           (otherwise ans-constraint-lst-etc)))))))
 
-(defun putprop-constraints (fn constrained-fns constraint-lst
+(defun putprop-constraints (fn constrained-fns constraint-lst-etc
                                unknown-constraints-p wrld3)
 
 ; Wrld3 is almost wrld3 of the encapsulation essay.  We have added all the
-; exports, but we have not yet stored the 'constraint-lst properties of the
-; functions in the signature of the encapsulate.  Fn is the first function
-; mentioned in the signature, while constrained-fns includes the others as well
-; as all functions that have any function in the signature as an ancestor.  We
-; have determined that the common constraint for all these functions is
-; constraint-lst, which has presumably been obtained from all the new theorems
-; introduced by the encapsulate that mention any functions in (fn
+; exports, but we have not yet stored the 'constraint-lst-etc
+; (constraints-related) properties of the functions in the signature of the
+; encapsulate.  Fn is the first function mentioned in the signature, while
+; constrained-fns includes the others as well as all functions that have any
+; function in the signature as an ancestor.  We have determined that the common
+; constraint for all these functions is the conjunction of (car
+; constraint-lst-etc), which has presumably been obtained from all the new
+; theorems introduced by the encapsulate that mention any functions in (fn
 ; . constrained-fns).
 
-; We actually store the symbol fn as the value of the 'constraint-lst property
-; for every function in constrained-fns.  For fn, we store a 'constraint-lst
-; property of constraint-lst.
+; We actually store the symbol fn as the value of the 'constraint-lst-etc
+; property for every function in constrained-fns.  For fn, we store a
+; 'constraint-lst-etc property of constraint-lst-etc itself.
 
-; Note that we store a 'constraint-lst property for every function in (fn
+; Note that we store a 'constraint-lst-etc property for every function in (fn
 ; . constrained-fns).  The function constraint-info will find this property
 ; rather than looking for an 'unnormalized-body or 'defchoose-axiom.
 
   (putprop-x-lst1
-   constrained-fns 'constraint-lst fn
+   constrained-fns
+   'constraint-lst-etc
+   (cons fn nil) ; a constraint-lst-etc pair that points to fn
    (putprop
-    fn 'constraint-lst constraint-lst
+    fn 'constraint-lst-etc constraint-lst-etc
     (cond
      (unknown-constraints-p
       (putprop-x-lst1
@@ -5839,6 +5898,21 @@
   (let ((fns (instantiable-ffn-symbs-lst lst trips ans nil)))
     (instantiable-ancestors fns trips ans)))
 
+(defun remove-guard-holders-weak-constraint-lst-etc (constraint-lst-etc lamp)
+
+; Return a constraint-lst-etc whose car is element-wise equal to that of
+; constraint-lst-etc, with the same origins.
+
+; See the warnings and other comments in remove-guard-holders1.
+
+  (declare (xargs :guard (and (consp constraint-lst-etc)
+                              (pseudo-term-listp (car constraint-lst-etc)))))
+  (cons (mv-let (changedp result)
+          (remove-guard-holders1-lst (car constraint-lst-etc) lamp)
+          (declare (ignore changedp))
+          result)
+        (cdr constraint-lst-etc)))
+
 (defun encapsulate-constraint (sig-fns exported-names new-trips wrld)
 
 ; This function implements the algorithm described in the first paragraph of
@@ -5852,15 +5926,16 @@
 ; New-trips is the list of property list triples added to the initial world to
 ; form wrld.  Wrld is the result of processing the non-local events in body.
 
-; We return (mv constraints constrained-fns subversive-fns infectious-fns fns),
-; where constraints is a list of the formulas that constrain all of the
-; functions listed in constrained-fns.  Subversive-fns is a list of exported
-; functions which are not ``tight'' wrt the initial world (see
-; subversive-cliquep).  Infectious-fns is the list of fns (other than
-; subversive-fns) whose defuns are in the constraint.  This could happen
-; because some non-subversive definition is ancestral in the constraint.  Fns
-; is the list of all exported-names not moved forward, i.e., for which some
-; function in sig-fns is ancestral.
+; We return (mv constraint-lst-etc constrained-fns subversive-fns
+; infectious-fns fns), where constraint-lst-etc is a constraints and origins
+; pair listing the terms that constrain all of the functions listed in
+; constrained-fns and origins describes the origin of each constraint.
+; Subversive-fns is a list of exported functions which are not ``tight'' wrt
+; the initial world (see subversive-cliquep).  Infectious-fns is the list of
+; fns (other than subversive-fns) whose defuns are in the constraint.  This
+; could happen because some non-subversive definition is ancestral in the
+; constraint.  Fns is the list of all exported-names not moved forward, i.e.,
+; for which some function in sig-fns is ancestral.
 
 ; We do not actually rearrange anything.  Instead, we compute the constraint
 ; formula generated by this encapsulate as though we had pulled certain events
@@ -5884,7 +5959,7 @@
             new-trips))
           (subversive-fns
            (get-subversives exported-names wrld))
-          (formula-lst1
+          (formula-constraint-lst-etc1
 
 ; Having in essence applied the [Front] rule, the remaining work is related to
 ; the [Back] rule mentioned in the Structured Theory paper, in which certain
@@ -5897,25 +5972,26 @@
 ; one function symbol in fns.
 
 ; A long comment in constraints-introduced explains why we collect up
-; 'constraint-lst properties here, rather than restricting ourselves to
+; 'constraint-lst-etc properties here, rather than restricting ourselves to
 ; formulas from defun and defchoose events.
 
-           (constraints-introduced
+           (constraint-lst-etc-introduced
             new-trips fns
-            (constraints-list subversive-fns wrld nil nil)))
+            (constraints-list subversive-fns wrld (cons nil nil) nil)))
           (constrained-fns
 
 ; The functions to receive a constraint from this encapsulate are those that
 ; remain introduced inside the encapsulate: the sig-fns and subversive
 ; functions, and all functions ancestral in one or more of the above-collected
-; formulas.  We intersect with fns because, as stated above, we do not want to
-; include functions whose introducing axioms can be moved in front of the
-; encapsulate.
+; formulas (i.e., the car of formula-constraint-lst-etc1).  We intersect with
+; fns because, as stated above, we do not want to include functions whose
+; introducing axioms can be moved in front of the encapsulate.
 
            (intersection-eq fns
-                            (ancestral-ffn-symbs-lst formula-lst1 new-trips
-                                                     (append subversive-fns
-                                                             sig-fns))))
+                            (ancestral-ffn-symbs-lst
+                             (car formula-constraint-lst-etc1)
+                             new-trips
+                             (append subversive-fns sig-fns))))
           (infectious-fns
 
 ; The "infected" functions are those from the entire set of to-be-constrained
@@ -5925,37 +6001,44 @@
            (set-difference-eq
             (set-difference-eq constrained-fns subversive-fns)
             sig-fns))
-          (constraints
+          (constraint-lst-etc
 
-; Finally, we obtain all constraints.  Recall that we built formula-lst1 above
-; without including any definitions; so now we include those.  Perhaps we only
-; need defun and defchoose axioms at this point, having already included
-; constraint-lst properties; but to be safe we go ahead and collect all
-; constraints.
+; Finally, we obtain all constraints.  Recall that we built
+; formula-constraint-lst-etc1 above without including any definitions; so now
+; we include those.  Perhaps we only need defun and defchoose axioms at this
+; point, having already included constraint-lst-etc properties; but to be safe
+; we go ahead and collect all constraints.
 
-; We apply remove-guard-holders[-weak] in order to clean up a bit.  Consider
-; for example:
+; We apply remove-guard-holders[-weak] to the constraint-lst-etc in order to
+; clean up a bit.  Consider for example:
 
 ; (defun-sk foo (x) (forall e (implies (member e x) (integerp e))))
 
 ; If you then evaluate
 
-; (getpropc 'foo-witness 'constraint-lst)
+; (getpropc 'foo-witness 'constraint-lst-etc '(t . nil) (w state))
 
 ; you'll see a much simpler result, with return-last calls removed, than if we
-; did not apply remove-guard-holders-weak-lst here.  Out of an abundance of
-; caution (perhaps more than is necessary), we avoid removing guard holders
-; from quoted lambdas by calling remove-guard-holders-weak-lst rather than
-; remove-guard-holders-lst, i.e., by avoiding the application of
+; did not apply remove-guard-holders-weak-constraint-lst-etc here.  Out of an
+; abundance of caution (perhaps more than is necessary), we avoid removing
+; guard holders from quoted lambdas by calling remove-guard-holders-weak rather
+; than remove-guard-holders-lst, i.e., by avoiding the application of
 ; possibly-clean-up-dirty-lambda-objects-lst.  That is, it might be sound to
 ; clean up dirty lambdas here, as is our convention when calling
 ; remove-guard-holders, but we are playing it safe here.  If that causes
 ; problems then we can think harder about whether it is sound.
 
-           (remove-guard-holders-weak-lst
-            (constraints-list infectious-fns wrld formula-lst1 nil)
+           (remove-guard-holders-weak-constraint-lst-etc
+            (constraints-list infectious-fns
+                              wrld
+                              formula-constraint-lst-etc1
+                              nil)
             (remove-guard-holders-lamp))))
-     (mv constraints constrained-fns subversive-fns infectious-fns fns))))
+     (mv constraint-lst-etc
+         constrained-fns
+         subversive-fns
+         infectious-fns
+         fns))))
 
 (defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
                                         wrld)
@@ -6050,12 +6133,15 @@
 ; normally and return a state in which wrld3 of the essay is current.  In the
 ; case of normal return and only-pass-p = nil, the value is a list containing
 
-; * constrained-fns - the functions for which a new constraint-lst will
-;   be stored, each with a 'siblings property equal to constrained-fns
+; * constrained-fns - the functions for which a new constraint-lst-etc property
+;   will be stored, each with a 'siblings property equal to constrained-fns
 
 ; * retval - the value returned
 
-; * constraints - the corresponding list of constraints
+; * constraints - either the *unknown-constraints* or the list of constraint
+;   terms (Note: even though this function passes up just the list of
+;   constraints, it stores the constraint-lst-etc property (constraints and
+;   origins) for all the constrained functions)
 
 ; * exported-names - the exported names
 
@@ -6310,8 +6396,10 @@
                (let* ((new-trips (new-trips wrld wrld1))
                       (sig-fns (strip-cars insigs)))
                  (mv-let
-                   (constraints constrained-fns subversive-fns infectious-fns
-                                exports-with-sig-ancestors)
+                   (constraint-lst-etc constrained-fns
+                                       subversive-fns
+                                       infectious-fns
+                                       exports-with-sig-ancestors)
                    (encapsulate-constraint sig-fns exported-names new-trips
                                            wrld)
                    (let ((transparent-mismatch
@@ -6353,20 +6441,25 @@
                                 (car sig-fns)
                                 (remove1-eq (car sig-fns) constrained-fns)
                                 (if unknown-constraints-p
-                                    (cons *unknown-constraints*
-                                          (all-fnnames1
-                                           t
-                                           constraints
+
+; Manufacture a constraint-lst-etc with unknown constraints.
+
+                                    (cons
+                                     (cons *unknown-constraints*
+                                           (all-fnnames1
+                                            t
+                                            (car constraint-lst-etc)
 
 ; The following contains sig-fns.  That is arranged by
 ; set-unknown-constraints-supporters, and is enforced (in case the table is set
 ; directly rather than with set-unknown-constraints-supporters) by
 ; unknown-constraints-table-guard.
 
-                                           (cdr (assoc-eq
-                                                 :supporters
-                                                 unknown-constraints-table))))
-                                  constraints)
+                                            (cdr (assoc-eq
+                                                  :supporters
+                                                  unknown-constraints-table))))
+                                     nil)
+                                  constraint-lst-etc)
                                 unknown-constraints-p
                                 (if constrained-fns
                                     (assert$
@@ -6422,9 +6515,17 @@
                                   (cons expansion-alist retval)
                                 (list constrained-fns
                                       retval
+
+; Note: this function doesn't pass up the whole constraint-lst-etc, just the
+; list of constraints (or a token that indicates unknown constraints.  This
+; component of our answer is just used in output messages to the user.  But the
+; putprop-constraints above actually stores the constraint-lst-etc property for
+; all the constrained fns, so we have recorded the origins of each of these
+; constraints (except when the constraints are unknown).
+
                                       (if unknown-constraints-p
                                           *unknown-constraints*
-                                        constraints)
+                                          (car constraint-lst-etc))
                                       exported-names
                                       subversive-fns
                                       infectious-fns)))))))))))))))))))))
@@ -6445,6 +6546,7 @@
 ; ; handling of signatures in their three forms.  I need a stobj.
 ;
 ; (defstobj $s x y)
+; (include-book "std/testing/must-fail" :dir :system)
 ;
 ; ; Here is a simple, typical encapsulate.
 ; (encapsulate ((p (x) t))
@@ -6453,53 +6555,63 @@
 ;
 ; (test
 ;  (equal
-;   (getpropc 'p 'constraint-lst)
-;   '((booleanp (P X)))))
+;   (getpropc 'p 'constraint-lst-etc)
+;   '(((booleanp (P X)))
+;     . ((theorem booleanp-p)))))
 ;
 ; (u)
 ;
 ; ; The next set just look for errors that should never happen.
 ;
-;   The following all cause errors.
+; ; The following all cause errors.
 ;
-;   (encapsulate (((p x) => x))
-;                (local (defun p (x) x)))
+; (must-fail
+;  (encapsulate (((p x) => x))
+;    (local (defun p (x) x))))
 ;
-;   (encapsulate ((p x) => x)
-;                (local (defun p (x) x)))
+; (must-fail
+;  (encapsulate ((p x) => x)
+;    (local (defun p (x) x))))
 ;
-;   (encapsulate (((p x $s) => (mv x $s)))
-;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
+; (must-fail
+;  (encapsulate (((p x $s) => (mv x $s)))
+;    (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s)))))
 ;
-;   (encapsulate (((p * state $s) => state))
-;                (local (defun p (x state $s)
-;                         (declare (xargs :stobjs nil) (ignore x $s))
-;                         state)))
+; (must-fail
+;  (encapsulate (((p * state $s) => state))
+;    (local (defun p (x state $s)
+;             (declare (xargs :stobjs nil) (ignore x $s))
+;             state))))
 ;
-;   (encapsulate (((p * state *) => $s))
-;                (local (defun p (x state $s)
-;                         (declare (xargs :stobjs $s) (ignore x state))
-;                         $s)))
+; (must-fail
+;  (encapsulate (((p * state *) => $s))
+;    (local (defun p (x state $s)
+;             (declare (xargs :stobjs $s) (ignore x state))
+;             $s))))
 ;
-;   ; Here are some of the "same" errors provoked in the old notation.
+; ; Here are some of the "same" errors provoked in the old notation.
 ;
-;   (encapsulate ((p (x $s) (mv * $s) :stobjs *))
-;                (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s))))
+; (must-fail
+;  (encapsulate ((p (x $s) (mv * $s) :stobjs *))
+;    (local (defun p (x $s) (declare (xargs :stobjs ($s))) (mv x $s)))))
 ;
-;   (encapsulate ((p (* state $s) state))
-;                (local (defun p (x state $s)
-;                         (declare (xargs :stobjs nil) (ignore x $s))
-;                         state)))
+; (must-fail
+;  (encapsulate ((p (* state $s) state))
+;    (local (defun p (x state $s)
+;             (declare (xargs :stobjs nil) (ignore x $s))
+;             state))))
 ;
-;   (encapsulate ((p (y state $s) $s))
-;                (local (defun p (x state $s)
-;                         (declare (xargs :stobjs $s) (ignore x state))
-;                         $s)))
+; (must-fail
+;  (encapsulate ((p (y state $s) $s))
+;    (local (defun p (x state $s)
+;             (declare (xargs :stobjs $s) (ignore x state))
+;             $s))))
 ;
-;   (encapsulate ((p (x state y) $s))
-;                (local (defun p (x state $s)
-;                         (declare (xargs :stobjs $s) (ignore x state))
-;                         $s)))
+; (must-fail
+;  (encapsulate ((p (x state y) $s))
+;    (local (defun p (x state $s)
+;             (declare (xargs :stobjs $s) (ignore x state))
+;             $s))))
 ;
 ; ; The rest of my tests are concerned with the constraints produced.
 ;
@@ -6522,8 +6634,9 @@
 ;
 ; (test
 ;  (equal
-;   (getpropc 'p 'constraint-lst)
-;   '((EVP (P X)))))
+;   (getpropc 'p 'constraint-lst-etc)
+;   '(((EVP (P X)))
+;     . ((theorem evp-p)))))
 ;
 ; (u)
 ;
@@ -6547,9 +6660,10 @@
 ;   (defthm integerp-p (integerp (p x))))
 ;
 ; (test
-;  (and (equal (getpropc 'p 'constraint-lst)
-;              '((integerp (p x))))
-;       (equal (getpropc 'mapp 'constraint-lst)
+;  (and (equal (getpropc 'p 'constraint-lst-etc)
+;              '(((integerp (p x)))
+;                . ((theorem integerp-p))))
+;       (equal (getpropc 'mapp 'constraint-lst-etc)
 ;              nil)))
 ;
 ; (u)
@@ -6567,20 +6681,21 @@
 ;         (not (bad (p x)))
 ;       t)))
 ;
+; ; Prior to v3.5, the constraints below included a third constraint, that (bad
+; ; x) returns a Boolean value.
+;
 ; (test
-;  (and (equal (getpropc 'p 'constraint-lst)
-; ; Modified for v3-5:
-;              (reverse '((EQUAL (BAD X)
-;                                (IF (CONSP X)
-;                                    (NOT (BAD (P X)))
-;                                    'T))
-; ;                        (IF (EQUAL (BAD X) 'T)
-; ;                            'T
-; ;                            (EQUAL (BAD X) 'NIL))
-;                         (IMPLIES (CONSP X)
-;                                  (< (LEN (P X)) (LEN X))))))
-;       (equal (getpropc 'bad 'constraint-lst)
-;              'p)))
+;  (and (equal (getpropc 'p 'constraint-lst-etc)
+;              (cons '((IMPLIES (CONSP X)
+;                               (< (LEN (P X)) (LEN X)))
+;                      (EQUAL (BAD X)
+;                             (IF (CONSP X)
+;                                 (NOT (BAD (P X)))
+;                                 'T)))
+;                    '((theorem len-p)
+;                      (defun bad))))
+;       (equal (getpropc 'bad 'constraint-lst-etc)
+;              '(p . nil))))
 ;
 ; (u)
 ;
@@ -6596,9 +6711,10 @@
 ;   (defthm len-p (implies (consp x) (< (len (p x)) (len x)))))
 ;
 ; (test
-;  (equal (getpropc 'p 'constraint-lst)
-;         '((IMPLIES (CONSP X)
-;                    (< (LEN (P X)) (LEN X))))))
+;  (equal (getpropc 'p 'constraint-lst-etc)
+;         '(((IMPLIES (CONSP X)
+;                     (< (LEN (P X)) (LEN X))))
+;           . ((theorem len-p)))))
 ;
 ; ; The only constraint on p is
 ; ; (IMPLIES (CONSP X) (< (LEN (P X)) (LEN X))).
@@ -6625,19 +6741,24 @@
 ;   (defthm mapp-is-a-list-of-ints
 ;     (integer-listp (mapp x))))
 ;
+; ; Prior to v3.5 the constraints included the fact that (mapp x) returns a
+; ; true-listp.
+;
 ; (test
-;  (and (equal (getpropc 'p 'constraint-lst)
-;              '((EQUAL (MAPP X)
-;                       (IF (CONSP X)
-;                           (CONS (P (CAR X)) (MAPP (CDR X)))
-;                           'NIL))
-; ; No longer starting with v3-5:
-; ;              (TRUE-LISTP (MAPP X))
-;                (INTEGER-LISTP (MAPP X))))
-;       (equal (getpropc 'mapp 'constraint-lst)
-;              'p)))
+;  (and (equal (getpropc 'p 'constraint-lst-etc)
+;              '(((EQUAL (MAPP X)
+;                        (IF (CONSP X)
+;                            (CONS (P (CAR X)) (MAPP (CDR X)))
+;                            'NIL))
+;                 (INTEGER-LISTP (MAPP X)))
+;                . ((defun mapp)
+;                   (theorem mapp-is-a-list-of-ints))))
+;       (equal (getpropc 'mapp 'constraint-lst-etc)
+;              '(p . nil))))
 ;
 ; (u)
+;
+; ; Picasso: I think this comment is unnecessary.
 ;
 ; ; The constraint above, on both p and mapp, is
 ; ; (AND (EQUAL (MAPP X)
@@ -6658,26 +6779,26 @@
 ;         (not (bad2 (bad1 x)))
 ;       t)))
 ;
+; ; Prior to v3.5 the constraints included that (bad2 x) is boolean.
+;
 ; (test
-;  (and (equal (getpropc 'p 'constraint-lst)
-;              '((EQUAL (BAD1 X) (P X))
-;                (EQUAL (BAD2 X)
-;                       (IF (CONSP X)
-;                           (NOT (BAD2 (BAD1 X)))
-;                           'T))
-; ; No longer starting with v3-5:
-; ;              (IF (EQUAL (BAD2 X) 'T)
-; ;                  'T
-; ;                  (EQUAL (BAD2 X) 'NIL))
-;                ))
-;       (equal (getpropc 'bad1 'constraint-lst)
-;              'p)
-;       (equal (getpropc 'bad2 'constraint-lst)
-;              'p)
+;  (and (equal (getpropc 'p 'constraint-lst-etc)
+;              '(((EQUAL (BAD1 X) (P X))
+;                 (EQUAL (BAD2 X)
+;                        (IF (CONSP X)
+;                            (NOT (BAD2 (BAD1 X)))
+;                            'T))
+;                 )
+;                . ((defun bad1)
+;                   (defun bad2))))
+;       (equal (getpropc 'bad1 'constraint-lst-etc)
+;              '(p . nil))
+;       (equal (getpropc 'bad2 'constraint-lst-etc)
+;              '(p . nil))
 ;       (equal (getpropc 'bad2 'induction-machine nil)
 ;              nil)))
 ;
-;
+; 
 ; (u)
 ;
 ; (encapsulate ((p (x) t))
@@ -6689,25 +6810,27 @@
 ;         (not (bad2 (bad1 x)))
 ;       t)))
 ;
+; ; Prior to v3.5 the constraints included the boolean property of (bad2 x).
+;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;              '((EQUAL (BAD1 X)
-;                       (IF (CONSP X)
-;                           (BAD1 (CDR X))
-;                           (P X)))
-;                (EQUAL (BAD2 X)
-;                       (IF (CONSP X)
-;                           (NOT (BAD2 (BAD1 X)))
-;                           'T))
-; ; No longer starting with v3-5:
-; ;              (IF (EQUAL (BAD2 X) 'T)
-; ;                  'T
-; ;                  (EQUAL (BAD2 X) 'NIL))
-;                ))
-;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
-;              'p)
-;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
-;              'p)
+;  (and (equal (getprop 'p 'constraint-lst-etc nil 'current-acl2-world (w state))
+;              '(((EQUAL (BAD1 X)
+;                        (IF (CONSP X)
+;                            (BAD1 (CDR X))
+;                            (P X)))
+;                 (EQUAL (BAD2 X)
+;                        (IF (CONSP X)
+;                            (NOT (BAD2 (BAD1 X)))
+;                            'T))
+;                 )
+;                . ((defun bad1)
+;                   (defun bad2))))
+;       (equal (getprop 'bad1 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
+;              '(p . nil))
+;       (equal (getprop 'bad2 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
+;              '(p . nil))
 ;       (not (equal (getprop 'bad1 'induction-machine nil
 ;                            'current-acl2-world (w state))
 ;                   nil))
@@ -6737,29 +6860,34 @@
 ;       t))))
 ;
 ; (test
-;  (and (equal (getprop 'fn1 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getprop 'fn1 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
 ; ; Reversed as shown starting with v3-5:
-;              '((EQUAL (FN2 X)
-;                       (IF (CONSP X)
-;                           (NOT (FN3 (FN1 X)))
-;                           'T))
+;              '(((EQUAL (FN2 X)
+;                        (IF (CONSP X)
+;                            (NOT (FN3 (FN1 X)))
+;                            'T))
 ; ; No longer starting with v3-5:
-; ;              (IF (EQUAL (FN2 X) 'T)
-; ;                  'T
-; ;                  (EQUAL (FN2 X) 'NIL))
-;                (EQUAL (FN3 X)
-;                       (IF (CONSP X)
-;                           (NOT (FN3 (FN1 X)))
-;                           'T))
+; ;               (IF (EQUAL (FN2 X) 'T)
+; ;                   'T
+; ;                   (EQUAL (FN2 X) 'NIL))
+;                 (EQUAL (FN3 X)
+;                        (IF (CONSP X)
+;                            (NOT (FN3 (FN1 X)))
+;                             'T))
 ; ; No longer starting with v3-5:
-; ;              (IF (EQUAL (FN3 X) 'T)
-; ;                  'T
-; ;                  (EQUAL (FN3 X) 'NIL))
-;                ))
-;       (equal (getprop 'fn2 'constraint-lst nil 'current-acl2-world (w state))
-;              'fn1)
-;       (equal (getprop 'fn3 'constraint-lst nil 'current-acl2-world (w state))
-;              'fn1)
+; ;               (IF (EQUAL (FN3 X) 'T)
+; ;                   'T
+; ;                   (EQUAL (FN3 X) 'NIL))
+;                 )
+;                . ((defun fn2)
+;                   (defun fn3))))
+;       (equal (getprop 'fn2 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(fn1 . nil))
+;       (equal (getprop 'fn3 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(fn1 . nil))
 ;       (equal (getprop 'fn2 'induction-machine nil
 ;                       'current-acl2-world (w state))
 ;              nil)
@@ -6811,27 +6939,33 @@
 ;         (bad2 (bad3 (cdr x)))
 ;       nil)))                        ; tight: even though it calls bad2
 ;
-; ; Bad2 is swept into the constraint because it is not tight (subversive).  Bad1
-; ; is swept into it because it introduces a function (bad1) used in the enlarged
-; ; constraint.  Bad3 is not swept in.  Indeed, bad3 is moved [Back].
+; ; Bad2 is swept into the constraint because it is not tight (subversive).
+; ; Bad1 is swept into it because it introduces a function (bad1) used in the
+; ; enlarged constraint.  Bad3 is not swept in.  Indeed, bad3 is moved [Back].
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;              '((EQUAL (BAD1 X) (P X))
-;                (EQUAL (BAD2 X)
-;                       (IF (CONSP X)
-;                           (NOT (BAD2 (BAD1 X)))
-;                           'T))
+;  (and (equal (getprop 'p 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
+;              '(((EQUAL (BAD1 X) (P X))
+;                 (EQUAL (BAD2 X)
+;                        (IF (CONSP X)
+;                            (NOT (BAD2 (BAD1 X)))
+;                            'T))
 ; ; No longer starting with v3-5:
-; ;              (IF (EQUAL (BAD2 X) 'T)
-; ;                  'T
-; ;                  (EQUAL (BAD2 X) 'NIL))
-;                ))
-;       (equal (getprop 'bad1 'constraint-lst nil 'current-acl2-world (w state))
-;              'p)
-;       (equal (getprop 'bad2 'constraint-lst nil 'current-acl2-world (w state))
-;              'p)
-;       (equal (getprop 'bad3 'constraint-lst nil 'current-acl2-world (w state))
+; ;               (IF (EQUAL (BAD2 X) 'T)
+; ;                   'T
+; ;                   (EQUAL (BAD2 X) 'NIL))
+;                 )
+;                . ((defun bad1)
+;                   (defun bad2))))
+;       (equal (getprop 'bad1 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
+;              '(p . nil))
+;       (equal (getprop 'bad2 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
+;              '(p . nil))
+;       (equal (getprop 'bad3 'constraint-lst-etc nil
+;                       'current-acl2-world (w state))
 ;              nil)
 ;       (equal (getprop 'bad2 'induction-machine nil
 ;                       'current-acl2-world (w state))
@@ -6858,8 +6992,8 @@
 ;
 ; (test
 ;  (equal
-;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;   '((integerp (P X)))))
+;   (getprop 'p 'constraint-lst-etc nil 'current-acl2-world (w state))
+;   '(((integerp (P X))) . ((theorem integerp-p)))))
 ;
 ; (u)
 ;
@@ -6879,8 +7013,9 @@
 ;
 ; (test
 ;  (equal
-;   (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;   '((integerp (P X)))))
+;   (getprop 'p 'constraint-lst-etc nil 'current-acl2-world (w state))
+;   '(((integerp (P X)))
+;     . ((theorem integerp-p)))))
 ;
 ; (u)
 ;
@@ -6888,25 +7023,34 @@
 ; ; we lost the ability to rearrange things in v3-6-1 but not v4-0:
 ;
 ; (encapsulate ((p1 (x) t))
-;              (local (defun p1 (x) x))
-;              (defun benign1 (x)
-;                (if (consp x) (benign1 (cdr x)) t))
-;              (defthm p1-constraint (benign1 (p1 x)))
-;              (encapsulate  ((p2 (x) t))
-;                            (local (defun p2 (x) x))
-;                            (defun benign2 (x)
-;                              (if (consp x) (benign2 (cdr x)) t))
-;                            (defthm p2-constraint (benign2 (p2 x)))))
+;   (local (defun p1 (x) x))
+;   (defun benign1 (x)
+;     (if (consp x) (benign1 (cdr x)) t))
+;   (defthm p1-constraint (benign1 (p1 x)))
+;   (encapsulate  ((p2 (x) t))
+;     (local (defun p2 (x) x))
+;     (defun benign2 (x)
+;       (if (consp x) (benign2 (cdr x)) t))
+;     (defthm p2-constraint (benign2 (p2 x)))))
 ;
 ; (test
-;  (and (equal (getprop 'p1 'constraint-lst nil 'current-acl2-world (w state))
-;              '((BENIGN1 (P1 X))))
-;       (equal (getprop 'p2 'constraint-lst nil 'current-acl2-world (w state))
-;              '((BENIGN2 (P2 X))))
-;       (equal (getprop 'benign2 'constraint-lst nil 'current-acl2-world (w state))
-;              nil)
-;       (equal (getprop 'benign1 'constraint-lst nil 'current-acl2-world (w state))
-;              nil)))
+;  (and (equal (getprop 'p1 'constraint-lst-etc '(t . nil) 
+;                       'current-acl2-world (w state))
+;              '(((BENIGN1 (P1 X)))
+;                . ((theorem p1-constraint))))
+;       (equal (getprop 'p2 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(((BENIGN2 (P2 X)))
+;                . ((theorem p2-constraint))))
+;       (equal (getprop 'benign2 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(t . nil))
+;       (equal (getprop 'benign1 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(t . nil))))
+;
+; ; Note that the computed constraint on benign1, say, is its defun, by virtue
+; ; of there being no 'constraint-lst-etc property.
 ;
 ; (u)
 ;
@@ -6921,8 +7065,11 @@
 ;                      (f1 x))
 ;                  0)))
 ;
+; ; Before v3-5 we generated a constraint
+;
 ; (test
-;  (and (equal (getprop 'f1 'constraint-lst nil 'current-acl2-world (w state))
+;  (and (equal (getprop 'f1 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
 ; ; No longer generates this constraint starting with v3-5:
 ; ;              '((EQUAL (BAD X)
 ; ;                       (IF (CONSP X)
@@ -6934,14 +7081,35 @@
 ; ;                               (BAD (BAD (CDR X)))
 ; ;                               (F1 X))
 ; ;                           '0)))
-;              nil)
+; ; In fact, there are no constraints on f1.
+;
+;              '(nil . nil))
+; ; The constraint on bad is just that it has a defun (by virtue of having
+; ; no constraint-lst-etc property but having an unnormalized-body).
 ;       (equal
-;        (getprop 'bad 'constraint-lst nil 'current-acl2-world (w state))
+;        (getprop 'bad 'constraint-lst-etc '(t . nil)
+;                 'current-acl2-world (w state))
 ; ; No longer starting with v3-5:
 ; ;      'f1
-;        nil
+;        '(t . nil)
 ;        )
-; ; No longer subversive, starting with v3-5:
+;       (mv-let (flg x origin)
+;         (constraint-info 'bad (w state))
+;         (and (equal flg nil)
+;              (equal x
+;                     '(EQUAL (BAD X)
+;                             (IF (CONSP X)
+;                                 (IF (IF (INTEGERP (BAD (CDR X)))
+;                                         (IF (NOT (< (BAD (CDR X)) '0))
+;                                             (< (BAD (CDR X)) (ACL2-COUNT X))
+;                                             'NIL)
+;                                         'NIL)
+;                                     (BAD (BAD (CDR X)))
+;                                     (F1 X))
+;                                 '0)))
+;              (equal origin '(DEFUN BAD))))
+;
+; ; Bad is no longer subversive, starting with v3-5:
 ; ;      (equal
 ;        (getprop 'bad 'induction-machine nil 'current-acl2-world (w state))
 ; ;       nil)
@@ -6949,7 +7117,7 @@
 ;
 ; (u)
 ;
-;
+; 
 ; ; Here is a sample involving defchoose.  In this example, the signature
 ; ; function is ancestral in the defchoose axiom.
 ;
@@ -6962,13 +7130,17 @@
 ;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;              '((IMPLIES (P Y X)
-;                         ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y))
-;                (CONSP (WITLESS Y))))
+;  (and (equal (getprop 'p 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(((IMPLIES (P Y X)
+;                          ((LAMBDA (X Y) (P Y X)) (WITLESS Y) Y))
+;                 (CONSP (WITLESS Y)))
+;                . ((defchoose witless)
+;                   (theorem consp-witless))))
 ;       (equal
-;        (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
-;        'p)
+;        (getprop 'witless 'constraint-lst-etc '(t . nil)
+;                 'current-acl2-world (w state))
+;        '(p . nil))
 ;       (equal
 ;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
 ;        '(IMPLIES (P Y X)
@@ -6986,11 +7158,14 @@
 ;                :hints (("Goal" :use (:instance witless (x (cons y nil)))))))
 ;
 ; (test
-;  (and (equal (getprop 'p 'constraint-lst nil 'current-acl2-world (w state))
-;              '((p y (witless y))))
+;  (and (equal (getprop 'p 'constraint-lst-etc '(t . nil)
+;                       'current-acl2-world (w state))
+;              '(((p y (witless y)))
+;                . ((theorem p-constraint))))
 ;       (equal
-;        (getprop 'witless 'constraint-lst nil 'current-acl2-world (w state))
-;        nil)
+;        (getprop 'witless 'constraint-lst-etc '(t . nil)
+;                 'current-acl2-world (w state))
+;        '(t . nil))
 ;       (equal
 ;        (getprop 'witless 'defchoose-axiom nil 'current-acl2-world (w state))
 ;        '(IMPLIES (member-equal Y X)
@@ -6998,7 +7173,9 @@
 ;
 ; (u)
 ;
-; (quote (the end of my encapsulate tests -- there follow two undo commands))
+; (quote (the end of my encapsulate tests -- there follow four undo commands))
+; (u)
+; (u)
 ; (u)
 ; (u)
 
@@ -7161,6 +7338,10 @@
 ; This function prints a sequence of paragraphs, one devoted to each
 ; constrained function (its arities and constraint) and one devoted to
 ; a summary of the other names created by the encapsulation.
+
+; Note: constraints-introduced here is just a list of terms.  In particular, it
+; is not a constraint-lst-etc pair as is returned by the function named
+; constraints-introduced!
 
   (cond
    ((ld-skip-proofsp state) state)
@@ -8497,6 +8678,8 @@
                                        (constrained-fns (nth 0 temp))
                                        (retval (nth 1 temp))
                                        (constraints-introduced (nth 2 temp))
+; Note: constraints-introduced is just a list of terms, not a
+; constraint-lst-etc pair.
                                        (exports (nth 3 temp))
                                        (subversive-fns (nth 4 temp))
                                        (infectious-fns (nth 5 temp))
@@ -29533,8 +29716,8 @@
 ; representative f.  Then the 'attachment property of f is an alist matching
 ; function symbols to their attachments (including f); but the other function
 ; symbols in the nest have an 'attachment property of f -- reminiscent of
-; handling of the 'constraint-lst property.  We maintain the invariant that for
-; every function symbol g with an attachment h to its code, g is associated
+; handling of the 'constraint-lst-etc property.  We maintain the invariant that
+; for every function symbol g with an attachment h to its code, g is associated
 ; with h using the lookup method described above: if g is associated with an
 ; alist then h is the result of looking up g in that alist, else g is
 ; associated with a "canonical" symbol g' that is associated with an alist
@@ -30281,12 +30464,12 @@
                      (let* ((erasures (cond ((consp at-alist)
                                              (append at-alist erasures))
                                             (t erasures)))
-                            (constraint-lst
-                             (getpropc f 'constraint-lst t wrld))
+                            (constraint-lst-etc
+                             (getpropc f 'constraint-lst-etc '(t . nil) wrld))
                             (attach-pair (assoc-eq :ATTACH helper-alist)))
                        (cond
                         ((and (not skip-checks-t)
-                              (unknown-constraints-p constraint-lst))
+                              (unknown-constraints-p (car constraint-lst-etc)))
                          (defattach-unknown-constraints-error f ctx state))
                         ((null g)
                          (cond
@@ -30332,10 +30515,10 @@
                                                       wrld)
                                             :program)))
 
-; Is it legal to attach for execution?  A 'constraint-lst property alone isn't
-; enough, because a defined function can have a constraint-lst; for example, g
-; has a Common Lisp defun (so we can't attach to it) yet it also has a non-nil
-; 'constraint-lst property.
+; Is it legal to attach for execution?  A 'constraint-lst-etc property alone
+; isn't enough, because a defined function can have a 'constraint-lst-etc
+; property; for example, g has a Common Lisp defun (so we can't attach to it)
+; yet it also has a non-nil 'constraint-lst-etc property.
 
 ; (encapsulate
 ;  ((f (x) t))
@@ -30345,11 +30528,12 @@
 
 ; A 'constrainedp property alone isn't enough either, because defchoose
 ; introduces a 'constrainedp property of t but doesn't provide a
-; 'constraints-lst property.  That might be OK, depending on how we gather
+; 'constraint-lst-etc property.  That might be OK, depending on how we gather
 ; constraints; but defchoose is an unusual case and for now we won't consider
 ; it.
 
-                              (or (eq constraint-lst t) ; property is missing
+                              (or (equal constraint-lst-etc ; property is missing
+                                         '(t . nil))
                                   (not (getpropc f 'constrainedp nil wrld))))
 
 ; We cause an error: the function is not permitted an executable attachment.
@@ -30808,8 +30992,9 @@
            event-names new-entries seen wrld))
         (t
          (mv-let
-          (name x)
+          (name x origins)
           (constraint-info (caar alist) wrld)
+          (declare (ignore origins)) ; Picasso!
           (cond
            ((unknown-constraints-p x)
             (mv x name nil)) ; the nil is irrelevant
@@ -31941,7 +32126,7 @@
 ; - records is the new list of attachment records to install in the world.
 
 ; We return an error if any function that would be in the domain of
-; attachment-alist-exec is missing a 'constraint-lst property or has a
+; attachment-alist-exec is missing a 'constraint-lst-etc property or has a
 ; 'constrainedp property of nil.  Any proposed attachment or unattachment that
 ; agrees with the current attachment status will cause a suitable warning, and
 ; will not be included in the erasures or attachment-alist-sorted that we
