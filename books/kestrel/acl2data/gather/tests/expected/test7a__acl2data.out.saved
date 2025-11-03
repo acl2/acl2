@@ -7,7 +7,8 @@
 0 ;total_count_book_runes
 4 ;failure_count_single_rune
 6 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test7a.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test7a.lisp")
  (APP-ASSOC-REWRITE
       (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                     (BINARY-APPEND X (BINARY-APPEND Y Z))))

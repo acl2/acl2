@@ -7,7 +7,8 @@
 0 ;total_count_book_runes
 10 ;failure_count_single_rune
 12 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test2a.lisp")
  (APP-ASSOC-REWRITE
       (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                     (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -184,14 +185,14 @@
                          (APPEND (APPEND X Y) Z)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((NTH . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (CAR-CONS . :BUILTIN)
-    (BINARY-APPEND . :BUILTIN)
-    (APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+     ((NTH . :BUILTIN)
+      (EQUAL . :BUILTIN)
+      (CAR-CONS . :BUILTIN)
+      (BINARY-APPEND . :BUILTIN)
+      (APPEND . :BUILTIN)
+      (APP-ASSOC-REWRITE :SYSTEM
+                         .
+                         "kestrel/acl2data/gather/tests/runs/test2a.lisp"))))
  (APP-ASSOC-1
   (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                 (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -253,12 +254,12 @@
     (CAR-CONS . :BUILTIN)
     (BINARY-APPEND . :BUILTIN)
     (APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-        .
-        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
-    (APP-ASSOC-BACKWARDS
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+    (APP-ASSOC-REWRITE :SYSTEM
+                       .
+                       "kestrel/acl2data/gather/tests/runs/test2a.lisp")
+    (APP-ASSOC-BACKWARDS :SYSTEM
+                         .
+                         "kestrel/acl2data/gather/tests/runs/test2a.lisp"))))
  (APP-ASSOC-2
   (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                 (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -290,12 +291,12 @@
   (:SYMBOL-TABLE
    ((EQUAL . :BUILTIN)
     (BINARY-APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-        .
-        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
-    (APP-ASSOC-BACKWARDS
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+    (APP-ASSOC-REWRITE :SYSTEM
+                       .
+                       "kestrel/acl2data/gather/tests/runs/test2a.lisp")
+    (APP-ASSOC-BACKWARDS :SYSTEM
+                         .
+                         "kestrel/acl2data/gather/tests/runs/test2a.lisp"))))
  (APP-ASSOC-3
   (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                 (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -337,12 +338,12 @@
    ((NTH . :BUILTIN)
     (EQUAL . :BUILTIN)
     (BINARY-APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-        .
-        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
-    (APP-ASSOC-BACKWARDS
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+    (APP-ASSOC-REWRITE :SYSTEM
+                       .
+                       "kestrel/acl2data/gather/tests/runs/test2a.lisp")
+    (APP-ASSOC-BACKWARDS :SYSTEM
+                         .
+                         "kestrel/acl2data/gather/tests/runs/test2a.lisp"))))
  (APP-ASSOC-4
   (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                 (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -385,12 +386,12 @@
                          (APPEND X Y Z)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((NTH . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (BINARY-APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+     ((NTH . :BUILTIN)
+      (EQUAL . :BUILTIN)
+      (BINARY-APPEND . :BUILTIN)
+      (APP-ASSOC-REWRITE :SYSTEM
+                         .
+                         "kestrel/acl2data/gather/tests/runs/test2a.lisp"))))
  (APP-ASSOC-4A
   (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                 (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -424,10 +425,11 @@
                          (APPEND X Y Z)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((R1 .
-        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
-    (EQUAL . :BUILTIN)
-    (BINARY-APPEND . :BUILTIN)
-    (APP-ASSOC-REWRITE
-     .
-     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")))))
+    ((R1 :SYSTEM
+         .
+         "kestrel/acl2data/gather/tests/runs/test2a.lisp")
+     (EQUAL . :BUILTIN)
+     (BINARY-APPEND . :BUILTIN)
+     (APP-ASSOC-REWRITE :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test2a.lisp")))))
