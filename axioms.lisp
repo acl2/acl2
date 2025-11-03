@@ -14561,6 +14561,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-rw-cache-state! set-induction-depth-limit!
     attach-stobj set-override-hints-macro
     deftheory pstk verify-guards defchoose
+    set-constraint-tracking
     set-default-backchain-limit set-state-ok set-subgoal-loop-limits
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
     set-compile-fns add-include-book-dir add-include-book-dir!
@@ -17725,6 +17726,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (or (null (cdr val))
             (and (natp (cdr val))
                  (< 0 (cdr val))))))
+  ((eq key :constraint-tracking)
+   (booleanp val))
   (t nil))
  :coda (and (member-eq key '(:check-invariant-risk
                              :register-invariant-risk))
@@ -24131,7 +24134,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (:INCLUDE-BOOK-DIR-ALIST . NIL)
     (:CASE-SPLIT-LIMITATIONS . (500 100))
     (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)) ; (2.b)
-    (:SUBGOAL-LOOP-LIMITS . (1000 . 2))))
+    (:SUBGOAL-LOOP-LIMITS . (1000 . 2))
+    ))
 
 (defun untrans-table (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -24503,6 +24507,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defmacro set-subgoal-loop-limits (val)
+  (declare (ignore val))
+  nil)
+
+(defun constraint-tracking (wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :constraint-tracking
+                 (table-alist 'acl2-defaults-table wrld))))
+
+#+acl2-loop-only
+(defmacro set-constraint-tracking (val)
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :constraint-tracking
+                   ,val)
+            (table acl2-defaults-table :constraint-tracking))))
+
+#-acl2-loop-only
+(defmacro set-constraint-tracking (val)
   (declare (ignore val))
   nil)
 

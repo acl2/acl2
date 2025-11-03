@@ -1770,7 +1770,7 @@
                  establish the constraint generated~/, provided we can ~
                  establish the ~n3 constraints generated~]"
                 seeds
-                (list "" "~s*" "~s* and " "~s*, " techs)
+                (list "" "~@*" "~@* and " "~@*, " techs)
                 (zero-one-or-more k)
                 k))
           (t
@@ -1781,7 +1781,7 @@
                  generated~/, provided we can establish the ~n5 constraints ~
                  generated~]"
                 seeds
-                (list "" "~s*" "~s* and " "~s*, " techs)
+                (list "" "~@*" "~@* and " "~@*, " techs)
 
 ; Recall that an event-name of 0 is really an indication that the event in
 ; question didn't actually have a name.  See install-event.
