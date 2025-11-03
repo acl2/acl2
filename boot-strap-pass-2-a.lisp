@@ -1226,7 +1226,7 @@
         (cond ((logicp name wrld)
                (mv-let (flg prop origins)
                  (constraint-info name wrld)
-                 (declare (ignore origins)) ; Picasso!
+                 (declare (ignore origins)) ; Ignoring origins.
                  (cond ((unknown-constraints-p prop)
                         *t*)
                        (flg (ec-call (conjoin prop)))

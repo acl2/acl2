@@ -3262,7 +3262,7 @@
                        (mv-let
                          (name x origins)
                          (constraint-info (car fns) installed-wrld)
-                         (declare (ignore name origins)) ; Picasso!
+                         (declare (ignore name origins)) ; Ignoring origins.
                          (unknown-constraints-p x))))))))
 
 (defun puffable-command-blockp (wrld cmd-form ntep installed-wrld)

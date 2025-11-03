@@ -3923,7 +3923,7 @@
    (shallow-clausify
     (mv-let (sym x origins)
             (constraint-info ev wrld)
-            (declare (ignore origins)) ; Picasso!
+            (declare (ignore origins)) ; Ignoring origins.
             (assert$ (not (unknown-constraints-p x))
                      (cond
                       (sym (conjoin x))
@@ -4739,7 +4739,7 @@
          (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn rlp)))
     (mv-let (name x origins) ; name could be t
             (constraint-info+ fn wrld)
-            (declare (ignore origins)) ; Picasso!
+            (declare (ignore origins)) ; Ignoring origins.
             (cond
              ((unknown-constraints-p x)
               (collect-canonical-siblings (unknown-constraints-supporters x)
@@ -4826,7 +4826,7 @@
            (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn t)))
       (mv-let (name x origins) ; name could be t
         (constraint-info+ fn wrld)
-        (declare (ignore origins)) ; Picasso!
+        (declare (ignore origins)) ; Ignoring origins.
         (cond
          ((unknown-constraints-p x)
           (collect-canonical-siblings (unknown-constraints-supporters x)
@@ -5007,7 +5007,7 @@
    (mv-let
      (fn constraint origins)
      (constraint-info ev wrld)
-     (declare (ignore fn origins)) ; Picasso! on origins but not fn!
+     (declare (ignore fn origins)) ; Ignoring origins.
      (cond
       ((unknown-constraints-p constraint)
        (er soft ctx ; see comment in defaxiom-supporters

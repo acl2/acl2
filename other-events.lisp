@@ -6758,15 +6758,6 @@
 ;
 ; (u)
 ;
-; ; Picasso: I think this comment is unnecessary.
-;
-; ; The constraint above, on both p and mapp, is
-; ; (AND (EQUAL (MAPP X)
-; ;             (AND (CONSP X)
-; ;                  (CONS (P (CAR X)) (MAPP (CDR X)))))
-; ;      (TRUE-LISTP (MAPP X))
-; ;      (INTEGER-LISTP (MAPP X)))
-;
 ; ; Here is another case of a subversive definition, illustrating that
 ; ; we do not just check whether the function uses p but whether it uses
 ; ; p ancestrally.
@@ -30994,7 +30985,7 @@
          (mv-let
           (name x origins)
           (constraint-info (caar alist) wrld)
-          (declare (ignore origins)) ; Picasso!
+          (declare (ignore origins)) ; Ignoring origins.
           (cond
            ((unknown-constraints-p x)
             (mv x name nil)) ; the nil is irrelevant

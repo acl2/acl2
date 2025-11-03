@@ -11492,7 +11492,7 @@
 
   (mv-let (name x origins)
           (constraint-info fn wrld)
-    (declare (ignore origins)) ; Picasso!
+    (declare (ignore origins)) ; Ignoring origins.
     (cond
      ((unknown-constraints-p x)
       (let ((supporters (unknown-constraints-supporters x)))
