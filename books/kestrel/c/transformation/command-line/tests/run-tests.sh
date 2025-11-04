@@ -6,6 +6,8 @@ rm -f simpadd0.output/*.*
 ../transform-c.sh simpadd0.json
 rm -f split-fn.output/*.*
 ../transform-c.sh split-fn.json
+../transform-c.sh split-fn2.json
+../transform-c.sh split-fn3.json
 
 # cd input-files
 # gcc -O0 -c *.c
