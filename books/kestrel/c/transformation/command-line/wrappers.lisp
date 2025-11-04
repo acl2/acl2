@@ -23,6 +23,9 @@
 (include-book "kestrel/c/syntax/input-files" :dir :system)
 (include-book "kestrel/c/syntax/output-files" :dir :system)
 (include-book "kestrel/utilities/lookup-keyword" :dir :system)
+(include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/utilities/keyword-value-lists2" :dir :system))
 
 ;; :OLD-DIR and :NEW-DIR are among the non-transformation-specific arguments.
@@ -40,36 +43,36 @@
         (er hard? ctx "The :old-dir and :new-dir arguments must be different.")))
     nil))
 
-;; Returns (mv old-dir new-dir files preprocess gcc remaining-kv-list).
+;; Returns (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list).
 ;; Changes the default for :preprocess to :auto
 ;; Changes the default for :gcc to t.
 (defun handle-common-args (kv-list ctx)
   (declare (xargs :guard t))
   (b* (((when (not (keyword-value-listp kv-list)))
         (er hard? ctx "Ill-formed args: ~x0." kv-list)
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        ;; Handle :old-dir and :new-dir (both required):
        ((when (not (assoc-keyword :old-dir kv-list)))
         (er hard? ctx "Missing argument: old-dir.")
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        (old-dir (lookup-keyword :old-dir kv-list))
        ((when (not (stringp old-dir)))
         (er hard? ctx "Bad argument: old-dir is not a string: ~x0." old-dir)
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        ((when (not (assoc-keyword :new-dir kv-list)))
         (er hard? ctx "Missing argument: new-dir.")
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        (new-dir (lookup-keyword :new-dir kv-list))
        ((when (not (stringp new-dir)))
         (er hard? ctx "Bad argument: new-dir is not a string: ~x0." new-dir)
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        (- (check-dir-args old-dir new-dir ctx))
        (kv-list (remove-keyword :old-dir kv-list))
        (kv-list (remove-keyword :new-dir kv-list))
        ;; Handle :files (required):
        ((when (not (assoc-keyword :files kv-list)))
         (er hard? ctx "Missing argument: files.")
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil nil nil nil))
        (files (lookup-keyword :files kv-list))
        (kv-list (remove-keyword :files kv-list))
        ;; Change the default for :preprocess:
@@ -78,13 +81,29 @@
                        (lookup-keyword :preprocess kv-list)
                      :auto))
        (kv-list (remove-keyword :preprocess kv-list))
+       ;; Handle the :preprocess-args:
+       (preprocess-args-suppliedp (if (assoc-keyword :preprocess-args kv-list) t nil))
+       (preprocess-args (lookup-keyword :preprocess-args kv-list))
+       (preprocess-args-listp (string-listp preprocess-args))
+       (preprocess-args-alistp (and (alistp preprocess-args)
+                                    (string-listp (strip-cars preprocess-args))
+                                    (string-list-listp (strip-cdrs preprocess-args))))
+       ((when (not (or preprocess-args-listp
+                       preprocess-args-alistp)))
+        (er hard? ctx "Bad preprocess-args.  Should be either an array of strings (the preprocess args for the given file) or a JSON object mapping filepaths (strings) to the corresponding preprocess args (each a list of strings).")
+        (mv nil nil nil nil nil nil nil nil))
+       (preprocess-args (if preprocess-args-listp ; includes the NIL case
+                            preprocess-args
+                          (omap::from-lists (strip-cars preprocess-args)
+                                            (strip-cdrs preprocess-args))))
+       (kv-list (remove-keyword :preprocess-args kv-list))
        ;; Change the default for :gcc:
        (gcc-suppliedp (assoc-keyword :gcc kv-list))
        (gcc (if gcc-suppliedp
                 (lookup-keyword :gcc kv-list)
               t))
        (kv-list (remove-keyword :gcc kv-list)))
-    (mv old-dir new-dir files preprocess gcc kv-list)))
+    (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc kv-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,14 +114,14 @@
 (defun splitgso-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
-                        ;; :preprocess-args ; todo?
+                        ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
                         :gcc ,gcc)
        (c2c::splitgso *old-const*
                       *new-const*
@@ -125,14 +144,14 @@
 (defun simpadd0-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
-                        ;; :preprocess-args ; todo
+                        ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
                         :gcc ,gcc)
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
@@ -155,14 +174,14 @@
 (defun split-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
                         :path ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
-                        ;; :preprocess-args ; todo
+                        ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
                         :gcc ,gcc)
        (c2c::split-fn *old-const*
                       *new-const*

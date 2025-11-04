@@ -102,6 +102,29 @@
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *preprocess-args-macro-tests*
+  (omap::update "macro_test1.c"
+                (list "-DMY_MACRO=0")
+                (omap::update "macro_test2.c"
+                              (list "-DMY_MACRO=1")
+                              nil)))
+
+(input-files :files '("macro_test1.c" "macro_test2.c")
+             :preprocess :auto
+             :preprocess-args *preprocess-args-macro-tests*
+             :const *macro-tests*)
+
+(acl2::assert! (code-ensemblep *macro-tests*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths
+   (code-ensemble->transunits *macro-tests*))
+ (set::mergesort (list (filepath "macro_test1.c")
+                       (filepath "macro_test2.c"))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Parse and disambiguate.

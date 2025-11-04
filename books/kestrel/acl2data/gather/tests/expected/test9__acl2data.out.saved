@@ -7,7 +7,8 @@
 3 ;total_count_book_runes
 62 ;failure_count_single_rune
 91 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test9.lisp")
  (THM1
       (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
                     (BINARY-APPEND X (BINARY-APPEND Y Z))))
@@ -714,66 +715,65 @@
                       (CAR-CONS . :BUILTIN)
                       (BINARY-APPEND . :BUILTIN))))
  (CONSP-OF-EMPLOYEE
-  (:GOAL (CONSP (EMPLOYEE NAME SALARY POSITION)))
-  (:HASH 77081976)
-  (:EXPANSION-STACK (PROGN WITH-OUTPUT
-                           MAKE-EVENT STD::DEFAGGREGATE))
-  (:GOAL-CLAUSES (((CONSP (EMPLOYEE NAME SALARY POSITION)))))
-  (:EVENT (DEFTHM CONSP-OF-EMPLOYEE
-            (CONSP (EMPLOYEE NAME SALARY POSITION))
-            :RULE-CLASSES :TYPE-PRESCRIPTION
-            :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE)))))
-  (:RULE-CLASSES :TYPE-PRESCRIPTION)
-  (:USED-INDUCTION NIL)
-  (:HYP-ALIST NIL)
-  (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE)
-                         :REMOVE
-                         (DEFTHM CONSP-OF-EMPLOYEE
-                           (CONSP (EMPLOYEE NAME SALARY POSITION))
-                           :RULE-CLASSES :TYPE-PRESCRIPTION))))
-  (:BOOK-RUNES-ALIST NIL)
-  (:RUNE-ALIST (((:TYPE-PRESCRIPTION EMPLOYEE)
-                 (((CONSP (EMPLOYEE NAME SALARY POSITION))))
-                 ((CONSP (EMPLOYEE NAME SALARY POSITION)))
-                 NIL NIL)))
-  (:SYMBOL-TABLE
-   ((EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CONSP . :BUILTIN))))
+   (:GOAL (CONSP (EMPLOYEE NAME SALARY POSITION)))
+   (:HASH 77081976)
+   (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                            MAKE-EVENT STD::DEFAGGREGATE))
+   (:GOAL-CLAUSES (((CONSP (EMPLOYEE NAME SALARY POSITION)))))
+   (:EVENT (DEFTHM CONSP-OF-EMPLOYEE
+             (CONSP (EMPLOYEE NAME SALARY POSITION))
+             :RULE-CLASSES :TYPE-PRESCRIPTION
+             :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE)))))
+   (:RULE-CLASSES :TYPE-PRESCRIPTION)
+   (:USED-INDUCTION NIL)
+   (:HYP-ALIST NIL)
+   (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE)
+                          :REMOVE
+                          (DEFTHM CONSP-OF-EMPLOYEE
+                            (CONSP (EMPLOYEE NAME SALARY POSITION))
+                            :RULE-CLASSES :TYPE-PRESCRIPTION))))
+   (:BOOK-RUNES-ALIST NIL)
+   (:RUNE-ALIST (((:TYPE-PRESCRIPTION EMPLOYEE)
+                  (((CONSP (EMPLOYEE NAME SALARY POSITION))))
+                  ((CONSP (EMPLOYEE NAME SALARY POSITION)))
+                  NIL NIL)))
+   (:SYMBOL-TABLE ((EMPLOYEE :SYSTEM
+                             .
+                             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+                   (CONSP . :BUILTIN))))
  (BOOLEANP-OF-EMPLOYEE-P
-  (:GOAL (BOOLEANP (EMPLOYEE-P X)))
-  (:HASH 1823218487)
-  (:EXPANSION-STACK (PROGN WITH-OUTPUT
-                           MAKE-EVENT STD::DEFAGGREGATE))
-  (:GOAL-CLAUSES (((BOOLEANP (EMPLOYEE-P X)))))
-  (:EVENT (DEFTHM BOOLEANP-OF-EMPLOYEE-P
-            (BOOLEANP (EMPLOYEE-P X))
-            :RULE-CLASSES :TYPE-PRESCRIPTION
-            :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE-P)))))
-  (:RULE-CLASSES :TYPE-PRESCRIPTION)
-  (:USED-INDUCTION NIL)
-  (:HYP-ALIST NIL)
-  (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE-P)
-                         :REMOVE
-                         (DEFTHM BOOLEANP-OF-EMPLOYEE-P
-                           (BOOLEANP (EMPLOYEE-P X))
-                           :RULE-CLASSES :TYPE-PRESCRIPTION))))
-  (:BOOK-RUNES-ALIST NIL)
-  (:RUNE-ALIST (((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
-                 (((BOOLEANP (EMPLOYEE-P X))))
-                 ((BOOLEANP (EMPLOYEE-P X)))
-                 NIL NIL)
-                ((:TYPE-PRESCRIPTION EMPLOYEE-P)
-                 (((BOOLEANP (EMPLOYEE-P X))))
-                 ((BOOLEANP (EMPLOYEE-P X)))
-                 NIL NIL)))
-  (:SYMBOL-TABLE
-   ((EMPLOYEE-P
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
-    (BOOLEANP . :BUILTIN))))
+      (:GOAL (BOOLEANP (EMPLOYEE-P X)))
+      (:HASH 1823218487)
+      (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                               MAKE-EVENT STD::DEFAGGREGATE))
+      (:GOAL-CLAUSES (((BOOLEANP (EMPLOYEE-P X)))))
+      (:EVENT (DEFTHM BOOLEANP-OF-EMPLOYEE-P
+                (BOOLEANP (EMPLOYEE-P X))
+                :RULE-CLASSES :TYPE-PRESCRIPTION
+                :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE-P)))))
+      (:RULE-CLASSES :TYPE-PRESCRIPTION)
+      (:USED-INDUCTION NIL)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE-P)
+                             :REMOVE
+                             (DEFTHM BOOLEANP-OF-EMPLOYEE-P
+                               (BOOLEANP (EMPLOYEE-P X))
+                               :RULE-CLASSES :TYPE-PRESCRIPTION))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST (((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+                     (((BOOLEANP (EMPLOYEE-P X))))
+                     ((BOOLEANP (EMPLOYEE-P X)))
+                     NIL NIL)
+                    ((:TYPE-PRESCRIPTION EMPLOYEE-P)
+                     (((BOOLEANP (EMPLOYEE-P X))))
+                     ((BOOLEANP (EMPLOYEE-P X)))
+                     NIL NIL)))
+      (:SYMBOL-TABLE
+           ((EMPLOYEE-P :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+            (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
+            (BOOLEANP . :BUILTIN))))
  (EMPLOYEE-P-OF-EMPLOYEE
   (:GOAL (EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
                 'T))
@@ -893,23 +893,23 @@
                                  (CONS 'POSITION POSITION))))))
      NIL NIL)))
   (:SYMBOL-TABLE
-   ((NOT . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (EMPLOYEE-P
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CONSP . :BUILTIN)
-    (CDR-CONS . :BUILTIN)
-    (CAR-CONS . :BUILTIN)
-    (BOOLEANP-OF-EMPLOYEE-P
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
-    (ASSOC-EQUAL . :BUILTIN)
-    (ALISTP . :BUILTIN))))
+    ((NOT . :BUILTIN)
+     (EQUAL . :BUILTIN)
+     (EMPLOYEE-P :SYSTEM
+                 .
+                 "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (EMPLOYEE :SYSTEM
+               .
+               "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (CONSP . :BUILTIN)
+     (CDR-CONS . :BUILTIN)
+     (CAR-CONS . :BUILTIN)
+     (BOOLEANP-OF-EMPLOYEE-P :SYSTEM
+                             .
+                             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
+     (ASSOC-EQUAL . :BUILTIN)
+     (ALISTP . :BUILTIN))))
  (TAG-OF-EMPLOYEE
   (:GOAL (EQUAL (TAG$INLINE (EMPLOYEE NAME SALARY POSITION))
                 ':EMPLOYEE))
@@ -986,13 +986,12 @@
                           (CONS 'POSITION POSITION)))
                :EMPLOYEE))
        NIL NIL)))
-  (:SYMBOL-TABLE
-   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
-    (EQUAL . :BUILTIN)
-    (EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CAR-CONS . :BUILTIN))))
+  (:SYMBOL-TABLE ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+                  (EQUAL . :BUILTIN)
+                  (EMPLOYEE :SYSTEM
+                            .
+                            "kestrel/acl2data/gather/tests/runs/test9.lisp")
+                  (CAR-CONS . :BUILTIN))))
  (TAG-WHEN-EMPLOYEE-P
   (:GOAL (IMPLIES (EMPLOYEE-P X)
                   (EQUAL (TAG$INLINE X) ':EMPLOYEE)))
@@ -1072,12 +1071,12 @@
                            (EQUAL (TAG X) :EMPLOYEE)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
-    (IMPLIES . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (EMPLOYEE-P
-      .
-      "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"))))
+       ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+        (IMPLIES . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (EMPLOYEE-P :SYSTEM
+                    .
+                    "kestrel/acl2data/gather/tests/runs/test9.lisp"))))
  (EMPLOYEE-P-WHEN-WRONG-TAG
   (:GOAL (IMPLIES (NOT (EQUAL (TAG$INLINE X) ':EMPLOYEE))
                   (EQUAL (EMPLOYEE-P X) 'NIL)))
@@ -1158,13 +1157,13 @@
                  NIL NIL)
                 ((:DEFINITION NOT) :REMOVE)))
   (:SYMBOL-TABLE
-   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
-    (NOT . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (EMPLOYEE-P
-      .
-      "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"))))
+       ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+        (NOT . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (EMPLOYEE-P :SYSTEM
+                    .
+                    "kestrel/acl2data/gather/tests/runs/test9.lisp"))))
  (CONSP-WHEN-EMPLOYEE-P
   (:GOAL (IMPLIES (EMPLOYEE-P X) (CONSP X)))
   (:HASH 554178344)
@@ -1209,11 +1208,11 @@
                  ((IMPLIES (EMPLOYEE-P X) (CONSP X)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((IMPLIES . :BUILTIN)
-    (EMPLOYEE-P
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CONSP . :BUILTIN))))
+       ((IMPLIES . :BUILTIN)
+        (EMPLOYEE-P :SYSTEM
+                    .
+                    "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (CONSP . :BUILTIN))))
  (EMPLOYEE->NAME-OF-EMPLOYEE
   (:GOAL (EQUAL (EMPLOYEE->NAME$INLINE (EMPLOYEE NAME SALARY POSITION))
                 NAME))
@@ -1320,19 +1319,19 @@
              NAME))
      NIL NIL)))
   (:SYMBOL-TABLE
-   ((EQUAL . :BUILTIN)
-    (EMPLOYEE->NAME$INLINE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE->NAME
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CDR-CONS . :BUILTIN)
-    (CAR-CONS . :BUILTIN)
-    (ASSOC-EQUAL . :BUILTIN))))
+     ((EQUAL . :BUILTIN)
+      (EMPLOYEE->NAME$INLINE :SYSTEM
+                             .
+                             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+      (EMPLOYEE->NAME :SYSTEM
+                      .
+                      "kestrel/acl2data/gather/tests/runs/test9.lisp")
+      (EMPLOYEE :SYSTEM
+                .
+                "kestrel/acl2data/gather/tests/runs/test9.lisp")
+      (CDR-CONS . :BUILTIN)
+      (CAR-CONS . :BUILTIN)
+      (ASSOC-EQUAL . :BUILTIN))))
  (EMPLOYEE->SALARY-OF-EMPLOYEE
   (:GOAL (EQUAL (EMPLOYEE->SALARY$INLINE (EMPLOYEE NAME SALARY POSITION))
                 SALARY))
@@ -1440,15 +1439,15 @@
      NIL NIL)))
   (:SYMBOL-TABLE
    ((EQUAL . :BUILTIN)
-    (EMPLOYEE->SALARY$INLINE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE->SALARY
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE->SALARY$INLINE :SYSTEM
+                             .
+                             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+    (EMPLOYEE->SALARY :SYSTEM
+                      .
+                      "kestrel/acl2data/gather/tests/runs/test9.lisp")
+    (EMPLOYEE :SYSTEM
+              .
+              "kestrel/acl2data/gather/tests/runs/test9.lisp")
     (CDR-CONS . :BUILTIN)
     (CAR-CONS . :BUILTIN)
     (ASSOC-EQUAL . :BUILTIN))))
@@ -1558,19 +1557,20 @@
              POSITION))
      NIL NIL)))
   (:SYMBOL-TABLE
-   ((EQUAL . :BUILTIN)
-    (EMPLOYEE->POSITION$INLINE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE->POSITION
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EMPLOYEE
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CDR-CONS . :BUILTIN)
-    (CAR-CONS . :BUILTIN)
-    (ASSOC-EQUAL . :BUILTIN))))
+       ((EQUAL . :BUILTIN)
+        (EMPLOYEE->POSITION$INLINE
+             :SYSTEM
+             .
+             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (EMPLOYEE->POSITION :SYSTEM
+                            .
+                            "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (EMPLOYEE :SYSTEM
+                  .
+                  "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (CDR-CONS . :BUILTIN)
+        (CAR-CONS . :BUILTIN)
+        (ASSOC-EQUAL . :BUILTIN))))
  (THM6 (:GOAL (IMPLIES (IF (NATP X) (< X '10) 'NIL)
                        (NATP (LEN (MAKE-LIST-AC X 'NIL 'NIL)))))
        (:HASH 872105661)
@@ -1622,51 +1622,51 @@
                        (IF . :BUILTIN)
                        (< . :BUILTIN))))
  (THM7
-  (:GOAL (CONSP (FOO X)))
-  (:HASH 307618445)
-  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
-                                 DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
-                                 WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
-                                 PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
-  (:GOAL-CLAUSES (((CONSP (FOO X)))))
-  (:EVENT (DEFTHM THM7 (CONSP (FOO X))))
-  (:RULE-CLASSES (:REWRITE))
-  (:USED-INDUCTION NIL)
-  (:HYP-ALIST NIL)
-  (:HINT-SETTING-ALIST NIL)
-  (:BOOK-RUNES-ALIST NIL)
-  (:RUNE-ALIST (((:TYPE-PRESCRIPTION FOO)
-                 (((CONSP (FOO X))))
-                 ((CONSP (FOO X)))
-                 NIL NIL)))
-  (:SYMBOL-TABLE
-   ((FOO .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CONSP . :BUILTIN))))
+      (:GOAL (CONSP (FOO X)))
+      (:HASH 307618445)
+      (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
+                                     DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
+                                     WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                                     PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+      (:GOAL-CLAUSES (((CONSP (FOO X)))))
+      (:EVENT (DEFTHM THM7 (CONSP (FOO X))))
+      (:RULE-CLASSES (:REWRITE))
+      (:USED-INDUCTION NIL)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST NIL)
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST (((:TYPE-PRESCRIPTION FOO)
+                     (((CONSP (FOO X))))
+                     ((CONSP (FOO X)))
+                     NIL NIL)))
+      (:SYMBOL-TABLE ((FOO :SYSTEM
+                           .
+                           "kestrel/acl2data/gather/tests/runs/test9.lisp")
+                      (CONSP . :BUILTIN))))
  (THM8
-  (:GOAL (EQUAL (FOO X) (CONS X X)))
-  (:HASH 2124148126)
-  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
-                                 DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
-                                 WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
-                                 PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
-  (:GOAL-CLAUSES (((EQUAL (FOO X) (CONS X X)))))
-  (:EVENT (DEFTHM THM8
-            (EQUAL (FOO X) (CONS X X))))
-  (:RULE-CLASSES (:REWRITE))
-  (:USED-INDUCTION NIL)
-  (:HYP-ALIST NIL)
-  (:HINT-SETTING-ALIST NIL)
-  (:BOOK-RUNES-ALIST NIL)
-  (:RUNE-ALIST (((:DEFINITION FOO)
-                 (((EQUAL (FOO X) (CONS X X))))
-                 ((EQUAL (FOO X) (CONS X X)))
-                 NIL NIL)))
-  (:SYMBOL-TABLE
-   ((FOO .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EQUAL . :BUILTIN)
-    (CONS . :BUILTIN))))
+      (:GOAL (EQUAL (FOO X) (CONS X X)))
+      (:HASH 2124148126)
+      (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
+                                     DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
+                                     WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                                     PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+      (:GOAL-CLAUSES (((EQUAL (FOO X) (CONS X X)))))
+      (:EVENT (DEFTHM THM8
+                (EQUAL (FOO X) (CONS X X))))
+      (:RULE-CLASSES (:REWRITE))
+      (:USED-INDUCTION NIL)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST NIL)
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST (((:DEFINITION FOO)
+                     (((EQUAL (FOO X) (CONS X X))))
+                     ((EQUAL (FOO X) (CONS X X)))
+                     NIL NIL)))
+      (:SYMBOL-TABLE ((FOO :SYSTEM
+                           .
+                           "kestrel/acl2data/gather/tests/runs/test9.lisp")
+                      (EQUAL . :BUILTIN)
+                      (CONS . :BUILTIN))))
  (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
       (:GOAL (IF (EQUAL (NATP X) 'T)
                  (EQUAL (NATP X) 'T)
@@ -1762,17 +1762,17 @@
                            (EQUAL (NAT-FREE-LISTP X) T)))
                  NIL NIL)))
   (:SYMBOL-TABLE
-   ((SYNP . :BUILTIN)
-    (NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IF . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-CONS :SYSTEM . "std/lists/abstract.lisp")
-    (CONS . :BUILTIN)
-    (ATOM . :BUILTIN))))
+       ((SYNP . :BUILTIN)
+        (NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IF . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-CONS :SYSTEM . "std/lists/abstract.lisp")
+        (CONS . :BUILTIN)
+        (ATOM . :BUILTIN))))
  (NAT-FREE-LISTP-OF-CDR-WHEN-NAT-FREE-LISTP
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (NAT-FREE-LISTP (CDR X))))
@@ -1832,14 +1832,14 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
-         :SYSTEM . "std/lists/abstract.lisp")
-    (DOUBLE-REWRITE . :BUILTIN)
-    (CDR . :BUILTIN))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
+             :SYSTEM . "std/lists/abstract.lisp")
+        (DOUBLE-REWRITE . :BUILTIN)
+        (CDR . :BUILTIN))))
  (NAT-FREE-LISTP-WHEN-NOT-CONSP
   (:GOAL (IMPLIES (NOT (CONSP X))
                   (NAT-FREE-LISTP X)))
@@ -1896,14 +1896,14 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NOT . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
-         :SYSTEM . "std/lists/abstract.lisp")
-    (CONSP . :BUILTIN))))
+       ((NOT . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
+             :SYSTEM . "std/lists/abstract.lisp")
+        (CONSP . :BUILTIN))))
  (NATP-OF-CAR-WHEN-NAT-FREE-LISTP
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
                   (IFF (NATP (CAR X))
@@ -1983,21 +1983,22 @@
                 ((:TYPE-PRESCRIPTION STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM)
                  :REMOVE)))
   (:SYMBOL-TABLE
-   ((NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
-         :SYSTEM . "std/lists/abstract.lisp")
-    (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (CONSP . :BUILTIN)
-    (CAR . :BUILTIN))))
+       ((NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
+             :SYSTEM . "std/lists/abstract.lisp")
+        (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
+             :SYSTEM
+             .
+             "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (CONSP . :BUILTIN)
+        (CAR . :BUILTIN))))
  (NAT-FREE-LISTP-OF-APPEND
   (:GOAL (EQUAL (NAT-FREE-LISTP (BINARY-APPEND A B))
                 (IF (NAT-FREE-LISTP A)
@@ -2054,14 +2055,14 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IF . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-APPEND-NON-TRUE-LIST
-         :SYSTEM . "std/lists/abstract.lisp")
-    (BINARY-APPEND . :BUILTIN))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IF . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-APPEND-NON-TRUE-LIST
+             :SYSTEM . "std/lists/abstract.lisp")
+        (BINARY-APPEND . :BUILTIN))))
  (NAT-FREE-LISTP-OF-LIST-FIX
   (:GOAL (EQUAL (NAT-FREE-LISTP (TRUE-LIST-FIX X))
                 (NAT-FREE-LISTP X)))
@@ -2108,19 +2109,19 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TRUE-LIST-FIX . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-LIST-FIX-NON-TRUE-LISTP
-         :SYSTEM . "std/lists/list-fix.lisp"))))
+       ((TRUE-LIST-FIX . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-LIST-FIX-NON-TRUE-LISTP
+             :SYSTEM . "std/lists/list-fix.lisp"))))
  (NAT-FREE-LISTP-OF-SFIX
-  (:GOAL (IFF (NAT-FREE-LISTP (SET::SFIX X))
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::SFIX$INLINE X))
               (IF (NAT-FREE-LISTP X)
                   (NAT-FREE-LISTP X)
                 (NOT (SET::SETP X)))))
-  (:HASH 1778854736)
+  (:HASH 843380432)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
@@ -2128,10 +2129,10 @@
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
   (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
-                   (IFF (NAT-FREE-LISTP (SET::SFIX X))
+                   (IFF (NAT-FREE-LISTP (SET::SFIX$INLINE X))
                         (NAT-FREE-LISTP X)))
                   ((NAT-FREE-LISTP X)
-                   (IFF (NAT-FREE-LISTP (SET::SFIX X))
+                   (IFF (NAT-FREE-LISTP (SET::SFIX$INLINE X))
                         (NOT (SET::SETP X))))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-SFIX
@@ -2156,7 +2157,7 @@
                      (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
-         (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
+         (((NOT (NAT-FREE-LISTP (SET::SFIX$INLINE X)))
            (NAT-FREE-LISTP X)
            (NOT (SET::SETP X))))
          ((IMPLIES (AND (NAT-FREE-LISTP (SET::SFIX X))
@@ -2171,32 +2172,32 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((SET::SFIX :SYSTEM . "std/osets/top.lisp")
-    (SET::SETP :SYSTEM . "std/osets/top.lisp")
-    (NOT . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-SFIX :SYSTEM
-                            . "std/osets/element-list.lisp"))))
+       ((SET::SFIX$INLINE :SYSTEM . "std/osets/top.lisp")
+        (SET::SETP :SYSTEM . "std/osets/top.lisp")
+        (NOT . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-SFIX :SYSTEM
+                                . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-INSERT
   (:GOAL (IFF (NAT-FREE-LISTP (SET::INSERT A X))
-              (IF (NAT-FREE-LISTP (SET::SFIX X))
+              (IF (NAT-FREE-LISTP (SET::SFIX$INLINE X))
                   (NOT (NATP A))
                 'NIL)))
-  (:HASH 1000185865)
+  (:HASH 672025892)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
                            PROGN WITH-OUTPUT ENCAPSULATE
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
-  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX$INLINE X)))
                    (IFF (NAT-FREE-LISTP (SET::INSERT A X))
                         (NOT (NATP A))))
-                  ((NAT-FREE-LISTP (SET::SFIX X))
+                  ((NAT-FREE-LISTP (SET::SFIX$INLINE X))
                    (IFF (NAT-FREE-LISTP (SET::INSERT A X))
                         'NIL))))
   (:EVENT
@@ -2237,17 +2238,17 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((SET::SFIX :SYSTEM . "std/osets/top.lisp")
-    (NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (SET::INSERT :SYSTEM . "std/osets/top.lisp")
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-INSERT :SYSTEM
-                              . "std/osets/element-list.lisp"))))
+       ((SET::SFIX$INLINE :SYSTEM . "std/osets/top.lisp")
+        (NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (SET::INSERT :SYSTEM . "std/osets/top.lisp")
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-INSERT :SYSTEM
+                                  . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-DELETE
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
                   (NAT-FREE-LISTP (SET::DELETE K X))))
@@ -2311,23 +2312,23 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-DELETE :SYSTEM . "std/osets/element-list.lisp")
-    (SET::DELETE :SYSTEM . "std/osets/top.lisp"))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-DELETE :SYSTEM . "std/osets/element-list.lisp")
+        (SET::DELETE :SYSTEM . "std/osets/top.lisp"))))
  (NAT-FREE-LISTP-OF-MERGESORT
-  (:GOAL (IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::MERGESORT$INLINE X))
               (NAT-FREE-LISTP (TRUE-LIST-FIX X))))
-  (:HASH 1019406015)
+  (:HASH 1783352689)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
                            PROGN WITH-OUTPUT ENCAPSULATE
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
-  (:GOAL-CLAUSES (((IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+  (:GOAL-CLAUSES (((IFF (NAT-FREE-LISTP (SET::MERGESORT$INLINE X))
                         (NAT-FREE-LISTP (TRUE-LIST-FIX X))))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-MERGESORT
@@ -2351,7 +2352,7 @@
                      (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
-         (((NAT-FREE-LISTP (SET::MERGESORT X))
+         (((NAT-FREE-LISTP (SET::MERGESORT$INLINE X))
            (NOT (NAT-FREE-LISTP X))))
          ((IMPLIES (NOT (NAT-FREE-LISTP (SET::MERGESORT X)))
                    (NOT (NAT-FREE-LISTP X))))
@@ -2363,31 +2364,31 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TRUE-LIST-FIX . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (SET::MERGESORT :SYSTEM . "std/osets/top.lisp")
-    (IFF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-MERGESORT :SYSTEM
-                                 . "std/osets/element-list.lisp"))))
+       ((TRUE-LIST-FIX . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (SET::MERGESORT$INLINE :SYSTEM . "std/osets/top.lisp")
+        (IFF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-MERGESORT :SYSTEM
+                                     . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-UNION
-  (:GOAL (IFF (NAT-FREE-LISTP (SET::UNION X Y))
-              (IF (NAT-FREE-LISTP (SET::SFIX X))
-                  (NAT-FREE-LISTP (SET::SFIX Y))
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::UNION$INLINE X Y))
+              (IF (NAT-FREE-LISTP (SET::SFIX$INLINE X))
+                  (NAT-FREE-LISTP (SET::SFIX$INLINE Y))
                 'NIL)))
-  (:HASH 593256241)
+  (:HASH 516079443)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
                            PROGN WITH-OUTPUT ENCAPSULATE
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
-  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
-                   (IFF (NAT-FREE-LISTP (SET::UNION X Y))
-                        (NAT-FREE-LISTP (SET::SFIX Y))))
-                  ((NAT-FREE-LISTP (SET::SFIX X))
-                   (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX$INLINE X)))
+                   (IFF (NAT-FREE-LISTP (SET::UNION$INLINE X Y))
+                        (NAT-FREE-LISTP (SET::SFIX$INLINE Y))))
+                  ((NAT-FREE-LISTP (SET::SFIX$INLINE X))
+                   (IFF (NAT-FREE-LISTP (SET::UNION$INLINE X Y))
                         'NIL))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-UNION
@@ -2412,7 +2413,7 @@
                      (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
-         (((NAT-FREE-LISTP (SET::UNION X Y))
+         (((NAT-FREE-LISTP (SET::UNION$INLINE X Y))
            (NOT (NAT-FREE-LISTP X))
            (SET::SETP Y)))
          ((IMPLIES (AND (NOT (NAT-FREE-LISTP (SET::UNION X Y)))
@@ -2427,19 +2428,19 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((SET::UNION :SYSTEM . "std/osets/top.lisp")
-    (SET::SFIX :SYSTEM . "std/osets/top.lisp")
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-UNION :SYSTEM
-                             . "std/osets/element-list.lisp"))))
+       ((SET::UNION$INLINE :SYSTEM . "std/osets/top.lisp")
+        (SET::SFIX$INLINE :SYSTEM . "std/osets/top.lisp")
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-UNION :SYSTEM
+                                 . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-INTERSECT-1
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
-                  (NAT-FREE-LISTP (SET::INTERSECT X Y))))
-  (:HASH 545565413)
+                  (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
+  (:HASH 1643299694)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
@@ -2447,7 +2448,7 @@
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
   (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
-                   (NAT-FREE-LISTP (SET::INTERSECT X Y)))))
+                   (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y)))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-1
        (IMPLIES (NAT-FREE-LISTP X)
@@ -2465,7 +2466,7 @@
   (:HYP-ALIST
    (((NAT-FREE-LISTP X)
      (((NAT-FREE-LISTP X)
-       (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+       (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
      ((IMPLIES (NOT (NAT-FREE-LISTP X))
                (NAT-FREE-LISTP (SET::INTERSECT X Y))))
      NIL NIL
@@ -2488,7 +2489,7 @@
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
          (((NOT (NAT-FREE-LISTP X))
-           (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+           (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
          ((IMPLIES (NAT-FREE-LISTP X)
                    (NAT-FREE-LISTP (SET::INTERSECT X Y))))
          NIL NIL
@@ -2499,17 +2500,17 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (SET::INTERSECT :SYSTEM . "std/osets/top.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-INTERSECT-1 :SYSTEM
-                                   . "std/osets/element-list.lisp"))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (SET::INTERSECT$INLINE :SYSTEM . "std/osets/top.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-INTERSECT-1 :SYSTEM
+                                       . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-INTERSECT-2
   (:GOAL (IMPLIES (NAT-FREE-LISTP Y)
-                  (NAT-FREE-LISTP (SET::INTERSECT X Y))))
-  (:HASH 540863291)
+                  (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
+  (:HASH 1095221310)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
@@ -2517,7 +2518,7 @@
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
   (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP Y))
-                   (NAT-FREE-LISTP (SET::INTERSECT X Y)))))
+                   (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y)))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-2
        (IMPLIES (NAT-FREE-LISTP Y)
@@ -2535,7 +2536,7 @@
   (:HYP-ALIST
    (((NAT-FREE-LISTP Y)
      (((NAT-FREE-LISTP Y)
-       (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+       (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
      ((IMPLIES (NOT (NAT-FREE-LISTP Y))
                (NAT-FREE-LISTP (SET::INTERSECT X Y))))
      NIL NIL
@@ -2558,7 +2559,7 @@
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
          (((NOT (NAT-FREE-LISTP Y))
-           (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+           (NAT-FREE-LISTP (SET::INTERSECT$INLINE X Y))))
          ((IMPLIES (NAT-FREE-LISTP Y)
                    (NAT-FREE-LISTP (SET::INTERSECT X Y))))
          NIL NIL
@@ -2569,17 +2570,17 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (SET::INTERSECT :SYSTEM . "std/osets/top.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-INTERSECT-2 :SYSTEM
-                                   . "std/osets/element-list.lisp"))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (SET::INTERSECT$INLINE :SYSTEM . "std/osets/top.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-INTERSECT-2 :SYSTEM
+                                       . "std/osets/element-list.lisp"))))
  (NAT-FREE-LISTP-OF-DIFFERENCE
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
-                  (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
-  (:HASH 1383662359)
+                  (NAT-FREE-LISTP (SET::DIFFERENCE$INLINE X Y))))
+  (:HASH 644699467)
   (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
                            DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
                            MAKE-EVENT WITH-OUTPUT STD::DEFLIST
@@ -2587,7 +2588,7 @@
                            WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
                            PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
   (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
-                   (NAT-FREE-LISTP (SET::DIFFERENCE X Y)))))
+                   (NAT-FREE-LISTP (SET::DIFFERENCE$INLINE X Y)))))
   (:EVENT
      (DEFTHM NAT-FREE-LISTP-OF-DIFFERENCE
        (IMPLIES (NAT-FREE-LISTP X)
@@ -2605,7 +2606,7 @@
   (:HYP-ALIST
    (((NAT-FREE-LISTP X)
      (((NAT-FREE-LISTP X)
-       (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+       (NAT-FREE-LISTP (SET::DIFFERENCE$INLINE X Y))))
      ((IMPLIES (NOT (NAT-FREE-LISTP X))
                (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
      NIL NIL
@@ -2628,7 +2629,7 @@
                      (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
                      (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
          (((NOT (NAT-FREE-LISTP X))
-           (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+           (NAT-FREE-LISTP (SET::DIFFERENCE$INLINE X Y))))
          ((IMPLIES (NAT-FREE-LISTP X)
                    (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
          NIL NIL
@@ -2639,12 +2640,12 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-DIFFERENCE :SYSTEM . "std/osets/element-list.lisp")
-    (SET::DIFFERENCE :SYSTEM . "std/osets/top.lisp"))))
+      ((NAT-FREE-LISTP :SYSTEM
+                       .
+                       "kestrel/acl2data/gather/tests/runs/test9.lisp")
+       (IMPLIES . :BUILTIN)
+       (ELEMENT-LIST-P-OF-DIFFERENCE :SYSTEM . "std/osets/element-list.lisp")
+       (SET::DIFFERENCE$INLINE :SYSTEM . "std/osets/top.lisp"))))
  (NAT-FREE-LISTP-OF-DUPLICATED-MEMBERS
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
                   (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
@@ -2708,15 +2709,15 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
-         :SYSTEM
-         . "defsort/duplicated-members.lisp")
-    (DUPLICATED-MEMBERS :SYSTEM
-                        . "defsort/duplicated-members.lisp"))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
+             :SYSTEM
+             . "defsort/duplicated-members.lisp")
+        (DUPLICATED-MEMBERS :SYSTEM
+                            . "defsort/duplicated-members.lisp"))))
  (NAT-FREE-LISTP-OF-REV
   (:GOAL (EQUAL (NAT-FREE-LISTP (REV X))
                 (NAT-FREE-LISTP (TRUE-LIST-FIX X))))
@@ -2763,13 +2764,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TRUE-LIST-FIX . :BUILTIN)
-    (REV :SYSTEM . "std/lists/list-defuns.lisp")
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-REV :SYSTEM . "std/lists/rev.lisp"))))
+       ((TRUE-LIST-FIX . :BUILTIN)
+        (REV :SYSTEM . "std/lists/list-defuns.lisp")
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-REV :SYSTEM . "std/lists/rev.lisp"))))
  (NAT-FREE-LISTP-OF-RCONS
   (:GOAL (IFF (NAT-FREE-LISTP (RCONS A X))
               (IF (NOT (NATP A))
@@ -2826,16 +2827,16 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TRUE-LIST-FIX . :BUILTIN)
-    (RCONS :SYSTEM . "std/lists/list-defuns.lisp")
-    (NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-RCONS :SYSTEM . "std/lists/rcons.lisp"))))
+       ((TRUE-LIST-FIX . :BUILTIN)
+        (RCONS :SYSTEM . "std/lists/list-defuns.lisp")
+        (NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-RCONS :SYSTEM . "std/lists/rcons.lisp"))))
  (NATP-WHEN-MEMBER-EQUAL-OF-NAT-FREE-LISTP
   (:GOAL (IF (IMPLIES (IF (MEMBER-EQUAL A X)
                           (NAT-FREE-LISTP X)
@@ -2900,16 +2901,16 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (MEMBER-EQUAL . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-P-WHEN-MEMBER-EQUAL-OF-ELEMENT-LIST-NEGATED
-         :SYSTEM . "std/lists/sets.lisp"))))
+       ((NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (MEMBER-EQUAL . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-P-WHEN-MEMBER-EQUAL-OF-ELEMENT-LIST-NEGATED
+             :SYSTEM . "std/lists/sets.lisp"))))
  (NAT-FREE-LISTP-WHEN-SUBSETP-EQUAL
   (:GOAL (IF (IMPLIES (IF (SUBSETP-EQUAL X Y)
                           (NAT-FREE-LISTP Y)
@@ -2974,14 +2975,14 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((SUBSETP-EQUAL . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST
-         :SYSTEM . "std/lists/sets.lisp"))))
+       ((SUBSETP-EQUAL . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST
+             :SYSTEM . "std/lists/sets.lisp"))))
  (NAT-FREE-LISTP-SET-EQUIV-CONGRUENCE
   (:GOAL (IMPLIES (SET-EQUIV X Y)
                   (EQUAL (NAT-FREE-LISTP X)
@@ -3054,14 +3055,14 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST (((:DEFINITION NOT) :REMOVE)))
   (:SYMBOL-TABLE
-   ((SET-EQUIV :SYSTEM . "std/lists/list-defuns.lisp")
-    (NOT . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE :SYSTEM . "std/lists/sets.lisp"))))
+    ((SET-EQUIV :SYSTEM . "std/lists/list-defuns.lisp")
+     (NOT . :BUILTIN)
+     (NAT-FREE-LISTP :SYSTEM
+                     .
+                     "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (IMPLIES . :BUILTIN)
+     (EQUAL . :BUILTIN)
+     (ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE :SYSTEM . "std/lists/sets.lisp"))))
  (NAT-FREE-LISTP-OF-SET-DIFFERENCE-EQUAL
   (:GOAL (IMPLIES (NAT-FREE-LISTP X)
                   (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
@@ -3125,13 +3126,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((SET-DIFFERENCE-EQUAL . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
-         :SYSTEM . "std/lists/sets.lisp"))))
+       ((SET-DIFFERENCE-EQUAL . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
+             :SYSTEM . "std/lists/sets.lisp"))))
  (NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-1
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
@@ -3195,13 +3196,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (INTERSECTION-EQUAL . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1 :SYSTEM . "std/lists/sets.lisp")
-    (DOUBLE-REWRITE . :BUILTIN))))
+    ((NAT-FREE-LISTP :SYSTEM
+                     .
+                     "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (INTERSECTION-EQUAL . :BUILTIN)
+     (IMPLIES . :BUILTIN)
+     (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1 :SYSTEM . "std/lists/sets.lisp")
+     (DOUBLE-REWRITE . :BUILTIN))))
  (NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-2
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE Y))
                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
@@ -3265,13 +3266,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (INTERSECTION-EQUAL . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2 :SYSTEM . "std/lists/sets.lisp")
-    (DOUBLE-REWRITE . :BUILTIN))))
+    ((NAT-FREE-LISTP :SYSTEM
+                     .
+                     "kestrel/acl2data/gather/tests/runs/test9.lisp")
+     (INTERSECTION-EQUAL . :BUILTIN)
+     (IMPLIES . :BUILTIN)
+     (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2 :SYSTEM . "std/lists/sets.lisp")
+     (DOUBLE-REWRITE . :BUILTIN))))
  (NAT-FREE-LISTP-OF-UNION-EQUAL
   (:GOAL (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
                 (IF (NAT-FREE-LISTP (TRUE-LIST-FIX X))
@@ -3328,15 +3329,15 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((UNION-EQUAL . :BUILTIN)
-    (TRUE-LIST-FIX . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IF . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-UNION-EQUAL :SYSTEM . "std/lists/sets.lisp")
-    (DOUBLE-REWRITE . :BUILTIN))))
+       ((UNION-EQUAL . :BUILTIN)
+        (TRUE-LIST-FIX . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IF . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-UNION-EQUAL :SYSTEM . "std/lists/sets.lisp")
+        (DOUBLE-REWRITE . :BUILTIN))))
  (NAT-FREE-LISTP-OF-TAKE
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (IFF (NAT-FREE-LISTP (TAKE N X))
@@ -3423,20 +3424,20 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TAKE . :BUILTIN)
-    (NOT . :BUILTIN)
-    (NFIX . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (LEN . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-TAKE :SYSTEM . "std/lists/take.lisp")
-    (DOUBLE-REWRITE . :BUILTIN)
-    (< . :BUILTIN))))
+       ((TAKE . :BUILTIN)
+        (NOT . :BUILTIN)
+        (NFIX . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (LEN . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-TAKE :SYSTEM . "std/lists/take.lisp")
+        (DOUBLE-REWRITE . :BUILTIN)
+        (< . :BUILTIN))))
  (NAT-FREE-LISTP-OF-REPEAT
   (:GOAL (IFF (NAT-FREE-LISTP (REPEAT N X))
               (IF (NOT (NATP X))
@@ -3491,16 +3492,16 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((ZP . :BUILTIN)
-    (REPEAT :SYSTEM . "std/lists/list-defuns.lisp")
-    (NOT . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-REPEAT :SYSTEM . "std/lists/repeat.lisp"))))
+       ((ZP . :BUILTIN)
+        (REPEAT :SYSTEM . "std/lists/list-defuns.lisp")
+        (NOT . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-REPEAT :SYSTEM . "std/lists/repeat.lisp"))))
  (NATP-OF-NTH-WHEN-NAT-FREE-LISTP
   (:GOAL (IMPLIES (IF (NAT-FREE-LISTP X)
                       (< (NFIX N) (LEN X))
@@ -3596,19 +3597,19 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NTH . :BUILTIN)
-    (NOT . :BUILTIN)
-    (NFIX . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (LEN . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
-         :SYSTEM . "std/util/deflist.lisp")
-    (< . :BUILTIN))))
+       ((NTH . :BUILTIN)
+        (NOT . :BUILTIN)
+        (NFIX . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (LEN . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+             :SYSTEM . "std/util/deflist.lisp")
+        (< . :BUILTIN))))
  (NAT-FREE-LISTP-OF-UPDATE-NTH
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
@@ -3706,20 +3707,20 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((UPDATE-NTH . :BUILTIN)
-    (NOT . :BUILTIN)
-    (NFIX . :BUILTIN)
-    (NATP . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (LEN . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (IFF . :BUILTIN)
-    (IF . :BUILTIN)
-    (ELEMENT-LIST-P-OF-UPDATE-NTH :SYSTEM . "std/util/deflist.lisp")
-    (DOUBLE-REWRITE . :BUILTIN)
-    (< . :BUILTIN))))
+       ((UPDATE-NTH . :BUILTIN)
+        (NOT . :BUILTIN)
+        (NFIX . :BUILTIN)
+        (NATP . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (LEN . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (IFF . :BUILTIN)
+        (IF . :BUILTIN)
+        (ELEMENT-LIST-P-OF-UPDATE-NTH :SYSTEM . "std/util/deflist.lisp")
+        (DOUBLE-REWRITE . :BUILTIN)
+        (< . :BUILTIN))))
  (NAT-FREE-LISTP-OF-BUTLAST
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (NAT-FREE-LISTP (BUTLAST X N))))
@@ -3783,13 +3784,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-BUTLAST :SYSTEM . "std/util/deflist.lisp")
-    (DOUBLE-REWRITE . :BUILTIN)
-    (BUTLAST . :BUILTIN))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-BUTLAST :SYSTEM . "std/util/deflist.lisp")
+        (DOUBLE-REWRITE . :BUILTIN)
+        (BUTLAST . :BUILTIN))))
  (NAT-FREE-LISTP-OF-NTHCDR
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (NAT-FREE-LISTP (NTHCDR N X))))
@@ -3853,13 +3854,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NTHCDR . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-NTHCDR :SYSTEM . "std/util/deflist.lisp")
-    (DOUBLE-REWRITE . :BUILTIN))))
+       ((NTHCDR . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-NTHCDR :SYSTEM . "std/util/deflist.lisp")
+        (DOUBLE-REWRITE . :BUILTIN))))
  (NAT-FREE-LISTP-OF-LAST
   (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
                   (NAT-FREE-LISTP (LAST X))))
@@ -3923,13 +3924,13 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (LAST . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-LAST :SYSTEM . "std/util/deflist.lisp")
-    (DOUBLE-REWRITE . :BUILTIN))))
+       ((NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (LAST . :BUILTIN)
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-LAST :SYSTEM . "std/util/deflist.lisp")
+        (DOUBLE-REWRITE . :BUILTIN))))
  (NAT-FREE-LISTP-OF-REMOVE
   (:GOAL
      (IMPLIES
@@ -4002,15 +4003,15 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((RETURN-LAST . :BUILTIN)
-    (REMOVE-EQUAL . :BUILTIN)
-    (REMOVE-EQL-EXEC$GUARD-CHECK . :BUILTIN)
-    (REMOVE-EQL-EXEC . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IMPLIES . :BUILTIN)
-    (ELEMENT-LIST-P-OF-REMOVE :SYSTEM . "std/util/deflist.lisp"))))
+       ((RETURN-LAST . :BUILTIN)
+        (REMOVE-EQUAL . :BUILTIN)
+        (REMOVE-EQL-EXEC$GUARD-CHECK . :BUILTIN)
+        (REMOVE-EQL-EXEC . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IMPLIES . :BUILTIN)
+        (ELEMENT-LIST-P-OF-REMOVE :SYSTEM . "std/util/deflist.lisp"))))
  (NAT-FREE-LISTP-OF-REVAPPEND
   (:GOAL (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
                 (IF (NAT-FREE-LISTP (TRUE-LIST-FIX X))
@@ -4067,11 +4068,11 @@
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
-   ((TRUE-LIST-FIX . :BUILTIN)
-    (REVAPPEND . :BUILTIN)
-    (NAT-FREE-LISTP
-         .
-         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
-    (IF . :BUILTIN)
-    (EQUAL . :BUILTIN)
-    (ELEMENT-LIST-P-OF-REVAPPEND :SYSTEM . "std/util/deflist.lisp")))))
+       ((TRUE-LIST-FIX . :BUILTIN)
+        (REVAPPEND . :BUILTIN)
+        (NAT-FREE-LISTP :SYSTEM
+                        .
+                        "kestrel/acl2data/gather/tests/runs/test9.lisp")
+        (IF . :BUILTIN)
+        (EQUAL . :BUILTIN)
+        (ELEMENT-LIST-P-OF-REVAPPEND :SYSTEM . "std/util/deflist.lisp")))))

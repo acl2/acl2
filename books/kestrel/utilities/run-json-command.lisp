@@ -35,9 +35,10 @@
           ((eq :null val) nil) ; todo: think about this (could go to :null)
           ((rationalp val) val)
           ((stringp val) val) ; todo: look for keywords
+          ;; A JSON array becomes an ACL2 list:
           ((parsed-json-arrayp val)
            (parsed-json-values-to-lisp-values (parsed-json-array->values val)))
-          ;; must be a json object
+          ;; must be a json object (becomes an ACL2 alist):
           (t
             (let* ((pairs (parsed-json-object->pairs val))
                    (keys (strip-cars pairs)) ;; strings, but we might someday convert some to symbols
