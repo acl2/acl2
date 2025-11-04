@@ -207,44 +207,49 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-files
-  ((files string-listp
-          "The file path list specifying C file to preprocess.")
+  ((files
+     string-listp
+     "The file path list specifying C file to preprocess.")
    &key
-   ((path stringp
-          "The base path to which @('files') are relative. By default, the
-           value is @('\".\"') (the current working directory).")
+   ((path
+      stringp
+      "The base path to which @('files') are relative. By default, the value is
+      @('\".\"') (the current working directory).")
     '".")
-   ((out-dir (or (not out-dir)
-                 (stringp out-dir))
-             "This specifies the directory that preprocessed output files are
-              saved to with posfix @('\".i\"'). If @('nil'), temporary files
-              will be created (see @(see oslib::tempfile)).")
+   ((out-dir
+      (or (not out-dir)
+          (stringp out-dir))
+      "This specifies the directory that preprocessed output files are saved to
+       with posfix @('\".i\"'). If @('nil'), temporary files will be created
+       (see @(see oslib::tempfile)).")
     'nil)
-   ((save "If @('t'), the output files are saved. If @('nil'), the files are
-           removed after reading them in. If @(':auto'), the default value,
-           files will be saved only if an explicit @('out-dir') value is
-           provided.")
+   ((save
+      "If @('t'), the output files are saved. If @('nil'), the files are
+       removed after reading them in. If @(':auto'), the default value, files
+       will be saved only if an explicit @('out-dir') value is provided.")
     ':auto)
-   ((preprocessor stringp
-                  "The preprocessor executable to use. The default is
-                   \"gcc\". Other reasonable values might be \"cpp\",
-                   \"clang\", \"cc\", etc.")
+   ((preprocessor
+      stringp
+      "The preprocessor executable to use. The default is \"gcc\". Other
+       reasonable values might be \"cpp\", \"clang\", \"cc\", etc.")
     '"gcc")
-   ((extra-args (or (string-listp extra-args)
-                    (acl2::string-stringlist-mapp extra-args))
-                "Arguments to pass to the C preprocessor, in addition to
-                 \"-E\". This may be either a string list, representing the
-                 list of preprocessing arguments providing for every file,
-                 or an omap from strings to string lists, associating a list of
-                 preprocessing arguments to each file independently.
-                 When an omap is provided, any file without an association
-                 under the map is interpreted as if it is associated with an
-                 empty list. A value of @('nil') has the same interpretation as
-                 both a list and map, and so may be considered either.
-                 The default value is @('(list \"-P\" \"-std=c17\")').
-                 (The flag @('\"-P\"') suppresses the generation of
-                 linemarkers and @('\"-std=c17\"') instructs the preprocessor
-                 to use the C17 standard.)")
+   ((extra-args
+      (or (string-listp extra-args)
+          (acl2::string-stringlist-mapp extra-args))
+      "Arguments to pass to the C preprocessor, in addition to \"-E\". This may
+       be either a string list, representing the list of preprocessing
+       arguments provided for every file, or an omap from strings to string
+       lists, associating a list of preprocessing arguments to each file
+       independently. When the argument is an omap, file names from the
+       @('files') argument are looked up directly in the omap. No sort of path
+       equivalence is considered (e.g., @('\"./foo.c\"') is <i>not</i> the same
+       as @('\"foo.c\"')). When an omap is provided, any file without an
+       association under the map is interpreted as if it is associated with an
+       empty list. A value of @('nil') has the same interpretation as both a
+       list and map, and so may be considered either.  The default value is
+       @('(list \"-P\" \"-std=c17\")').  (The flag @('\"-P\"') suppresses the
+       generation of linemarkers and @('\"-std=c17\"') instructs the
+       preprocessor to use the C17 standard.)")
     ''("-P" "-std=c17"))
    (state 'state))
   :returns (mv (erp "@('nil') if successful, or the first error @('msgp')
@@ -271,14 +276,15 @@
                                      "/"
                                      filename
                                      ".i")))))
-       (filename (concatenate 'string path "/" (first files)))
+       (filename (first files))
+       (full-filename (concatenate 'string path "/" filename))
        (extra-args-is-mapp (and (consp extra-args)
                                 (consp (first extra-args))))
        (preprocessor-args (if extra-args-is-mapp
                               (cdr (omap::assoc filename extra-args))
                             extra-args))
        ((erp - filedata state)
-        (preprocess-file filename
+        (preprocess-file full-filename
                          :out out
                          :save save
                          :preprocessor preprocessor
