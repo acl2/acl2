@@ -22,9 +22,7 @@
 
 (local (include-book "std/lists/last" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,6 +131,7 @@
   :elementp-of-nil t
   :pred var-tablep
   :prepwork ((local (in-theory (enable fix max))))
+
   ///
 
   (defrule var-tablep-of-cons-alt
@@ -167,8 +166,7 @@
        ((when (consp pair)) (cdr pair))
        (vartab (cdr vartab))
        ((when (endp vartab)) nil))
-    (var-table-lookup var vartab))
-  :hooks (:fix))
+    (var-table-lookup var vartab)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,8 +195,7 @@
      as enforced by its invariant,
      any scope added to it must be a block scope,
      because the file scope is always in the table."))
-  (cons nil (var-table-fix vartab))
-  :hooks (:fix))
+  (cons nil (var-table-fix vartab)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,7 +286,7 @@
     (assert* (and (var-defstatus-case tabdefstatus :defined)
                   (var-defstatus-case defstatus :defined))
              (reserrf (list :duplicate-var-def var))))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,8 +312,7 @@
        ((unless (or (var-defstatus-case defstatus :defined)
                     (var-defstatus-case defstatus :tentative)))
         nil))
-    (var-scope-all-definedp (omap::tail varscope)))
-  :hooks (:fix))
+    (var-scope-all-definedp (omap::tail varscope))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,8 +324,7 @@
    (xdoc::p
     "We only use this ACL2 function when the variable table has one scope,
      which must therefore be the file scope."))
-  (var-scope-all-definedp (car vartab))
-  :hooks (:fix))
+  (var-scope-all-definedp (car vartab)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,8 +408,7 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::assoc (ident-fix fun) (fun-table-fix funtab)))
-  :hooks (:fix))
+  (cdr (omap::assoc (ident-fix fun) (fun-table-fix funtab))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,7 +481,7 @@
                       (change-fun-sinfo info :definedp t)
                       funtab)))
     funtab)
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,8 +492,7 @@
        ((when (omap::emptyp funtab)) t)
        ((mv & info) (omap::head funtab))
        ((unless (fun-sinfo->definedp info)) nil))
-    (fun-table-all-definedp (omap::tail funtab)))
-  :hooks (:fix))
+    (fun-table-all-definedp (omap::tail funtab))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -534,7 +527,7 @@
                        (ident-fix mem)
                        members))))
     (type-option-some->val type))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -628,6 +621,7 @@
    (variables var-table))
   :require (not (set::emptyp return-types))
   :pred types+vartab-p
+
   ///
 
   (defrule not-types+vartab-p-of-error
@@ -695,7 +689,8 @@
     (:sshort (type-sint))
     (:ushort (if (<= (ushort-max) (sint-max)) (type-sint) (type-uint)))
     (t (type-fix type)))
-  :hooks (:fix)
+  :no-function nil
+
   ///
 
   (defrule type-arithmeticp-of-promote-type
@@ -839,7 +834,7 @@
                                            type-signed-integerp
                                            type-unsigned-integerp
                                            promote-type)))
-  :hooks (:fix)
+
   ///
 
   (defrule type-arithmeticp-of-uaconvert-types
@@ -937,7 +932,7 @@
   (if (type-case type :array)
       (type-pointer (type-array->of type))
     (type-fix type))
-  :hooks (:fix)
+
   ///
 
   (defrule type-arithmeticp-of-apconvert-type
@@ -956,7 +951,9 @@
   :returns (types1 type-listp)
   :short "Lift @(tsee apconvert-type) to lists."
   (apconvert-type x)
+
   ///
+
   (fty::deffixequiv apconvert-type-list
     :args ((x type-listp))))
 
@@ -975,8 +972,7 @@
      Note that the size, if present, is lost."))
   (if (type-case type :array)
       (make-type-pointer :to (type-array->of type))
-    (type-fix type))
-  :hooks (:fix))
+    (type-fix type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -985,7 +981,9 @@
   :returns (types1 type-listp)
   :short "Lift @(tsee adjust-type) to lists."
   (adjust-type x)
+
   ///
+
   (fty::deffixequiv adjust-type-list
     :args ((x type-listp))))
 
@@ -1003,7 +1001,7 @@
   (if (paident-stringp (ident->name id))
       :wellformed
     (reserrf (list :illegal/unsupported-ident (ident-fix id))))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1064,7 +1062,7 @@
                 (cond ((sllong-integerp ic.value) (type-sllong))
                       ((ullong-integerp ic.value) (type-ullong))
                       (t (reserrf (list :iconst-out-of-range ic))))))))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1086,7 +1084,8 @@
               :float (reserrf (list :unsupported-float-const (const-fix c)))
               :enum (reserrf (list :unsupported-enum-const (const-fix c)))
               :char (reserrf (list :unsupported-char-const (const-fix c))))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1132,7 +1131,7 @@
    :union (reserrf (list :not-supported-union tyspec.tag))
    :enum (reserrf (list :not-supported-enum tyspec.tag))
    :typedef (reserrf (list :not-supported-typedef tyspec.name)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1183,7 +1182,7 @@
                                (make-type-array :of type :size size))))
   :measure (obj-adeclor-count declor)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1198,7 +1197,8 @@
      then the abstracto object declarator."))
   (b* (((okf type) (check-tyspecseq (tyname->tyspec tyname) tagenv)))
     (check-obj-adeclor (tyname->declor tyname) type))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1301,7 +1301,7 @@
     (t (reserrf (impossible))))
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
                                            type-realp)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1430,7 +1430,7 @@
   :guard-hints (("Goal" :in-theory (enable type-arithmeticp
                                            type-realp
                                            binop-purep)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1463,7 +1463,8 @@
                        :required :scalar
                        :supplied type))))
     (make-expr-type :type type :lvalue nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1535,7 +1536,7 @@
         (reserrf (list :diff-promoted-types then-type else-type)))
        (type then-type))
     (make-expr-type :type type :lvalue nil))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1581,7 +1582,7 @@
                        :required :integer
                        :supplied (type-fix sub-type)))))
     (make-expr-type :type (type-pointer->to arr-type) :lvalue t))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1609,7 +1610,8 @@
        (tag (type-struct->tag target-type))
        ((okf memtype) (struct-member-lookup tag name tagenv)))
     (make-expr-type :type memtype :lvalue target-lvalue))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1639,7 +1641,8 @@
        (tag (type-struct->tag type))
        ((okf memtype) (struct-member-lookup tag name tagenv)))
     (make-expr-type :type memtype :lvalue t))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1698,7 +1701,8 @@
   :measure (expr-count e)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1707,6 +1711,7 @@
                               (tagenv tag-envp))
   :returns (types type-list-resultp
                   :hints (("Goal"
+                           :induct t
                            :in-theory
                            (enable
                             typep-when-type-resultp-and-not-reserrp
@@ -1724,7 +1729,8 @@
        (type (apconvert-type type))
        ((okf types) (check-expr-pure-list (cdr es) vartab tagenv)))
     (cons type types))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1770,7 +1776,8 @@
                        :required param-types
                        :supplied arg-types))))
     (fun-sinfo->output info))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1801,7 +1808,8 @@
                        tagenv)
     (b* (((okf etype) (check-expr-pure e vartab tagenv)))
       (expr-type->type etype)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1866,7 +1874,8 @@
                     (type-case left-type :pointer)))
         (reserrf (list :expr-asg-disallowed-type left-type))))
     :wellformed)
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1903,7 +1912,8 @@
             (reserrf (list :nonvoid-function-result-discarded (expr-fix e)))))
         :wellformed)
     (check-expr-asg e funtab vartab tagenv))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1941,7 +1951,8 @@
                     (not (expr-list-constp initer.get))))
          (reserrf (list :not-constant :multi initer.get))))
      (init-type-list types)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1989,7 +2000,7 @@
            (reserrf (list :init-type-mismatch
                           :required (type-fix type)
                           :supplied (init-type-fix itype)))))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2048,7 +2059,8 @@
        ((okf init-type) (check-initer init funtab vartab tagenv constp))
        ((okf &) (init-type-matchp init-type type)))
     (var-table-add-var var type (var-defstatus-defined) vartab))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2220,7 +2232,8 @@
                    (reserrf (list :return-void-expression s.value))))
                (make-types+vartab :return-types (set::insert type nil)
                                   :variables vartab)))
-    :measure (stmt-count s))
+    :measure (stmt-count s)
+    :no-function nil)
 
   (define check-block-item ((item block-itemp)
                             (funtab fun-tablep)
@@ -2234,7 +2247,8 @@
        (make-types+vartab :return-types (set::insert (type-void) nil)
                           :variables vartab))
      :stmt (check-stmt item.get funtab vartab tagenv))
-    :measure (block-item-count item))
+    :measure (block-item-count item)
+    :no-function nil)
 
   (define check-block-item-list ((items block-item-listp)
                                  (funtab fun-tablep)
@@ -2253,15 +2267,19 @@
          (vartab (types+vartab->variables stype)))
       (make-types+vartab :return-types (set::union rtypes1 rtypes2)
                          :variables vartab))
-    :measure (block-item-list-count items))
+    :measure (block-item-list-count items)
+    :no-function nil)
 
   :prepwork ((local (in-theory (enable not-reserrp-when-types+vartab-p))))
 
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
 
   :verify-guards nil ; done below
+
   ///
-  (verify-guards check-stmt)
+
+  (verify-guards check-stmt
+    :hints (("Goal" :in-theory (enable (:e tau-system)))))
 
   (fty::deffixequiv-mutual check-stmt)
 
@@ -2281,7 +2299,9 @@
        t
        :rule-classes nil
        :flag check-block-item-list)
-     :hints (("Goal" :expand ((check-stmt s funtab vartab tagenv))))))
+     :hints (("Goal"
+              :in-theory (enable (:e tau-system))
+              :expand ((check-stmt s funtab vartab tagenv))))))
 
   (defrule check-stmt-var-table-no-change
     (b* ((result (check-stmt s funtab vartab tagenv)))
@@ -2318,7 +2338,8 @@
        ((unless (type-completep type))
         (reserrf (list :param-type-incomplete (param-declon-fix param)))))
     (var-table-add-var var type (var-defstatus-defined) vartab))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2336,7 +2357,8 @@
   (b* (((when (endp params)) (var-table-fix vartab))
        ((okf vartab) (check-param-declon (car params) vartab tagenv)))
     (check-param-declon-list (cdr params) vartab tagenv))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2368,7 +2390,7 @@
    :pointer (check-fun-declor declor.decl vartab tagenv))
   :measure (fun-declor-count declor)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2394,7 +2416,8 @@
        (in-types (type-name-list-to-type-list in-tynames))
        (in-types (adjust-type-list in-types)))
     (fun-table-add-fun name in-types out-type nil funtab))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2452,7 +2475,8 @@
                        :required out-type
                        :inferred (types+vartab->return-types stype)))))
     funtab)
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2494,21 +2518,26 @@
      members-opt
      :some members-opt.val
      :none (reserrf (list :duplicate-member name))))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil
+
   ///
 
   (fty::deffixequiv check-struct-declon-list
     :args ((declons struct-declon-listp)
            (tagenv tag-envp))
-    ;; for speed:
-    :hints (("Goal" :in-theory (disable equal-of-error))))
+    :hints (("Goal" :induct t :in-theory (disable equal-of-error))))
 
   (defret consp-of-check-struct-declon-list
     (equal (consp (check-struct-declon-list declons tagenv))
            (consp declons))
     :fn check-struct-declon-list
-    :hints (("Goal" :in-theory (enable member-type-list-option-some->val
-                                       member-type-add-first
-                                       member-type-list-option-some)))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable member-type-list-option-some->val
+                                member-type-add-first
+                                member-type-list-option-some)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2561,7 +2590,7 @@
   (("Goal"
     :in-theory
     (enable member-type-listp-when-member-type-list-resultp-and-not-reserrp)))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2604,7 +2633,8 @@
                  (make-funtab+vartab+tagenv :funs (fun-table-fix funtab)
                                             :vars (var-table-fix vartab)
                                             :tags tagenv)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2629,7 +2659,8 @@
                            (funtab+vartab+tagenv->funs funtab+vartab+tagenv)
                            (funtab+vartab+tagenv->vars funtab+vartab+tagenv)
                            (funtab+vartab+tagenv->tags funtab+vartab+tagenv)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2680,7 +2711,8 @@
        ((unless (fun-table-all-definedp funtab))
         (reserrf (list :transunit-has-undef-fun funtab))))
     :wellformed)
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2708,8 +2740,7 @@
   (b* ((h-extdecls (and (fileset->dot-h fileset)
                         (file->declons (fileset->dot-h fileset))))
        (c-extdecls (file->declons (fileset->dot-c fileset))))
-    (make-transunit :declons (append h-extdecls c-extdecls)))
-  :hooks (:fix))
+    (make-transunit :declons (append h-extdecls c-extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2724,4 +2755,5 @@
      we check the translation unit."))
   (b* (((okf tunit) (preprocess fileset)))
     (check-transunit tunit))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :no-function nil)
