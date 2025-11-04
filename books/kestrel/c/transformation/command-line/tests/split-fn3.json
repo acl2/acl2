@@ -6,5 +6,5 @@
   "target": "foo",
   "new-fn": "foo_new",
   "split-point": 1,
-  "preprocess-args": {"input-files/file7.c": ["-P", "-DMY_CONST=0"]}
+  "preprocess-args": {"file7.c": ["-P", "-DMY_CONST=0"]}
  }}
