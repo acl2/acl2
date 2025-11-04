@@ -9,16 +9,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
 
-(include-book "semantics64")
+(include-book "features")
+(include-book "semantics")
 
-(include-book "../executable/decoding-executable")
+(include-book "../../executable/decoding-executable")
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ execution64
-  :parents (rv64im)
+(defxdoc+ rv64im-le-execution
+  :parents (specialized-rv64im-le)
   :short "Model of execution for RV64IM."
   :long
   (xdoc::topstring
@@ -63,4 +66,9 @@
      If @('n') is 0, we return the state unchanged."))
   (cond ((zp n) (state64-fix stat))
         ((error64p stat) (state64-fix stat))
-        (t (step64n (1- n) (step64 stat)))))
+        (t (step64n (1- n) (step64 stat))))
+
+  ///
+
+  (fty::deffixequiv step64n
+    :hints (("Goal" :induct t :in-theory (enable nfix)))))

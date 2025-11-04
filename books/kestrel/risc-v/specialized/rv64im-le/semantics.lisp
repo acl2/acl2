@@ -9,22 +9,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
 
-(include-book "features")
-(include-book "states64")
+(include-book "states")
 
-(include-book "../specification/instructions")
+(include-book "../../specification/instructions")
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
+
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -33,18 +34,22 @@
 (defrulel dab-digit-list-of-256-when-ubyte8-listp
   (implies (ubyte8-listp x)
            (acl2::dab-digit-listp 256 x))
-  :enable (ubyte8-listp ubyte8p acl2::dab-digitp))
+  :induct t
+  :enable (ubyte8-listp
+           ubyte8p
+           acl2::dab-digitp
+           unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ semantics64
-  :parents (rv64im)
+(defxdoc+ rv64im-le-semantics
+  :parents (specialized-rv64im-le)
   :short "Semantics of instructions for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define state-transforming functions that model
-     the effect of each instruction on the RV64I state.")
+     the effect of each instruction on the state.")
    (xdoc::p
     "For now we only support little endian access to memory,
      in load and store instructions.
@@ -1805,8 +1810,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the error flag for the RV32I shift instructions,
-     because here we are in RV64I mode."))
+    "We set the error flag for the 32-bit shift instructions,
+     because here we are in 64-bit mode."))
   (instr-case instr
               :op-imm (exec64-op-imm instr.funct
                                      instr.rd

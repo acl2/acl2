@@ -9,7 +9,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
+
+(include-book "features")
+
+(include-book "../../specification/states")
 
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
@@ -21,7 +25,7 @@
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 
-(local (include-book "../library-extensions/logops-theorems"))
+(local (include-book "../../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -31,22 +35,38 @@
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte64-ihs-theorems" :dir :system))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (disable ash ifix)))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ states64
-  :parents (rv64im)
-  :short "Model of states for RV64IM."
+(defxdoc+ rv64im-le-states
+  :parents (specialized-rv64im-le)
+  :short (xdoc::topstring
+          "Specialization of "
+          (xdoc::seetopic "riscv::states" "states")
+          " to RV64IM little endian.")
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We define a recognizer for the valid states for RV64IM little endian;
+     in our current model, the states do not depend
+     on (the presence of absence of) the M extension
+     or on the endianness.
+     It remains to introduce the isomorphism between this recognizer
+     and our model of specialized states.")
    (xdoc::p
     "Along with the model of states,
      we define some operations on the states."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64im-le-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of states for RV64IM little endian."
+  (and (riscv::statp x)
+       (riscv::stat-validp x (feat-rv64im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -119,6 +139,7 @@
   :layout :list
   :tag :state64
   :pred state64p
+  :prepwork ((local (in-theory (enable (:e tau-system)))))
 
   ///
 
@@ -134,7 +155,7 @@
 
 (define read64-xreg-unsigned ((reg ubyte5p) (stat state64p))
   :returns (val ubyte64p
-                :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p))))
+                :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p nfix))))
   :short "Read an unsigned 64-bit integer from an @('x') register."
   :long
   (xdoc::topstring
@@ -148,13 +169,15 @@
     (if (= reg 0)
         0
       (nth (1- reg) (state64->xregfile stat))))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
   (more-returns
    (val natp
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (disable read64-xreg-unsigned))))))
+        :hints (("Goal" :in-theory (e/d (natp (:e tau-system))
+                                        (read64-xreg-unsigned)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,7 +250,9 @@
   :guard-hints (("Goal" :in-theory (enable xregfile64p
                                            state64p
                                            state64->xregfile
-                                           ubyte5p)))
+                                           ubyte5p
+                                           nfix
+                                           max)))
   ///
   (fty::deffixequiv write64-xreg
     :hints (("Goal" :in-theory (enable loghead)))))
@@ -311,7 +336,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read64-mem-ubyte8 ((addr integerp) (stat state64p))
-  :returns (val ubyte8p)
+  :returns (val ubyte8p :hints (("Goal" :in-theory (enable nfix))))
   :short "Read an unsigned 8-bit integer from memory."
   :long
   (xdoc::topstring
@@ -320,6 +345,7 @@
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 64 addr)))
     (nth addr (state64->mem stat)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -343,7 +369,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read64-mem-ubyte16-lendian ((addr integerp) (stat state64p))
-  :returns (val ubyte16p :hints (("Goal" :in-theory (enable ubyte16p))))
+  :returns (val ubyte16p
+                :hints (("Goal" :in-theory (enable ubyte16p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
   :short "Read an unsigned 16-bit little endian integer from memory."
   :long
   (xdoc::topstring
@@ -360,7 +389,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read64-mem-ubyte32-lendian ((addr integerp) (stat state64p))
-  :returns (val ubyte32p :hints (("Goal" :in-theory (enable ubyte32p))))
+  :returns (val ubyte32p
+                :hints (("Goal" :in-theory (enable ubyte32p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
   :short "Read an unsigned 32-bit little endian integer from memory."
   :long
   (xdoc::topstring
@@ -379,7 +411,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read64-mem-ubyte64-lendian ((addr integerp) (stat state64p))
-  :returns (val ubyte64p :hints (("Goal" :in-theory (enable ubyte64p))))
+  :returns (val ubyte64p
+                :hints (("Goal" :in-theory (enable ubyte64p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
   :short "Read an unsigned 64-bit little endian integer from memory."
   :long
   (xdoc::topstring
@@ -417,7 +452,8 @@
   (change-state64 stat :mem (update-nth (loghead 64 addr)
                                         (loghead 8 val)
                                         (state64->mem stat)))
-  :guard-hints (("Goal" :in-theory (enable memory64p)))
+  :guard-hints (("Goal" :in-theory (enable memory64p nfix max (:e tau-system))))
+  :hooks nil ; does not fix val
 
   ///
 
@@ -429,7 +465,8 @@
 (define write64-mem-ubyte16-lendian ((addr integerp)
                                      (val ubyte16p)
                                      (stat state64p))
-  :returns (new-stat state64p)
+  :returns (new-stat state64p
+                     :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 16-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -444,7 +481,11 @@
        (stat (write64-mem-ubyte8 addr b0 stat))
        (stat (write64-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           ubyte16p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks nil ; does not fix val
 
   ///
 
@@ -457,7 +498,8 @@
 (define write64-mem-ubyte32-lendian ((addr integerp)
                                      (val ubyte32p)
                                      (stat state64p))
-  :returns (new-stat state64p)
+  :returns (new-stat state64p
+                     :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 32-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -474,7 +516,11 @@
        (stat (write64-mem-ubyte8 (+ 2 (ifix addr)) b2 stat))
        (stat (write64-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           ubyte32p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks nil ; does not fix val
 
   ///
 
@@ -487,7 +533,8 @@
 (define write64-mem-ubyte64-lendian ((addr integerp)
                                      (val ubyte64p)
                                      (stat state64p))
-  :returns (new-stat state64p)
+  :returns (new-stat state64p
+                     :hints (("Goal" :in-theory (enable (:e tau-system)))))
   :short "Write an unsigned 64-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -513,7 +560,11 @@
        (stat (write64-mem-ubyte8 (+ 6 (ifix addr)) b6 stat))
        (stat (write64-mem-ubyte8 (+ 7 (ifix addr)) b7 stat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte64p)))
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           ubyte64p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks nil ; does not fix val
 
   ///
 

@@ -22,14 +22,14 @@
 (defund clear-extend (n addr stat)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (write n addr 0 stat))
 
 ;; An alias of clear
 (defund clear-retract (n addr stat)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (write n addr 0 stat))
 
 ;; Introduces the clear when there is a write in STAT to be cleared.

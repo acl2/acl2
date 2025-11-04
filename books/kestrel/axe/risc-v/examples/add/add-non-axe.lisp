@@ -32,7 +32,7 @@
      (implies (and (equal (pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name afor read32-pc
                           ;(bvplus 32  base-address) ; for position-independent mode (but see below)
                           )
-                   (stat32ip stat)
+                   (stat32p stat)
                    ;; Generates the assumptions:
                    ,@(assumptions-elf32! *executable*
                                          10 ; stack-slots

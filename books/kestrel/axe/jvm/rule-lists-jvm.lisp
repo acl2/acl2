@@ -692,10 +692,10 @@
           (new-ad-rules)
           (address-rules)
           '(set::delete-constant-opener ;needed for address calcs
-            set::tail-constant-opener   ;needed for address calcs
-            set::head-constant-opener   ;needed for address calcs
-            set::emptyp-constant-opener ;needed for address calcs
-            set::sfix-constant-opener   ;needed for address calcs
+            set::tail$inline-constant-opener   ;needed for address calcs
+            set::head$inline-constant-opener   ;needed for address calcs
+            set::emptyp$inline-constant-opener ;needed for address calcs
+            set::sfix$inline-constant-opener   ;needed for address calcs
             set::setp-constant-opener   ;needed for address calcs
             fast-<<-constant-opener     ;needed for address calcs
             ;; do-inst-of-myif

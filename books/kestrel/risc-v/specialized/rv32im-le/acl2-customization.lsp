@@ -9,15 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-(include-book "../portcullis")
-(include-book "centaur/fty/portcullis" :dir :system)
+(ld "package.lsp")
 
-(include-book "tools/with-supporters" :dir :system)
+(reset-prehistory)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(acl2::with-supporters
- (local (include-book "execution32"))
- :names (step32n))
+(in-package "RISCV32IM-LE")
