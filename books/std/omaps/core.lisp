@@ -1384,6 +1384,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define from-alist ((alist alistp))
+  :returns (map mapp)
+  :short "Build an omap from an alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are duplicate keys in the alist,
+     the leftmost one, with the corresponding value,
+     will be in the resulting omap.
+     This is consistent with the shadowing of alists."))
+  (cond ((endp alist) nil)
+        (t (update (caar alist) (cdar alist) (from-alist (cdr alist))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection omap-induction2
   :short "Induction on two omaps, applying @(tsee tail) to both."
 
