@@ -143,7 +143,7 @@ elements are in order.  Its cost is linear in the size of @('n').</p>"
   :long "<p>This function is like @(see endp) for lists, but it respects the
 non-set convention and always returns true for ill-formed sets.</p>"
 
-  (defun emptyp (X)
+  (defun-inline emptyp (X)
     (declare (xargs :guard (setp X)))
     (mbe :logic (or (null X)
                     (not (setp X)))
@@ -181,7 +181,7 @@ non-@(see setp) into the empty set.</p>
 numbers.  It is often useful to use @('sfix') in the base case of a set
 operation to ensure that an ordered set is always produced.</p>"
 
-  (defun sfix (X)
+  (defun-inline sfix (X)
     (declare (xargs :guard (setp X)))
     (mbe :logic (if (emptyp X) nil X)
          :exec  X))
@@ -224,7 +224,7 @@ operation to ensure that an ordered set is always produced.</p>"
   :long "<p>This is like @(see car), but respects the non-set convention and
 always returns @('nil') for ill-formed sets.</p>"
 
-  (defun head (X)
+  (defun-inline head (X)
     (declare (xargs :guard (and (setp X)
                                 (not (emptyp X)))))
     (mbe :logic (car (sfix X))
@@ -269,7 +269,7 @@ head)."
   :long "<p>This is like @(see cdr), but respects the non-set convention and
 always returns @('nil') for ill-formed sets.</p>"
 
-  (defun tail (X)
+  (defun-inline tail (X)
     (declare (xargs :guard (and (setp X)
                                 (not (emptyp X)))))
     (mbe :logic (cdr (sfix X))
