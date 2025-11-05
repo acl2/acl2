@@ -314,4 +314,6 @@
         ,@(make-decoding-cases alist)
         (t (mv :unsupported nil nil))))))
 
+;; This makes a decoder called arm32-decode that decodes a USB32 into an
+;; instruction (any of the instructions in the *patterns*):
 (make-event (make-decoder 'arm32-decode *patterns*))
