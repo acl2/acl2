@@ -81,7 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist-of-len xregs32
+(fty::deflist-of-len xregs
   :short "Fixtype of the @('x') registers for RV32IM little endian."
   :long
   (xdoc::topstring
@@ -91,7 +91,7 @@
      Recall that @('x0') is always 0 and thus not explicitly modeled."))
   :list-type ubyte32-list
   :length 31
-  :pred xregs32p)
+  :pred xregsp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +116,7 @@
    (xdoc::p
     "This is a specialization of @(tsee riscv::stat)
      according to @(tsee riscv::stat-validp)."))
-  ((xregs xregs32)
+  ((xregs xregs)
    (pc ubyte32)
    (memory memory32)
    (error bool))
@@ -147,7 +147,7 @@
   (("Goal"
     :in-theory (enable stat-rv32im-le-p
                        riscv::stat-validp
-                       xregs32p
+                       xregsp
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
                        memory32p
                        ubyte32p
@@ -193,7 +193,7 @@
     :hints (:beta-of-alpha (("Goal" :in-theory (enable stat-from-stat32
                                                        stat32-from-stat
                                                        stat-rv32im-le-p
-                                                       xregs32p
+                                                       xregsp
                                                        memory32p
                                                        (:e feat-rv32im-le))))
             :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32
@@ -449,7 +449,7 @@
       (change-stat32 stat :xregs (update-nth (1-  reg)
                                               (loghead 32 val)
                                               (stat32->xregs stat)))))
-  :guard-hints (("Goal" :in-theory (enable xregs32p
+  :guard-hints (("Goal" :in-theory (enable xregsp
                                            stat32p
                                            stat32->xregs
                                            ubyte5p
