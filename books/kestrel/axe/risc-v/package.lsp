@@ -41,8 +41,8 @@
     riscv32im-le::stat32-fix
     riscv32im-le::stat32->xregs
 
-    riscv32im-le::xregs32-fix
-    riscv32im-le::xregs32p
+    riscv32im-le::xregs-fix
+    riscv32im-le::xregsp
 
     riscv32im-le::read32-mem-ubyte8
     riscv32im-le::write32-mem-ubyte8
