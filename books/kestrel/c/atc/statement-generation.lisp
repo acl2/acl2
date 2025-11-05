@@ -13,6 +13,7 @@
 
 (include-book "expression-generation")
 (include-book "object-tables")
+(include-book "pure-expression-limits")
 
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)
@@ -868,9 +869,9 @@
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr)
-     to not stop right away due to the limit being 0.
-     In this case, @('result') is essentially the untranslated input term,
+     We calculate the limit using @(tsee expr-pure-limit):
+     see the documentation of that function.
+     The @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
   (b* (((reterr)
         (irr-expr)
@@ -1180,13 +1181,16 @@
                                                           ,gin.compst-var)))
                              ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
+       ((unless (expr-purep pure.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
+       (limit `(quote ,(expr-pure-limit pure.expr)))
        (formula1 (atc-contextualize formula1
                                     gin.context
                                     gin.fn
                                     gin.fn-guard
                                     gin.compst-var
                                     gin.limit-var
-                                    ''1
+                                    limit
                                     t
                                     wrld))
        (formula2 (atc-contextualize formula2
