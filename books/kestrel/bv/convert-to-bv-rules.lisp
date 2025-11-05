@@ -24,6 +24,11 @@
 (include-book "bvsx-def")
 (include-book "logext-def")
 (include-book "bvlt-def")
+(include-book "bvdiv")
+(include-book "bitnot")
+(include-book "bitand")
+(include-book "bitor")
+(include-book "bitxor")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvcat"))
 (local (include-book "slice"))
@@ -73,6 +78,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvuminus-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvuminus size x)
+                  (bvuminus size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd bvmult-convert-arg2-to-bv
   (implies (syntaxp (convertible-to-bvp x))
            (equal (bvmult size x y)
@@ -83,6 +96,20 @@
   (implies (syntaxp (convertible-to-bvp y))
            (equal (bvmult size x y)
                   (bvmult size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvdiv-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvdiv size x y)
+                  (bvdiv size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvdiv-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvdiv size x y)
+                  (bvdiv size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,3 +162,101 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvnot-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvnot size x)
+                  (bvnot size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvand-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvand size x y)
+                  (bvand size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvand-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvand size x y)
+                  (bvand size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvor-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvor size x y)
+                  (bvor size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvor-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvor size x y)
+                  (bvor size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvxor-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvxor size x y)
+                  (bvxor size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvxor-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bvxor size x y)
+                  (bvxor size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bitnot-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bitnot x)
+                  (bitnot (trim 1 x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bitand-convert-arg1-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bitand x y)
+                  (bitand (trim 1 x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bitand-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bitand x y)
+                  (bitand x (trim 1 y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bitor-convert-arg1-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bitor x y)
+                  (bitor (trim 1 x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bitor-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bitor x y)
+                  (bitor x (trim 1 y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bitxor-convert-arg1-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bitxor x y)
+                  (bitxor (trim 1 x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bitxor-convert-arg2-to-bv
+  (implies (syntaxp (convertible-to-bvp y))
+           (equal (bitxor x y)
+                  (bitxor x (trim 1 y))))
+  :hints (("Goal" :in-theory (enable trim))))
