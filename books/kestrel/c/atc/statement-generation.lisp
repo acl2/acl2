@@ -1148,14 +1148,16 @@
                                           :names-to-avoid gin.names-to-avoid
                                           :proofs gin.proofs)
                            state))
-       (bound '(quote 1))
+       ((unless (expr-purep pure.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
+       (limit `(quote ,(expr-pure-limit pure.expr)))
        ((when (not gin.proofs))
         (retok pure.expr
                pure.type
                pure.term
                (untranslate$ pure.term nil state)
                gin.compst-var
-               bound
+               limit
                pure.events
                nil
                gin.inscope
@@ -1181,9 +1183,6 @@
                                                           ,gin.compst-var)))
                              ,gin.compst-var)))
        (formula2 `(,type-pred ,uterm*))
-       ((unless (expr-purep pure.expr))
-        (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
-       (limit `(quote ,(expr-pure-limit pure.expr)))
        (formula1 (atc-contextualize formula1
                                     gin.context
                                     gin.fn
@@ -1243,7 +1242,7 @@
            pure.term
            (untranslate$ pure.term nil state)
            gin.compst-var
-           bound
+           limit
            (append pure.events (list event))
            thm-name
            gin.inscope

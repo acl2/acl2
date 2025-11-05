@@ -65,7 +65,11 @@
      because we just need to pass the initial test,
      and then there is no recursive call of @(tsee exec-expr).")
    (xdoc::p
-    "This is also the case for call expressions,
+    "For unary expressions, we add 1 to the limit for the argument,
+     because we need one more to reach the recursive call
+     of @(tsee exec-expr) applied to the argument.")
+   (xdoc::p
+    "Call expressions currently need just 1,
      because, for the arguments, we use @(tsee exec-expr-pure-list);
      but eventually we will extend this case
      to recursively call @(tsee exec-expr),
@@ -89,9 +93,11 @@
    :arrsub 1
    :member 1
    :memberp 1
-   :unary 1
+   :unary (1+ (expr-pure-limit expr.arg))
    :cast 1
    :binary 1
    :cond 1
    :otherwise (prog2$ (impossible) 0))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o-finp o<)))
   :guard-hints (("Goal" :expand (expr-purep expr))))
