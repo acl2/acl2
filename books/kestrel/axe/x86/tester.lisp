@@ -195,7 +195,7 @@
                            assumptions ; untranslated terms
                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                           normalize-xors count-hits print monitor
+                           normalize-xors count-hits print max-printed-term-size monitor
                            step-limit step-increment
                            prune-precise prune-approx tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
@@ -219,6 +219,8 @@
                               (natp step-increment)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -336,6 +338,7 @@
           count-hits
           print
           10 ; print-base (todo: consider 16)
+          max-printed-term-size
           t ; untranslatep (todo: make this an option)
           ;; t ; bvp
           state))
@@ -429,7 +432,7 @@
                          assumptions
                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                         normalize-xors count-hits print monitor
+                         normalize-xors count-hits print max-printed-term-size monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
                          max-conflicts inputs-disjoint-from stack-slots existing-stack-slots
@@ -448,6 +451,8 @@
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -497,7 +502,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -539,6 +544,7 @@
                          (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
                          (count-hits 'nil)
                          (print 'nil)
+                         (max-printed-term-size '10000)
                          (monitor 'nil)
                          (step-limit '1000000)
                          (step-increment '100)
@@ -566,6 +572,7 @@
                                              ',normalize-xors
                                              ',count-hits
                                              ',print
+                                             ',max-printed-term-size
                                              ,monitor ; gets evaluated
                                              ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)))
 
@@ -578,7 +585,7 @@
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits
-                              print monitor step-limit step-increment prune-precise prune-approx
+                              print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                               tactics max-conflicts
                               inputs-disjoint-from
                               stack-slots
@@ -601,6 +608,8 @@
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -633,7 +642,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -644,7 +653,7 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                              tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
@@ -658,7 +667,7 @@
                           assumptions
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                          normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
                           state)
@@ -677,6 +686,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -771,7 +782,7 @@
                                assumption-alist
                                extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                               normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                                tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
@@ -791,7 +802,7 @@
                           assumptions
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                          normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                           expected-failures
                           whole-form
@@ -811,6 +822,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -845,7 +858,7 @@
                             assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
                             state))
@@ -878,6 +891,7 @@
                           (normalize-xors 't)
                           (count-hits 'nil)
                           (print 'nil)
+                          (max-printed-term-size '10000)
                           (monitor 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
@@ -907,6 +921,7 @@
                                               ',normalize-xors
                                               ',count-hits
                                               ',print
+                                              ',max-printed-term-size
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
@@ -923,7 +938,7 @@
                      assumptions
                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                     normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                     normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                      tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                      expected-failures
                      whole-form
@@ -943,6 +958,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -977,7 +994,7 @@
                             assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
                             expected-failures
                             state))
@@ -1012,6 +1029,7 @@
                      (normalize-xors 't)
                      (count-hits 'nil)
                      (print 'nil)
+                     (max-printed-term-size '10000)
                      (monitor 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
@@ -1039,7 +1057,9 @@
                                          ,remove-lift-rules ; gets evaluated
                                          ,remove-proof-rules ; gets evaluated
                                          ',normalize-xors
-                                         ',count-hits ',print
+                                         ',count-hits
+                                         ',print
+                                         ',max-printed-term-size
                                          ,monitor ; gets evaluated
                                          ',step-limit ',step-increment ',prune-precise ',prune-approx
                                          ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
