@@ -689,7 +689,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits print print-base untranslatep memoizep
+                                  normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
   (declare (xargs :guard (and (natp steps-done)
@@ -711,6 +711,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -873,13 +874,13 @@
                (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
+                (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                 (mv :unresolved-error-branches nil state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
+                (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))
@@ -888,11 +889,11 @@
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
                (if (print-level-at-least-tp print)
-                   (print-dag-nicely-with-base dag (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
+                   (print-dag-nicely-with-base dag max-printed-term-size (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -925,6 +926,7 @@
                              count-hits
                              print
                              print-base
+                             max-printed-term-size
                              untranslatep
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
@@ -959,6 +961,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep))
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
@@ -1099,7 +1102,7 @@
                         (if 64-bitp
                             (first (step-opener-rules64))
                           (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
@@ -1144,6 +1147,7 @@
                         count-hits
                         print
                         print-base
+                        max-printed-term-size
                         untranslatep
                         produce-function
                         non-executable
@@ -1186,6 +1190,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep)
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
@@ -1221,7 +1226,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
           inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
        (result-dag-size (dag-or-quotep-size result-dag))
@@ -1394,6 +1399,7 @@
                                   (count-hits 'nil)
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
+                                  (max-printed-term-size '10000)
                                   (untranslatep 't)
                                   (produce-function 't)
                                   (non-executable ':auto)
@@ -1431,6 +1437,7 @@
       ',count-hits
       ',print
       ',print-base
+      ',max-printed-term-size
       ',untranslatep
       ',produce-function
       ',non-executable
@@ -1472,12 +1479,14 @@
          (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
+         (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
          (untranslatep "Whether to untranslate terms when printing.")
          (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
-         (max-result-term-size "Max size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
+         (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
+
          (restrict-theory "To be deprecated..."))
   :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."

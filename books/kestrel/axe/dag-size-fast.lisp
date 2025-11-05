@@ -29,18 +29,19 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (enable not-<-of-car-when-all-<
-                          <=-of-0-when-natp
-                          acl2-numberp-when-natp
-                          integerp-when-natp)))
+(local (in-theory (e/d (not-<-of-car-when-all-<
+                        <=-of-0-when-natp
+                        acl2-numberp-when-natp
+                        integerp-when-natp)
+                       (natp weak-dagp-aux top-nodenum))))
 
-(local (in-theory (disable natp weak-dagp-aux top-nodenum)))
-
-(defthmd <-of-car-of-car-when-all-<-of-strip-cars
-  (implies (and (all-< (strip-cars x) bound)
-                (consp x))
-           (< (car (car x)) bound))
-  :hints (("Goal" :in-theory (enable strip-cars all-<))))
+;dup
+(local
+  (defthmd <-of-car-of-car-when-all-<-of-strip-cars
+    (implies (and (all-< (strip-cars x) bound)
+                  (consp x))
+             (< (car (car x)) bound))
+    :hints (("Goal" :in-theory (enable strip-cars all-<)))))
 
 ;dup
 (local
@@ -55,9 +56,7 @@
            (reverse-list (strip-cars dag)))
     :hints (("Goal" :in-theory (enable reverse-list strip-cars)))))
 
-;;;
-;;; make-size-array-for-rev-dag-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version of the array filler stores a size for every node in the array.
 ;; Returns the array, whose name is 'SIZE-ARRAY.
@@ -75,18 +74,16 @@
     (make-size-array-for-rev-dag-aux (rest rev-dag)
                                      (let* ((entry (first rev-dag))
                                             (nodenum (car entry))
-                                            (expr (cdr entry)))
-                                       (aset1 'size-array
-                                              size-array
-                                              nodenum
+                                            (expr (cdr entry))
+                                            (node-size
                                               (if (or (variablep expr)
                                                       (fquotep expr))
                                                   ;; variables and constants have size 1:
                                                   1
                                                 ;; the size of a function call node is 1 plus the sizes of its node args,
                                                 ;; plus 1 for each constant arg:
-                                                ;; todo: bake in the size array name to a version of this:
-                                                (add-darg-sizes (dargs expr) size-array 1)))))))
+                                                (add-darg-sizes (dargs expr) size-array 1))))
+                                       (aset1 'size-array size-array nodenum node-size)))))
 
 (local
   (defthm size-arrayp-of-make-size-array-for-rev-dag-aux
@@ -125,12 +122,11 @@
                               <-of-car-of-car-when-all-<-of-strip-cars)
                              (natp))))))
 
-;;;
-;;; make-size-array-for-dag
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Makes an array named 'SIZE-ARRAY and populates it with a size for every
-;; node in the dag.
+;; Makes an array named 'SIZE-ARRAY and populates it with a size for every node
+;; in the dag.  This does not turn the dag into an array (though it does
+;; reverse it).
 ;; Smashes the array named 'size-array.
 (defund make-size-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
@@ -153,17 +149,15 @@
 
 (local
   (defthm alen1-of-make-size-array-for-dag
-  (implies (and (pseudo-dagp dag)
-                (< (top-nodenum-of-dag dag) *max-1d-array-length*))
-           (equal (alen1 'size-array (make-size-array-for-dag dag))
-                  (len dag)))
-  :hints (("Goal" :in-theory (enable make-size-array-for-dag
-                                     top-nodenum-when-pseudo-dagp
-                                     car-of-car-when-pseudo-dagp-cheap)))))
+    (implies (and (pseudo-dagp dag)
+                  (< (top-nodenum-of-dag dag) *max-1d-array-length*))
+             (equal (alen1 'size-array (make-size-array-for-dag dag))
+                    (len dag)))
+    :hints (("Goal" :in-theory (enable make-size-array-for-dag
+                                       top-nodenum-when-pseudo-dagp
+                                       car-of-car-when-pseudo-dagp-cheap)))))
 
-;;;
-;;; dag-size-fast
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the size of the tree represented by the DAG (may be very large).
 ;; Smashes the array named 'size-array.
@@ -188,9 +182,7 @@
                                    top-nodenum-when-pseudo-dagp)
                                   (natp)))))
 
-;;;
-;;; dag-or-quotep-size-fast
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Smashes the array named 'size-array.
 (defund dag-or-quotep-size-fast (x)
@@ -208,12 +200,10 @@
            (natp (dag-or-quotep-size-fast x)))
   :hints (("Goal" :in-theory (enable dag-or-quotep-size-fast))))
 
-;;;
-;;; dag-size-less-thanp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Smashes the array named 'size-array.
-;; We could just compare to the result of dag-size-fast, but not if we optimize this to use the limit
+;; We could just dag-size-fast and compare the result to the limit, but that would in some cases be slower.
 (defund dag-size-less-thanp (dag limit)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
@@ -227,12 +217,9 @@
     ;; node is found (assumes the dag is reduced):
     (< (dag-size-fast dag) limit)))
 
-;;;
-;;; dag-or-quotep-size-less-thanp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Smashes the array named 'size-array.
-;; We could just compare to dag-or-quotep-size-fast, but not if we optimize this to use the limit
 (defund dag-or-quotep-size-less-thanp (dag-or-quotep limit)
   (declare (xargs :guard (and (or (and (pseudo-dagp dag-or-quotep)
                                        (<= (len dag-or-quotep) *max-1d-array-length*))
