@@ -1208,6 +1208,7 @@
                                compustatep-of-exit-scope
                                compustatep-of-if*-when-both-compustatep
                                exec-expr-when-pure
+                               (:e expr-pure-limit)
                                (:e expr-purep)
                                (:e expr-kind)
                                (:e expr-binary->op)
