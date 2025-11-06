@@ -23,23 +23,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move to C formalization:
-
-(defruled pure-limit-bound-when-exec-expr-not-error
-  (b* (((mv eval &) (c::exec-expr expr compst fenv limit)))
-    (implies (and (c::expr-purep expr)
-                  (not (c::errorp eval)))
-             (>= (nfix limit) (c::expr-pure-limit expr))))
-  :rule-classes ((:linear :trigger-terms ((c::expr-pure-limit expr))))
-  :induct (c::induct-exec-expr-of-pure expr limit)
-  :enable (c::induct-exec-expr-of-pure
-           c::exec-expr
-           c::expr-pure-limit
-           c::expr-purep
-           nfix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ proof-generation-theorems
   :parents (transformation-tools)
   :short "Theorems supporting proof generation."
@@ -635,7 +618,7 @@
                      (compst compst)
                      (fenv new-fenv)
                      (limit limit)))
-    :enable (pure-limit-bound-when-exec-expr-not-error
+    :enable (c::pure-limit-bound-when-exec-expr-not-error
              nfix
              c::exec-expr))
 
@@ -669,7 +652,7 @@
     :expand ((c::exec-initer (c::initer-single old-expr) compst old-fenv limit)
              (c::exec-initer (c::initer-single new-expr) compst new-fenv limit))
     :enable (c::exec-expr-to-exec-expr-pure
-             pure-limit-bound-when-exec-expr-not-error
+             c::pure-limit-bound-when-exec-expr-not-error
              nfix
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
@@ -749,7 +732,7 @@
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-to-exec-expr-pure
-             pure-limit-bound-when-exec-expr-not-error
+             c::pure-limit-bound-when-exec-expr-not-error
              nfix
              c::type-of-value
              c::apconvert-expr-value-when-not-array
@@ -1270,7 +1253,7 @@
                     (compst compst)
                     (fenv fenv)
                     (limit limit))
-    :enable pure-limit-bound-when-exec-expr-not-error)
+    :enable c::pure-limit-bound-when-exec-expr-not-error)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -143,3 +143,27 @@
            expr-pure-limit
            expr-purep
            nfix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pure-limit-bound-when-exec-expr-not-error
+  :short "Bound on the limit
+          if the execution of a pure expression does not fail."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee exec-expr) applied to a pure expression
+     does not return an error,
+     the limit must be at least the minimum one for the expression.
+     Otherwise execution would yield a (limit) error."))
+  (b* (((mv eval &) (c::exec-expr expr compst fenv limit)))
+    (implies (and (c::expr-purep expr)
+                  (not (c::errorp eval)))
+             (>= (nfix limit) (c::expr-pure-limit expr))))
+  :rule-classes ((:linear :trigger-terms ((c::expr-pure-limit expr))))
+  :induct (c::induct-exec-expr-of-pure expr limit)
+  :enable (c::induct-exec-expr-of-pure
+           c::exec-expr
+           c::expr-pure-limit
+           c::expr-purep
+           nfix))
