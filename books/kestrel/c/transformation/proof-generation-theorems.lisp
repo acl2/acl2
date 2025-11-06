@@ -25,20 +25,6 @@
 
 ; move to C formalization:
 
-(defruled c::exec-expr-to-exec-expr-pure
-  (implies (and (c::expr-purep expr)
-                (>= (nfix limit) (c::expr-pure-limit expr)))
-           (equal (c::exec-expr expr compst fenv limit)
-                  (mv (c::exec-expr-pure expr compst)
-                      (c::compustate-fix compst))))
-  :induct (c::induct-exec-expr-of-pure expr limit)
-  :expand (c::exec-expr-pure expr compst)
-  :enable (c::induct-exec-expr-of-pure
-           c::exec-expr
-           c::expr-pure-limit
-           c::expr-purep
-           nfix))
-
 (defruled pure-limit-bound-when-exec-expr-not-error
   (b* (((mv eval &) (c::exec-expr expr compst fenv limit)))
     (implies (and (c::expr-purep expr)
@@ -641,10 +627,14 @@
                            (c::type-of-value old-val-pure)))))
     :use ((:instance c::exec-expr-to-exec-expr-pure
                      (expr old)
-                     (fenv old-fenv))
+                     (compst compst)
+                     (fenv old-fenv)
+                     (limit limit))
           (:instance c::exec-expr-to-exec-expr-pure
                      (expr new)
-                     (fenv new-fenv)))
+                     (compst compst)
+                     (fenv new-fenv)
+                     (limit limit)))
     :enable (pure-limit-bound-when-exec-expr-not-error
              nfix
              c::exec-expr))
@@ -1275,7 +1265,11 @@
     (implies (and (c::expr-purep expr)
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
-    :use c::exec-expr-to-exec-expr-pure
+    :use (:instance c::exec-expr-to-exec-expr-pure
+                    (expr expr)
+                    (compst compst)
+                    (fenv fenv)
+                    (limit limit))
     :enable pure-limit-bound-when-exec-expr-not-error)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

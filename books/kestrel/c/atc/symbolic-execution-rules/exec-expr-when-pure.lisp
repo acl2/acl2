@@ -35,23 +35,6 @@
      apparently because of the binding hypothesis for @('eval').
      So we prove by induction a lemma without the binding hypothesis."))
 
-  (defrulel lemma
-    (b* ((eval (exec-expr-pure e compst)))
-      (implies (and (expr-purep e)
-                    (integerp limit)
-                    (>= limit (expr-pure-limit e))
-                    (compustatep compst)
-                    (expr-valuep eval))
-               (equal (exec-expr e compst fenv limit)
-                      (mv eval compst))))
-    :induct (induct-exec-expr-of-pure e limit)
-    :expand ((exec-expr e compst fenv limit)
-             (exec-expr-pure e compst))
-    :enable (induct-exec-expr-of-pure
-             expr-purep
-             binop-purep
-             expr-pure-limit))
-
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
                   (expr-purep e)
@@ -61,7 +44,9 @@
                   (equal eval (exec-expr-pure e compst))
                   (expr-valuep eval))
              (equal (exec-expr e compst fenv limit)
-                    (mv eval compst))))
+                    (mv eval compst)))
+    :enable (exec-expr-to-exec-expr-pure
+             nfix))
 
   (defval *atc-exec-expr-when-pure-rules*
     '(exec-expr-when-pure

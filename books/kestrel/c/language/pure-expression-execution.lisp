@@ -117,3 +117,29 @@
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-expr-to-exec-expr-pure
+  :short "Reductio of @(tsee exec-expr) to @(tsee exec-expr-pure)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given a pure expression and a sufficient limit for it,
+     the first result of @(tsee exec-expr) is
+     the same as the (only) result of @(tsee exec-expr-pure)
+     (whether it is an error or not),
+     and the second result of @(tsee exec-expr) is
+     the unchanged computation state."))
+  (implies (and (expr-purep expr)
+                (>= (nfix limit) (expr-pure-limit expr)))
+           (equal (exec-expr expr compst fenv limit)
+                  (mv (exec-expr-pure expr compst)
+                      (compustate-fix compst))))
+  :induct (induct-exec-expr-of-pure expr limit)
+  :expand (exec-expr-pure expr compst)
+  :enable (induct-exec-expr-of-pure
+           exec-expr
+           expr-pure-limit
+           expr-purep
+           nfix))
