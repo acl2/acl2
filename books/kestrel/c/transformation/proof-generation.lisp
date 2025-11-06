@@ -415,12 +415,9 @@
                          (equal (c::type-of-value old-value) ',ctype)))))
        (hints `(("Goal"
                  :use (,expr-pure-thm
-                       (:instance exec-expr-when-exec-expr-pure-integer
-                                  (expr ',old-expr)
-                                  (fenv old-fenv))
-                       (:instance exec-expr-when-exec-expr-pure-integer
-                                  (expr ',new-expr)
-                                  (fenv new-fenv)))
+                       (:instance expr-pure-congruence
+                                  (old ',old-expr)
+                                  (new ',new-expr)))
                  :in-theory '(c::exec-expr
                               c::exec-expr-pure-when-const
                               c::errorp-of-error
@@ -429,6 +426,7 @@
                               (:e c::expr-binary->op)
                               (:e c::binop-kind)
                               (:e c::type-nonchar-integerp)
+                              (:e c::expr-pure-limit)
                               (:t c::exec-expr-pure)
                               (:t c::expr-value->value)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -2071,6 +2069,7 @@
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
+                        (:e c::expr-pure-limit)
                         initer-compustate-vars)
            :use ((:instance ,expr-thm-name)
                  (:instance initer-single-pure-congruence
@@ -2277,6 +2276,7 @@
                             (:e c::expr-binary->op)
                             (:e c::binop-kind)
                             (:e c::type-nonchar-integerp)
+                            (:e c::expr-pure-limit)
                             (:t c::exec-expr-pure)
                             stmt-compustate-vars)
                :use (,expr?-thm-name

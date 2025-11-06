@@ -3723,7 +3723,7 @@
     (INST "MOVDDUP"
           (OP :OP #xF12 :PFX :F2 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          'NIL
+          '(X86-MOVDDUP-SSE)
           '((:EX (CHK-EXC :TYPE-5 (:SSE3)))))
     (INST "VMOVDDUP"
           (OP :OP #xF12

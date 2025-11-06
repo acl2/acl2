@@ -23,11 +23,11 @@
 ;; Non-local because this prevents out-of-memory errors
 (in-theory (disable (:e repeat)))
 
-(defthm nth-of-memory32-fix
+(defthm nth-of-memory-fix
   (implies (unsigned-byte-p 32 n)
-           (equal (nth n (memory32-fix x))
+           (equal (nth n (memory-fix x))
                   (ubyte8-fix (nth n x))))
-  :hints (("Goal" :in-theory (enable memory32-fix memory32p))))
+  :hints (("Goal" :in-theory (enable memory-fix memoryp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,13 +65,13 @@
          (if (equal (ubyte5-fix reg) 0)
              0
            (loghead 32 val)))
-  :hints (("Goal" :in-theory (enable read32-xreg-unsigned write32-xreg xregs32-fix xregs32p UBYTE32-FIX ubyte32p))))
+  :hints (("Goal" :in-theory (enable read32-xreg-unsigned write32-xreg xregs-fix xregsp UBYTE32-FIX ubyte32p))))
 
 (defthm read32-xreg-unsigned-of-write32-xreg-diff
   (implies (not (equal (ubyte5-fix reg1) (ubyte5-fix reg2)))
            (equal (read32-xreg-unsigned reg1 (write32-xreg reg2 val stat))
                   (read32-xreg-unsigned reg1 stat)))
-  :hints (("Goal" :in-theory (enable read32-xreg-unsigned write32-xreg xregs32-fix xregs32p))))
+  :hints (("Goal" :in-theory (enable read32-xreg-unsigned write32-xreg xregs-fix xregsp))))
 
 (defthm read32-xreg-unsigned-of-write32-xreg-both
   (equal (read32-xreg-unsigned reg1 (write32-xreg reg2 val stat))
@@ -84,8 +84,8 @@
            (read32-xreg-unsigned reg1 stat)))
   :hints (("Goal" :in-theory (enable read32-xreg-unsigned
                                      write32-xreg
-                                     xregs32-fix
-                                     xregs32p
+                                     xregs-fix
+                                     xregsp
                                      ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,7 +100,7 @@
   (equal (write32-mem-ubyte8 ad byte1 (write32-mem-ubyte8 ad byte2 stat))
          (write32-mem-ubyte8 ad byte1 stat))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte8
-                                     memory32p))))
+                                     memoryp))))
 
 (defthm write32-mem-ubyte8-of-write32-mem-ubyte8-same-diff
   (implies (and (not (equal (mod ad1 4294967296)
@@ -110,7 +110,7 @@
            (equal (write32-mem-ubyte8 ad1 byte1 (write32-mem-ubyte8 ad2 byte2 stat))
                   (write32-mem-ubyte8 ad2 byte2 (write32-mem-ubyte8 ad1 byte1 stat))))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte8
-                                     memory32p))))
+                                     memoryp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +243,7 @@
 (defthm write32-xreg-of-write32-xreg-same
   (equal (write32-xreg reg val1 (write32-xreg reg val2 stat))
          (write32-xreg reg val1 stat))
-  :hints (("Goal" :in-theory (enable write32-xreg xregs32-fix acl2::ubyte32-list-fix xregs32p ubyte32p))))
+  :hints (("Goal" :in-theory (enable write32-xreg xregs-fix acl2::ubyte32-list-fix xregsp ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,7 +265,7 @@
   (implies (not (equal reg1 reg2))
            (equal (write32-xreg reg1 val1 (write32-xreg reg2 val2 stat))
                   (write32-xreg reg2 val2 (write32-xreg reg1 val1 stat))))
-  :hints (("Goal" :in-theory (enable write32-xreg xregs32-fix acl2::ubyte32-list-fix xregs32p ubyte32p ubyte5-fix))))
+  :hints (("Goal" :in-theory (enable write32-xreg xregs-fix acl2::ubyte32-list-fix xregsp ubyte32p ubyte5-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -203,7 +203,7 @@
 
 (defthm unsigned-byte-listp-of-stat32->xregs
   (unsigned-byte-listp 32 (stat32->xregs stat))
-  :hints (("Goal" :in-theory (enable stat32->xregs xregs32-fix))))
+  :hints (("Goal" :in-theory (enable stat32->xregs xregs-fix))))
 
 (defthmd write32-xreg-when-equal-of-read32-xreg-unsigned
   (implies (equal val (read32-xreg-unsigned reg stat))
@@ -211,9 +211,9 @@
                   (stat32-fix stat)))
   :hints (("Goal" :in-theory (enable write32-xreg
                                      ubyte5-fix
-                                     xregs32-fix
+                                     xregs-fix
                                      read32-xreg-unsigned
-                                     xregs32p
+                                     xregsp
                                      ;ubyte32p
                                      ))))
 

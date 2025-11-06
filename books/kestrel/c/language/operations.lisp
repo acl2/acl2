@@ -15,10 +15,7 @@
 (include-book "array-operations")
 (include-book "structure-operations")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,8 +40,7 @@
       (test-scalar-value val)
     (error (list :test-mistype
                  :required :scalar
-                 :supplied (value-fix val))))
-  :hooks (:fix))
+                 :supplied (value-fix val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +56,6 @@
     (error (list :plus-mistype
                  :required :arithmetic
                  :supplied (value-fix val))))
-  :hooks (:fix)
 
   ///
 
@@ -87,7 +82,6 @@
     (error (list :minus-mistype
                  :required :arithmetic
                  :supplied (value-fix val))))
-  :hooks (:fix)
 
   ///
 
@@ -114,7 +108,6 @@
                  :supplied (value-fix val))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 
@@ -138,7 +131,6 @@
     (error (list :lognot-mistype
                  :required :scalar
                  :supplied (value-fix val))))
-  :hooks (:fix)
 
   ///
 
@@ -162,7 +154,6 @@
     (error (list :mul-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -187,7 +178,6 @@
     (error (list :div-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -213,7 +203,6 @@
     (error (list :rem-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -238,7 +227,6 @@
     (error (list :add-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -263,7 +251,6 @@
     (error (list :sub-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -293,7 +280,6 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 
@@ -323,7 +309,6 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 
@@ -349,7 +334,6 @@
     (error (list :lt-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -374,7 +358,6 @@
     (error (list :gt-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -399,7 +382,6 @@
     (error (list :le-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -424,7 +406,6 @@
     (error (list :ge-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -448,7 +429,6 @@
     (error (list :eq-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -472,7 +452,6 @@
     (error (list :ne-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix)
 
   ///
 
@@ -502,7 +481,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -536,7 +514,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -570,7 +547,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
