@@ -25,27 +25,16 @@
 
 ; move to C formalization:
 
-(local
- (defun induction (expr limit)
-   (declare (xargs :measure (c::expr-count expr)
-                   :hints (("Goal" :in-theory (enable o< o-finp)))))
-   (declare (irrelevant limit))
-   (c::expr-case expr
-                 :ident nil
-                 :const nil
-                 :call nil
-                 :unary (induction expr.arg (1- limit))
-                 :otherwise nil)))
-
 (defruled c::exec-expr-to-exec-expr-pure
   (implies (and (c::expr-purep expr)
                 (>= (nfix limit) (c::expr-pure-limit expr)))
            (equal (c::exec-expr expr compst fenv limit)
                   (mv (c::exec-expr-pure expr compst)
                       (c::compustate-fix compst))))
-  :induct (induction expr limit)
+  :induct (c::induct-exec-expr-of-pure expr limit)
   :expand (c::exec-expr-pure expr compst)
-  :enable (c::exec-expr
+  :enable (c::induct-exec-expr-of-pure
+           c::exec-expr
            c::expr-pure-limit
            c::expr-purep
            nfix))
@@ -56,8 +45,9 @@
                   (not (c::errorp eval)))
              (>= (nfix limit) (c::expr-pure-limit expr))))
   :rule-classes ((:linear :trigger-terms ((c::expr-pure-limit expr))))
-  :induct (induction expr limit)
-  :enable (c::exec-expr
+  :induct (c::induct-exec-expr-of-pure expr limit)
+  :enable (c::induct-exec-expr-of-pure
+           c::exec-expr
            c::expr-pure-limit
            c::expr-purep
            nfix))

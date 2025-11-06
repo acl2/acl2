@@ -27,25 +27,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We need a (locally defined) induction schema
+    "We use a custom induction schema
      that takes into account the recursive structure of @(tsee exec-expr)
      with respect to the expression and the limit.")
    (xdoc::p
     "Attempting to prove the theorem directly by induction fails,
      apparently because of the binding hypothesis for @('eval').
      So we prove by induction a lemma without the binding hypothesis."))
-
-  (local
-   (defun induction (expr limit)
-     (declare (xargs :measure (expr-count expr)
-                     :hints (("Goal" :in-theory (enable o< o-finp)))))
-     (declare (irrelevant limit))
-     (expr-case expr
-                :ident nil
-                :const nil
-                :call nil
-                :unary (induction expr.arg (1- limit))
-                :otherwise nil)))
 
   (defrulel lemma
     (b* ((eval (exec-expr-pure e compst)))
@@ -56,10 +44,11 @@
                     (expr-valuep eval))
                (equal (exec-expr e compst fenv limit)
                       (mv eval compst))))
-    :induct (induction e limit)
+    :induct (induct-exec-expr-of-pure e limit)
     :expand ((exec-expr e compst fenv limit)
              (exec-expr-pure e compst))
-    :enable (expr-purep
+    :enable (induct-exec-expr-of-pure
+             expr-purep
              binop-purep
              expr-pure-limit))
 

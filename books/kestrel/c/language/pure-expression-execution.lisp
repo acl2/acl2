@@ -99,3 +99,21 @@
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o-finp o<)))
   :guard-hints (("Goal" :expand (expr-purep expr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define induct-exec-expr-of-pure ((expr exprp) (limit natp))
+  :short "Induction scheme for @(tsee exec-expr) applied to a pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This concerns both the expression structure and the limit."))
+  (expr-case expr
+             :ident nil
+             :const nil
+             :call nil
+             :unary (induct-exec-expr-of-pure expr.arg (1- limit))
+             :otherwise nil)
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :verify-guards nil)
