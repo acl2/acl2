@@ -24,16 +24,6 @@
 
 (defsection atc-exec-expr-when-pure-rules
   :short "Rules for executing pure expressions with @(tsee exec-expr)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use a custom induction schema
-     that takes into account the recursive structure of @(tsee exec-expr)
-     with respect to the expression and the limit.")
-   (xdoc::p
-    "Attempting to prove the theorem directly by induction fails,
-     apparently because of the binding hypothesis for @('eval').
-     So we prove by induction a lemma without the binding hypothesis."))
 
   (defruled exec-expr-when-pure
     (implies (and (syntaxp (quotep e))
