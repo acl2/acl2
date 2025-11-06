@@ -94,8 +94,7 @@
         (mv nil nil nil nil nil nil nil nil))
        (preprocess-args (if preprocess-args-listp ; includes the NIL case
                             preprocess-args
-                          (omap::from-lists (strip-cars preprocess-args)
-                                            (strip-cdrs preprocess-args))))
+                          (omap::from-alist preprocess-args)))
        (kv-list (remove-keyword :preprocess-args kv-list))
        ;; Change the default for :gcc:
        (gcc-suppliedp (assoc-keyword :gcc kv-list))
