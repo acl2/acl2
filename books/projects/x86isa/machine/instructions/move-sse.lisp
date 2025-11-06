@@ -1265,7 +1265,17 @@
   :short "MOVDDUP: replicate double precision floating-point values."
 
   :long
-  "<p>This is the SSE variant.</p>"
+  "<p>
+   This is the SSE variant.
+   </p>
+   <p>
+   Although the operand size is 128 bits,
+   the use of @('m64') in @('xmm2/m64') in the Intel manual
+   suggests that only 64 bits are read from memory.
+   Reading 128 bits from memory and ignoring the 64 high ones
+   can make a difference if the additional memory accesses
+   cause some kind of exception.
+   </p>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
