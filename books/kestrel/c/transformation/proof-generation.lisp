@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "variables-in-computation-states")
+(include-book "proof-generation-theorems")
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")

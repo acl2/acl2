@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "proof-generation")
+(include-book "variables-in-computation-states")
 
 (include-book "../language/pure-expression-execution")
 
