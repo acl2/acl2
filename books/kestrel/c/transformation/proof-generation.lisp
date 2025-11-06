@@ -12,11 +12,9 @@
 
 (include-book "proof-generation-theorems")
 
-(include-book "../syntax/abstract-syntax-operations")
-(include-book "../syntax/code-ensembles")
-(include-book "../syntax/validation-information")
 (include-book "../syntax/ascii-identifiers")
-(include-book "../syntax/purity")
+(include-book "../syntax/unambiguity")
+(include-book "../syntax/validation-information")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 
