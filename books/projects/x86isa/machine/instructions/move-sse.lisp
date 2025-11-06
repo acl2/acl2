@@ -1271,10 +1271,10 @@
    <p>
    Although the operand size is 128 bits,
    the use of @('m64') in @('xmm2/m64') in the Intel manual
-   suggests that only 64 bits are read from memory.
-   Reading 128 bits from memory and ignoring the 64 high ones
-   can make a difference if the additional memory accesses
-   cause some kind of exception.
+   suggests that only 64 bits are read from the source operand.
+   If the access is to memory,
+   reading 128 and ignoring the 64 high ones can make a difference
+   if the additional memory accesses cause some kind of exception.
    </p>"
 
   :returns (x86 x86p :hyp (x86p x86))
@@ -1298,22 +1298,22 @@
        ((mv flg0
             (the (unsigned-byte 64) val)
             (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
+            & ; address of the operand
             x86)
         (x86-operand-from-modr/m-and-sib-bytes proc-mode
-                                                #.*xmm-access*
-                                                8 ; only 64 bits
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+                                               #.*xmm-access*
+                                               8 ; only 64 bits
+                                               inst-ac?
+                                               nil ;; Not a memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; No immediate operand
+                                               x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
