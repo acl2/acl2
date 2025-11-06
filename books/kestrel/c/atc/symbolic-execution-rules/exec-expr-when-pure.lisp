@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "../../language/dynamic-semantics")
-(include-book "../pure-expression-limits")
+(include-book "../../language/pure-expression-execution")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 

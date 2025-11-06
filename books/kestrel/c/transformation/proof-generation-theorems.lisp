@@ -12,7 +12,7 @@
 
 (include-book "proof-generation")
 
-(include-book "../atc/pure-expression-limits")
+(include-book "../language/pure-expression-execution")
 
 (include-book "std/util/defund-sk" :dir :system)
 

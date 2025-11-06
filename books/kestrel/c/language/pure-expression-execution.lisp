@@ -1,6 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,23 +11,40 @@
 
 (in-package "C")
 
-(include-book "../language/dynamic-semantics")
+(include-book "dynamic-semantics")
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ pure-expression-limits
-  :parents (atc-event-and-code-generation)
-  :short "Limit calculation for pure expressions."
+(defxdoc+ pure-expression-execution
+  :parents (dynamic-semantics)
+  :short "Properties about the execution of pure expressions."
   :long
   (xdoc::topstring
    (xdoc::p
     "As discussed in @(tsee exec-expr-pure),
      we are planning to move away from that function
      in favor of (an extended version of) @(tsee exec-expr).
-     The latter function handles possible non-termination
+     However, while we have both versions, here we prove
+     properties that relate the two execution functions on pure expressions.
+     We also define some more general concepts
+     that may survive after the elimination of @(tsee exec-expr-pure)."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-pure-limit ((expr exprp))
+  :guard (expr-purep expr)
+  :returns (limit natp)
+  :short "Minimum limit to pass to @(tsee exec-expr)
+          for the execution of the given pure expression to terminate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function @(tsee exec-expr-pure) handles possible non-termination
      via the artificial limit input to the execution functions.
      However, pure expressions always terminate,
      and we can calculate, for each pure expression,
@@ -41,22 +59,9 @@
      (i.e. in the @(':otherwise') case.
      However, as we extend @(tsee exec-expr) with more explicit cases
      (as part of our moving away from @(tsee exec-expr-pure)),
-     this calculation will become correspondingly richer."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-pure-limit ((expr exprp))
-  :guard (expr-purep expr)
-  :returns (limit natp)
-  :short "Minimum limit to pass to @(tsee exec-expr)
-          for the execution of the given pure expression to terminate."
-  :long
-  (xdoc::topstring
+     this calculation will become correspondingly richer.")
    (xdoc::p
-    "See @(see pure-expression-limits) for motivation.
-     The execution of the expression may terminate with an error,
+    "The execution of the expression may terminate with an error,
      depending on the computation state and possibly function environment.
      However, here we are solely concerned with @(tsee exec-expr)
      not failing the @('(zp limit)') test.")
@@ -78,14 +83,7 @@
     "Most other kinds of expressions also just need 1 currently,
      because after passing the initial test,
      we call @(tsee exec-expr-pure) and not @(tsee exec-expr);
-     this will also change as we extend @(tsee exec-expr).")
-   (xdoc::p
-    "But there is already one case that needs a more complex calculation,
-     namely the case of an assignment whose left side is a variable,
-     because in that case we use @(tsee exec-expr) for the right side.
-     So we recursively calculate the limit for the right side,
-     and we add 1 for the initial test performed when
-     @(tsee exec-expr) is called on the assignment."))
+     this will also change as we extend @(tsee exec-expr)."))
   (expr-case
    expr
    :ident 1
