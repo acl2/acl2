@@ -11,8 +11,7 @@
 
 (in-package "C")
 
-(include-book "../../language/dynamic-semantics")
-(include-book "../pure-expression-limits")
+(include-book "../../language/pure-expression-execution")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
@@ -36,11 +35,8 @@
                   (expr-valuep eval))
              (equal (exec-expr e compst fenv limit)
                     (mv eval compst)))
-    :expand ((exec-expr e compst fenv limit)
-             (expr-purep e))
-    :enable (exec-expr-pure
-             binop-purep
-             expr-pure-limit))
+    :enable (exec-expr-to-exec-expr-pure
+             nfix))
 
   (defval *atc-exec-expr-when-pure-rules*
     '(exec-expr-when-pure

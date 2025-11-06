@@ -41,7 +41,9 @@
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
-         ((mv erp ?ast ?pos/span ppstate)
+         (,(if (member-eq fn '(plex-*-hexadecimal-digit))
+               '(mv erp ?ast ?pos/span ?pos/span2 ppstate)
+             '(mv erp ?ast ?pos/span ppstate))
           (,fn ,@more-inputs ppstate)))
       (mv
        (if erp
@@ -68,7 +70,9 @@
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
-         ((mv erp & & ppstate)
+         (,(if (member-eq fn '(plex-*-hexadecimal-digit))
+               '(mv erp & & & ppstate)
+             '(mv erp & & ppstate))
           (,fn ,@more-inputs ppstate)))
       (mv erp ppstate))
     ppstate))
@@ -687,3 +691,379 @@
                    #\b)
                   (sign-minus)))
                 #\x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-hexadecimal-digit
+
+(test-lex
+ plex-hexadecimal-digit
+ "0"
+ :cond (equal ast #\0))
+
+(test-lex
+ plex-hexadecimal-digit
+ "1"
+ :cond (equal ast #\1))
+
+(test-lex
+ plex-hexadecimal-digit
+ "8"
+ :cond (equal ast #\8))
+
+(test-lex
+ plex-hexadecimal-digit
+ "A"
+ :cond (equal ast #\A))
+
+(test-lex
+ plex-hexadecimal-digit
+ "b"
+ :cond (equal ast #\b))
+
+(test-lex
+ plex-hexadecimal-digit
+ "fy"
+ :cond (and (equal ast #\f)
+            (equal (ppstate->bytes ppstate) (list (char-code #\y)))))
+
+(test-lex-fail
+ plex-hexadecimal-digit
+ "")
+
+(test-lex-fail
+ plex-hexadecimal-digit
+ " ")
+
+(test-lex-fail
+ plex-hexadecimal-digit
+ " c")
+
+(test-lex-fail
+ plex-hexadecimal-digit
+ "g")
+
+(test-lex-fail
+ plex-hexadecimal-digit
+ "@")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-hex-quad
+
+(test-lex
+ plex-hex-quad
+ "0000"
+ :cond (equal ast (hex-quad #\0 #\0 #\0 #\0)))
+
+(test-lex
+ plex-hex-quad
+ "b8F0"
+ :cond (equal ast (hex-quad #\b #\8 #\F #\0)))
+
+(test-lex
+ plex-hex-quad
+ "DeadBeef"
+ :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
+            (equal (ppstate->bytes ppstate) (acl2::string=>nats "Beef"))))
+
+(test-lex-fail
+ plex-hex-quad
+ "")
+
+(test-lex-fail
+ plex-hex-quad
+ "7aa")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-*-hexadecimal-digit
+
+(test-lex
+ plex-*-hexadecimal-digit
+ ""
+ :pos (position 20 88)
+ :more-inputs ((position 20 87))
+ :cond (and (equal ast nil)
+            (equal pos/span (position 20 87))
+            (equal pos/span2 (position 20 88))))
+
+(test-lex
+ plex-*-hexadecimal-digit
+ "dEadbeFf"
+ :pos (position 1 1)
+ :more-inputs ((position 1 0))
+ :cond (and (equal ast '(#\d #\E #\a #\d #\b #\e #\F #\f))
+            (equal pos/span (position 1 8))
+            (equal pos/span2 (position 1 9))))
+
+(test-lex
+ plex-*-hexadecimal-digit
+ "1"
+ :pos (position 10 10)
+ :more-inputs ((position 10 9))
+ :cond (and (equal ast '(#\1))
+            (equal pos/span (position 10 10))
+            (equal pos/span2 (position 10 11))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-escape-sequence
+
+(test-lex
+ plex-escape-sequence
+ "'"
+ :cond (equal ast (escape-simple (simple-escape-squote))))
+
+(test-lex
+ plex-escape-sequence
+ "\""
+ :cond (equal ast (escape-simple (simple-escape-dquote))))
+
+(test-lex
+ plex-escape-sequence
+ "?"
+ :cond (equal ast (escape-simple (simple-escape-qmark))))
+
+(test-lex
+ plex-escape-sequence
+ "\\ " ; extra space to avoid end-of-file with backslash
+ :cond (equal ast (escape-simple (simple-escape-bslash))))
+
+(test-lex
+ plex-escape-sequence
+ "a"
+ :cond (equal ast (escape-simple (simple-escape-a))))
+
+(test-lex
+ plex-escape-sequence
+ "b"
+ :cond (equal ast (escape-simple (simple-escape-b))))
+
+(test-lex
+ plex-escape-sequence
+ "f"
+ :cond (equal ast (escape-simple (simple-escape-f))))
+
+(test-lex
+ plex-escape-sequence
+ "n"
+ :cond (equal ast (escape-simple (simple-escape-n))))
+
+(test-lex
+ plex-escape-sequence
+ "r"
+ :cond (equal ast (escape-simple (simple-escape-r))))
+
+(test-lex
+ plex-escape-sequence
+ "t"
+ :cond (equal ast (escape-simple (simple-escape-t))))
+
+(test-lex
+ plex-escape-sequence
+ "v"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex
+ plex-escape-sequence
+ "vv"
+ :cond (equal ast (escape-simple (simple-escape-v))))
+
+(test-lex-fail
+ plex-escape-sequence
+ "w")
+
+(test-lex
+ plex-escape-sequence
+ "6"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ plex-escape-sequence
+ "68"
+ :cond (equal ast (escape-oct (oct-escape-one #\6))))
+
+(test-lex
+ plex-escape-sequence
+ "60"
+ :cond (equal ast (escape-oct (oct-escape-two #\6 #\0))))
+
+(test-lex
+ plex-escape-sequence
+ "601"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex
+ plex-escape-sequence
+ "6011"
+ :cond (equal ast (escape-oct (oct-escape-three #\6 #\0 #\1))))
+
+(test-lex-fail
+ plex-escape-sequence
+ "8")
+
+(test-lex
+ plex-escape-sequence
+ "xf8"
+ :cond (equal ast (escape-hex (list #\f #\8))))
+
+(test-lex
+ plex-escape-sequence
+ "x829s"
+ :cond (equal ast (escape-hex (list #\8 #\2 #\9))))
+
+(test-lex-fail
+ plex-escape-sequence
+ "x")
+
+(test-lex-fail
+ plex-escape-sequence
+ "x+")
+
+(test-lex
+ plex-escape-sequence
+ "uabBA"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-locase-u (hex-quad #\a #\b #\B #\A)))))
+
+(test-lex
+ plex-escape-sequence
+ "U744dD900"
+ :cond (equal ast (escape-univ
+                   (univ-char-name-upcase-u (hex-quad #\7 #\4 #\4 #\d)
+                                            (hex-quad #\D #\9 #\0 #\0)))))
+
+(test-lex-fail
+ plex-escape-sequence
+ "u123")
+
+(test-lex-fail
+ plex-escape-sequence
+ "U0000123")
+
+(test-lex-fail
+ plex-escape-sequence
+ "%")
+
+(test-lex
+ plex-escape-sequence
+ "%"
+ :gcc t
+ :cond (equal ast (escape-simple (simple-escape-percent))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-*-c-char
+
+(test-lex
+ plex-*-c-char
+ "a'"
+ :cond (equal ast (list (c-char-char (char-code #\a)))))
+
+(test-lex
+ plex-*-c-char
+ "\\a'"
+ :cond (equal ast (list (c-char-escape (escape-simple (simple-escape-a))))))
+
+(test-lex
+ plex-*-c-char
+ "&\\xf7'"
+ :cond (equal ast (list (c-char-char (char-code #\&))
+                        (c-char-escape (escape-hex (list #\f #\7))))))
+
+(test-lex
+ plex-*-c-char
+ "\\1111'"
+ :cond (equal ast (list (c-char-escape
+                         (escape-oct (oct-escape-three #\1 #\1 #\1)))
+                        (c-char-char (char-code #\1)))))
+
+(test-lex
+ plex-*-c-char
+ "ABC'"
+ :cond (and (equal ast (list (c-char-char (char-code #\A))
+                             (c-char-char (char-code #\B))
+                             (c-char-char (char-code #\C))))
+            (equal pos/span (position 1 3))))
+
+(test-lex
+ plex-*-c-char
+ "d\"q'"
+ :cond (and (equal ast (list (c-char-char (char-code #\d))
+                             (c-char-char (char-code #\"))
+                             (c-char-char (char-code #\q))))
+            (equal pos/span (position 1 3))))
+
+(test-lex-fail
+ plex-*-c-char
+ "")
+
+(test-lex-fail
+ plex-*-c-char
+ "a")
+
+(test-lex-fail
+ plex-*-c-char
+ "a\\'")
+
+(test-lex-fail
+ plex-*-c-char
+ "a\\z'")
+
+(test-lex-fail
+ plex-*-c-char
+ (list (char-code #\a) 10 (char-code #\b) (char-code #\')))
+
+(test-lex-fail
+ plex-*-c-char
+ (list (char-code #\a) 13 (char-code #\b) (char-code #\')))
+
+(test-lex-fail
+ plex-*-c-char
+ (list (char-code #\a) 13 10 (char-code #\')))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-*-s-char
+
+(test-lex
+ plex-*-s-char
+ "p\""
+ :cond (equal ast (list (s-char-char (char-code #\p)))))
+
+(test-lex
+ plex-*-s-char
+ "'\""
+ :cond (equal ast (list (s-char-char (char-code #\')))))
+
+(test-lex
+ plex-*-s-char
+ "\\n\""
+ :cond (equal ast (list (s-char-escape (escape-simple (simple-escape-n))))))
+
+(test-lex
+ plex-*-s-char
+ "12\""
+ :cond (equal ast (list (s-char-char (char-code #\1))
+                        (s-char-char (char-code #\2)))))
+
+(test-lex-fail
+ plex-*-s-char
+ "")
+
+(test-lex-fail
+ plex-*-s-char
+ "noclose")
+
+(test-lex-fail
+ plex-*-s-char
+ "\\k\"")
+
+(test-lex-fail
+ plex-*-s-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ plex-*-s-char
+ (list (char-code #\U) 13 (char-code #\")))

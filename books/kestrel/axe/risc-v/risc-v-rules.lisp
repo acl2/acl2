@@ -23,11 +23,11 @@
 ;; Non-local because this prevents out-of-memory errors
 (in-theory (disable (:e repeat)))
 
-(defthm nth-of-memory32-fix
+(defthm nth-of-memory-fix
   (implies (unsigned-byte-p 32 n)
-           (equal (nth n (memory32-fix x))
+           (equal (nth n (memory-fix x))
                   (ubyte8-fix (nth n x))))
-  :hints (("Goal" :in-theory (enable memory32-fix memory32p))))
+  :hints (("Goal" :in-theory (enable memory-fix memoryp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +100,7 @@
   (equal (write32-mem-ubyte8 ad byte1 (write32-mem-ubyte8 ad byte2 stat))
          (write32-mem-ubyte8 ad byte1 stat))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte8
-                                     memory32p))))
+                                     memoryp))))
 
 (defthm write32-mem-ubyte8-of-write32-mem-ubyte8-same-diff
   (implies (and (not (equal (mod ad1 4294967296)
@@ -110,7 +110,7 @@
            (equal (write32-mem-ubyte8 ad1 byte1 (write32-mem-ubyte8 ad2 byte2 stat))
                   (write32-mem-ubyte8 ad2 byte2 (write32-mem-ubyte8 ad1 byte1 stat))))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte8
-                                     memory32p))))
+                                     memoryp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

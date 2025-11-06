@@ -14,10 +14,7 @@
 (include-book "arithmetic-operations")
 (include-book "pointer-operations")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,8 +43,7 @@
         (t (ec-call (acl2::bool-fix (impossible)))))
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
-                                           value-realp)))
-  :hooks (:fix))
+                                           value-realp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,7 +57,6 @@
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 

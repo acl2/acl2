@@ -2063,7 +2063,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-*-c-char),
-     but it operates on preprocessor states instead of parser states."))
+     but it operates on preprocessor states instead of parser states,
+     and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (pread-char ppstate))
        ((unless char)
@@ -2074,7 +2075,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -2123,7 +2124,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-*-s-char),
-     but it operates on preprocessor states instead of parser states."))
+     but it operates on preprocessor states instead of parser states,
+     and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (pread-char ppstate))
        ((unless char)
@@ -2134,7 +2136,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -2193,7 +2195,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -2245,7 +2247,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
