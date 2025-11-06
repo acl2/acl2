@@ -21,8 +21,8 @@
 ;; packages into this package.
 
 (defconst *risc-v-symbols*
-  '(riscv32im-le::memory32-fix
-    riscv32im-le::memory32p
+  '(riscv32im-le::memory-fix
+    riscv32im-le::memoryp
 
     riscv::ubyte5p
     riscv::ubyte5-fix

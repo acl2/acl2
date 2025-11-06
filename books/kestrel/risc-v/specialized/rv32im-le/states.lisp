@@ -95,7 +95,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist-of-len memory32
+(fty::deflist-of-len memory
   :short "Fixtype of memories fo RV32IM little endian."
   :long
   (xdoc::topstring
@@ -105,7 +105,7 @@
      Recall that we do not model restrictions on the address space yet."))
   :list-type ubyte8-list
   :length 4294967296 ; (expt 2 32)
-  :pred memory32p)
+  :pred memoryp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +118,7 @@
      according to @(tsee riscv::stat-validp)."))
   ((xregs xregs)
    (pc ubyte32)
-   (memory memory32)
+   (memory memory)
    (error bool))
   :pred stat32p
 
@@ -149,7 +149,7 @@
                        riscv::stat-validp
                        xregsp
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
-                       memory32p
+                       memoryp
                        ubyte32p
                        (:e feat-rv32im-le)))))
 
@@ -194,7 +194,7 @@
                                                        stat32-from-stat
                                                        stat-rv32im-le-p
                                                        xregsp
-                                                       memory32p
+                                                       memoryp
                                                        (:e feat-rv32im-le))))
             :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32
                                                        stat32-from-stat))))))
@@ -599,7 +599,7 @@
   (change-stat32 stat :memory (update-nth (loghead 32 addr)
                                            (loghead 8 val)
                                            (stat32->memory stat)))
-  :guard-hints (("Goal" :in-theory (enable memory32p nfix max (:e tau-system))))
+  :guard-hints (("Goal" :in-theory (enable memoryp nfix max (:e tau-system))))
   :hooks nil ; does not fix val
 
   ///
