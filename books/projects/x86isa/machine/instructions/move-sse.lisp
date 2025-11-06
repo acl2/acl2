@@ -1283,16 +1283,16 @@
 
   :body
 
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-
-       (p2 (prefixes->seg prefixes))
-
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
+       ;; index of xmm1:
+       ((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       ;; read xmm2/m64:
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg0
@@ -1325,9 +1325,10 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
+       ;; value for xmm1:
        (dup-val (logior (ash val 64) val))
 
-       ;; Update the x86 state:
+       ;; write to xmm1:
        (x86 (!xmmi-size 16 xmm-index dup-val x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
