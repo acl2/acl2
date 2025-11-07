@@ -1509,7 +1509,7 @@
                               (:e member-equal))
                  :use (,arg-thm-name
                        (:instance
-                        expr-unary-congruence
+                        expr-unary-congruence-pure
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -1520,7 +1520,7 @@
                         (old-arg ',old-arg)
                         (new-arg ',new-arg))
                        (:instance
-                        expr-unary-errors
+                        expr-unary-errors-pure
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
