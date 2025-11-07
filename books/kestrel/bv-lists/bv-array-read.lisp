@@ -38,7 +38,9 @@
                               )
                   :type-prescription (natp (bv-array-read element-size len index data))))
   (let* ((len (nfix len))
-         (numbits (ceiling-of-lg len)) ;number of index bits needed
+          ;number of index bits needed ; todo: disallow len=0 (no valid indices):
+         (numbits (mbe :exec (if (equal 0 len) 0 (ceiling-of-lg len)) ; avoid calling ceiling-of-lg on 0 (guard violation)
+                       :logic (ceiling-of-lg len)))
          ;; Chop the index down to the needed number of bits:
          (index (bvchop numbits (ifix index))))
     (if (< index len) ;; always true when LEN is a power of 2

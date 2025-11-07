@@ -218,7 +218,7 @@
   (declare (xargs :guard t))
   (let* ((len (nfix len))
          (index (ifix index))
-         (numbits (ceiling-of-lg len))
+         (numbits (if (equal 0 len) 0 (ceiling-of-lg len)))
          (index (bvchop numbits index)))
     (if (< index len)
         (bvchop (nfix element-size) (ifix (nth-unguarded-aux index data)))
@@ -242,11 +242,13 @@
            (natp element-size)
            (true-listp data))
       (bv-array-write element-size len index val data)
-    (bv-array-write (nfix element-size)
-                    (nfix len)
-                    (BVCHOP (CEILING-OF-LG (nfix LEN)) (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
-                    val
-                    (true-list-fix data))))
+    (let* ((len (nfix len))
+           (numbits (if (equal 0 len) 0 (ceiling-of-lg len))))
+      (bv-array-write (nfix element-size)
+                      len
+                      (BVCHOP numbits (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
+                      val
+                      (true-list-fix data)))))
 
 ;move
 (local
@@ -616,9 +618,7 @@
 
 (defund ceiling-of-lg-unguarded (x)
   (declare (xargs :guard t))
-  (if (integerp x)
-      (ceiling-of-lg x)
-    0))
+  (integer-length-unguarded (binary-+-unguarded -1 x)))
 
 (defthm ceiling-of-lg-unguarded-correct
   (equal (ceiling-of-lg-unguarded x)
