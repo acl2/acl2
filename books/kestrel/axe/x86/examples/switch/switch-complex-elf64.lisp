@@ -10,17 +10,21 @@
 
 (in-package "X")
 
-;; STATUS: INCOMPLETE (awaiting jump table support in Axe)
+;; STATUS: lifting completes but doesn't handle global variable properly.
 
 ;; This example demonstrates lifting a more complex switch statement that
 ;; compiles to a jump table.  The compiler generates a jump table for the
-;; switch statement, which uses indirect jumps (jmpq *%rax).  This is
-;; currently not supported by the Axe x86 lifter.  Once jump table support
-;; is implemented, this example should work.
+;; switch statement, which uses indirect jumps (jmpq *%rax).  
 ;;
 ;; This switch statement has 10 cases (0-9) plus a default case, and each
 ;; case performs operations on a global volatile variable to prevent
 ;; optimization and to test memory access patterns.
+
+;; switch-complex.elf64 was produced on Linux by:
+;;
+;;   gcc -o switch-complex.elf64 switch-complex.c
+;;
+;; with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
 ;; cert_param: (uses-stp)
 
