@@ -20,11 +20,8 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,8 +64,7 @@
    :unknown t
    :pointer (or (type-case type.to :void)
                 (type-case type.to :unknown))
-   :otherwise (type-integerp type))
-  :hooks (:fix))
+   :otherwise (type-integerp type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,8 +77,7 @@
    (xdoc::p
     "See @(tsee expr-null-pointer-constp)."))
   (b* (((const-expr const-expr) const-expr))
-    (expr-null-pointer-constp const-expr.expr type))
-  :hooks (:fix))
+    (expr-null-pointer-constp const-expr.expr type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +97,8 @@
      By annotating identifiers with their unique alias,
      disambiguation of variables becomes trivial."))
   ((uid nat))
-  :pred uidp)
+  :pred uidp
+  :layout :fulltree)
 
 (defirrelevant irr-uid
   :short "An irrelevant unique identifier."
@@ -122,6 +118,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uid-equal ((x uidp) (y uidp))
+  (mbe :logic (uid-equiv x y)
+       :exec (= (the unsigned-byte (uid->uid x))
+                (the unsigned-byte (uid->uid y))))
+  :guard-hints (("Goal" :in-theory (enable uidp uid->uid)))
+  :inline t)
+
 (define uid-increment ((uid uidp))
   :returns (new-uid uidp)
   :short "Create a fresh unique identifier."
@@ -130,8 +133,7 @@
    (xdoc::p
     "This simply increments the numerical value of the unique identifier."))
   (b* (((uid uid) uid))
-    (uid (1+ uid.uid)))
-  :hooks (:fix))
+    (uid (1+ uid.uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,7 +503,8 @@
   (if (var-infop x)
       x
     (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
-            (irr-var-info))))
+            (irr-var-info)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,122 +628,125 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce annop
-  :short "Definition of the predicates that check whether
-          the abstract syntax is annotated with validation information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
-   (xdoc::p
-    "The @(':default') value is @('t'),
-     meaning that there are no constraints by default.")
-   (xdoc::p
-    "The @(':combine') operator is @(tsee and),
-     because we need to check all the constructs, recursively.")
-   (xdoc::p
-    "We override the predicate for
-     the constructs for which the validator adds information.")
-   (xdoc::p
-    "Since for now the validator accepts GCC attribute and other extensions
-     without actually checking them and their constituents,
-     we also have the annotation predicates accept those constructs,
-     by overriding those cases to return @('t').")
-   (xdoc::p
-    "The validator operates on unambiguous abstract syntax,
-     which satisfies the @(see unambiguity) predicates.
-     Ideally, the annotation predicates should use
-     the unambiguity predicates as guards,
-     but @(tsee fty::deffold-reduce) does not support that feature yet.
-     Thus, for now we add run-time checks, in the form of @(tsee raise),
-     for the cases in which the unambiguity predicates do not hold;
-     note that @(tsee raise) is logically @('nil'),
-     so the annotation predicates are false on ambiguous constructs."))
-  :types (ident
-          ident-list
-          ident-option
-          iconst
-          iconst-option
-          const
-          const-option
-          attrib-name
-          exprs/decls/stmts
-          fundef
-          extdecl
-          extdecl-list
-          transunit
-          filepath-transunit-map
-          transunit-ensemble
-          code-ensemble)
-  :result booleanp
-  :default t
-  :combine and
-  :override
-  ((iconst (iconst-infop (iconst->info iconst)))
-   (expr :ident (var-infop expr.info))
-   (expr :unary (and (expr-annop expr.arg)
-                     (expr-unary-infop expr.info)))
-   (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
-                              (expr-fix expr)))
-   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
-                               (expr-fix expr)))
-   (expr :binary (and (expr-annop expr.arg1)
-                      (expr-annop expr.arg2)
-                      (expr-binary-infop expr.info)))
-   (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
+(encapsulate ()
+  (std::make-define-config :no-function nil)
+
+  (fty::deffold-reduce annop
+    :short "Definition of the predicates that check whether
+            the abstract syntax is annotated with validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
+     (xdoc::p
+      "The @(':default') value is @('t'),
+       meaning that there are no constraints by default.")
+     (xdoc::p
+      "The @(':combine') operator is @(tsee and),
+       because we need to check all the constructs, recursively.")
+     (xdoc::p
+      "We override the predicate for
+       the constructs for which the validator adds information.")
+     (xdoc::p
+      "Since for now the validator accepts GCC attribute and other extensions
+       without actually checking them and their constituents,
+       we also have the annotation predicates accept those constructs,
+       by overriding those cases to return @('t').")
+     (xdoc::p
+      "The validator operates on unambiguous abstract syntax,
+       which satisfies the @(see unambiguity) predicates.
+       Ideally, the annotation predicates should use
+       the unambiguity predicates as guards,
+       but @(tsee fty::deffold-reduce) does not support that feature yet.
+       Thus, for now we add run-time checks, in the form of @(tsee raise),
+       for the cases in which the unambiguity predicates do not hold;
+       note that @(tsee raise) is logically @('nil'),
+       so the annotation predicates are false on ambiguous constructs."))
+    :types (ident
+            ident-list
+            ident-option
+            iconst
+            iconst-option
+            const
+            const-option
+            attrib-name
+            exprs/decls/stmts
+            fundef
+            extdecl
+            extdecl-list
+            transunit
+            filepath-transunit-map
+            transunit-ensemble
+            code-ensemble)
+    :result booleanp
+    :default t
+    :combine and
+    :override
+    ((iconst (iconst-infop (iconst->info iconst)))
+     (expr :ident (var-infop expr.info))
+     (expr :unary (and (expr-annop expr.arg)
+                       (expr-unary-infop expr.info)))
+     (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+     (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
-   (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+     (expr :binary (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-binary-infop expr.info)))
+     (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                    (expr-fix expr)))
-   (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
-                                   (type-spec-fix type-spec)))
-   (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
-                                     (align-spec-fix align-spec)))
-   (dirabsdeclor :dummy-base (raise "Internal error: ~
-                                     dummy base case of ~
-                                     direct abstract declarator."))
-   (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                (absdeclor-option-annop (tyname->declor? tyname))
-                (tyname-infop (tyname->info tyname))))
-   (param-declor :nonabstract (and (declor-annop
-                                    (param-declor-nonabstract->declor
-                                     param-declor))
-                                   (param-declor-nonabstract-infop
-                                    (param-declor-nonabstract->info
-                                     param-declor))))
-   (attrib t)
-   (attrib-spec t)
-   (initdeclor (and (declor-annop (initdeclor->declor initdeclor))
-                    (initer-option-annop (initdeclor->init? initdeclor))
-                    (initdeclor-infop (initdeclor->info initdeclor))))
-   (asm-output t)
-   (asm-input t)
-   (asm-stmt t)
-   (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
-                           (stmt-fix stmt)))
-   (block-item :ambig (raise "Internal error: ambiguous ~x0."
-                             (block-item-fix block-item)))
-   (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
-                           (amb-expr/tyname-fix amb-expr/tyname)))
-   (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
-                                (amb-declor/absdeclor-fix
-                                 amb-declor/absdeclor)))
-   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))
-   (fundef (and (decl-spec-list-annop (fundef->spec fundef))
-                (declor-annop (fundef->declor fundef))
-                (decl-list-annop (fundef->decls fundef))
-                (comp-stmt-annop (fundef->body fundef))
-                (fundef-infop (fundef->info fundef))))
-   (transunit (and (extdecl-list-annop (transunit->decls transunit))
-                   (transunit-infop (transunit->info transunit))))))
+     (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                     (expr-fix expr)))
+     (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
+                                     (type-spec-fix type-spec)))
+     (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
+                                       (align-spec-fix align-spec)))
+     (dirabsdeclor :dummy-base (raise "Internal error: ~
+                                       dummy base case of ~
+                                       direct abstract declarator."))
+     (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                  (absdeclor-option-annop (tyname->declor? tyname))
+                  (tyname-infop (tyname->info tyname))))
+     (param-declor :nonabstract (and (declor-annop
+                                      (param-declor-nonabstract->declor
+                                       param-declor))
+                                     (param-declor-nonabstract-infop
+                                      (param-declor-nonabstract->info
+                                       param-declor))))
+     (attrib t)
+     (attrib-spec t)
+     (initdeclor (and (declor-annop (initdeclor->declor initdeclor))
+                      (initer-option-annop (initdeclor->init? initdeclor))
+                      (initdeclor-infop (initdeclor->info initdeclor))))
+     (asm-output t)
+     (asm-input t)
+     (asm-stmt t)
+     (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
+                             (stmt-fix stmt)))
+     (block-item :ambig (raise "Internal error: ambiguous ~x0."
+                               (block-item-fix block-item)))
+     (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
+                             (amb-expr/tyname-fix amb-expr/tyname)))
+     (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
+                                  (amb-declor/absdeclor-fix
+                                   amb-declor/absdeclor)))
+     (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
+                           (amb-decl/stmt-fix amb-decl/stmt)))
+     (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+                  (declor-annop (fundef->declor fundef))
+                  (decl-list-annop (fundef->decls fundef))
+                  (comp-stmt-annop (fundef->body fundef))
+                  (fundef-infop (fundef->info fundef))))
+     (transunit (and (extdecl-list-annop (transunit->decls transunit))
+                     (transunit-infop (transunit->info transunit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -949,6 +955,18 @@
              (transunit-infop (transunit->info transunit)))
     :enable transunit-annop)
 
+  ;; theorems about irrelevants:
+
+  (defruled transunit-ensemble-annop-of-irr-transunit-ensemble
+    (transunit-ensemble-annop (irr-transunit-ensemble))
+    :enable ((:e transunit-ensemble-annop)
+             (:e irr-transunit-ensemble)))
+
+  (defruled code-ensemble-annop-of-irr-code-ensemble
+    (code-ensemble-annop (irr-code-ensemble))
+    :enable ((:e code-ensemble-annop)
+             (:e irr-code-ensemble)))
+
   ;; Add the above theorems to the rule set.
 
   (add-to-ruleset
@@ -983,7 +1001,9 @@
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls
-     transunit-infop-of-transunit->info)))
+     transunit-infop-of-transunit->info
+     transunit-ensemble-annop-of-irr-transunit-ensemble
+     code-ensemble-annop-of-irr-code-ensemble)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1048,8 +1068,7 @@
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1068,8 +1087,7 @@
    initer
    :single (expr-type initer.expr)
    :list (type-unknown))
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1228,5 +1246,4 @@
                   (set::insert (type-void) (set::delete nil types))
                 types)))
     types)
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
