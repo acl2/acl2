@@ -11,7 +11,9 @@
 
 (in-package "X")
 
-;; STATUS: Testing whether symbolic execution keeps global_counter symbolic
+;; STATUS: INCOMPLETE (fails to lift)
+
+;; Testing whether symbolic execution keeps global_counter symbolic
 ;; when lifting from the main entry point instead of directly from process_command.
 
 ;; This example is based on switch-complex-1.c but uses argv[1][0] (first byte)
