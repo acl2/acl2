@@ -48,6 +48,45 @@ int bar(int y, int z) {
 
   :with-output-off nil)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This transformation shows
+
+(acl2::must-succeed*
+  (c$::input-files :files '("test2.c")
+                   :const *old*)
+
+  (defconst *new*
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/test2.c"
+    :content "int foo(int x) {
+  if (x) {
+    return foo(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
+}
+int bar(int x) {
+  if (x) {
+    return bar(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
+}
+")
+
+  :with-output-off nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*

@@ -16,10 +16,10 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/fty/deffold-map" :dir :system)
-
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
+(include-book "../syntax/validation-information")
+(include-book "utilities/rename-fn")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -70,61 +70,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This takes longer than one would hope. One issue is printing, which may be
-;; solved easily by deffold-map wrapping its events in a with-output.
-;; Another issue is that many "useless" maps are generated for types in the
-;; clique we do not care about (i.e. those whose maps are not actually mutually
-;; recursive with those we explicitly care about). Perhaps the :types argument
-;; could take members of a type clique instead of generating maps for an entire
-;; clique. E.g., the list here could be (c$::expr c$::genassoc
-;; c$::genassoc-list).
-(fty::deffold-map funcall-fun-rename-fn
-  :types (c$::exprs/decls/stmts)
-  :extra-args ((old-fn identp) (new-fn identp))
-  :short "Rename a function within a @('funcall') function expression."
-  :override
-  ((c$::expr
-     (b* ((old-fn (ident-fix old-fn))
-          (new-fn (ident-fix new-fn)))
-       (expr-case
-         c$::expr
-         :ident (if (equal expr.ident old-fn)
-                    (make-expr-ident :ident new-fn :info nil)
-                  (expr-fix c$::expr))
-         :paren (expr-paren
-                  (expr-funcall-fun-rename-fn expr.inner old-fn new-fn))
-         :gensel
-         (make-expr-gensel
-           :control expr.control
-           :assocs (genassoc-list-funcall-fun-rename-fn
-                     expr.assocs old-fn new-fn))
-         :cast (make-expr-cast :type expr.type
-                               :arg (expr-funcall-fun-rename-fn
-                                      expr.arg old-fn new-fn))
-         :otherwise (expr-fix c$::expr))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deffold-map rename-fn
-  :types (c$::exprs/decls/stmts)
-  :extra-args ((old-fn identp) (new-fn identp))
-  :override
-  ((c$::expr
-     :funcall
-     (make-expr-funcall
-       :fun (expr-funcall-fun-rename-fn expr.fun old-fn new-fn)
-       :args (expr-list-rename-fn expr.args old-fn new-fn)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define copy-fn-fundef
   ((fundef fundefp)
    (target-fn identp)
    (new-fn identp))
+  :guard (fundef-annop fundef)
   :short "Transform a function definition."
   :returns (fundef? fundef-optionp)
   (b* (((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
+       ((declor fundef.declor) fundef.declor)
+       ((fundef-info info) fundef.info))
     (dirdeclor-case
       fundef.declor.direct
       :function-params
@@ -144,7 +99,9 @@
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
                    :items (block-item-list-rename-fn
-                           (comp-stmt->items fundef.body) target-fn new-fn))
+                            (comp-stmt->items fundef.body)
+                            info.uid
+                            new-fn))
             :info fundef.info)
         nil)
       :otherwise nil)))
@@ -155,6 +112,7 @@
   ((extdecl extdeclp)
    (target-fn identp)
    (new-fn identp))
+  :guard (extdecl-annop extdecl)
   :short "Transform an external declaration."
   :returns (mv (found booleanp)
                (extdecls extdecl-listp))
@@ -176,6 +134,7 @@
   ((extdecls extdecl-listp)
    (target-fn identp)
    (new-fn identp))
+  :guard (extdecl-list-annop extdecls)
   :short "Transform a list of external declarations."
   :returns (new-extdecls extdecl-listp)
   (b* (((when (endp extdecls))
@@ -185,7 +144,8 @@
     (append new-extdecls
             (if found
                 (extdecl-list-fix (rest extdecls))
-              (copy-fn-extdecl-list (rest extdecls) target-fn new-fn)))))
+              (copy-fn-extdecl-list (rest extdecls) target-fn new-fn))))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,6 +153,7 @@
   ((tunit transunitp)
    (target-fn identp)
    (new-fn identp))
+  :guard (transunit-annop tunit)
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
@@ -205,6 +166,7 @@
   ((map filepath-transunit-mapp)
    (target-fn identp)
    (new-fn identp))
+  :guard (filepath-transunit-map-annop map)
   :short "Transform a filepath."
   :returns (new-map filepath-transunit-mapp
                     :hyp (filepath-transunit-mapp map))
@@ -222,6 +184,7 @@
   ((tunits transunit-ensemblep)
    (target-fn identp)
    (new-fn identp))
+  :guard (transunit-ensemble-annop tunits)
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
@@ -236,6 +199,7 @@
   ((code code-ensemblep)
    (target-fn identp)
    (new-fn identp))
+  :guard (code-ensemble-annop code)
   :returns (new-code code-ensemblep)
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code))

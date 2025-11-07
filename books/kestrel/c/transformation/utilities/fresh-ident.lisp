@@ -21,10 +21,11 @@
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "collect-idents")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,10 +54,11 @@
    (number-suffix stringp))
   :returns (string stringp)
   (concatenate 'string
-               base
-               number-prefix
-               (acl2::implode (explode-nonnegative-integer number 10 nil))
-               number-suffix)
+               (mbe :logic (acl2::str-fix base) :exec base)
+               (mbe :logic (acl2::str-fix number-prefix) :exec number-prefix)
+               (acl2::implode (explode-nonnegative-integer
+                                (mbe :logic (nfix number) :exec number) 10 nil))
+               (mbe :logic (acl2::str-fix number-suffix) :exec number-suffix))
   :guard-hints (("Goal" :in-theory (enable string-listp)))
   :prepwork
   ((defrulel character-listp-of-explode-nonnegative-integer
@@ -85,6 +87,7 @@
      number-suffix
      blacklist
      (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+  :hooks ((:fix :omit (blacklist)))
   :prepwork
   ((local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
    (define fresh-numbered-string-wrt0
@@ -95,12 +98,11 @@
       (blacklist acl2::string-setp)
       (steps :type #.acl2::*fixnat-type*))
      :returns (string stringp)
-     (b* (((when (eql 0 (mbe :logic (nfix steps)
-                             :exec (acl2::the-fixnat steps))))
-           (mbe :logic (if (stringp base)
-                           base
-                         "")
-                :exec base))
+     (b* ((number (mbe :logic (nfix number) :exec number))
+          (steps (mbe :logic (nfix steps) :exec (acl2::the-fixnat steps)))
+          (blacklist (acl2::string-sfix blacklist))
+          ((when (= 0 steps))
+           (mbe :logic (acl2::str-fix base) :exec base))
           (numbered-string
             (make-numbered-string base number-prefix number number-suffix)))
        (if (in numbered-string blacklist)
@@ -111,9 +113,7 @@
                                        blacklist
                                        (- steps 1))
          numbered-string))
-     :measure (nfix steps)
-     :hints (("Goal" :in-theory (enable o< o-finp nfix)))
-     :guard-hints (("Goal" :in-theory (enable nfix))))))
+     :measure (nfix steps))))
 
 (define fresh-string-wrt
   ((base stringp)
@@ -121,25 +121,26 @@
    (number-suffix stringp)
    (blacklist acl2::string-setp))
   :returns (string stringp)
-  (if (in base blacklist)
-      (fresh-numbered-string-wrt base number-prefix 0 number-suffix blacklist)
-    (mbe :logic (if (stringp base)
-                    base
-                  "")
-         :exec base)))
+  (let ((base (mbe :logic (acl2::str-fix base) :exec base))
+        (blacklist (acl2::string-sfix blacklist)))
+    (if (in base blacklist)
+        (fresh-numbered-string-wrt base number-prefix 0 number-suffix blacklist)
+      base)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-ident->unwrap
   ((idents ident-setp))
   :returns (strings acl2::string-setp)
-  (b* (((when (emptyp idents))
+  (b* ((idents (ident-set-fix idents))
+       ((when (emptyp idents))
         nil)
        (unwrapped-head (ident->unwrap (head idents))))
     (if (stringp unwrapped-head)
         (insert unwrapped-head
                 (map-ident->unwrap (tail idents)))
       (map-ident->unwrap (tail idents))))
+  :measure (acl2-count (ident-set-fix idents))
   :verify-guards :after-returns)
 
 (define fresh-ident
@@ -159,7 +160,8 @@
       (fresh-string-wrt ident-string
                         number-prefix
                         number-suffix
-                        string-blacklist))))
+                        string-blacklist)))
+  :no-function nil)
 
 (define fresh-idents
   ((idents ident-listp)
@@ -168,7 +170,13 @@
    ((number-prefix stringp) '"_")
    ((number-suffix stringp) '""))
   :returns (idents$ ident-listp)
-  (b* (((when (endp idents))
+  (b* ((idents (c$::ident-list-fix idents))
+       (blacklist (ident-set-fix blacklist))
+       (number-prefix (mbe :logic (acl2::str-fix number-prefix)
+                           :exec number-prefix))
+       (number-suffix (mbe :logic (acl2::str-fix number-suffix)
+                           :exec number-suffix))
+       ((when (endp idents))
         nil)
        (ident$ (fresh-ident (first idents)
                             blacklist
@@ -178,7 +186,17 @@
           (fresh-idents (rest idents)
                         (insert ident$ blacklist)
                         :number-prefix number-prefix
-                        :number-suffix number-suffix))))
+                        :number-suffix number-suffix)))
+  :measure (acl2-count (c$::ident-list-fix idents))
+  :hints (("Goal" :in-theory (enable c$::ident-list-fix)))
+  :hooks ((:fix
+           :hints (("Goal"
+                     :expand ((fresh-idents idents blacklist
+                                            :number-prefix number-prefix
+                                            :number-suffix (acl2::str-fix number-suffix))
+                              (fresh-idents idents blacklist
+                                            :number-prefix number-prefix
+                                            :number-suffix number-suffix)))))))
 
 (defrule len-of-fresh-idents
   (equal (len (fresh-idents idents
@@ -188,7 +206,8 @@
          (len idents))
   :induct t
   :enable (fresh-idents
-           len))
+           len
+           endp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
