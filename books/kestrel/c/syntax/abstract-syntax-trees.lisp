@@ -20,6 +20,26 @@
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration
+  ;; Needed by FTY
+  :induction-depth 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Needed by FTY
+(local (in-theory (enable nfix fix)))
+
+;; Needed by FTY when tau is disabled
+(defrulel sfix-when-not-setp-cheap
+  (implies (not (setp x))
+           (equal (sfix x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable sfix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-trees

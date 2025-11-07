@@ -1,4 +1,5 @@
 ; A proof of a more complex x86 binary function with a switch statement
+; Version 1a: Lifts from main entry point instead of process_command
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -10,19 +11,20 @@
 
 (in-package "X")
 
-;; STATUS: lifting completes but doesn't handle global variable properly.
+;; STATUS: INCOMPLETE (fails to lift)
 
-;; This example demonstrates lifting a more complex switch statement that
-;; compiles to a jump table.  The compiler generates a jump table for the
-;; switch statement, which uses indirect jumps (jmpq *%rax).  
-;;
-;; This switch statement has 10 cases (0-9) plus a default case, and each
-;; case performs operations on a global volatile variable to prevent
-;; optimization and to test memory access patterns.
+;; Testing whether symbolic execution keeps global_counter symbolic
+;; when lifting from the main entry point instead of directly from process_command.
 
-;; switch-complex.elf64 was produced on Linux by:
+;; This example is based on switch-complex-1.c but uses argv[1][0] (first byte)
+;; for global_counter and argv[1][1] (second byte) as the command argument.
+;; It lifts starting from main() rather than process_command(). This tests whether
+;; Axe's symbolic execution will treat both values as symbolic when the entire
+;; call chain from main is lifted together.
+
+;; switch-complex-1a.elf64 was produced on Linux by:
 ;;
-;;   gcc -o switch-complex.elf64 switch-complex.c
+;;   gcc -o switch-complex-1a.elf64 switch-complex-1a.c
 ;;
 ;; with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
@@ -30,7 +32,7 @@
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 
-; (depends-on "switch-complex.elf64")
+; (depends-on "switch-complex-1a.elf64")
 
 (defthm *-of-4-and-slice-when-multiple
   (implies (and (equal 0 (mod index 4))
@@ -303,37 +305,12 @@
                                   ()))))
 
 #|
-;; EM: This failed, don't know why yet.  Might not be needed.
-(defthm slice-of-bvplus
-  (implies (and (natp high)
-                (natp low)
-                (<= low high)
-                (natp size)
-                (< high size))
-           (equal (slice high low (bvplus size x y))
-                  (bvchop (+ 1 high (- low))
-                          (+ (slice high low x)
-                             (slice high low y)))))
-  :hints (("Goal" :in-theory (e/d (slice
-                                   bvplus
-                                   bvchop
-                                   acl2::logtail-of-bvchop)
-                                  ()))))
-|#
+; This doesn't work yet.
 
-
-;; EM: Note, this def-unrolled form is accepted now, but it lifts to
-;; (DEFUN PROCESS-COMMAND (CMD)
-;;    (BVIF 32 (BVLT 32 9 CMD) 4294967295 0))
-;; when it should lift to something like
-;; (BVIF 32 (BVLT 32 9 CMD)
-;;        (bvuminus 32 1)  ; default case
-;;        (bvmult 32 global-counter-val (bvplus 32 2 cmd)))  ; cases 0-9
-
-;; Lift the subroutine into logic:
-(def-unrolled process-command
-    :executable "switch-complex.elf64"
-    :target "process_command"
+;; Lift from the main entry point:
+(def-unrolled main
+    :executable "switch-complex-1a.elf64"
+    :target "main"
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
                    unsigned-canonical-address-p-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
@@ -361,83 +338,23 @@
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil
-    :inputs ((cmd u32)
+; this doesn't seem to change nything:
+;    :inputs-disjoint-from :all
+    :inputs ((argc u64)
+             (argv u64)
+             (envp u64)
              (global-counter-addr u64)
              (global-counter-val u32))
     :output :rax
-    :extra-assumptions '((canonical-address-p$inline global-counter-addr))
+    :extra-assumptions '((canonical-address-p$inline argv)
+                         (canonical-address-p$inline (bvplus 64 8 argv))
+                         (canonical-address-p$inline (bvplus 64 15 argv))
+                         (canonical-address-p$inline (read 8 (bvplus 48 8 argv) x86))
+                         (canonical-address-p$inline (bvplus 64 1 (read 8 (bvplus 48 8 argv) x86)))
+                         (canonical-address-p$inline global-counter-addr))
     :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
                ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                )
     :stack-slots 10)
-
-;; The above command created the function process-command, which represents the
-;; values returned by the C function process_command, in terms of its inputs:
-;; cmd, global-counter-addr, and global-counter-val.
-
-;; NOTE: This is more complex than classify-value because each case modifies
-;; the global_counter variable. The lifted function will need to model both
-;; the return value and the memory writes to the global variable.
-
-
-#|
-;; Shows that the program correctly implements the switch statement.
-;; For inputs 0-9, it returns global_counter * (cmd + 2)
-;; and increments global_counter by (cmd + 1).
-;; For all other inputs, it returns -1 and resets global_counter to 0.
-
-(defthm process-command-correct-case-0
-  (implies (equal global-counter-val 10) ; example initial value
-           (equal (process-command 0 global-counter-addr global-counter-val)
-                  (* 10 2))))
-
-(defthm process-command-correct-case-1
-  (implies (equal global-counter-val 10)
-           (equal (process-command 1 global-counter-addr global-counter-val)
-                  (* 10 3))))
-
-(defthm process-command-correct-case-2
-  (implies (equal global-counter-val 10)
-           (equal (process-command 2 global-counter-addr global-counter-val)
-                  (* 10 4))))
-
-(defthm process-command-correct-case-3
-  (implies (equal global-counter-val 10)
-           (equal (process-command 3 global-counter-addr global-counter-val)
-                  (* 10 5))))
-
-(defthm process-command-correct-case-4
-  (implies (equal global-counter-val 10)
-           (equal (process-command 4 global-counter-addr global-counter-val)
-                  (* 10 6))))
-
-(defthm process-command-correct-case-5
-  (implies (equal global-counter-val 10)
-           (equal (process-command 5 global-counter-addr global-counter-val)
-                  (* 10 7))))
-
-(defthm process-command-correct-case-6
-  (implies (equal global-counter-val 10)
-           (equal (process-command 6 global-counter-addr global-counter-val)
-                  (* 10 8))))
-
-(defthm process-command-correct-case-7
-  (implies (equal global-counter-val 10)
-           (equal (process-command 7 global-counter-addr global-counter-val)
-                  (* 10 9))))
-
-(defthm process-command-correct-case-8
-  (implies (equal global-counter-val 10)
-           (equal (process-command 8 global-counter-addr global-counter-val)
-                  (* 10 10))))
-
-(defthm process-command-correct-case-9
-  (implies (equal global-counter-val 10)
-           (equal (process-command 9 global-counter-addr global-counter-val)
-                  (* 10 11))))
-
-(defthm process-command-correct-default
-  (implies (bvlt 32 9 cmd) ; (not (member-equal cmd '(0 1 2 3 4 5 6 7 8 9)))
-           (equal (process-command cmd global-counter-addr global-counter-val)
-                  (bvuminus 32 1))))
 |#
+
