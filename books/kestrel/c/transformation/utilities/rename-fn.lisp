@@ -22,50 +22,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (fty::deffold-map funcall-fun-rename-fn
-;;   :types (c$::exprs/decls/stmts)
-;;   :extra-args ((old-fn identp) (new-fn identp))
-;;   :short "Rename a function within a @('funcall') function expression."
-;;   :override
-;;   ((c$::expr
-;;      (b* ((old-fn (ident-fix old-fn))
-;;           (new-fn (ident-fix new-fn)))
-;;        (expr-case
-;;          c$::expr
-;;          :ident (if (equal expr.ident old-fn)
-;;                     (make-expr-ident :ident new-fn :info nil)
-;;                   (expr-fix c$::expr))
-;;          :paren (expr-paren
-;;                   (expr-funcall-fun-rename-fn expr.inner old-fn new-fn))
-;;          :gensel
-;;          (make-expr-gensel
-;;            :control expr.control
-;;            :assocs (genassoc-list-funcall-fun-rename-fn
-;;                      expr.assocs old-fn new-fn))
-;;          :cast (make-expr-cast :type expr.type
-;;                                :arg (expr-funcall-fun-rename-fn
-;;                                       expr.arg old-fn new-fn))
-;;          :otherwise (expr-fix c$::expr))))))
-;;
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; (fty::deffold-map rename-fn
-;;   :types #!c$(exprs/decls/stmts
-;;               fundef
-;;               fundef-option
-;;               extdecl
-;;               extdecl-list)
-;;   :extra-args ((old-fn identp) (new-fn identp))
-;;   :override
-;;   ((c$::expr
-;;      :funcall
-;;      (make-expr-funcall
-;;        :fun (expr-funcall-fun-rename-fn expr.fun old-fn new-fn)
-;;        :args (expr-list-rename-fn expr.args old-fn new-fn)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deffold-map funcall-fun-rename-fn
+  :parents (rename-fn)
   :types (c$::exprs/decls/stmts)
   :extra-args ((uid c$::uidp) (new-fn identp))
   :short "Rename a function within a @('funcall') function expression."
@@ -95,6 +53,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-map rename-fn
+  :parents (utilities)
   :types #!c$(exprs/decls/stmts
               fundef
               fundef-option
