@@ -321,3 +321,15 @@
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (+ 1 k) index (take (+ 1 k) data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-+-of-ceiling-of-lg
+  (implies (integerp i)
+           (equal (bv-array-read element-size array-len (+ i (expt 2 (ceiling-of-lg array-len))) array)
+                  (bv-array-read element-size array-len i array)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-ceiling-of-lg
+  (equal (bv-array-read element-size array-len (expt 2 (ceiling-of-lg array-len)) array)
+         (bv-array-read element-size array-len 0 array))
+  :hints (("Goal" :use (:instance bv-array-read-of-expt2-of-+-of-ceiling-of-lg (i 0))
+                  :in-theory (disable bv-array-read-of-expt2-of-+-of-ceiling-of-lg))))
