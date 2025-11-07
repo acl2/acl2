@@ -157,12 +157,6 @@
                   (<= 0 index)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p integer-length))))
 
-(local
- (defun sub1-induct (n)
-  (if (zp n)
-      n
-    (sub1-induct (+ -1 n)))))
-
 (defthm integer-length-of-*-of-2
   (implies (integerp n)
            (equal (integer-length (* 2 n))
@@ -171,6 +165,12 @@
                     (+ 1 (integer-length n)))))
   :hints (("Goal" :in-theory (enable integer-length))))
 
+(local
+ (defun sub1-induct (n)
+  (if (zp n)
+      n
+    (sub1-induct (+ -1 n)))))
+
 (defthm integer-length-of-*-of-expt2
   (implies (and (natp n)
                 (integerp x))
@@ -178,11 +178,8 @@
                   (if (equal 0 x)
                       0
                     (+ n (integer-length x)))))
-  :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
-           :induct (sub1-induct n)
-           :in-theory (e/d (integer-length expt)
-                           (;expt-hack
-                            )))))
+  :hints (("Goal" :induct (sub1-induct n)
+                  :in-theory (enable integer-length expt))))
 
 ;; conflicts with expanding integer-length?
 (defthm integer-length-of-*-of-1/2
@@ -196,42 +193,38 @@
            :in-theory (e/d (integer-length floor)
                            (integer-length-of-floor-by-2)))))
 
+;drop?
 (defthm integer-length-of-*-of-expt-of--
-  (implies (and (<= 0 i) ; gen?
+  (implies (and (natp i)                     ; gen?
                 (equal 0 (mod x (expt 2 i))) ; or else x/2^i is not an integer
-                (< 0 x)
-                (integerp x)
-                (integerp i))
+                )
            (equal (integer-length (* x (expt 2 (- i))))
-                  (- (integer-length x) i)))
-  :hints (("Goal" ; :expand (integer-length x)
-;           :induct (add1-floor-by-2-induct-2 i x)
-;           :induct (and (expt 2 i) (integer-length x))
-           :in-theory (e/d ((:i expt)
-                            zip
-                            integer-length
-                            expt-of-+)
-                           (integer-length-of-floor-by-2
-                            floor)))))
+                  (if (equal (ifix x) 0)
+                      0
+                    (- (integer-length x) i))))
+  :hints (("Goal" :in-theory (e/d (zip
+                                   integer-length
+                                   expt-of-+)
+                                  (integer-length-of-floor-by-2
+                                   floor)))))
 
 (defthm integer-length-of-*-of-/-of-expt
-  (implies (and (<= 0 i) ; gen?
+  (implies (and (natp i)                     ; gen?
                 (equal 0 (mod x (expt 2 i))) ; or else x/2^i is not an integer
-                (< 0 x)
-                (integerp x)
-                (integerp i))
+                )
            (equal (integer-length (* x (/ (expt 2 i))))
-                  (- (integer-length x) i)))
-)
+                  (if (equal (ifix x) 0)
+                      0
+                    (- (integer-length x) i)))))
 
 (defthm integer-length-of-*-of-expt-when-negative
-  (implies (and (<= i 0) ; gen?
+  (implies (and (<= i 0)                         ; gen?
                 (equal 0 (mod x (expt 2 (- i)))) ; or else x*2^i is not an integer
-                (< 0 x)
-                (integerp x)
                 (integerp i))
            (equal (integer-length (* x (expt 2 i)))
-                  (+ (integer-length x) i)))
+                  (if (equal (ifix x) 0)
+                      0
+                    (+ (integer-length x) i))))
   :hints (("Goal" :use (:instance integer-length-of-*-of-expt-of-- (i (- i)))
                   :in-theory (disable integer-length-of-*-of-expt-of--))))
 

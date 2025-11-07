@@ -38,7 +38,6 @@
 (include-book "kestrel/x86/assumptions-new" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/x86/separate" :dir :system) ; todo: drop?
 (include-book "kestrel/x86/rflags" :dir :system)
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/support-bv" :dir :system)
@@ -252,7 +251,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; In 32-bit mode, the upper 32-bits of the 64-bit register in the model are
+;; In 32-bit mode, the upper 32-bits of the 64-bit registers in the model are
 ;; unused, so we can assume they are equal to 0, without loss of generality.
 ;; Note that WR32 zeros out the upper 32-bits of a register; these assumptions
 ;; let us show that that has no effect.
