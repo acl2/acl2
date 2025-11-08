@@ -21,6 +21,8 @@
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 
+(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
+
 ; (depends-on "switch.macho64")
 
 (defthm *-of-4-and-slice-when-multiple
@@ -43,13 +45,26 @@
   :hints (("Goal" :use (:instance acl2::ceiling-of-lg-of-*-of-expt-of-- (i 2))
                   :in-theory (disable acl2::ceiling-of-lg-of-*-of-expt-of--))))
 
+(defthm integerp-of-*-of-1/4
+  (equal (integerp (* 1/4 x))
+         (equal 0 (mod x 4))))
+
+(defthm *-of-4-and-logtail-of-2
+  (implies (and (equal 0 (mod index 4))
+                (natp index))
+           (equal (* 4 (logtail 2 index))
+                  index))
+  :hints (("Goal" :in-theory (enable logtail))))
+
 ;todo: gen!
-(defthm bv-array-read-chunk-little-when-multiple
+(defthm bv-array-read-chunk-little-when-multiple-helper
   (implies (and (equal 0 (bvchop 2 index)) ; index is a multiple of the chunk size
                 (equal 0 (bvchop 2 len))
-                (equal len 4096) ; fixme
+                ;(equal len 4096) ; fixme
                 (equal len (len array)) ; todo
-            ;    (axe-smt (bvlt (ceiling-of-lg 4096) index 4096))
+                ;; (axe-smt (bvlt (ceiling-of-lg 4096) index 4096))
+                (< (+ -1 index 4) len)
+                ;(bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
                 (natp index)
                 )
            (equal (bv-array-read-chunk-little 4 8 len index array)
@@ -58,21 +73,74 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         2
                                         index)
-                                 (acl2::packbvs-little 4 8 array))))
-  :otf-flg t
+                                 (acl2::packbvs-little ; todo: add to package
+                                  4 8 array))))
   :hints (("Goal" :expand ( ;(slice 6 2 index)
-                           (bvchop 2 index))
+                           (bvchop 2 (len array))
+                           (bvchop 2 index)
+                           (bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
+                           (bvlt (ceiling-of-lg (len array)) (+ 3 index) (len array))
+                           (slice (+ -1 (ceiling-of-lg (len array)))
+                         2 index))
+                  :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (bv-array-read
                                    acl2::packbv-little
                                    acl2::packbv-opener
                                    acl2::bvchop-of-sum-cases
                                    bvplus
-                                   nfix)
+                                   nfix
+                                   ;bvlt
+                                   )
                                   (acl2::bvcat-of-nth-arg4 ;loop
                                    acl2::bvcat-of-nth-arg2 ; loop!
                                    acl2::equal-of-constant-and-getbit-extend ; looped
                                    ;acl2::bvchop-top-bit-cases ; looped
                                    )))))
+
+;gen
+(defthm bv-array-read-chunk-little-when-multiple
+  (implies (and (equal 0 (bvchop 2 index)) ; index is a multiple of the chunk size
+                (equal 0 (bvchop 2 len)) ; len is a multiple of the chunk size
+                (equal len (len array))
+                (unsigned-byte-p (ceiling-of-lg len) index) ; we have another rule to trim it
+                (bvlt (ceiling-of-lg len) index (bvplus (ceiling-of-lg len) -3 len))
+                ;(unsigned-byte-p (ceiling-of-lg len) (+ 3 index))
+                ;(bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
+                (natp index)
+                (<= 4 (len array)) ;drop or gen?
+                )
+           (equal (bv-array-read-chunk-little 4 8 len index array)
+                  (bv-array-read 32
+                                 (/ len 4)
+                                 (slice (- (ceiling-of-lg len) 1)
+                                        2
+                                        index)
+                                 (acl2::packbvs-little 4 8 array))))
+  :hints (("Goal" :use bv-array-read-chunk-little-when-multiple-helper
+                  :expand (bvplus (ceiling-of-lg (len array)) -3 (len array))
+                  :in-theory (e/d (bvlt acl2::bvchop-of-sum-cases)
+                                  (bv-array-read-chunk-little-when-multiple-helper)))))
+
+(defthm acl2::bv-array-read-chunk-little-when-multiple-smt
+  (implies (and (equal 0 (bvchop 2 index)) ; index is a multiple of the chunk size
+                (equal 0 (bvchop 2 len)) ; len is a multiple of the chunk size
+                (equal len (len array))
+                (unsigned-byte-p (ceiling-of-lg len) index)
+                (axe-smt (bvlt (ceiling-of-lg len) index (bvplus (ceiling-of-lg len) -3 len)))
+                ;(unsigned-byte-p (ceiling-of-lg len) (+ 3 index))
+                ;(bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
+                (natp index)
+                (<= 4 (len array))
+                )
+           (equal (bv-array-read-chunk-little 4 8 len index array)
+                  (bv-array-read 32
+                                 (/ len 4)
+                                 (slice (- (ceiling-of-lg len) 1)
+                                        2
+                                        index)
+                                 (acl2::packbvs-little 4 8 array))))
+  :hints (("Goal" :use bv-array-read-chunk-little-when-multiple
+                  :in-theory (disable bv-array-read-chunk-little-when-multiple))))
 
 ;; since the bvcat has low zeros, the low bits of k can't cause carry
 ;gen!  and don't require args to be trimmed?
@@ -154,6 +222,27 @@
              (set-rip (bvchop size tp) x86)
            (set-rip (bvchop size ep) x86))))
 
+(defthm bv-array-read-chunk-little-of-bvchop-arg4
+  (implies (and (equal len (len array))
+                (natp index)
+                (natp size))
+           (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
+                  (bv-array-read-chunk-little count size len index array)))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))
+
+(defthm bv-array-read-chunk-little-of-bvchop-trim-index
+  (implies (and (axe-binding-hyp (equal numbits (ceiling-of-lg len)))
+                (axe-syntaxp (term-should-be-trimmed-axe numbits index 'acl2::all ; todo: use :all
+                                                         dag-array))
+                (equal len (len array))
+                (natp index)
+                (natp size))
+           (equal (bv-array-read-chunk-little count size len index array)
+                  (bv-array-read-chunk-little count size len (trim numbits index) array)))
+  :hints (("Goal" :use (bv-array-read-chunk-little-of-bvchop-arg4)
+                  :in-theory (e/d (trim) (bv-array-read-chunk-little-of-bvchop-arg4)))))
+
+
  ;; Lift the subroutine into logic:
 (def-unrolled classify-value
     :executable "switch.macho64"
@@ -164,7 +253,7 @@
                    acl2::bv-array-read-trim-index-axe
                    acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
-                   bv-array-read-chunk-little-when-multiple
+                   acl2::bv-array-read-chunk-little-when-multiple-smt
                    acl2::packbvs-little-constant-opener
                    acl2::packbv-little-constant-opener
                    acl2::slice-trim-axe-all
@@ -180,13 +269,16 @@
                    set-rip-of-bv-array-read-split-cases
                    acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split
-                   x86isa::x86-fetch-decode-execute-of-if)
+                   x86isa::x86-fetch-decode-execute-of-if
+                   bv-array-read-chunk-little-of-bvchop-trim-index)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil
     :inputs ((x u32))
     :output :rax
     :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
-               ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
+;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
+;               bv-array-read-chunk-little-of-bvchop-trim-index
+               ;bv-array-read-chunk-little-when-multiple
                )
     :stack-slots 10)
 
