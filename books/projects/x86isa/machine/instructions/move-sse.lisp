@@ -1265,7 +1265,17 @@
   :short "MOVDDUP: replicate double precision floating-point values."
 
   :long
-  "<p>This is the SSE variant.</p>"
+  "<p>
+   This is the SSE variant.
+   </p>
+   <p>
+   Although the operand size is 128 bits,
+   the use of @('m64') in @('xmm2/m64') in the Intel manual
+   suggests that only 64 bits are read from the source operand.
+   If the access is to memory,
+   reading 128 and ignoring the 64 high ones can make a difference
+   if the additional memory accesses cause some kind of exception.
+   </p>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -1273,37 +1283,37 @@
 
   :body
 
-  (b* (((the (unsigned-byte 4) xmm-index)
-        (reg-index reg rex-byte #.*r*))
-
-       (p2 (prefixes->seg prefixes))
-
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
-
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
+       ;; index of xmm1:
+       ((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       ;; read xmm2/m64:
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg0
             (the (unsigned-byte 64) val)
             (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) ?addr)
+            & ; address of the operand
             x86)
         (x86-operand-from-modr/m-and-sib-bytes proc-mode
-                                                #.*xmm-access*
-                                                8 ; only 64 bits
-                                                inst-ac?
-                                                nil ;; Not a memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
+                                               #.*xmm-access*
+                                               8 ; only 64 bits
+                                               inst-ac?
+                                               nil ;; Not a memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; No immediate operand
+                                               x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
@@ -1315,9 +1325,10 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
+       ;; value for xmm1:
        (dup-val (logior (ash val 64) val))
 
-       ;; Update the x86 state:
+       ;; write to xmm1:
        (x86 (!xmmi-size 16 xmm-index dup-val x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))

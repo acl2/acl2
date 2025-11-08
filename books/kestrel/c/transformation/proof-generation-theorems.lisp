@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "proof-generation")
+(include-book "variables-in-computation-states")
 
 (include-book "../language/pure-expression-execution")
 
@@ -203,7 +203,76 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (defruledl c::lognot-value-lemma
+    (implies (and (c::valuep val)
+                  (member-equal (c::value-kind val)
+                                '(:uchar :schar
+                                  :ushort :sshort
+                                  :uint :sint
+                                  :ulong :slong
+                                  :ullong :sllong)))
+             (equal (c::value-kind (c::lognot-value val)) :sint))
+    :enable (c::lognot-value
+             c::lognot-scalar-value
+             c::lognot-integer-value
+             c::value-scalarp
+             c::value-arithmeticp
+             c::value-realp
+             c::value-integerp
+             c::value-signed-integerp
+             c::value-unsigned-integerp))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
   (defruled expr-unary-congruence
+    (b* ((old (c::expr-unary op old-arg))
+         (new (c::expr-unary op new-arg))
+         ((mv old-arg-eval old-arg-compst)
+          (c::exec-expr old-arg compst old-fenv (1- limit)))
+         ((mv new-arg-eval new-arg-compst)
+          (c::exec-expr new-arg compst new-fenv (1- limit)))
+         (old-arg-val (c::expr-value->value old-arg-eval))
+         (new-arg-val (c::expr-value->value new-arg-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type (c::type-of-value old-arg-val)))
+      (implies (and (c::unop-nonpointerp op)
+                    (not (c::errorp old-eval))
+                    (not (c::errorp new-arg-eval))
+                    (iff old-arg-eval new-arg-eval)
+                    (equal old-arg-val new-arg-val)
+                    (equal old-arg-compst new-arg-compst)
+                    (c::type-nonchar-integerp type))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    old-eval
+                    (equal (c::type-of-value old-val)
+                           (if (equal (c::unop-kind op) :lognot)
+                               (c::type-sint)
+                             (c::promote-type type))))))
+    :expand ((c::exec-expr (c::expr-unary op old-arg) compst old-fenv limit)
+             (c::exec-expr (c::expr-unary op new-arg) compst new-fenv limit))
+    :disable ((:e c::type-sint))
+    :enable (c::unop-nonpointerp
+             c::exec-unary
+             c::eval-unary
+             c::apconvert-expr-value-when-not-array
+             c::value-arithmeticp
+             c::value-realp
+             c::value-integerp
+             c::value-signed-integerp
+             c::value-unsigned-integerp
+             c::value-kind-not-array-when-value-integerp
+             c::lognot-value-lemma))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-unary-congruence-pure
     (b* ((old (c::expr-unary op old-arg))
          (new (c::expr-unary op new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -238,26 +307,8 @@
              c::value-integerp
              c::value-signed-integerp
              c::value-unsigned-integerp
-             c::value-kind-not-array-when-value-integerp)
-    :prep-lemmas
-    ((defrule c::lognot-value-lemma
-       (implies (and (c::valuep val)
-                     (member-equal (c::value-kind val)
-                                   '(:uchar :schar
-                                     :ushort :sshort
-                                     :uint :sint
-                                     :ulong :slong
-                                     :ullong :sllong)))
-                (equal (c::value-kind (c::lognot-value val)) :sint))
-       :enable (c::lognot-value
-                c::lognot-scalar-value
-                c::lognot-integer-value
-                c::value-scalarp
-                c::value-arithmeticp
-                c::value-realp
-                c::value-integerp
-                c::value-signed-integerp
-                c::value-unsigned-integerp))))
+             c::value-kind-not-array-when-value-integerp
+             c::lognot-value-lemma))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1112,6 +1163,17 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-unary-errors
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-expr arg compst fenv (1- limit))))
+             (c::errorp
+              (mv-nth 0 (c::exec-expr
+                         (c::expr-unary op arg) compst fenv limit))))
+    :expand (c::exec-expr (c::expr-unary op arg) compst fenv limit))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-unary-errors-pure
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
     :expand (c::exec-expr-pure (c::expr-unary op arg) compst))

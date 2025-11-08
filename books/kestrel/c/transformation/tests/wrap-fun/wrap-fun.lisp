@@ -27,8 +27,7 @@
 
   (wrap-fun *old*
             *new*
-            :target "foo"
-            :wrapper "wrapper_foo")
+            :targets (("foo" . "wrapper_foo")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -54,7 +53,7 @@ int main(void) {
 
   (wrap-fun *old*
             *new*
-            :target "foo")
+            :targets ("foo"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -83,7 +82,7 @@ int main(void) {
 
   (wrap-fun *old*
             *new*
-            :target "foo")
+            :targets ("foo"))
 
   (c$::output-files :const *new*
                     :path "new")

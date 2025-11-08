@@ -17,13 +17,16 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(include-book "std/system/constant-value" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/fty/string-option" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
 (include-book "../syntax/validation-information")
+(include-book "../syntax/validator")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 (include-book "utilities/rename-fn")
@@ -36,11 +39,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Additional FTY types
+
+(fty::defalist string-string-option-alist
+  :short "Fixtype of alists from strings to optional strings."
+  :key-type string
+  :val-type acl2::string-option
+  :true-listp t
+  :pred string-string-option-alistp
+  :prepwork ((set-induction-depth-limit 1)))
+
+(fty::defomap ident-ident-option-map
+  :short "Fixtype of omaps from identifiers to optional identifiers."
+  :key-type ident
+  :val-type ident-option
+  :pred ident-ident-option-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (xdoc::evmac-topic-implementation wrap-fun :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wrap-fun-process-param-declon-list
+(define wrap-fun-process-param-declon-list-loop
   ((params param-declon-listp)
    (fresh-ident-base identp)
    (blacklist ident-setp))
@@ -48,8 +69,6 @@
                (blacklist$ ident-setp)
                (params$ param-declon-listp)
                (idents ident-listp))
-  :short "Check that the parameter list is supported and add parameter names as
-          necessary."
   (b* (((reterr) nil nil nil)
        (blacklist (ident-set-fix blacklist))
        ((when (endp params))
@@ -86,9 +105,9 @@
                      ident))
             :ambig (reterr t))))
        ((erp blacklist params idents)
-        (wrap-fun-process-param-declon-list (rest params)
-                                            fresh-ident-base
-                                            blacklist)))
+        (wrap-fun-process-param-declon-list-loop (rest params)
+                                                 fresh-ident-base
+                                                 blacklist)))
     (retok blacklist
            (cons param-declon params)
            (cons ident idents)))
@@ -96,6 +115,37 @@
 
   (more-returns
    (idents true-listp :rule-classes :type-prescription)))
+
+(define wrap-fun-process-param-declon-list
+  ((params param-declon-listp)
+   (fresh-ident-base identp)
+   (blacklist ident-setp))
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (blacklist$ ident-setp)
+               (params$ param-declon-listp)
+               (idents ident-listp))
+  :short "Check that the parameter list is supported and add parameter names as
+          necessary."
+  (b* (((reterr) nil nil nil)
+       (blacklist (ident-set-fix blacklist))
+       (params (param-declon-list-fix params))
+       ((when (equal params
+                     (list (make-param-declon
+                             :specs (list (decl-spec-typespec
+                                            (c$::type-spec-void)))
+                             :declor (param-declor-none)
+                             :attribs nil))))
+        ;; Special (void) case
+        (retok blacklist params nil)))
+    (wrap-fun-process-param-declon-list-loop params
+                                             fresh-ident-base
+                                             blacklist))
+  ///
+
+  (more-returns
+   (idents true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor-wrap-fun-make-wrapper
   (define declor-wrap-fun-make-wrapper
@@ -643,27 +693,98 @@
              :transunits transunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
+(define code-ensemble-wrap-fun-multiple
+  ((code code-ensemblep)
+   (targets ident-ident-option-mapp))
+  :guard (and ;; (code-ensemble-unambp code)
+              (c$::code-ensemble-annop code))
+  :returns (mv (er? maybe-msgp)
+               (code$ code-ensemblep))
+  :short "Transform a code ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The @('target-name') is the function to be wrapped. @('wrapper-name?'),
+      if it is non-@('nil'), is the suggested name of the wrapper function. If
+      no suggestion is provided, a name will be generated."))
+  (b* (((reterr) (c$::code-ensemble-fix code))
+       (targets (ident-ident-option-map-fix targets))
+       ((when (omap::emptyp targets))
+        (retok (c$::code-ensemble-fix code)))
+       ((erp code)
+        (code-ensemble-wrap-fun code
+                                (omap::head-key targets)
+                                (omap::head-val targets)))
+       ;; TODO: prove the above preserves disambiguation.
+       ((unless (code-ensemble-unambp code))
+        (retmsg$ "Internal error: code has not been disambiguated."))
+       ((erp valid-transunits)
+        (c$::valid-transunit-ensemble (code-ensemble->transunits code)
+                                      (code-ensemble->ienv code)
+                                      nil))
+       ;; TODO: remove after it is proved that validation produces an annotated
+       ;; term.
+       ((unless (transunit-ensemble-annop valid-transunits))
+        (retmsg$ "Internal error: code is invalid."))
+       (code (change-code-ensemble
+               code
+               :transunits valid-transunits)))
+    (code-ensemble-wrap-fun-multiple code (omap::tail targets)))
+  :measure (acl2-count (ident-ident-option-map-fix targets))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules
+                                            c$::abstract-syntax-unambp-rules))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing wrap-fun)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define string-string-option-alist-to-ident-ident-option-map
+  ((alist string-string-option-alistp))
+  :returns (map ident-ident-option-mapp)
+  :parents (wrap-fun-input-processing)
+  (b* ((alist (string-string-option-alist-fix alist))
+       ((when (endp alist))
+        nil)
+       (ident (ident (car (first alist))))
+       (string-option (cdr (first alist)))
+       (ident-option (if string-option (ident string-option) nil)))
+    (omap::update
+      ident
+      ident-option
+      (string-string-option-alist-to-ident-ident-option-map (rest alist))))
+  :measure (acl2-count (string-string-option-alist-fix alist))
+  :verify-guards :after-returns)
+
+(define string-list-to-ident-ident-option-map
+  ((list string-listp))
+  :returns (map ident-ident-option-mapp)
+  :parents (wrap-fun-input-processing)
+  (b* ((list (str::string-list-fix list))
+       ((when (atom list))
+        nil))
+    (omap::update
+      (ident (first list))
+      nil
+      (string-list-to-ident-ident-option-map (rest list))))
+  :measure (acl2-count (str::string-list-fix list))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  :verify-guards :after-returns)
+
 (define wrap-fun-process-inputs (const-old
                                  const-new
-                                 target
-                                 wrapper
+                                 targets
                                  (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (code (and (code-ensemblep code)
                           (c$::code-ensemble-annop code))
                      :hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
                (const-new$ symbolp)
-               (target identp)
-               (wrapper? ident-optionp))
+               (targets ident-ident-option-mapp))
   :parents (wrap-fun-input-processing)
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-code-ensemble) nil (c$::irr-ident) nil)
+  (b* (((reterr) (c$::irr-code-ensemble) nil nil)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol" const-old))
        (code (acl2::constant-value const-old wrld))
@@ -674,16 +795,19 @@
                  const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new))
-       ((unless (stringp target))
-        (retmsg$ "~x0 must be a string" target))
-       (target (ident target))
-       ((unless (or (not wrapper) (stringp wrapper)))
-        (retmsg$ "~x0 must be a string or @('nil')" wrapper))
-       (wrapper? (if wrapper (ident wrapper) nil)))
+       ((erp targets)
+        (b* (((reterr) nil))
+          (cond ((string-listp targets)
+                 (retok (string-list-to-ident-ident-option-map targets)))
+                ((string-string-option-alistp targets)
+                 (retok (string-string-option-alist-to-ident-ident-option-map
+                          targets)))
+                (t (retmsg$ "~x0 must be a list of strings ~
+                             or an alist from strings to optional strings."
+                            targets))))))
     (retok code
            const-new
-           target
-           wrapper?)))
+           targets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -694,8 +818,7 @@
 (define wrap-fun-gen-everything
   ((code code-ensemblep)
    (const-new symbolp)
-   (target identp)
-   (wrapper? ident-optionp))
+   (targets ident-ident-option-mapp))
   :guard (c$::code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
@@ -704,10 +827,7 @@
   (b* (((reterr) '(_))
        (const-new (mbe :logic (acl2::symbol-fix const-new) :exec const-new))
        ((erp code)
-        (code-ensemble-wrap-fun
-          code
-          target
-          wrapper?))
+        (code-ensemble-wrap-fun-multiple code targets))
        (defconst-event
          `(defconst ,const-new
             ',code)))
@@ -718,26 +838,24 @@
 (define wrap-fun-process-inputs-and-gen-everything
   (const-old
    const-new
-   target
-   wrapper
+   targets
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :parents (wrap-fun-event-generation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp code const-new target wrapper?)
-        (wrap-fun-process-inputs const-old const-new target wrapper wrld))
+       ((erp code const-new targets)
+        (wrap-fun-process-inputs const-old const-new targets wrld))
        ((erp event)
-        (wrap-fun-gen-everything code const-new target wrapper?)))
+        (wrap-fun-gen-everything code const-new targets)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define wrap-fun-fn (const-old
                      const-new
-                     target
-                     wrapper
+                     targets
                      (ctx ctxp)
                      state)
   :returns (mv (erp booleanp :rule-classes :type-prescription)
@@ -748,8 +866,7 @@
   (b* (((mv erp event)
         (wrap-fun-process-inputs-and-gen-everything const-old
                                                     const-new
-                                                    target
-                                                    wrapper
+                                                    targets
                                                     (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -763,11 +880,9 @@
     (const-old
      const-new
      &key
-     target
-     wrapper)
+     targets)
     `(make-event (wrap-fun-fn ',const-old
                               ',const-new
-                              ',target
-                              ',wrapper
+                              ',targets
                               'wrap-fun
                               state))))
