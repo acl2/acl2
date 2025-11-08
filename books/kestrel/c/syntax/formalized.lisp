@@ -478,18 +478,12 @@
    :complit nil
    :unary (unop-case
            expr.op
-           :address (and (expr-formalp expr.arg)
-                         (expr-purep expr.arg))
-           :indir (and (expr-pure-formalp expr.arg)
-                       (expr-purep expr.arg))
-           :plus (and (expr-formalp expr.arg)
-                      (expr-purep expr.arg))
-           :minus (and (expr-formalp expr.arg)
-                       (expr-purep expr.arg))
-           :bitnot (and (expr-formalp expr.arg)
-                        (expr-purep expr.arg))
-           :lognot (and (expr-formalp expr.arg)
-                        (expr-purep expr.arg))
+           :address (expr-formalp expr.arg)
+           :indir (expr-formalp expr.arg)
+           :plus (expr-formalp expr.arg)
+           :minus (expr-formalp expr.arg)
+           :bitnot (expr-formalp expr.arg)
+           :lognot (expr-formalp expr.arg)
            :preinc nil
            :predec nil
            :postinc nil
