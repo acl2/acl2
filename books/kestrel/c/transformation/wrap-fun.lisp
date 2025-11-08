@@ -1,0 +1,773 @@
+; C Library
+;
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C2C")
+
+(include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
+
+(include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
+
+(include-book "std/system/constant-value" :dir :system)
+
+(include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
+(include-book "../syntax/validation-information")
+(include-book "utilities/collect-idents")
+(include-book "utilities/fresh-ident")
+(include-book "utilities/rename-fn")
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/system/w" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-implementation wrap-fun :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define wrap-fun-process-param-declon-list
+  ((params param-declon-listp)
+   (fresh-ident-base identp)
+   (blacklist ident-setp))
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (blacklist$ ident-setp)
+               (params$ param-declon-listp)
+               (idents ident-listp))
+  :short "Check that the parameter list is supported and add parameter names as
+          necessary."
+  (b* (((reterr) nil nil nil)
+       (blacklist (ident-set-fix blacklist))
+       ((when (endp params))
+        (retok (ident-set-fix blacklist) nil nil))
+       (param-declor (c$::param-declon->declor (first params)))
+       ((erp blacklist param-declon ident)
+        (b* (((reterr) nil nil nil))
+          (param-declor-case
+            param-declor
+            :nonabstract
+            (retok blacklist
+                   (param-declon-fix (first params))
+                   (declor->ident param-declor.declor))
+            :abstract
+            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+              (retok (insert ident blacklist)
+                     (c$::change-param-declon
+                       (first params)
+                       :declor (make-param-declor-nonabstract
+                                 :declor (c$::absdeclor-to-declor
+                                           param-declor.declor
+                                           ident)))
+                     ident))
+            :none
+            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+              (retok (insert ident blacklist)
+                     (c$::change-param-declon
+                       (first params)
+                       :declor (make-param-declor-nonabstract
+                                 :declor (make-declor
+                                           :pointers nil
+                                           :direct (c$::make-dirdeclor-ident
+                                                     :ident ident))))
+                     ident))
+            :ambig (reterr t))))
+       ((erp blacklist params idents)
+        (wrap-fun-process-param-declon-list (rest params)
+                                            fresh-ident-base
+                                            blacklist)))
+    (retok blacklist
+           (cons param-declon params)
+           (cons ident idents)))
+  ///
+
+  (more-returns
+   (idents true-listp :rule-classes :type-prescription)))
+
+(defines declor/dirdeclor-wrap-fun-make-wrapper
+  (define declor-wrap-fun-make-wrapper
+    ((declor declorp)
+     (wrapper-name identp)
+     (arg-base-name identp)
+     (blacklist ident-setp))
+    :returns (mv (blacklist ident-setp)
+                 (found-paramsp booleanp :rule-classes :type-prescription)
+                 (can-create-wrapperp booleanp :rule-classes :type-prescription)
+                 (declor$ declorp)
+                 (idents ident-listp))
+    :short "Make the wrapper function declarator if the parameter list is
+            supported."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+       "Also returns an updated blacklist and identifier list corresponding to
+        the parameters.")
+     (xdoc::p
+       "The @('found-paramsp') return value is @('t') iff function parameters
+        were found, as expected. The @('can-create-wrapperp') return is @('t')
+        iff the parameter list was in the supported set."))
+    (b* (((mv blacklist found-paramsp can-create-wrapperp dirdeclor idents)
+          (dirdeclor-wrap-fun-make-wrapper
+            (declor->direct declor) wrapper-name arg-base-name blacklist)))
+      (mv blacklist
+          found-paramsp
+          can-create-wrapperp
+          (c$::change-declor
+            declor
+            :direct dirdeclor)
+          idents))
+    :measure (declor-count declor)
+    ///
+
+    (more-returns
+     (idents true-listp
+      :rule-classes :type-prescription
+      :hints (("Goal" :use return-type-of-declor-wrap-fun-make-wrapper.idents
+                      :in-theory (disable return-type-of-declor-wrap-fun-make-wrapper.idents))))))
+
+  (define dirdeclor-wrap-fun-make-wrapper
+    ((dirdeclor dirdeclorp)
+     (wrapper-name identp)
+     (arg-base-name identp)
+     (blacklist ident-setp))
+    :returns (mv (blacklist ident-setp)
+                 (found-paramsp booleanp :rule-classes :type-prescription)
+                 (can-create-wrapperp booleanp :rule-classes :type-prescription)
+                 (dirdeclor$ dirdeclorp)
+                 (idents ident-listp))
+    :short "Make the wrapper function direct declarator if the parameter list is
+            supported."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+       "See @(tsee declor-wrap-fun-make-wrapper)."))
+    (dirdeclor-case
+      dirdeclor
+      :paren
+      (b* (((mv blacklist found-paramsp can-create-wrapperp declor idents)
+            (declor-wrap-fun-make-wrapper
+              dirdeclor.inner wrapper-name arg-base-name blacklist)))
+        (mv blacklist
+            found-paramsp
+            can-create-wrapperp
+            (c$::change-dirdeclor-paren
+              dirdeclor
+              :inner declor)
+            idents))
+      :function-params
+      (b* (((mv blacklist found-paramsp can-create-wrapperp dirdeclor$ idents)
+            (dirdeclor-wrap-fun-make-wrapper
+              dirdeclor.declor wrapper-name arg-base-name blacklist))
+           ((when found-paramsp)
+            (mv blacklist
+                found-paramsp
+                can-create-wrapperp
+                (c$::change-dirdeclor-function-params
+                  dirdeclor
+                  :declor dirdeclor$)
+                idents))
+           ((when dirdeclor.ellipsis)
+            (mv blacklist t nil (dirdeclor-fix dirdeclor) nil))
+           ((mv erp blacklist params idents)
+            (wrap-fun-process-param-declon-list
+              dirdeclor.params arg-base-name blacklist))
+           ((when erp)
+            (mv blacklist t nil (dirdeclor-fix dirdeclor) nil)))
+        (mv blacklist
+            t
+            t
+            (c$::change-dirdeclor-function-params
+              dirdeclor
+              :declor (c$::dirdeclor-rename dirdeclor.declor wrapper-name)
+              :params params)
+            idents))
+      :function-names (mv (ident-set-fix blacklist)
+                          t
+                          nil
+                          (dirdeclor-fix dirdeclor)
+                          nil)
+      :otherwise (mv (ident-set-fix blacklist)
+                     nil
+                     nil
+                     (dirdeclor-fix dirdeclor)
+                     nil))
+    :measure (dirdeclor-count dirdeclor)
+    ///
+
+    (more-returns
+     (idents true-listp
+      :rule-classes :type-prescription
+      :hints (("Goal" :use return-type-of-dirdeclor-wrap-fun-make-wrapper.idents
+                      :in-theory (disable return-type-of-dirdeclor-wrap-fun-make-wrapper.idents))))))
+
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv-mutual declor/dirdeclor-wrap-fun-make-wrapper))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor-wrap-fun-add-wrapper-def
+  ((declor declorp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp)
+   (specs decl-spec-listp))
+  :returns (mv (er? maybe-msgp)
+               (foundp booleanp :rule-classes :type-prescription)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if a declarator matches the target, and create the function
+          wrapper if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "If the @('foundp') return value is @('t') but @('wrapper?') is @('nil'),
+      that means the declarator matched the target, but some aspect of it is
+      unsupported by the current implementation."))
+  (b* (((reterr) nil nil nil)
+       ((unless (c$::ident-equiv (declor->ident declor) target-name))
+        (retok nil nil nil))
+       (wrapper-base-name
+         (or wrapper-name?
+             (ident (concatenate
+                      'string
+                      "wrapper_"
+                      (let ((target-name-str (ident->unwrap target-name)))
+                        (if (stringp target-name-str)
+                            target-name-str
+                          ""))))))
+       (wrapper-name (fresh-ident wrapper-base-name blacklist))
+       (arg-base-name
+         (ident (concatenate
+                  'string
+                  (let ((wrapper-name-str (ident->unwrap wrapper-name)))
+                    (if (stringp wrapper-name-str)
+                        wrapper-name-str
+                      ""))
+                  "_arg")))
+       ((mv - found-paramsp can-create-wrapperp wrapper-declor idents)
+        (declor-wrap-fun-make-wrapper
+          declor wrapper-name arg-base-name blacklist))
+       ((unless found-paramsp)
+        (retok nil nil nil))
+       ((unless can-create-wrapperp)
+        (retok t nil nil))
+       (wrapper-body
+         (make-comp-stmt
+           :items
+           (list
+             (make-block-item-stmt
+               :stmt (make-stmt-return
+                       :expr? (make-expr-funcall
+                                :fun (make-expr-ident
+                                       :ident target-name)
+                                :args (c$::ident-list-map-expr-ident idents))))
+             ))))
+    (retok t
+           (make-fundef
+             :spec (c$::declor-spec-list-make-static specs)
+             :declor wrapper-declor
+             :body wrapper-body
+             :info nil)
+           wrapper-name))
+  ///
+
+  (defret fundefp-of-declor-wrap-fun-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-declor-wrap-fun-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))))
+
+(define initdeclor-list-wrap-fun-add-wrapper-def
+  ((init initdeclor-listp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp)
+   (specs decl-spec-listp))
+  :guard (c$::initdeclor-list-annop init)
+  :returns (mv (er? maybe-msgp)
+               (uid? c$::uid-optionp)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if a initializer declarator matches the target, and create the
+          function wrapper if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+      c$::uid) of the matched function.")
+   (xdoc::p
+     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+      that means the initializer declarator matched the target, but some aspect
+      of it is unsupported by the current implementation."))
+  (b* (((reterr) nil nil nil)
+       ((when (endp init))
+        (retok nil nil nil))
+       (declor (initdeclor->declor (first init)))
+       ((erp foundp wrapper? wrapper-name?$)
+        (declor-wrap-fun-add-wrapper-def declor
+                                         target-name
+                                         wrapper-name?
+                                         blacklist
+                                         specs))
+       ((unless foundp)
+        (initdeclor-list-wrap-fun-add-wrapper-def (rest init)
+                                                target-name
+                                                wrapper-name?
+                                                blacklist
+                                                specs))
+       ((erp uid?)
+         (b* (((reterr) nil)
+             ((unless (c$::initdeclor-infop (c$::initdeclor->info (first init))))
+              (retmsg$ "Initializer declarator does not have ~
+                        initdeclor-info metadata: ~x0"
+                       (initdeclor-fix (first init)))))
+           (retok (c$::initdeclor-info->uid?
+                    (c$::initdeclor->info (first init)))))))
+    (retok uid? wrapper? wrapper-name?$))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  ///
+
+  (defret fundefp-of-initdeclor-list-wrap-fun-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-initdeclor-list-wrap-fun-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))
+    :hints (("Goal" :induct t))))
+
+(define decl-wrap-fun-add-wrapper-def
+  ((decl declp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::decl-annop decl)
+  :returns (mv (er? maybe-msgp)
+               (uid? c$::uid-optionp)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if a declaration matches the target, and create the function
+          wrapper if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+      c$::uid) of the matched function.")
+   (xdoc::p
+     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+      that means the declaration matched the target, but some aspect of it is
+      unsupported by the current implementation."))
+  (decl-case
+    decl
+    :decl (initdeclor-list-wrap-fun-add-wrapper-def
+            decl.init
+            target-name
+            wrapper-name?
+            blacklist
+            decl.specs)
+    :otherwise (retok nil nil nil))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  ///
+
+  (defret fundefp-of-decl-wrap-fun-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-decl-wrap-fun-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))))
+
+(define fundef-wrap-fun-add-wrapper-def
+  ((fundef fundefp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::fundef-annop fundef)
+  :returns (mv (er? maybe-msgp)
+               (uid? c$::uid-optionp)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if a function definition matches the target, and create the
+          function wrapper if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+      c$::uid) of the matched function.")
+   (xdoc::p
+     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+      that means the function definition matched the target, but some aspect of
+      it is unsupported by the current implementation."))
+  (b* (((reterr) nil nil nil)
+       ((fundef fundef) fundef)
+       ((erp foundp wrapper? wrapper-name?)
+        (declor-wrap-fun-add-wrapper-def fundef.declor
+                                         target-name
+                                         wrapper-name?
+                                         blacklist
+                                         fundef.spec))
+       ((erp uid?)
+        (b* (((reterr) nil)
+             ((unless foundp)
+              (retok nil))
+             ((unless (fundef-infop (c$::fundef->info fundef)))
+              (retmsg$ "Function definition does not have ~
+                        fundef-info metadata: ~x0"
+                       (fundef-fix fundef))))
+          (retok (c$::fundef-info->uid (c$::fundef->info fundef))))))
+    (retok uid?
+           wrapper?
+           wrapper-name?))
+  ///
+
+  (defret fundefp-of-fundef-wrap-fun-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-fundef-wrap-fun-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))))
+
+(define extdecl-wrap-fun-add-wrapper-def
+  ((extdecl extdeclp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::extdecl-annop extdecl)
+  :returns (mv (er? maybe-msgp)
+               (uid? c$::uid-optionp)
+               (wrapper? fundef-optionp)
+               (wrapper-name?$ ident-optionp))
+  :short "Check if an external declaration matches the target, and create the
+          function wrapper if so."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+      c$::uid) of the matched function.")
+   (xdoc::p
+     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+      that means the external declaration matched the target, but some aspect
+      of it is unsupported by the current implementation."))
+  (extdecl-case
+    extdecl
+    :fundef (fundef-wrap-fun-add-wrapper-def
+              extdecl.unwrap target-name wrapper-name? blacklist)
+    :decl (decl-wrap-fun-add-wrapper-def
+            extdecl.unwrap target-name wrapper-name? blacklist)
+    :otherwise (retok nil nil nil))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  ///
+
+  (defret fundefp-of-extdecl-wrap-fun-add-wrapper-def.wrapper?-under-iff
+    (iff (fundefp wrapper?)
+         wrapper?))
+
+  (defret identp-of-extdecl-wrap-fun-add-wrapper-def.wrapper-name?$
+    (equal (identp wrapper-name?$)
+           (fundefp wrapper?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define extdecl-list-wrap-fun
+  ((extdecls extdecl-listp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::extdecl-list-annop extdecls)
+  :returns (mv (er? maybe-msgp)
+               (foundp booleanp :rule-classes :type-prescription)
+               (found-satp booleanp :rule-classes :type-prescription)
+               (extdecls$ extdecl-listp))
+  :short "Transform an external declaration list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This searches for an external declaration matching the target function.
+      When it finds one, it creates the function wrapper. It then substitutes
+      the wrapper function for the original function in direct function calls
+      occurring in the remainder of the translation unit."))
+  (b* (((reterr) nil nil nil)
+       ((when (endp extdecls))
+        (retok nil nil nil))
+       (extdecl (extdecl-fix (first extdecls)))
+       ((erp uid? wrapper? wrapper-name?$)
+        (extdecl-wrap-fun-add-wrapper-def
+          extdecl target-name wrapper-name? blacklist))
+       ((when (and uid? wrapper?))
+        (retok t
+               t
+               (list* extdecl
+                      (extdecl-fundef wrapper?)
+                      (extdecl-list-rename-fn (rest extdecls)
+                                              uid?
+                                              wrapper-name?$))))
+       ((erp foundp$ found-satp extdecls$)
+        (extdecl-list-wrap-fun
+          (rest extdecls) target-name wrapper-name? blacklist)))
+    (retok (if uid?
+               t
+             foundp$)
+           found-satp
+           (cons extdecl extdecls$)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  ///
+
+  (more-returns
+   (extdecls$ true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transunit-wrap-fun
+  ((transunit transunitp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::transunit-annop transunit)
+  :returns (mv (er? maybe-msgp)
+               (warnings? maybe-msgp)
+               (foundp booleanp :rule-classes :type-prescription)
+               (transunit$ transunitp))
+  :short "Transform a translation unit."
+  (b* (((reterr) nil nil (c$::transunit-fix transunit))
+       ((transunit transunit) transunit)
+       ((erp foundp found-satp extdecls)
+        (extdecl-list-wrap-fun
+          transunit.decls target-name wrapper-name? blacklist))
+       (warnings?
+         (if (and foundp (not found-satp))
+             (msg$ "Declaration of ~x0 found, but couldn't create a wrapper."
+                   (ident->unwrap target-name))
+           nil)))
+    (retok warnings?
+           foundp
+           (c$::change-transunit
+             transunit
+             :decls extdecls
+             :info nil)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+
+(define filepath-transunit-map-wrap-fun
+  ((map filepath-transunit-mapp)
+   (target-name identp)
+   (wrapper-name? ident-optionp)
+   (blacklist ident-setp))
+  :guard (c$::filepath-transunit-map-annop map)
+  :returns (mv (er? maybe-msgp)
+               (any-foundp booleanp :rule-classes :type-prescription)
+               (map$ filepath-transunit-mapp))
+  :short "Transform an omap of file paths to translation units."
+  (b* ((map (c$::filepath-transunit-map-fix map))
+       ((reterr) nil map)
+       ((when (omap::emptyp map))
+        (retok nil nil))
+       ((erp warnings? foundp transunit)
+        (transunit-wrap-fun
+          (omap::head-val map) target-name wrapper-name? blacklist))
+       (-
+         (if warnings?
+             (cw "Warning in ~x0: ~@1~%"
+                 (filepath->unwrap (omap::head-key map))
+                 warnings?)
+           nil))
+       ((erp any-foundp map$)
+        (filepath-transunit-map-wrap-fun
+          (omap::tail map) target-name wrapper-name? blacklist)))
+    (retok (or foundp any-foundp)
+           (omap::update (omap::head-key map) transunit map$)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
+  :verify-guards :after-returns)
+
+(define transunit-ensemble-wrap-fun
+  ((transunits transunit-ensemblep)
+   (target-name identp)
+   (wrapper-name? ident-optionp))
+  :guard (c$::transunit-ensemble-annop transunits)
+  :returns (mv (er? maybe-msgp)
+               (transunits$ transunit-ensemblep))
+  :short "Transform a translation unit ensemble."
+  (b* (((reterr) (c$::transunit-ensemble-fix transunits))
+       ((transunit-ensemble transunits) transunits)
+       (blacklist (filepath-transunit-map-collect-idents transunits.unwrap))
+       ((erp any-foundp map)
+        (filepath-transunit-map-wrap-fun
+          transunits.unwrap target-name wrapper-name? blacklist))
+       (-
+         (if any-foundp
+             nil
+           (cw "Warning: No declaration found for ~x0.~%"
+               (ident->unwrap target-name)))))
+    (retok (c$::change-transunit-ensemble
+             transunits
+             :unwrap map)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+
+(define code-ensemble-wrap-fun
+  ((code code-ensemblep)
+   (target-name identp)
+   (wrapper-name? ident-optionp))
+  :guard (c$::code-ensemble-annop code)
+  :returns (mv (er? maybe-msgp)
+               (code$ code-ensemblep))
+  :short "Transform a code ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The @('target-name') is the function to be wrapped. @('wrapper-name?'),
+      if it is non-@('nil'), is the suggested name of the wrapper function. If
+      no suggestion is provided, a name will be generated."))
+  (b* (((reterr) (c$::code-ensemble-fix code))
+       ((code-ensemble code) code)
+       ((erp transunits)
+        (transunit-ensemble-wrap-fun
+          code.transunits target-name wrapper-name?)))
+    (retok (c$::change-code-ensemble
+             code
+             :transunits transunits)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing wrap-fun)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define wrap-fun-process-inputs (const-old
+                                 const-new
+                                 target
+                                 wrapper
+                                 (wrld plist-worldp))
+  :returns (mv (er? maybe-msgp)
+               (code (and (code-ensemblep code)
+                          (c$::code-ensemble-annop code))
+                     :hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+               (const-new$ symbolp)
+               (target identp)
+               (wrapper? ident-optionp))
+  :parents (wrap-fun-input-processing)
+  :short "Process the inputs."
+  (b* (((reterr) (c$::irr-code-ensemble) nil (c$::irr-ident) nil)
+       ((unless (symbolp const-old))
+        (retmsg$ "~x0 must be a symbol" const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       ((unless (c$::code-ensemble-annop code))
+        (retmsg$ "~x0 must be an annotated with validation information."
+                 const-old))
+       ((unless (symbolp const-new))
+        (retmsg$ "~x0 must be a symbol" const-new))
+       ((unless (stringp target))
+        (retmsg$ "~x0 must be a string" target))
+       (target (ident target))
+       ((unless (or (not wrapper) (stringp wrapper)))
+        (retmsg$ "~x0 must be a string or @('nil')" wrapper))
+       (wrapper? (if wrapper (ident wrapper) nil)))
+    (retok code
+           const-new
+           target
+           wrapper?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation wrap-fun)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define wrap-fun-gen-everything
+  ((code code-ensemblep)
+   (const-new symbolp)
+   (target identp)
+   (wrapper? ident-optionp))
+  :guard (c$::code-ensemble-annop code)
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
+  :parents (wrap-fun-event-generation)
+  :short "Generate all the events."
+  (b* (((reterr) '(_))
+       (const-new (mbe :logic (acl2::symbol-fix const-new) :exec const-new))
+       ((erp code)
+        (code-ensemble-wrap-fun
+          code
+          target
+          wrapper?))
+       (defconst-event
+         `(defconst ,const-new
+            ',code)))
+    (retok defconst-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define wrap-fun-process-inputs-and-gen-everything
+  (const-old
+   const-new
+   target
+   wrapper
+   (wrld plist-worldp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
+  :parents (wrap-fun-event-generation)
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((erp code const-new target wrapper?)
+        (wrap-fun-process-inputs const-old const-new target wrapper wrld))
+       ((erp event)
+        (wrap-fun-gen-everything code const-new target wrapper?)))
+    (retok event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define wrap-fun-fn (const-old
+                     const-new
+                     target
+                     wrapper
+                     (ctx ctxp)
+                     state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
+  :parents (wrap-fun-event-generation)
+  :short "Event expansion of @(tsee wrap-fun)."
+  (b* (((mv erp event)
+        (wrap-fun-process-inputs-and-gen-everything const-old
+                                                    const-new
+                                                    target
+                                                    wrapper
+                                                    (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection wrap-fun-macro-definition
+  :parents (wrap-fun-event-generation)
+  :short "Definition of @(tsee wrap-fun)."
+  (defmacro wrap-fun
+    (const-old
+     const-new
+     &key
+     target
+     wrapper)
+    `(make-event (wrap-fun-fn ',const-old
+                              ',const-new
+                              ',target
+                              ',wrapper
+                              'wrap-fun
+                              state))))

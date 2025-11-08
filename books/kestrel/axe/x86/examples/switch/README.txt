@@ -19,13 +19,13 @@ switch.elf64 was produced on Linux by:
 
   gcc -o switch.elf64 switch.c
 
-with GCC 15.2.0 (from gcc:latest Docker image) on an ARM Mac.
+with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
 switch-complex.elf64 was produced on Linux by:
 
   gcc -O1 -o switch-complex.elf64 switch-complex.c
 
-with GCC 15.2.0 (from gcc:latest Docker image) on an ARM Mac.
+with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
 ----------------
 Note #1

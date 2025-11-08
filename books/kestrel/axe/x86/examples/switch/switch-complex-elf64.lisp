@@ -10,17 +10,21 @@
 
 (in-package "X")
 
-;; STATUS: INCOMPLETE (awaiting jump table support in Axe)
+;; STATUS: lifting completes but doesn't handle global variable properly.
 
 ;; This example demonstrates lifting a more complex switch statement that
 ;; compiles to a jump table.  The compiler generates a jump table for the
-;; switch statement, which uses indirect jumps (jmpq *%rax).  This is
-;; currently not supported by the Axe x86 lifter.  Once jump table support
-;; is implemented, this example should work.
+;; switch statement, which uses indirect jumps (jmpq *%rax).
 ;;
 ;; This switch statement has 10 cases (0-9) plus a default case, and each
 ;; case performs operations on a global volatile variable to prevent
 ;; optimization and to test memory access patterns.
+
+;; switch-complex.elf64 was produced on Linux by:
+;;
+;;   gcc -o switch-complex.elf64 switch-complex.c
+;;
+;; with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
 ;; cert_param: (uses-stp)
 
@@ -113,41 +117,9 @@
                                    acl2::bvcat-of-nth-arg2
                                    acl2::equal-of-constant-and-getbit-extend)))))
 
-(defund map-bvsx (high low lst)
-  (if (endp lst)
-      nil
-    (cons (bvsx high low (first lst))
-          (map-bvsx high low (rest lst)))))
-
-(defthm unsigned-byte-listp-of-map-bvsx
-  (implies (natp high)
-           (acl2::unsigned-byte-listp ; package!
-            high (map-bvsx high low data)))
-  :hints (("Goal" :in-theory (enable map-bvsx))))
-
-(defthm len-of-map-bvsx
-  (equal (len (map-bvsx high low data))
-         (len data))
-  :hints (("Goal" :in-theory (enable map-bvsx))))
-
-(def-constant-opener map-bvsx)
-
-(defthmd bvsx-of-nth
-  (implies (and (natp n)
-                (< n (len data)))
-           (equal (bvsx high low (nth n data))
-                  (nth n (map-bvsx high low data))))
-  :hints (("Goal" :in-theory (enable map-bvsx (:I nth)))))
-
-(defthm bvsx-of-bv-array-read-constant-array
-  (implies (and (syntaxp (quotep data))
-                (equal len (len data)))
-           (equal (bvsx 64 32 (bv-array-read 32 len index data))
-                  (bv-array-read 64 len index (map-bvsx 64 32 data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvsx-of-nth))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; One value is fixed, the other is a list
 (defund map-bvplus-val (size val lst)
   (if (endp lst)
       nil
@@ -198,61 +170,7 @@
                   (bv-array-read size len index (map-bvplus-val size val data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
-(defun bv-array-read-cases (i size len index data)
-  (if (zp i)
-      (bv-array-read size len 0 data)
-    (if (equal i (bvchop (ceiling-of-lg len) index))
-        (bv-array-read size len i data)
-      (bv-array-read-cases (+ -1 i) size len index data))))
 
-;(defopeners bv-array-read-cases) ; didn't work well (rules too specific?)
-(defthm bv-array-read-cases-opener
-  (implies (syntaxp (quotep i))
-           (equal (bv-array-read-cases i size len index data)
-                  (if (zp i)
-                      (bv-array-read size len 0 data)
-                    (if (equal i (bvchop (ceiling-of-lg len) index))
-                        (bv-array-read size len i data)
-                      (bv-array-read-cases (+ -1 i) size len index data))))))
-
-
-
-(local
- (defthm helper
-   (implies (and (not (equal 0 i))
-                 (not (equal i (bvchop size index)))
-                 (not (bvlt size i index))
-                 (natp index)
-                 (unsigned-byte-p size i)
-                 )
-            (not (bvlt size (bvplus size -1 i) index)))
-   :hints (("Goal" :do-not-induct t :in-theory (enable bvlt bvplus)))))
-
-(defthmd bv-array-read-becomes-bv-array-read-cases-helper
-  (implies (and (bvle (ceiling-of-lg len) index i)
-                (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) i)
-                (natp i))
-           (equal (bv-array-read size len index data)
-                  (bv-array-read-cases i size len index data)))
-  :hints (("Goal" :induct (bv-array-read-cases i size len index data)
-                  :expand ((bv-array-read size len 0 data)
-                           (bv-array-read size len index data))
-                  :in-theory (enable acl2::bvlt-convert-arg2-to-bv
-                                     acl2::trim-of-+-becomes-bvplus ; don't we want this enabled?
-                                     ))))
-
-(defthmd bv-array-read-becomes-bv-array-read-cases
-  (implies (and (posp len)
-                (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
-                (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
-                )
-           (equal (bv-array-read size len index data)
-                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len))
-                                       size len index data)))
-  :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
-                                  (i (+ -1 len))))))
 
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
@@ -266,7 +184,7 @@
                 )
            (equal (set-rip (bv-array-read size len index data) x86)
                   (set-rip (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len)) size len index data) x86)))
-  :hints (("Goal" :in-theory (enable bv-array-read-becomes-bv-array-read-cases))))
+  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
 
 (defthm set-rip-of-bvif-split
   (equal (set-rip (bvif size test tp ep) x86)
@@ -317,7 +235,7 @@
                                   ()))))
 |#
 
-#|
+
 ;; EM: Note, this def-unrolled form is accepted now, but it lifts to
 ;; (DEFUN PROCESS-COMMAND (CMD)
 ;;    (BVIF 32 (BVLT 32 9 CMD) 4294967295 0))
@@ -347,12 +265,12 @@
                    acl2::slice-of-bvplus-of-bvcat-special
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
-                   bvsx-of-bv-array-read-constant-array
-                   map-bvsx-constant-opener
+                   acl2::bvsx-of-bv-array-read-constant-array
+                   acl2::map-bvsx-constant-opener
                    bvplus-of-bv-array-read-constant-array-smt
                    map-bvplus-val-constant-opener
                    set-rip-of-bv-array-read-split-cases
-                   bv-array-read-cases-opener
+                   acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
@@ -375,6 +293,8 @@
 ;; the global_counter variable. The lifted function will need to model both
 ;; the return value and the memory writes to the global variable.
 
+
+#|
 ;; Shows that the program correctly implements the switch statement.
 ;; For inputs 0-9, it returns global_counter * (cmd + 2)
 ;; and increments global_counter by (cmd + 1).

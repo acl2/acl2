@@ -1,4 +1,5 @@
-; A proof of a simple x86 binary function with a switch statement
+; A proof of a more complex x86 binary function with a switch statement
+; Version 1a: Lifts from main entry point instead of process_command
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -10,18 +11,28 @@
 
 (in-package "X")
 
-;; STATUS: INCOMPLETE (awaiting jump table support in Axe)
+;; STATUS: INCOMPLETE (fails to lift)
 
-;; This example demonstrates lifting a switch statement that compiles to a jump
-;; table.  The compiler generates a jump table for the switch statement, which
-;; uses indirect jumps (jmpq *%rax).  This is currently not supported by the Axe
-;; x86 lifter.  Once jump table support is implemented, this example should work.
+;; Testing whether symbolic execution keeps global_counter symbolic
+;; when lifting from the main entry point instead of directly from process_command.
+
+;; This example is based on switch-complex-1.c but uses argv[1][0] (first byte)
+;; for global_counter and argv[1][1] (second byte) as the command argument.
+;; It lifts starting from main() rather than process_command(). This tests whether
+;; Axe's symbolic execution will treat both values as symbolic when the entire
+;; call chain from main is lifted together.
+
+;; switch-complex-1a.elf64 was produced on Linux by:
+;;
+;;   gcc -o switch-complex-1a.elf64 switch-complex-1a.c
+;;
+;; with GCC 15.2.0 (in "--platform linux/amd64 gcc:latest" Docker container).
 
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 
-; (depends-on "switch.macho64")
+; (depends-on "switch-complex-1a.elf64")
 
 (defthm *-of-4-and-slice-when-multiple
   (implies (and (equal 0 (mod index 4))
@@ -82,6 +93,32 @@
   :hints (("Goal" :in-theory (enable ;bvplus acl2::bvchop-of-sum-cases
                               acl2::slice-of-bvplus-cases))))
 
+;; Variant for 8-byte chunks (needed for the jump table with 336 bytes)
+(defthm bv-array-read-chunk-little-when-multiple-8-336
+  (implies (and (equal 0 (bvchop 3 index)) ; index is a multiple of 8
+                (equal 0 (bvchop 3 len))   ; len is a multiple of 8
+                (equal len 336)
+                (equal len (len array))
+                (natp index))
+           (equal (bv-array-read-chunk-little 8 8 len index array)
+                  (bv-array-read 64
+                                 (/ len 8)
+                                 (slice (- (ceiling-of-lg len) 1)
+                                        3
+                                        index)
+                                 (acl2::packbvs-little 8 8 array))))
+  :otf-flg t
+  :hints (("Goal" :expand ((bvchop 3 index))
+                  :in-theory (e/d (bv-array-read
+                                   acl2::packbv-little
+                                   acl2::packbv-opener
+                                   acl2::bvchop-of-sum-cases
+                                   bvplus
+                                   nfix)
+                                  (acl2::bvcat-of-nth-arg4
+                                   acl2::bvcat-of-nth-arg2
+                                   acl2::equal-of-constant-and-getbit-extend)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund map-bvplus-val (size val lst)
@@ -134,11 +171,13 @@
                   (bv-array-read size len index (map-bvplus-val size val data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
 
+
+
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
 (defthm set-rip-of-bv-array-read-split-cases
   (implies (and (syntaxp (quotep data))
-                (< len 10)
+                (< len 12) ; increased from 10 to handle 10 cases plus default
                 (posp len)
                 (natp index)
                 (unsigned-byte-p (ceiling-of-lg len) index)
@@ -154,10 +193,37 @@
              (set-rip (bvchop size tp) x86)
            (set-rip (bvchop size ep) x86))))
 
- ;; Lift the subroutine into logic:
-(def-unrolled classify-value
-    :executable "switch.macho64"
-    :target "_classify_value"
+;;; EM: this is similar to slice-of-sum-cases but for bvplus
+(defthmd slice-of-bvplus-cases
+  (implies (and (natp low)
+                (natp high)
+                (natp size)
+                (< high size))
+           (equal (slice high low (bvplus size x y))
+                  (if (< high low)
+                      0
+                    (if (<= (expt 2 low)
+                            (+ (bvchop low x)
+                               (bvchop low y)))
+                        ;;if carry
+                        (bvchop (+ 1 high (- low))
+                                (+ 1
+                                   (slice high low x)
+                                   (slice high low y)))
+                      ;;no carry:
+                      (bvchop (+ 1 high (- low))
+                              (+ (slice high low x)
+                                 (slice high low y)))))))
+  :hints (("Goal" :in-theory (e/d (bvplus acl2::slice-of-sum-cases)
+                                  ()))))
+
+#|
+; This doesn't work yet.
+
+;; Lift from the main entry point:
+(def-unrolled main
+    :executable "switch-complex-1a.elf64"
+    :target "main"
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
                    unsigned-canonical-address-p-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
@@ -165,11 +231,13 @@
                    acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
                    bv-array-read-chunk-little-when-multiple
+                   bv-array-read-chunk-little-when-multiple-8-336
                    acl2::packbvs-little-constant-opener
                    acl2::packbv-little-constant-opener
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
                    acl2::bvplus-trim-arg3-axe-all
+                   slice-of-bvplus-cases ; EM, defined above temporarily
                    acl2::slice-of-bvplus-of-bvcat-special
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
@@ -183,36 +251,22 @@
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil
-    :inputs ((x u32))
+; this doesn't seem to change nything:
+;    :inputs-disjoint-from :all
+    :inputs ((argc u64)
+             (argv u64)
+             (envp u64)
+             (global-counter-addr u64)
+             (global-counter-val u32))
     :output :rax
+    :extra-assumptions '((canonical-address-p$inline argv)
+                         (canonical-address-p$inline (bvplus 64 8 argv))
+                         (canonical-address-p$inline (bvplus 64 15 argv))
+                         (canonical-address-p$inline (read 8 (bvplus 48 8 argv) x86))
+                         (canonical-address-p$inline (bvplus 64 1 (read 8 (bvplus 48 8 argv) x86)))
+                         (canonical-address-p$inline global-counter-addr))
     :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
                ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                )
     :stack-slots 10)
-
-;; The above command created the function classify-value, which represents the
-;; values returned by the C function classify_value, in terms of its input, x.
-
-;; Shows that the program correctly implements the switch statement.
-;; For inputs 0-3, it returns 100, 200, 300, 400 respectively.
-;; For all other inputs, it returns -1 (0xFFFFFFFF in 32-bit representation).
-(defthm classify-value-correct-case-0
-  (equal (classify-value 0)
-         100))
-
-(defthm classify-value-correct-case-1
-  (equal (classify-value 1)
-         200))
-
-(defthm classify-value-correct-case-2
-  (equal (classify-value 2)
-         300))
-
-(defthm classify-value-correct-case-3
-  (equal (classify-value 3)
-         400))
-
-(defthm classify-value-correct-default
-  (implies (bvlt 32 3 x) ; (not (member-equal x '(0 1 2 3)))
-           (equal (classify-value x)
-                  (bvuminus 32 1))))
+|#
