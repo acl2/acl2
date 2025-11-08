@@ -416,6 +416,8 @@
     memory-regionsp
     memory-region-addresses-and-lens
 
+    packbvs-little ; todo: more?
+
     ))
 
 ;; Ideally, these would all be rewritten to BV ops
