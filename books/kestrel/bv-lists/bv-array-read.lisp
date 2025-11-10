@@ -149,7 +149,8 @@
          (bvchop element-size (nth 0 data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-;; the index gets chopped down to 0 bits
+;; unusual case: when the array has size 1, the only valid index is 0 (because
+;; the index gets chopped down to 0 bits).  Thus, the index is irrelevant.
 ;todo: maybe enable
 (defthmd bv-array-read-of-1-arg2-better
   (implies (< 0 index) ;prevents loops (could also do a syntactic check against '0 but not for axe?)
