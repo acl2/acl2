@@ -140,7 +140,8 @@
     bv-array-write
     bv-array-read-chunk-little
     bv-arrayp
-    array-of-zeros))
+    array-of-zeros
+    bv-array-read-cases))
 
 ;; Symbols that appear in terms that Axe "knows" about.
 ;; BV, boolean, and array symbols
@@ -375,6 +376,7 @@
     all-true-listp
     items-have-len
     all-unsigned-byte-p
+    unsigned-byte-listp
 
     check-arities
 
@@ -413,6 +415,8 @@
     memory-regionp
     memory-regionsp
     memory-region-addresses-and-lens
+
+    packbvs-little ; todo: more?
 
     ))
 

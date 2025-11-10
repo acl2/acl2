@@ -559,3 +559,124 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; VMOVDDUP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-vmovddup-vex
+
+  :parents (two-byte-opcodes)
+
+  :short "VMOVDDUP: replicate double precision floating-point values."
+
+  :long
+  "<p>
+   This instruction is listed under MOVDDUP
+   in Intel Manual Volume 2 (Jun 2025).
+   </p>
+   <p>
+   When the operand size is 128 bits,
+   the use of @('m64') in @('xmm2/m64') in the Intel manual
+   suggests that only 64 bits are read from the source operand.
+   If the access is to memory,
+   reading 128 bits and ignoring the 64 high ones can make a difference
+   if the additional memory accesses cause some kind of exception.
+   </p>
+   <p>
+   When the operand size is 256 bits,
+   the use of @('m256') in @('ymm2/m256') in the Intel manual
+   suggests that all 256 bits are read from the source operand,
+   even though the ones at positions 64-127 and 192-255 are ignored.
+   In principle it could suffice to read the ones at positions 0-63 and 128-191,
+   or perhaps the low 192 bits.
+   But we read all 256, because of the @('m256').
+   If the access is to memory,
+   reading fewer bytes could make a difference
+   if the additional ignored ones cause some kind of exception.
+   </p>"
+
+  :vex t
+
+  :modr/m t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+
+       ;; index of xmm1 or ymm1:
+       ((the (unsigned-byte 4) xmm/ymm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       ;; The operand size is determined by VEX.L, regardless of processor mode.
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; read xmm2/m64 or ymm2/m256:
+       (inst-ac? t)
+       ((mv flg
+            (the (unsigned-byte 256) val)
+            (the (integer 0 4) increment-RIP-by)
+            & ; address of the operand
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               (if (= operand-size 16)
+                                                   #.*vex-xmm-access*
+                                                 #.*ymm-access*)
+                                               (if (= operand-size 16)
+                                                   8 ; 64 bits for xmm2/m64
+                                                 32) ; 256 bits for ymm2/m256
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; value for xmm1 or ymm2:
+       (dup-val (if (= operand-size 16)
+                    (logior (ash val 64) val)
+                  ;; Figure 4-2 in Intel manual:
+                  (b* ((x0 (part-select val :low 0 :high 63))
+                       (x2 (part-select val :low 128 :high 191))
+                       (x0x0 (logior (ash x0 64) x0))
+                       (x2x2 (logior (ash x2 64) x2)))
+                    (logior (ash x2x2 128) x0x0))))
+
+       ;; write to xmm1 or ymm2:
+       (x86 (!zmmi-size operand-size
+                        xmm/ymm-index
+                        dup-val
+                        x86
+                        :regtype (if (= operand-size 16)
+                                     #.*vex-xmm-access*
+                                   #.*ymm-access*)))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))

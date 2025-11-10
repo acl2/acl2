@@ -21,18 +21,17 @@
   (xdoc::topstring
     (xdoc::evmac-section-intro
       (xdoc::p
-        "This transformation introduces a ``function wrapper'' &mdash; i.e. a
-         new function which does nothing but call the function it ``wraps.''
-         All subsequent occurrences of the original function in the function
+        "This transformation introduces ``function wrappers'' &mdash; i.e.
+         new functions which do nothing but call the function they ``wrap.''
+         All subsequent occurrences of the original functions in the function
          position of direct function calls (i.e., function calls not invoking a
-         function pointer) are replaced with the wrapper function. The new
-         function is defined with internal linkage."))
+         function pointer) are replaced with the wrapper function. The wrapper
+         functions are defined with internal linkage."))
     (xdoc::evmac-section-form
       (xdoc::codeblock
         "(wrap-fun const-old"
         "          const-new"
-        "          :target  ... ; required"
-        "          :wrapper ... ; optional"
+        "          :targets ... ; required"
         "  )"
         ))
     (xdoc::evmac-section-inputs
@@ -61,13 +60,14 @@
       (xdoc::desc
         "@(':target') &mdash; no default"
         (xdoc::p
-          "A string denoting the identifier of the function for which to create
-           a wrapper."))
-      (xdoc::desc
-        "@(':wrapper') &mdash; optional"
-        (xdoc::p
-          "A string denoting the name to use for the function wrapper. If this
-           argument is omitted, a fresh name will be inferred.")))
+          "Either a string list, or an alist from strings to optional strings.
+           When an alist is provided, each key of the alist denotes the
+           identifier of a function for which we will define a wrapper. The key
+           is optionally associated with a wrapper name. If no wrapper name is
+           provided, a fresh name will be generated. When a string list is
+           provided, it is interpreted as if it were an alist with all elements
+           of the list associated to @('nil').")))
+    ;; Assumed want external functions
     (xdoc::section
       "Current Limitations"
       (xdoc::p
@@ -99,6 +99,9 @@
            translation unit. "
           (xdoc::seetopic "c$::gcc-builtins" "Built-in")
           " functions which are used without declaration are unsupported.")
+        (xdoc::li
+          "No mechanism is provided to differentiate functions of the same
+          name.")
         (xdoc::li
           "The function wrapper is not substituted for the original function in
            function pointers. This is a conservative measure to ensure
