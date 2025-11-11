@@ -345,6 +345,8 @@
     acl2::bv-array-read-chunk-little-trim-index-axe
     acl2::packbvs-little-constant-opener
     acl2::packbv-little-constant-opener
+    acl2::map-bvsx-constant-opener
+    acl2::map-bvplus-val-constant-opener
 
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
