@@ -760,8 +760,7 @@
      :continue nil
      :break nil
      :return (or (not stmt.expr?)
-                 (expr-call-formalp stmt.expr?)
-                 (expr-pure-formalp stmt.expr?))
+                 (expr-formalp stmt.expr?))
      :asm nil)
     :measure (stmt-count stmt))
 
