@@ -58,7 +58,7 @@
         (xdoc::p
           "This must be a symbol that is valid name for a new ACL2 constant."))
       (xdoc::desc
-        "@(':target') &mdash; no default"
+        "@(':targets') &mdash; no default"
         (xdoc::p
           "Either a string list, or an alist from strings to optional strings.
            When an alist is provided, each key of the alist denotes the
@@ -67,7 +67,6 @@
            provided, a fresh name will be generated. When a string list is
            provided, it is interpreted as if it were an alist with all elements
            of the list associated to @('nil').")))
-    ;; Assumed want external functions
     (xdoc::section
       "Current Limitations"
       (xdoc::p
