@@ -449,7 +449,7 @@
 ;; For use by Axe.
 ;; todo: package
 (defthmd x86isa::idiv-spec-64-trim-arg1-axe-all
-  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x :all dag-array))
            (equal (idiv-spec-64 x y)
                   (idiv-spec-64 (trim 128 x) y)))
   :hints (("Goal" :in-theory (enable trim idiv-spec-64))))

@@ -313,8 +313,7 @@
 
 (defthm acl2::bv-array-read-chunk-little-of-bvchop-trim-index
   (implies (and (axe-binding-hyp (equal numbits (ceiling-of-lg len)))
-                (axe-syntaxp (term-should-be-trimmed-axe numbits index 'acl2::all ; todo: use :all
-                                                         dag-array))
+                (axe-syntaxp (term-should-be-trimmed-axe numbits index :all dag-array))
                 (equal len (len array))
                 (natp index)
                 (natp size))
