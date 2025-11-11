@@ -10,8 +10,8 @@
            (equal (* 4 (slice n 2 index))
                   (bvchop (+ 1 n) index))))
 
-(def-constant-opener acl2::packbv-little :disable t)
-(def-constant-opener acl2::packbvs-little :disable t)
+(def-constant-opener packbv-little :disable t)
+(def-constant-opener packbvs-little :disable t)
 
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
@@ -49,7 +49,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         2
                                         index)
-                                 (acl2::packbvs-little 4 8 array))))
+                                 (packbvs-little 4 8 array))))
   :hints (("Goal" :expand ( ;(slice 6 2 index)
                            (bvchop 2 (len array))
                            (bvchop 2 index)
@@ -59,7 +59,7 @@
                          2 index))
                   :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (bv-array-read
-                                   acl2::packbv-little
+                                   packbv-little
                                    acl2::packbv-opener
                                    acl2::bvchop-of-sum-cases
                                    bvplus
@@ -90,7 +90,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         2
                                         index)
-                                 (acl2::packbvs-little 4 8 array))))
+                                 (packbvs-little 4 8 array))))
   :hints (("Goal" :use bv-array-read-chunk-little-when-multiple-4-8-helper
                   :expand (bvplus (ceiling-of-lg (len array)) -3 (len array))
                   :in-theory (e/d (bvlt acl2::bvchop-of-sum-cases)
@@ -113,7 +113,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         2
                                         index)
-                                 (acl2::packbvs-little 4 8 array))))
+                                 (packbvs-little 4 8 array))))
   :hints (("Goal" :use bv-array-read-chunk-little-when-multiple-4-8
                   :in-theory (disable bv-array-read-chunk-little-when-multiple-4-8))))
 
@@ -154,7 +154,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         3
                                         index)
-                                 (acl2::packbvs-little 8 8 array))))
+                                 (packbvs-little 8 8 array))))
   :hints (("Goal" :expand ((bvchop 3 (len array))
                            (bvchop 3 index)
                            ;(bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
@@ -162,7 +162,7 @@
                            (slice (+ -1 (ceiling-of-lg (len array))) 3 index))
                   :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (bv-array-read
-                                   acl2::packbv-little
+                                   packbv-little
                                    acl2::packbv-opener
                                    acl2::bvchop-of-sum-cases
                                    bvplus
@@ -191,7 +191,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         3
                                         index)
-                                 (acl2::packbvs-little 8 8 array))))
+                                 (packbvs-little 8 8 array))))
   :hints (("Goal" :use bv-array-read-chunk-little-when-multiple-8-8-helper
                   :expand (bvplus (ceiling-of-lg (len array)) -7 (len array))
                   :in-theory (e/d (bvlt acl2::bvchop-of-sum-cases)
@@ -216,7 +216,7 @@
                                  (slice (- (ceiling-of-lg len) 1)
                                         3
                                         index)
-                                 (acl2::packbvs-little 8 8 array))))
+                                 (packbvs-little 8 8 array))))
   :hints (("Goal" :use bv-array-read-chunk-little-when-multiple-8-8
                   :in-theory (disable bv-array-read-chunk-little-when-multiple-8-8))))
 
@@ -241,8 +241,7 @@
 
 (defthm unsigned-byte-listp-of-map-bvplus-val
   (implies (natp size)
-           (acl2::unsigned-byte-listp
-            size (map-bvplus-val size val data)))
+           (unsigned-byte-listp size (map-bvplus-val size val data)))
   :hints (("Goal" :in-theory (enable map-bvplus-val))))
 
 (defthm len-of-map-bvplus-val
@@ -310,14 +309,3 @@
            (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
                   (bv-array-read-chunk-little count size len index array)))
   :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))
-
-(defthm acl2::bv-array-read-chunk-little-of-bvchop-trim-index
-  (implies (and (axe-binding-hyp (equal numbits (ceiling-of-lg len)))
-                (axe-syntaxp (term-should-be-trimmed-axe numbits index :all dag-array))
-                (equal len (len array))
-                (natp index)
-                (natp size))
-           (equal (bv-array-read-chunk-little count size len index array)
-                  (bv-array-read-chunk-little count size len (trim numbits index) array)))
-  :hints (("Goal" :use (bv-array-read-chunk-little-of-bvchop-arg4)
-                  :in-theory (e/d (trim) (bv-array-read-chunk-little-of-bvchop-arg4)))))
