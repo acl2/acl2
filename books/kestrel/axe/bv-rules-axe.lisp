@@ -745,7 +745,7 @@
 
 ;; ;shoot.  can't conveniently pass in size+1
 ;; (defthmd slice-trim-arg2
-;;   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
+;;   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y :non-arithmetic dag-array))
 ;;                 (natp size))
 ;;            (equal (slice high low x)
 ;;                   (slice high low (bvchop + 1 high) x)))
@@ -1762,7 +1762,7 @@
 ;todo: add axe to the name
 ;shouldn't this just go to bvuminus?
 (defthmd bvchop-of-minus-trim
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x :all dag-array))
                 (natp size))
            (equal (bvchop size (unary-- x))
                   (bvchop size (unary-- (trim size x)))))

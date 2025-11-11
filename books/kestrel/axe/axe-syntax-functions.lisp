@@ -27,7 +27,8 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;; quotep gets converted this this
+;; quotep gets converted to this when inside an axe-syntaxp
+;; todo: rename darg-quotep?
 (defund-inline axe-quotep (darg)
   (declare (xargs :guard (dargp darg)))
   (consp darg) ;; means that it is a quotep, not a nodenum

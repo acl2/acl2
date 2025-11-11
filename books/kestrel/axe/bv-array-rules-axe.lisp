@@ -69,7 +69,7 @@
 ;;            :cases ((integerp size)))))
 
 (defthmd bv-array-write-trim-value-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val 'all dag-array))
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :all dag-array))
                 (natp len)
                 (natp index)
                 (< index len))
@@ -81,7 +81,7 @@
                                    )))))
 
 (defthmd bv-array-write-trim-value
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val 'non-arithmetic dag-array))
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :non-arithmetic dag-array))
                 (natp len)
                 (natp index)
 ;                (integerp size) ;new
@@ -271,7 +271,7 @@
 (defthmd bv-array-read-trim-index-axe
   (implies (and (syntaxp (quotep len))
                 (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; binding hyp, desired-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'non-arithmetic dag-array)))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index :non-arithmetic dag-array)))
            (equal (bv-array-read element-width len index data)
                   (bv-array-read element-width len (trim desired-size index) data)))
   :hints (("Goal" :in-theory (enable trim))))
@@ -279,7 +279,7 @@
 (defthmd bv-array-read-trim-index-axe-all
   (implies (and (syntaxp (quotep len))
                 (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; desired-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'all dag-array)))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index :all dag-array)))
            (equal (bv-array-read element-width len index data)
                   (bv-array-read element-width len (trim desired-size index) data)))
   :hints (("Goal" :use bv-array-read-trim-index-axe
@@ -509,7 +509,7 @@
 (defthm bv-array-read-chunk-little-trim-index-axe
   (implies (and (syntaxp (quotep array-len))
                 (axe-binding-hyp (equal desired-index-size (ceiling-of-lg array-len))) ; binding hyp, desired-index-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-index-size index 'all dag-array))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-index-size index :all dag-array))
                 (natp index))
            (equal (bv-array-read-chunk-little element-count element-size array-len index array)
                   (bv-array-read-chunk-little element-count element-size array-len (trim desired-index-size index) array)))
