@@ -508,6 +508,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod expr-const-info
+  :short "Fixtype of validation information for constant expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to constant expressions,
+     i.e. the @('const') case of @(tsee expr).
+     The information for a constant consists of the type."))
+  ((type type))
+  :pred expr-const-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-string-info
+  :short "Fixtype of validation information for string literal expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to string literal expressions,
+     i.e. the @('string') case of @(tsee expr).
+     The information for a string literal consists of the type."))
+  ((type type))
+  :pred expr-string-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-arrsub-info
+  :short "Fixtype of validation information for array subscript expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to array subscript expressions,
+     i.e. the @('arrsub') case of @(tsee expr).
+     The information for an array subscript consists of the type."))
+  ((type type))
+  :pred expr-arrsub-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-funcall-info
+  :short "Fixtype of validation information for function call expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to function call expressions,
+     i.e. the @('funcall') case of @(tsee expr).
+     The information for a function call consists of the type."))
+  ((type type))
+  :pred expr-funcall-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod expr-unary-info
   :short "Fixtype of validation information for unary expressions."
   :long
@@ -684,6 +740,15 @@
     :override
     ((iconst (iconst-infop (iconst->info iconst)))
      (expr :ident (var-infop expr.info))
+     (expr :const (and (const-annop expr.const)
+                       (expr-const-infop expr.info)))
+     (expr :string (expr-string-infop expr.info))
+     (expr :arrsub (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-arrsub-infop expr.info)))
+     (expr :funcall (and (expr-annop expr.fun)
+                         (expr-list-annop expr.args)
+                         (expr-funcall-infop expr.info)))
      (expr :unary (and (expr-annop expr.arg)
                        (expr-unary-infop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
@@ -777,6 +842,33 @@
            (var-infop info))
     :enable (expr-annop identity))
 
+  (defruled expr-annop-of-expr-const
+    (equal (expr-annop (expr-const const info))
+           (and (const-annop const)
+                (expr-const-infop info)))
+    :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-string
+    (equal (expr-annop (expr-string strings info))
+           (expr-string-infop info))
+    :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-arrsub
+    (equal (expr-annop (expr-arrsub arg1 arg2 info))
+           (and (expr-annop arg1)
+                (expr-annop arg2)
+                (expr-arrsub-infop info)))
+    :expand (expr-annop (expr-arrsub arg1 arg2 info))
+    :enable identity)
+
+  (defruled expr-annop-of-expr-funcall
+    (equal (expr-annop (expr-funcall fun args info))
+           (and (expr-annop fun)
+                (expr-list-annop args)
+                (expr-funcall-infop info)))
+    :expand (expr-annop (expr-funcall fun args info))
+    :enable identity)
+
   (defruled expr-annop-of-expr-unary
     (equal (expr-annop (expr-unary op arg info))
            (and (expr-annop arg)
@@ -845,6 +937,60 @@
     (implies (and (expr-annop expr)
                   (expr-case expr :ident))
              (var-infop (expr-ident->info expr)))
+    :enable expr-annop)
+
+  (defruled const-annop-of-expr-const->const
+    (implies (and (expr-annop expr)
+                  (expr-case expr :const))
+             (const-annop (expr-const->const expr)))
+    :enable expr-annop)
+
+  (defruled expr-const-infop-of-expr-const->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :const))
+             (expr-const-infop (expr-const->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-string-infop-of-expr-string->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :string))
+             (expr-string-infop (expr-string->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-arrsub->arg1
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-annop (expr-arrsub->arg1 expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-arrsub->arg2
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-annop (expr-arrsub->arg2 expr)))
+    :enable expr-annop)
+
+  (defruled expr-arrsub-infop-of-expr-arrsub->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-arrsub-infop (expr-arrsub->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-funcall->fun
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-annop (expr-funcall->fun expr)))
+    :enable expr-annop)
+
+  (defruled expr-list-annop-of-expr-funcall->args
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-list-annop (expr-funcall->args expr)))
+    :enable expr-annop)
+
+  (defruled expr-funcall-infop-of-expr-funcall->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-funcall-infop (expr-funcall->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-unary->arg
@@ -973,6 +1119,10 @@
    abstract-syntax-annop-rules
    '(iconst-annop-of-iconst
      expr-annop-of-expr-ident
+     expr-annop-of-expr-const
+     expr-annop-of-expr-string
+     expr-annop-of-expr-arrsub
+     expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
      tyname-annop-of-tyname
@@ -983,6 +1133,15 @@
      transunit-annop-of-transunit
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
+     const-annop-of-expr-const->const
+     expr-const-infop-of-expr-const->info
+     expr-string-infop-of-expr-string->info
+     expr-annop-of-expr-arrsub->arg1
+     expr-annop-of-expr-arrsub->arg2
+     expr-arrsub-infop-of-expr-arrsub->info
+     expr-annop-of-expr-funcall->fun
+     expr-list-annop-of-expr-funcall->args
+     expr-funcall-infop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
      expr-unary-infop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
@@ -1034,16 +1193,12 @@
   (expr-case
    expr
    :ident (var-info->type expr.info)
-   :const (if (const-case expr.const :int)
-              (iconst-info->type
-               (iconst->info
-                (const-int->unwrap expr.const)))
-            (type-unknown))
-   :string (type-unknown)
+   :const (expr-const-info->type expr.info)
+   :string (expr-string-info->type expr.info)
    :paren (expr-type expr.inner)
    :gensel (type-unknown)
-   :arrsub (type-unknown)
-   :funcall (type-unknown)
+   :arrsub (expr-arrsub-info->type expr.info)
+   :funcall (expr-funcall-info->type expr.info)
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
