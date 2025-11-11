@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (include-book "kestrel/bv-lists/map-bvsx" :dir :system)
+(include-book "kestrel/bv-lists/packbvs-little" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
 ;(include-book "kestrel/lists-light/prefixp" :dir :system) ;drop?
@@ -48,6 +49,9 @@
 (defopeners bvxor-list :hyps ((and (syntaxp (quotep x)) (syntaxp (quotep y)))))
 
 (def-constant-opener map-bvsx)
+
+(def-constant-opener packbv-little :disable t)
+(def-constant-opener packbvs-little :disable t)
 
 (defthmd nth-of-bv-when-all-same
   (implies (and (syntaxp (quotep lst))
