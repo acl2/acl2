@@ -29,8 +29,8 @@
 (include-book "splitgso")
 (include-book "splitgso-doc")
 (include-book "utilities/top")
-(include-book "wrap-fun")
-(include-book "wrap-fun-doc")
+(include-book "wrap-fn")
+(include-book "wrap-fn-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -20,7 +20,7 @@
 (include-book "kestrel/c/transformation/splitgso" :dir :system)
 (include-book "kestrel/c/transformation/simpadd0" :dir :system)
 (include-book "kestrel/c/transformation/split-fn" :dir :system)
-(include-book "kestrel/c/transformation/wrap-fun" :dir :system)
+(include-book "kestrel/c/transformation/wrap-fn" :dir :system)
 (include-book "kestrel/c/syntax/input-files" :dir :system)
 (include-book "kestrel/c/syntax/output-files" :dir :system)
 (include-book "kestrel/utilities/lookup-keyword" :dir :system)
@@ -201,7 +201,7 @@
 ;; todo: error checking
 ;; todo: add preprocessor args, etc. (eventually make per-file)
 ;; could all files to be "all" instead of a list
-(defun wrap-fun-wrapper (kv-list whole-form)
+(defun wrap-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
@@ -213,14 +213,14 @@
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
                         :gcc ,gcc)
-       (c2c::wrap-fun *old-const*
-                      *new-const*
-                      ;; Pass through all other args (currently, :targets):
-                      ,@remaining-kv-list)
+       (c2c::wrap-fn *old-const*
+                     *new-const*
+                     ;; Pass through all other args (currently, :targets):
+                     ,@remaining-kv-list)
        (c$::output-files :const *new-const*
                          :path ,new-dir))))
 
-;; A wrapper for wrap-fun that takes all its arguments as alternating keywords/values.
+;; A wrapper for wrap-fn that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
-(defmacro wrap-fun (&whole whole-form &rest kv-list)
-  `(make-event (wrap-fun-wrapper ',kv-list ',whole-form)))
+(defmacro wrap-fn (&whole whole-form &rest kv-list)
+  `(make-event (wrap-fn-wrapper ',kv-list ',whole-form)))

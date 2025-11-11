@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ wrap-fun
+(defxdoc+ wrap-fn
   :parents (transformation-tools)
   :short "A C-to-C transformation to introduce a function wrapper."
   :long
@@ -29,9 +29,9 @@
          functions are defined with internal linkage."))
     (xdoc::evmac-section-form
       (xdoc::codeblock
-        "(wrap-fun const-old"
-        "          const-new"
-        "          :targets ... ; required"
+        "(wrap-fn const-old"
+        "         const-new"
+        "         :targets ... ; required"
         "  )"
         ))
     (xdoc::evmac-section-inputs

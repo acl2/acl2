@@ -57,11 +57,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-implementation wrap-fun :default-parent t)
+(xdoc::evmac-topic-implementation wrap-fn :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wrap-fun-process-param-declon-list-loop
+(define wrap-fn-process-param-declon-list-loop
   ((params param-declon-listp)
    (fresh-ident-base identp)
    (blacklist ident-setp))
@@ -105,9 +105,9 @@
                      ident))
             :ambig (reterr t))))
        ((erp blacklist params idents)
-        (wrap-fun-process-param-declon-list-loop (rest params)
-                                                 fresh-ident-base
-                                                 blacklist)))
+        (wrap-fn-process-param-declon-list-loop (rest params)
+                                                fresh-ident-base
+                                                blacklist)))
     (retok blacklist
            (cons param-declon params)
            (cons ident idents)))
@@ -116,7 +116,7 @@
   (more-returns
    (idents true-listp :rule-classes :type-prescription)))
 
-(define wrap-fun-process-param-declon-list
+(define wrap-fn-process-param-declon-list
   ((params param-declon-listp)
    (fresh-ident-base identp)
    (blacklist ident-setp))
@@ -137,9 +137,9 @@
                              :attribs nil))))
         ;; Special (void) case
         (retok blacklist params nil)))
-    (wrap-fun-process-param-declon-list-loop params
-                                             fresh-ident-base
-                                             blacklist))
+    (wrap-fn-process-param-declon-list-loop params
+                                            fresh-ident-base
+                                            blacklist))
   ///
 
   (more-returns
@@ -147,8 +147,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defines declor/dirdeclor-wrap-fun-make-wrapper
-  (define declor-wrap-fun-make-wrapper
+(defines declor/dirdeclor-wrap-fn-make-wrapper
+  (define declor-wrap-fn-make-wrapper
     ((declor declorp)
      (wrapper-name identp)
      (arg-base-name identp)
@@ -170,7 +170,7 @@
         were found, as expected. The @('can-create-wrapperp') return is @('t')
         iff the parameter list was in the supported set."))
     (b* (((mv blacklist found-paramsp can-create-wrapperp dirdeclor idents)
-          (dirdeclor-wrap-fun-make-wrapper
+          (dirdeclor-wrap-fn-make-wrapper
             (declor->direct declor) wrapper-name arg-base-name blacklist)))
       (mv blacklist
           found-paramsp
@@ -185,10 +185,10 @@
     (more-returns
      (idents true-listp
       :rule-classes :type-prescription
-      :hints (("Goal" :use return-type-of-declor-wrap-fun-make-wrapper.idents
-                      :in-theory (disable return-type-of-declor-wrap-fun-make-wrapper.idents))))))
+      :hints (("Goal" :use return-type-of-declor-wrap-fn-make-wrapper.idents
+                      :in-theory (disable return-type-of-declor-wrap-fn-make-wrapper.idents))))))
 
-  (define dirdeclor-wrap-fun-make-wrapper
+  (define dirdeclor-wrap-fn-make-wrapper
     ((dirdeclor dirdeclorp)
      (wrapper-name identp)
      (arg-base-name identp)
@@ -203,12 +203,12 @@
     :long
     (xdoc::topstring
      (xdoc::p
-       "See @(tsee declor-wrap-fun-make-wrapper)."))
+       "See @(tsee declor-wrap-fn-make-wrapper)."))
     (dirdeclor-case
       dirdeclor
       :paren
       (b* (((mv blacklist found-paramsp can-create-wrapperp declor idents)
-            (declor-wrap-fun-make-wrapper
+            (declor-wrap-fn-make-wrapper
               dirdeclor.inner wrapper-name arg-base-name blacklist)))
         (mv blacklist
             found-paramsp
@@ -219,7 +219,7 @@
             idents))
       :function-params
       (b* (((mv blacklist found-paramsp can-create-wrapperp dirdeclor$ idents)
-            (dirdeclor-wrap-fun-make-wrapper
+            (dirdeclor-wrap-fn-make-wrapper
               dirdeclor.declor wrapper-name arg-base-name blacklist))
            ((when found-paramsp)
             (mv blacklist
@@ -232,7 +232,7 @@
            ((when dirdeclor.ellipsis)
             (mv blacklist t nil (dirdeclor-fix dirdeclor) nil))
            ((mv erp blacklist params idents)
-            (wrap-fun-process-param-declon-list
+            (wrap-fn-process-param-declon-list
               dirdeclor.params arg-base-name blacklist))
            ((when erp)
             (mv blacklist t nil (dirdeclor-fix dirdeclor) nil)))
@@ -260,17 +260,17 @@
     (more-returns
      (idents true-listp
       :rule-classes :type-prescription
-      :hints (("Goal" :use return-type-of-dirdeclor-wrap-fun-make-wrapper.idents
-                      :in-theory (disable return-type-of-dirdeclor-wrap-fun-make-wrapper.idents))))))
+      :hints (("Goal" :use return-type-of-dirdeclor-wrap-fn-make-wrapper.idents
+                      :in-theory (disable return-type-of-dirdeclor-wrap-fn-make-wrapper.idents))))))
 
   :verify-guards :after-returns
   ///
 
-  (fty::deffixequiv-mutual declor/dirdeclor-wrap-fun-make-wrapper))
+  (fty::deffixequiv-mutual declor/dirdeclor-wrap-fn-make-wrapper))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declor-wrap-fun-add-wrapper-def
+(define declor-wrap-fn-add-wrapper-def
   ((declor declorp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -310,7 +310,7 @@
                       ""))
                   "_arg")))
        ((mv - found-paramsp can-create-wrapperp wrapper-declor idents)
-        (declor-wrap-fun-make-wrapper
+        (declor-wrap-fn-make-wrapper
           declor wrapper-name arg-base-name blacklist))
        ((unless found-paramsp)
         (retok nil nil nil))
@@ -336,15 +336,15 @@
            wrapper-name))
   ///
 
-  (defret fundefp-of-declor-wrap-fun-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-declor-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-declor-wrap-fun-add-wrapper-def.wrapper-name?$
+  (defret identp-of-declor-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define initdeclor-list-wrap-fun-add-wrapper-def
+(define initdeclor-list-wrap-fn-add-wrapper-def
   ((init initdeclor-listp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -371,13 +371,13 @@
         (retok nil nil nil))
        (declor (initdeclor->declor (first init)))
        ((erp foundp wrapper? wrapper-name?$)
-        (declor-wrap-fun-add-wrapper-def declor
+        (declor-wrap-fn-add-wrapper-def declor
                                          target-name
                                          wrapper-name?
                                          blacklist
                                          specs))
        ((unless foundp)
-        (initdeclor-list-wrap-fun-add-wrapper-def (rest init)
+        (initdeclor-list-wrap-fn-add-wrapper-def (rest init)
                                                 target-name
                                                 wrapper-name?
                                                 blacklist
@@ -394,16 +394,16 @@
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-initdeclor-list-wrap-fun-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-initdeclor-list-wrap-fun-add-wrapper-def.wrapper-name?$
+  (defret identp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))
     :hints (("Goal" :induct t))))
 
-(define decl-wrap-fun-add-wrapper-def
+(define decl-wrap-fn-add-wrapper-def
   ((decl declp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -426,7 +426,7 @@
       unsupported by the current implementation."))
   (decl-case
     decl
-    :decl (initdeclor-list-wrap-fun-add-wrapper-def
+    :decl (initdeclor-list-wrap-fn-add-wrapper-def
             decl.init
             target-name
             wrapper-name?
@@ -436,15 +436,15 @@
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-decl-wrap-fun-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-decl-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-decl-wrap-fun-add-wrapper-def.wrapper-name?$
+  (defret identp-of-decl-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define fundef-wrap-fun-add-wrapper-def
+(define fundef-wrap-fn-add-wrapper-def
   ((fundef fundefp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -468,11 +468,11 @@
   (b* (((reterr) nil nil nil)
        ((fundef fundef) fundef)
        ((erp foundp wrapper? wrapper-name?)
-        (declor-wrap-fun-add-wrapper-def fundef.declor
-                                         target-name
-                                         wrapper-name?
-                                         blacklist
-                                         fundef.spec))
+        (declor-wrap-fn-add-wrapper-def fundef.declor
+                                        target-name
+                                        wrapper-name?
+                                        blacklist
+                                        fundef.spec))
        ((erp uid?)
         (b* (((reterr) nil)
              ((unless foundp)
@@ -487,15 +487,15 @@
            wrapper-name?))
   ///
 
-  (defret fundefp-of-fundef-wrap-fun-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-fundef-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-fundef-wrap-fun-add-wrapper-def.wrapper-name?$
+  (defret identp-of-fundef-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define extdecl-wrap-fun-add-wrapper-def
+(define extdecl-wrap-fn-add-wrapper-def
   ((extdecl extdeclp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -518,25 +518,25 @@
       of it is unsupported by the current implementation."))
   (extdecl-case
     extdecl
-    :fundef (fundef-wrap-fun-add-wrapper-def
+    :fundef (fundef-wrap-fn-add-wrapper-def
               extdecl.unwrap target-name wrapper-name? blacklist)
-    :decl (decl-wrap-fun-add-wrapper-def
+    :decl (decl-wrap-fn-add-wrapper-def
             extdecl.unwrap target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-extdecl-wrap-fun-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-extdecl-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-extdecl-wrap-fun-add-wrapper-def.wrapper-name?$
+  (defret identp-of-extdecl-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-list-wrap-fun
+(define extdecl-list-wrap-fn
   ((extdecls extdecl-listp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -559,7 +559,7 @@
         (retok nil nil nil))
        (extdecl (extdecl-fix (first extdecls)))
        ((erp uid? wrapper? wrapper-name?$)
-        (extdecl-wrap-fun-add-wrapper-def
+        (extdecl-wrap-fn-add-wrapper-def
           extdecl target-name wrapper-name? blacklist))
        ((when (and uid? wrapper?))
         (retok t
@@ -570,7 +570,7 @@
                                               uid?
                                               wrapper-name?$))))
        ((erp foundp$ found-satp extdecls$)
-        (extdecl-list-wrap-fun
+        (extdecl-list-wrap-fn
           (rest extdecls) target-name wrapper-name? blacklist)))
     (retok (if uid?
                t
@@ -585,7 +585,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-wrap-fun
+(define transunit-wrap-fn
   ((transunit transunitp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -599,7 +599,7 @@
   (b* (((reterr) nil nil (c$::transunit-fix transunit))
        ((transunit transunit) transunit)
        ((erp foundp found-satp extdecls)
-        (extdecl-list-wrap-fun
+        (extdecl-list-wrap-fn
           transunit.decls target-name wrapper-name? blacklist))
        (warnings?
          (if (and foundp (not found-satp))
@@ -614,7 +614,7 @@
              :info nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define filepath-transunit-map-wrap-fun
+(define filepath-transunit-map-wrap-fn
   ((map filepath-transunit-mapp)
    (target-name identp)
    (wrapper-name? ident-optionp)
@@ -629,7 +629,7 @@
        ((when (omap::emptyp map))
         (retok nil nil))
        ((erp warnings? foundp transunit)
-        (transunit-wrap-fun
+        (transunit-wrap-fn
           (omap::head-val map) target-name wrapper-name? blacklist))
        (-
          (if warnings?
@@ -638,14 +638,14 @@
                  warnings?)
            nil))
        ((erp any-foundp map$)
-        (filepath-transunit-map-wrap-fun
+        (filepath-transunit-map-wrap-fn
           (omap::tail map) target-name wrapper-name? blacklist)))
     (retok (or foundp any-foundp)
            (omap::update (omap::head-key map) transunit map$)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   :verify-guards :after-returns)
 
-(define transunit-ensemble-wrap-fun
+(define transunit-ensemble-wrap-fn
   ((transunits transunit-ensemblep)
    (target-name identp)
    (wrapper-name? ident-optionp))
@@ -657,7 +657,7 @@
        ((transunit-ensemble transunits) transunits)
        (blacklist (filepath-transunit-map-collect-idents transunits.unwrap))
        ((erp any-foundp map)
-        (filepath-transunit-map-wrap-fun
+        (filepath-transunit-map-wrap-fn
           transunits.unwrap target-name wrapper-name? blacklist))
        (-
          (if any-foundp
@@ -669,7 +669,7 @@
              :unwrap map)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define code-ensemble-wrap-fun
+(define code-ensemble-wrap-fn
   ((code code-ensemblep)
    (target-name identp)
    (wrapper-name? ident-optionp))
@@ -686,14 +686,14 @@
   (b* (((reterr) (c$::code-ensemble-fix code))
        ((code-ensemble code) code)
        ((erp transunits)
-        (transunit-ensemble-wrap-fun
+        (transunit-ensemble-wrap-fn
           code.transunits target-name wrapper-name?)))
     (retok (c$::change-code-ensemble
              code
              :transunits transunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define code-ensemble-wrap-fun-multiple
+(define code-ensemble-wrap-fn-multiple
   ((code code-ensemblep)
    (targets ident-ident-option-mapp))
   :guard (and ;; (code-ensemble-unambp code)
@@ -712,9 +712,9 @@
        ((when (omap::emptyp targets))
         (retok (c$::code-ensemble-fix code)))
        ((erp code)
-        (code-ensemble-wrap-fun code
-                                (omap::head-key targets)
-                                (omap::head-val targets)))
+        (code-ensemble-wrap-fn code
+                               (omap::head-key targets)
+                               (omap::head-val targets)))
        ;; TODO: prove the above preserves disambiguation.
        ((unless (code-ensemble-unambp code))
         (retmsg$ "Internal error: code has not been disambiguated."))
@@ -729,21 +729,21 @@
        (code (change-code-ensemble
                code
                :transunits valid-transunits)))
-    (code-ensemble-wrap-fun-multiple code (omap::tail targets)))
+    (code-ensemble-wrap-fn-multiple code (omap::tail targets)))
   :measure (acl2-count (ident-ident-option-map-fix targets))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules
                                             c$::abstract-syntax-unambp-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing wrap-fun)
+(xdoc::evmac-topic-input-processing wrap-fn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string-string-option-alist-to-ident-ident-option-map
   ((alist string-string-option-alistp))
   :returns (map ident-ident-option-mapp)
-  :parents (wrap-fun-input-processing)
+  :parents (wrap-fn-input-processing)
   (b* ((alist (string-string-option-alist-fix alist))
        ((when (endp alist))
         nil)
@@ -760,7 +760,7 @@
 (define string-list-to-ident-ident-option-map
   ((list string-listp))
   :returns (map ident-ident-option-mapp)
-  :parents (wrap-fun-input-processing)
+  :parents (wrap-fn-input-processing)
   (b* ((list (str::string-list-fix list))
        ((when (atom list))
         nil))
@@ -772,17 +772,17 @@
   :guard-hints (("Goal" :in-theory (enable string-listp)))
   :verify-guards :after-returns)
 
-(define wrap-fun-process-inputs (const-old
-                                 const-new
-                                 targets
-                                 (wrld plist-worldp))
+(define wrap-fn-process-inputs (const-old
+                                const-new
+                                targets
+                                (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (code (and (code-ensemblep code)
                           (c$::code-ensemble-annop code))
                      :hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
                (const-new$ symbolp)
                (targets ident-ident-option-mapp))
-  :parents (wrap-fun-input-processing)
+  :parents (wrap-fn-input-processing)
   :short "Process the inputs."
   (b* (((reterr) (c$::irr-code-ensemble) nil nil)
        ((unless (symbolp const-old))
@@ -811,23 +811,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-event-generation wrap-fun)
+(xdoc::evmac-topic-event-generation wrap-fn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wrap-fun-gen-everything
+(define wrap-fn-gen-everything
   ((code code-ensemblep)
    (const-new symbolp)
    (targets ident-ident-option-mapp))
   :guard (c$::code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
-  :parents (wrap-fun-event-generation)
+  :parents (wrap-fn-event-generation)
   :short "Generate all the events."
   (b* (((reterr) '(_))
        (const-new (mbe :logic (acl2::symbol-fix const-new) :exec const-new))
        ((erp code)
-        (code-ensemble-wrap-fun-multiple code targets))
+        (code-ensemble-wrap-fn-multiple code targets))
        (defconst-event
          `(defconst ,const-new
             ',code)))
@@ -835,25 +835,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wrap-fun-process-inputs-and-gen-everything
+(define wrap-fn-process-inputs-and-gen-everything
   (const-old
    const-new
    targets
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
-  :parents (wrap-fun-event-generation)
+  :parents (wrap-fn-event-generation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        ((erp code const-new targets)
-        (wrap-fun-process-inputs const-old const-new targets wrld))
+        (wrap-fn-process-inputs const-old const-new targets wrld))
        ((erp event)
-        (wrap-fun-gen-everything code const-new targets)))
+        (wrap-fn-gen-everything code const-new targets)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wrap-fun-fn (const-old
+(define wrap-fn-fn (const-old
                      const-new
                      targets
                      (ctx ctxp)
@@ -861,28 +861,28 @@
   :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
-  :parents (wrap-fun-event-generation)
-  :short "Event expansion of @(tsee wrap-fun)."
+  :parents (wrap-fn-event-generation)
+  :short "Event expansion of @(tsee wrap-fn)."
   (b* (((mv erp event)
-        (wrap-fun-process-inputs-and-gen-everything const-old
-                                                    const-new
-                                                    targets
-                                                    (w state)))
+        (wrap-fn-process-inputs-and-gen-everything const-old
+                                                   const-new
+                                                   targets
+                                                   (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection wrap-fun-macro-definition
-  :parents (wrap-fun-event-generation)
-  :short "Definition of @(tsee wrap-fun)."
-  (defmacro wrap-fun
+(defsection wrap-fn-macro-definition
+  :parents (wrap-fn-event-generation)
+  :short "Definition of @(tsee wrap-fn)."
+  (defmacro wrap-fn
     (const-old
      const-new
      &key
      targets)
-    `(make-event (wrap-fun-fn ',const-old
+    `(make-event (wrap-fn-fn ',const-old
                               ',const-new
                               ',targets
-                              'wrap-fun
+                              'wrap-fn
                               state))))

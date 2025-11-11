@@ -8,8 +8,8 @@ rm -f split-fn.output/*.*
 ../transform-c.sh split-fn.json
 ../transform-c.sh split-fn2.json
 ../transform-c.sh split-fn3.json
-rm -f wrap-fun.output/*.*
-../transform-c.sh wrap-fun.json
+rm -f wrap-fn.output/*.*
+../transform-c.sh wrap-fn.json
 
 # cd input-files
 # gcc -O0 -c *.c
@@ -37,9 +37,9 @@ ls -l *.c
 ls -l *.o
 cd ..
 
-cd wrap-fun.output
+cd wrap-fn.output
 gcc -O0 -c *.c
-echo "Results in wrap-fun.output:"
+echo "Results in wrap-fn.output:"
 ls -l *.c
 ls -l *.o
 cd ..
