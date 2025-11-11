@@ -56,6 +56,7 @@
 (include-book "getbit-list")
 (include-book "map-slice")
 (include-book "map-bvsx")
+(include-book "map-bvplus-val")
 
 (include-book "width-of-widest-int")
 
