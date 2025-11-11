@@ -21,6 +21,7 @@
 (include-book "../axe/lifter-common") ; for lifter-targetp ; todo
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/keyword-listp" :dir :system))
 ;(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 ;(include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system) ; todo: reduce
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
@@ -443,13 +444,14 @@
 
 ;; Creates assumptions about STATE-VAR and BASE-ADDRESS-VAR.
 ;; Returns (mv erp assumptions).
-(defund assumptions-for-memory-regions (regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp acc)
+(defund assumptions-for-memory-regions (regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes acc)
   (declare (xargs :guard (and (memory-regionsp regions)
                               (symbolp base-address-var) ; only used if position-independentp
                               (symbolp state-var)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (booleanp position-independentp)
+                              (member-eq assume-bytes '(:all :non-write)) ; indicator of which segments/sections to assume have their original bytes
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (e/d (memory-regionsp
                                                          memory-regionp)
@@ -461,9 +463,16 @@
          (length (first region))
          (addr (second region)) ; a virtual address
          (bytes (third region))
-         ;; (flags (fourth region))
-         (assert-bytesp t ;(not (member-eq :w flags))
-                        ) ; assert the bytes are loaded unless they can be overwritten (todo: if lifting from the entry point, always assert)
+         (flags (fourth region))
+         ;; assert the bytes are loaded unless they can be overwritten (todo: if lifting from the entry point, always assert):
+         (writeablep (member-eq :w flags))
+         (assume-bytesp (if (eq :all assume-bytes)
+                            t
+                          ;; assume-bytes must be :not-write
+                          (if writeablep
+                              (prog2$ (cw "NOTE: Not asserting the contents of writeable region at ~x0.~%" addr)
+                                      nil)
+                            t)))
          ((mv erp assumptions-for-region)
           (if position-independentp
               ;; Relative addresses make everything relative to the base-address-var:
@@ -489,7 +498,7 @@
                                            ))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      (and assert-bytesp `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes)))
+                      (and assume-bytesp `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes)))
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       (if (posp existing-stack-slots)
@@ -514,7 +523,7 @@
                 (mv nil ; no error
                     (append
                       ;; Assert that the chunk is loaded into memory:
-                      (and assert-bytesp `((equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)))
+                      (and assume-bytesp `((equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)))
 
                       ;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
@@ -534,13 +543,14 @@
           (mv erp nil)))
       (assumptions-for-memory-regions (rest regions)
                                       base-address-var state-var stack-slots-needed existing-stack-slots position-independentp
+                                      assume-bytes
                                       ;; todo: think about the order:
                                       (append assumptions-for-region acc)))))
 
 (local
   (defthm true-list-of-mv-nth-1-of-assumptions-for-memory-regions
     (implies (true-listp acc)
-             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp acc))))
+             (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes acc))))
     :hints (("Goal" :in-theory (enable assumptions-for-memory-regions)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -557,6 +567,7 @@
                                inputs
                                type-assumptions-for-array-varsp
                                inputs-disjoint-from
+                               assume-bytes
                                parsed-elf)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
@@ -566,6 +577,7 @@
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
@@ -589,7 +601,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -633,7 +645,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
-  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-elf)))
+  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -650,6 +662,7 @@
                                  inputs
                                  type-assumptions-for-array-varsp
                                  inputs-disjoint-from
+                                 assume-bytes
                                  parsed-macho)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
@@ -659,6 +672,7 @@
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (acl2::parsed-mach-o-p parsed-macho))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-mach-o-p acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
@@ -682,7 +696,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from existing and future stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
@@ -726,7 +740,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
-  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-macho)))
+  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -740,6 +754,7 @@
                               inputs
                               type-assumptions-for-array-varsp
                               inputs-disjoint-from
+                              assume-bytes
                               parsed-pe)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
@@ -749,6 +764,7 @@
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (acl2::parsed-pe-p parsed-pe))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p acl2::true-listp-when-pseudo-term-listp-2))))
            (ignore type-assumptions-for-array-varsp) ; todo: use this
@@ -776,7 +792,7 @@
         (mv :no-memory-regions-found-in-executable nil nil))
        ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future and existing stack words):
        ((mv erp memory-region-assumptions)
-        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp nil))
+        (assumptions-for-memory-regions regions-to-load base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes nil))
        ((when erp) (mv erp nil nil))
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp & ;addresses-and-lens-of-chunks-disjoint-from-inputs ; todo: use this!
@@ -828,7 +844,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
-  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from parsed-pe)))
+  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe)))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

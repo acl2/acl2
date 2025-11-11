@@ -2624,6 +2624,7 @@
                                      nil ; inputs ; todo
                                      nil ; type-assumptions-for-array-varsp ; todo
                                      :all ; inputs-disjoint-from
+                                     :all ; assume-bytes ; todo
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
@@ -2634,6 +2635,7 @@
                                     nil ; inputs ; todo
                                     nil ; type-assumptions-for-array-varsp ; todo
                                     :all ; inputs-disjoint-from
+                                    :all ; assume-bytes ; todo
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
@@ -2644,6 +2646,7 @@
                                        nil ; inputs ; todo
                                        nil ; type-assumptions-for-array-varsp ; todo
                                        :all ; inputs-disjoint-from
+                                       :all ; assume-bytes ; todo
                                        parsed-executable)
               ;; todo: support other executable types!
               (mv :unsupported-executable-type nil nil)))))

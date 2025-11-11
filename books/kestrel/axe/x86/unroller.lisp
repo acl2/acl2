@@ -272,6 +272,7 @@
                         extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                         suppress-assumptions
                         inputs-disjoint-from
+                        assume-bytes
                         stack-slots
                         existing-stack-slots
                         ;position-independent
@@ -289,6 +290,7 @@
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
@@ -320,6 +322,7 @@
                                      inputs
                                      type-assumptions-for-array-varsp
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                     assume-bytes
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil nil state))
            (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -349,6 +352,7 @@
                                          inputs
                                          type-assumptions-for-array-varsp
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                         assume-bytes
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil nil state))
              (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -378,6 +382,7 @@
                                         inputs
                                         type-assumptions-for-array-varsp
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                        assume-bytes
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil nil state))
                (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -904,6 +909,7 @@
                              extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                              suppress-assumptions
                              inputs-disjoint-from
+                             assume-bytes
                              stack-slots
                              existing-stack-slots
                              position-independent
@@ -933,6 +939,7 @@
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
@@ -961,7 +968,8 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslatep))
+                              (booleanp untranslatep)
+                              )
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
                   ))
@@ -1023,6 +1031,7 @@
                          extra-assumptions
                          suppress-assumptions
                          inputs-disjoint-from
+                         assume-bytes
                          stack-slots
                          existing-stack-slots
                          inputs
@@ -1127,6 +1136,7 @@
                         extra-assumptions
                         suppress-assumptions
                         inputs-disjoint-from
+                        assume-bytes
                         stack-slots
                         existing-stack-slots
                         position-independent
@@ -1162,6 +1172,7 @@
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
@@ -1223,7 +1234,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
+          extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
           inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
@@ -1379,6 +1390,7 @@
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
+                                  (assume-bytes ':all) ; todo: change the default to :non-write
                                   (stack-slots '100)
                                   (existing-stack-slots ':auto)
                                   (position-independent ':auto)
@@ -1417,6 +1429,7 @@
       ,extra-assumptions
       ',suppress-assumptions
       ',inputs-disjoint-from
+      ',assume-bytes
       ',stack-slots
       ',existing-stack-slots
       ',position-independent
@@ -1454,6 +1467,7 @@
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
          (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
          (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
+         (assume-bytes "Indication of which sections/segments to assume still have their original bytes, either @(':all') (meaning assume it for all sections/segments) or @(':non-write') (meaning assume it for only non-writeable sections/segments).  Note that global variables may be initialized to certain values but may have then been overwritten before the function being lifted is called, so it may not be appropriate to assume such variables still have their original values.")
          (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
          (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
