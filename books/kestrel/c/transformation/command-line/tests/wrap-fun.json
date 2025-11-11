@@ -1,0 +1,6 @@
+{"command": "wrap-fun",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "wrap-fun.output",
+  "files": ["file8.c"],
+  "targets": ["foo"]}}
