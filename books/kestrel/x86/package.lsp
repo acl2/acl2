@@ -370,13 +370,15 @@
 (defconst *symbols-from-acl2-package*
   '(;; list and bv-list stuff:
     prefixp
-    ;; byte-listp ; todo: clash!
     all-integerp
     all-all-unsigned-byte-p
     all-true-listp
     items-have-len
     all-unsigned-byte-p
     unsigned-byte-listp
+    ;; byte-listp ; todo: clash!
+
+    keyword-listp
 
     check-arities
 
@@ -668,7 +670,7 @@
     x86isa::!flgi-undefined
     x86isa::separate
     x86isa::program-at
-    x86isa::byte-listp ;todo: compare with unsigned-byte-p-list
+    x86isa::byte-listp ;todo: compare with unsigned-byte-listp
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
     x86isa::x86-fetch-decode-execute
