@@ -461,6 +461,9 @@
          (length (first region))
          (addr (second region)) ; a virtual address
          (bytes (third region))
+         ;; (flags (fourth region))
+         (assert-bytesp t ;(not (member-eq :w flags))
+                        ) ; assert the bytes are loaded unless they can be overwritten (todo: if lifting from the entry point, always assert)
          ((mv erp assumptions-for-region)
           (if position-independentp
               ;; Relative addresses make everything relative to the base-address-var:
@@ -486,7 +489,7 @@
                                            ))
                       ;; Assert that the chunk is loaded into memory:
                       ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes))
+                      (and assert-bytesp `((equal (read-bytes ',(len bytes) ,first-addr-term ,state-var) ',bytes)))
                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
                       ;; TODO: Do this only for writable chunks?
                       (if (posp existing-stack-slots)
@@ -509,22 +512,24 @@
                             (canonical-address-p last-addr)))
                   (mv :bad-address nil)
                 (mv nil ; no error
-                    `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
+                    (append
                       ;; Assert that the chunk is loaded into memory:
-                      (equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)
-                       ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
-                       ;; TODO: Do this only for writable chunks?
-                       ,@(if (posp existing-stack-slots)
-                             `((disjoint-regions48p ',(len bytes) ',first-addr
-                                                    ',(* 8 existing-stack-slots) (rsp ,state-var)))
-                           nil)
-                       ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
-                       ;; TODO: Do this only for writable chunks?
-                       ,@(if (posp stack-slots-needed)
-                             `((disjoint-regions48p ',(len bytes) ',first-addr
-                                                    ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
-                           ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                           nil)))))))
+                      (and assert-bytesp `((equal (read-bytes ',(len bytes) ',first-addr ,state-var) ',bytes)))
+
+                      ;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
+                      ;; Assert that the chunk is disjoint from the existing part of the stack that will be written:
+                      ;; TODO: Do this only for writable chunks?
+                      (if (posp existing-stack-slots)
+                          `((disjoint-regions48p ',(len bytes) ',first-addr
+                                                 ',(* 8 existing-stack-slots) (rsp ,state-var)))
+                        nil)
+                      ;; Assert that the chunk is disjoint from the new part of the stack that will be written:
+                      ;; TODO: Do this only for writable chunks?
+                      (if (posp stack-slots-needed)
+                          `((disjoint-regions48p ',(len bytes) ',first-addr
+                                                 ',(* 8 stack-slots-needed) (bvplus 48 ',(bvchop 48 (* -8 stack-slots-needed)) (rsp ,state-var))))
+                        ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+                        nil)))))))
          ((when erp)
           (mv erp nil)))
       (assumptions-for-memory-regions (rest regions)
