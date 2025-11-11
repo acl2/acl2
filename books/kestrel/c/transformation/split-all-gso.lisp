@@ -17,7 +17,7 @@
 
 (include-book "../syntax/disambiguator")
 (include-book "../syntax/validator")
-(include-book "splitgso")
+(include-book "split-gso")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -316,14 +316,14 @@
           ((erp filepath? gso field-name)
            (transunit-ensemble-find-gso-candidate tunits blacklist))
           ((mv erp tunits$)
-           (splitgso-transunit-ensemble filepath?
-                                        gso
-                                        nil
-                                        nil
-                                        nil
-                                        nil
-                                        (list field-name)
-                                        tunits))
+           (split-gso-transunit-ensemble filepath?
+                                         gso
+                                         nil
+                                         nil
+                                         nil
+                                         nil
+                                         (list field-name)
+                                         tunits))
           ((when erp)
            (transunit-ensemble-split-any-gso0 tunits
                                               (insert gso blacklist)
@@ -372,7 +372,7 @@
              blacklist))
           ((when erp)
            (retok blacklist tunits))
-          ;; TODO: prove that splitgso preserves unambiguity and validity
+          ;; TODO: prove that split-gso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
            (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))

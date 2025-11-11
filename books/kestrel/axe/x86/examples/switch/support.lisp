@@ -10,9 +10,6 @@
            (equal (* 4 (slice n 2 index))
                   (bvchop (+ 1 n) index))))
 
-(def-constant-opener packbv-little :disable t)
-(def-constant-opener packbvs-little :disable t)
-
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
 ;todo: gen
