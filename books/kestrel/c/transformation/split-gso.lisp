@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-implementation splitgso)
+(xdoc::evmac-topic-implementation split-gso)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,7 +585,7 @@
                          :final-comma initer.final-comma)))))))
 
 (defines match-simple-declor-ident
-  :parents (splitgso-implementation)
+  :parents (split-gso-implementation)
   :short "Matches against a simple declarator."
   :long
   (xdoc::topstring
@@ -664,7 +664,7 @@
                              split-members
                              (first initdeclors))))
 
-(define split-gso-decl
+(define split-gso-split-object-decl
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -733,7 +733,7 @@
                                 :init? initer-option2))))))
       :statassert (retok nil (list (decl-fix decl))))))
 
-(define split-gso-extdecl
+(define split-gso-split-object-extdecl
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -751,7 +751,7 @@
       extdecl
       :fundef (retok nil (list (extdecl-fix extdecl)))
       :decl (b* (((erp found decls)
-                  (split-gso-decl
+                  (split-gso-split-object-decl
                     original
                     linkage
                     new1
@@ -769,7 +769,7 @@
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-gso-extdecl-list
+(define split-gso-split-object-extdecl-list
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -784,7 +784,7 @@
        ((when (endp extdecls))
         (retok nil))
        ((erp found new-extdecls1)
-        (split-gso-extdecl
+        (split-gso-split-object-extdecl
           original
           linkage
           new1
@@ -797,7 +797,7 @@
         (retok (append new-extdecls1
                        (extdecl-list-fix (rest extdecls)))))
        ((erp new-extdecls2)
-        (split-gso-extdecl-list
+        (split-gso-split-object-extdecl-list
           original
           linkage
           new1
@@ -808,7 +808,7 @@
           (rest extdecls))))
     (retok (append new-extdecls1 new-extdecls2))))
 
-(define split-gso-transunit
+(define split-gso-split-object-transunit
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -822,7 +822,7 @@
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
-        (split-gso-extdecl-list
+        (split-gso-split-object-extdecl-list
           original
           linkage
           new1
@@ -833,7 +833,7 @@
           tunit.decls)))
     (retok (make-transunit :decls extdecls :info tunit.info))))
 
-(define split-gso-filepath-transunit-map
+(define split-gso-split-object-filepath-transunit-map
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -848,7 +848,7 @@
        ((when (omap::emptyp map))
         (retok nil))
        ((erp tunit)
-        (split-gso-transunit
+        (split-gso-split-object-transunit
           original
           linkage
           new1
@@ -858,7 +858,7 @@
           split-members
           (omap::head-val map)))
        ((erp map$)
-        (split-gso-filepath-transunit-map
+        (split-gso-split-object-filepath-transunit-map
           original
           linkage
           new1
@@ -897,7 +897,7 @@
      (new1 identp)
      (new2 identp)
      (split-members ident-listp))
-    :parents (splitgso-implementation)
+    :parents (split-gso-implementation)
     :override
     ((c$::expr
        :ident
@@ -970,19 +970,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-rename-filepaths
+(define split-gso-rename-filepaths
   ((map filepath-transunit-mapp))
   :returns (map$ filepath-transunit-mapp)
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map)))
     (omap::update (c$::filepath-fix path)
                   (c$::transunit-fix tunit)
-                  (splitgso-rename-filepaths (omap::tail map))))
+                  (split-gso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)
 
 ;; TODO: add `:fragment` argument indicate the map does not represent a
 ;;   complete program. In such cases, fail if the gso is external.
-(define splitgso-filepath-transunit-map
+(define split-gso-filepath-transunit-map
   ((struct-tag identp)
    (filepath filepathp)
    (linkage c$::linkagep)
@@ -1024,7 +1024,7 @@
                                   new-struct2)
                             ident-blacklist))
              ((erp map)
-              (split-gso-filepath-transunit-map
+              (split-gso-split-object-filepath-transunit-map
                 orig-struct
                 linkage
                 new-struct1
@@ -1063,7 +1063,7 @@
                             new-struct2)
                       ident-blacklist))
        ((erp tunit)
-        (split-gso-transunit
+        (split-gso-split-object-transunit
           orig-struct
           linkage
           new-struct1
@@ -1084,7 +1084,7 @@
                          tunit
                          map))))
 
-(define splitgso-transunit-ensemble
+(define split-gso-transunit-ensemble
   ((filepath? c$::filepath-optionp)
    (orig-struct identp)
    (new-struct1 ident-optionp)
@@ -1101,7 +1101,7 @@
         (get-gso-info filepath? orig-struct tunits))
        (map (transunit-ensemble->unwrap tunits))
        ((erp map)
-        (splitgso-filepath-transunit-map
+        (split-gso-filepath-transunit-map
           struct-tag
           filepath
           linkage
@@ -1113,9 +1113,9 @@
           split-members
           map)))
     (retok
-      (transunit-ensemble (splitgso-rename-filepaths map)))))
+      (transunit-ensemble (split-gso-rename-filepaths map)))))
 
-(define splitgso-code-ensemble
+(define split-gso-code-ensemble
   ((filepath? c$::filepath-optionp)
    (orig-struct identp)
    (new-struct1 ident-optionp)
@@ -1129,7 +1129,7 @@
                (code$ code-ensemblep))
   (b* (((reterr) (irr-code-ensemble))
        ((code-ensemble code) code)
-       ((erp tunits) (splitgso-transunit-ensemble filepath?
+       ((erp tunits) (split-gso-transunit-ensemble filepath?
                                                   orig-struct
                                                   new-struct1
                                                   new-struct2
@@ -1141,7 +1141,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing splitgso)
+(xdoc::evmac-topic-input-processing split-gso)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,16 +1160,16 @@
   :enable ((:e c$::transunit-ensemble-annop)
            (:e c$::irr-code-ensemble)))
 
-(define splitgso-process-inputs (const-old
-                                 const-new
-                                 object-name
-                                 object-filepath
-                                 new-object1
-                                 new-object2
-                                 new-type1
-                                 new-type2
-                                 split-members
-                                 (wrld plist-worldp))
+(define split-gso-process-inputs (const-old
+                                  const-new
+                                  object-name
+                                  object-filepath
+                                  new-object1
+                                  new-object2
+                                  new-type1
+                                  new-type2
+                                  split-members
+                                  (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (code (and (code-ensemblep code)
                           (c$::transunit-ensemble-annop
@@ -1244,11 +1244,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-event-generation splitgso)
+(xdoc::evmac-topic-event-generation split-gso)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-gen-everything
+(define split-gso-gen-everything
   ((code code-ensemblep)
    (object-ident identp)
    (filepath? c$::filepath-optionp)
@@ -1264,7 +1264,7 @@
   :short "Generate all the events."
   (b* (((reterr) '(_))
        ((erp code)
-        (splitgso-code-ensemble
+        (split-gso-code-ensemble
           filepath?
           object-ident
           new-object1
@@ -1280,7 +1280,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-process-inputs-and-gen-everything
+(define split-gso-process-inputs-and-gen-everything
   (const-old
    const-new
    object-name
@@ -1293,7 +1293,7 @@
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
-  :parents (splitgso-implementation)
+  :parents (split-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        ((erp code
@@ -1305,66 +1305,66 @@
              new-type2
              split-members
              const-new)
-        (splitgso-process-inputs const-old
-                                 const-new
-                                 object-name
-                                 object-filepath
-                                 new-object1
-                                 new-object2
-                                 new-type1
-                                 new-type2
-                                 split-members
-                                 wrld))
+        (split-gso-process-inputs const-old
+                                  const-new
+                                  object-name
+                                  object-filepath
+                                  new-object1
+                                  new-object2
+                                  new-type1
+                                  new-type2
+                                  split-members
+                                  wrld))
        ((erp event)
-        (splitgso-gen-everything code
-                                 object-ident
-                                 filepath?
-                                 new-object1
-                                 new-object2
-                                 new-type1
-                                 new-type2
-                                 split-members
-                                 const-new)))
+        (split-gso-gen-everything code
+                                  object-ident
+                                  filepath?
+                                  new-object1
+                                  new-object2
+                                  new-type1
+                                  new-type2
+                                  split-members
+                                  const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-fn (const-old
-                     const-new
-                     object-name
-                     object-filepath
-                     new-object1
-                     new-object2
-                     new-type1
-                     new-type2
-                     split-members
-                     (ctx ctxp)
-                     state)
+(define split-gso-fn (const-old
+                      const-new
+                      object-name
+                      object-filepath
+                      new-object1
+                      new-object2
+                      new-type1
+                      new-type2
+                      split-members
+                      (ctx ctxp)
+                      state)
   :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
-  :parents (splitgso-implementation)
-  :short "Event expansion of @(tsee splitgso)."
+  :parents (split-gso-implementation)
+  :short "Event expansion of @(tsee split-gso)."
   (b* (((mv erp event)
-        (splitgso-process-inputs-and-gen-everything const-old
-                                                    const-new
-                                                    object-name
-                                                    object-filepath
-                                                    new-object1
-                                                    new-object2
-                                                    new-type1
-                                                    new-type2
-                                                    split-members
-                                                    (w state)))
+        (split-gso-process-inputs-and-gen-everything const-old
+                                                     const-new
+                                                     object-name
+                                                     object-filepath
+                                                     new-object1
+                                                     new-object2
+                                                     new-type1
+                                                     new-type2
+                                                     split-members
+                                                     (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection splitgso-macro-definition
-  :parents (splitgso-implementation)
-  :short "Definition of @(tsee splitgso)."
-  (defmacro splitgso
+(defsection split-gso-macro-definition
+  :parents (split-gso-implementation)
+  :short "Definition of @(tsee split-gso)."
+  (defmacro split-gso
     (const-old
      const-new
      &key
@@ -1375,14 +1375,14 @@
      new-type1
      new-type2
      split-members)
-    `(make-event (splitgso-fn ',const-old
-                              ',const-new
-                              ',object-name
-                              ',object-filepath
-                              ',new-object1
-                              ',new-object2
-                              ',new-type1
-                              ',new-type2
-                              ',split-members
-                              'splitgso
-                              state))))
+    `(make-event (split-gso-fn ',const-old
+                               ',const-new
+                               ',object-name
+                               ',object-filepath
+                               ',new-object1
+                               ',new-object2
+                               ',new-type1
+                               ',new-type2
+                               ',split-members
+                               'split-gso
+                               state))))

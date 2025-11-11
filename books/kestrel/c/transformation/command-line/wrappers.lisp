@@ -17,7 +17,7 @@
 ;; split into arguments passed to input-files/output-files and arguments passed
 ;; to the transformation (e.g., if the gcc argument is passed to both).
 
-(include-book "kestrel/c/transformation/splitgso" :dir :system)
+(include-book "kestrel/c/transformation/split-gso" :dir :system)
 (include-book "kestrel/c/transformation/simpadd0" :dir :system)
 (include-book "kestrel/c/transformation/split-fn" :dir :system)
 (include-book "kestrel/c/transformation/wrap-fn" :dir :system)
@@ -111,7 +111,7 @@
 ;; todo: error checking
 ;; todo: add preprocessor args, etc. (eventually make per-file)
 ;; could all files to be "all" instead of a list
-(defun splitgso-wrapper (kv-list whole-form)
+(defun split-gso-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
@@ -123,17 +123,17 @@
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
                         :gcc ,gcc)
-       (c2c::splitgso *old-const*
-                      *new-const*
-                      ;; Pass through all other args:
-                      ,@remaining-kv-list)
+       (c2c::split-gso *old-const*
+                       *new-const*
+                       ;; Pass through all other args:
+                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
                          :path ,new-dir))))
 
-;; A wrapper for splitgso that takes all its arguments as alternating keywords/values.
+;; A wrapper for split-gso that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command.
-(defmacro splitgso (&whole whole-form &rest kv-list)
-  `(make-event (splitgso-wrapper ',kv-list ',whole-form)))
+(defmacro split-gso (&whole whole-form &rest kv-list)
+  `(make-event (split-gso-wrapper ',kv-list ',whole-form)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

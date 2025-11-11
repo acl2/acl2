@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ splitgso
+(defxdoc+ split-gso
   :parents (transformation-tools)
   :short "A C-to-C transformation to split a global struct object."
   :long
@@ -37,15 +37,15 @@
          padding, locality, etc."))
    (xdoc::evmac-section-form
      (xdoc::codeblock
-       "(splitgso const-old"
-       "          const-new"
-       "          :object-name       ..."
-       "          :split-members     ..."
-       "          :object-filepath   ... ; optional"
-       "          :new-object1       ... ; optional"
-       "          :new-object2       ... ; optional"
-       "          :new-type1         ... ; optional"
-       "          :new-type2         ... ; optional"
+       "(split-gso const-old"
+       "           const-new"
+       "           :object-name       ..."
+       "           :split-members     ..."
+       "           :object-filepath   ... ; optional"
+       "           :new-object1       ... ; optional"
+       "           :new-object2       ... ; optional"
+       "           :new-type1         ... ; optional"
+       "           :new-type2         ... ; optional"
        "  )"
       ))
    (xdoc::evmac-section-inputs

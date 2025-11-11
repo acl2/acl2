@@ -2,7 +2,7 @@ To run all the tests, run ./run-tests.sh.
 
 Notes:
 
-splitgso.json - Basic test of splitgso
+split-gso.json - Basic test of splitgso
 
 simpadd0.json - Basic test of simpadd0
 
