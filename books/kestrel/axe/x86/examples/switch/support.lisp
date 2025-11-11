@@ -230,30 +230,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvplus-of-bv-array-read-constant-array
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (or (power-of-2p len)
-                    (bvlt (ceiling-of-lg len) index (len data)))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
-
-(defthm bvplus-of-bv-array-read-constant-array-smt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (axe-smt (or (power-of-2p len)
-                             (bvlt (ceiling-of-lg len) index (len data))))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
-
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
 (defthm set-rip-of-bv-array-read-split-cases

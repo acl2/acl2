@@ -116,7 +116,7 @@
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                    acl2::bvsx-of-bv-array-read-constant-array
-                   bvplus-of-bv-array-read-constant-array-smt
+                   acl2::bvplus-of-bv-array-read-constant-array-smt
                    set-rip-of-bv-array-read-split-cases
                    acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split

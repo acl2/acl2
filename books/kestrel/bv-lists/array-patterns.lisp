@@ -14,6 +14,7 @@
 
 (include-book "bv-array-read")
 (include-book "map-bvsx")
+(include-book "map-bvplus-val")
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
@@ -345,6 +346,20 @@
            (equal (bvsx new-size old-size (bv-array-read old-size len index data))
                   (bv-array-read new-size len index (map-bvsx new-size old-size data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvsx-of-nth))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-bv-array-read-constant-array
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep val)
+                              (quotep size)))
+                (natp size)
+                (or (power-of-2p len)
+                    (bvlt (ceiling-of-lg len) index (len data)))
+                (equal len (len data)))
+           (equal (bvplus size val (bv-array-read size len index data))
+                  (bv-array-read size len index (map-bvplus-val size val data))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
