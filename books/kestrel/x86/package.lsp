@@ -416,6 +416,7 @@
     memory-regionsp
     memory-region-addresses-and-lens
 
+    packbv-little
     packbvs-little ; todo: more?
 
     ))
