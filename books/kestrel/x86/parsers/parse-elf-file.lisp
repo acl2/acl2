@@ -106,6 +106,11 @@
           (cons flag (decode-val-with-mask-flag-alist val (rest mask-flag-alist)))
         (decode-val-with-mask-flag-alist val (rest mask-flag-alist))))))
 
+(defthm keyword-listp-of-decode-val-with-mask-flag-alist
+  (implies (keyword-listp (strip-cdrs mask-flag-alist))
+           (keyword-listp (decode-val-with-mask-flag-alist val mask-flag-alist)))
+  :hints (("Goal" :in-theory (enable decode-val-with-mask-flag-alist))))
+
 ;; There seem to be somewhat different lists of these values floating around.
 ;; One reference is https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 (defconst *osabis*
@@ -642,6 +647,7 @@
   (and (symbol-alistp entry)
        (natp (lookup-eq :vaddr entry))
        (natp (lookup-eq :memsz entry))
+       (keyword-listp (lookup-eq :flags entry))
        ;; todo: more
        ))
 
