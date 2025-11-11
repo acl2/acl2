@@ -619,6 +619,11 @@
     (#x4 . :SG_NORELOC)
     (#x8 . :SG_PROTECTED_VERSION_1)))
 
+(defconst *mach-o-protection-flags*
+  '((#x1 . :VM_PROT_READ)
+    (#x2 . :VM_PROT_WRITE)
+    (#x4 . :VM_PROT_EXECUTE)))
+
 ; Returns (mv erp cmd-data).
 ;; Note that the caller adds the cmd itself to the alist returned.
 (defun parse-mach-o-load-command (cmd ; the type of the command
@@ -664,8 +669,8 @@
                          (cons :vmsize vmsize)
                          (cons :fileoff fileoff)
                          (cons :filesize filesize)
-                         (cons :maxprot maxprot)
-                         (cons :initprot initprot)
+                         (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                         (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
                          (cons :nsects nsects)
                          (cons :flags (decode-flags flags *mach-o-segment-flags*))
                          (cons :sections sections)))))
@@ -697,8 +702,8 @@
                           (cons :vmsize vmsize)
                           (cons :fileoff fileoff)
                           (cons :filesize filesize)
-                          (cons :maxprot maxprot)
-                          (cons :initprot initprot)
+                          (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                          (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
                           (cons :nsects nsects)
                           (cons :flags (decode-flags flags *mach-o-segment-flags*))
                           (cons :sections sections)))))

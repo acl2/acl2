@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Supporting Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,18 +48,43 @@
   (equal (rax (get-literal x86)) 4202500) ; 0x402004 in hex
   :hints (("Goal" :in-theory (enable get-literal))))
 
-;; TODO: Verify the returned address points to "hello"
-;; How do we show that?
-;; ATTEMPTED: Using read-byte to check memory at addr 4202500 contains 'h','e','l','l','o'
-;; RESULT: Cannot prove - the lifting assumptions seem to elide .rodata section bytes (:ELIDED)
-;; The assumption shows: (EQUAL (READ-BYTES '328 '4202496 X86) :ELIDED)
-;; SOLUTION: Would need lifting to include actual .rodata bytes in assumptions,
-;;           or a different approach to verify memory contents
-;; Example of attempted theorem:
-;;   (let ((addr (rax (get-literal x86))))
-;;     (and (equal (read-byte addr x86) #x68)  ; 'h'
-;;          (equal (read-byte (+ 1 addr) x86) #x65) ...))
-;; NOTE: Use read-byte (defined in kestrel/x86/read-and-write.lisp) for memory access
+
+;; Verify the returned address points to "hello"
+;; I used :print t to show the non-elided byte lists in the assumptions and
+;; copied the key assumption here:
+(thm
+  (implies (equal (read-bytes '328 '4202496 x86)
+                  '(1 0 2 0 104 101 108 108 111
+                    0 116 101 115 116 0 0 1 27 3 59 52 0 0
+                    0 5 0 0 0 16 240 255 255 80 0 0 0 64 240
+                    255 255 124 0 0 0 246 240 255 255 144
+                    0 0 0 1 241 255 255 176 0 0 0 25 241 255
+                    255 208 0 0 0 0 0 0 0 20 0 0 0 0 0 0 0 1
+                    122 82 0 1 120 16 1 27 12 7 8 144 1 7 16
+                    16 0 0 0 28 0 0 0 184 239 255 255 34 0 0
+                    0 0 0 0 0 20 0 0 0 0 0 0 0 1 122 82 0 1
+                    120 16 1 27 12 7 8 144 1 0 0 16 0 0 0 28
+                    0 0 0 188 239 255 255 1 0 0 0 0 0 0 0 28
+                    0 0 0 48 0 0 0 94 240 255 255 11 0 0 0
+                    0 65 14 16 134 2 67 13 6 70 12 7 8 0 0 0
+                    28 0 0 0 80 0 0 0 73 240 255 255 24 0 0
+                    0 0 65 14 16 134 2 67 13 6 83 12 7 8 0 0
+                    0 28 0 0 0 112 0 0 0 65 240 255 255 11 0
+                    0 0 0 65 14 16 134 2 67 13 6 70 12 7 8 0
+                    0 0 0 0 0 0 0 0 0 0 4 0 0 0 16 0 0 0 5 0
+                    0 0 71 78 85 0 2 128 0 192 4 0 0 0 1 0 0
+                    0 0 0 0 0 4 0 0 0 16 0 0 0 1 0 0 0 71 78
+                    85 0 0 0 0 0 3 0 0 0 2 0 0 0 0 0 0 0))
+           (let ((addr (rax (get-literal x86))))
+             (and (equal (read-byte addr x86) (char-code #\h))
+                  (equal (read-byte (+ 1 addr) x86) (char-code #\e))
+                  (equal (read-byte (+ 2 addr) x86) (char-code #\l))
+                  (equal (read-byte (+ 3 addr) x86) (char-code #\l))
+                  (equal (read-byte (+ 4 addr) x86) (char-code #\o))
+                  (equal (read-byte (+ 5 addr) x86) 0) ; null terminator for "hello" string
+                  )))
+  :hints (("Goal" :in-theory (enable read-byte-becomes-read ; to match the normal forms that Axe uses
+                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

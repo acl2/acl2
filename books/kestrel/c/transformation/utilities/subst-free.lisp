@@ -86,13 +86,15 @@
                (expr-subst-free (c$::expr-arrsub->arg1 expr)
                                 subst bound-vars)
                (expr-subst-free (c$::expr-arrsub->arg2 expr)
-                                subst bound-vars))
+                                subst bound-vars)
+               (c$::expr-arrsub->info expr))
      :funcall
      (c$::expr-funcall
        (expr-subst-free (c$::expr-funcall->fun expr)
                         subst bound-vars)
        (expr-list-subst-free (c$::expr-funcall->args expr)
-                             subst bound-vars))
+                             subst bound-vars)
+       (c$::expr-funcall->info expr))
      :member (c$::expr-member
                (expr-subst-free (c$::expr-member->arg expr)
                                 subst bound-vars)

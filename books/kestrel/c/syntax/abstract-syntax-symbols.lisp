@@ -72,7 +72,10 @@
     expr-ident
     make-expr-ident
     expr-ident->ident
+    expr-string
+    make-expr-string
     expr-const
+    make-expr-const
     expr-const->const
     expr-paren
     make-expr-gensel
@@ -678,6 +681,15 @@
     var-infop
     var-info-fix
     coerce-var-info
+
+    expr-const-infop
+    expr-const-info-fix
+
+    expr-string-infop
+
+    expr-arrsub-infop
+
+    expr-funcall-infop
 
     expr-unary-infop
 

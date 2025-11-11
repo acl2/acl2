@@ -420,7 +420,8 @@
   :returns (expr exprp)
   (c::value-case
    value
-   :uchar (expr-const
+   :uchar (make-expr-const
+            :const
             (c$::const-int
               (c$::make-iconst :core (if (zp value.get)
                                          (dec/oct/hex-const-oct 1 0)
@@ -429,17 +430,20 @@
    :schar (if (minusp value.get)
               (make-expr-unary
                 :op (c::unop-minus)
-                :arg (expr-const
+                :arg (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec (- value.get)))))
                 :info nil)
-            (expr-const
+            (make-expr-const
+              :const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
                                            (dec/oct/hex-const-oct 1 0)
                                          (c$::dec/oct/hex-const-dec value.get))))))
-   :ushort (expr-const
+   :ushort (make-expr-const
+             :const
              (c$::const-int
                (c$::make-iconst :core (if (zp value.get)
                                           (dec/oct/hex-const-oct 1 0)
@@ -448,17 +452,20 @@
    :sshort (if (minusp value.get)
                (make-expr-unary
                  :op (c::unop-minus)
-                 :arg (expr-const
+                 :arg (make-expr-const
+                        :const
                         (c$::const-int
                           (c$::make-iconst
                             :core (c$::dec/oct/hex-const-dec (- value.get)))))
                  :info nil)
-             (expr-const
+             (make-expr-const
+               :const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
                                             (dec/oct/hex-const-oct 1 0)
                                           (c$::dec/oct/hex-const-dec value.get))))))
-   :uint (expr-const
+   :uint (make-expr-const
+           :const
            (c$::const-int
              (c$::make-iconst :core (if (zp value.get)
                                         (dec/oct/hex-const-oct 1 0)
@@ -467,17 +474,20 @@
    :sint (if (minusp value.get)
              (make-expr-unary
                :op (c::unop-minus)
-               :arg (expr-const
+               :arg (make-expr-const
+                      :const
                       (c$::const-int
                         (c$::make-iconst
                           :core (c$::dec/oct/hex-const-dec (- value.get)))))
                :info nil)
-           (expr-const
+           (make-expr-const
+             :const
              (c$::const-int
                (c$::make-iconst :core (if (zp value.get)
                                           (dec/oct/hex-const-oct 1 0)
                                         (c$::dec/oct/hex-const-dec value.get))))))
-   :ulong (expr-const
+   :ulong (make-expr-const
+            :const
             (c$::const-int
               (c$::make-iconst :core (if (zp value.get)
                                          (dec/oct/hex-const-oct 1 0)
@@ -488,19 +498,22 @@
    :slong (if (minusp value.get)
               (make-expr-unary
                 :op (c::unop-minus)
-                :arg (expr-const
+                :arg (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec (- value.get))
                            :suffix? (c$::isuffix-l (c$::lsuffix-locase-l)))))
                 :info nil)
-            (expr-const
+            (make-expr-const
+              :const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
                                            (dec/oct/hex-const-oct 1 0)
                                          (c$::dec/oct/hex-const-dec value.get))
                                  :suffix? (c$::isuffix-l (c$::lsuffix-locase-l))))))
-   :ullong (expr-const
+   :ullong (make-expr-const
+             :const
              (c$::const-int
                (c$::make-iconst :core (if (zp value.get)
                                           (dec/oct/hex-const-oct 1 0)
@@ -511,13 +524,15 @@
    :sllong (if (minusp value.get)
                (make-expr-unary
                  :op (c::unop-minus)
-                 :arg (expr-const
+                 :arg (make-expr-const
+                        :const
                         (c$::const-int
                           (c$::make-iconst
                             :core (c$::dec/oct/hex-const-dec (- value.get))
                             :suffix? (c$::isuffix-l (c$::lsuffix-locase-ll)))))
                  :info nil)
-             (expr-const
+             (make-expr-const
+               :const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
                                             (dec/oct/hex-const-oct 1 0)
