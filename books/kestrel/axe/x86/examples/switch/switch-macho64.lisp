@@ -42,9 +42,7 @@
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                    acl2::bvsx-of-bv-array-read-constant-array
-                   acl2::map-bvsx-constant-opener
                    bvplus-of-bv-array-read-constant-array-smt
-                   map-bvplus-val-constant-opener
                    set-rip-of-bv-array-read-split-cases
                    acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split

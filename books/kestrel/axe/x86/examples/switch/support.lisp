@@ -1,6 +1,7 @@
 (in-package "X")
 
 (include-book "kestrel/axe/x86/unroller" :dir :system) ; todo: reduce, or file all these rules
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
 
 (in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
 
@@ -229,32 +230,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; One value is fixed, the other is a list
-(defund map-bvplus-val (size val lst)
-  (if (endp lst)
-      nil
-    (cons (bvplus size val (first lst))
-          (map-bvplus-val size val (rest lst)))))
-
-(defthm unsigned-byte-listp-of-map-bvplus-val
-  (implies (natp size)
-           (unsigned-byte-listp size (map-bvplus-val size val data)))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
-
-(defthm len-of-map-bvplus-val
-  (equal (len (map-bvplus-val high low data))
-         (len data))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
-
-(def-constant-opener map-bvplus-val)
-
-(defthmd bvplus-of-nth
-  (implies (and (natp n)
-                (< n (len data)))
-           (equal (bvplus size val (nth n data))
-                  (nth n (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable map-bvplus-val (:I nth)))))
-
 (defthm bvplus-of-bv-array-read-constant-array
   (implies (and (syntaxp (and (quotep data)
                               (quotep val)
@@ -265,7 +240,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
 
 (defthm bvplus-of-bv-array-read-constant-array-smt
   (implies (and (syntaxp (and (quotep data)
@@ -277,7 +252,7 @@
                 (equal len (len data)))
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
 
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
