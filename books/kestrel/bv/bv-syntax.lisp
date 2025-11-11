@@ -181,10 +181,16 @@
                               (natp (unquote quoted-width))
                               (pseudo-termp term)
                               (member-eq operators '(:all :non-arithmetic)))))
+  ;; (if (not (member-eq operators '(:all :non-arithmetic)))
+  ;;     (prog2$ (cw "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators) ; calls to (er hard? ...) seem to be ignored, so we use CW
+  ;;             (exit 1))
+  ;; (er hard? 'term-should-be-trimmed "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators)
   (if (not (quotep quoted-width)) ;check natp or posp?
       nil                         ;; warning or error?
     (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed-helper width term operators))))
+      (term-should-be-trimmed-helper width term operators)))
+  ;; )
+  )
 
 ;; WARNING: Keep this in sync with the rules in trim-elim-rules-non-bv.lisp.
 (defconst *functions-convertible-to-bv*

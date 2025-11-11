@@ -34,7 +34,7 @@
 ;BOZO lots more rules like this
 
 (defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed size x ':all))
+  (implies (and (syntaxp (term-should-be-trimmed size x :all))
                 (natp size))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
