@@ -342,6 +342,7 @@
     ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
+    acl2::bv-array-read-chunk-little-trim-index-axe
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes

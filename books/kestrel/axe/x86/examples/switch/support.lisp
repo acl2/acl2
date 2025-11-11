@@ -309,15 +309,3 @@
            (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
                   (bv-array-read-chunk-little count size len index array)))
   :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))
-
-(defthm acl2::bv-array-read-chunk-little-of-bvchop-trim-index
-  (implies (and (axe-binding-hyp (equal numbits (ceiling-of-lg len)))
-                (axe-syntaxp (term-should-be-trimmed-axe numbits index 'acl2::all ; todo: use :all
-                                                         dag-array))
-                (equal len (len array))
-                (natp index)
-                (natp size))
-           (equal (bv-array-read-chunk-little count size len index array)
-                  (bv-array-read-chunk-little count size len (trim numbits index) array)))
-  :hints (("Goal" :use (bv-array-read-chunk-little-of-bvchop-arg4)
-                  :in-theory (e/d (trim) (bv-array-read-chunk-little-of-bvchop-arg4)))))

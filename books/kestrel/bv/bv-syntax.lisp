@@ -147,6 +147,8 @@
         (bind-var-to-bv-term-size var-name term)
       nil)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund term-should-be-trimmed-helper (width term operators)
   (declare (xargs :guard (and (natp width)
                               (pseudo-termp term)
@@ -175,16 +177,18 @@
 ;TODO: Does this functionality already exist?
 ;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
-;; not used much
-(defund term-should-be-trimmed (quoted-width term operators)
-  (declare (xargs :guard (and (myquotep quoted-width)
-                              (natp (unquote quoted-width))
+;; not used much (yet)
+;; todo: rename to term-should-be-trimmedp
+(defund term-should-be-trimmed (width-term term operators)
+  (declare (xargs :guard (and (pseudo-termp width-term)
                               (pseudo-termp term)
                               (member-eq operators '(:all :non-arithmetic)))))
-  (if (not (quotep quoted-width)) ;check natp or posp?
-      nil                         ;; warning or error?
-    (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed-helper width term operators))))
+  (and (myquotep width-term) ; width-term must be a quoted constant
+       (let ((width (unquote width-term)))
+         (and (natp width)
+              (term-should-be-trimmed-helper width term operators)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; WARNING: Keep this in sync with the rules in trim-elim-rules-non-bv.lisp.
 (defconst *functions-convertible-to-bv*
