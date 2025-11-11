@@ -200,6 +200,7 @@
                            prune-precise prune-approx tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
                            inputs-disjoint-from
+                           assume-bytes
                            stack-slots
                            existing-stack-slots
                            position-independentp
@@ -231,6 +232,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
@@ -290,6 +292,7 @@
           extra-assumptions
           nil ;suppress-assumptions
           inputs-disjoint-from
+          assume-bytes
           stack-slots
           existing-stack-slots
           position-independentp
@@ -435,7 +438,7 @@
                          normalize-xors count-hits print max-printed-term-size monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
-                         max-conflicts inputs-disjoint-from stack-slots existing-stack-slots
+                         max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots
                          position-independent
                          expected-result
                          whole-form
@@ -467,6 +470,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
@@ -502,7 +506,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -553,6 +557,7 @@
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
                          (expected-result ':pass)
                          (inputs-disjoint-from ':code)
+                         (assume-bytes ':all)
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
@@ -574,7 +579,7 @@
                                              ',print
                                              ',max-printed-term-size
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)))
+                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,6 +593,7 @@
                               print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                               tactics max-conflicts
                               inputs-disjoint-from
+                              assume-bytes
                               stack-slots
                               existing-stack-slots
                               position-independentp
@@ -624,6 +630,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
@@ -642,7 +649,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -654,7 +661,7 @@
                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
+                             tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
@@ -668,7 +675,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                           expected-failures
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -702,6 +709,7 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
@@ -783,7 +791,7 @@
                                extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                                normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                               tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
+                               tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
                                state))
@@ -803,7 +811,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                           expected-failures
                           whole-form
                           state)
@@ -838,6 +846,7 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
@@ -859,7 +868,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                             expected-failures
                             state))
        ((when erp) (mv erp nil state)))
@@ -900,6 +909,7 @@
                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
                           (max-conflicts '1000000)
                           (inputs-disjoint-from ':code)
+                          (assume-bytes ':all)
                           (stack-slots ':auto)
                           (existing-stack-slots ':auto)
                           (position-independent ':auto)
@@ -924,7 +934,7 @@
                                               ',max-printed-term-size
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
                                               ',expected-failures
                                               ',whole-form
                                               state)))
@@ -939,7 +949,7 @@
                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                      normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                     tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                     tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                      expected-failures
                      whole-form
                      state)
@@ -974,6 +984,7 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
@@ -995,7 +1006,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                             expected-failures
                             state))
        ((when erp) (mv erp nil state)))
@@ -1038,6 +1049,7 @@
                      (tactics '(:rewrite :stp)) ; todo: try something with :prune
                      (max-conflicts '1000000)
                      (inputs-disjoint-from ':code)
+                     (assume-bytes ':all)
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
                      (position-independent ':auto)
@@ -1062,7 +1074,7 @@
                                          ',max-printed-term-size
                                          ,monitor ; gets evaluated
                                          ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
+                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
                                          ',expected-failures
                                          ',whole-form
                                          state)))

@@ -2557,10 +2557,19 @@
                        type
                        nil
                        (valid-table-fix table)))
-       :const (b* (((erp const type) (valid-const expr.const table ienv)))
-                (retok (expr-const const) type nil (valid-table-fix table)))
-       :string (b* (((erp type) (valid-stringlit-list expr.strings ienv)))
-                 (retok (expr-fix expr) type nil (valid-table-fix table)))
+       :const (b* (((erp const type) (valid-const expr.const table ienv))
+                   (info (make-expr-const-info :type type)))
+                (retok (make-expr-const :const const
+                                        :info info)
+                       type
+                       nil
+                       (valid-table-fix table)))
+       :string (b* (((erp type) (valid-stringlit-list expr.strings ienv))
+                    (info (make-expr-string-info :type type)))
+                 (retok (change-expr-string expr :info info)
+                        type
+                        nil
+                        (valid-table-fix table)))
        :paren (b* (((erp new-inner type types table)
                     (valid-expr expr.inner table ienv)))
                 (retok (expr-paren new-inner) type types table))
@@ -2578,8 +2587,11 @@
                      (valid-expr expr.arg1 table ienv))
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
-                    ((erp type) (valid-arrsub expr type-arg1 type-arg2)))
-                 (retok (make-expr-arrsub :arg1 new-arg1 :arg2 new-arg2)
+                    ((erp type) (valid-arrsub expr type-arg1 type-arg2))
+                    (info (make-expr-arrsub-info :type type)))
+                 (retok (make-expr-arrsub :arg1 new-arg1
+                                          :arg2 new-arg2
+                                          :info info)
                         type
                         (set::union types-arg1 types-arg2)
                         table))
@@ -2587,8 +2599,11 @@
                       (valid-expr expr.fun table ienv))
                      ((erp new-args types-arg rtypes-arg table)
                       (valid-expr-list expr.args table ienv))
-                     ((erp type) (valid-funcall expr type-fun types-arg ienv)))
-                  (retok (make-expr-funcall :fun new-fun :args new-args)
+                     ((erp type) (valid-funcall expr type-fun types-arg ienv))
+                     (info (make-expr-funcall-info :type type)))
+                  (retok (make-expr-funcall :fun new-fun
+                                            :args new-args
+                                            :info info)
                          type
                          (set::union types-fun rtypes-arg)
                          table))
@@ -3781,12 +3796,14 @@
        ((and (type-case target-type :array)
              (initer-case initer :single)
              (expr-case (initer-single->expr initer) :string))
-        (b* (((erp &) (valid-stringlit-list
-                       (expr-string->strings (initer-single->expr initer))
-                       ienv)))
+        (b* (((erp type) (valid-stringlit-list
+                           (expr-string->strings (initer-single->expr initer))
+                           ienv))
+             (info (make-expr-string-info :type type)))
           (retok (initer-single
-                  (expr-string
-                   (expr-string->strings (initer-single->expr initer))))
+                  (make-expr-string
+                    :strings (expr-string->strings (initer-single->expr initer))
+                    :info info))
                  nil
                  (valid-table-fix table))))
        ((and (or (type-aggregatep target-type)

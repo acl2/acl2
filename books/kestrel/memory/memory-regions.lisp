@@ -16,18 +16,21 @@
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 
 ;; Recognizes a representation of a memory region, of the form:
-;; (<len> <addr> <bytes>)
+;; (<len> <addr> <bytes> <flags>)
 ;; todo: consider adding support for zero-fill (or partial zero-fill) regions
 (defund memory-regionp (reg)
   (declare (xargs :guard t))
   (and (true-listp reg)
-       (= 3 (len reg))
+       (= 4 (len reg))
        (natp (first reg)) ; length
        ;; The ultimate address might be relative (a term representing some base-var plus the addr):
        (natp (second reg)) ; addr (agnostic on the size of the memory space, for now)
        (acl2::byte-listp (third reg))
        ;; the length must be correct, at least for now:
-       (= (first reg) (len (third reg)))))
+       (= (first reg) (len (third reg)))
+       ;; the flags:
+       (keyword-listp (fourth reg))
+       (subsetp-eq (fourth reg) '(:r :w :x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
