@@ -60,6 +60,8 @@
 (defund mach-o-commandp (cmd)
   (declare (xargs :guard t))
   (and (symbol-alistp cmd)
+       ;; todo: more
+       (keyword-listp (lookup-eq :initprot cmd))
        (mach-o-section-listp (lookup-equal :sections cmd))))
 
 (local
@@ -509,6 +511,13 @@
              (memsz (lookup-eq :vmsize command))
              (offset (lookup-eq :fileoff command))
              (filesz (lookup-eq :filesize command))
+             (initprot (lookup-eq :initprot command)) ; we don't use the maxprot
+             (readable   (member-eq :VM_PROT_READ initprot))
+             (writeable  (member-eq :VM_PROT_WRITE initprot))
+             (executable (member-eq :VM_PROT_EXECUTE initprot))
+             (nice-flags (append (if readable '(:r) nil)
+                                 (if writeable '(:w) nil)
+                                 (if executable '(:x) nil)))
              ((when (not (and (natp offset)
                               (natp filesz)
                               (natp vaddr)
@@ -532,7 +541,7 @@
                       bytes)))
           (macho64-regions-to-load-aux (rest commands)
                                        all-bytes-len all-bytes
-                                       (cons (list memsz vaddr bytes)
+                                       (cons (list memsz vaddr bytes nice-flags)
                                              acc)))))))
 
 (local
