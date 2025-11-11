@@ -509,7 +509,7 @@
 (defthm bv-array-read-chunk-little-trim-index-axe
   (implies (and (syntaxp (quotep array-len))
                 (axe-binding-hyp (equal desired-index-size (ceiling-of-lg array-len))) ; binding hyp, desired-index-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-index-size index 'all dag-array))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-index-size index :all dag-array))
                 (natp index))
            (equal (bv-array-read-chunk-little element-count element-size array-len index array)
                   (bv-array-read-chunk-little element-count element-size array-len (trim desired-index-size index) array)))
