@@ -121,8 +121,7 @@
                    set-rip-of-bv-array-read-split-cases
                    acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split
-                   x86isa::x86-fetch-decode-execute-of-if
-                   acl2::bv-array-read-chunk-little-of-bvchop-trim-index)
+                   x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil
     :inputs ((cmd u32)

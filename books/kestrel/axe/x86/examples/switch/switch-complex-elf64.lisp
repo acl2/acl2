@@ -125,7 +125,6 @@
                    acl2::bv-array-read-trim-index-axe
                    acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
-                   acl2::bv-array-read-chunk-little-of-bvchop-trim-index
                    acl2::bv-array-read-chunk-little-when-multiple-8-8-smt
                    ;;bv-array-read-chunk-little-when-multiple-8-336
                    acl2::packbvs-little-constant-opener
