@@ -183,10 +183,18 @@
   (declare (xargs :guard (and (pseudo-termp width-term)
                               (pseudo-termp term)
                               (member-eq operators '(:all :non-arithmetic)))))
-  (and (myquotep width-term) ; width-term must be a quoted constant
-       (let ((width (unquote width-term)))
-         (and (natp width)
-              (term-should-be-trimmed-helper width term operators)))))
+
+  ;; (if (not (member-eq operators '(:all :non-arithmetic)))
+  ;;     (prog2$ (cw "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators) ; calls to (er hard? ...) seem to be ignored, so we use CW
+  ;;             (exit 1))
+  ;; (er hard? 'term-should-be-trimmed "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators)
+  (if (not (quotep width-term)) ;check natp or posp?
+      nil                         ;; warning or error?
+    (let ((width (unquote width-term)))
+      (and (natp width)
+           (term-should-be-trimmed-helper width term operators))))
+  ;; )
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
