@@ -125,7 +125,7 @@
                    acl2::bv-array-read-cases-opener
                    set-rip-of-bvif-split
                    x86isa::x86-fetch-decode-execute-of-if
-                   acl2::bv-array-read-chunk-little-of-bvchop-trim-index)
+                   )
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil
 ; this doesn't seem to change nything:
