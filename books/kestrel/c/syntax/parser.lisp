@@ -3805,21 +3805,21 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-keywordp token "true") ; C23
-        (retok (expr-const
-                (const-int
-                 (make-iconst :core (dec/oct/hex-const-dec 1)
-                              :suffix? nil
-                              :info nil)))
+        (retok (make-expr-const
+                 :const (const-int
+                          (make-iconst :core (dec/oct/hex-const-dec 1)
+                                       :suffix? nil
+                                       :info nil)))
                span
                parstate))
        ((token-keywordp token "false") ; C23
-        (retok (expr-const
-                (const-int
-                 (make-iconst :core (make-dec/oct/hex-const-oct
-                                     :leading-zeros 1
-                                     :value 0)
-                              :suffix? nil
-                              :info nil)))
+        (retok (make-expr-const
+                 :const (const-int
+                          (make-iconst :core (make-dec/oct/hex-const-oct
+                                               :leading-zeros 1
+                                               :value 0)
+                                       :suffix? nil
+                                       :info nil)))
                span
                parstate))
        ((and token (token-case token :ident)) ; identifier
@@ -3828,11 +3828,14 @@
                span
                parstate))
        ((and token (token-case token :const)) ; constant
-        (retok (expr-const (token-const->unwrap token)) span parstate))
+        (retok (make-expr-const :const (token-const->unwrap token))
+               span
+               parstate))
        ((and token (token-case token :string)) ; stringlit
         (b* (((erp strings last-span parstate) ; stringlit stringlits
               (parse-*-stringlit parstate)))
-          (retok (expr-string (cons (token-string->unwrap token) strings))
+          (retok (make-expr-string
+                   :strings (cons (token-string->unwrap token) strings))
                  (if strings (span-join span last-span) span)
                  parstate)))
        ((token-punctuatorp token "(") ; (

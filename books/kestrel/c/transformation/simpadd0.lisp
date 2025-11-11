@@ -265,7 +265,7 @@
       (expr-case
        expr
        :ident (xeq-expr-ident expr.ident expr.info gin)
-       :const (xeq-expr-const expr.const gin)
+       :const (xeq-expr-const expr.const expr.info gin)
        :string (mv (expr-fix expr) (gout-no-thm gin))
        :paren
        (b* (((mv new-inner gout) (simpadd0-expr expr.inner gin)))
@@ -288,7 +288,8 @@
              (simpadd0-expr expr.arg2 gin))
             (gin (gin-update gin gout-arg2)))
          (mv (make-expr-arrsub :arg1 new-arg1
-                               :arg2 new-arg2)
+                               :arg2 new-arg2
+                               :info expr.info)
              (gout-no-thm gin)))
        :funcall
        (b* (((mv new-fun (gout gout-fun))
@@ -298,7 +299,8 @@
              (simpadd0-expr-list expr.args gin))
             (gin (gin-update gin gout-args)))
          (mv (make-expr-funcall :fun new-fun
-                                :args new-args)
+                                :args new-args
+                                :info expr.info)
              (gout-no-thm gin)))
        :member
        (b* (((mv new-arg (gout gout-arg))
