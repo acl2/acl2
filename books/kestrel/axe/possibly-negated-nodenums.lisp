@@ -116,8 +116,8 @@
                   (possibly-negated-nodenumsp items))))
 
 (defthm possibly-negated-nodenumsp-of-intersection-equal
-  (implies (and (possibly-negated-nodenumsp context1)
-                (possibly-negated-nodenumsp context2))
+  (implies (or (possibly-negated-nodenumsp context1)
+               (possibly-negated-nodenumsp context2))
            (possibly-negated-nodenumsp (intersection-equal context1 context2))))
 
 (defthm possibly-negated-nodenumsp-of-add-to-set-equal
