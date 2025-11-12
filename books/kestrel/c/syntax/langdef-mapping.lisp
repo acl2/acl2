@@ -826,6 +826,15 @@
              :in-theory (enable expr-pure-formalp
                                 expr-list-pure-formalp))))
 
+  (defret ldm-expr-ok-when-expr-formalp
+    (not erp)
+    :hyp (expr-formalp expr)
+    :fn ldm-expr
+    :hints (("Goal"
+             :in-theory (enable expr-formalp
+                                check-expr-ident)
+             :expand (ldm-expr expr))))
+
   (defret ldm-expr-ok-when-expr-call-formalp
     (not erp)
     :hyp (expr-call-formalp expr)
@@ -1654,6 +1663,7 @@
                                 comp-stmt-formalp
                                 block-item-formalp
                                 block-item-list-formalp
+                                ldm-expr-option
                                 expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

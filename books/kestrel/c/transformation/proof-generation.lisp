@@ -2284,11 +2284,7 @@
      Note that the expression is present in the old statement
      iff it is present in the new statement;
      also note that, if there is no expression,
-     old and new statements cannot differ.
-     If the expression is present,
-     the theorem is proved via two general ones proved below;
-     if the expression is absent,
-     the theorem is proved via another general one proved below."))
+     old and new statements are syntactically equal."))
   (b* (((gin gin) gin)
        (stmt (make-stmt-return :expr? expr? :info info))
        (stmt-new (make-stmt-return :expr? expr?-new :info info))
@@ -2300,50 +2296,56 @@
                expr? expr?-new)
         (mv stmt-new (irr-gout)))
        ((unless (or (not expr?)
-                    (and expr?-thm-name
-                         (expr-purep expr?))))
+                    expr?-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
-       (hints
-        (if expr?
-            `(("Goal"
-               :in-theory '((:e set::insert)
-                            (:e c::stmt-kind)
-                            (:e c::stmt-return)
-                            (:e c::stmt-return->value)
-                            (:e c::expr-purep)
-                            (:e c::expr-kind)
-                            (:e c::expr-binary->op)
-                            (:e c::binop-kind)
-                            (:e c::type-nonchar-integerp)
-                            (:e c::expr-pure-limit)
-                            (:t c::exec-expr-pure)
-                            stmt-compustate-vars)
-               :use (,expr?-thm-name
-                     (:instance
-                      stmt-return-value-congruence
-                      (old-expr ',old-expr?)
-                      (new-expr ',new-expr?))
-                     (:instance
-                      stmt-return-errors
-                      (expr ',old-expr?)
-                      (fenv old-fenv)))))
-          `(("Goal"
-             :in-theory '((:e c::stmt-return)
-                          (:e c::type-void)
-                          (:e set::insert)
-                          stmt-compustate-vars)
-             :use (stmt-return-novalue-congruence)))))
+       ((mv lifted-thm-name thm-index events)
+        (if (and expr?
+                 (expr-purep expr?)
+                 (not (expr-case expr? :ident))
+                 (not (expr-case expr? :const))
+                 (not (expr-case expr? :unary)))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm expr?
+                                      expr?-new
+                                      expr?-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
+       (hints (if expr?
+                  `(("Goal"
+                     :in-theory '((:e set::insert)
+                                  (:e c::stmt-kind)
+                                  (:e c::stmt-return)
+                                  (:e c::stmt-return->value)
+                                  (:e c::type-nonchar-integerp)
+                                  stmt-compustate-vars)
+                     :use ((:instance ,(or lifted-thm-name expr?-thm-name)
+                                      (limit (1- limit)))
+                           (:instance stmt-return-value-congruence
+                                      (old-expr ',old-expr?)
+                                      (new-expr ',new-expr?))
+                           (:instance stmt-return-errors
+                                      (expr ',old-expr?)
+                                      (fenv old-fenv)))))
+                `(("Goal"
+                   :in-theory '((:e c::stmt-return)
+                                (:e c::type-void)
+                                (:e set::insert)
+                                stmt-compustate-vars)
+                   :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      gin.thm-index
+                      thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
