@@ -129,8 +129,8 @@
      but we plan to generalize this.")
    (xdoc::p
     "The same hypothesis on pure expression limits is also in
-     @('initer-single-pure-congruence') and @('stmt-return-value-congruence'),
-     because they also involve lifting from pure expressions."))
+     @('initer-single-pure-congruence'),
+     because it also involves lifting from pure expressions."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -755,39 +755,34 @@
   (defruled stmt-return-value-congruence
     (b* ((old (c::stmt-return old-expr))
          (new (c::stmt-return new-expr))
-         (old-expr-result (c::exec-expr-pure old-expr compst))
-         (new-expr-result (c::exec-expr-pure new-expr compst))
-         (old-expr-value (c::expr-value->value old-expr-result))
-         (new-expr-value (c::expr-value->value new-expr-result))
-         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
-         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit))
-         (type (c::type-of-value old-expr-value)))
+         ((mv old-expr-eval old-expr-compst)
+          (c::exec-expr old-expr compst old-fenv (1- limit)))
+         ((mv new-expr-eval new-expr-compst)
+          (c::exec-expr new-expr compst new-fenv (1- limit)))
+         (old-expr-val (c::expr-value->value old-expr-eval))
+         (new-expr-val (c::expr-value->value new-expr-eval))
+         ((mv old-sval old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-sval new-compst) (c::exec-stmt new compst new-fenv limit))
+         (type (c::type-of-value old-expr-val)))
       (implies (and old-expr
                     new-expr
-                    (c::expr-purep old-expr)
-                    (c::expr-purep new-expr)
-                    (<= (c::expr-pure-limit new-expr)
-                        (c::expr-pure-limit old-expr))
-                    (not (c::errorp old-result))
-                    (not (c::errorp new-expr-result))
-                    (iff old-expr-result new-expr-result)
-                    (equal old-expr-value new-expr-value)
+                    (not (c::errorp old-sval))
+                    (not (c::errorp new-expr-eval))
+                    (iff old-expr-eval new-expr-eval)
+                    (equal old-expr-val new-expr-val)
+                    (equal old-expr-compst new-expr-compst)
                     (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-result new-result)
+               (and (not (c::errorp new-sval))
+                    (equal old-sval new-sval)
                     (equal old-compst new-compst)
-                    (equal (c::stmt-value-kind old-result) :return)
-                    (c::stmt-value-return->value? old-result)
-                    (set::in (c::type-option-of-stmt-value old-result)
+                    (equal (c::stmt-value-kind old-sval) :return)
+                    (c::stmt-value-return->value? old-sval)
+                    (set::in (c::type-option-of-stmt-value old-sval)
                              (set::insert type nil)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
-    :enable (c::exec-expr-to-exec-expr-pure
-             c::pure-limit-bound-when-exec-expr-not-error
-             nfix
-             c::type-of-value
-             c::apconvert-expr-value-when-not-array
-             c::type-nonchar-integerp
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp
              c::type-option-of-stmt-value
              c::type-of-value-option
              c::value-option-some->val))
@@ -1342,15 +1337,14 @@
 
   (defruled stmt-return-errors
     (implies (and expr
-                  (c::expr-purep expr)
-                  (c::errorp (c::exec-expr-pure expr compst)))
+                  (c::errorp
+                   (mv-nth 0 (c::exec-expr expr compst fenv (1- limit)))))
              (c::errorp
               (mv-nth 0 (c::exec-stmt (c::stmt-return expr)
                                       compst
                                       fenv
                                       limit))))
-    :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable expr-pure-errors)
+    :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
