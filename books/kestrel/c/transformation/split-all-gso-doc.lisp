@@ -21,7 +21,7 @@
   (xdoc::topstring
     (xdoc::evmac-section-intro
       (xdoc::p
-        "This is a meta transformation which repeatedly applies @(see splitgso)
+        "This is a meta transformation which repeatedly applies @(see split-gso)
          to any global struct object it can."))
    (xdoc::evmac-section-form
      (xdoc::codeblock

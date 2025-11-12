@@ -342,12 +342,14 @@
            :postinc nil
            :postdec nil
            :sizeof nil
+           :alignof nil
            :real nil
            :imag nil)
    :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
+   :alignof-ambig (impossible)
    :cast (and (tyname-formalp expr.type)
               (expr-pure-formalp expr.arg))
    :binary (and (member-eq (binop-kind expr.op)
@@ -476,29 +478,25 @@
    :complit nil
    :unary (unop-case
            expr.op
-           :address (and (expr-formalp expr.arg)
-                         (expr-purep expr.arg))
-           :indir (and (expr-pure-formalp expr.arg)
-                       (expr-purep expr.arg))
-           :plus (and (expr-formalp expr.arg)
-                      (expr-purep expr.arg))
-           :minus (and (expr-formalp expr.arg)
-                       (expr-purep expr.arg))
-           :bitnot (and (expr-formalp expr.arg)
-                        (expr-purep expr.arg))
-           :lognot (and (expr-formalp expr.arg)
-                        (expr-purep expr.arg))
+           :address (expr-formalp expr.arg)
+           :indir (expr-formalp expr.arg)
+           :plus (expr-formalp expr.arg)
+           :minus (expr-formalp expr.arg)
+           :bitnot (expr-formalp expr.arg)
+           :lognot (expr-formalp expr.arg)
            :preinc nil
            :predec nil
            :postinc nil
            :postdec nil
            :sizeof nil
+           :alignof nil
            :real nil
            :imag nil)
    :label-addr nil
    :sizeof nil
    :sizeof-ambig (impossible)
    :alignof nil
+   :alignof-ambig (impossible)
    :cast (and (tyname-formalp expr.type)
               (expr-formalp expr.arg)
               (expr-purep expr.arg))

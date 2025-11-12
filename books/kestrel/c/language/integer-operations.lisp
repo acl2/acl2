@@ -20,10 +20,7 @@
 (local (include-book "kestrel/bv/logxor" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,7 +53,7 @@
   :guard-hints (("Goal" :in-theory (enable value-integerp
                                            value-signed-integerp
                                            value-unsigned-integerp)))
-  :hooks (:fix)
+
   ///
 
   (defrule value-integer->get-bounds
@@ -112,7 +109,7 @@
                                            ullong-integerp-alt-def
                                            sllong-integerp-alt-def
                                            type-nonchar-integerp)))
-  :hooks (:fix)
+
   ///
 
   (defrule type-of-value-of-value-integer
@@ -188,8 +185,7 @@
      an integer is treated as a logical boolean:
      false if 0, true if not 0.
      This is captured by this ACL2 function."))
-  (not (equal (value-integer->get val) 0))
-  :hooks (:fix))
+  (not (equal (value-integer->get val) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +244,7 @@
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range (value-fix val) (type-fix type))))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
-  :hooks (:fix)
+
   ///
 
   (defret type-of-value-of-convert-integer-value
@@ -282,6 +278,9 @@
   (defruled valuep-of-convert-integer-value-to-unsigned
     (implies (type-unsigned-integerp type)
              (valuep (convert-integer-value val type))))
+
+  (local (in-theory (disable (:e integer-type-max)
+                             (:e integer-type-min))))
 
   (defruled valuep-of-convert-integer-value-from-schar-to-sint
     (implies (value-case val :schar)
@@ -491,8 +490,6 @@
               valuep-of-convert-integer-value-from-ushort-to-sint)
      :disable ((:e type-sint))))
 
-  :hooks (:fix)
-
   ///
 
   (defruled type-of-value-of-promote-value
@@ -606,12 +603,11 @@
               valuep-of-convert-integer-value-from-ushort-to-sllong
               valuep-of-convert-integer-value-from-uint-to-slong
               valuep-of-convert-integer-value-from-uint-to-sllong
-              valuep-of-convert-integer-value-from-ulong-to-sllong)
+              valuep-of-convert-integer-value-from-ulong-to-sllong
+              (:e tau-system))
      :disable ((:e type-sint)
                (:e type-slong)
                (:e type-sllong))))
-
-  :hooks (:fix)
 
   ///
 
@@ -730,7 +726,6 @@
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range mathint (type-fix type))))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
-  :hooks (:fix)
 
   ///
 
@@ -759,7 +754,6 @@
      We introduce this function mainly for uniformity with other operations,
      despite it being trivial in a way."))
   (value-fix val)
-  :hooks (:fix)
 
   ///
 
@@ -790,7 +784,6 @@
        (resval (result-integer-value result (type-of-value val)))
        ((when (errorp resval)) (error (list :undefined-minus (value-fix val)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -859,7 +852,6 @@
        (result (lognot mathint))
        (resval (result-integer-value result (type-of-value val))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -928,7 +920,6 @@
   (if (equal (value-integer->get val) 0)
       (value-sint 1)
     (value-sint 0))
-  :hooks (:fix)
 
   ///
 
@@ -966,7 +957,6 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -1012,7 +1002,6 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -1060,7 +1049,6 @@
                                             (value-fix val2)))))
     resval)
   :guard-hints (("Goal" :in-theory (enable rem)))
-  :hooks (:fix)
 
   ///
 
@@ -1100,7 +1088,6 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -1140,7 +1127,6 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -1192,7 +1178,6 @@
                                             (value-fix val2)))))
     resval)
   :guard-hints (("Goal" :in-theory (enable integer-range-p)))
-  :hooks (:fix)
 
   ///
 
@@ -1243,7 +1228,6 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix)
 
   ///
 
@@ -1280,7 +1264,6 @@
     (if (< mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1315,7 +1298,6 @@
     (if (> mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1350,7 +1332,6 @@
     (if (<= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1385,7 +1366,6 @@
     (if (>= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1420,7 +1400,6 @@
     (if (= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1455,7 +1434,6 @@
     (if (/= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix)
 
   ///
 
@@ -1524,7 +1502,6 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix)
 
   ///
 
@@ -1584,7 +1561,6 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix)
 
   ///
 
@@ -1644,7 +1620,6 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix)
 
   ///
 

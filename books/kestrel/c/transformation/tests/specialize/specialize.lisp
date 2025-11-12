@@ -28,7 +28,8 @@
               *new*
               :target "foo"
               :param "y"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 1)))))
@@ -57,7 +58,8 @@
               *new*
               :target "foo"
               :param "z"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 42)))))

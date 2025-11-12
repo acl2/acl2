@@ -54,7 +54,8 @@
 (include-book "bvnot-list")
 (include-book "bvchop-list")
 (include-book "getbit-list")
-(include-book "map-slice") ; todo: call this slice-list?
+(include-book "map-slice")
+(include-book "map-bvsx")
 
 (include-book "width-of-widest-int")
 

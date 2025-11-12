@@ -13,10 +13,7 @@
 
 (include-book "values")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,8 +29,9 @@
   :returns (ptr valuep)
   :short "Null pointer for a given referenced type."
   (make-value-pointer :core (pointer-null) :reftype reftype)
-  :hooks (:fix)
+
   ///
+
   (defret value-kind-of-value-pointer-null
     (equal (value-kind ptr) :pointer)))
 
@@ -44,7 +42,7 @@
   :returns (yes/no booleanp)
   :short "Check if a pointer is null."
   (pointer-case (value-pointer->core ptr) :null)
-  :hooks (:fix)
+
   ///
 
   (defrule value-pointer-nullp-of-value-pointer
@@ -57,8 +55,9 @@
   :returns (ptr valuep)
   :short "Danling pointer for a given referenced type."
   (make-value-pointer :core (pointer-dangling) :reftype reftype)
-  :hooks (:fix)
+
   ///
+
   (defret value-kind-of-value-pointer-dangling
     (equal (value-kind ptr) :pointer)))
 
@@ -69,7 +68,7 @@
   :returns (yes/no booleanp)
   :short "Check if a pointer is dangling."
   (pointer-case (value-pointer->core ptr) :dangling)
-  :hooks (:fix)
+
   ///
 
   (defrule value-pointer-danglingp-of-value-pointer
@@ -96,7 +95,7 @@
      even though they cannot be dereferenced.
      Perhaps we might change the name of this predicate in the future."))
   (pointer-case (value-pointer->core ptr) :valid)
-  :hooks (:fix)
+
   ///
 
   (defrule value-pointer-validp-of-value-pointer
@@ -112,7 +111,7 @@
   :short "Object designator of a valid pointer."
   (pointer-valid->get (value-pointer->core ptr))
   :guard-hints (("Goal" :in-theory (enable value-pointer-validp)))
-  :hooks (:fix)
+
   ///
 
   (defrule value-pointer->designator-of-value-pointer
@@ -133,8 +132,7 @@
      a pointer is treated as a logical boolean:
      false if null, true if not null.
      This is captured by this ACL2 function."))
-  (not (value-pointer-nullp val))
-  :hooks (:fix))
+  (not (value-pointer-nullp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,7 +149,6 @@
   (if (value-pointer-nullp val)
       (value-sint 1)
     (value-sint 0))
-  :hooks (:fix)
 
   ///
 

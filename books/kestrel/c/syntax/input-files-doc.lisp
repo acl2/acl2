@@ -147,6 +147,9 @@
        If @(':preprocess-args') is an omap,
        then we provide the list of arguments associated with the file name
        (again, after the @('-E') argument).
+       A file in the @(':files') list corresponds to a list of arguments
+       in the map only when the file name matches the map key exactly
+       (i.e., without prepending the @(':path')).
        If the file name is not in the key set,
        only the @('-E') argument is provided.
        If @(':preprocess-args') is @('nil'),

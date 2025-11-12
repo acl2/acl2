@@ -27,10 +27,7 @@
 ;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
 (local (include-book "std/lists/update-nth" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +127,7 @@
          (1- (expt 2 ,(if signedp
                           `(1- (,<type>-bits))
                         `(,<type>-bits))))
+
          ///
 
          (in-theory (disable (:e ,<type>-max)))
@@ -139,9 +137,9 @@
            :rule-classes :linear
            :enable ,<type>-max
            :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                 (m ,(if signedp (1- minbits) minbits))
-                 (n ,(if signedp `(1- (,<type>-bits)) `(,<type>-bits)))
-                 (x 2))))
+                           (m ,(if signedp (1- minbits) minbits))
+                           (n ,(if signedp `(1- (,<type>-bits)) `(,<type>-bits)))
+                           (x 2))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,6 +150,7 @@
               :short ,(str::cat
                        "Minimum ACL2 integer value of " type-string ".")
               (- (expt 2 (1- (,<type>-bits))))
+
               ///
 
               (in-theory (disable (:e ,<type>-min)))
@@ -161,9 +160,9 @@
                 :rule-classes :linear
                 :enable ,<type>-min
                 :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                      (m ,(1- minbits))
-                      (n (1- (,<type>-bits)))
-                      (x 2))))))
+                                (m ,(1- minbits))
+                                (n (1- (,<type>-bits)))
+                                (x 2))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,9 +178,7 @@
                   ,<type>-max
                   ,@(and signedp `(,<type>-min))))))
 
-  :guard-hints (("Goal" :in-theory (enable string-listp)))
-
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable string-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,13 +189,13 @@
           for ranges of integer types."
   (cond ((endp types) nil)
         (t (cons (def-integer-range (car types))
-                 (def-integer-range-loop (cdr types)))))
-  :hooks (:fix))
+                 (def-integer-range-loop (cdr types))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(encapsulate ()
+ `(encapsulate
+    ()
     (local (in-theory (enable nfix
                               not
                               integer-range-p
@@ -710,8 +707,7 @@
         ((type-case type :sllong) (sllong-min))
         ((type-case type :ullong) 0)
         (t (prog2$ (impossible) 0)))
-  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -736,8 +732,7 @@
         ((type-case type :sllong) (sllong-max))
         ((type-case type :ullong) (ullong-max))
         (t (prog2$ (impossible) 0)))
-  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -753,7 +748,7 @@
      in anticipation for extending it to those two types."))
   (and (<= (integer-type-min type) (ifix mathint))
        (<= (ifix mathint) (integer-type-max type)))
-  :hooks (:fix)
+
   ///
 
   (defruled integer-type-rangep-to-signed-byte-p

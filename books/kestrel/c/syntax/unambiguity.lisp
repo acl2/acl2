@@ -89,6 +89,7 @@
   :combine and
   :override
   ((expr :sizeof-ambig nil)
+   (expr :alignof-ambig nil)
    (expr :cast/call-ambig nil)
    (expr :cast/mul-ambig nil)
    (expr :cast/add-ambig nil)
@@ -234,6 +235,12 @@
     :rule-classes :forward-chaining
     :enable expr-unambp)
 
+  (defruled expr-not-alignof-when-unambp
+    (implies (expr-unambp expr)
+             (not (equal (expr-kind expr) :alignof-ambig)))
+    :rule-classes :forward-chaining
+    :enable expr-unambp)
+
   (defruled expr-not-cast/call-ambig-when-unambp
     (implies (expr-unambp expr)
              (not (equal (expr-kind expr) :cast/call-ambig)))
@@ -345,6 +352,7 @@
                     stmt-unambp-of-when-asm
                     extdecl-unambp-when-not-fundef/decl
                     expr-not-sizeof-when-unambp
+                    expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp
                     expr-not-cast/mul-ambig-when-unambp
                     expr-not-cast/add-ambig-when-unambp

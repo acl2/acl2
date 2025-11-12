@@ -284,6 +284,13 @@
          (filesz (lookup-eq :filesz program-header-table-entry))
          (vaddr (lookup-eq :vaddr program-header-table-entry)) ; we don't use the paddr for anything
          (memsz (lookup-eq :memsz program-header-table-entry)) ; todo: do anything with flags or align?
+         (flags (lookup-eq :flags program-header-table-entry))
+         (readable   (member-eq :pf_r flags))
+         (writeable  (member-eq :pf_w flags))
+         (executable (member-eq :pf_x flags))
+         (nice-flags (append (if readable '(:r) nil)
+                             (if writeable '(:w) nil)
+                             (if executable '(:x) nil)))
          ((when (not (and (natp offset)
                           (natp filesz)
                           (natp vaddr)
@@ -293,6 +300,7 @@
           (mv :bad-program-header-table-entry-value nil))
          (last-byte-num (+ -1 offset filesz))
          ((when (not (< last-byte-num all-bytes-len)))
+          (cw ": Not enough bytes for region.  last-byte-num: ~x0.  all-bytes-len: ~x1." last-byte-num all-bytes-len)
           (mv :not-enough-bytes nil))
          ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
          (numzeros (- memsz filesz))
@@ -304,10 +312,11 @@
          ;; ((when (not (= memsz filesz))) ; todo
          ;;  (cw "Warning: filesz is ~x0 but memsz is ~x1.~%" filesz memsz)
          ;;  (mv :filesz-memsz-mismatch nil))
+         (- (cw "Loadable segment at ~x0 of size ~x1 (flags: ~x2).~%" vaddr memsz flags))
          )
       (elf64-regions-to-load-aux (rest program-header-table)
                                  all-bytes-len all-bytes
-                                 (cons (list memsz vaddr bytes)
+                                 (cons (list memsz vaddr bytes nice-flags)
                                        acc)))))
 
 (local

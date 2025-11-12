@@ -90,7 +90,7 @@ public class ABNFDeepGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseABNFCore";
         Acl2Value input =
-            getInputFromFile("../../../abnf/notation/core-rules.abnf");
+            getInputFromFile("../../../../projects/abnf/notation/core-rules.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -99,7 +99,7 @@ public class ABNFDeepGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseABNFSyntax";
         Acl2Value input =
-            getInputFromFile("../../../abnf/notation/concrete-syntax-rules.abnf");
+            getInputFromFile("../../../../projects/abnf/notation/concrete-syntax-rules.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -107,7 +107,7 @@ public class ABNFDeepGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseURI";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/uri.abnf");
+        Acl2Value input = getInputFromFile("../../../../projects/abnf/examples/uri.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -115,7 +115,7 @@ public class ABNFDeepGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseHTTP";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/http.abnf");
+        Acl2Value input = getInputFromFile("../../../../projects/abnf/examples/http.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -123,7 +123,7 @@ public class ABNFDeepGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMF";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/imf.abnf");
+        Acl2Value input = getInputFromFile("../../../../projects/abnf/examples/imf.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -131,7 +131,7 @@ public class ABNFDeepGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseSMTP";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/smtp.abnf");
+        Acl2Value input = getInputFromFile("../../../../projects/abnf/examples/smtp.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -139,7 +139,7 @@ public class ABNFDeepGuardedTests {
         throws Acl2UndefinedPackageException,
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseIMAP";
-        Acl2Value input = getInputFromFile("../../../abnf/examples/imap.abnf");
+        Acl2Value input = getInputFromFile("../../../../projects/abnf/examples/imap.abnf");
         test_Parse(testName, input, n, m);
     }
 
@@ -183,7 +183,7 @@ public class ABNFDeepGuardedTests {
                java.io.FileNotFoundException, java.io.IOException {
         String testName = "ParseYul";
         Acl2Value input =
-            getInputFromFile("../../../yul/language/grammar-new.abnf");
+            getInputFromFile("../../../yul/language/grammar.abnf");
         test_Parse(testName, input, n, m);
     }
 

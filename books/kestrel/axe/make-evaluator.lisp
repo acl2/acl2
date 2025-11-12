@@ -39,6 +39,8 @@
 (include-book "kestrel/bv/bvif" :dir :system) ;built in to the evaluator
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "make-evaluator-common")
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
+(include-book "kestrel/typed-lists-light/append-all" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
@@ -320,15 +322,55 @@
 
 (defmacro eval-in-logic (x) `(with-guard-checking nil (ec-call ,x)))
 
+(local
+  (defthm alistp-of-append-all
+    (implies (alist-listp x)
+             (alistp (append-all x)))
+    :hints (("Goal" :in-theory (enable append-all alistp)))))
+
+;move
+(local
+  (defthm symbol-alist-listp-forward-to-alist-listp
+    (implies (symbol-alist-listp a)
+             (alist-listp a))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable symbol-alist-listp alist-listp)))))
+
+(local
+  (defthm alist-listp-of-strip-cdrs
+    (implies (arity-fn-call-alist-alistp a)
+             (alist-listp (strip-cdrs a)))
+    :hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))
+    ))
+
+(local
+  (defthm symbol-alist-listp-forward-to-true-list-listp
+    (implies (symbol-alist-listp a)
+             (true-list-listp a))
+    :rule-classes :forward-chaining))
+
+(local
+  (defthm symbol-alistp-of-append-all
+    (implies (symbol-alist-listp a)
+             (symbol-alistp (append-all a)))
+    :hints (("Goal" :in-theory (enable append-all)))))
+
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
 ;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
 ;;we use that expression when we call the corresponding function
 ;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
 ;ffixme since this no longer takes state we could use a macro instead of make-event
 (defun make-evaluator-fn (base-name arity-fn-call-alist-alist ;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them
-                          )
+                                    wrld)
   (declare (xargs :guard (and (symbolp base-name)
-                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist))))
+                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist)
+                              (plist-worldp wrld)
+                              (function-symbolsp (strip-cars (append-all (strip-cdrs arity-fn-call-alist-alist))) wrld)
+                              )
+                  :guard-hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))
+                  )
+           (ignore wrld) ; only used in guard
+           )
   (let* ((apply-function-name (pack$ 'apply- base-name))
          (apply-function-to-quoted-args-name (pack$ 'apply- base-name '-to-quoted-args))
          (eval-function-name (pack$ 'eval- base-name))
@@ -640,7 +682,8 @@
                           arity-fn-call-alist-alist)
   `(make-event
     (make-evaluator-fn ',base-name
-                       ,arity-fn-call-alist-alist)))
+                       ,arity-fn-call-alist-alist
+                       (w state))))
 
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags

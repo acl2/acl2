@@ -43,9 +43,11 @@
                               (true-listp data))
                   :guard-hints (("Goal" :in-theory (enable update-nth2)))))
   (let* ((len (nfix len))
-         (numbits (ceiling-of-lg len))
+          ;number of index bits needed ; todo: disallow len=0 (no valid indices):
+         (numbits (mbe :exec (if (equal 0 len) 0 (ceiling-of-lg len)) ; avoid calling ceiling-of-lg on 0 (guard violation)
+                       :logic (ceiling-of-lg len)))
          (index (bvchop numbits (ifix index))))
-        (bvchop-list element-size ;; the bvchop-list is often wasted work
+    (bvchop-list element-size ;; the bvchop-list is often wasted work
                 ;this calls take, but in many cases that is wasted work:
                 (update-nth2 len index val data))))
 

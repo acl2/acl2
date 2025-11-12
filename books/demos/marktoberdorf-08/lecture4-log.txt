@@ -1216,8 +1216,8 @@ find application.
 [Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
-The hypothesis can be derived from |G-INV-arity-1-DEF| via instantiation.
-We are left with the following subgoal.
+The hypothesis can be derived from |G-INV-arity-1-DEF| via instanti-
+ation.  We are left with the following subgoal.
 
 Goal'
 (IMPLIES
@@ -3435,8 +3435,8 @@ find application.
 [Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
-The hypothesis can be derived from |H-INV-arity-1-DEF| via instantiation.
-We are left with the following subgoal.
+The hypothesis can be derived from |H-INV-arity-1-DEF| via instanti-
+ation.  We are left with the following subgoal.
 
 Goal'
 (IMPLIES

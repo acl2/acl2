@@ -22,21 +22,23 @@
 
 ;; Prints as a term if the term is not too big.
 ;; todo: respect the print-base?
-(defund print-dag-nicely (dag)
-  (declare (xargs :guard (pseudo-dagp dag)))
-  (if (dag-or-quotep-size-less-than dag 1000)
+(defund print-dag-nicely (dag max-term-size)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (natp max-term-size))))
+  (if (dag-or-quotep-size-less-than dag max-term-size)
       (cw "~X01" (dag-to-term dag) nil) ; todo: untranslate (see below)
     (cw "~X01" dag nil)))
 
 ;; Returns state.
 ;; restores the print-base to 10 (do better?)
-(defund print-dag-nicely-with-base (dag descriptor untranslatep print-base state)
+(defund print-dag-nicely-with-base (dag max-term-size descriptor untranslatep print-base state)
   (declare (xargs :guard (and (pseudo-dagp dag)
+                              (natp max-term-size)
                               (stringp descriptor)
                               (booleanp untranslatep)
                               (member print-base '(10 16)))
                   :stobjs state))
-  (if (dag-or-quotep-size-less-than dag 1000) ; todo: drop the "-or-quotep"
+  (if (dag-or-quotep-size-less-than dag max-term-size) ; todo: drop the "-or-quotep"
       (b* ((- (cw "(Term ~x0:~%" descriptor))
            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                       (set-print-base-radix print-base state)

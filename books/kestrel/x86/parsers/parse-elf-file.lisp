@@ -106,10 +106,28 @@
           (cons flag (decode-val-with-mask-flag-alist val (rest mask-flag-alist)))
         (decode-val-with-mask-flag-alist val (rest mask-flag-alist))))))
 
-;; todo: There is an entry for Linux, but I don't see it being used.
+(defthm keyword-listp-of-decode-val-with-mask-flag-alist
+  (implies (keyword-listp (strip-cdrs mask-flag-alist))
+           (keyword-listp (decode-val-with-mask-flag-alist val mask-flag-alist)))
+  :hints (("Goal" :in-theory (enable decode-val-with-mask-flag-alist))))
+
+;; There seem to be somewhat different lists of these values floating around.
+;; One reference is https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 (defconst *osabis*
-  `((0 . :elfosabi_sysv)
+  `((0 . :elfosabi_none) ; was :elfosabi_sysv
     (1 . :elfosabi_hpux)
+    (2 . :elfosabi_netbsd)
+    (3 . :elfosabi_linux) ; also called :elfosabi_gnu ?
+    (6 . :elfosabi_solaris)
+    (7 . :elfosabi_aix)
+    (8 . :elfosabi_irix)
+    (9 . :elfosabi_freebsd)
+    (10 . :elfosabi_tru64)
+    (11 . :elfosabi_modesto)
+    (12 . :elfosabi_openbsd)
+    (13 . :elfosabi_openvms)
+    (14 . :elfosabi_nsk)
+    ;; todo: add more
     (255 . :elfosabi_standalone)))
 
 (defconst *program-header-types*
@@ -599,13 +617,19 @@
     (b* ((section-header (first section-header-table))
          (name (lookup-eq-safe :name section-header))
          (offset (lookup-eq-safe :offset section-header))
+         (type (lookup-eq-safe :type section-header))
          ((when (not (natp offset))) ; impossible?
           (mv :bad-size nil))
          (size (lookup-eq-safe :size section-header))
          ((when (not (natp size))) ; impossible?
           (mv :bad-size nil))
-         ((mv erp bytes &) (parse-n-bytes size (nthcdr offset all-bytes)))
-         ((when erp) (mv erp nil)))
+         ((mv erp bytes &)
+          (if (eq type :sht-nobits)
+              (mv nil nil nil) ; no bits ; todo: think about what happens downstream
+            (parse-n-bytes size (nthcdr offset all-bytes))))
+         ((when erp)
+          (cw "ERROR: Not enough bytes for ~x0 section (type: ~x1)." name type)
+          (mv erp nil)))
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
@@ -623,6 +647,7 @@
   (and (symbol-alistp entry)
        (natp (lookup-eq :vaddr entry))
        (natp (lookup-eq :memsz entry))
+       (keyword-listp (lookup-eq :flags entry))
        ;; todo: more
        ))
 
@@ -894,6 +919,7 @@
        ((when erp) (mv erp nil))
        (result (acons :symbol-table symbol-table result))
 
+       ;; Note that sections of type :sht-nobits, such as .bss, will be mapped to the empty list of bytes:
        ((mv erp sections) (extract-elf-sections section-header-table all-bytes nil))
        ((when erp) (mv erp nil))
        (result (acons :sections sections result))

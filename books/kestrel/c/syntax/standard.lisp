@@ -107,12 +107,17 @@
                          (type-qual-volatile->uscores type-qual) :none))
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
+   (expr :unary (and (expr-standardp (expr-unary->arg expr))
+                     (not (member-eq (expr-unary->op expr)
+                                     '(:alignof :real :imag)))))
    (expr :label-addr nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :alignof (and (tyname-standardp (expr-alignof->type expr))
                        (keyword-uscores-case
                         (expr-alignof->uscores expr) :none)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :cond (and (expr-standardp (expr-cond->test expr))
                     (expr-option-case (expr-cond->then expr) :some)
                     (expr-standardp (expr-option-some->val

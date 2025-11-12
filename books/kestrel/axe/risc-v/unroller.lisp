@@ -263,7 +263,8 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits print print-base untranslatep memoizep
+                                  normalize-xors count-hits print print-base max-printed-term-size
+                                  untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
   (declare (xargs :guard (and (natp steps-done)
@@ -285,6 +286,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -451,13 +453,13 @@
                (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
+                (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                 (mv :unresolved-error-branches nil state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
+                (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil state)))
             (mv (erp-nil) dag-or-constant state))
@@ -466,11 +468,11 @@
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
                (if (print-level-at-least-tp print)
-                   (print-dag-nicely-with-base dag (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
+                   (print-dag-nicely-with-base dag max-printed-term-size (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
                           state))))))
 
 ;; Returns (mv erp result-dag-or-quotep
@@ -503,6 +505,7 @@
                                 count-hits
                                 print
                                 print-base
+                                max-printed-term-size
                                 untranslatep
                                 state)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
@@ -538,6 +541,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep))
                   :stobjs state
                   :mode :program ; todo: because of wrap-in-output-extractor
@@ -643,7 +647,7 @@
                               ;; Not position-independent, so the target is a concrete address:
                               (acl2::enquote target-offset)))
        (assumptions (append  `((equal (pc stat) ,target-address-term)
-                               (stat32ip stat)
+                               (stat32p stat)
                                )
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
@@ -724,7 +728,7 @@
                         ;; (if 64-bitp
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
        (state (acl2::unwiden-margins state))
@@ -771,6 +775,7 @@
                         count-hits
                         print
                         print-base
+                        max-printed-term-size
                         untranslatep
                         ;;produce-function
                         ;;non-executable
@@ -812,6 +817,7 @@
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep)
                               ;; (booleanp produce-function)
                               ;; (member-eq non-executable '(t nil :auto))
@@ -858,7 +864,7 @@
                                  ;; extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
                                  ;;stop-pcs
-                                 memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+                                 memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
        (result-dag-size (dag-or-quotep-size result-dag))
@@ -1030,6 +1036,7 @@
                                   (count-hits 'nil)
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
+                                  (max-printed-term-size '10000)
                                   (untranslatep 't)
                                   ;;(produce-function 't)
                                   ;;(non-executable ':auto)
@@ -1038,42 +1045,52 @@
                                   ;;(restrict-theory 't)       ;todo: deprecate
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
-    (def-unrolled-fn
-      ',lifted-name
-      ,target
-      ,executable ; gets evaluated
-;;      ',inputs
-      ',output
-      ,extra-assumptions
-;;      ',suppress-assumptions
-;;      ',inputs-disjoint-from
-      ',stack-slots
-      ',existing-stack-slots
-      ',position-independent
-;;      ',type-assumptions-for-array-vars
-      ',prune-precise
-      ',prune-approx
-      ,extra-rules ; gets evaluated since not quoted
-      ,remove-rules ; gets evaluated since not quoted
-;;      ,extra-assumption-rules ; gets evaluated since not quoted
-;;      ,remove-assumption-rules ; gets evaluated since not quoted
-      ',step-limit
-      ',step-increment
-;;      ,stop-pcs
-      ',memoizep
-      ,monitor ; gets evaluated since not quoted
-      ',normalize-xors
-      ',count-hits
-      ',print
-      ',print-base
-      ',untranslatep
-      ;; ',produce-function
-      ;; ',non-executable
-      ;; ',produce-theorem
-      ;; ',prove-theorem
-      ;; ',restrict-theory
-      ',whole-form
-      state))
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+      "acl2-unwind-protect for def-unrolled"
+      (def-unrolled-fn
+        ',lifted-name
+        ,target
+        ,executable ; gets evaluated
+        ;;      ',inputs
+        ',output
+        ,extra-assumptions
+        ;;      ',suppress-assumptions
+        ;;      ',inputs-disjoint-from
+        ',stack-slots
+        ',existing-stack-slots
+        ',position-independent
+        ;;      ',type-assumptions-for-array-vars
+        ',prune-precise
+        ',prune-approx
+        ,extra-rules ; gets evaluated since not quoted
+        ,remove-rules ; gets evaluated since not quoted
+        ;;      ,extra-assumption-rules ; gets evaluated since not quoted
+        ;;      ,remove-assumption-rules ; gets evaluated since not quoted
+        ',step-limit
+        ',step-increment
+        ;;      ,stop-pcs
+        ',memoizep
+        ,monitor ; gets evaluated since not quoted
+        ',normalize-xors
+        ',count-hits
+        ',print
+        ',print-base
+        ',max-printed-term-size
+        ',untranslatep
+        ;; ',produce-function
+        ;; ',non-executable
+        ;; ',produce-theorem
+        ;; ',prove-theorem
+        ;; ',restrict-theory
+        ',whole-form
+        state)
+      ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+      ;; Remove the temp-dir, if it exists:
+      (maybe-remove-temp-dir ; ,keep-temp-dir
+        state)
+      ;; Normal exit (remove the temp-dir, if it exists):
+      (maybe-remove-temp-dir ; ,keep-temp-dir
+        state)))
   :parents (acl2::axe-risc-v acl2::axe-lifters)
   :short "A tool to lift RISC-V binary code into logic, unrolling loops as needed."
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
@@ -1106,6 +1123,7 @@
          (count-hits "Whether to count rule hits during rewriting (@('t') means count hits for every rule, @(':total') means just count the total number of hits, @('nil') means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
+         (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
          (untranslatep "Whether to untranslate terms when printing.")
 ;;         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
 ;;         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")

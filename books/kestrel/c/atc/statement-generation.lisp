@@ -14,6 +14,8 @@
 (include-book "expression-generation")
 (include-book "object-tables")
 
+(include-book "../language/pure-expression-execution")
+
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
@@ -868,9 +870,9 @@
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr)
-     to not stop right away due to the limit being 0.
-     In this case, @('result') is essentially the untranslated input term,
+     We calculate the limit using @(tsee expr-pure-limit):
+     see the documentation of that function.
+     The @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
   (b* (((reterr)
         (irr-expr)
@@ -1147,14 +1149,16 @@
                                           :names-to-avoid gin.names-to-avoid
                                           :proofs gin.proofs)
                            state))
-       (bound '(quote 1))
+       ((unless (expr-purep pure.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
+       (limit `(quote ,(expr-pure-limit pure.expr)))
        ((when (not gin.proofs))
         (retok pure.expr
                pure.type
                pure.term
                (untranslate$ pure.term nil state)
                gin.compst-var
-               bound
+               limit
                pure.events
                nil
                gin.inscope
@@ -1186,7 +1190,7 @@
                                     gin.fn-guard
                                     gin.compst-var
                                     gin.limit-var
-                                    ''1
+                                    limit
                                     t
                                     wrld))
        (formula2 (atc-contextualize formula2
@@ -1208,6 +1212,7 @@
                                compustatep-of-exit-scope
                                compustatep-of-if*-when-both-compustatep
                                exec-expr-when-pure
+                               (:e expr-pure-limit)
                                (:e expr-purep)
                                (:e expr-kind)
                                (:e expr-binary->op)
@@ -1238,7 +1243,7 @@
            pure.term
            (untranslate$ pure.term nil state)
            gin.compst-var
-           bound
+           limit
            (append pure.events (list event))
            thm-name
            gin.inscope

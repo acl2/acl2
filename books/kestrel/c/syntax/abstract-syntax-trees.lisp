@@ -20,6 +20,26 @@
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration
+  ;; Needed by FTY
+  :induction-depth 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Needed by FTY
+(local (in-theory (enable nfix fix)))
+
+;; Needed by FTY when tau is disabled
+(defrulel sfix-when-not-setp-cheap
+  (implies (not (setp x))
+           (equal (sfix x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable sfix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-trees
@@ -1040,6 +1060,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum keyword-uscores
+  :short "Fixtype of keyword underscores."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some keywords for GCC extensions have variants
+     without underscores,
+     with underscores at the beginning,
+     and with underscores at both the beginning and end:
+     see the ABNF grammar for examples.")
+   (xdoc::p
+    "In order to preserve that information in our abstract syntax,
+     we introduce a fixtype that captures those three possibilities."))
+  (:none ())
+  (:start ())
+  (:both ())
+  :pred keyword-uscores-p
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum unop
   :short "Fixtype of unary operators
           [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
@@ -1065,10 +1106,19 @@
      @('--') (prefix),
      @('++') (postfix),
      @('--') (postfix),
-     @('sizeof') (the variant on expressions; see @(tsee expr)),
+     @('sizeof')
+     (the variant on expressions; see @(tsee expr)),
+     @('_Alignof') or @('__alignof') or @('__alignof__')
+     (the variant on expressions; see @(tsee expr)),
      @('__real__'), and
      @('__imag__').
-     The latter two are GCC extensions; see the ABNF grammar."))
+     The latter three are GCC extensions; see the ABNF grammar.
+     For @(':alignof'), we keep track of the underscore variant;
+     note that the variant without underscores
+     represents the standard @('_Alignof'),
+     not the non-existing @('alignof'),
+     while the other two represent @('__alignof') and @('__alignof__');
+     see the ABNF grammar."))
   (:address ())
   (:indir ())
   (:plus ())
@@ -1080,6 +1130,7 @@
   (:postinc ())
   (:postdec ())
   (:sizeof ())
+  (:alignof ((uscores keyword-uscores))) ; GCC extension
   (:real ()) ; GCC extension
   (:imag ()) ; GCC extension
   :pred unopp
@@ -1193,27 +1244,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred inc/dec-op-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum keyword-uscores
-  :short "Fixtype of keyword underscores."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some keywords for GCC extensions have variants
-     without underscores,
-     with underscores at the beginning,
-     and with underscores at both the beginning and end:
-     see the ABNF grammar for examples.")
-   (xdoc::p
-    "In order to preserve that information in our abstract syntax,
-     we introduce a fixtype that captures those three possibilities."))
-  (:none ())
-  (:start ())
-  (:both ())
-  :pred keyword-uscores-p
-  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1564,8 +1594,14 @@
        This is captured by the @(':sizeof-ambig') case,
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
-      "The @(':alignof') case of this fixtype
-       includes an indication of the underscore variant.
+      "The @(':alignof') cases of this fixtype
+       is similar to the @(':sizeof') case:
+       it captures the application of the operator to a type name,
+       while the application to an expression is instead captured
+       in the @(':unary') case.
+       For the same reason as @('sizeof'),
+       we include an ambiguous case for @('_Alignof') (and keyword variants).
+       The @(':alignof') case includes an indication of the underscore variant.
        Note that the variant without underscores
        represents the standard @('_Alignof'),
        not the non-existing @('alignof'),
@@ -1779,15 +1815,19 @@
        See our ABNF grammar."))
     (:ident ((ident ident)
              (info any)))
-    (:const ((const const)))
-    (:string ((strings stringlit-list)))
+    (:const ((const const)
+             (info any)))
+    (:string ((strings stringlit-list)
+              (info any)))
     (:paren ((inner expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
     (:arrsub ((arg1 expr)
-              (arg2 expr)))
+              (arg2 expr)
+              (info any)))
     (:funcall ((fun expr)
-               (args expr-list)))
+               (args expr-list)
+               (info any)))
     (:member ((arg expr)
               (name ident)))
     (:memberp ((arg expr)
@@ -1803,6 +1843,8 @@
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
                (uscores keyword-uscores))) ; GCC extension
+    (:alignof-ambig ((expr/tyname amb-expr/tyname)
+                     (uscores keyword-uscores))) ; GCC extension
     (:cast ((type tyname)
             (arg expr)))
     (:binary ((op binop)

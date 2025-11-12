@@ -9,7 +9,7 @@
 (defun polyp (x)
 
 ; A polynomial is a list of pairs (constant . exponent), sorted by decreasing
-; order of exponent.  Example:
+; exponent.  Example:
 
 ; '((3 . 2) (5 . 0)) ; 3a^2 + 5a^0 = 3a^2 + 5
 
@@ -30,8 +30,9 @@
 (defun eval-poly (x v)
 
 ; Evaluate the polynomial x for the value v.  Example:
+
 ; (eval-poly '((3 . 2) (5 . 0)) ; 3a^2 + 5
-;            4)
+;            4)                 ; where a = 4
 ; = 53
 
   (declare (xargs :guard (and (polyp x)
@@ -42,6 +43,11 @@
               (eval-poly (cdr x) v)))))
 
 (defun sum-polys (x y)
+
+; Add the two given polynomials to produce a new polynomial.  The recursion
+; here ensures that the result is sorted by decreasing exponent, as is
+; required by polyp.
+
   (declare (xargs :guard (and (polyp x)
                               (polyp y))
                   :measure (+ (len x) (len y))))
@@ -58,8 +64,8 @@
          (cons (car x)
                (sum-polys (cdr x) y)))))
 
-; Example showing evaluation of two polynomials to 58 and 78, respectively, as
-; being equal to the evaluation of their sum to 58+78 = 131.
+; Here is an example showing the evaluation of two polynomials to 53 and 78,
+; respectively, where the sum of those polynomials evaluates to 53+78 = 131.
 (thm (and (equal (eval-poly '((3 . 2) (5 . 0)) 4) ; 3a^2 + 5a^0
                  53)
           (equal (eval-poly '((4 . 2) (3 . 1) (2 . 0)) 4) ; 4a^2 + 3a^1 + 2a^0
@@ -72,12 +78,12 @@
                             4)
                  131)))
 
-; Theorem generalizing the example just above:
+; The following theorem generalizes the example just above.
 (defthm eval-poly-sum-polys
   (equal (eval-poly (sum-polys x y) v)
          (+ (eval-poly x v) (eval-poly y v))))
 
-; Just for fun:
+; Here is an extra theorem, just for fun.
 (defthm polyp-sum-polys
   (implies (and (polyp x)
                 (polyp y))

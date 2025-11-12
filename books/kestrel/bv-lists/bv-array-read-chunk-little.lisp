@@ -171,3 +171,15 @@
                   (if (posp element-count)
                       (bv-array-read element-size array-len index array)
                     0))))
+
+(defthm bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg
+  (implies (integerp i)
+           (equal (bv-array-read-chunk-little element-count element-size array-len (+ i (expt 2 (ceiling-of-lg array-len))) array)
+                  (bv-array-read-chunk-little element-count element-size array-len i array)))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
+
+(defthm bv-array-read-chunk-little-of-expt2-of-ceiling-of-lg
+  (equal (bv-array-read-chunk-little element-count element-size array-len (expt 2 (ceiling-of-lg array-len)) array)
+         (bv-array-read-chunk-little element-count element-size array-len 0 array))
+  :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg (i 0))
+                  :in-theory (disable bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg))))

@@ -65,8 +65,7 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred ident-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

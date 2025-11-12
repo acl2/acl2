@@ -12,10 +12,10 @@
 
 (include-book "abstract-syntax-irrelevants")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,8 +32,7 @@
   :short "Lift @(tsee stringlit->prefix?) to lists."
   (cond ((endp strlits) nil)
         (t (cons (stringlit->prefix? (car strlits))
-                 (stringlit-list->prefix?-list (cdr strlits)))))
-  :hooks (:fix))
+                 (stringlit-list->prefix?-list (cdr strlits))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,8 +64,7 @@
                     :offsetof
                     :va-arg
                     :extension))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,13 +96,13 @@
                     :sizeof
                     :sizeof-ambig
                     :alignof
+                    :alignof-ambig
                     :stmt
                     :tycompat
                     :offsetof
                     :va-arg
                     :extension))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,8 +171,7 @@
    :asg-shr (expr-priority-asg)
    :asg-and (expr-priority-asg)
    :asg-xor (expr-priority-asg)
-   :asg-ior (expr-priority-asg))
-  :hooks (:fix))
+   :asg-ior (expr-priority-asg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,6 +186,8 @@
      straightforwardly according to the grammar.")
    (xdoc::p
     "An ambiguous @('sizeof') has the same priority as an unambiguous one.
+     An ambiguous @('_Alignof') (and keyword variants)
+     has the same priority as an unambiguous one.
      An ambiguous cast/call expression is given
      the higher priority of the two possibilities,
      i.e. the priority of a postfix expression.
@@ -212,6 +211,7 @@
    :sizeof (expr-priority-unary)
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
+   :alignof-ambig (expr-priority-unary)
    :cast (expr-priority-cast)
    :binary (binop->priority expr.op)
    :cond (expr-priority-cond)
@@ -226,8 +226,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
-   :extension (expr-priority-primary))
-  :hooks (:fix))
+   :extension (expr-priority-primary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -263,7 +262,6 @@
      here we are only concerned with single nonterminals as rule definientia."))
   (<= (expr-priority-number prio1)
       (expr-priority-number prio2))
-  :hooks (:fix)
 
   :prepwork
   ((define expr-priority-number ((prio expr-priorityp))
@@ -287,32 +285,28 @@
       :logor 3
       :cond 2
       :asg 1
-      :expr 0)
-     :hooks (:fix))))
+      :expr 0))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define expr-priority->= ((prio1 expr-priorityp) (prio2 expr-priorityp))
   :returns (yes/no booleanp)
   :short "Total order on expression priorities: greater than or equal to."
-  (expr-priority-<= prio2 prio1)
-  :hooks (:fix))
+  (expr-priority-<= prio2 prio1))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define expr-priority-< ((prio1 expr-priorityp) (prio2 expr-priorityp))
   :returns (yes/no booleanp)
   :short "Total order on expression priorities: less than."
-  (not (expr-priority-<= prio2 prio1))
-  :hooks (:fix))
+  (not (expr-priority-<= prio2 prio1)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define expr-priority-> ((prio1 expr-priorityp) (prio2 expr-priorityp))
   :returns (yes/no booleanp)
   :short "Total order on expression priorities: greater than."
-  (not (expr-priority-<= prio1 prio2))
-  :hooks (:fix))
+  (not (expr-priority-<= prio1 prio2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -354,8 +348,7 @@
               :asg-shr (mv (expr-priority-unary) (expr-priority-asg))
               :asg-and (mv (expr-priority-unary) (expr-priority-asg))
               :asg-xor (mv (expr-priority-unary) (expr-priority-asg))
-              :asg-ior (mv (expr-priority-unary) (expr-priority-asg)))
-  :hooks (:fix))
+              :asg-ior (mv (expr-priority-unary) (expr-priority-asg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,12 +374,11 @@
        ((dec/oct/hex-const-oct doh) iconst.core)
        ((unless (= doh.leading-zeros 1)) nil)
        ((unless (= doh.value 0)) nil))
-    t)
-  :hooks (:fix))
+    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines declor->ident
+(defines declor/dirdeclor->ident
   :short "Identifier of a declarator."
   :long
   (xdoc::topstring
@@ -415,16 +407,96 @@
      :function-names (dirdeclor->ident dirdeclor.declor))
     :measure (dirdeclor-count dirdeclor))
 
-  :hints (("Goal" :in-theory (enable o< o-finp))))
+  ///
+  (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define initdeclor->ident
   ((initdeclor initdeclorp))
+  :returns (ident identp)
   :short "Identifier of an initializer declarator."
-  :returns (ident? identp)
   (b* (((initdeclor initdeclor) initdeclor))
     (declor->ident initdeclor.declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-rename
+  (define declor-rename
+    ((declor declorp)
+     (ident identp))
+    :returns (declor$ declorp)
+    :short "Change the identifier of the declarator."
+    (b* (((declor declor) declor))
+      (change-declor
+        declor
+        :direct (dirdeclor-rename declor.direct ident)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-rename
+    ((dirdeclor dirdeclorp)
+     (ident identp))
+    :returns (dirdeclor$ dirdeclorp)
+    :short "Change the identifier of the direct declarator."
+    (dirdeclor-case
+      dirdeclor
+      :ident (change-dirdeclor-ident
+               dirdeclor
+               :ident ident)
+      :paren (change-dirdeclor-paren
+               dirdeclor
+               :inner (declor-rename dirdeclor.inner ident))
+      :array (change-dirdeclor-array
+               dirdeclor
+               :declor (dirdeclor-rename dirdeclor.declor ident))
+      :array-static1 (change-dirdeclor-array-static1
+                       dirdeclor
+                       :declor (dirdeclor-rename dirdeclor.declor ident))
+      :array-static2 (change-dirdeclor-array-static2
+                       dirdeclor
+                       :declor (dirdeclor-rename dirdeclor.declor ident))
+      :array-star (change-dirdeclor-array-star
+                    dirdeclor
+                    :declor (dirdeclor-rename dirdeclor.declor ident))
+      :function-params (change-dirdeclor-function-params
+                         dirdeclor
+                         :declor (dirdeclor-rename dirdeclor.declor ident))
+      :function-names (change-dirdeclor-function-names
+                         dirdeclor
+                         :declor (dirdeclor-rename dirdeclor.declor ident)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns
+  ///
+  (fty::deffixequiv-mutual declor/dirdeclor-rename))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-has-paramsp
+  (define declor-has-paramsp ((declor declorp))
+    :returns (yes/no booleanp)
+    :short "Check if a declarator contains function parameters/names."
+    (b* (((declor declor) declor))
+      (dirdeclor-has-paramsp declor.direct))
+    :measure (declor-count declor))
+
+  (define dirdeclor-has-paramsp ((dirdeclor dirdeclorp))
+    :returns (yes/no booleanp)
+    :short "Check if a direct declarator contains function parameters/names."
+    (dirdeclor-case
+      dirdeclor
+      :ident nil
+      :paren (declor-has-paramsp dirdeclor.inner)
+      :array (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-static1 (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-static2 (dirdeclor-has-paramsp dirdeclor.declor)
+      :array-star (dirdeclor-has-paramsp dirdeclor.declor)
+      :function-params t
+      :function-names t)
+    :measure (dirdeclor-count dirdeclor))
+
+  ///
+  (fty::deffixequiv-mutual declor/dirdeclor-has-paramsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -445,8 +517,7 @@
    :array-static1 (not dirabsdeclor.declor?)
    :array-static2 (not dirabsdeclor.declor?)
    :array-star (not dirabsdeclor.declor?)
-   :function (not dirabsdeclor.declor?))
-  :hooks (:fix))
+   :function (not dirabsdeclor.declor?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,8 +555,74 @@
                                                  :declor? dirabsdeclor1)
      :function (change-dirabsdeclor-function dirabsdeclor2
                                              :declor? dirabsdeclor1)))
-  :guard-hints (("Goal" :in-theory (enable dirabsdeclor-declor?-nil-p)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable dirabsdeclor-declor?-nil-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines absdeclor/dirabsdeclor-to-declor/dirdeclor
+  (define absdeclor-to-declor ((absdeclor absdeclorp) (ident identp))
+    :returns (declor declorp)
+    :short "Turn an abstract declarator into a regular declarator using the
+            provided identifier."
+    (b* (((absdeclor absdeclor) absdeclor))
+      (make-declor
+        :pointers absdeclor.pointers
+        :direct (dirabsdeclor-option-to-dirdeclor absdeclor.direct? ident)))
+    :measure (absdeclor-count absdeclor))
+
+  (define dirabsdeclor-option-to-dirdeclor ((dirabsdeclor? dirabsdeclor-optionp)
+                                            (ident identp))
+    :returns (dirdeclor dirdeclorp)
+    :short "Turn an optional abstract direct declarator into a regular direct
+            declarator using the provided identifier."
+    (dirabsdeclor-option-case
+      dirabsdeclor?
+      :some (dirabsdeclor-to-dirdeclor
+              (dirabsdeclor-option-some->val dirabsdeclor?)
+              ident)
+      :none (dirdeclor-ident ident))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  (define dirabsdeclor-to-dirdeclor ((dirabsdeclor dirabsdeclorp)
+                                     (ident identp))
+    :returns (dirdeclor dirdeclorp)
+    :short "Turn an abstract direct declarator into a regular direct declarator
+            using the provided identifier."
+    (dirabsdeclor-case
+      dirabsdeclor
+      :dummy-base (dirdeclor-ident ident)
+      :paren (dirdeclor-paren (absdeclor-to-declor dirabsdeclor.inner ident))
+      :array (make-dirdeclor-array
+               :declor (dirabsdeclor-option-to-dirdeclor dirabsdeclor.declor?
+                                                         ident)
+               :qualspecs dirabsdeclor.qualspecs
+               :size? dirabsdeclor.size?)
+      :array-static1 (make-dirdeclor-array-static1
+                       :declor (dirabsdeclor-option-to-dirdeclor
+                                 dirabsdeclor.declor?
+                                 ident)
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size dirabsdeclor.size)
+      :array-static2 (make-dirdeclor-array-static2
+                       :declor (dirabsdeclor-option-to-dirdeclor
+                                 dirabsdeclor.declor?
+                                 ident)
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size dirabsdeclor.size)
+      :array-star (make-dirdeclor-array-star
+                    :declor (dirabsdeclor-option-to-dirdeclor
+                              dirabsdeclor.declor?
+                              ident)
+                    :qualspecs nil)
+      :function (make-dirdeclor-function-params
+                  :declor (dirabsdeclor-option-to-dirdeclor
+                            dirabsdeclor.declor?
+                            ident)
+                  :params dirabsdeclor.params
+                  :ellipsis dirabsdeclor.ellipsis))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -494,8 +631,7 @@
   :short "Check if an expression is an identifier,
           returning the identifier if the check passes."
   (and (expr-case expr :ident)
-       (expr-ident->ident expr))
-  :hooks (:fix))
+       (expr-ident->ident expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,8 +643,7 @@
        (const (expr-const->const expr))
        ((unless (const-case const :int)))
        (iconst (const-int->unwrap const)))
-    iconst)
-  :hooks (:fix))
+    iconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,7 +660,6 @@
           (expr-binary->arg1 expr)
           (expr-binary->arg2 expr))
     (mv nil (irr-binop) (irr-expr) (irr-expr)))
-  :hooks (:fix)
 
   ///
 
@@ -554,7 +688,6 @@
            (binop-case (expr-binary->op expr) :mul))
       (mv t (expr-binary->arg1 expr) (expr-binary->arg2 expr))
     (mv nil (irr-expr) (irr-expr)))
-  :hooks (:fix)
 
   ///
 
@@ -587,7 +720,7 @@
        ((unless struni-spec.name?)
         (raise "Misusage error: empty structure or union specifier.")))
     struni-spec.name?)
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,7 +739,7 @@
        ((unless enumspec.name)
         (raise "Misusage error: empty enumeration specifier.")))
     enumspec.name)
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,8 +758,7 @@
        ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
-      (mv nil nil)))
-  :hooks (:fix))
+      (mv nil nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,7 +793,6 @@
                   (cons (decl-spec-stoclass->spec declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
-  :hooks (:fix)
 
   ///
 
@@ -697,8 +828,7 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil)))
-  :hooks (:fix))
+      (mv nil nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -712,8 +842,7 @@
     (if (decl-spec-case declspec :typespec)
         (cons (decl-spec-typespec->spec declspec)
               (decl-spec-list-to-type-spec-list (cdr declspecs)))
-      (decl-spec-list-to-type-spec-list (cdr declspecs))))
-  :hooks (:fix))
+      (decl-spec-list-to-type-spec-list (cdr declspecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -727,8 +856,7 @@
     (if (decl-spec-case declspec :stoclass)
         (cons (decl-spec-stoclass->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
-      (decl-spec-list-to-stor-spec-list (cdr declspecs))))
-  :hooks (:fix))
+      (decl-spec-list-to-stor-spec-list (cdr declspecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -742,8 +870,7 @@
     (if (spec/qual-case specqual :typespec)
         (cons (spec/qual-typespec->spec specqual)
               (spec/qual-list-to-type-spec-list (cdr specquals)))
-      (spec/qual-list-to-type-spec-list (cdr specquals))))
-  :hooks (:fix))
+      (spec/qual-list-to-type-spec-list (cdr specquals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,8 +890,7 @@
      op
      :inc (make-expr-unary :op (unop-preinc) :arg expr :info nil)
      :dec (make-expr-unary :op (unop-predec) :arg expr :info nil)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -783,8 +909,7 @@
               op
               :inc (make-expr-unary :op (unop-postinc) :arg expr :info nil)
               :dec (make-expr-unary :op (unop-postdec) :arg expr :info nil))))
-    (apply-post-inc/dec-ops expr (cdr ops)))
-  :hooks (:fix))
+    (apply-post-inc/dec-ops expr (cdr ops))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -806,9 +931,54 @@
       (append (expr-to-asg-expr-list (expr-comma->first expr))
               (expr-to-asg-expr-list (expr-comma->next expr)))
     (list (expr-fix expr)))
-  :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix))
+  :measure (expr-count expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ident-list-map-expr-ident
+  ((idents ident-listp))
+  :returns (exprs expr-listp)
+  :short "Map @(tsee expr-ident) over a list of identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@('nil') is provided for the @('info') argument of @(tsee expr-ident)."))
+  (if (endp idents)
+      nil
+    (cons (make-expr-ident :ident (first idents))
+          (ident-list-map-expr-ident (rest idents))))
+  ///
+
+  (more-returns
+   (exprs true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor-spec-list-filter-out-linkage-specs
+  ((specs decl-spec-listp))
+  :returns (specs$ decl-spec-listp)
+  :short "Drop declaration specifiers related to linkage."
+  (b* (((when (endp specs))
+        nil)
+       (spec (first specs))
+       (drop-specp
+         (decl-spec-case
+           spec
+           :stoclass (or (stor-spec-case spec.spec :static)
+                         (stor-spec-case spec.spec :extern))
+           :otherwise nil)))
+    (if drop-specp
+        (declor-spec-list-filter-out-linkage-specs (rest specs))
+      (cons (decl-spec-fix (first specs))
+            (declor-spec-list-filter-out-linkage-specs (rest specs))))))
+
+(define declor-spec-list-make-static
+  ((specs decl-spec-listp))
+  :returns (specs$ decl-spec-listp)
+  :short "Add the @('static') declaration specifier and remove all existing
+          specifiers related to linkage."
+  (cons (decl-spec-stoclass (stor-spec-static))
+        (declor-spec-list-filter-out-linkage-specs specs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -825,8 +995,7 @@
    (xdoc::p
     "Together with @(tsee transunit-at-path),
      it can be used as an API to inspect translation unit ensembles."))
-  (omap::keys (transunit-ensemble->unwrap tunits))
-  :hooks (:fix))
+  (omap::keys (transunit-ensemble->unwrap tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -848,5 +1017,4 @@
   (transunit-fix
    (omap::lookup (filepath-fix path) (transunit-ensemble->unwrap tunits)))
   :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
-                                           transunit-ensemble-paths)))
-  :hooks (:fix))
+                                           transunit-ensemble-paths))))

@@ -28,23 +28,23 @@
              (fast-<< (car x) (cadr x))
              (set::setp (cdr x))))))
 
-(defun set::emptyp (x)
+(defun-inline set::emptyp (x)
   (declare (xargs :guard (set::setp x)))
   (mbe :logic (or (null x) (not (set::setp x)))
        :exec (null x)))
 
-(defun set::sfix (x)
+(defun-inline set::sfix (x)
   (declare (xargs :guard (set::setp x)))
   (mbe :logic (if (set::emptyp x) nil x)
        :exec x))
 
-(defun set::head (x)
+(defun-inline set::head (x)
   (declare (xargs :guard (and (set::setp x)
                               (not (set::emptyp x)))))
   (mbe :logic (car (set::sfix x))
        :exec (car x)))
 
-(defun set::tail (x)
+(defun-inline set::tail (x)
   (declare (xargs :guard (and (set::setp x)
                               (not (set::emptyp x)))))
   (mbe :logic (cdr (set::sfix x))

@@ -23,10 +23,13 @@
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
 (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
+(include-book "kestrel/bv-lists/map-bvsx" :dir :system)
+(include-book "kestrel/bv-lists/packbvs-little" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
 ;(include-book "kestrel/lists-light/prefixp" :dir :system) ;drop?
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 ;(include-book "kestrel/lists-light/nth" :dir :system)
@@ -44,6 +47,11 @@
 ;TODO: I forgot the extra parens around the claim, and it treated AND as one claim and so on...
 ;use def-constant-opener?
 (defopeners bvxor-list :hyps ((and (syntaxp (quotep x)) (syntaxp (quotep y)))))
+
+(def-constant-opener map-bvsx)
+
+(def-constant-opener packbv-little :disable t)
+(def-constant-opener packbvs-little :disable t)
 
 (defthmd nth-of-bv-when-all-same
   (implies (and (syntaxp (quotep lst))

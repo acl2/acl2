@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,8 @@
 
 ;; TODO: Consider making a version that doesn't use bignums and only approximates the size.
 
+;; TODO: Consider using dag-size-fast instead
+
 (include-book "dag-arrays")
 (include-book "dag-size-array")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
@@ -24,16 +26,13 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/if-rules" :dir :system))
 
-(local (in-theory (enable not-<-of-car-when-all-<
-                          <=-of-0-when-natp
-                          acl2-numberp-when-natp
-                          integerp-when-natp)))
+(local (in-theory (e/d (not-<-of-car-when-all-<
+                        <=-of-0-when-natp
+                        acl2-numberp-when-natp
+                        integerp-when-natp)
+                       (natp))))
 
-(local (in-theory (disable natp)))
-
-;;;
-;;; make-size-array-for-dag-array-with-name-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version of the array filler stores a size for every node in the array.
 ;; Returns the populated size-array.

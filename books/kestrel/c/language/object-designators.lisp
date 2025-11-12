@@ -13,9 +13,9 @@
 
 (include-book "identifiers")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,8 +80,7 @@
      and not their sub-objects."))
   ((number nat))
   :tag :address
-  :pred addressp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred addressp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +117,7 @@
   (:member ((super objdesign)
             (name ident)))
   :pred objdesignp
-  :prepwork ((local (in-theory (enable nfix))))
+  :prepwork ((set-induction-depth-limit 1))
 
   ///
 
@@ -189,7 +188,6 @@
                   :member (objdesign-top objdes.super))
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-  :hooks (:fix)
 
   ///
 
@@ -220,7 +218,6 @@
        (objdesign-case objdes2 :alloc)
        (not (equal (objdesign-alloc->get objdes1)
                    (objdesign-alloc->get objdes2))))
-  :hooks (:fix)
 
   ///
 

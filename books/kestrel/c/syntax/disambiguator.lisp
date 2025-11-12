@@ -711,7 +711,7 @@
   (b* ((arg-expected (if (member-eq (unop-kind op)
                                     '(:predec :preinc
                                       :postdec :postinc
-                                      :sizeof))
+                                      :sizeof :alignof))
                          (expr-priority-unary)
                        (expr-priority-cast)))
        (arg-actual (expr->priority arg))
@@ -1295,7 +1295,7 @@
        following the recursive structure of the types.")
      (xdoc::p
       "We call a separate function to disambiguate
-       an ambiguous @('sizeof') expression.
+       an ambiguous @('sizeof') or @('_Alignof') expression.
        Depending on whether the result is an expression or a type name,
        we re-classify the expression into an unambiguous one.")
      (xdoc::p
@@ -1343,7 +1343,7 @@
                             (ident->unwrap expr.ident))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
-          :enumconst (retok (expr-const (const-enum expr.ident))
+          :enumconst (retok (make-expr-const :const (const-enum expr.ident))
                             (dimb-table-fix table))))
        :const
        (retok (expr-fix expr) (dimb-table-fix table))
@@ -1408,6 +1408,17 @@
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
          (retok (make-expr-alignof :type new-tyname :uscores expr.uscores)
                 table))
+       :alignof-ambig
+       (b* (((erp expr-or-tyname table)
+             (dimb-amb-expr/tyname expr.expr/tyname t table)))
+         (expr/tyname-case
+          expr-or-tyname
+          :expr (retok (dimb-make/adjust-expr-unary (unop-alignof expr.uscores)
+                                                    expr-or-tyname.unwrap)
+                       table)
+          :tyname (retok (make-expr-alignof :type expr-or-tyname.unwrap
+                                            :uscores expr.uscores)
+                         table)))
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))

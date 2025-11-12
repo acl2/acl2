@@ -3117,13 +3117,17 @@
       "We can always distinguish the alternatives of
        the grammar rule for unary expressions based on the next token,
        except for the potential ambiguity between
-       parenthesized expressions or type names after @('sizeof').")
+       parenthesized expressions or type names
+       after @('sizeof') or @('_Alignof'),
+       the latter only if GCC extensions are enabled.")
      (xdoc::p
-      "If we encounter a @('sizeof') not followed by an open parenthesis,
+      "If we encounter a @('sizeof') or @('_Alignof')
+       not followed by an open parenthesis,
        there is no potential ambiguity: the operand must be an expression.
        If there is an open parenthesis,
        we parse an expression or type name via a separate function,
-       and based on the result we return a @('sizeof') expression with
+       and based on the result we return
+       a @('sizeof') or @('_Alignof') expression with
        an expression, a type name, or an ambiguous type name or expression."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -3208,29 +3212,78 @@
                                       :info nil)
                      (span-join span last-span)
                      parstate))))))
-       ;; If token is '_Alignof',
-       ;; we parse an open parenthesis, a type name, and a closed parenthesis.
-       ;; We also allow '__alignof' and '__alignof__',
-       ;; which can be keywords only if GCC extensions are supported.
+       ;; If token is '_Alignof' (or keywords variants),
+       ;; there are two cases, based on whether GCC extensions are enabled.
        ((or (token-keywordp token "_Alignof") ; _Alignof
             (token-keywordp token "__alignof") ; __alignof
             (token-keywordp token "__alignof__")) ; __alignof__
-        (b* (((erp & parstate) ; _Alignof (
-              (read-punctuator "(" parstate))
-             ((erp tyname & parstate) ; _Alignof ( typename
-              (parse-type-name parstate))
-             ((erp last-span parstate) ; _Alignof ( typename )
-              (read-punctuator ")" parstate)))
-          (retok (make-expr-alignof
-                  :type tyname
-                  :uscores (cond ((token-keywordp token "_Alignof")
-                                  (keyword-uscores-none))
-                                 ((token-keywordp token "__alignof")
-                                  (keyword-uscores-start))
-                                 ((token-keywordp token "__alignof__")
-                                  (keyword-uscores-both))))
-                 (span-join span last-span)
-                 parstate)))
+        (cond
+         ;; If GCC extensions are not enabled,
+         ;; we parse an open parenthesis,
+         ;; a type name,
+         ;; and a closed parenthesis.
+         ;; Note that in this case
+         ;; the only allowed keyword is '_Alignof'.
+         ((not (parstate->gcc parstate))
+          (b* (((erp & parstate) ; _Alignof (
+                (read-punctuator "(" parstate))
+               ((erp tyname & parstate) ; _Alignof ( typename
+                (parse-type-name parstate))
+               ((erp last-span parstate) ; _Alignof ( typename )
+                (read-punctuator ")" parstate)))
+            (retok (make-expr-alignof
+                    :type tyname
+                    :uscores (keyword-uscores-none))
+                   (span-join span last-span)
+                   parstate)))
+         ;; If GCC extensions are enabled,
+         ;; we need to read another token.
+         (t ; (parstate->gcc parstate)
+          (b* (((erp token2 & parstate) (read-token parstate))
+               (uscores (cond ((token-keywordp token "_Alignof")
+                               (keyword-uscores-none))
+                              ((token-keywordp token "__alignof")
+                               (keyword-uscores-start))
+                              ((token-keywordp token "__alignof__")
+                               (keyword-uscores-both)))))
+            (cond
+             ;; If token2 is an open parenthesis,
+             ;; we are in a potentially ambiguous situation.
+             ;; We put back the token and we attempt to parse
+             ;; a unary expression or a parenthesized type name.
+             ;; Note that PARSE-UNARY-EXPRESSION-OR-PARENTHESIZED-TYPE-NAME
+             ;; returns the type name (whether ambiguous or not)
+             ;; without parentheses,
+             ;; and that the expression, if ambiguous,
+             ;; is without the parentheses.
+             ((token-punctuatorp token2 "(") ; alignof expr/parentyname
+              (b* ((parstate (unread-token parstate))
+                   ((erp expr/tyname last-span parstate)
+                    (parse-unary-expression-or-parenthesized-type-name parstate))
+                   (expr
+                    (amb?-expr/tyname-case
+                     expr/tyname
+                     :expr (make-expr-unary :op (unop-alignof uscores)
+                                            :arg expr/tyname.unwrap
+                                            :info nil)
+                     :tyname (make-expr-alignof :type expr/tyname.unwrap
+                                                :uscores uscores)
+                     :ambig (make-expr-alignof-ambig
+                             :expr/tyname expr/tyname.unwrap
+                             :uscores uscores))))
+                (retok expr (span-join span last-span) parstate)))
+             ;; If token2 is not an open parenthesis,
+             ;; the operand must be a unary expression.
+             (t ; alignof other
+              (b* ((parstate
+                    (if token2 (unread-token parstate) parstate)) ; alignof
+                   ((erp expr last-span parstate) ; alignof expr
+                    (parse-unary-expression parstate)))
+                (retok (make-expr-unary :op (unop-alignof uscores)
+                                        :arg expr
+                                        :info nil)
+                       (span-join span last-span)
+                       parstate))))))))
        ;; If token is '__real__', which can only happen with GCC extensions,
        ;; we recursively parse a cast expression as operand.
        ((token-keywordp token "__real__") ; __real__
@@ -3752,21 +3805,21 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-keywordp token "true") ; C23
-        (retok (expr-const
-                (const-int
-                 (make-iconst :core (dec/oct/hex-const-dec 1)
-                              :suffix? nil
-                              :info nil)))
+        (retok (make-expr-const
+                 :const (const-int
+                          (make-iconst :core (dec/oct/hex-const-dec 1)
+                                       :suffix? nil
+                                       :info nil)))
                span
                parstate))
        ((token-keywordp token "false") ; C23
-        (retok (expr-const
-                (const-int
-                 (make-iconst :core (make-dec/oct/hex-const-oct
-                                     :leading-zeros 1
-                                     :value 0)
-                              :suffix? nil
-                              :info nil)))
+        (retok (make-expr-const
+                 :const (const-int
+                          (make-iconst :core (make-dec/oct/hex-const-oct
+                                               :leading-zeros 1
+                                               :value 0)
+                                       :suffix? nil
+                                       :info nil)))
                span
                parstate))
        ((and token (token-case token :ident)) ; identifier
@@ -3775,11 +3828,14 @@
                span
                parstate))
        ((and token (token-case token :const)) ; constant
-        (retok (expr-const (token-const->unwrap token)) span parstate))
+        (retok (make-expr-const :const (token-const->unwrap token))
+               span
+               parstate))
        ((and token (token-case token :string)) ; stringlit
         (b* (((erp strings last-span parstate) ; stringlit stringlits
               (parse-*-stringlit parstate)))
-          (retok (expr-string (cons (token-string->unwrap token) strings))
+          (retok (make-expr-string
+                   :strings (cons (token-string->unwrap token) strings))
                  (if strings (span-join span last-span) span)
                  parstate)))
        ((token-punctuatorp token "(") ; (

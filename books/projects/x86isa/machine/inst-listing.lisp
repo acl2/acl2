@@ -3723,20 +3723,22 @@
     (INST "MOVDDUP"
           (OP :OP #xF12 :PFX :F2 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          'NIL
+          '(X86-MOVDDUP-SSE)
           '((:EX (CHK-EXC :TYPE-5 (:SSE3)))))
     (INST "VMOVDDUP"
           (OP :OP #xF12
               :VEX '(:0F :128 :F2 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+          '(X86-VMOVDDUP-VEX)
+          '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
     (INST "VMOVDDUP"
           (OP :OP #xF12
               :VEX '(:0F :256 :F2 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+          '(X86-VMOVDDUP-VEX)
+          '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
     (INST "VMOVHLPS"
           (OP :OP #xF12
               :VEX '(:0F :NDS :128 :WIG)

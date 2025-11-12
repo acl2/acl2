@@ -2537,13 +2537,20 @@
 (defun lift-subroutine-fn (lifted-name
                            target ; todo: add support for :entry-point and for a numeric offset
                            executable
-                           stack-slots-needed
+                           inputs
+                           ;; output-indicator
+                           extra-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
+                           ;; suppress-assumptions
+                           inputs-disjoint-from
+                           assume-bytes
+                           stack-slots
+                           existing-stack-slots
+                           position-independent
+                           ;; todo: continue reordering args below here
                            loop-alist ; relative to the target-offset (but adjusted below)
                            extra-rules
                            remove-rules
                            produce-theorem
-                           ;;output ; an output-indicatorp
-                           extra-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable ; boolean
                            ;;restrict-theory
                            monitor
@@ -2575,11 +2582,32 @@
         (mv (erp-t) nil state))
        ((when (not (or (stringp executable)
                        (acl2::parsed-executablep executable))))
-        (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0.")
+        (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0." executable)
         (mv (erp-t) nil state))
-       ;; Check the stack-slots-needed argument:
-       ((when (not (natp stack-slots-needed)))
-        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots-needed: ~x0" stack-slots-needed)
+       ;; Check the inputs argument:
+       ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))
+        (er hard? 'lift-subroutine-fn "Bad value for :inputs argument: ~x0." inputs)
+        (mv (erp-t) nil state))
+       ;; Check the inputs-disjoint-from argument:
+       ((when (not (member-eq inputs-disjoint-from '(nil :code :all))))
+        (er hard? 'lift-subroutine-fn "Bad value for :inputs-disjoint-from argument: ~x0." inputs-disjoint-from)
+        (mv (erp-t) nil state))
+       ;; Check the assume-bytes argument:
+       ((when (not (member-eq assume-bytes '(:all :non-write))))
+        (er hard? 'lift-subroutine-fn "Bad value for :assume-bytes argument: ~x0." assume-bytes)
+        (mv (erp-t) nil state))
+       ;; Check the stack-slots argument:
+       ((when (not (natp stack-slots)))
+        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for stack-slots: ~x0" stack-slots)
+                (mv (erp-t) nil state)))
+       ;; Check the existing-stack-slots argument:
+       ((when (not (or (natp existing-stack-slots)
+                       (eq :auto existing-stack-slots))))
+        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for existing-stack-slots: ~x0" existing-stack-slots)
+                (mv (erp-t) nil state)))
+       ;; Check the position-independent argument:
+       ((when (not (booleanp position-independent)))
+        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for position-independent ~x0" position-independent)
                 (mv (erp-t) nil state)))
        ;; Check the loop-alist argument::
        ((when (eq :none loop-alist))
@@ -2597,7 +2625,7 @@
        ((when (not (acl2::print-levelp print)))
         (er hard? 'lift-subroutine-fn "Bad value for :print (should be a print-level): ~x0" print)
         (mv (erp-t) nil state))
-       ;; Done checking inputs:
+       ;; Done checking args:
        (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
        ((mv erp parsed-executable state)
@@ -2612,38 +2640,47 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Throws an error if we have a non-x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
+       (existing-stack-slots (if (eq :auto existing-stack-slots)
+                                 (if (eq :pe-64 executable-type)
+                                     5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)
+                                   1 ; todo: think about the 32-bit cases
+                                   )
+                               existing-stack-slots))
        (extra-assumptions (acl2::translate-terms extra-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
        ((mv erp tool-assumptions &)
         (if (eq :mach-o-64 executable-type)
             (assumptions-macho64-new target
-                                     t ; position-independentp
-                                     stack-slots-needed
-                                     1 ; existing-stack-slots
+                                     position-independent
+                                     stack-slots
+                                     existing-stack-slots
                                      'x86_0
-                                     nil ; inputs ; todo
+                                     inputs
                                      nil ; type-assumptions-for-array-varsp ; todo
-                                     :all ; inputs-disjoint-from
+                                     inputs-disjoint-from
+                                     assume-bytes
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
-                                    t ; position-independentp
-                                    stack-slots-needed
-                                    5 ; existing-stack-slots ; different for PE64 due to calling conventions
+                                    position-independent
+                                    stack-slots
+                                    existing-stack-slots
                                     'x86_0
-                                    nil ; inputs ; todo
+                                    inputs
                                     nil ; type-assumptions-for-array-varsp ; todo
-                                    :all ; inputs-disjoint-from
+                                    inputs-disjoint-from
+                                    assume-bytes
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
-                                       t ; position-independentp
-                                       stack-slots-needed
-                                       1 ; existing-stack-slots
+                                       position-independent
+                                       stack-slots
+                                       existing-stack-slots
                                        'x86_0
-                                       nil ; inputs ; todo
+                                       inputs
                                        nil ; type-assumptions-for-array-varsp ; todo
-                                       :all ; inputs-disjoint-from
+                                       inputs-disjoint-from
+                                       assume-bytes
                                        parsed-executable)
               ;; todo: support other executable types!
               (mv :unsupported-executable-type nil nil)))))
@@ -2762,9 +2799,17 @@
                            &key
                            (target ':none) ; required (for now).  must be a string naming a subroutine
                            (executable ':none) ; required, a string (filename), or (for example) a defconst created by defconst-x86
+                           (inputs ':skip)
+                           ;; output-indicator
                            (extra-assumptions 'nil)
-                           (loops ':none) ; required (for now)
+                           ;; suppress-assumptions
+                           (inputs-disjoint-from ':code)
+                           (assume-bytes ':all) ; todo: change the default to :non-write
                            (stack-slots '10)
+                           (existing-stack-slots ':auto)
+                           (position-independent 't)
+
+                           (loops ':none) ; required (for now)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            (extra-rules 'nil)
                            (remove-rules 'nil)
@@ -2774,23 +2819,40 @@
                            ;;restrict-theory
                            (monitor 'nil)
                            (print ':brief))
-  `(make-event (lift-subroutine-fn ',lifted-name
-                                   ',target
-                                   ,executable
-                                   ',stack-slots
-                                   ',loops
-                                   ,extra-rules
-                                   ,remove-rules
-                                   ',produce-theorem
-                                   ;;output
-                                   ,extra-assumptions
-                                   ',non-executable
-                                   ;;restrict-theory
-                                   ,monitor
-                                   ',measures
-                                   ',whole-form
-                                   ',print
-                                   state)))
+  `(make-event
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for lift-subroutine"
+       (lift-subroutine-fn ',lifted-name
+                           ',target
+                           ,executable
+                           ',inputs
+                           ;; output-indicator
+                           ,extra-assumptions
+                           ;; suppress-assumptions
+                           ',inputs-disjoint-from
+                           ',assume-bytes
+                           ',stack-slots
+                           ',existing-stack-slots
+                           ',position-independent
+
+                           ',loops
+                           ,extra-rules
+                           ,remove-rules
+                           ',produce-theorem
+                           ',non-executable
+                           ;;restrict-theory
+                           ,monitor
+                           ',measures
+                           ',whole-form
+                           ',print
+                           state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;(defttag t)
 ;(remove-untouchable acl2::verify-termination-on-raw-program-okp nil)
