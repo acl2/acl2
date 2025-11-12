@@ -35,8 +35,6 @@
                    acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
                    acl2::bv-array-read-chunk-little-when-multiple-4-8-smt
-                   acl2::packbvs-little-constant-opener
-                   acl2::packbv-little-constant-opener
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
                    acl2::bvplus-trim-arg3-axe-all

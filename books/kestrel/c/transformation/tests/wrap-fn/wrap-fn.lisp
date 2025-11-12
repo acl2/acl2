@@ -16,7 +16,7 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
-(include-book "../../wrap-fun")
+(include-book "../../wrap-fn")
 (include-book "../utilities")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -25,9 +25,9 @@
   (c$::input-files :files '("test1.c")
                    :const *old*)
 
-  (wrap-fun *old*
-            *new*
-            :targets (("foo" . "wrapper_foo")))
+  (wrap-fn *old*
+           *new*
+           :targets (("foo" . "wrapper_foo")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -51,9 +51,9 @@ int main(void) {
   (c$::input-files :files '("test2.c")
                    :const *old*)
 
-  (wrap-fun *old*
-            *new*
-            :targets ("foo"))
+  (wrap-fn *old*
+           *new*
+           :targets ("foo"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -80,9 +80,9 @@ int main(void) {
   (c$::input-files :files '("test3.c")
                    :const *old*)
 
-  (wrap-fun *old*
-            *new*
-            :targets ("foo"))
+  (wrap-fn *old*
+           *new*
+           :targets ("foo"))
 
   (c$::output-files :const *new*
                     :path "new")

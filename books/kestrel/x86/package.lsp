@@ -338,7 +338,8 @@
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
     parsed-executablep
-    ))
+
+    maybe-remove-temp-dir))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg

@@ -105,8 +105,6 @@
                    acl2::bv-array-read-shorten-when-in-first-half-smt
                    acl2::bv-array-read-chunk-little-when-multiple-8-8-smt
                    ;bv-array-read-chunk-little-when-multiple-8-336
-                   acl2::packbvs-little-constant-opener
-                   acl2::packbv-little-constant-opener
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
                    acl2::bvplus-trim-arg3-axe-all

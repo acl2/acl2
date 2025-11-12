@@ -16,7 +16,7 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
-(include-book "../../splitgso")
+(include-book "../../split-gso")
 (include-book "../utilities")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -29,14 +29,14 @@
   (c$::input-files :files '("test1.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :new-object1 "my1"
-            :new-object2 "my2"
-            :new-type1 "s1"
-            :new-type2 "s2"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -61,14 +61,14 @@ int main(void) {
   (c$::input-files :files '("test1.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :new-object1 "my"
-            :new-object2 "my"
-            :new-type1 "s"
-            :new-type2 "s"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my"
+             :new-object2 "my"
+             :new-type1 "s"
+             :new-type2 "s"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -93,10 +93,10 @@ int main(void) {
   (c$::input-files :files '("test1.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -121,14 +121,14 @@ int main(void) {
   (c$::input-files :files '("test2.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :new-object1 "my1"
-            :new-object2 "my2"
-            :new-type1 "s1"
-            :new-type2 "s2"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -159,15 +159,15 @@ int main(void) {
                            "extern-struct.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "s"
-            ;; :object-filepath "extern-struct.c"
-            :new-object1 "s1"
-            :new-object2 "s2"
-            :new-type1 "S1"
-            :new-type2 "S2"
-            :split-members ("x"))
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             ;; :object-filepath "extern-struct.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -221,15 +221,15 @@ struct S2 s2 = {.x = 0};
                            "extern-struct.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "s"
-            :object-filepath "extern-struct.c"
-            :new-object1 "s1"
-            :new-object2 "s2"
-            :new-type1 "S1"
-            :new-type2 "S2"
-            :split-members ("x"))
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -281,15 +281,15 @@ struct S2 s2 = {.x = 0};
                            "extern-struct.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :object-filepath "static-struct2.c"
-            :new-object1 "my1"
-            :new-object2 "my2"
-            :new-type1 "myStruct1"
-            :new-type2 "myStruct2"
-            :split-members ("b"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :object-filepath "static-struct2.c"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "myStruct1"
+             :new-type2 "myStruct2"
+             :split-members ("b"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -338,10 +338,10 @@ struct S s = {.x = 0};
                            "extern-struct.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "s"
-            :split-members ("x"))
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :split-members ("x"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -391,10 +391,10 @@ struct S_1 s_1 = {.x = 0};
   (c$::input-files :files '("typedef1.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -421,10 +421,10 @@ int main(void) {
   (c$::input-files :files '("typedef2.c")
                    :const *old*)
 
-  (splitgso *old*
-            *new*
-            :object-name "my"
-            :split-members ("baz"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :split-members ("baz"))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -456,14 +456,14 @@ int main(void) {
                    :const *old*)
 
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("bar")))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("bar")))
 
   :with-output-off nil)
 
@@ -475,14 +475,14 @@ int main(void) {
 
   ;; Global struct object occurs outside of field access.
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("baz"))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("baz"))
     :with-output-off nil)
 
   :with-output-off nil)
@@ -496,14 +496,14 @@ int main(void) {
 
   ;; Unsupported initializer
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("baz"))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("baz"))
 
     :with-output-off nil)
 
@@ -518,14 +518,14 @@ int main(void) {
 
   ;; Unsupported static assert struct declaration
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("baz"))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("baz"))
 
     :with-output-off nil)
 
@@ -540,14 +540,14 @@ int main(void) {
 
   ;; Unsupported multiple struct declarators
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("baz"))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("baz"))
 
     :with-output-off nil)
 
@@ -562,14 +562,14 @@ int main(void) {
 
   ;; Unsupported simultaneous struct initializer/declarations
   (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("baz"))
+    (split-gso *old*
+               *new*
+               :object-name "my"
+               :new-object1 "my1"
+               :new-object2 "my2"
+               :new-type1 "s1"
+               :new-type2 "s2"
+               :split-members ("baz"))
 
     :with-output-off nil)
 
@@ -586,14 +586,14 @@ int main(void) {
   ;; (must-fail
     ;; TODO: should this fail? the struct object it finds is static. Should we
     ;;   force :object-filepath?
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "myStruct1"
-              :new-type2 "myStruct2"
-              :split-members ("b"))
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "myStruct1"
+             :new-type2 "myStruct2"
+             :split-members ("b"))
 
     ;; :with-output-off nil)
 
