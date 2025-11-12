@@ -139,26 +139,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Remove the temp dir, if present and if instructed to.  If keep-temp-dir is
-;; :auto, remove it unless erp is non-nil (the contents of the temp-dir may
-;; help diagnose the error).
-(defun maybe-remove-temp-dir2 (keep-temp-dir erp interruptp state)
-  (declare (xargs :guard (and (member-eq keep-temp-dir '(t nil :auto))
-                              (booleanp interruptp))
-                  :stobjs state))
-  (let* ((removep (if (booleanp keep-temp-dir)
-                      (not keep-temp-dir)
-                    ;; must be :auto (remove the temp-dir if no error, but always remove it if interrupted):
-                    (if interruptp
-                        t ; don't leave temp dirs around when interrupting (we often interrupt builds)
-                      (if erp nil t))))
-         (state (if removep
-                    (maybe-remove-temp-dir state)
-                  state)))
-    state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; move, so we can use it in other tools?
 ;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars

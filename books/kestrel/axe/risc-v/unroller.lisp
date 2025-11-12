@@ -1045,43 +1045,52 @@
                                   ;;(restrict-theory 't)       ;todo: deprecate
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
-    (def-unrolled-fn
-      ',lifted-name
-      ,target
-      ,executable ; gets evaluated
-;;      ',inputs
-      ',output
-      ,extra-assumptions
-;;      ',suppress-assumptions
-;;      ',inputs-disjoint-from
-      ',stack-slots
-      ',existing-stack-slots
-      ',position-independent
-;;      ',type-assumptions-for-array-vars
-      ',prune-precise
-      ',prune-approx
-      ,extra-rules ; gets evaluated since not quoted
-      ,remove-rules ; gets evaluated since not quoted
-;;      ,extra-assumption-rules ; gets evaluated since not quoted
-;;      ,remove-assumption-rules ; gets evaluated since not quoted
-      ',step-limit
-      ',step-increment
-;;      ,stop-pcs
-      ',memoizep
-      ,monitor ; gets evaluated since not quoted
-      ',normalize-xors
-      ',count-hits
-      ',print
-      ',print-base
-      ',max-printed-term-size
-      ',untranslatep
-      ;; ',produce-function
-      ;; ',non-executable
-      ;; ',produce-theorem
-      ;; ',prove-theorem
-      ;; ',restrict-theory
-      ',whole-form
-      state))
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+      "acl2-unwind-protect for def-unrolled"
+      (def-unrolled-fn
+        ',lifted-name
+        ,target
+        ,executable ; gets evaluated
+        ;;      ',inputs
+        ',output
+        ,extra-assumptions
+        ;;      ',suppress-assumptions
+        ;;      ',inputs-disjoint-from
+        ',stack-slots
+        ',existing-stack-slots
+        ',position-independent
+        ;;      ',type-assumptions-for-array-vars
+        ',prune-precise
+        ',prune-approx
+        ,extra-rules ; gets evaluated since not quoted
+        ,remove-rules ; gets evaluated since not quoted
+        ;;      ,extra-assumption-rules ; gets evaluated since not quoted
+        ;;      ,remove-assumption-rules ; gets evaluated since not quoted
+        ',step-limit
+        ',step-increment
+        ;;      ,stop-pcs
+        ',memoizep
+        ,monitor ; gets evaluated since not quoted
+        ',normalize-xors
+        ',count-hits
+        ',print
+        ',print-base
+        ',max-printed-term-size
+        ',untranslatep
+        ;; ',produce-function
+        ;; ',non-executable
+        ;; ',produce-theorem
+        ;; ',prove-theorem
+        ;; ',restrict-theory
+        ',whole-form
+        state)
+      ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+      ;; Remove the temp-dir, if it exists:
+      (maybe-remove-temp-dir ; ,keep-temp-dir
+        state)
+      ;; Normal exit (remove the temp-dir, if it exists):
+      (maybe-remove-temp-dir ; ,keep-temp-dir
+        state)))
   :parents (acl2::axe-risc-v acl2::axe-lifters)
   :short "A tool to lift RISC-V binary code into logic, unrolling loops as needed."
   :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")

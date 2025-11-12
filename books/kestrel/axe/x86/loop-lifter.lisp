@@ -2819,30 +2819,40 @@
                            ;;restrict-theory
                            (monitor 'nil)
                            (print ':brief))
-  `(make-event (lift-subroutine-fn ',lifted-name
-                                   ',target
-                                   ,executable
-                                   ',inputs
-                                   ;; output-indicator
-                                   ,extra-assumptions
-                                   ;; suppress-assumptions
-                                   ',inputs-disjoint-from
-                                   ',assume-bytes
-                                   ',stack-slots
-                                   ',existing-stack-slots
-                                   ',position-independent
+  `(make-event
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for lift-subroutine"
+       (lift-subroutine-fn ',lifted-name
+                           ',target
+                           ,executable
+                           ',inputs
+                           ;; output-indicator
+                           ,extra-assumptions
+                           ;; suppress-assumptions
+                           ',inputs-disjoint-from
+                           ',assume-bytes
+                           ',stack-slots
+                           ',existing-stack-slots
+                           ',position-independent
 
-                                   ',loops
-                                   ,extra-rules
-                                   ,remove-rules
-                                   ',produce-theorem
-                                   ',non-executable
-                                   ;;restrict-theory
-                                   ,monitor
-                                   ',measures
-                                   ',whole-form
-                                   ',print
-                                   state)))
+                           ',loops
+                           ,extra-rules
+                           ,remove-rules
+                           ',produce-theorem
+                           ',non-executable
+                           ;;restrict-theory
+                           ,monitor
+                           ',measures
+                           ',whole-form
+                           ',print
+                           state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;(defttag t)
 ;(remove-untouchable acl2::verify-termination-on-raw-program-okp nil)

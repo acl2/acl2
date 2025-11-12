@@ -562,24 +562,35 @@
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
                          (max-conflicts '1000000))
-  `(acl2::make-event-quiet (test-function-fn ',function-name-string
-                                             ,executable   ; gets evaluated
-                                             ,param-names  ; gets evaluated
-                                             ,assumptions  ; gets evaluated
-                                             ,extra-rules  ; gets evaluated
-                                             ,extra-assumption-rules ; gets evaluated
-                                             ,extra-lift-rules ; gets evaluated
-                                             ,extra-proof-rules ; gets evaluated
-                                             ,remove-rules ; gets evaluated
-                                             ,remove-assumption-rules ; gets evaluated
-                                             ,remove-lift-rules ; gets evaluated
-                                             ,remove-proof-rules ; gets evaluated
-                                             ',normalize-xors
-                                             ',count-hits
-                                             ',print
-                                             ',max-printed-term-size
-                                             ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)))
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-function"
+       (test-function-fn ',function-name-string
+                         ,executable   ; gets evaluated
+                         ,param-names  ; gets evaluated
+                         ,assumptions  ; gets evaluated
+                         ,extra-rules  ; gets evaluated
+                         ,extra-assumption-rules ; gets evaluated
+                         ,extra-lift-rules ; gets evaluated
+                         ,extra-proof-rules ; gets evaluated
+                         ,remove-rules ; gets evaluated
+                         ,remove-assumption-rules ; gets evaluated
+                         ,remove-lift-rules ; gets evaluated
+                         ,remove-proof-rules ; gets evaluated
+                         ',normalize-xors
+                         ',count-hits
+                         ',print
+                         ',max-printed-term-size
+                         ,monitor ; gets evaluated
+                         ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
+                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -916,28 +927,38 @@
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                           )
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
-                                              ',function-name-strings
-                                              nil ; no need for excludes (just don't list the functions you don't want to test)
-                                              ,assumptions  ; gets evaluated
-                                              ,extra-rules  ; gets evaluated
-                                              ,extra-assumption-rules  ; gets evaluated
-                                              ,extra-lift-rules ; gets evaluated
-                                              ,extra-proof-rules ; gets evaluated
-                                              ,remove-rules ; gets evaluated
-                                              ,remove-assumption-rules ; gets evaluated
-                                              ,remove-lift-rules ; gets evaluated
-                                              ,remove-proof-rules ; gets evaluated
-                                              ',normalize-xors
-                                              ',count-hits
-                                              ',print
-                                              ',max-printed-term-size
-                                              ,monitor ; gets evaluated
-                                              ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
-                                              ',expected-failures
-                                              ',whole-form
-                                              state)))
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-functions"
+       (test-functions-fn ,executable ; gets evaluated
+                          ',function-name-strings
+                          nil ; no need for excludes (just don't list the functions you don't want to test)
+                          ,assumptions  ; gets evaluated
+                          ,extra-rules  ; gets evaluated
+                          ,extra-assumption-rules  ; gets evaluated
+                          ,extra-lift-rules ; gets evaluated
+                          ,extra-proof-rules ; gets evaluated
+                          ,remove-rules ; gets evaluated
+                          ,remove-assumption-rules ; gets evaluated
+                          ,remove-lift-rules ; gets evaluated
+                          ,remove-proof-rules ; gets evaluated
+                          ',normalize-xors
+                          ',count-hits
+                          ',print
+                          ',max-printed-term-size
+                          ,monitor ; gets evaluated
+                          ',step-limit ',step-increment ',prune-precise ',prune-approx
+                          ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
+                          ',expected-failures
+                          ',whole-form
+                          state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1056,25 +1077,35 @@
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      )
-  `(acl2::make-event-quiet (test-file-fn ,executable ; gets evaluated
-                                         ',include ; todo: evaluate?
-                                         ',exclude ; todo: evaluate?
-                                         ,assumptions  ; gets evaluated
-                                         ,extra-rules  ; gets evaluated
-                                         ,extra-assumption-rules  ; gets evaluated
-                                         ,extra-lift-rules ; gets evaluated
-                                         ,extra-proof-rules ; gets evaluated
-                                         ,remove-rules ; gets evaluated
-                                         ,remove-assumption-rules ; gets evaluated
-                                         ,remove-lift-rules ; gets evaluated
-                                         ,remove-proof-rules ; gets evaluated
-                                         ',normalize-xors
-                                         ',count-hits
-                                         ',print
-                                         ',max-printed-term-size
-                                         ,monitor ; gets evaluated
-                                         ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
-                                         ',expected-failures
-                                         ',whole-form
-                                         state)))
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-file"
+       (test-file-fn ,executable ; gets evaluated
+                     ',include ; todo: evaluate?
+                     ',exclude ; todo: evaluate?
+                     ,assumptions  ; gets evaluated
+                     ,extra-rules  ; gets evaluated
+                     ,extra-assumption-rules  ; gets evaluated
+                     ,extra-lift-rules ; gets evaluated
+                     ,extra-proof-rules ; gets evaluated
+                     ,remove-rules ; gets evaluated
+                     ,remove-assumption-rules ; gets evaluated
+                     ,remove-lift-rules ; gets evaluated
+                     ,remove-proof-rules ; gets evaluated
+                     ',normalize-xors
+                     ',count-hits
+                     ',print
+                     ',max-printed-term-size
+                     ,monitor ; gets evaluated
+                     ',step-limit ',step-increment ',prune-precise ',prune-approx
+                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
+                     ',expected-failures
+                     ',whole-form
+                     state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
