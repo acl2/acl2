@@ -381,8 +381,8 @@
            :induct t
            :enable (set::union set::emptyp set::setp set::head set::tail))
          (defrule ,pred-of-intersect
-           (implies (and (,x.pred ,x.xvar)
-                         (,x.pred ,y))
+           (implies (or (,x.pred ,x.xvar)
+                        (,x.pred ,y))
                     (,x.pred (set::intersect ,x.xvar ,y)))
            :induct t
            :enable set::intersect)
