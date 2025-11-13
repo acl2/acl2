@@ -336,3 +336,38 @@
          (bv-array-read element-size array-len 0 array))
   :hints (("Goal" :use (:instance bv-array-read-of-expt2-of-+-of-ceiling-of-lg (i 0))
                   :in-theory (disable bv-array-read-of-expt2-of-+-of-ceiling-of-lg))))
+
+(defthm bv-array-read-of-+-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (integerp j)
+                (natp size))
+           (equal (bv-array-read element-size len (+ i (bvchop size j)) data)
+                  (bv-array-read element-size len (+ i j) data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (natp size))
+           (equal (bv-array-read element-size len (bvchop size i) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-+-len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (+ i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthm bv-array-read-of---len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (- i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
