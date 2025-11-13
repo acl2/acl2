@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
