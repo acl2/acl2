@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RISCV")
+(in-package "RISCV64IM-LE")
 
 (include-book "features")
 
@@ -41,11 +41,14 @@
 
 (defxdoc+ rv64im-le-states
   :parents (specialized-rv64im-le)
-  :short "Specialization of (@see states) to RV64IM little endian."
+  :short (xdoc::topstring
+          "Specialization of "
+          (xdoc::seetopic "riscv::states" "states")
+          " to RV64IM little endian.")
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a recognizer for the valid states for the RV64I base;
+    "We define a recognizer for the valid states for RV64IM little endian;
      in our current model, the states do not depend
      on (the presence of absence of) the M extension
      or on the endianness.
@@ -59,16 +62,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stat-rv64i-p (x)
+(define stat-rv64im-le-p (x)
   :returns (yes/no booleanp)
-  :short "Recognizer of states with base RV64I."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv64im-le))))
+  :short "Recognizer of states for RV64IM little endian."
+  (and (riscv::statp x)
+       (riscv::stat-validp x (feat-rv64im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

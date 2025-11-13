@@ -20,6 +20,26 @@
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration
+  ;; Needed by FTY
+  :induction-depth 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Needed by FTY
+(local (in-theory (enable nfix fix)))
+
+;; Needed by FTY when tau is disabled
+(defrulel sfix-when-not-setp-cheap
+  (implies (not (setp x))
+           (equal (sfix x)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable sfix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-trees
@@ -1795,15 +1815,19 @@
        See our ABNF grammar."))
     (:ident ((ident ident)
              (info any)))
-    (:const ((const const)))
-    (:string ((strings stringlit-list)))
+    (:const ((const const)
+             (info any)))
+    (:string ((strings stringlit-list)
+              (info any)))
     (:paren ((inner expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
     (:arrsub ((arg1 expr)
-              (arg2 expr)))
+              (arg2 expr)
+              (info any)))
     (:funcall ((fun expr)
-               (args expr-list)))
+               (args expr-list)
+               (info any)))
     (:member ((arg expr)
               (name ident)))
     (:memberp ((arg expr)

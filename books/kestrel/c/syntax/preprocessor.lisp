@@ -2063,7 +2063,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-*-c-char),
-     but it operates on preprocessor states instead of parser states."))
+     but it operates on preprocessor states instead of parser states,
+     and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (pread-char ppstate))
        ((unless char)
@@ -2074,7 +2075,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\'))) ; '
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -2123,7 +2124,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-*-s-char),
-     but it operates on preprocessor states instead of parser states."))
+     but it operates on preprocessor states instead of parser states,
+     and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (pread-char ppstate))
        ((unless char)
@@ -2134,7 +2136,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
                                any character other than ~
@@ -2193,7 +2195,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\>))) ; >
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -2245,7 +2247,7 @@
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
-       ((when (utf8-= char 10)) ; new-line
+       ((when (or (utf8-= char 10) (utf8-= char 13))) ; new-line
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
                                greater-than or new-line"
@@ -2319,7 +2321,7 @@
                (lexeme plexemep)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a string literal."
+  :short "Lex a string literal during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2350,7 +2352,7 @@
                (lexeme plexemep)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a header name."
+  :short "Lex a header name during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2402,5 +2404,160 @@
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-block-comment ((first-pos positionp) (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a block comment during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the same as @(tsee lex-block-comment),
+     but it operates on preprocessor states instead of parser states,
+     and it returns the content of the comment as part of the lexeme.")
+   (xdoc::p
+    "Collecting the content of the comment,
+     i.e. the characters between @('/*') and @('*/') (excluding both),
+     requires some additional code here.
+     Note that @('plex-rest-of-block-comment-after-star') is always called
+     just after a @('*') has been read;
+     the addition of that @('*') to the content is deferred
+     until it is established that the @('*') is not part of
+     the closing @('*/');
+     see the comments interspersed with the code."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp content last-pos ppstate)
+        (plex-rest-of-block-comment first-pos ppstate)))
+    (retok (plexeme-block-comment content)
+           (make-span :start first-pos :end last-pos)
+           ppstate))
+
+  :prepwork
+
+  ((defines plex-block-comment-loops
+
+     (define plex-rest-of-block-comment ((first-pos positionp)
+                                         (ppstate ppstatep))
+       :returns (mv erp
+                    (content nat-listp)
+                    (last-pos positionp)
+                    (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+       (b* (((reterr) nil (irr-position) ppstate)
+            ((erp char pos ppstate) (pread-char ppstate)))
+         (cond
+          ((not char) ; EOF
+           (reterr-msg :where (position-to-msg pos)
+                       :expected "a character"
+                       :found (char-to-msg char)
+                       :extra (msg "The block comment starting at ~@1 ~
+                                    never ends."
+                                   (position-to-msg first-pos))))
+          ((utf8-= char (char-code #\*)) ; *
+           ;; The function PLEX-REST-OF-BLOCK-COMMENT-AFTER-STAR that we call
+           ;; takes care of including the * just read into the content
+           ;; if that is not immediately followed by /.
+           ;; So here we do not need to handle the inclusion of the *,
+           ;; and instead we just relay the content from the call.
+           (plex-rest-of-block-comment-after-star first-pos ppstate))
+          (t ; other
+           ;; We add the character just read to
+           ;; the content returned by the recursive call.
+           (b* (((erp content last-pos ppstate)
+                 (plex-rest-of-block-comment first-pos ppstate)))
+             (retok (cons char content) last-pos ppstate)))))
+       :measure (ppstate->size ppstate))
+
+     (define plex-rest-of-block-comment-after-star ((first-pos positionp)
+                                                    (ppstate ppstatep))
+       :returns (mv erp
+                    (content nat-listp)
+                    (last-pos positionp)
+                    (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+       (b* (((reterr) nil (irr-position) ppstate)
+            ((erp char pos ppstate) (pread-char ppstate)))
+         (cond
+          ((not char) ; EOF
+           (reterr-msg :where (position-to-msg pos)
+                       :expected "a character"
+                       :found (char-to-msg char)
+                       :extra (msg "The block comment starting at ~@1 ~
+                                    never ends."
+                                   (position-to-msg first-pos))))
+          ((utf8-= char (char-code #\/)) ; /
+           ;; We have reached the end of the comment,
+           ;; and the * read just before this call must be
+           ;; part of  closing */ of the comment.
+           ;; So we just return the empty content here;
+           ;; recall that the content of a comment lexeme
+           ;; does not include the opening /* and closing */.
+           (retok nil pos ppstate))
+          ((utf8-= char (char-code #\*)) ; *
+           ;; Here we are reading another * after having read a *
+           ;; just before this call, either called by this function
+           ;; or called by PLEX-REST-OF-BLOCK-COMMENT.
+           ;; Thus that previous * cannot be part of the closing */
+           ;; and thus we add a * to the content that is
+           ;; recursively returned by the call just below.
+           ;; The * just read may or may not be added to the content,
+           ;; based on what follows, but this is handled
+           ;; in the recursive call of PLEX-REST-OF-BLOCK-COMMENT-AFTER-STAR.
+           (b* (((erp content last-pos ppstate)
+                 (plex-rest-of-block-comment-after-star first-pos ppstate)))
+             (retok (cons (char-code #\*) content) last-pos ppstate)))
+          (t ; other
+           ;; Besides adding to the recursively obtained content
+           ;; the character just read, we also need to add
+           ;; the * that was read before this call.
+           (b* (((erp content last-pos ppstate)
+                 (plex-rest-of-block-comment first-pos ppstate)))
+             (retok (list* (char-code #\*) char content) last-pos ppstate)))))
+       :measure (ppstate->size ppstate))
+
+     :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+
+     ///
+
+     (std::defret-mutual ppstate->size-of-plex-block-comment-loops-uncond
+       (defret ppstate->size-of-plex-rest-of-block-comment-uncond
+         (<= (ppstate->size new-ppstate)
+             (ppstate->size ppstate))
+         :rule-classes :linear
+         :fn plex-rest-of-block-comment)
+       (defret ppstate->size-of-plex-resto-of-block-comment-after-star-uncond
+         (<= (ppstate->size new-ppstate)
+             (ppstate->size ppstate))
+         :rule-classes :linear
+         :fn plex-rest-of-block-comment-after-star))
+
+     (std::defret-mutual ppstate->size-of-plex-block-comment-loops-cond
+       (defret ppstate->size-of-plex-rest-of-block-comment-cond
+         (implies (not erp)
+                  (<= (ppstate->size new-ppstate)
+                      (1- (ppstate->size ppstate))))
+         :rule-classes :linear
+         :fn plex-rest-of-block-comment)
+       (defret ppstate->size-of-plex-resto-of-block-comment-after-star-cond
+         (implies (not erp)
+                  (<= (ppstate->size new-ppstate)
+                      (1- (ppstate->size ppstate))))
+         :rule-classes :linear
+         :fn plex-rest-of-block-comment-after-star))))
+
+  ///
+
+  (defret ppstate->size-of-plex-block-comment-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-plex-block-comment-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; TODO: continue

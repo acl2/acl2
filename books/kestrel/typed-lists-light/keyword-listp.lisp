@@ -1,7 +1,7 @@
 ; A lightweight book about the build-in function keyword-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,3 +26,11 @@
   (equal (keyword-listp (remove-duplicates-equal x))
          (keyword-listp (true-list-fix x)))
   :hints (("Goal" :in-theory (enable remove-duplicates-equal true-list-fix))))
+
+;; Then several built-in :forward-chaining rules should get us all the way to
+;; true-listp.
+(defthm keyword-listp-forward-to-symbol-listp
+  (implies (keyword-listp x)
+           (symbol-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable keyword-listp))))

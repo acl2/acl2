@@ -106,10 +106,28 @@
           (cons flag (decode-val-with-mask-flag-alist val (rest mask-flag-alist)))
         (decode-val-with-mask-flag-alist val (rest mask-flag-alist))))))
 
-;; todo: There is an entry for Linux, but I don't see it being used.
+(defthm keyword-listp-of-decode-val-with-mask-flag-alist
+  (implies (keyword-listp (strip-cdrs mask-flag-alist))
+           (keyword-listp (decode-val-with-mask-flag-alist val mask-flag-alist)))
+  :hints (("Goal" :in-theory (enable decode-val-with-mask-flag-alist))))
+
+;; There seem to be somewhat different lists of these values floating around.
+;; One reference is https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 (defconst *osabis*
-  `((0 . :elfosabi_sysv)
+  `((0 . :elfosabi_none) ; was :elfosabi_sysv
     (1 . :elfosabi_hpux)
+    (2 . :elfosabi_netbsd)
+    (3 . :elfosabi_linux) ; also called :elfosabi_gnu ?
+    (6 . :elfosabi_solaris)
+    (7 . :elfosabi_aix)
+    (8 . :elfosabi_irix)
+    (9 . :elfosabi_freebsd)
+    (10 . :elfosabi_tru64)
+    (11 . :elfosabi_modesto)
+    (12 . :elfosabi_openbsd)
+    (13 . :elfosabi_openvms)
+    (14 . :elfosabi_nsk)
+    ;; todo: add more
     (255 . :elfosabi_standalone)))
 
 (defconst *program-header-types*
@@ -629,6 +647,7 @@
   (and (symbol-alistp entry)
        (natp (lookup-eq :vaddr entry))
        (natp (lookup-eq :memsz entry))
+       (keyword-listp (lookup-eq :flags entry))
        ;; todo: more
        ))
 

@@ -13,6 +13,7 @@
 ;; TODO: These aren't really "array patterns"
 
 (include-book "bv-array-read")
+(include-book "map-bvsx")
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
@@ -335,3 +336,75 @@
                   (bv-array-read element-size (+ 1 k) (bvchop isize index) (take (+ 1 k) data))))
   :hints (("Goal" :in-theory (e/d (bvlt <=-of-bvchop-same-linear)
                                   (bv-array-read-of-cons-both)))))
+
+(defthm bvsx-of-bv-array-read-constant-array
+  (implies (and (syntaxp (quotep data))
+                (equal len (len data))
+                (natp new-size)
+                (natp old-size))
+           (equal (bvsx new-size old-size (bv-array-read old-size len index data))
+                  (bv-array-read new-size len index (map-bvsx new-size old-size data))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvsx-of-nth))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Splitting an array-read into cases based on the index:
+
+(defund bv-array-read-cases (i size len index data)
+  (if (zp i)
+      (bv-array-read size len 0 data)
+    (if (equal i (bvchop (ceiling-of-lg len) index))
+        (bv-array-read size len i data)
+      (bv-array-read-cases (+ -1 i) size len index data))))
+
+;(defopeners bv-array-read-cases) ; didn't work well (rules too specific?)
+(defthm bv-array-read-cases-opener
+  (implies (syntaxp (quotep i))
+           (equal (bv-array-read-cases i size len index data)
+                  (if (zp i)
+                      (bv-array-read size len 0 data)
+                    (if (equal i (bvchop (ceiling-of-lg len) index))
+                        (bv-array-read size len i data)
+                      (bv-array-read-cases (+ -1 i) size len index data)))))
+  :hints (("Goal" :in-theory (enable bv-array-read-cases))))
+
+(local
+ (defthm helper
+   (implies (and (not (equal 0 i))
+                 (not (equal i (bvchop size index)))
+                 (not (bvlt size i index))
+                 (natp index)
+                 (unsigned-byte-p size i)
+                 )
+            (not (bvlt size (bvplus size -1 i) index)))
+   :hints (("Goal" :do-not-induct t :in-theory (enable bvlt bvplus)))))
+
+(local
+ (defthmd bv-array-read-becomes-bv-array-read-cases-helper
+   (implies (and (bvle (ceiling-of-lg len) index i)
+                 (natp index)
+                 (unsigned-byte-p (ceiling-of-lg len) i)
+                 (natp i))
+            (equal (bv-array-read size len index data)
+                   (bv-array-read-cases i size len index data)))
+   :hints (("Goal" :induct (bv-array-read-cases i size len index data)
+                   :expand ((bv-array-read size len 0 data)
+                            (bv-array-read size len index data))
+                   :in-theory (enable bv-array-read-cases
+                                      bvlt
+                                      ;;acl2::bvlt-convert-arg2-to-bv
+                                      ;;acl2::trim-of-+-becomes-bvplus ; don't we want this enabled?
+                                      )))))
+
+;; restrict to constant array?
+(defthmd bv-array-read-becomes-bv-array-read-cases
+  (implies (and (posp len)
+                (natp index)
+                (unsigned-byte-p (ceiling-of-lg len) index)
+                (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
+                )
+           (equal (bv-array-read size len index data)
+                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len))
+                                       size len index data)))
+  :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
+                                  (i (+ -1 len))))))

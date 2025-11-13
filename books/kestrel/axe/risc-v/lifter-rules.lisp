@@ -20,7 +20,7 @@
 (add-known-boolean subregion32p)
 (add-known-boolean disjoint-regions32p)
 
-(add-known-boolean stat32ip)
+(add-known-boolean stat32p)
 
 (def-constant-opener in-region32p)
 (def-constant-opener subregion32p)
@@ -78,7 +78,7 @@
 (def-constant-opener unsigned-byte-listp)
 
 ;todo: more
-(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv::funct))))
+(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv32im-le::funct))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

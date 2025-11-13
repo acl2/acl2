@@ -38,7 +38,9 @@
                               )
                   :type-prescription (natp (bv-array-read element-size len index data))))
   (let* ((len (nfix len))
-         (numbits (ceiling-of-lg len)) ;number of index bits needed
+          ;number of index bits needed ; todo: disallow len=0 (no valid indices):
+         (numbits (mbe :exec (if (equal 0 len) 0 (ceiling-of-lg len)) ; avoid calling ceiling-of-lg on 0 (guard violation)
+                       :logic (ceiling-of-lg len)))
          ;; Chop the index down to the needed number of bits:
          (index (bvchop numbits (ifix index))))
     (if (< index len) ;; always true when LEN is a power of 2
@@ -147,7 +149,8 @@
          (bvchop element-size (nth 0 data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-;; the index gets chopped down to 0 bits
+;; unusual case: when the array has size 1, the only valid index is 0 (because
+;; the index gets chopped down to 0 bits).  Thus, the index is irrelevant.
 ;todo: maybe enable
 (defthmd bv-array-read-of-1-arg2-better
   (implies (< 0 index) ;prevents loops (could also do a syntactic check against '0 but not for axe?)
@@ -321,3 +324,15 @@
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (+ 1 k) index (take (+ 1 k) data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-+-of-ceiling-of-lg
+  (implies (integerp i)
+           (equal (bv-array-read element-size array-len (+ i (expt 2 (ceiling-of-lg array-len))) array)
+                  (bv-array-read element-size array-len i array)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-ceiling-of-lg
+  (equal (bv-array-read element-size array-len (expt 2 (ceiling-of-lg array-len)) array)
+         (bv-array-read element-size array-len 0 array))
+  :hints (("Goal" :use (:instance bv-array-read-of-expt2-of-+-of-ceiling-of-lg (i 0))
+                  :in-theory (disable bv-array-read-of-expt2-of-+-of-ceiling-of-lg))))

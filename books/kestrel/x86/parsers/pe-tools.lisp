@@ -40,7 +40,8 @@
   (declare (xargs :guard t))
   (and (symbol-alistp h)
        (natp (lookup-equal :virtual-address h))
-       (natp (lookup-equal :virtual-size h))))
+       (natp (lookup-equal :virtual-size h))
+       (keyword-listp (lookup-eq :characteristics h))))
 
 (local
   (defthm alistp-when-pe-section-headerp
@@ -442,6 +443,13 @@
          (memsz (lookup-eq :virtual-size header))
          ;; (offset (lookup-eq :pointer-to-raw-data section)) ; todo: this is rel to what?
          ;; (filesz (lookup-eq :filesize section))
+         (characteristics (lookup-eq :characteristics header))
+         (readable   (member-eq :IMAGE_SCN_MEM_READ characteristics))
+         (writeable  (member-eq :IMAGE_SCN_MEM_WRITE characteristics))
+         (executable (member-eq :IMAGE_SCN_MEM_EXECUTE characteristics))
+         (nice-flags (append (if readable '(:r) nil)
+                             (if writeable '(:w) nil)
+                             (if executable '(:x) nil)))
          (bytes (lookup-eq :raw-data info))
          (len-bytes (len bytes))
          ((when (not (and ;; (natp offset)
@@ -473,7 +481,7 @@
          )
       (pe64-regions-to-load-aux (rest sections)
                                 ;all-bytes-len all-bytes
-                                (cons (list memsz vaddr bytes)
+                                (cons (list memsz vaddr bytes nice-flags)
                                       acc)))))
 
 (local

@@ -22,13 +22,13 @@
 ;; ;; larger SP means a shorter stack.
 ;; (defund sp-is-abovep (old-sp stat)
 ;;   (declare (xargs :guard (and (unsigned-byte-p 32 old-sp)
-;;                               (stat32ip stat))))
+;;                               (stat32p stat))))
 ;;   (bvlt 32 2147483648 ; 2^31
 ;;         (bvminus 32 old-sp (sp stat))))
 
 ;; (defund sp-is-belowp (old-sp stat)
 ;;   (declare (xargs :guard (and (unsigned-byte-p 32 old-sp)
-;;                               (stat32ip stat))))
+;;                               (stat32p stat))))
 ;;   (bvlt 32 2147483648 ; 2^31
 ;;         (bvminus 32 (sp stat) old-sp)))
 
@@ -70,7 +70,7 @@
 (defund update-call-stack-height-aux (instr call-stack-height stat)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr)
                               (integerp call-stack-height)
-                              (stat32ip stat))
+                              (stat32p stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte32p)))
                   ))
   (let ((instr? (riscv::decodex instr *features*)))
@@ -119,7 +119,7 @@
 ;; Increment on call, decrement on return
 (defund update-call-stack-height (call-stack-height stat)
   (declare (xargs :guard (and (integerp call-stack-height)
-                              (stat32ip stat))
+                              (stat32p stat))
                   :guard-hints (("Goal" :in-theory (enable ubyte32p)))
                   ))
   (let* ((pc (pc stat))
@@ -131,7 +131,7 @@
 ;; (defund run-is-donep (return-address old-sp stat)
 ;;   (declare (xargs :guard (and (unsigned-byte-p 32 return-address)
 ;;                               (unsigned-byte-p 32 old-sp)
-;;                               (stat32ip stat))))
+;;                               (stat32p stat))))
 ;;   (if (sp-is-abovep old-sp stat) ; the stack has shrunk (it grows downward)
 ;;       ;; the stack has shrunk, so we've exited the main subroutine being lifted
 ;;       t
@@ -174,13 +174,13 @@
 
 ;; Run until we return from the current function.
 (defund run-until-return (stat)
-  (declare (xargs :guard (stat32ip stat)))
+  (declare (xargs :guard (stat32p stat)))
   (run-until-return-aux
    0 ; initial call-stack-height
    stat))
 
 (defund run-subroutine (stat)
-  ;; (declare (xargs :guard (stat32ip stat))) ; todo: need a property of the defpun
+  ;; (declare (xargs :guard (stat32p stat))) ; todo: need a property of the defpun
   ;; OLD: We start by stepping once.  This increases the stack height.  Then we run
   ;; until the stack height decreases again.  Finally, we step one more time to
   ;; do the RET.

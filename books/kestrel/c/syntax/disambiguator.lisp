@@ -1343,7 +1343,7 @@
                             (ident->unwrap expr.ident))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
-          :enumconst (retok (expr-const (const-enum expr.ident))
+          :enumconst (retok (make-expr-const :const (const-enum expr.ident))
                             (dimb-table-fix table))))
        :const
        (retok (expr-fix expr) (dimb-table-fix table))

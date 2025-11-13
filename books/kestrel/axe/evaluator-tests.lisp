@@ -150,7 +150,7 @@
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
-                           (set::union (mv t (eval-in-logic (set::union arg1 arg2))))
+                           (set::union$inline (mv t (eval-in-logic (set::union$inline arg1 arg2))))
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (eval-in-logic (set::insert arg1 arg2))))
@@ -752,7 +752,7 @@
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
-                           (set::union (mv t (eval-in-logic (set::union arg1 arg2))))
+                           (set::union$inline (mv t (eval-in-logic (set::union$inline arg1 arg2))))
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (eval-in-logic (set::insert arg1 arg2))))

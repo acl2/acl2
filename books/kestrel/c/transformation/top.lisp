@@ -26,9 +26,11 @@
 (include-book "split-fn-when-doc")
 (include-book "split-all-gso")
 (include-book "split-all-gso-doc")
-(include-book "splitgso")
-(include-book "splitgso-doc")
+(include-book "split-gso")
+(include-book "split-gso-doc")
 (include-book "utilities/top")
+(include-book "wrap-fn")
+(include-book "wrap-fn-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
