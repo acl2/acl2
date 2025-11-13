@@ -301,7 +301,7 @@
   (defret ienv->short-byte-size-type-prescription
     (posp size)
     :rule-classes :type-prescription
-    ::hints (("Goal" :in-theory (disable ienv->short-byte-size)))))
+    :hints (("Goal" :in-theory (disable ienv->short-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +346,7 @@
   (defret ienv->int-byte-size-type-prescription
     (posp size)
     :rule-classes :type-prescription
-    ::hints (("Goal" :in-theory (disable ienv->int-byte-size)))))
+    :hints (("Goal" :in-theory (disable ienv->int-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,7 +391,7 @@
   (defret ienv->long-byte-size-type-prescription
     (posp size)
     :rule-classes :type-prescription
-    ::hints (("Goal" :in-theory (disable ienv->long-byte-size)))))
+    :hints (("Goal" :in-theory (disable ienv->long-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,7 +436,7 @@
   (defret ienv->llong-byte-size-type-prescription
     (posp size)
     :rule-classes :type-prescription
-    ::hints (("Goal" :in-theory (disable ienv->llong-byte-size)))))
+    :hints (("Goal" :in-theory (disable ienv->llong-byte-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

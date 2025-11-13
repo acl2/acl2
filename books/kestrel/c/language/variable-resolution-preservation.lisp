@@ -204,7 +204,7 @@
            not-errorp-of-write-object-of-peel-scopes
            objdesign-of-var-of-write-object)
   :disable objdesign-kind-of-objdesign-top
-  ::use objdesign-kind-of-objdesign-top)
+  :use objdesign-kind-of-objdesign-top)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

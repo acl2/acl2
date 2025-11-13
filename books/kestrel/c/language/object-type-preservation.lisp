@@ -289,7 +289,7 @@
               not-errorp-of-write-object-of-peel-scopes
               read-object-of-write-object-when-auto/static/alloc-existing)
      :disable objdesign-kind-of-objdesign-top
-     ::use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
+     :use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

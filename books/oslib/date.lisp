@@ -28,6 +28,20 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; Matt K. mod; explanation follows
+; cert_param: (non-gcl)
+;   Regarding that cert_param:
+; Using ACL2 built on GCL 2.7.1, the assertion
+; (assert! (and (natp *year*) (<= 2014 *year*)))
+; in tests/date.lisp failed.  That's because (date) evaluated to the string:
+;"January 1, 0 00:00:00".
+; I tried using :inline nil with the define forms for get-decoded-time$ and
+; universal-time in date-logic.lisp, but that didn't solve the problem.
+; I also tried including "date-logic" with :load-compiled-file nil when
+; #+gcl-2.7.0+, but that too didn't solve the problem.  If it turns out to be
+; important for this book to work with GCL, or if a similar problem arises
+; elsewhere, then more effort to solve this problem may be justified.
+
 (in-package "OSLIB")
 (include-book "date-logic")
 (include-book "tools/include-raw" :dir :system)
