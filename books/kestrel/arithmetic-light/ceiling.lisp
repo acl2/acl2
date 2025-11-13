@@ -338,3 +338,18 @@
                     (and (< j 0)
                          (<= (- j) i)))))
   :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-ceiling-of-2-same ; gen the 2
+  (implies (natp n)
+           (equal (< (ceiling n 2) n)
+                  (< 1 n)))
+  :hints (("Goal" :cases ((< (+ 1 (floor n 2)) n))
+                  :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(defthm ceiling-of-expt2-and-2
+  (implies (integerp i)
+           (equal (ceiling (expt 2 i) 2)
+                  (if (<= i 0)
+                      1
+                    (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
