@@ -188,7 +188,10 @@
 (defval *cc-options-space-sep*
   :short "C flags whose value follows after a whitespace separator."
   '("-o" "-include" "-idirafter" "-imacros" "-imultilib" "-iprefix" "-iquote"
-    "-isysroot" "-isystem" "-iwithprefix" "-iwithprefixbefore"))
+    "-isysroot" "-isystem" "-iwithprefix" "-iwithprefixbefore"
+    ;; NOTE: `-I` is accepted as both space-separated and a conventional short
+    ;;  argument. I.e., both `-I <dir>` and `-I<dir` are accepted.
+    "-I"))
 
 (defval *cc-options-equal-sep*
   :short "C flags whose value follows after an @('=') character."
