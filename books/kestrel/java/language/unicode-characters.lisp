@@ -41,9 +41,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This type models Java characters in the context of modeling Java's syntax.
+    "This type models Java characters in the context of Java's syntax.
      This is isomorphic, but distinct from, the type @(tsee char-value)
-     that models Java characters in the context of modeling Java's semantics.
+     that models Java characters in the context of Java's semantics.
      The reason for having these two different types is that
      we want character values to be tagged when modeling semantics,
      while we want characters to be simple numbers when modeling syntax."))

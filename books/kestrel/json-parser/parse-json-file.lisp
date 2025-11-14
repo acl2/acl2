@@ -1,6 +1,6 @@
 ; A tool to parse a file containing a JSON object
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,8 +23,8 @@
        ((when (not existsp))
         (progn$ (er hard? 'parse-file-as-json "JSON file does not exist: ~x0." filename)
                 (mv `(:file-does-not-exist ,filename) nil nil state)))
-       (chars ; note that state is not returned!
-        (read-file-into-character-list filename state))
+       ((mv chars state)
+        (read-file-into-character-list-safe filename state))
        ((when (not (consp chars)))
         (prog2$ (er hard? 'parse-file-as-json "Failed to read any character from file: ~x0." filename)
                 (mv `(:failed-to-read-from-file ,filename) nil nil state)))
