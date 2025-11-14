@@ -16,10 +16,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,8 +90,7 @@
      would not work, and so we need to introduce this function here."))
   (if (> (compustate-top-frame-scopes-number compst) 1)
       (exit-scope compst)
-    (pop-frame compst))
-  :hooks (:fix))
+    (pop-frame compst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -204,7 +200,7 @@
            not-errorp-of-write-object-of-peel-scopes
            objdesign-of-var-of-write-object)
   :disable objdesign-kind-of-objdesign-top
-  ::use objdesign-kind-of-objdesign-top)
+  :use objdesign-kind-of-objdesign-top)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

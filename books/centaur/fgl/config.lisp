@@ -232,3 +232,44 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
 
 (define fgl-toplevel-vacuity-check-config-wrapper (override)
   (or override (fgl-toplevel-vacuity-check-config)))
+
+
+
+
+;; Config objects for SAT checks go here so we don't have to include the whole
+;; SAT implementation just to define a rewrite rule that calls SAT.
+
+
+(defprod fgl-ipasir-config
+  :parents (fgl-sat-check)
+  :short "Configuration object for IPASIR SAT checks in the default FGL configuration."
+  ((ignore-pathcond booleanp :default nil)
+   (ignore-constraint booleanp :default nil)
+   (ipasir-callback-limit acl2::maybe-natp :default nil
+                          "Limit on the number of callbacks in a single SAT check
+                           after which the check fails.")
+   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
+                                  "Limit on the number of callbacks over the lifespan
+                                   of a solver object, after which the solver is
+                                   re-initialized.")
+   (ipasir-index natp :default '0))
+  :tag :fgl-ipasir-config)
+
+
+(defprod fgl-satlink-monolithic-sat-config
+  ((ignore-pathcond booleanp :default nil)
+   (ignore-constraint booleanp :default nil)
+   (satlink-config-override :default nil)
+   (transform booleanp :default nil)
+   (transform-config-override :default nil)
+   (conjoin :default t))
+  :tag :fgl-satlink-config)
+
+;; the main monolithic SAT configs we tend to need:
+(define monolithic-sat-with-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform t))
+
+(define monolithic-sat-without-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform nil))
+
+

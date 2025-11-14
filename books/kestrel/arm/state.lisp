@@ -8,6 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod: An array is too big for GCL 2.7.1 (and probably any version of
+; GCL starting with 2.7.0).
+; cert_param: (non-gcl)
+
 (in-package "ARM")
 
 ;; STATUS: In-progress / incomplete

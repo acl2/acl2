@@ -84,6 +84,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd slice-trim-axe
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe-plus-one high x :non-arithmetic dag-array))
+                (<= low high)
+                (natp low)
+                (natp high))
+           (equal (slice high low x)
+                  (slice high low (trim (+ 1 high) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
 (defthmd slice-trim-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe-plus-one high x :all dag-array))
                 (<= low high)
@@ -557,7 +566,6 @@
   :hints (("Goal" :use leftrotate32-trim-arg1
            :in-theory (disable leftrotate32-trim-arg1))))
 
-;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y))
 (defthmd leftrotate32-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt :all dag-array))
                 (natp amt))
@@ -568,15 +576,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;bozo gen
-;rename
-;make :all variant, like for leftrotate above
-(defthmd rightrotate32-trim-amt-axe
+(defthmd rightrotate32-trim-arg1-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt :non-arithmetic dag-array))
                 (natp amt))
            (equal (rightrotate32 amt x)
                   (rightrotate32 (trim 5 amt) x)))
-  :hints (("Goal" :in-theory (enable rightrotate32 rightrotate leftrotate trim mod-becomes-bvchop-when-power-of-2p))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd rightrotate32-trim-arg1-axe-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt :all dag-array))
+                (natp amt))
+           (equal (rightrotate32 amt x)
+                  (rightrotate32 (trim 5 amt) x)))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
