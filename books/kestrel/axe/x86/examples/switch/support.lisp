@@ -241,6 +241,7 @@
                 (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
                 )
            (equal (set-rip (bv-array-read size len index data) x86)
+                  ;; bv-array-read-cases here will then get unrolled:
                   (set-rip (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len)) size len index data) x86)))
   :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
 
