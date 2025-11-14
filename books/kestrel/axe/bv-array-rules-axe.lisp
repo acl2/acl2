@@ -486,6 +486,26 @@
                   (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
   :hints (("Goal" :use bv-array-read-shorten-when-in-first-half)))
 
+;; Here we guess that the index may be > ~half the array size.  if so, we can
+;; discard the first ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-second-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (integerp len) ; prevent loops, because (ceiling-of-lg len) is at least 1, so the length decreases
+                (< 1 len)  ; seems needed
+                (axe-smt (bvle (ceiling-of-lg len) (ceiling len 2) index)) ; index in second half
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (integerp index))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (- len (ceiling len 2)) ; gets computed
+                                 (bvminus (ceiling-of-lg len) index (ceiling len 2))
+                                 (nthcdr (ceiling len 2) data) ; gets computed
+                                 )))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-second-half)))
+
 (defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
   (implies (and (syntaxp (and (quotep k)
                               (quotep data)
