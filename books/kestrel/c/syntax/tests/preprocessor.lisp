@@ -1324,3 +1324,29 @@
               (plexeme-block-comment
                (append (acl2::string=>nats "// no special significance")
                        (list 10)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-line-comment
+
+(test-lex
+ plex-line-comment
+ (list 10)
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-line-comment nil)))
+
+(test-lex
+ plex-line-comment
+ (append (acl2::string=>nats "comment") (list 10 13))
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-line-comment (acl2::string=>nats "comment"))))
+
+(test-lex
+ plex-line-comment
+ (append (acl2::string=>nats "/* no special significance */") (list 13))
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-line-comment
+               (acl2::string=>nats "/* no special significance */"))))
