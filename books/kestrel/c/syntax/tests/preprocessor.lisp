@@ -1067,3 +1067,82 @@
 (test-lex-fail
  plex-*-s-char
  (list (char-code #\U) 13 (char-code #\")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-*-h-char
+
+(test-lex
+ plex-*-h-char
+ "abc>"
+ :cond (equal ast (list (h-char (char-code #\a))
+                        (h-char (char-code #\b))
+                        (h-char (char-code #\c)))))
+
+(test-lex
+ plex-*-h-char
+ "\">"
+ :cond (equal ast (list (h-char (char-code #\")))))
+
+(test-lex
+ plex-*-h-char
+ "'>"
+ :cond (equal ast (list (h-char (char-code #\')))))
+
+(test-lex
+ plex-*-h-char
+ "<>"
+ :cond (equal ast (list (h-char (char-code #\<)))))
+
+(test-lex-fail
+ plex-*-h-char
+ "")
+
+(test-lex-fail
+ plex-*-h-char
+ "noclose")
+
+(test-lex-fail
+ plex-*-h-char
+ (list (char-code #\U) 10 (char-code #\>)))
+
+(test-lex-fail
+ plex-*-h-char
+ (list (char-code #\U) 13 (char-code #\>)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-*-q-char
+
+(test-lex
+ plex-*-q-char
+ "abc\""
+ :cond (equal ast (list (q-char (char-code #\a))
+                        (q-char (char-code #\b))
+                        (q-char (char-code #\c)))))
+
+(test-lex
+ plex-*-q-char
+ ">\""
+ :cond (equal ast (list (q-char (char-code #\>)))))
+
+(test-lex
+ plex-*-q-char
+ "'\""
+ :cond (equal ast (list (q-char (char-code #\')))))
+
+(test-lex-fail
+ plex-*-q-char
+ "")
+
+(test-lex-fail
+ plex-*-q-char
+ "noclose")
+
+(test-lex-fail
+ plex-*-q-char
+ (list (char-code #\U) 10 (char-code #\")))
+
+(test-lex-fail
+ plex-*-q-char
+ (list (char-code #\U) 13 (char-code #\")))
