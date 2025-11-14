@@ -124,6 +124,22 @@
  (set::mergesort (list (filepath "macro_test1.c")
                        (filepath "macro_test2.c"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test with :gcc t
+(input-files :files '("macro_test1.c" "macro_test2.c")
+             :preprocess :auto
+             :preprocess-args *preprocess-args-macro-tests*
+             :gcc t
+             :const *macro-tests2*)
+
+(acl2::assert! (code-ensemblep *macro-tests2*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths
+   (code-ensemble->transunits *macro-tests2*))
+ (set::mergesort (list (filepath "macro_test1.c")
+                       (filepath "macro_test2.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
