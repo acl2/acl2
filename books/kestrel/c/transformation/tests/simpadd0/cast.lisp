@@ -17,11 +17,11 @@
 
 (include-book "../utilities")
 
-; (depends-on "old/cast_int_to_long.c")
+; (depends-on "old/cast.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files '("cast_int_to_long.c")
+(c$::input-files :files '("cast.c")
                  :path "old"
                  :const *old-code*)
 
@@ -32,9 +32,15 @@
                   :path "new")
 
 (assert-file-contents
- :file "new/cast_int_to_long.c"
- :content "long cast_int_to_long(int x) {
+ :file "new/cast.c"
+ :content "int cast_long_to_int(long x) {
+  return (int) x;
+}
+long cast_int_to_long(int x) {
   return (long) x;
+}
+short cast_nonpure(int x) {
+  return (short) (x = 5);
 }
 ")
 
