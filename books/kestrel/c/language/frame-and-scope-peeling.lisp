@@ -15,10 +15,7 @@
 
 (local (include-book "std/basic/inductions" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,7 +59,6 @@
         ((= (compustate-frames-number compst) 0) (compustate-fix compst))
         (t (peel-frames (1- n) (pop-frame compst))))
   :prepwork ((local (in-theory (enable nfix))))
-  :hooks (:fix)
 
   ///
 
@@ -157,7 +153,6 @@
          (compustate-fix compst))
         (t (peel-scopes (1- m) (exit-scope compst))))
   :prepwork ((local (in-theory (enable nfix))))
-  :hooks (:fix)
 
   ///
 

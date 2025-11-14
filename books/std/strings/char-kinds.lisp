@@ -10,6 +10,7 @@
 
 (in-package "STR")
 
+(include-book "ascii-chars")
 (include-book "letter-chars")
 (include-book "letter-digit-chars")
 (include-book "letter-digit-dash-chars")

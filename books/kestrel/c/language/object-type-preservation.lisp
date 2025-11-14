@@ -16,10 +16,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,6 +74,7 @@
                                    (type-of-value
                                     (read-object objdes peeled-compst))))))))
   :prepwork ((local (in-theory (disable acl2::member-of-cons)))) ; for speed
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -289,7 +287,7 @@
               not-errorp-of-write-object-of-peel-scopes
               read-object-of-write-object-when-auto/static/alloc-existing)
      :disable objdesign-kind-of-objdesign-top
-     ::use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
+     :use (:instance objdesign-kind-of-objdesign-top (objdes objdes1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

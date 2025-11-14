@@ -498,8 +498,7 @@
    :alignof nil
    :alignof-ambig (impossible)
    :cast (and (tyname-formalp expr.type)
-              (expr-formalp expr.arg)
-              (expr-purep expr.arg))
+              (expr-formalp expr.arg))
    :binary (cond
             ((member-eq (binop-kind expr.op)
                         '(:mul :div :rem :add :sub :shl :shr
@@ -760,8 +759,7 @@
      :continue nil
      :break nil
      :return (or (not stmt.expr?)
-                 (expr-call-formalp stmt.expr?)
-                 (expr-pure-formalp stmt.expr?))
+                 (expr-formalp stmt.expr?))
      :asm nil)
     :measure (stmt-count stmt))
 

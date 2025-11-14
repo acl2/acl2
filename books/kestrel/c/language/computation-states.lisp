@@ -21,9 +21,7 @@
 (local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,6 +29,7 @@
   (implies (and (< (nfix i) (len x)))
            (equal (update-nth i a (rev x))
                   (rev (update-nth (- (1- (len x)) (nfix i)) a x))))
+  :induct t
   :enable (update-nth len rev fix nfix))
 
 (defruledl nth-of-minus1-and-cdr
@@ -75,7 +74,7 @@
              (iff (cdr (omap::assoc id scope))
                   (omap::assoc id scope)))
     :induct t
-    :enable omap::assoc))
+    :enable (omap::assoc (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,7 +255,6 @@
      for a component other than @(':frames')
      preserves the number of frames."))
   (len (compustate->frames compst))
-  :hooks (:fix)
 
   ///
 
@@ -275,7 +273,6 @@
   (b* ((stack (compustate->frames compst))
        (new-stack (cons (frame-fix frame) stack)))
     (change-compustate compst :frames new-stack))
-  :hooks (:fix)
 
   ///
 
@@ -301,7 +298,6 @@
   (b* ((stack (compustate->frames compst))
        (new-stack (cdr stack)))
     (change-compustate compst :frames new-stack))
-  :hooks (:fix)
 
   ///
 
@@ -326,8 +322,7 @@
   :returns (frame framep)
   :short "Top frame of a computation state's call stack."
   (frame-fix (car (compustate->frames compst)))
-  :guard-hints (("Goal" :in-theory (enable compustate-frames-number)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable compustate-frames-number))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,7 +368,8 @@
 
   ((define compustate-scopes-numbers-aux ((frames frame-listp))
      :returns (ns pos-listp
-                  :hints (("Goal" :in-theory (enable posp pos-listp))))
+                  :hints
+                  (("Goal" :induct t :in-theory (enable posp pos-listp))))
      (cond ((endp frames) nil)
            (t (cons (len (frame->scopes (car frames)))
                     (compustate-scopes-numbers-aux (cdr frames)))))
@@ -384,11 +380,12 @@
      (defret len-of-compustate-scopes-numbers-aux
        (equal (len ns)
               (len frames))
-       :hints (("Goal" :in-theory (enable len))))
+       :hints (("Goal" :induct t :in-theory (enable len))))
 
      (defret consp-of-compustate-scopes-numbers-aux
        (equal (consp ns)
-              (consp frames)))
+              (consp frames))
+       :hints (("Goal" :induct t)))
 
      (defret car-of-compustate-scopes-numbers-aux
        (implies (> (len frames) 0)
@@ -399,11 +396,13 @@
      (defrule compustate-scopes-numbers-aux-of-append
        (equal (compustate-scopes-numbers-aux (append frames1 frames2))
               (append (compustate-scopes-numbers-aux frames1)
-                      (compustate-scopes-numbers-aux frames2))))
+                      (compustate-scopes-numbers-aux frames2)))
+       :induct t)
 
      (defrule compustate-scopes-numbers-aux-of-rev
        (equal (compustate-scopes-numbers-aux (rev frames))
-              (rev (compustate-scopes-numbers-aux frames))))
+              (rev (compustate-scopes-numbers-aux frames)))
+       :induct t)
 
      (defrule compustate-scopes-numbers-aux-of-update-nth
        (implies (< (nfix i) (len frames))
@@ -412,6 +411,7 @@
                        (update-nth i
                                    (len (frame->scopes frame))
                                    (compustate-scopes-numbers-aux frames))))
+       :induct t
        :enable (update-nth len))
 
      (defrule update-nth-of-nth-and-compustate-scopes-numbers-aux
@@ -428,7 +428,6 @@
                        (frames (compustate->frames compst)))
        :disable compustate-scopes-numbers-aux-of-update-nth)))
 
-  :hooks (:fix)
 
   ///
 
@@ -488,8 +487,7 @@
    (xdoc::p
     "We use this as an enabled abbreviation."))
   (car (compustate-scopes-numbers compst))
-  :enabled t
-  :hooks (:fix))
+  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +505,6 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
-  :hooks (:fix)
 
   ///
 
@@ -560,7 +557,6 @@
   :guard-hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
                                            top-frame
                                            len)))
-  :hooks (:fix)
 
   ///
 
@@ -649,7 +645,6 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
-  :hooks (:fix)
 
   ///
 
@@ -766,7 +761,6 @@
     (and (consp var+val?)
          (objdesign-static var)))
   :guard-hints (("Goal" :in-theory (enable natp compustate-frames-number)))
-  :hooks (:fix)
 
   :prepwork
   ((define objdesign-of-var-aux ((var identp) (frame natp) (scopes scope-listp))
@@ -787,12 +781,14 @@
      (fty::deffixequiv objdesign-of-var-aux
        :hints
        (("Goal"
+         :induct t
          :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
 
      (defrule objdesign-kind-of-objdesign-of-var-aux
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
          (implies objdes
-                  (equal (objdesign-kind objdes) :auto))))
+                  (equal (objdesign-kind objdes) :auto)))
+       :induct t)
 
      (defrule objdesign-auto->name-of-objdesign-of-var-aux
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
@@ -967,7 +963,7 @@
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1085,7 +1081,7 @@
      (write-object objdes.super new-super compst)))
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
-  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
 
@@ -1094,18 +1090,22 @@
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal"
-             :in-theory (enable compustate-frames-number nfix max))))
+             :induct t
+             :in-theory (enable compustate-frames-number
+                                nfix max (:e tau-system)))))
 
   (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal"
+             :induct t
              :in-theory (enable compustate-scopes-numbers
                                 fix
                                 max
                                 acl2::nth-of-rev
-                                update-nth-of-rev))))
+                                update-nth-of-rev
+                                (:e tau-system)))))
 
   (defruled assoc-of-compustate-static-of-write-object
     (b* ((compst1 (write-object objdes val compst)))
@@ -1179,7 +1179,8 @@
            write-object
            read-object
            top-frame
-           compustate-frames-number)
+           compustate-frames-number
+           (:e tau-system))
   :use
   (valuep-of-read-object-of-objdesign-of-var
    (:instance objdesign-of-var-aux-lemma
@@ -1774,7 +1775,8 @@
     :induct t
     :enable (objdesign-top
              write-object
-             read-object-of-pop-frame))
+             read-object-of-pop-frame
+             (:e tau-system)))
 
   (defruled not-errorp-of-write-object-auto-of-pop-frame
     (implies (and (equal (objdesign-kind objdes) :auto)
@@ -1788,7 +1790,8 @@
              len
              fix
              nfix
-             nth))
+             nth
+             (:e tau-system)))
 
   (defruled not-errorp-of-write-object-top-auto-of-pop-frame
     (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)
@@ -1829,7 +1832,8 @@
     :induct t
     :enable (objdesign-top
              write-object
-             read-object-of-exit-scope))
+             read-object-of-exit-scope
+             (:e tau-system)))
 
   (defruled not-errorp-of-write-object-auto-of-exit-scope
     (implies (and (equal (objdesign-kind objdes) :auto)
@@ -1851,7 +1855,8 @@
              fix
              nfix
              update-nth-of-rev
-             nth))
+             nth
+             (:e tau-system)))
 
   (defruled not-errorp-of-write-object-top-auto-of-exit-scope
     (implies (and (equal (objdesign-kind (objdesign-top objdes)) :auto)

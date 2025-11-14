@@ -417,9 +417,16 @@ be a string or message identifying the particular SAT check.</p>"
              (stack-extract stack)
              stk))
 
+(fancy-ev-add-primitive interp-st-extract-stack t)
+
+
 (defmacro save-fgl-stack (&key (to ':stack)
                                (interp-st 'interp-st))
   `(f-put-global ',to (interp-st-extract-stack ,interp-st) state))
+
+(defmacro save-fgl-stack-to-scratch (&key (to ':stack)
+                                          (interp-st 'interp-st))
+  `(interp-st-put-user-scratch ',to (interp-st-extract-stack ,interp-st) ,interp-st))
 
 (defxdoc save-fgl-stack
   :parents (fgl-debugging)

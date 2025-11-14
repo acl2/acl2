@@ -37,21 +37,6 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable w)))
 
-(defprod fgl-ipasir-config
-  :parents (fgl-sat-check)
-  :short "Configuration object for IPASIR SAT checks in the default FGL configuration."
-  ((ignore-pathcond booleanp :default nil)
-   (ignore-constraint booleanp :default nil)
-   (ipasir-callback-limit acl2::maybe-natp :default nil
-                          "Limit on the number of callbacks in a single SAT check
-                           after which the check fails.")
-   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
-                                  "Limit on the number of callbacks over the lifespan
-                                   of a solver object, after which the solver is
-                                   re-initialized.")
-   (ipasir-index natp :default '0))
-  :tag :fgl-ipasir-config)
-
 (define logicman-ensure-ipasir ((idx natp)
                                 logicman)
   :guard (logicman-invar logicman)

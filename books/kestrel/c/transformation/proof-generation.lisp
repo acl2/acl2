@@ -604,95 +604,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-expr-asg-thm ((old exprp)
-                          (new exprp)
-                          (vartys c::ident-type-mapp)
-                          (const-new symbolp)
-                          (thm-index posp)
-                          (hints true-listp))
-  :guard (and (expr-unambp old)
-              (expr-annop old)
-              (expr-unambp new)
-              (expr-annop new))
-  :returns (mv (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (updated-thm-index posp))
-  :short "Generate a theorem for the transformation
-          of an assignment expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The expressions must be simple assignments
-     whose left side is a variable expression @('var')
-     (which is not changed by the transformation)
-     and whose old and new right sides are pure expressions."))
-  (b* ((old (expr-fix old))
-       (new (expr-fix new))
-       ((unless (expr-asg-formalp old))
-        (raise "Internal error: ~x0 is not in the formalized subset." old)
-        (mv '(_) nil 1))
-       ((unless (expr-asg-formalp new))
-        (raise "Internal error: ~x0 is not in the formalized subset." new)
-        (mv '(_) nil 1))
-       ((unless (and (expr-case old :binary)
-                     (binop-case (expr-binary->op old) :asg)))
-        (raise "Internal error: ~x0 is not an assignment expression." old)
-        (mv '(_) nil 1))
-       (old-left (expr-binary->arg1 old))
-       ((unless (expr-case old-left :ident))
-        (raise "Internal error: ~x0 is not a variable." old-left)
-        (mv '(_) nil 1))
-       ((unless (and (expr-case new :binary)
-                     (binop-case (expr-binary->op new) :asg)))
-        (raise "Internal error: ~x0 is not an assignment expression." new)
-        (mv '(_) nil 1))
-       (new-left (expr-binary->arg1 new))
-       ((unless (equal new-left old-left))
-        (raise "Internal error: ~x0 and ~x1 differ." old-left new-left)
-        (mv '(_) nil 1))
-       (type (expr-type old))
-       ((unless (equal (expr-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new expression ~x1 differs from ~
-                the type ~x2 of the old expression ~x3."
-               (expr-type new) new type old)
-        (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
-       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
-       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
-       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
-       ((mv & ctype) (ldm-type type)) ; ERP must be NIL
-       (formula
-        `(b* ((old-expr ',old-expr)
-              (new-expr ',new-expr)
-              ((mv old-result old-compst)
-               (c::exec-expr old-expr compst old-fenv limit))
-              ((mv new-result new-compst)
-               (c::exec-expr new-expr compst new-fenv limit))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
-           (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (iff old-result new-result)
-                         (equal old-value new-value)
-                         (equal old-compst new-compst)
-                         old-result
-                         (equal (c::type-of-value old-value) ',ctype)
-                         ,@vars-post))))
-       (thm-event `(defrule ,thm-name
-                     ,formula
-                     :rule-classes nil
-                     :hints ,hints)))
-    (mv thm-event thm-name thm-index))
-  ///
-  (fty::deffixequiv gen-expr-asg-thm
-    :args ((old exprp) (new exprp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define gen-stmt-thm ((old stmtp)
                       (new stmtp)
                       (vartys c::ident-type-mapp)
@@ -1505,7 +1416,8 @@
         (if (and (expr-purep arg)
                  (not (expr-case arg :ident))
                  (not (expr-case arg :const))
-                 (not (expr-case arg :unary)))
+                 (not (expr-case arg :unary))
+                 (not (expr-case arg :cast)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm arg
                                       arg-new
@@ -1653,29 +1565,53 @@
        ((mv & ctyname) (ldm-tyname type)) ; ERP must be NIL
        ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
        ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
+       ((mv lifted-thm-name thm-index events)
+        (if (and (expr-purep arg)
+                 (not (expr-case arg :ident))
+                 (not (expr-case arg :const))
+                 (not (expr-case arg :unary))
+                 (not (expr-case arg :cast)))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm arg
+                                      arg-new
+                                      arg-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-cast)
                               (:e c::tyname-to-type)
-                              (:e c::type-nonchar-integerp))
-                 :use (,arg-thm-name
-                       (:instance
-                        expr-cast-congruence
-                        (tyname ',ctyname)
-                        (old-arg ',old-arg)
-                        (new-arg ',new-arg))
-                       (:instance
-                        expr-cast-errors
-                        (tyname ',ctyname)
-                        (arg ',old-arg))))))
+                              (:e c::type-nonchar-integerp)
+                              expr-compustate-vars)
+                 :use ((:instance ,(or lifted-thm-name arg-thm-name)
+                                  (limit (1- limit)))
+                       ,arg-thm-name
+                       (:instance expr-cast-congruence
+                                  (tyname ',ctyname)
+                                  (old-arg ',old-arg)
+                                  (new-arg ',new-arg))
+                       (:instance expr-cast-congruence-pure
+                                  (tyname ',ctyname)
+                                  (old-arg ',old-arg)
+                                  (new-arg ',new-arg))
+                       (:instance expr-cast-errors
+                                  (tyname ',ctyname)
+                                  (arg ',old-arg)
+                                  (fenv old-fenv))
+                       (:instance expr-cast-errors-pure
+                                  (tyname ',ctyname)
+                                  (arg ',old-arg))))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr-new
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr-new
+                      gin.vartys
+                      gin.const-new
+                      thm-index
+                      hints)))
     (mv expr-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -1879,7 +1815,8 @@
             (if (and (expr-purep arg2)
                      (not (expr-case arg2 :ident))
                      (not (expr-case arg2 :const))
-                     (not (expr-case arg2 :unary)))
+                     (not (expr-case arg2 :unary))
+                     (not (expr-case arg2 :cast)))
                 (b* (((mv thm-event thm-name thm-index)
                       (lift-expr-pure-thm arg2
                                           arg2-new
@@ -1921,12 +1858,12 @@
                       (expr ',old-arg2)
                       (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
-            (gen-expr-asg-thm expr
-                              expr-new
-                              gin.vartys
-                              gin.const-new
-                              thm-index
-                              hints)))
+            (gen-expr-thm expr
+                          expr-new
+                          gin.vartys
+                          gin.const-new
+                          thm-index
+                          hints)))
         (mv expr-new
             (make-gout :events (cons thm-event events)
                        :thm-index thm-index
@@ -2190,7 +2127,8 @@
                  (expr-purep expr?)
                  (not (expr-case expr? :ident))
                  (not (expr-case expr? :const))
-                 (not (expr-case expr? :unary)))
+                 (not (expr-case expr? :unary))
+                 (not (expr-case expr? :cast)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new
@@ -2284,11 +2222,7 @@
      Note that the expression is present in the old statement
      iff it is present in the new statement;
      also note that, if there is no expression,
-     old and new statements cannot differ.
-     If the expression is present,
-     the theorem is proved via two general ones proved below;
-     if the expression is absent,
-     the theorem is proved via another general one proved below."))
+     old and new statements are syntactically equal."))
   (b* (((gin gin) gin)
        (stmt (make-stmt-return :expr? expr? :info info))
        (stmt-new (make-stmt-return :expr? expr?-new :info info))
@@ -2300,50 +2234,57 @@
                expr? expr?-new)
         (mv stmt-new (irr-gout)))
        ((unless (or (not expr?)
-                    (and expr?-thm-name
-                         (expr-purep expr?))))
+                    expr?-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
-       (hints
-        (if expr?
-            `(("Goal"
-               :in-theory '((:e set::insert)
-                            (:e c::stmt-kind)
-                            (:e c::stmt-return)
-                            (:e c::stmt-return->value)
-                            (:e c::expr-purep)
-                            (:e c::expr-kind)
-                            (:e c::expr-binary->op)
-                            (:e c::binop-kind)
-                            (:e c::type-nonchar-integerp)
-                            (:e c::expr-pure-limit)
-                            (:t c::exec-expr-pure)
-                            stmt-compustate-vars)
-               :use (,expr?-thm-name
-                     (:instance
-                      stmt-return-value-congruence
-                      (old-expr ',old-expr?)
-                      (new-expr ',new-expr?))
-                     (:instance
-                      stmt-return-errors
-                      (expr ',old-expr?)
-                      (fenv old-fenv)))))
-          `(("Goal"
-             :in-theory '((:e c::stmt-return)
-                          (:e c::type-void)
-                          (:e set::insert)
-                          stmt-compustate-vars)
-             :use (stmt-return-novalue-congruence)))))
+       ((mv lifted-thm-name thm-index events)
+        (if (and expr?
+                 (expr-purep expr?)
+                 (not (expr-case expr? :ident))
+                 (not (expr-case expr? :const))
+                 (not (expr-case expr? :unary))
+                 (not (expr-case expr? :cast)))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm expr?
+                                      expr?-new
+                                      expr?-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
+       (hints (if expr?
+                  `(("Goal"
+                     :in-theory '((:e set::insert)
+                                  (:e c::stmt-kind)
+                                  (:e c::stmt-return)
+                                  (:e c::stmt-return->value)
+                                  (:e c::type-nonchar-integerp)
+                                  stmt-compustate-vars)
+                     :use ((:instance ,(or lifted-thm-name expr?-thm-name)
+                                      (limit (1- limit)))
+                           (:instance stmt-return-value-congruence
+                                      (old-expr ',old-expr?)
+                                      (new-expr ',new-expr?))
+                           (:instance stmt-return-errors
+                                      (expr ',old-expr?)
+                                      (fenv old-fenv)))))
+                `(("Goal"
+                   :in-theory '((:e c::stmt-return)
+                                (:e c::type-void)
+                                (:e set::insert)
+                                stmt-compustate-vars)
+                   :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      gin.thm-index
+                      thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
