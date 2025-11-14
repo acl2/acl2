@@ -735,7 +735,7 @@
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
 
-     ;; rightrotate32-trim-amt-axe ;move to trim rules? or drop since we go to leftrotate32
+     ;; rightrotate32-trim-arg1-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
      ;; LEFTROTATE32-open-when-constant-shift-amount
