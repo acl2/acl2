@@ -1013,6 +1013,9 @@
       "A unary expression is always deterministic,
        because it has a single sub-expression.")
      (xdoc::p
+      "A cast expression is always deterministic in our current C subset,
+       because the type name does not undergo any execution currently.")
+     (xdoc::p
       "If the expression is an assignment,
        the left-hand side must be a pure lvalue expression;
        if it were not pure,
@@ -1058,6 +1061,11 @@
                    ((unless arg)
                     (mv (error (list :unary-void-expr e.arg)) compst)))
                 (mv (exec-unary e.op arg compst) compst))
+       :cast (b* (((mv arg compst) (c::exec-expr e.arg compst fenv (1- limit)))
+                  ((when (errorp arg)) (mv arg compst))
+                  ((unless arg)
+                   (mv (error (list :cast-void-expr e.arg)) compst)))
+               (mv (exec-cast e.type arg) compst))
        :otherwise
        (b* (((when (expr-purep e))
              (mv (exec-expr-pure e compst) (compustate-fix compst)))

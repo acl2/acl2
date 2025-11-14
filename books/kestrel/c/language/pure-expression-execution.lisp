@@ -70,9 +70,11 @@
      because we just need to pass the initial test,
      and then there is no recursive call of @(tsee exec-expr).")
    (xdoc::p
-    "For unary expressions, we add 1 to the limit for the argument,
+    "For unary and cast expressions, we add 1 to the limit for the argument,
      because we need one more to reach the recursive call
-     of @(tsee exec-expr) applied to the argument.")
+     of @(tsee exec-expr) applied to the argument.
+     Note that currently type names do not undergo execution
+     in our formal dynamic semantics.")
    (xdoc::p
     "Call expressions currently need just 1,
      because, for the arguments, we use @(tsee exec-expr-pure-list);
@@ -92,7 +94,7 @@
    :member 1
    :memberp 1
    :unary (1+ (expr-pure-limit expr.arg))
-   :cast 1
+   :cast (1+ (expr-pure-limit expr.arg))
    :binary 1
    :cond 1
    :otherwise (prog2$ (impossible) 0))
@@ -113,6 +115,7 @@
              :const nil
              :call nil
              :unary (induct-exec-expr-of-pure expr.arg (1- limit))
+             :cast (induct-exec-expr-of-pure expr.arg (1- limit))
              :otherwise nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
