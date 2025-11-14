@@ -1369,8 +1369,8 @@
   (equal (bool-to-bit bool)
          (bvif 1 bool 1 0)))
 
-(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-of-1-and-0-becomes-bool-to-bit)))
-(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-0-1-becomes-bvnot-of-bool-to-bit)))
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite bvif-of-1-and-0-becomes-bool-to-bit)))
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite bvif-0-1-becomes-bvnot-of-bool-to-bit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
