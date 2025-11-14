@@ -1416,7 +1416,8 @@
         (if (and (expr-purep arg)
                  (not (expr-case arg :ident))
                  (not (expr-case arg :const))
-                 (not (expr-case arg :unary)))
+                 (not (expr-case arg :unary))
+                 (not (expr-case arg :cast)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm arg
                                       arg-new
@@ -1564,29 +1565,53 @@
        ((mv & ctyname) (ldm-tyname type)) ; ERP must be NIL
        ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
        ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
+       ((mv lifted-thm-name thm-index events)
+        (if (and (expr-purep arg)
+                 (not (expr-case arg :ident))
+                 (not (expr-case arg :const))
+                 (not (expr-case arg :unary))
+                 (not (expr-case arg :cast)))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm arg
+                                      arg-new
+                                      arg-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-cast)
                               (:e c::tyname-to-type)
-                              (:e c::type-nonchar-integerp))
-                 :use (,arg-thm-name
-                       (:instance
-                        expr-cast-congruence
-                        (tyname ',ctyname)
-                        (old-arg ',old-arg)
-                        (new-arg ',new-arg))
-                       (:instance
-                        expr-cast-errors
-                        (tyname ',ctyname)
-                        (arg ',old-arg))))))
+                              (:e c::type-nonchar-integerp)
+                              expr-compustate-vars)
+                 :use ((:instance ,(or lifted-thm-name arg-thm-name)
+                                  (limit (1- limit)))
+                       ,arg-thm-name
+                       (:instance expr-cast-congruence
+                                  (tyname ',ctyname)
+                                  (old-arg ',old-arg)
+                                  (new-arg ',new-arg))
+                       (:instance expr-cast-congruence-pure
+                                  (tyname ',ctyname)
+                                  (old-arg ',old-arg)
+                                  (new-arg ',new-arg))
+                       (:instance expr-cast-errors
+                                  (tyname ',ctyname)
+                                  (arg ',old-arg)
+                                  (fenv old-fenv))
+                       (:instance expr-cast-errors-pure
+                                  (tyname ',ctyname)
+                                  (arg ',old-arg))))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr-new
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr-new
+                      gin.vartys
+                      gin.const-new
+                      thm-index
+                      hints)))
     (mv expr-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -1790,7 +1815,8 @@
             (if (and (expr-purep arg2)
                      (not (expr-case arg2 :ident))
                      (not (expr-case arg2 :const))
-                     (not (expr-case arg2 :unary)))
+                     (not (expr-case arg2 :unary))
+                     (not (expr-case arg2 :cast)))
                 (b* (((mv thm-event thm-name thm-index)
                       (lift-expr-pure-thm arg2
                                           arg2-new
@@ -2101,7 +2127,8 @@
                  (expr-purep expr?)
                  (not (expr-case expr? :ident))
                  (not (expr-case expr? :const))
-                 (not (expr-case expr? :unary)))
+                 (not (expr-case expr? :unary))
+                 (not (expr-case expr? :cast)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new
@@ -2216,7 +2243,8 @@
                  (expr-purep expr?)
                  (not (expr-case expr? :ident))
                  (not (expr-case expr? :const))
-                 (not (expr-case expr? :unary)))
+                 (not (expr-case expr? :unary))
+                 (not (expr-case expr? :cast)))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new
