@@ -17,11 +17,11 @@
 
 (include-book "../utilities")
 
-; (depends-on "old/var.c")
+; (depends-on "old/variable.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files '("var.c")
+(c$::input-files :files '("variable.c")
                  :path "old"
                  :const *old-code*)
 
@@ -32,8 +32,8 @@
                   :path "new")
 
 (assert-file-contents
- :file "new/var.c"
- :content "int var(int x) {
+ :file "new/variable.c"
+ :content "int variable(int x) {
   return x;
 }
 ")
