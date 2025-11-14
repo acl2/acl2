@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/utilities/state" :dir :system))
+
 (local (in-theory (disable read-file-into-string2)))
 
 ;; Returns a character list, or nil if the file does not exist.
@@ -42,4 +44,14 @@
 
 (defthm character-listp-of-mv-nth-0-of-read-file-into-character-list-safe
   (character-listp (mv-nth 0 (read-file-into-character-list-safe filename state)))
+  :hints (("Goal" :in-theory (enable read-file-into-character-list-safe))))
+
+(defthm state-p-of-mv-nth-1-of-read-file-into-character-list-safe
+  (implies (state-p state)
+           (state-p (mv-nth 1 (read-file-into-character-list-safe filename state))))
+  :hints (("Goal" :in-theory (enable read-file-into-character-list-safe))))
+
+(defthm state-p1-of-mv-nth-1-of-read-file-into-character-list-safe
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 1 (read-file-into-character-list-safe filename state))))
   :hints (("Goal" :in-theory (enable read-file-into-character-list-safe))))
