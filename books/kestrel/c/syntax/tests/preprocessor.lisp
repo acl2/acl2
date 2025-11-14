@@ -1266,3 +1266,61 @@
 (test-lex-fail
  plex-header-name
  "\"noclose")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-block-comment
+
+(test-lex
+ plex-block-comment
+ "*/"
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment nil)))
+
+(test-lex
+ plex-block-comment
+ "comment*/"
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment (acl2::string=>nats "comment"))))
+
+(test-lex
+ plex-block-comment
+ "comment****/"
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment (acl2::string=>nats "comment***"))))
+
+(test-lex
+ plex-block-comment
+ "/*comment*/"
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment (acl2::string=>nats "/*comment"))))
+
+(test-lex
+ plex-block-comment
+ (append (acl2::string=>nats " This is a")
+         (list 10)
+         (acl2::string=>nats "multiline comment.")
+         (list 10)
+         (acl2::string=>nats "*/"))
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment
+               (append (acl2::string=>nats " This is a")
+                       (list 10)
+                       (acl2::string=>nats "multiline comment.")
+                       (list 10)))))
+
+(test-lex
+ plex-block-comment
+ (append (acl2::string=>nats "// no special significance")
+         (list 10)
+         (acl2::string=>nats "*/"))
+ :more-inputs ((position 1 2))
+ :cond (equal ast
+              (plexeme-block-comment
+               (append (acl2::string=>nats "// no special significance")
+                       (list 10)))))
