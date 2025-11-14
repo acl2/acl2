@@ -347,6 +347,8 @@
     acl2::packbv-little-constant-opener
     acl2::map-bvsx-constant-opener
     acl2::map-bvplus-val-constant-opener
+    acl2::bv-array-read-shorten-when-in-first-half-smt
+    acl2::bv-array-read-shorten-when-in-second-half-smt
 
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
