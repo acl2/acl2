@@ -15,10 +15,7 @@
 (include-book "computation-states")
 (include-book "function-environments")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +105,6 @@
              :object nil)
           (error (list :array-without-designator (expr-value-fix eval))))
       (expr-value-fix eval)))
-  :hooks (:fix)
 
   ///
 
@@ -176,8 +172,7 @@
                         (t error))
                 (cond ((sllong-integerp ic.value) (value-sllong ic.value))
                       ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error))))))
-  :hooks (:fix))
+                      (t error)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,8 +187,7 @@
               :int (eval-iconst c.get)
               :float (error :exec-const-float)
               :enum (error :exec-const-enum)
-              :char (error :exec-const-char))
-  :hooks (:fix))
+              :char (error :exec-const-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +203,7 @@
   (b* ((val (eval-const c))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,8 +221,7 @@
        (val (read-object objdes compst)))
     (make-expr-value :value val :object objdes))
   :guard-hints
-  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var)))
-  :hooks (:fix))
+  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -269,8 +262,7 @@
     (make-expr-value
      :value (make-value-pointer :core (pointer-valid objdes)
                                 :reftype type)
-     :object nil))
-  :hooks (:fix))
+     :object nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +290,7 @@
        (*val (read-object objdes compst))
        ((when (errorp *val)) *val))
     (make-expr-value :value *val :object objdes))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -313,8 +305,7 @@
     (:bitnot (bitnot-value arg))
     (:lognot (lognot-value arg))
     (t (error (impossible))))
-  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,8 +338,7 @@
             (val (eval-unary op (expr-value->value arg)))
             ((when (errorp val)) val))
          (make-expr-value :value val :object nil))))
-  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -376,8 +366,7 @@
     (:bitxor (bitxor-values arg1 arg2))
     (:bitior (bitior-values arg1 arg2))
     (t (error (impossible))))
-  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -405,7 +394,7 @@
        (val (eval-binary-strict-pure op val1 val2))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,8 +417,7 @@
        (err (error (list :cast-undefined :from (value-fix arg) :to type)))
        (val (convert-integer-value arg type))
        ((when (errorp val)) err))
-    val)
-  :hooks (:fix))
+    val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -445,7 +433,7 @@
        (val (eval-cast tyname (expr-value->value arg)))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,7 +513,7 @@
        ((when (errorp val)) val)
        (elem-objdes (make-objdesign-element :super objdes :index index)))
     (make-expr-value :value val :object elem-objdes))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,7 +550,7 @@
        (objdes-mem (and objdes-str
                         (make-objdesign-member :super objdes-str :name mem))))
     (make-expr-value :value val-mem :object objdes-mem))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -607,7 +595,7 @@
        ((when (errorp val)) val)
        (objdes-mem (make-objdesign-member :super objdes :name mem)))
     (make-expr-value :value val :object objdes-mem))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -737,8 +725,7 @@
                     ((when (errorp eval)) eval))
                  (change-expr-value eval :object nil))))))
   :measure (expr-count e)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards nil ; done below
 
   ///
@@ -749,7 +736,7 @@
                     :trigger-terms ((exec-expr-pure e compst)))))
 
   (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable binop-strictp))))
+    :hints (("Goal" :in-theory (enable binop-strictp (:e tau-system)))))
 
   (defruled not-call-when-exec-expr-pure-not-error
     (implies (not (errorp (exec-expr-pure expr compst)))
@@ -798,7 +785,7 @@
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -845,16 +832,17 @@
     (if (omap::assoc name scope)
         (error (list :init-scope :duplicate-param name))
       (omap::update name (remove-flexible-array-member actual) scope)))
-  :hooks (:fix)
   :measure (len formals)
-  :hints (("Goal" :in-theory (enable o<
+  :hints (("Goal" :in-theory (enable o-p
+                                     o<
                                      o-finp
                                      endp
                                      cdr-of-param-declon-list-fix
                                      len)))
   :verify-guards nil ; done below
   ///
-  (verify-guards init-scope))
+  (verify-guards init-scope
+    :hints (("Goal" :in-theory (enable (:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -908,8 +896,7 @@
                             :supplied (len ival.get))))
               ((unless (consp ival.get))
                (error (list :init-value-empty-mismatch))))
-           (make-value-array :elemtype elemtype :elements ival.get)))
-  :hooks (:fix))
+           (make-value-array :elemtype elemtype :elements ival.get))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1413,7 +1400,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :hints (("Goal" :in-theory (enable o< o-finp nfix)))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp nfix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :returns-hints (("Goal" :in-theory (enable (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1468,7 +1459,7 @@
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable len)
+             :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
@@ -1526,7 +1517,7 @@
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable len)
+             :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
@@ -1543,6 +1534,7 @@
     (("Goal"
       :in-theory
       (enable
+       (:e tau-system)
        len
        expr-value-optionp-when-expr-value-option-resultp-and-not-errorp))))
 
