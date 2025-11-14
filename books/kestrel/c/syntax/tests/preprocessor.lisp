@@ -1146,3 +1146,123 @@
 (test-lex-fail
  plex-*-q-char
  (list (char-code #\U) 13 (char-code #\")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-character-constant
+
+(test-lex
+ plex-character-constant
+ "e'"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0))
+ :cond (equal ast
+              (plexeme-char
+               (cconst nil
+                       (list (c-char-char (char-code #\e)))))))
+
+(test-lex
+ plex-character-constant
+ "\\aA'"
+ :pos (position 1 2)
+ :more-inputs ((cprefix-locase-u) (position 1 1))
+ :cond (equal ast
+              (plexeme-char
+               (cconst (cprefix-locase-u)
+                       (list (c-char-escape (escape-simple (simple-escape-a)))
+                             (c-char-char (char-code #\A)))))))
+
+(test-lex-fail
+ plex-character-constant
+ "''"
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
+
+(test-lex-fail
+ plex-character-constant
+ (list 10 (char-code #\'))
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-string-literal
+
+(test-lex
+ plex-string-literal
+ "\""
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0))
+ :cond (equal ast
+              (plexeme-string
+               (stringlit nil nil))))
+
+(test-lex
+ plex-string-literal
+ "helo\""
+ :pos (position 10 10)
+ :more-inputs ((eprefix-upcase-l) (position 10 9))
+ :cond (equal ast
+              (plexeme-string
+               (stringlit (eprefix-upcase-l)
+                          (list (s-char-char (char-code #\h))
+                                (s-char-char (char-code #\e))
+                                (s-char-char (char-code #\l))
+                                (s-char-char (char-code #\o)))))))
+
+(test-lex-fail
+ plex-string-literal
+ "wrong'"
+ :more-inputs (nil (position 1 0)))
+
+(test-lex-fail
+ plex-string-literal
+ (list 10 (char-code #\"))
+ :more-inputs (nil (position 1 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;l
+
+; plex-header-name
+
+(test-lex
+ plex-header-name
+ "<stdio.h>"
+ :cond (equal ast
+              (plexeme-header
+               (header-name-angles (list (h-char (char-code #\s))
+                                         (h-char (char-code #\t))
+                                         (h-char (char-code #\d))
+                                         (h-char (char-code #\i))
+                                         (h-char (char-code #\o))
+                                         (h-char (char-code #\.))
+                                         (h-char (char-code #\h)))))))
+
+(test-lex
+ plex-header-name
+ "\"parser.h\""
+ :cond (equal ast
+              (plexeme-header
+               (header-name-quotes (list (q-char (char-code #\p))
+                                         (q-char (char-code #\a))
+                                         (q-char (char-code #\r))
+                                         (q-char (char-code #\s))
+                                         (q-char (char-code #\e))
+                                         (q-char (char-code #\r))
+                                         (q-char (char-code #\.))
+                                         (q-char (char-code #\h)))))))
+
+(test-lex-fail
+ plex-header-name
+ "")
+
+(test-lex-fail
+ plex-header-name
+ "noopen")
+
+(test-lex-fail
+ plex-header-name
+ "<noclose")
+
+(test-lex-fail
+ plex-header-name
+ "\"noclose")
