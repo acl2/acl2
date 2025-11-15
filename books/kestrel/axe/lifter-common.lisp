@@ -44,7 +44,7 @@
                       (set-print-base-radix print-base state)
                     state))
            (term (dag-to-term dag))
-           (term (if untranslatep (acl2::untranslate$ term nil state) term))
+           (term (if untranslatep (untranslate$ term nil state) term))
            (- (cw "~X01" term nil))
            (state (set-print-base-radix 10 state)) ;make-event sets it to 10
            (- (cw ")~%"))) ; matches "(Term after"
@@ -55,7 +55,7 @@
                   state))
          (- (cw "~X01" dag nil))
          (state (set-print-base-radix 10 state))
-         (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
+         (- (cw "(DAG has ~x0 IF-branches.)~%" (count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
          (- (cw ")~%"))) ; matches "(DAG after"
       state)))
 

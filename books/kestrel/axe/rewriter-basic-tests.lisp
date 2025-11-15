@@ -779,7 +779,7 @@
 (include-book "basic-rules") ; for equal-same
 
 (def-simplified-basic *result1*
-  (acl2::make-equality-dag-basic! '(bvxor 32 6 (bvxor 32 x (bvxor 32 y 5)))
+  (make-equality-dag-basic! '(bvxor 32 6 (bvxor 32 x (bvxor 32 y 5)))
                                   '(bvxor 32 x (bvxor 32 (bvxor 32 5 y) 6))
                                   nil (w state))
   :rules '(equal-same)
@@ -788,7 +788,7 @@
 (must-be-redundant (defconst *result1* ''t))
 
 (def-simplified-basic *result2*
-  (acl2::make-equality-dag-basic! '(bitxor 0 (bitxor x (bitxor y 1)))
+  (make-equality-dag-basic! '(bitxor 0 (bitxor x (bitxor y 1)))
                                   '(bitxor x (bitxor (bitxor 1 y) 0))
                                   nil (w state))
   :rules '(equal-same)

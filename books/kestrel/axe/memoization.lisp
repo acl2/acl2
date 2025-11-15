@@ -253,7 +253,7 @@
          (combine-value-into-hash (quick-val-to-hash (unquote tree)) acc)
        ;; it's a function-call:
        ;; todo: hash the lambda-body if present
-       ;; todo: could get info from the fn (if it is a symbol) using something like (fgetprop fn 'acl2::absolute-event-number 0 world)
+       ;; todo: could get info from the fn (if it is a symbol) using something like (fgetprop fn 'absolute-event-number 0 world)
        (axe-tree-hash-aux-lst (fargs tree) acc))))
 
  (defun axe-tree-hash-aux-lst (trees acc)

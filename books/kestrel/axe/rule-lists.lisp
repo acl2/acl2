@@ -545,7 +545,7 @@
     ;; These just unconditionally replace non-bv operators with bv operators:
     bool->bit-becomes-bool-to-bit
     bit->bool-becomes-bit-to-bool
-    acl2::logbitp-to-getbit-equal-1 ;rename
+    logbitp-to-getbit-equal-1 ;rename
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
