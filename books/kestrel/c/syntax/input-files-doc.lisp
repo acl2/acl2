@@ -148,7 +148,7 @@
                 (xdoc::td "@('-std=c23')")
                 (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
-      "When present, the @(':preprocess-args') specifies additional arguments
+      "The @(':preprocess-args') specifies additional arguments
        to pass to the preprocessor beyond the two outlined above.
        If @(':preprocess-args') is a string list,
        this list of arguments is passed to the preprocessor for each file,
