@@ -17,11 +17,11 @@
 
 (include-book "../utilities")
 
-; (depends-on "old/nosimp_ulong.c")
+; (depends-on "old/cast.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files '("nosimp_ulong.c")
+(c$::input-files :files '("cast.c")
                  :path "old"
                  :const *old-code*)
 
@@ -32,13 +32,15 @@
                   :path "new")
 
 (assert-file-contents
- :file "new/nosimp_ulong.c"
- :content "unsigned long nosimp_ulong(unsigned long x) {
-  unsigned long x1 = +x;
-  unsigned long x2 = -x;
-  unsigned long x3 = ~x;
-  unsigned long x4 = !x;
-  return x1 + x2 + x3 + x4;
+ :file "new/cast.c"
+ :content "int cast_long_to_int(long x) {
+  return (int) x;
+}
+long cast_int_to_long(int x) {
+  return (long) x;
+}
+short cast_nonpure(int x) {
+  return (short) (x = 5);
 }
 ")
 
