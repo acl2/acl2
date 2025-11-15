@@ -176,7 +176,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-process-preprocess-args ((preprocessor string-optionp)
-                                             preprocess-args-presentp
                                              preprocess-args
                                              state)
   (declare (ignore state))
@@ -189,19 +188,20 @@
   (xdoc::topstring
    (xdoc::p
     "The @('preprocessor') input to this function
-     is the result of processing the @(':preprocess') input.")
+     is the result of processing the @(':preprocess') input.
+     If it is @('nil'), the @(':preprocess-args') input
+     is expected to also be @('nil').")
    (xdoc::p
     "If processing of the @(':preprocess-args') input is successful,
-     we return a boolean saying whether the input was present or not,
-     and the list of strings that it consists of (@('nil') if absent);
-     the latter are passed as the @(':extra-args') input
+     we return its value,
+     which is either a string list or an omap from strings to string lists.
+     This value is passed as part of the @(':extra-args') input
      of @(tsee preprocess-files), which justifies the name of the result."))
   (b* (((reterr) nil)
-       ((when (not preprocess-args-presentp))
-        (retok nil))
-       ((when (not preprocessor))
+       ((when (and (not preprocessor)
+                   preprocess-args))
         (reterr (msg "Since the :PREPROCESS input is NIL, ~
-                      the :PREPROCESS-ARGS input must be absent, ~
+                      the :PREPROCESS-ARGS input must also be @('nil'), ~
                       but it is ~x0 instead."
                      preprocess-args)))
        ((unless (or (string-listp preprocess-args)
@@ -394,7 +394,6 @@
                                     files
                                     path
                                     preprocess
-                                    (preprocess-args-presentp booleanp)
                                     preprocess-args
                                     process
                                     (const-presentp booleanp)
@@ -438,7 +437,6 @@
        ((erp preprocessor) (input-files-process-preprocess preprocess))
        ((erp preprocess-extra-args)
         (input-files-process-preprocess-args preprocessor
-                                             preprocess-args-presentp
                                              preprocess-args
                                              state))
        ((erp process) (input-files-process-process process))
@@ -495,6 +493,8 @@
 
 (define input-files-preprocess-arg-std ((ienv ienvp))
   :returns (preprocess-arg stringp)
+  :short "Return the @('-std=') flag reflecting the implementation
+          environment."
   (b* (((ienv ienv) ienv))
     (c::version-case
       ienv.version
@@ -507,6 +507,8 @@
   ((x stringp)
    (map acl2::string-stringlist-mapp))
   :returns (new-map acl2::string-stringlist-mapp)
+  :short "Cons a string to the value of each entry in an omap from strings to
+          string lists."
   (b* ((map (acl2::string-stringlist-map-fix map))
        (x (mbe :logic (acl2::str-fix x) :exec x)))
     (if (omap::emptyp map)
@@ -522,6 +524,14 @@
      (or (acl2::string-stringlist-mapp preprocess-extra-args)
          (string-listp preprocess-extra-args)))
    (ienv ienvp))
+  :short "Extend the preprocessing arguments with a @('-std=') flag."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @('preprocess-extra-args') is a string list,
+     we cons the @('-std=') flag to the front of the list.
+     If it is an omap, we cons the flag to the front of each list
+     in the omap value set."))
   :returns (new-preprocess-extra-args
             (or (acl2::string-stringlist-mapp new-preprocess-extra-args)
                 (string-listp new-preprocess-extra-args)))
@@ -664,7 +674,6 @@
                                                    files
                                                    path
                                                    preprocess
-                                                   (preprocess-args-presentp booleanp)
                                                    preprocess-args
                                                    process
                                                    (const-presentp booleanp)
@@ -704,7 +713,6 @@
                                     files
                                     path
                                     preprocess
-                                    preprocess-args-presentp
                                     preprocess-args
                                     process
                                     const-presentp
@@ -748,7 +756,6 @@
                         files
                         path
                         preprocess
-                        (preprocess-args-presentp booleanp)
                         preprocess-args
                         process
                         (const-presentp booleanp)
@@ -775,7 +782,6 @@
                                                    files
                                                    path
                                                    preprocess
-                                                   preprocess-args-presentp
                                                    preprocess-args
                                                    process
                                                    const-presentp
@@ -800,7 +806,7 @@
   (defmacro input-files (&key (files 'nil files-presentp)
                               (path '".")
                               (preprocess 'nil)
-                              (preprocess-args 'nil preprocess-args-presentp)
+                              (preprocess-args 'nil)
                               (process ':validate)
                               (const 'nil const-presentp)
                               (keep-going 'nil)
@@ -816,7 +822,6 @@
                        ,files
                        ',path
                        ',preprocess
-                       ',preprocess-args-presentp
                        ,preprocess-args
                        ',process
                        ',const-presentp
@@ -892,7 +897,6 @@
                              files
                              path
                              preprocess
-                             (preprocess-args-presentp booleanp)
                              preprocess-args
                              process
                              (const-presentp booleanp)
@@ -920,7 +924,6 @@
                                                    files
                                                    path
                                                    preprocess
-                                                   preprocess-args-presentp
                                                    preprocess-args
                                                    process
                                                    const-presentp
@@ -952,7 +955,7 @@
   (defmacro input-files-prog (&key (files 'nil files-presentp)
                                    (path '".")
                                    (preprocess 'nil)
-                                   (preprocess-args 'nil preprocess-args-presentp)
+                                   (preprocess-args 'nil)
                                    (process ':validate)
                                    (const 'nil const-presentp)
                                    (keep-going 'nil)
@@ -967,7 +970,6 @@
                           ,files
                           ',path
                           ',preprocess
-                          ',preprocess-args-presentp
                           ,preprocess-args
                           ',process
                           ',const-presentp

@@ -56,7 +56,7 @@
      "(input-files :files             ...  ; required, no default"
      "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
-     "             :preprocess-args   ...  ; no default"
+     "             :preprocess-args   ...  ; default nil"
      "             :process           ...  ; default :validate"
      "             :const             ...  ; required, no default"
      "             :keep-going        ...  ; default nil"
@@ -125,11 +125,11 @@
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "If this is not absent, it must evaluate to a list of strings
+      "This must evaluate to a list of strings
        or to an omap from strings to lists of strings.")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
-       the @(':preprocess-args') input must be absent.")
+       the @(':preprocess-args') input must evaluate to @('nil').")
      (xdoc::p
       "If @(':preprocess') is not @('nil'), the input files are preprocessed.
        For each file, we provide the @('-E') flag to the preprocessor,
