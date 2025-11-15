@@ -134,53 +134,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund acl2::assoc-keyword-unguarded (key l)
+(defund assoc-keyword-unguarded (key l)
   (declare (xargs :guard t))
   (cond ((atom l) nil)
         ((equal key (car l)) l)
-        (t (assoc-keyword-unguarded key (acl2::cdr-unguarded (acl2::cdr-unguarded l))))))
+        (t (assoc-keyword-unguarded key (cdr-unguarded (cdr-unguarded l))))))
 
 (defthm assoc-keyword-unguarded-correct
-  (equal (acl2::assoc-keyword-unguarded key l)
+  (equal (assoc-keyword-unguarded key l)
          (assoc-keyword key l))
-  :hints (("Goal" :in-theory (enable acl2::assoc-keyword-unguarded))))
+  :hints (("Goal" :in-theory (enable assoc-keyword-unguarded))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund acl2::header-unguarded (name l)
+(defund header-unguarded (name l)
   (declare (xargs :guard t))
   (if (or (array1p name l)
           (array2p name l))
       (header name l)
     ;; todo: make an assoc-eq-unguarded:
-    (acl2::assoc-equal-unguarded :header l)))
+    (assoc-equal-unguarded :header l)))
 
 (defthm header-unguarded-correct
-  (equal (acl2::header-unguarded name l)
-         (acl2::header name l))
-  :hints (("Goal" :in-theory (enable acl2::header-unguarded acl2::header))))
+  (equal (header-unguarded name l)
+         (header name l))
+  :hints (("Goal" :in-theory (enable header-unguarded header))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund acl2::default-unguarded (name l)
+(defund default-unguarded (name l)
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (disable dimensions default)))))
   (if (or (array1p name l)
           (array2p name l))
       ;; normal case:
       (cadr (assoc-keyword :default (cdr (header name l))))
-    (acl2::car-unguarded (acl2::cdr-unguarded (acl2::assoc-keyword-unguarded :default (acl2::cdr-unguarded (acl2::header-unguarded name l)))))))
+    (car-unguarded (cdr-unguarded (assoc-keyword-unguarded :default (cdr-unguarded (header-unguarded name l)))))))
 
 (defthm default-unguarded-correct
-  (equal (acl2::default-unguarded name l)
-         (acl2::default name l))
-  :hints (("Goal" :in-theory (enable acl2::default-unguarded))))
+  (equal (default-unguarded name l)
+         (default name l))
+  :hints (("Goal" :in-theory (enable default-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; I hope this is still fast in the normal case.
 ;; TOOD: For some reason, I am seeing slow array warnings.
-(defund acl2::aref1-unguarded (name l n)
+(defund aref1-unguarded (name l n)
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))
   (if (and (symbolp name)
@@ -194,14 +194,14 @@
       ;; hope this is fast:
       (aref1 name l n)
     (let ((x (and (not (eq n :header))
-                  (acl2::assoc-equal-unguarded n l))))
-      (cond ((null x) (acl2::default-unguarded name l))
-            (t (acl2::cdr-unguarded x))))))
+                  (assoc-equal-unguarded n l))))
+      (cond ((null x) (default-unguarded name l))
+            (t (cdr-unguarded x))))))
 
 (defthm aref1-unguarded-correct
-  (equal (acl2::aref1-unguarded name l n)
-         (acl2::aref1 name l n))
-  :hints (("Goal" :in-theory (enable acl2::aref1-unguarded))))
+  (equal (aref1-unguarded name l n)
+         (aref1 name l n))
+  :hints (("Goal" :in-theory (enable aref1-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -742,7 +742,7 @@
                                     ;;axe-rule-hypp-when-simple ; caused case splits
                                     assoc-equal
                                     integerp-of-nth-when-all-natp
-                                    acl2::natp-of-nth-when-nat-listp-type ; brought in above
+                                    natp-of-nth-when-nat-listp-type ; brought in above
                                     ;; for the smtp variant:
                                     w)))
 
