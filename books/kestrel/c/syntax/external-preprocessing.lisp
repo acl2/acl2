@@ -103,8 +103,8 @@
     't)
    ((preprocessor stringp
                   "The preprocessor executable to use. The default is
-                   \"gcc\". Other reasonable values might be \"gcc\",
-                   \"clang\", \"cc\", etc.")
+                   \"gcc\". Other reasonable values might be \"clang\",
+                   \"cpp\", \"cc\", etc.")
     '"gcc")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
@@ -228,7 +228,7 @@
    ((preprocessor
       stringp
       "The preprocessor executable to use. The default is \"gcc\". Other
-       reasonable values might be \"cpp\", \"clang\", \"cc\", etc.")
+       reasonable values might be \"clang\", \"cpp\", \"cc\", etc.")
     '"gcc")
    ((extra-args
       (or (string-listp extra-args)
