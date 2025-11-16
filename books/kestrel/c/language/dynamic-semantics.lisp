@@ -108,11 +108,11 @@
 
   ///
 
-  (defruled c::apconvert-expr-value-when-not-array
-    (implies (not (equal (c::value-kind (c::expr-value->value eval))
+  (defruled apconvert-expr-value-when-not-array
+    (implies (not (equal (value-kind (expr-value->value eval))
                          :array))
-             (equal (c::apconvert-expr-value eval)
-                    (c::expr-value-fix eval)))))
+             (equal (apconvert-expr-value eval)
+                    (expr-value-fix eval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1043,12 +1043,12 @@
                (if val?
                    (mv (make-expr-value :value val? :object nil) compst)
                  (mv nil compst)))
-       :unary (b* (((mv arg compst) (c::exec-expr e.arg compst fenv (1- limit)))
+       :unary (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
                    ((when (errorp arg)) (mv arg compst))
                    ((unless arg)
                     (mv (error (list :unary-void-expr e.arg)) compst)))
                 (mv (exec-unary e.op arg compst) compst))
-       :cast (b* (((mv arg compst) (c::exec-expr e.arg compst fenv (1- limit)))
+       :cast (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
                   ((when (errorp arg)) (mv arg compst))
                   ((unless arg)
                    (mv (error (list :cast-void-expr e.arg)) compst)))
