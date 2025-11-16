@@ -111,15 +111,26 @@
   t)
 
 #-acl2-loop-only
-(defun defconst-val-raw (full-book-name name)
-  (let* ((entry (and *hcomp-book-ht*
-                     (gethash full-book-name *hcomp-book-ht*)))
-         (const-ht (and entry
-                        (access hcomp-book-ht-entry entry :const-ht))))
+(defvar *debug-on* nil)
+
+(defmacro with-debug (form string &rest args)
+
+; String is a format string and args is a corresponding list of format
+; arguments.  We evaluate form, but if *debug-eval-on* is non-nil then we first
+; print.
+
+  `(progn (when *debug-on*
+            (format t "; DEBUG: ")
+            (format t ,string ,@args))
+          ,form))
+
+#-acl2-loop-only
+(defun defconst-val-raw (name)
+  (let ((const-ht *hcomp-const-ht*))
     (cond (const-ht (multiple-value-bind (val present-p)
-                        (gethash name const-ht)
-                      (cond (present-p val)
-                            (t *hcomp-fake-value*))))
+                                         (gethash name const-ht)
+                                         (cond (present-p val)
+                                               (t *hcomp-fake-value*))))
           (t *hcomp-fake-value*))))
 
 (defun defconst-val (name form ctx wrld state)
@@ -161,12 +172,12 @@
 
     (return-from defconst-val
                  (value (symbol-value name))))
-   (t (let ((full-book-name (car (global-val 'include-book-path wrld))))
-        (when full-book-name
-          (let ((val (defconst-val-raw full-book-name name)))
-            (when (not (eq val *hcomp-fake-value*))
-              (return-from defconst-val
-                           (value val))))))))
+   (t (let ((val (defconst-val-raw name)))
+        (when (not (eq val *hcomp-fake-value*))
+          (return-from defconst-val
+                       (with-debug (value val)
+                                   "[~s] Found ~s in hash table.~%"
+                                   'defconst-val name))))))
   (er-let*
    ((pair (state-global-let*
            ((safe-mode
@@ -3636,6 +3647,7 @@
                                              (cons kwd-value-list
                                                    kwd-value-list-lst)
                                              wrld1)))))))))
+
 (defun chk-transparent (name val insig-lst kwd-value-list-lst ctx state)
   (cond ((endp kwd-value-list-lst)
          (value nil))
@@ -8378,6 +8390,65 @@
                                cert-data-entry-tr-to-free)
                               ,form))))))
 
+#+acl2-loop-only
+(defmacro with-hcomp-bindings-encapsulate (bindp form)
+  (declare (ignorable bindp)
+           (xargs :guard ; see comment in #-acl2-loop-only code
+                  (symbolp bindp)))
+  form)
+
+#-acl2-loop-only
+(defmacro with-hcomp-bindings-encapsulate (bindp form)
+
+; See the Essay on Hash Table Support for Compilation, specifically Appendix 2,
+; "Extension for Encapsulate".
+
+; Warning: Keep this in sync with with-hcomp-bindings and
+; with-hcomp-bindings-protected-eval.
+
+; This macro is wrapped around the first of two passes of encapsulate, when the
+; value of state global 'ld-skip-proofsp is not 'include-book.  If we are
+; already storing definitions into hash tables, this macro is essentially a
+; no-op since those updates are destructive.
+
+; Bindp is a symbol (as per the guard for with-hcomp-bindings-encapsulate), so
+; we can reference it repeatedly without suffering recomputation.
+
+  `(let* ((*hcomp-status* (and ,bindp 'encapsulate-pass-1))
+          (*hcomp-fn-ht* (and ,bindp
+                              (or *hcomp-fn-ht*
+                                  (make-hash-table :test 'eq))))
+          (*hcomp-const-ht* (and ,bindp
+                                 (or *hcomp-const-ht*
+                                     (make-hash-table :test 'eq))))
+          (*hcomp-macro-ht* (and ,bindp
+                                 (or *hcomp-macro-ht*
+                                     (make-hash-table :test 'eq))))
+          (*hcomp-fn-alist*    nil)
+          (*hcomp-const-alist* nil)
+          (*hcomp-macro-alist* nil)
+          (*declaim-list* nil)
+          (*hcomp-cert-obj* nil)
+          (*hcomp-cert-filename* nil)
+          (*hcomp-elided-defconst-alist* nil))
+
+; Form is an ACL2 form, so none of the raw Lisp variables bound above occurs
+; free in form, which saves us from a potential capture problem.
+
+     ,form))
+
+#+acl2-loop-only
+(defmacro switch-hcomp-status-encapsulate (condition form)
+  (declare (ignorable condition))
+  form)
+
+#-acl2-loop-only
+(defmacro switch-hcomp-status-encapsulate (condition form)
+  `(let ((*hcomp-status* (if ,condition
+                             'include-book
+                           nil)))
+     ,form))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -8519,7 +8590,8 @@
             (saved-acl2-defaults-table
              (table-alist 'acl2-defaults-table wrld1))
             (event-form (or event-form
-                            (list* 'encapsulate signatures ev-lst))))
+                            (list* 'encapsulate signatures ev-lst)))
+            (in-local-flg (f-get-global 'in-local-flg state)))
        (revert-world-on-error
         (let ((r (redundant-encapsulatep signatures ev-lst event-form wrld1
                                          state)))
@@ -8558,42 +8630,50 @@
                  (not (eq (ld-skip-proofsp state) 'include-book-with-locals))
                  (not (eq (ld-skip-proofsp state) 'initialize-acl2)))
 
-; Ld-skip-proofsp is either t or nil.  But whatever it is, we will be
-; processing the LOCAL events.  We are no longer sure why we do so when
-; ld-skip-proofsp is t, but a reasonable theory is that in such a case, the
-; user's intention is to do everything that one does other than actually
-; calling prove -- so in particular, we do both passes of an encapsulate.
+; Ld-skip-proofsp is either t or nil, so we will be processing the LOCAL
+; events.  We do so when ld-skip-proofsp is t since the user's intention is
+; presumably to do everything that one normally does other than actually
+; calling the prover.  We thus do both passes of an encapsulate.
 
-            (er-let*
-                ((trip (chk-acceptable-encapsulate1 signatures ev-lst
-                                                    ctx wrld1 state)))
+            (er-let* ((trip (chk-acceptable-encapsulate1 signatures ev-lst
+                                                         ctx wrld1 state)))
               (let* ((insigs (car trip))
                      (names (strip-cars insigs))
                      (kwd-value-list-lst (cadr trip))
-                     (wrld1 (cddr trip)))
-                (pprogn
-                 (set-w 'extension
-                        (global-set 'proof-supporters-alist nil wrld1)
-                        state)
-                 (print-encapsulate-msg1 insigs ev-lst state)
-                 (er-let*
-                     ((expansion-alist
-                       (state-global-let*
-                        ((in-local-flg
+                     (wrld1 (cddr trip))
+                     (do-hcomp-build-p
+                      (and (not in-local-flg)
+                           (null signatures)
+                           (null (ld-redefinition-action state))
+                           (not (in-encapsulatep
+                                 (global-val 'embedded-event-lst (w state))
+                                 t)))))
+                (declare (ignorable do-hcomp-build-p)) ; for #-acl2-loop-only
+                (with-hcomp-bindings-encapsulate
+                 do-hcomp-build-p
+                 (pprogn
+                  (set-w 'extension
+                         (global-set 'proof-supporters-alist nil wrld1)
+                         state)
+                  (print-encapsulate-msg1 insigs ev-lst state)
+                  (er-let*
+                      ((expansion-alist
+                        (state-global-let*
+                         ((in-local-flg
 
 ; As we start processing the events in the encapsulate, we are no longer in the
 ; lexical scope of LOCAL for purposes of disallowing setting of the
 ; acl2-defaults-table.
 
-                          (and (f-get-global 'in-local-flg state)
-                               'local-encapsulate)))
-                        (process-embedded-events
-                         'encapsulate-pass-1
-                         saved-acl2-defaults-table
-                         (ld-skip-proofsp state)
-                         (current-package state)
-                         (list 'encapsulate insigs)
-                         ev-lst 0 nil
+                           (and in-local-flg
+                                'local-encapsulate)))
+                         (process-embedded-events
+                          'encapsulate-pass-1
+                          saved-acl2-defaults-table
+                          (ld-skip-proofsp state)
+                          (current-package state)
+                          (list 'encapsulate insigs)
+                          ev-lst 0 nil
 
 ; If the value V of state global 'cert-data is non-nil, then presumably we are
 ; including a book, and thus we aren't even here, i.e., we aren't executing
@@ -8606,185 +8686,189 @@
 ; cert-data with information from the local defun of foo inside the present
 ; encapsulate.)
 
-                         nil ; cert-data
-                         ctx state))))
-                   (let* ((wrld2 (w state))
-                          (post-pass-1-skip-proofs-seen
-                           (global-val 'skip-proofs-seen wrld2))
-                          (post-pass-1-include-book-alist-all
-                           (global-val 'include-book-alist-all wrld2))
-                          (post-pass-1-pcert-books
-                           (global-val 'pcert-books wrld2))
-                          (post-pass-1-ttags-seen
-                           (global-val 'ttags-seen wrld2))
-                          (post-pass-1-proof-supporters-alist
-                           (global-val 'proof-supporters-alist wrld2))
-                          (post-pass-1-cert-replay
-                           (global-val 'cert-replay wrld2))
-                          (post-pass-1-proved-functional-instances-alist
-                           (global-val 'proved-functional-instances-alist wrld2))
-                          (cert-data
+                          nil ; cert-data
+                          ctx state))))
+                    (let* ((wrld2 (w state))
+                           (post-pass-1-skip-proofs-seen
+                            (global-val 'skip-proofs-seen wrld2))
+                           (post-pass-1-include-book-alist-all
+                            (global-val 'include-book-alist-all wrld2))
+                           (post-pass-1-pcert-books
+                            (global-val 'pcert-books wrld2))
+                           (post-pass-1-ttags-seen
+                            (global-val 'ttags-seen wrld2))
+                           (post-pass-1-proof-supporters-alist
+                            (global-val 'proof-supporters-alist wrld2))
+                           (post-pass-1-cert-replay
+                            (global-val 'cert-replay wrld2))
+                           (post-pass-1-proved-functional-instances-alist
+                            (global-val 'proved-functional-instances-alist wrld2))
+                           (cert-data
 
 ; We currently save cert-data only for trivial encapsulates.  See the Essay on
 ; Cert-data.
 
-                           (and (null insigs)
-                                (cert-data-pass1-saved wrld1 wrld2))))
-                     (fast-alist-free-cert-data-on-exit
-                      cert-data
-                      (state-global-let*
-                       ((cert-data cert-data))
-                       (pprogn
-                        (print-encapsulate-msg2 insigs ev-lst state)
-                        (er-progn
-                         (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
-                                                      wrld2 ctx state)
-                         (let* ((pass1-kpa
-                                 (global-val 'known-package-alist wrld2))
-                                (new-ev-lst
-                                 (subst-by-position expansion-alist ev-lst 0))
-                                (state (set-w 'retraction wrld1 state))
-                                (new-event-form
-                                 (and expansion-alist
-                                      (list* 'encapsulate signatures
-                                             new-ev-lst))))
-                           (er-let* ((temp
+                            (and (null insigs)
+                                 (cert-data-pass1-saved wrld1 wrld2))))
+                      (fast-alist-free-cert-data-on-exit
+                       cert-data
+                       (state-global-let*
+                        ((cert-data cert-data))
+                        (pprogn
+                         (print-encapsulate-msg2 insigs ev-lst state)
+                         (er-progn
+                          (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
+                                                       wrld2 ctx state)
+                          (let* ((pass1-kpa
+                                  (global-val 'known-package-alist wrld2))
+                                 (new-ev-lst
+                                  (subst-by-position expansion-alist ev-lst 0))
+                                 (state (set-w 'retraction wrld1 state))
+                                 (new-event-form
+                                  (and expansion-alist
+                                       (list* 'encapsulate signatures
+                                              new-ev-lst))))
+                            (er-let* ((temp
 
 ; The following encapsulate-pass-2 is protected by the revert-world-on
 ; error above.
-                                      (encapsulate-pass-2
-                                       insigs
-                                       kwd-value-list-lst
-                                       new-ev-lst
-                                       saved-acl2-defaults-table nil ctx state)))
-                             (pprogn
-                              (f-put-global 'last-make-event-expansion
-                                            new-event-form
-                                            state)
-                              (cond
-                               ((eq (car temp) :empty-encapsulate)
-                                (empty-encapsulate ctx state))
-                               (t
-                                (let* ((wrld3 (w state))
-                                       (constrained-fns (nth 0 temp))
-                                       (retval (nth 1 temp))
-                                       (constraints-introduced (nth 2 temp))
+
+                                       (switch-hcomp-status-encapsulate
+                                        do-hcomp-build-p
+                                        (encapsulate-pass-2
+                                         insigs
+                                         kwd-value-list-lst
+                                         new-ev-lst
+                                         saved-acl2-defaults-table
+                                         nil ctx state))))
+                              (pprogn
+                               (f-put-global 'last-make-event-expansion
+                                             new-event-form
+                                             state)
+                               (cond
+                                ((eq (car temp) :empty-encapsulate)
+                                 (empty-encapsulate ctx state))
+                                (t
+                                 (let* ((wrld3 (w state))
+                                        (constrained-fns (nth 0 temp))
+                                        (retval (nth 1 temp))
+                                        (constraints-introduced (nth 2 temp))
 ; Note: constraints-introduced is just a list of terms, not a
 ; constraint-lst-etc pair.
-                                       (exports (nth 3 temp))
-                                       (subversive-fns (nth 4 temp))
-                                       (infectious-fns (nth 5 temp))
-                                       (final-proved-fnl-inst-alist
-                                        (and
+                                        (exports (nth 3 temp))
+                                        (subversive-fns (nth 4 temp))
+                                        (infectious-fns (nth 5 temp))
+                                        (final-proved-fnl-inst-alist
+                                         (and
 
 ; The following test that constrained-fns is nil is an optimization, since
 ; otherwise we won't use final-proved-fnl-inst-alist.  See the comment below
 ; where final-proved-fnl-inst-alist is used; if we change that, then this
 ; optimization might no longer be suitable.
 
-                                         (null constrained-fns)
-                                         (new-proved-functional-instances-alist
-                                          saved-proved-functional-instances-alist
-                                          post-pass-1-proved-functional-instances-alist
-                                          wrld3
-                                          nil)))
-                                       (pass2-kpa
-                                        (global-val 'known-package-alist
-                                                    wrld3))
-                                       (eq-pass12-kpa
-                                        (equal pass1-kpa pass2-kpa)))
-                                  (pprogn
-                                   (if (eq retval
-                                           :trivial-extension-for-fast-cert)
-                                       (assert$
-                                        (and (null insigs)
-                                             (null exports)
-                                             (null constrained-fns)
-                                             (null constraints-introduced)
-                                             (null subversive-fns)
-                                             (null infectious-fns))
-                                        state)
-                                     (print-encapsulate-msg3
-                                      ctx insigs new-ev-lst exports
-                                      constrained-fns constraints-introduced
-                                      subversive-fns infectious-fns wrld3
-                                      state))
-                                   (er-let*
-                                       ((wrld3a (intro-udf-guards
-                                                 insigs
-                                                 kwd-value-list-lst
-                                                 (intro-udf-global-stobjs
+                                          (null constrained-fns)
+                                          (new-proved-functional-instances-alist
+                                           saved-proved-functional-instances-alist
+                                           post-pass-1-proved-functional-instances-alist
+                                           wrld3
+                                           nil)))
+                                        (pass2-kpa
+                                         (global-val 'known-package-alist
+                                                     wrld3))
+                                        (eq-pass12-kpa
+                                         (equal pass1-kpa pass2-kpa)))
+                                   (pprogn
+                                    (if (eq retval
+                                            :trivial-extension-for-fast-cert)
+                                        (assert$
+                                         (and (null insigs)
+                                              (null exports)
+                                              (null constrained-fns)
+                                              (null constraints-introduced)
+                                              (null subversive-fns)
+                                              (null infectious-fns))
+                                         state)
+                                      (print-encapsulate-msg3
+                                       ctx insigs new-ev-lst exports
+                                       constrained-fns constraints-introduced
+                                       subversive-fns infectious-fns wrld3
+                                       state))
+                                    (er-let*
+                                        ((wrld3a (intro-udf-guards
                                                   insigs
                                                   kwd-value-list-lst
-                                                  wrld3)
-                                                 wrld3 ctx state))
-                                        #+:non-standard-analysis
-                                        (wrld3a (value
-                                                 (intro-udf-non-classicalp
-                                                  insigs kwd-value-list-lst
-                                                  wrld3a))))
-                                     (install-event
-                                      (cond
-                                       ((encapsulate-return-value-p retval)
-                                        (cadr retval))
-                                       ((null names) t)
-                                       ((null (cdr names)) (car names))
-                                       (t names))
-                                      (or new-event-form event-form)
-                                      'encapsulate
-                                      (or names 0)
-                                      nil nil
-                                      t
-                                      ctx
-                                      (let* ((wrld4
-                                              (if eq-pass12-kpa
-                                                  wrld3a
-                                                (encapsulate-fix-known-package-alist
-                                                 pass1-kpa pass2-kpa wrld3a)))
-                                             (wrld5 (global-set?
-                                                     'ttags-seen
-                                                     post-pass-1-ttags-seen
-                                                     wrld4
-                                                     (global-val 'ttags-seen
-                                                                 wrld3)))
-                                             (wrld6 (install-proof-supporters-alist
-                                                     post-pass-1-proof-supporters-alist
-                                                     wrld3
-                                                     wrld5))
-                                             (wrld7 (cond
-                                                     ((or (global-val 'skip-proofs-seen
+                                                  (intro-udf-global-stobjs
+                                                   insigs
+                                                   kwd-value-list-lst
+                                                   wrld3)
+                                                  wrld3 ctx state))
+                                         #+:non-standard-analysis
+                                         (wrld3a (value
+                                                  (intro-udf-non-classicalp
+                                                   insigs kwd-value-list-lst
+                                                   wrld3a))))
+                                      (install-event
+                                       (cond
+                                        ((encapsulate-return-value-p retval)
+                                         (cadr retval))
+                                        ((null names) t)
+                                        ((null (cdr names)) (car names))
+                                        (t names))
+                                       (or new-event-form event-form)
+                                       'encapsulate
+                                       (or names 0)
+                                       nil nil
+                                       t
+                                       ctx
+                                       (let* ((wrld4
+                                               (if eq-pass12-kpa
+                                                   wrld3a
+                                                 (encapsulate-fix-known-package-alist
+                                                  pass1-kpa pass2-kpa wrld3a)))
+                                              (wrld5 (global-set?
+                                                      'ttags-seen
+                                                      post-pass-1-ttags-seen
+                                                      wrld4
+                                                      (global-val 'ttags-seen
+                                                                  wrld3)))
+                                              (wrld6 (install-proof-supporters-alist
+                                                      post-pass-1-proof-supporters-alist
+                                                      wrld3
+                                                      wrld5))
+                                              (wrld7 (cond
+                                                      ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
 ; about a non-local event.
 
-                                                                      wrld3)
-                                                          (null
-                                                           post-pass-1-skip-proofs-seen))
-                                                      wrld6)
-                                                     (t (global-set
-                                                         'skip-proofs-seen
-                                                         post-pass-1-skip-proofs-seen
-                                                         wrld6))))
-                                             (wrld8 (global-set?
-                                                     'include-book-alist-all
-                                                     post-pass-1-include-book-alist-all
-                                                     wrld7
-                                                     (global-val
+                                                                       wrld3)
+                                                           (null
+                                                            post-pass-1-skip-proofs-seen))
+                                                       wrld6)
+                                                      (t (global-set
+                                                          'skip-proofs-seen
+                                                          post-pass-1-skip-proofs-seen
+                                                          wrld6))))
+                                              (wrld8 (global-set?
                                                       'include-book-alist-all
-                                                      wrld3)))
-                                             (wrld9 (global-set?
-                                                     'pcert-books
-                                                     post-pass-1-pcert-books
-                                                     wrld8
-                                                     (global-val
+                                                      post-pass-1-include-book-alist-all
+                                                      wrld7
+                                                      (global-val
+                                                       'include-book-alist-all
+                                                       wrld3)))
+                                              (wrld9 (global-set?
                                                       'pcert-books
-                                                      wrld3)))
-                                             (wrld10
-                                              (if (and post-pass-1-cert-replay
-                                                       (not eq-pass12-kpa)
-                                                       (not (global-val
-                                                             'cert-replay
-                                                             wrld3)))
+                                                      post-pass-1-pcert-books
+                                                      wrld8
+                                                      (global-val
+                                                       'pcert-books
+                                                       wrld3)))
+                                              (wrld10
+                                               (if (and post-pass-1-cert-replay
+                                                        (not eq-pass12-kpa)
+                                                        (not (global-val
+                                                              'cert-replay
+                                                              wrld3)))
 
 ; The 'cert-replay world global supports the possible avoidance of rolling back
 ; the world after the first pass of certify-book, before doing the local
@@ -8812,22 +8896,22 @@
 ; make-event case, but if we set cert-replay a bit too aggressively here in
 ; very rare cases, that's OK.
 
-                                                  (global-set
-                                                   'cert-replay
-                                                   (if (f-get-global
-                                                        'certify-book-info
-                                                        state)
-                                                       t
-                                                     (cons
-                                                      (cons (- (max-absolute-command-number
-                                                                wrld3))
-                                                            nil)
-                                                      (scan-to-command
-                                                       wrld1)))
-                                                   wrld9)
-                                                wrld9))
-                                             (wrld11
-                                              (if (null constrained-fns)
+                                                   (global-set
+                                                    'cert-replay
+                                                    (if (f-get-global
+                                                         'certify-book-info
+                                                         state)
+                                                        t
+                                                      (cons
+                                                       (cons (- (max-absolute-command-number
+                                                                 wrld3))
+                                                             nil)
+                                                       (scan-to-command
+                                                        wrld1)))
+                                                    wrld9)
+                                                 wrld9))
+                                              (wrld11
+                                               (if (null constrained-fns)
 
 ; If there are constrained functions, we probably can still store proved
 ; functional instances that don't depend on the newly-constrained functions, by
@@ -8838,13 +8922,13 @@
 ; final-proved-fnl-inst-alist, where there is an optimization that will likely
 ; need to be changed.
 
-                                                  (global-set
-                                                   'proved-functional-instances-alist
-                                                   final-proved-fnl-inst-alist
-                                                   wrld10)
-                                                wrld10)))
-                                        wrld11)
-                                      state)))))))))))))))))))
+                                                   (global-set
+                                                    'proved-functional-instances-alist
+                                                    final-proved-fnl-inst-alist
+                                                    wrld10)
+                                                 wrld10)))
+                                         wrld11)
+                                       state))))))))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
 ;                                         'include-book-with-locals or
@@ -8867,7 +8951,10 @@
 
                      ((expansion-alist0/retval
                        (encapsulate-pass-2
-                        insigs kwd-value-list-lst ev-lst saved-acl2-defaults-table
+                        insigs
+                        kwd-value-list-lst
+                        ev-lst
+                        saved-acl2-defaults-table
                         t ctx state)))
                    (let* ((empty-encapsulate-p
                            (eq (car expansion-alist0/retval) :empty-encapsulate))
@@ -11591,8 +11678,8 @@
       ((consp ch-or-cert-obj)
 
 ; We skipped the following check when reading the certificate into
-; ch-or-cert-obj during the early load of the compiled file.  (See the Appendix
-; to the Essay on Hash Table Support for Compilation.)  So we do it now.
+; ch-or-cert-obj during the early load of the compiled file.  (See Appendix 1
+; in the Essay on Hash Table Support for Compilation.)  So we do it now.
 
        (cond ((include-book-alist-subsetp
                (access cert-obj ch-or-cert-obj :pre-alist)
@@ -12061,8 +12148,8 @@
 ; returned, as described below.
 
 ; Caller is 'include-book-raw during the early loading of compiled files; see
-; the Essay on Hash Table Support for Compilation, especially the Appendix,
-; "Saving space by eliding certain defconst forms".  In that case, failures are
+; the Essay on Hash Table Support for Compilation, especially Appendix 1,
+; "Saving Space by Eliding Certain Defconst Forms".  In that case, failures are
 ; silent: in case of a problem, there is no warning generated and nil is the
 ; returned value.  Also, the input suspect-book-action-alist is irrelevant if
 ; caller is 'include-book-raw.
@@ -12147,8 +12234,8 @@
 
 ; We avoid checks on packages not yet defined in ACL2 when loading compiled
 ; files early in an include-book.  We will do that check later, in the call of
-; chk-bad-lisp-object in chk-certificate-file.  See also the section "Appendix:
-; Saving space by eliding certain defconst forms" of the Essay on Hash Table
+; chk-bad-lisp-object in chk-certificate-file.  See also the section "Appendix
+; 1: Saving Space By Eliding Certain Defconst Forms" of the Essay on Hash Table
 ; Support for Compilation.
 
                          (assert (symbolp ch-or-cert-obj))
@@ -13391,29 +13478,41 @@
 ; Compilation.
 
 #+acl2-loop-only
-(defmacro with-hcomp-bindings (do-it form)
-  (declare (ignore do-it))
+(defmacro with-hcomp-bindings (form)
+; For comments, see the #-acl2-loop-only definition of this function.
   form)
 
 #-acl2-loop-only
-(defmacro with-hcomp-bindings (do-it form)
-  (let ((ht-form (and do-it '(make-hash-table :test 'eq))))
-    `(let ((*hcomp-fn-ht*       ,ht-form)
-           (*hcomp-const-ht*    ,ht-form)
-           (*hcomp-macro-ht*    ,ht-form)
-           (*hcomp-fn-alist*    nil)
-           (*hcomp-const-alist* nil)
-           (*hcomp-macro-alist* nil)
-           (*declaim-list* nil)
-           (*hcomp-cert-obj* nil)
-           (*hcomp-cert-filename* nil)
-           (*hcomp-elided-defconst-alist* nil))
-       ,@(and do-it
-              '((declare (type hash-table
-                               *hcomp-fn-ht*
-                               *hcomp-const-ht*
-                               *hcomp-macro-ht*))))
-       ,form)))
+(defmacro with-hcomp-bindings (form)
+
+; Warning: Keep this in sync with with-hcomp-bindings-encapsulate and
+; with-hcomp-bindings-protected-eval.
+
+; See the Essay on Hash Table Support for Compilation.
+
+; In certify-book-step-3+, we call this macro even when compile-flg is nil,
+; which is a bit sad.  But it's harmless to make a few extra hash tables those
+; occasional times that certification is performed without compilation.  Before
+; October, 2025, we had code here that attempted to avoid that, but it was
+; buggy: it always created hash tables.  And nobody ever seems to have noticed.
+
+  `(let ((*hcomp-fn-ht*       (make-hash-table :test 'eq))
+         (*hcomp-const-ht*    (make-hash-table :test 'eq))
+         (*hcomp-macro-ht*    (make-hash-table :test 'eq))
+         (*hcomp-fn-alist*    nil)
+         (*hcomp-const-alist* nil)
+         (*hcomp-macro-alist* nil)
+         (*declaim-list* nil)
+         (*hcomp-cert-obj* nil)
+         (*hcomp-cert-filename* nil)
+         (*hcomp-elided-defconst-alist* nil))
+     (declare (type hash-table
+                    *hcomp-fn-ht* *hcomp-const-ht* *hcomp-macro-ht*))
+
+; Form is an ACL2 form, so none of the raw Lisp variables bound above occurs
+; free in form, which saves us from a potential capture problem.
+
+     ,form))
 
 #+acl2-loop-only
 (defmacro with-hcomp-ht-bindings (form)
@@ -14232,9 +14331,9 @@
          (*defeat-slow-alist-action* (or *defeat-slow-alist-action*
                                          'stolen))
          #-acl2-loop-only
-         (*inside-include-book-fn* (if behalf-of-certify-flg
-                                       'hcomp-build
-                                     t))
+         (*hcomp-status* (if behalf-of-certify-flg
+                             'certify-book
+                           'include-book))
          (old-include-book-path
           (global-val 'include-book-path wrld1))
          (saved-acl2-defaults-table
@@ -14953,8 +15052,8 @@
 (defun subst-by-position-eliding-defconst (alist lst index)
 
 ; This function differs from subst-by-position only in that it elides defconst
-; forms, as discussed in section "Appendix: Saving space by eliding certain
-; defconst forms" of the Essay on Hash Table Support for Compilation.
+; forms, as discussed in section "Appendix 1: Saving Space by Eliding Certain
+; Defconst Forms" of the Essay on Hash Table Support for Compilation.
 
   (cond (alist
          (cond ((< (caar alist) index)
@@ -15473,10 +15572,13 @@
             (proofs-co state) state nil)))
 
 (defun hcomp-build-from-state (cltl-command-stack state)
+
+; This should only be called under a call of with-hcomp-bindings.
+
   #+acl2-loop-only
   (declare (ignore cltl-command-stack))
   #+acl2-loop-only
-  (read-acl2-oracle state)
+  (value nil)
   #-acl2-loop-only
   (hcomp-build-from-state-raw (reverse cltl-command-stack) state))
 
@@ -17693,7 +17795,6 @@
                (t (si::gbc t)))
          state)
        (with-hcomp-bindings
-        compile-flg
 
 ; It may seem strange to call with-hcomp-bindings here -- after all, we call
 ; include-book-fn below, and we may think that include-book-fn will ultimately
@@ -17702,8 +17803,8 @@
 ; include-book-raw and hence avoids calling load-compiled-book; it processes
 ; events without first doing a load in raw Lisp.  It is up to us to bind the
 ; *hcomp-xxx* variables here, so that add-trip can use them as it is processing
-; events on behalf of the call below of include-book-fn, where
-; *inside-include-book-fn* is 'hcomp-build.
+; events on behalf of the call below of include-book-fn, where *hcomp-status*
+; is 'certify-book.
 
         (mv-let
           (expansion-alist pcert-info)
@@ -33897,6 +33998,33 @@
        (tilde-@-abbreviate-object-phrase (cadr event-form))
        (if (cddr event-form) " ..." "")))
 
+#+acl2-loop-only
+(defmacro with-hcomp-bindings-protected-eval (form)
+  form)
+
+#-acl2-loop-only
+(defmacro with-hcomp-bindings-protected-eval (form)
+
+; Warning: Keep this in sync with with-hcomp-bindings and
+; with-hcomp-bindings-encapsulate.
+
+  `(let* ((*hcomp-status* nil)
+          (*hcomp-fn-ht* nil)
+          (*hcomp-const-ht* nil)
+          (*hcomp-macro-ht* nil)
+          (*hcomp-fn-alist* nil)
+          (*hcomp-const-alist* nil)
+          (*hcomp-macro-alist* nil)
+          (*declaim-list* nil)
+          (*hcomp-cert-obj* nil)
+          (*hcomp-cert-filename* nil)
+          (*hcomp-elided-defconst-alist* nil))
+
+; Form is an ACL2 form, so none of the raw Lisp variables bound above occurs
+; free in form, which saves us from a potential capture problem.
+
+     ,form))
+
 (defun protected-eval (form on-behalf-of ctx state aok)
 
 ; Warning: If you change this definition, consider whether the code in
@@ -33950,7 +34078,8 @@
 ; should use safe-mode, then we should strongly consider making the same
 ; decision for value-triple.
 
-                 (trans-eval-default-warning form ctx state aok)))
+                 (with-hcomp-bindings-protected-eval
+                  (trans-eval-default-warning form ctx state aok))))
         (let* ((new-kpa (known-package-alist state))
                (new-ttags-seen (global-val 'ttags-seen (w state)))
                (stobjs-out (car result))

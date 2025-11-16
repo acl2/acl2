@@ -1918,20 +1918,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              signatures)
           ,@lst))
 
-(defparameter *inside-include-book-fn*
+(defparameter *hcomp-status*
 
-; The value of this variable is t when we are inside an include-book that is
-; not being performed by the local compatibility check of certify-book.
-; Otherwise the value is nil unless we are inside certify-book in either of two
-; cases: inside hcomp-build-from-state, or inside a call of include-book made
-; by the local compatibility check.
+; See the Essay on Hash Table Support for Compilation for relevant background.
 
-; We trust include-book-fn and certify-book-fn to take care of all include-book
-; processing without any need to call the raw Lisp include-book.  It seems that
-; the only way this could be a bad idea is if include-book or certify-book
-; could be called from a user utility, rather than at the top level, while
-; inside a call of include-book-fn or certify-book-fn.  We disallow this in
-; translate11.
+; This variable takes on the following values, all symbols.
+
+; - include-book: when inside an include-book that is not being performed by
+;   the local-incompatibility check of certify-book
+
+; - certify-book: when inside an include-book that is being performed by
+;   the local-incompatibility check of certify-book, and also inside a call of
+;   hcomp-build-from-state (which is also performed by certify-book)
+
+; - encapsulate-pass-1: when inside the first of two passes of evaluation of an
+;   encapsulate event, with certain exceptions
+
+; - nil: otherwise.
 
   nil)
 
@@ -14612,6 +14615,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-output-object-channel-sharing
     with-hcomp-bindings
     with-hcomp-ht-bindings
+    with-hcomp-bindings-encapsulate
+    switch-hcomp-status-encapsulate
+    with-hcomp-bindings-protected-eval
     redef+
     redef-
     bind-acl2-time-limit
@@ -23084,7 +23090,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; on a large book we found a 2.8% time savings by redefining this function
 ; simply to return nil.
 
-  (when (not (or *inside-include-book-fn*
+  (when (not (or (eq *hcomp-status* 'include-book)
                  *bad-lisp-object-ok*
 
 ; We avoid the bad-lisp-objectp check during the Convert procedure of
