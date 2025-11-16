@@ -11,9 +11,9 @@
 
 (in-package "X")
 
-;; STATUS: partial success
-;; - get_literal: lifts to constant 4202500 (0x402004), theorem proved
-;;   Attempts to verify that the returned address points to "hello" failed.
+;; STATUS: COMPLETE
+;; - get_literal: lifts to constant 4202500 (0x402004), theorems proved
+;;   (both address and content verification)
 ;; - get_literal_char: lifts successfully, returns 116 in RAX, theorem proved
 
 ;; This example tests lifting functions that work with string literals.
@@ -37,17 +37,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Lift get_literal which returns a pointer to "hello" string literal
+;; Lift get_literal which returns a pointer to "hello" string literal.
 (def-unrolled get-literal
   :executable "return-literal.elf64"
   :target "get_literal"
   :stack-slots 2)
 
-;; Test that get_literal returns the expected constant address (0x402004)
+;; Note that .rodata in this executable is at #x402000 (decimal 4202496),
+;; and is 15 bytes long (000000000000000f):
+;;   % readelf -S return-literal.elf64 | grep -A1 .rodata
+;;     [11] .rodata           PROGBITS         0000000000402000  00002000
+;;          000000000000000f  0000000000000000   A       0     0     4
+;; Then note that "hello" is at offset 4:
+;;   % readelf -p .rodata return-literal.elf64 | grep 'hello'
+;;     [     4]  hello
+;; See .rodata in hex dump form:
+;;   % readelf -x .rodata return-literal.elf64
+;;   Hex dump of section '.rodata':
+;;     0x00402000 01000200 68656c6c 6f007465 737400   ....hello.test.
+
+;; Test that get_literal returns the expected address in .rodata:
 (defthmd get-literal-returns-expected-address
-  (equal (rax (get-literal x86)) 4202500) ; 0x402004 in hex
+  (equal (rax (get-literal x86)) #x402004) ; decimal 4202500
   :hints (("Goal" :in-theory (enable get-literal))))
 
+;; ----
 
 ;; Verify the returned address points to "hello"
 ;; I used :print t to show the non-elided byte lists in the assumptions and
@@ -85,6 +99,41 @@
                   )))
   :hints (("Goal" :in-theory (enable read-byte-becomes-read ; to match the normal forms that Axe uses
                                      ))))
+
+;; ----
+;; Axe does not seem to have a "loader" per se.
+
+;; We can fake just the .rodata part this way:
+(defun return-literal-.rodata-loaded-p (x86)
+  (declare (xargs :stobjs x86))
+  (equal (read-bytes 15 4202496 x86)  ; just .rodata section, from the hex dump above
+         '(01 00 02 00
+           #x68 #x65 #x6c #x6c
+           #x6f 00   #x74 #x65
+           #x73 #x74 0)))
+
+;; This should be replaced by a more general rule:
+(defthmd read-bytes-subrange-helper
+  (implies (equal (read-bytes 15 4202496 x86)
+                  '(1 0 2 0 104 101 108 108 111 0 116 101 115 116 0))
+           (equal (read-bytes 6 4202500 x86)
+                  '(104 101 108 108 111 0)))
+  :hints (("Goal" :expand ((:free (n addr) (read-bytes n addr x86))))))
+
+;; Verify the 6 bytes at the returned address are "hello\0",
+;; assuming the .rodata has been loaded.
+(defthmd get-literal-points-to-hello
+    (implies (return-literal-.rodata-loaded-p x86)
+             (equal (read-bytes 6 (rax (get-literal x86))
+                                x86)
+                    (list (char-code #\h)
+                          (char-code #\e)
+                          (char-code #\l)
+                          (char-code #\l)
+                          (char-code #\o)
+                          0))) ; null
+  :hints (("Goal" :in-theory (enable get-literal read-bytes-subrange-helper))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
