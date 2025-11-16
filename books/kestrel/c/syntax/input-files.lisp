@@ -201,7 +201,7 @@
        ((when (and (not preprocessor)
                    preprocess-args))
         (reterr (msg "Since the :PREPROCESS input is NIL, ~
-                      the :PREPROCESS-ARGS input must also be @('nil'), ~
+                      the :PREPROCESS-ARGS input must also be NIL, ~
                       but it is ~x0 instead."
                      preprocess-args)))
        ((unless (or (string-listp preprocess-args)
@@ -852,7 +852,7 @@
     "(input-files-prog :files             ...  ; required"
     "                  :path              ...  ; default \".\""
     "                  :preprocess        ...  ; default nil"
-    "                  :preprocess-args   ...  ; no default"
+    "                  :preprocess-args   ...  ; default nil"
     "                  :process           ...  ; default :validate"
     "                  :keep-going        ...  ; default nil"
     "                  :std               ...  ; default 17"
