@@ -1539,9 +1539,8 @@
    (xdoc::p
     "For now, we generate no theorem for the transformation of the type name,
      but we double-check that here.
-     We generate a theorem only if we generated one for the argument expression,
-     the argument expression is pure,
-     and the old and new type names are the same (i.e. no transformation)."))
+     The argument expression may be pure or not,
+     since the type name does not undergo execution."))
   (b* (((gin gin) gin)
        (expr (make-expr-cast :type type :arg arg))
        (expr-new (make-expr-cast :type type-new :arg arg-new))
@@ -1552,7 +1551,6 @@
         (mv expr-new (irr-gout)))
        ((tyname-info info) info)
        ((unless (and arg-thm-name
-                     (expr-purep arg)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
@@ -1587,22 +1585,25 @@
                               expr-compustate-vars)
                  :use ((:instance ,(or lifted-thm-name arg-thm-name)
                                   (limit (1- limit)))
-                       ,arg-thm-name
+                       ,@(and (expr-purep arg)
+                              (list arg-thm-name))
                        (:instance expr-cast-congruence
                                   (tyname ',ctyname)
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
-                       (:instance expr-cast-congruence-pure
-                                  (tyname ',ctyname)
-                                  (old-arg ',old-arg)
-                                  (new-arg ',new-arg))
+                       ,@(and (expr-purep arg)
+                              `((:instance expr-cast-congruence-pure
+                                           (tyname ',ctyname)
+                                           (old-arg ',old-arg)
+                                           (new-arg ',new-arg))))
                        (:instance expr-cast-errors
                                   (tyname ',ctyname)
                                   (arg ',old-arg)
                                   (fenv old-fenv))
-                       (:instance expr-cast-errors-pure
-                                  (tyname ',ctyname)
-                                  (arg ',old-arg))))))
+                       ,@(and (expr-purep arg)
+                              `((:instance expr-cast-errors-pure
+                                           (tyname ',ctyname)
+                                           (arg ',old-arg))))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr-new

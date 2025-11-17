@@ -21,24 +21,29 @@
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file "stdbool.c")))
+        (preprocess-file "stdbool.c" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (acl2::must-eval-to-t
     (b* (((mv erp out - state)
-          (preprocess-file "stdbool.c" :out "stdbool.i")))
+          (preprocess-file "stdbool.c"
+                           :out "stdbool.i"
+                           :extra-args (list "-std=c17"))))
       (value (and (not erp)
                   (stringp out))))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file "stdbool.i")))
+        (preprocess-file "stdbool.i" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file "stdbool.c" :out "stdbool.i" :save nil)))
+        (preprocess-file "stdbool.c"
+                         :out "stdbool.i"
+                         :save nil
+                         :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
@@ -48,14 +53,15 @@
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file "../tests/stdint.c")))
+        (preprocess-file "../tests/stdint.c" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - state)
         (preprocess-files
           (list "stdbool.c"
-                "stdint.c"))))
+                "stdint.c")
+          :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
@@ -69,5 +75,6 @@
         (preprocess-files
           (list "stdbool.c"
                 "stdint.c")
-          :path "../tests")))
+          :path "../tests"
+          :extra-args (list "-std=c17"))))
     (value (not erp))))
