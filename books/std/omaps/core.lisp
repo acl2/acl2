@@ -1195,7 +1195,7 @@
                     (cons a b))
              (set::in b (values m))))
 
-  (defrule value-of-update-when-not-assoc
+  (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
                     (set::insert val (values map))))))
