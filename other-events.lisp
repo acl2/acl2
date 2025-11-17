@@ -5363,7 +5363,7 @@
 ; point.
 
                      ans-constraint-lst-etc)
-                    (t 
+                    (t
 ; constraint-lst-etc is an ordinary constraint-lst-etc pair.
                        (constraint-lst-etc-introduced1
                         constraint-lst-etc
@@ -6801,7 +6801,7 @@
 ;       (equal (getpropc 'bad2 'induction-machine nil)
 ;              nil)))
 ;
-; 
+;
 ; (u)
 ;
 ; (encapsulate ((p (x) t))
@@ -7037,7 +7037,7 @@
 ;     (defthm p2-constraint (benign2 (p2 x)))))
 ;
 ; (test
-;  (and (equal (getprop 'p1 'constraint-lst-etc '(t . nil) 
+;  (and (equal (getprop 'p1 'constraint-lst-etc '(t . nil)
 ;                       'current-acl2-world (w state))
 ;              '(((BENIGN1 (P1 X)))
 ;                . ((theorem p1-constraint))))
@@ -7120,7 +7120,7 @@
 ;
 ; (u)
 ;
-; 
+;
 ; ; Here is a sample involving defchoose.  In this example, the signature
 ; ; function is ancestral in the defchoose axiom.
 ;
@@ -8642,12 +8642,11 @@
                      (kwd-value-list-lst (cadr trip))
                      (wrld1 (cddr trip))
                      (do-hcomp-build-p
-                      (and (not in-local-flg)
-                           (null signatures)
-                           (null (ld-redefinition-action state))
+                      (and (null signatures)
                            (not (in-encapsulatep
                                  (global-val 'embedded-event-lst (w state))
-                                 t)))))
+                                 t))
+                           (null (ld-redefinition-action state)))))
                 (declare (ignorable do-hcomp-build-p)) ; for #-acl2-loop-only
                 (with-hcomp-bindings-encapsulate
                  do-hcomp-build-p
@@ -21906,7 +21905,7 @@
 ; By (10) and applying the inductive hypothesis to cM (evaluating tN), there
 ; exists r_L such that
 
-; (11)    (ev_L tN a_L (- cM cN)) = (mv t r_L 0) 
+; (11)    (ev_L tN a_L (- cM cN)) = (mv t r_L 0)
 ;         where r_E E-corresponds to r_L with respect to A.
 
 ; By (9) and (11) and the definition of ev_L (and ev+), we have that r_L is
@@ -24744,7 +24743,7 @@
 ; St-name is st-name-new since discriminator = nil (since two-passes = nil).
                                st-name
                                anc corr-fn-exists congruent-to ctx wrld2
-                               state)) 
+                               state))
                             (let* ((congruent-stobj-rep
                                     (and congruent-to
                                          (congruent-stobj-rep congruent-to
