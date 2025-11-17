@@ -56,7 +56,7 @@
      "(input-files :files             ...  ; required, no default"
      "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
-     "             :preprocess-args   ...  ; no default"
+     "             :preprocess-args   ...  ; default nil"
      "             :process           ...  ; default :validate"
      "             :const             ...  ; required, no default"
      "             :keep-going        ...  ; default nil"
@@ -121,45 +121,51 @@
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':preprocess-args') &mdash; no default"
+     "@(':preprocess-args') &mdash; default @('nil')"
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "If this is not absent, it must evaluate to a list of strings
+      "This must evaluate to a list of strings
        or to an omap from strings to lists of strings.")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
-       the @(':preprocess-args') input must be absent.")
+       the @(':preprocess-args') input must evaluate to @('nil').")
      (xdoc::p
-      "If @(':preprocess') is not @('nil'),
-       and the @(':preprocess-args') input is absent,
-       the arguments @('-E') and @('-P') are passed to the preprocessor,
-       in that order.")
+      "If @(':preprocess') is not @('nil'), the input files are preprocessed.
+       For each file, we provide the @('-E') flag to the preprocessor,
+       as well as some instantiation of the @('-std=') flag.
+       This latter flag is based on the combination of the
+       @(':std') and @(':gcc') inputs,
+       as indicated by the following table.")
+     (xdoc::table_
+      (xdoc::tr (xdoc::th)
+                (xdoc::th "@(':gcc nil')")
+                (xdoc::th "@(':gcc t')"))
+      (xdoc::tr (xdoc::th "@(':std 17')")
+                (xdoc::td "@('-std=c17')")
+                (xdoc::td "@('-std=gnu17')"))
+      (xdoc::tr (xdoc::th "@(':std 23')")
+                (xdoc::td "@('-std=c23')")
+                (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
-      "If @(':preprocess') is not @('nil'),
-       and @(':preprocess-args') input is present,
-       the behavior depends on whether
-       it evaluates to a string list or to an omap.
-       For each file, the argument @('-E') is passed to the preprocessor.
+      "The @(':preprocess-args') input specifies additional arguments
+       to pass to the preprocessor beyond the two outlined above.
        If @(':preprocess-args') is a string list,
-       this list of arguments is also passed to the preprocessor,
-       following the @('-E') argument.
+       this list of arguments is passed to the preprocessor for each file,
+       following the @('-E') and ('-std=') arguments.
        If @(':preprocess-args') is an omap,
        then we provide the list of arguments associated with the file name
-       (again, after the @('-E') argument).
+       (again, after the @('-E') and @('-std=') arguments).
        A file in the @(':files') list corresponds to a list of arguments
        in the map only when the file name matches the map key exactly
        (i.e., without prepending the @(':path')).
        If the file name is not in the key set,
-       only the @('-E') argument is provided.
+       only the @('-E') and @('std=') arguments are provided.
        If @(':preprocess-args') is @('nil'),
        it is technically both a string list and
        an omap from strings to string lists;
        the behavior is the same under either interpretation:
-       only the argument @('-E') is provided for each file.")
-     (xdoc::p
-      "See the preprocessor documentation for information about
-       the arguments mentioned above."))
+       only the @('-E') and @('-std=') arguments are provided for each file."))
 
     (xdoc::desc
      "@(':process') &mdash; default @(':validate')"

@@ -17400,9 +17400,9 @@
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw "~%PROOF SUCCEEDED IN ")
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
@@ -17614,9 +17614,9 @@
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw "~%PROOF OF EQUIVALENCE SUCCEEDED IN ")
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
@@ -17822,9 +17822,9 @@
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw "~%PROOF OF EQUIVALENCE SUCCEEDED IN ")
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
